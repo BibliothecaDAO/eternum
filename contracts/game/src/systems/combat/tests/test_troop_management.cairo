@@ -186,6 +186,46 @@ mod tests {
             .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
     }
 
+    #[test]
+    #[should_panic(expected: ("explorer spawn location is occupied", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_create__fails_occupied() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+
+        // grant resources to the structure
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount * 2)].span());
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        starknet::testing::set_block_timestamp(1);
+        let troop_spawn_direction = Direction::NorthWest;
+
+        // create two explorers at the same location
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction);
+    }
+
 
     #[test]
     fn test_explorer_create_knight_tiers() {
@@ -798,5 +838,517 @@ mod tests {
 
         // try to delete explorer while troops are still alive
         troop_systems.explorer_delete(explorer_id);
+    }
+
+    #[test]
+    fn test_explorer_swap_essentials() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant troop resources to the structure
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount + troop_2_initial_amount)].span(),
+        );
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        starknet::testing::set_block_timestamp(1);
+
+        // create source explorer
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+
+        // reduce source explorer stamina by half
+        let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
+        assert!(from_explorer.troops.stamina.amount.is_non_zero(), "source explorer stamina should not be zero");
+        from_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount / 2;
+        assert!(from_explorer.troops.stamina.amount.is_non_zero(), "source explorer stamina should still not be zero");
+        world.write_model_test(@from_explorer);
+
+        // get source explorer weight before swap
+        let from_explorer_weight_before: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
+
+        // create target explorer (with no troops)
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+        let to_explorer_weight_before: Weight = WeightStoreImpl::retrieve(ref world, to_explorer_id);
+        // swap troops between explorers
+        let swap_amount = 20_000 * RESOURCE_PRECISION;
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, swap_amount);
+
+        // verify source explorer troops were reduced
+        let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
+        assert_eq!(from_explorer.troops.count, troop_amount - swap_amount, "incorrect source explorer troop count");
+
+        // verify target explorer received troops
+        let to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+        assert_eq!(
+            to_explorer.troops.count, swap_amount + troop_2_initial_amount, "incorrect target explorer troop count",
+        );
+
+        // verify stamina was properly transferred
+        assert_eq!(
+            to_explorer.troops.stamina.amount, from_explorer.troops.stamina.amount, "stamina mismatch after swap",
+        );
+
+        // ensure the capacity of source explorer was reduced
+        let from_explorer_weight_after: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
+        assert!(
+            from_explorer_weight_after.capacity < from_explorer_weight_before.capacity,
+            "source explorer capacity was not reduced",
+        );
+
+        // ensure the capacity of target explorer was increased
+        let to_explorer_weight_after: Weight = WeightStoreImpl::retrieve(ref world, to_explorer_id);
+        assert!(
+            to_explorer_weight_after.capacity > to_explorer_weight_before.capacity,
+            "target explorer capacity was not increased",
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_not_owner() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant resources and create explorers as owner
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount + troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // try to swap as non-owner
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'not_owner'>());
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("from explorer and to explorer have different tiers", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_wrong_tier() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant resources and create explorers as owner
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::KNIGHT_T2, troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T2, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("from explorer and to explorer have different categories", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_wrong_category() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant resources and create explorers as owner
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::CROSSBOWMAN_T1, troop_2_initial_amount)]
+                .span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Crossbowman, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("insufficient troops in source explorer", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_insufficient_troops() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant resources and setup
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount * 2)].span());
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // try to swap more troops than available
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount * 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("to explorer has no troops", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_target_has_no_troops() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // grant resources and setup
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount * 2)].span());
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        // create target explorer with troops
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // update troop count of target explorer
+        let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+        to_explorer.troops.count = 0;
+        world.write_model_test(@to_explorer);
+
+        // try to swap to an explorer that already has no troops
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("count must be greater than 0", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_zero_count() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // setup
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount + troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // try to swap zero troops
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, 0);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ("count must be divisible by resource precision", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_not_divisible_by_precision() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // setup
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount + troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // try to swap zero troops
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, RESOURCE_PRECISION - 1);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ("to explorer is not at the target coordinate", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_invalid_direction() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // setup
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::KNIGHT_T1, troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // try to swap with incorrect direction (explorers not adjacent)
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::SouthEast, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("reached limit of explorers amount per army", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_swap__fails_exceeds_max_troops() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs with low troop limit
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION; // More than the limit when combined
+        let troop_2_initial_amount: u128 = 50_000 * RESOURCE_PRECISION;
+
+        // allow structure have up to 2 explorers
+        let mut structure: Structure = world.read_model(realm_entity_id);
+        structure.limits.max_explorer_count = 2;
+        world.write_model_test(@structure);
+
+        // setup
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::KNIGHT_T1, troop_2_initial_amount)].span(),
+        );
+        starknet::testing::set_contract_address(owner);
+
+        let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
+        let from_explorer_id = troop_systems
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+        let to_explorer_id = troop_systems
+            .explorer_create(
+                realm_entity_id, TroopType::Knight, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
+            );
+
+        // Set very low troop limit
+        starknet::testing::set_contract_address(Zeroable::zero());
+        let mut low_troop_limit = MOCK_TROOP_LIMIT_CONFIG();
+        low_troop_limit.explorer_max_troop_count = 1; // Set very low limit
+        tstore_troop_limit_config(ref world, low_troop_limit);
+
+        // try to swap amount that would exceed max troop limit
+        starknet::testing::set_contract_address(owner);
+        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
     }
 }

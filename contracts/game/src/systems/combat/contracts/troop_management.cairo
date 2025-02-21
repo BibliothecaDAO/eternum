@@ -231,7 +231,7 @@ mod troop_management_systems {
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 amount <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
-                "reached limit of explorers amount per armys",
+                "reached limit of explorers amount per army",
             );
 
             // set troop stamina
@@ -255,6 +255,7 @@ mod troop_management_systems {
 
         fn explorer_add(ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
+            assert!(amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -284,7 +285,7 @@ mod troop_management_systems {
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
-                "reached limit of explorers amount per armys",
+                "reached limit of explorers amount per army",
             );
         }
 
@@ -296,6 +297,7 @@ mod troop_management_systems {
             count: u128,
         ) {
             assert!(count.is_non_zero(), "count must be greater than 0");
+            assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -311,16 +313,27 @@ mod troop_management_systems {
             to_explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorers are adjacent to one another
-            let to_explorer_coord = to_explorer.coord.neighbor(to_explorer_direction);
-            let to_explorer_occupier: Occupier = world.read_model(to_explorer_coord);
             assert!(
-                to_explorer_occupier.occupier == OccupiedBy::Explorer(to_explorer_id),
+                to_explorer.coord == from_explorer.coord.neighbor(to_explorer_direction),
                 "to explorer is not at the target coordinate",
             );
 
+            // ensure count is valid
+            assert!(count <= from_explorer.troops.count, "insufficient troops in source explorer");
+
             // ensure both explorers have troops
             assert!(from_explorer.troops.count.is_non_zero(), "from explorer has no troops");
-            assert!(to_explorer.troops.count.is_zero(), "to explorer has troops");
+            assert!(to_explorer.troops.count.is_non_zero(), "to explorer has no troops");
+
+            // ensure they have the same category and tier
+            assert!(
+                from_explorer.troops.category == to_explorer.troops.category,
+                "from explorer and to explorer have different categories",
+            );
+            assert!(
+                from_explorer.troops.tier == to_explorer.troops.tier,
+                "from explorer and to explorer have different tiers",
+            );
 
             // update troops
             from_explorer.troops.count -= count;
@@ -350,7 +363,7 @@ mod troop_management_systems {
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
                 to_explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
-                "reached limit of explorers amount per armys",
+                "reached limit of explorers amount per army",
             );
         }
 
