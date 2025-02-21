@@ -1,4 +1,6 @@
 use array::SpanTrait;
+use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
+
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, TickConfig};
 use s1_eternum::models::config::{TickTrait};
@@ -20,33 +22,109 @@ use traits::Into;
 pub struct Structure {
     #[key]
     entity_id: ID,
-    category: StructureCategory,
+    base: StructureBase,
+    troop_guards: GuardTroops,
+    troop_explorers: Span<ID>,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+struct StructureBase {
+    troop_guard_count: u8,
+    troop_explorer_count: u16,
+    troop_max_guard_count: u8,
+    troop_max_explorer_count: u16,
+    created_at: u32,
+    category: u8,
+    coord_x: u32,
+    coord_y: u32,
     owner: ContractAddress,
-    coord: Coord,
-    guards: GuardTroops,
-    limits: Limits,
-    created_at: u64,
-    // number of guards currently in this structure
-    guard_count: u32,
-    // list of explorers associated with this structure
-    explorers: Span<ID>,
 }
 
 
-// todo hmm getting structure will cost more for
-// players with more explorers
+#[generate_trait]
+impl StructureBaseImpl of StructureBaseTrait {
+    fn assert_exists(self: StructureBase) {
+        assert!(self.exists(), "entity is not a structure")
+    }
 
-// todo: add the explorers as a separate field so
-// other params can be IntrospectPacked
-#[derive(Introspect, Copy, Drop, Serde)]
-struct Limits {
-    // maximum total explorer + guards allowed for this structure
-    max_explorer_count: u32,
-    // maximum number of guards allowed for this structure
-    max_guard_count: u32,
+    fn assert_not_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) {
+        let (is_cloaked, reason) = self.is_cloaked(battle_config, tick_config);
+        assert!(!is_cloaked, "{}", reason);
+    }
+
+    fn coord(self: StructureBase) -> Coord {
+        return Coord { x: self.coord_x, y: self.coord_y };
+    }
+
+    fn exists(self: StructureBase) -> bool {
+        self.category != StructureCategory::None.into()
+    }
+
+    fn is_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) -> (bool, ByteArray) {
+        // Fragment mines have no immunity
+        if self.category == StructureCategory::FragmentMine.into() {
+            return (false, "");
+        }
+
+        let current_tick = tick_config.current();
+        let mut allow_attack_tick: u64 = 0;
+        if self.category == StructureCategory::Hyperstructure.into() {
+            allow_attack_tick = tick_config.at(self.created_at.into())
+                + battle_config.hyperstructure_immunity_ticks.into();
+        } else {
+            allow_attack_tick = tick_config.at(self.created_at.into()) + battle_config.regular_immunity_ticks.into();
+        }
+
+        if current_tick < allow_attack_tick {
+            let remaining_ticks = allow_attack_tick - current_tick;
+            return (
+                true,
+                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks),
+            );
+        }
+
+        return (false, "");
+    }
 }
 
-// implement Default trait
+#[generate_trait]
+impl StructureBaseStoreImpl of StructureBaseStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> StructureBase {
+        let base = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("base"));
+        return base;
+    }
+
+    fn store(ref self: StructureBase, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("base"), self);
+    }
+}
+
+#[generate_trait]
+impl StructureTroopGuardStoreImpl of StructureTroopGuardStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> GuardTroops {
+        let troops = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_guards"));
+        return troops;
+    }
+
+    fn store(ref self: GuardTroops, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_guards"), self);
+    }
+}
+
+#[generate_trait]
+impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> Span<ID> {
+        let explorers = world
+            .read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_explorers"));
+        return explorers;
+    }
+
+    fn store(self: Span<ID>, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_explorers"), self);
+    }
+}
+
 
 #[generate_trait]
 impl StructureImpl of StructureTrait {
@@ -56,13 +134,18 @@ impl StructureImpl of StructureTrait {
         };
         Structure {
             entity_id: 0,
-            category: StructureCategory::None,
-            owner: Zeroable::zero(),
-            coord: Coord { x: 0, y: 0 },
-            limits: Limits { max_explorer_count: 0, max_guard_count: 0 },
-            guard_count: 0,
-            explorers: array![].span(),
-            guards: GuardTroops {
+            base: StructureBase {
+                troop_guard_count: 0,
+                troop_explorer_count: 0,
+                troop_max_guard_count: 0,
+                troop_max_explorer_count: 0,
+                created_at: 0,
+                category: 0,
+                coord_x: 0,
+                coord_y: 0,
+                owner: Zeroable::zero(),
+            },
+            troop_guards: GuardTroops {
                 delta: troops,
                 charlie: troops,
                 bravo: troops,
@@ -72,7 +155,7 @@ impl StructureImpl of StructureTrait {
                 bravo_destroyed_tick: 0,
                 alpha_destroyed_tick: 0,
             },
-            created_at: 0,
+            troop_explorers: array![].span(),
         }
     }
 
@@ -80,76 +163,37 @@ impl StructureImpl of StructureTrait {
         assert!(category != StructureCategory::None, "category cannot be none");
         let mut structure: Structure = Self::default();
         structure.entity_id = entity_id;
-        structure.category = category;
-        structure.coord = coord;
-        structure.owner = owner;
+        structure.base.category = category.into();
+        structure.base.coord_x = coord.x;
+        structure.base.coord_y = coord.y;
+        structure.base.owner = owner;
 
         match category {
             StructureCategory::Realm => {
-                structure.limits.max_explorer_count = 1;
-                structure.limits.max_guard_count = 1; // 1 guard, 1 explorer
+                structure.base.troop_max_explorer_count = 1;
+                structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
             StructureCategory::Hyperstructure => {
-                structure.limits.max_explorer_count = 0;
-                structure.limits.max_guard_count = 4; // 4 guards, 0 explorers
+                structure.base.troop_max_explorer_count = 0;
+                structure.base.troop_max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::Bank => {
-                structure.limits.max_explorer_count = 0;
-                structure.limits.max_guard_count = 4; // 4 guards, 0 explorers
+                structure.base.troop_max_explorer_count = 0;
+                structure.base.troop_max_guard_count = 4; // 4 guards, 0 explorers
             },
             StructureCategory::FragmentMine => {
-                structure.limits.max_explorer_count = 0;
-                structure.limits.max_guard_count = 1; // 1 guard, 0 explorers
+                structure.base.troop_max_explorer_count = 0;
+                structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
             _ => { panic!("invalid structure category"); },
         }
-        structure.created_at = starknet::get_block_timestamp();
+        structure.base.created_at = starknet::get_block_timestamp().try_into().unwrap();
         structure
-    }
-
-    fn assert_exists(self: Structure) {
-        assert!(self.exists(), "entity {} is not a structure", self.entity_id)
-    }
-
-    fn assert_no_initial_attack_immunity(self: Structure, battle_config: BattleConfig, tick_config: TickConfig) {
-        let (no_initial_attack_immunity, reason) = self.no_initial_attack_immunity(battle_config, tick_config);
-        assert!(no_initial_attack_immunity, "{}", reason);
-    }
-
-    fn exists(self: Structure) -> bool {
-        self.category != StructureCategory::None
-    }
-
-    fn no_initial_attack_immunity(
-        self: Structure, battle_config: BattleConfig, tick_config: TickConfig,
-    ) -> (bool, ByteArray) {
-        // Fragment mines have no immunity
-        if self.category == StructureCategory::FragmentMine {
-            return (true, "");
-        }
-
-        let current_tick = tick_config.current();
-        let mut allow_attack_tick: u64 = 0;
-        if self.category == StructureCategory::Hyperstructure {
-            allow_attack_tick = tick_config.at(self.created_at) + battle_config.hyperstructure_immunity_ticks.into();
-        } else {
-            allow_attack_tick = tick_config.at(self.created_at) + battle_config.regular_immunity_ticks.into();
-        }
-
-        if current_tick < allow_attack_tick {
-            let remaining_ticks = allow_attack_tick - current_tick;
-            return (
-                false,
-                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks),
-            );
-        }
-
-        return (true, "");
     }
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Introspect, Default)]
+#[derive(PartialEq, Copy, Drop, Serde, Default)]
 enum StructureCategory {
     #[default]
     None,
@@ -161,6 +205,18 @@ enum StructureCategory {
 
 impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
     fn into(self: StructureCategory) -> felt252 {
+        match self {
+            StructureCategory::None => 0,
+            StructureCategory::Realm => 1,
+            StructureCategory::Hyperstructure => 2,
+            StructureCategory::Bank => 3,
+            StructureCategory::FragmentMine => 4,
+        }
+    }
+}
+
+impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
+    fn into(self: StructureCategory) -> u8 {
         match self {
             StructureCategory::None => 0,
             StructureCategory::Realm => 1,

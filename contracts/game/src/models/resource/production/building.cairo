@@ -11,7 +11,7 @@ use s1_eternum::models::config::{
     BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
     PopulationConfig, ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
 };
-use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+use s1_eternum::models::owner::{OwnerAddressTrait};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
 use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
@@ -20,7 +20,10 @@ use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
+use s1_eternum::models::structure::{
+    Structure, StructureBase, StructureBaseStoreImpl, StructureBaseTrait, StructureCategory, StructureImpl,
+    StructureTrait,
+};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
@@ -207,19 +210,19 @@ impl BuildingPerksImpl of BuildingPerksTrait {
     }
 
     fn _boost_explorer_capacity(self: Building, ref world: WorldStorage, add: bool) {
-        let mut structure: Structure = world.read_model(self.outer_entity_id);
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, self.outer_entity_id);
         if add {
-            structure.limits.max_explorer_count += 1;
+            structure_base.troop_max_explorer_count += 1;
         } else {
-            structure.limits.max_explorer_count -= 1;
+            structure_base.troop_max_explorer_count -= 1;
 
-            // ensure current troop count does not exceed new troop capacity
-            let total_troops_available = structure.guard_count + structure.explorers.len();
+            // ensure explorer count does not exceed troop capacity
             assert!(
-                total_troops_available <= structure.limits.max_explorer_count, "cannot reduce troop capacity below 0",
+                structure_base.troop_explorer_count <= structure_base.troop_max_explorer_count,
+                "delete an explorer troop unit before removing this building",
             );
         }
-        world.write_model(@structure);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, self.outer_entity_id);
     }
 }
 
@@ -582,8 +585,8 @@ impl BuildingImpl of BuildingTrait {
     /// and stops receiving bonuses from adjacent buildings.
     ///
     fn pause_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -607,8 +610,8 @@ impl BuildingImpl of BuildingTrait {
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
     fn resume_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -631,8 +634,8 @@ impl BuildingImpl of BuildingTrait {
     /// Destroy building and remove it from the structure
     ///
     fn destroy(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        let entity_owner: EntityOwner = world.read_model(outer_entity_id);
-        entity_owner.assert_caller_owner(world);
+        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
+        structure.owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);

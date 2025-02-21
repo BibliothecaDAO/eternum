@@ -90,8 +90,8 @@ mod tests {
 
         // ensure explorer was added to the structure
         let structure: Structure = world.read_model(realm_entity_id);
-        assert_eq!(structure.explorers.len(), 1);
-        assert_eq!(structure.explorers.at(0), @explorer_id);
+        assert_eq!(structure.troop_explorers.len(), 1);
+        assert_eq!(structure.troop_explorers.at(0), @explorer_id);
 
         // ensure troop resource was deducted from the structure
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
@@ -211,7 +211,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // set caller address before calling the contract
@@ -275,7 +275,7 @@ mod tests {
 
         // allow structure have up to 3 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 3;
+        structure.base.troop_max_explorer_count = 3;
         world.write_model_test(@structure);
 
         // create T1 Knights
@@ -299,10 +299,10 @@ mod tests {
 
         // ensure explorer was added to the structure
         let structure: Structure = world.read_model(realm_entity_id);
-        assert_eq!(structure.explorers.len(), 3);
-        assert_eq!(structure.explorers.at(0), @t1_knight_entity_id);
-        assert_eq!(structure.explorers.at(1), @t2_knight_entity_id);
-        assert_eq!(structure.explorers.at(2), @t3_knight_entity_id);
+        assert_eq!(structure.troop_explorers.len(), 3);
+        assert_eq!(structure.troop_explorers.at(0), @t1_knight_entity_id);
+        assert_eq!(structure.troop_explorers.at(1), @t2_knight_entity_id);
+        assert_eq!(structure.troop_explorers.at(2), @t3_knight_entity_id);
 
         // ensure troop resource was deducted from the structure
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
@@ -384,7 +384,7 @@ mod tests {
 
         // allow structure have up to 3 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 3;
+        structure.base.troop_max_explorer_count = 3;
         world.write_model_test(@structure);
 
         let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
@@ -409,10 +409,10 @@ mod tests {
 
         // verify explorers
         let structure: Structure = world.read_model(realm_entity_id);
-        assert_eq!(structure.explorers.len(), 3);
-        assert_eq!(structure.explorers.at(0), @t1_entity_id);
-        assert_eq!(structure.explorers.at(1), @t2_entity_id);
-        assert_eq!(structure.explorers.at(2), @t3_entity_id);
+        assert_eq!(structure.troop_explorers.len(), 3);
+        assert_eq!(structure.troop_explorers.at(0), @t1_entity_id);
+        assert_eq!(structure.troop_explorers.at(1), @t2_entity_id);
+        assert_eq!(structure.troop_explorers.at(2), @t3_entity_id);
 
         // verify resources were spent
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
@@ -493,7 +493,7 @@ mod tests {
 
         // allow structure have up to 3 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 3;
+        structure.base.troop_max_explorer_count = 3;
         world.write_model_test(@structure);
 
         let troop_systems = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr };
@@ -518,10 +518,10 @@ mod tests {
 
         // verify explorers
         let structure: Structure = world.read_model(realm_entity_id);
-        assert_eq!(structure.explorers.len(), 3);
-        assert_eq!(structure.explorers.at(0), @t1_entity_id);
-        assert_eq!(structure.explorers.at(1), @t2_entity_id);
-        assert_eq!(structure.explorers.at(2), @t3_entity_id);
+        assert_eq!(structure.troop_explorers.len(), 3);
+        assert_eq!(structure.troop_explorers.at(0), @t1_entity_id);
+        assert_eq!(structure.troop_explorers.at(1), @t2_entity_id);
+        assert_eq!(structure.troop_explorers.at(2), @t3_entity_id);
 
         // verify resources were spent
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
@@ -593,8 +593,8 @@ mod tests {
 
         // ensure explorer was added to the structure
         let structure: Structure = world.read_model(realm_entity_id);
-        assert_eq!(structure.explorers.len(), 1);
-        assert_eq!(structure.explorers.at(0), @explorer_id);
+        assert_eq!(structure.troop_explorers.len(), 1);
+        assert_eq!(structure.troop_explorers.at(0), @explorer_id);
 
         // ensure troop resource was deducted from the structure
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_entity_id);
@@ -750,7 +750,7 @@ mod tests {
 
         // verify explorer was removed from structure
         let structure: Structure = world.read_model(realm_entity_id);
-        assert!(structure.explorers.len() == 0, "explorer not removed from structure");
+        assert!(structure.troop_explorers.len() == 0, "explorer not removed from structure");
 
         // verify occupier was cleared
         let spawn_coord = realm_coord.neighbor(troop_spawn_direction);
@@ -862,7 +862,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant troop resources to the structure
@@ -953,7 +953,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // setup
@@ -1004,7 +1004,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant resources and create explorers as owner
@@ -1051,7 +1051,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant resources and create explorers as owner
@@ -1096,7 +1096,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant resources and create explorers as owner
@@ -1142,7 +1142,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant resources and setup
@@ -1184,7 +1184,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // grant resources and setup
@@ -1232,7 +1232,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // setup
@@ -1279,7 +1279,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // setup
@@ -1326,7 +1326,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // setup
@@ -1372,7 +1372,7 @@ mod tests {
 
         // allow structure have up to 2 explorers
         let mut structure: Structure = world.read_model(realm_entity_id);
-        structure.limits.max_explorer_count = 2;
+        structure.base.troop_max_explorer_count = 2;
         world.write_model_test(@structure);
 
         // setup

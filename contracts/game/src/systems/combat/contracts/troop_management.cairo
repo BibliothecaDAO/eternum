@@ -59,7 +59,11 @@ mod troop_management_systems {
             },
             resource::{ResourceList},
         },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
+        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
+        structure::{
+            Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+            StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+        },
         troop::{
             ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
@@ -89,14 +93,14 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: Structure = world.read_model(for_structure_id);
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create guard
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure guard slot is valid
-            let mut guard: GuardTroops = structure.guards;
+            let mut guard: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
 
             // ensure delay from troop defeat is over
@@ -115,11 +119,12 @@ mod troop_management_systems {
             if troops.count.is_zero() {
                 // ensure structure has not reached the hard limit of guards
                 assert!(
-                    structure.guard_count < structure.limits.max_guard_count, "reached limit of guards per structure",
+                    structure.troop_guard_count < structure.troop_max_guard_count.into(),
+                    "reached limit of guards per structure",
                 );
 
                 // update guard count
-                structure.guard_count += 1;
+                structure.troop_guard_count += 1;
 
                 // set category and tier
                 troops.category = category;
@@ -132,8 +137,8 @@ mod troop_management_systems {
 
             // update guard slot and structure
             guard.to_slot(slot, troops, current_tick);
-            structure.guards = guard;
-            world.write_model(@structure);
+            StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
+            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
         }
 
 
@@ -142,7 +147,7 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: Structure = world.read_model(for_structure_id);
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create guard
@@ -150,7 +155,7 @@ mod troop_management_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure guard slot is valid
-            let mut guard: GuardTroops = structure.guards;
+            let mut guard: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
             let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
 
             // ensure delay from troop defeat is over
@@ -168,13 +173,11 @@ mod troop_management_systems {
             troops.count = 0;
             troops.stamina.reset(current_tick);
             guard.to_slot(slot, troops, current_tick);
-            structure.guards = guard;
+            StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
 
             // reduce structure guard count
-            structure.guard_count -= 1;
-
-            // update structure
-            world.write_model(@structure);
+            structure.troop_guard_count -= 1;
+            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
         }
 
 
@@ -190,7 +193,7 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: Structure = world.read_model(for_structure_id);
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create explorer
@@ -198,14 +201,14 @@ mod troop_management_systems {
 
             // ensure structure has not reached itslimit of troops
             assert!(
-                structure.explorers.len() < structure.limits.max_explorer_count,
+                structure.troop_explorer_count < structure.troop_max_explorer_count.into(),
                 "reached limit of troops for your structure",
             );
 
             // ensure structure has not reached hard limit of explorers for all structures
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                structure.explorers.len() < troop_limit_config.explorer_max_party_count.into(),
+                structure.troop_explorer_count < troop_limit_config.explorer_max_party_count.into(),
                 "reached limit of troops per structure",
             );
 
@@ -213,13 +216,16 @@ mod troop_management_systems {
             let mut explorer_id: ID = world.dispatcher.uuid();
 
             // add explorer count to structure
-            let mut explorers: Array<ID> = structure.explorers.into();
+            let mut explorers: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(ref world, for_structure_id)
+                .into();
             explorers.append(explorer_id);
-            structure.explorers = explorers.span();
-            world.write_model(@structure);
+            StructureTroopExplorerStoreImpl::store(explorers.span(), ref world, for_structure_id);
+
+            structure.troop_explorer_count += 1;
+            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
 
             // ensure spawn location is not occupied
-            let spawn_coord: Coord = structure.coord.neighbor(spawn_direction);
+            let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
             let mut occupier: Occupier = world.read_model((spawn_coord.x, spawn_coord.y));
             assert!(occupier.not_occupied(), "explorer spawn location is occupied");
 
@@ -243,7 +249,7 @@ mod troop_management_systems {
 
             // set explorer
             let explorer: ExplorerTroops = ExplorerTroops {
-                explorer_id, coord: spawn_coord, troops, owner: structure.entity_id,
+                explorer_id, coord: spawn_coord, troops, owner: for_structure_id,
             };
             world.write_model(@explorer);
 
@@ -262,12 +268,12 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorer is adjacent to home structure
             assert!(
-                explorer_owner_structure.coord == explorer.coord.neighbor(home_direction),
+                explorer_owner_structure.coord() == explorer.coord.neighbor(home_direction),
                 "explorer not adjacent to home structure",
             );
 
@@ -312,7 +318,9 @@ mod troop_management_systems {
                 "from explorer and to explorer are not owned by the same structure",
             );
 
-            let mut explorer_owner_structure: Structure = world.read_model(from_explorer.owner);
+            let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, from_explorer.owner,
+            );
             explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorers are adjacent to one another
@@ -371,7 +379,17 @@ mod troop_management_systems {
 
             // delete from_explorer if count is 0
             if from_explorer.troops.count.is_zero() {
-                iExplorerImpl::explorer_delete(ref world, ref from_explorer, ref explorer_owner_structure);
+                let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
+                    ref world, from_explorer.owner,
+                )
+                    .into();
+                iExplorerImpl::explorer_delete(
+                    ref world,
+                    ref from_explorer,
+                    explorer_owner_structure_explorers_list,
+                    ref explorer_owner_structure,
+                    from_explorer.owner,
+                );
             }
         }
 
@@ -381,11 +399,23 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            let mut explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, explorer.owner,
+            );
             explorer_owner_structure.owner.assert_caller_owner();
 
             // delete explorer
-            iExplorerImpl::explorer_delete(ref world, ref explorer, ref explorer_owner_structure);
+            let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
+                ref world, explorer.owner,
+            )
+                .into();
+            iExplorerImpl::explorer_delete(
+                ref world,
+                ref explorer,
+                explorer_owner_structure_explorers_list,
+                ref explorer_owner_structure,
+                explorer.owner,
+            );
         }
     }
 }

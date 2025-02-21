@@ -45,7 +45,9 @@ mod trade_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+    };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
@@ -105,12 +107,12 @@ mod trade_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure maker structure is owned by caller
-            let maker_structure: Structure = world.read_model(maker_id);
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, maker_id);
             maker_structure.owner.assert_caller_owner();
 
             // ensure taker structure exists
             if taker_id.is_non_zero() {
-                let taker_structure: Structure = world.read_model(taker_id);
+                let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
                 taker_structure.assert_exists();
             }
 
@@ -203,7 +205,7 @@ mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns taker structure
-            let taker_structure: Structure = world.read_model(trade.taker_id);
+            let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.taker_id);
             taker_structure.owner.assert_caller_owner();
 
             // ensure trade is not expired
@@ -220,11 +222,11 @@ mod trade_systems {
             assert!(taker_buys_count <= trade.maker_gives_max_count, "attempting to buy more than available");
 
             // compute resource arrival time
-            let maker_structure: Structure = world.read_model(trade.maker_id);
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             let donkey_speed = SpeedImpl::for_donkey(ref world);
             let travel_time = starknet::get_block_timestamp()
                 + iDistanceImpl::time_required(
-                    ref world, maker_structure.coord, taker_structure.coord, donkey_speed, true,
+                    ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,
                 );
             let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
@@ -331,7 +333,7 @@ mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns maker structure
-            let maker_structure: Structure = world.read_model(trade.maker_id);
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             maker_structure.owner.assert_caller_owner();
 
             // return offered resource to maker balance

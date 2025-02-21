@@ -21,7 +21,7 @@ mod dev_resource_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{Structure, StructureImpl};
+    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
@@ -41,7 +41,7 @@ mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let structure: Structure = world.read_model(entity_id);
+                        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
                         structure.assert_exists();
 
                         // add resource to structure

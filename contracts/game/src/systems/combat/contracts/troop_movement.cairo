@@ -23,7 +23,8 @@ mod troop_movement_systems {
         resource::resource::{
             ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
         },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait}, structure::{Structure, StructureCategory, StructureTrait},
+        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
+        structure::{Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureTrait},
         troop::{
             ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
         },
@@ -49,7 +50,7 @@ mod troop_movement_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorer is alive

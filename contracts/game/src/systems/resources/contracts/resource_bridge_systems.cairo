@@ -208,7 +208,9 @@ mod resource_bridge_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+    };
     use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::dev::contracts::bank::dev_bank_systems::{ADMIN_BANK_ENTITY_ID};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
@@ -254,9 +256,13 @@ mod resource_bridge_systems {
             assert!(caller == realm_systems_address, "only realm systems can call this system");
 
             // ensure transfer recipient is a realm
-            let mut recipient_structure: Structure = world.read_model(recipient_realm_id);
+            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, recipient_realm_id,
+            );
             recipient_structure.assert_exists();
-            assert!(recipient_structure.category == StructureCategory::Realm, "recipient structure is not a realm");
+            assert!(
+                recipient_structure.category == StructureCategory::Realm.into(), "recipient structure is not a realm",
+            );
 
             // ensure bridge deposit is not paused
             InternalBridgeImpl::assert_deposit_not_paused(world);
@@ -286,13 +292,15 @@ mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: Structure = world.read_model(ADMIN_BANK_ENTITY_ID);
+            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
-                ref bank_structure,
+                ADMIN_BANK_ENTITY_ID,
+                bank_structure,
                 ref bank_structure_weight,
-                ref recipient_structure,
+                recipient_realm_id,
+                recipient_structure.coord(),
                 array![recipient_resource_index].span(),
                 resources,
                 true,
@@ -317,14 +325,18 @@ mod resource_bridge_systems {
 
             // ensure through bank is a bank
             let through_bank_id = ADMIN_BANK_ENTITY_ID;
-            let through_bank: Structure = world.read_model(through_bank_id);
+            let through_bank: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
             through_bank.assert_exists();
-            assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
+            assert!(through_bank.category == StructureCategory::Bank.into(), "through bank is not a bank");
 
             // ensure transfer recipient is a realm
-            let mut recipient_structure: Structure = world.read_model(recipient_realm_id);
+            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, recipient_realm_id,
+            );
             recipient_structure.assert_exists();
-            assert!(recipient_structure.category == StructureCategory::Realm, "recipient structure is not a realm");
+            assert!(
+                recipient_structure.category == StructureCategory::Realm.into(), "recipient structure is not a realm",
+            );
 
             // ensure bridge deposit is not paused
             InternalBridgeImpl::assert_deposit_not_paused(world);
@@ -366,13 +378,15 @@ mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: Structure = world.read_model(through_bank_id);
+            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, through_bank_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
-                ref bank_structure,
+                through_bank_id,
+                bank_structure,
                 ref bank_structure_weight,
-                ref recipient_structure,
+                recipient_realm_id,
+                recipient_structure.coord(),
                 array![recipient_resource_index].span(),
                 resources,
                 true,
@@ -394,14 +408,14 @@ mod resource_bridge_systems {
 
             // ensure through bank is a bank
             let through_bank_id = ADMIN_BANK_ENTITY_ID;
-            let through_bank: Structure = world.read_model(through_bank_id);
+            let through_bank: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
             through_bank.assert_exists();
-            assert!(through_bank.category == StructureCategory::Bank, "through bank is not a bank");
+            assert!(through_bank.category == StructureCategory::Bank.into(), "through bank is not a bank");
 
             // ensure from_realm_id is a realm
-            let from_structure: Structure = world.read_model(from_realm_id);
+            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_realm_id);
             from_structure.assert_exists();
-            assert!(from_structure.category == StructureCategory::Realm, "from structure is not a realm");
+            assert!(from_structure.category == StructureCategory::Realm.into(), "from structure is not a realm");
 
             // ensure bridge withdrawal is not paused
             InternalBridgeImpl::assert_withdraw_not_paused(world);

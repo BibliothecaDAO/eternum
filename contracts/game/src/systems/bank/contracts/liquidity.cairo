@@ -33,7 +33,9 @@ mod liquidity_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
+    use s1_eternum::models::structure::{
+        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+    };
     use s1_eternum::models::weight::{Weight, WeightTrait};
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
@@ -70,8 +72,8 @@ mod liquidity_systems {
             let bank: Bank = world.read_model(bank_entity_id);
             assert!(bank.exists, "Bank does not exist");
 
-            let mut player_structure: Structure = world.read_model(entity_id);
-            player_structure.owner.assert_caller_owner();
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            player_structure_base.owner.assert_caller_owner();
 
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
@@ -134,8 +136,8 @@ mod liquidity_systems {
 
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
-            let mut player_structure: Structure = world.read_model(entity_id);
-            player_structure.owner.assert_caller_owner();
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            player_structure_base.owner.assert_caller_owner();
 
             let player_liquidity: Liquidity = world
                 .read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
@@ -154,13 +156,15 @@ mod liquidity_systems {
             // burn the resource the player is exchanging for lords
             let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
                 .span();
-            let mut bank_structure: Structure = world.read_model(bank_entity_id);
+            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
-                ref bank_structure,
+                bank_entity_id,
+                bank_structure_base,
                 ref bank_structure_weight,
-                ref player_structure,
+                entity_id,
+                bank_structure_base.coord(),
                 array![player_resource_index].span(),
                 resources,
                 true,
