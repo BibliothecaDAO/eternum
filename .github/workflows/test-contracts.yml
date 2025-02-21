@@ -30,21 +30,8 @@ jobs:
       matrix:
         test:
           [
-            season_test,
-            combat_test,
-            owner_test,
-            position_test,
-            resources_test,
-            config_test,
-            hyperstructure_test,
-            bank_test,
-            map_test,
-            resource_bridge_test,
-            trade_test,
-            realm_test,
-            guild_test,
-            transport_test,
-            test_ownership_systems,
+            models,
+            test_troop_management
           ]
       fail-fast: false
     steps:
