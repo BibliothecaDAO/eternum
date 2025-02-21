@@ -46,7 +46,11 @@ export function ProposalList({
           <ProposalListItem
             key={proposal.id}
             proposal={proposal}
-            voteChoice={matchingVote?.choice}
+            voteChoice={
+              !delegateId || BigInt(delegateId) === 0n
+                ? 4
+                : matchingVote?.choice
+            }
           />
         );
       })}

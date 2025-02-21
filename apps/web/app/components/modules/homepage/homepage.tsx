@@ -190,10 +190,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
         <div className="mb-4 md:w-1/2">
           <h2 className="mb-2 text-xl font-semibold">Your Claims</h2>
           <Card>
-            <CardHeader>
-              <CardTitle>veLords</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
+            <CardContent className="flex flex-col gap-2 pt-6">
               <Link to={`/realms/claims`}>
                 <Badge className="flex justify-between gap-2 rounded">
                   <span className="flex text-3xl">

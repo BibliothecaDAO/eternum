@@ -5,7 +5,7 @@ import { formatLockEndTime } from "@/utils/time";
 import { shortenAddress } from "@/utils/utils";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export const ProposalListItem = ({
   proposal,
@@ -36,7 +36,7 @@ export const ProposalListItem = ({
     <div className="mx-4 flex items-center border-b py-[14px] last:border-b-0">
       <div className="mr-4 w-0 flex-auto">
         <div className="flex space-x-2">
-          <div className="my-1 items-center leading-6 md:flex md:min-w-0">
+          <div className="mb-1 items-center leading-6 md:flex md:min-w-0">
             <h4 className="my-0 text-lg font-semibold">
               {proposal.metadata?.title ?? `Proposal #${proposal.id}`}
             </h4>
@@ -70,14 +70,20 @@ export const ProposalListItem = ({
 
           <div>
             <div className="text-muted-foreground flex w-full items-center justify-end gap-2 text-sm">
-              Delegate
-              {voteChoice === 1 ? (
+              {voteChoice == 4 ? (
+                ""
+              ) : voteChoice === 1 ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
+                  Delegate: <CheckCircle2 className="h-4 w-4" />
                   For
                 </>
+              ) : voteChoice === 3 ? (
+                <>
+                  Delegate: <XCircle className="h-4 w-4" />
+                  Against
+                </>
               ) : (
-                " did not vote"
+                "Delegate did not vote"
               )}
             </div>
           </div>
