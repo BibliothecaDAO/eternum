@@ -324,6 +324,9 @@ importers:
       vite:
         specifier: ^6.0.5
         version: 6.0.11(@types/node@20.17.14)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0)
+      vite-plugin-mkcert:
+        specifier: ^1.17.6
+        version: 1.17.6(vite@6.0.11(@types/node@20.17.14)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.7.0))
 
   client/apps/game:
     dependencies:
