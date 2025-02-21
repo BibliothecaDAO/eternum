@@ -14,7 +14,7 @@ import {
   WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
-import { Config, EntityType, TickIds, TravelTypes } from "../types";
+import { Config, EntityType, TickIds, TroopType } from "../types";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -207,20 +207,20 @@ export class ClientConfigManager {
   getTravelStaminaCost() {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(
-        this.components.TravelStaminaCostConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Travel)]),
-      );
-      return staminaConfig?.cost ?? 0;
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
     }, 1);
   }
 
   getExploreStaminaCost() {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(
-        this.components.TravelStaminaCostConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
-      );
-      return staminaConfig?.cost ?? 0;
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_explore_stamina_cost ?? 0;
     }, 1);
   }
 
@@ -238,7 +238,11 @@ export class ClientConfigManager {
   getTroopConfig() {
     return this.getValueOrDefault(
       () => {
-        const troopConfig = getComponentValue(this.components.TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        // todo: need to fix this
+        const troopConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        ) as any;
 
         return {
           health: troopConfig?.health ?? 0,
@@ -278,7 +282,10 @@ export class ClientConfigManager {
 
   getBattleGraceTickCount(category: StructureType) {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const battleConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.battle_config;
       switch (category) {
         case StructureType.Hyperstructure:
           return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
@@ -287,14 +294,6 @@ export class ClientConfigManager {
         default:
           return Number(battleConfig?.regular_immunity_ticks ?? 0);
       }
-    }, 0);
-  }
-
-  getBattleDelay() {
-    return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-      return Number(battleConfig?.battle_delay_seconds ?? 0);
     }, 0);
   }
 
@@ -348,7 +347,7 @@ export class ClientConfigManager {
       if (tickId === TickIds.Armies) {
         return Number(tickConfig?.armies_tick_in_seconds ?? 0);
       } else if (tickId === TickIds.Default) {
-        return Number(tickConfig?.default_tick_in_seconds ?? 0);
+        return 1;
       } else {
         throw new Error("Undefined tick id in getTick");
       }
@@ -393,8 +392,25 @@ export class ClientConfigManager {
 
   getCapacityConfig(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
-      const capacityConfig = getComponentValue(this.components.CapacityConfig, getEntityIdFromKeys([BigInt(category)]));
-      return Number(capacityConfig?.weight_gram ?? 0);
+      const capacityConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.capacity_config;
+
+      switch (category) {
+        case CapacityConfig.Structure:
+          return Number(capacityConfig?.structure_capacity ?? 0);
+        case CapacityConfig.Donkey:
+          return Number(capacityConfig?.donkey_capacity ?? 0);
+        case CapacityConfig.Army:
+          return Number(capacityConfig?.troop_capacity ?? 0);
+        case CapacityConfig.Storehouse:
+          return Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+        case CapacityConfig.None:
+          return 0;
+        default:
+          throw new Error("Invalid capacity config category");
+      }
     }, 0);
   }
 
@@ -553,15 +569,15 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         const travelFoodCostConfig = getComponentValue(
-          this.components.TravelFoodCostConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopType)]),
-        );
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
 
         return {
-          exploreWheatBurnAmount: Number(travelFoodCostConfig?.explore_wheat_burn_amount) ?? 0,
-          exploreFishBurnAmount: Number(travelFoodCostConfig?.explore_fish_burn_amount) ?? 0,
-          travelWheatBurnAmount: Number(travelFoodCostConfig?.travel_wheat_burn_amount) ?? 0,
-          travelFishBurnAmount: Number(travelFoodCostConfig?.travel_fish_burn_amount) ?? 0,
+          exploreWheatBurnAmount: Number(travelFoodCostConfig?.stamina_explore_wheat_cost) ?? 0,
+          exploreFishBurnAmount: Number(travelFoodCostConfig?.stamina_explore_fish_cost) ?? 0,
+          travelWheatBurnAmount: Number(travelFoodCostConfig?.stamina_travel_wheat_cost) ?? 0,
+          travelFishBurnAmount: Number(travelFoodCostConfig?.stamina_travel_fish_cost) ?? 0,
         };
       },
       {
@@ -580,14 +596,42 @@ export class ClientConfigManager {
     };
   }
 
-  getTroopStaminaConfig(troopId: number) {
-    return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.StaminaConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopId)]),
-      );
-      return staminaConfig?.max_stamina ?? 0;
-    }, 0);
+  getTroopStaminaConfig(troopType: TroopType) {
+    return this.getValueOrDefault(
+      () => {
+        const staminaConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
+
+        switch (troopType) {
+          case TroopType.Knight:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_knight_max ?? 0,
+            };
+          case TroopType.Crossbowman:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_crossbowman_max ?? 0,
+            };
+          case TroopType.Paladin:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_paladin_max ?? 0,
+            };
+          default:
+            return {
+              staminaInitial: 0,
+              staminaMax: 0,
+            };
+        }
+      },
+      {
+        staminaInitial: 0,
+        staminaMax: 0,
+      },
+    );
   }
 
   getResourceRarity(resourceId: ResourcesIds) {

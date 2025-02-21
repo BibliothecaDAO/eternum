@@ -43,28 +43,28 @@ export class ArmyManager {
     });
   }
 
-  private _updateArmyTroops(overrideId: string, army: any, troops: Troops): void {
-    this.components.Army.addOverride(overrideId, {
-      entity: getEntityIdFromKeys([BigInt(this.armyEntityId)]),
-      value: {
-        ...army,
-        troops: {
-          knight_count: BigInt(army.troops.knight_count) + BigInt(troops[ResourcesIds.Knight]),
-          crossbowman_count: BigInt(army.troops.crossbowman_count) + BigInt(troops[ResourcesIds.Crossbowman]),
-          paladin_count: BigInt(army.troops.paladin_count) + BigInt(troops[ResourcesIds.Paladin]),
-        },
-      },
-    });
-  }
+  // private _updateArmyTroops(overrideId: string, army: any, troops: Troops): void {
+  // this.components.Army.addOverride(overrideId, {
+  //   entity: getEntityIdFromKeys([BigInt(this.armyEntityId)]),
+  //   value: {
+  //     ...army,
+  //     troops: {
+  //       knight_count: BigInt(army.troops.knight_count) + BigInt(troops[ResourcesIds.Knight]),
+  //       crossbowman_count: BigInt(army.troops.crossbowman_count) + BigInt(troops[ResourcesIds.Crossbowman]),
+  //       paladin_count: BigInt(army.troops.paladin_count) + BigInt(troops[ResourcesIds.Paladin]),
+  //     },
+  //   },
+  // });
+  // }
 
   private _optimisticAddTroops(overrideId: string, troops: Troops): void {
-    const entity = getEntityIdFromKeys([BigInt(this.armyEntityId)]);
-    const army = getComponentValue(this.components.Army, entity);
+    // const entity = getEntityIdFromKeys([BigInt(this.armyEntityId)]);
+    // const army = getComponentValue(this.components.Army, entity);
 
-    if (!army) return;
+    // if (!army) return;
 
     this._updateResourceBalances(overrideId, troops);
-    this._updateArmyTroops(overrideId, army, troops);
+    // this._updateArmyTroops(overrideId, army, troops);
   }
 
   public addTroops(signer: Account | AccountInterface, troops: Troops): void {
@@ -96,6 +96,6 @@ export class ArmyManager {
       army_id: armyId,
     });
 
-    this.components.Army.removeOverride(getEntityIdFromKeys([BigInt(armyId)]));
+    // this.components.Army.removeOverride(getEntityIdFromKeys([BigInt(armyId)]));
   }
 }

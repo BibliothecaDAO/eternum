@@ -1,8 +1,9 @@
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ResourcesIds, WORLD_CONFIG_ID } from "../constants";
+import { WORLD_CONFIG_ID } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { ID } from "../types";
+import { ID, Troops, TroopType } from "../types";
+import { configManager } from "./config-manager";
 
 export class StaminaManager {
   constructor(
@@ -10,70 +11,34 @@ export class StaminaManager {
     private armyEntityId: ID,
   ) {}
 
-  public getStaminaConfig() {
-    const knightConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Knight)]),
-    );
-    const crossbowmanConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
-    );
-    const paladinConfig = getComponentValue(
-      this.components.StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Paladin)]),
-    );
-
-    return {
-      knightConfig: knightConfig?.max_stamina ?? 0,
-      crossbowmanConfig: crossbowmanConfig?.max_stamina ?? 0,
-      paladinConfig: paladinConfig?.max_stamina ?? 0,
-    };
+  public getStaminaConfig(troopType: TroopType) {
+    return configManager.getTroopStaminaConfig(troopType);
   }
 
   public getStamina(currentArmiesTick: number) {
     let armyOnchainStamina = getComponentValue(
-      this.components.Stamina,
+      this.components.ExplorerTroops,
       getEntityIdFromKeys([BigInt(this.armyEntityId)]),
-    );
+    )?.troops.stamina;
+
     if (!armyOnchainStamina) {
       return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
     }
 
-    const armyEntityId = getComponentValue(this.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]));
-    if (!armyEntityId) {
-      return { ...DEFAULT_STAMINA, entity_id: this.armyEntityId };
-    }
-
-    const last_refill_tick = armyOnchainStamina?.last_refill_tick;
+    const last_refill_tick = armyOnchainStamina?.updated_tick;
 
     if (last_refill_tick >= BigInt(currentArmiesTick)) {
       return structuredClone(armyOnchainStamina);
     }
 
-    const newStamina = this.refill(currentArmiesTick, last_refill_tick, armyOnchainStamina.amount);
+    const newStamina = this.refill(currentArmiesTick, last_refill_tick, Number(armyOnchainStamina.amount));
 
     return newStamina;
   }
 
-  public getMaxStamina = (troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined): number => {
-    let maxStaminas: number[] = [];
-    const staminaConfig = this.getStaminaConfig();
-    if ((troops?.knight_count ?? 0) > 0) {
-      maxStaminas.push(staminaConfig.knightConfig);
-    }
-    if ((troops?.crossbowman_count ?? 0) > 0) {
-      maxStaminas.push(staminaConfig.crossbowmanConfig);
-    }
-    if ((troops?.paladin_count ?? 0) > 0) {
-      maxStaminas.push(staminaConfig.paladinConfig);
-    }
-
-    if (maxStaminas.length === 0) return 0;
-
-    const maxArmyStamina = Math.min(...maxStaminas);
-
-    return maxArmyStamina;
+  public getMaxStamina = (troops: Troops | undefined): number => {
+    const staminaConfig = this.getStaminaConfig(troops?.category as TroopType);
+    return staminaConfig.staminaMax;
   };
 
   private refill(currentArmiesTick: number, last_refill_tick: bigint, amount: number) {
@@ -84,14 +49,14 @@ export class StaminaManager {
     const totalStaminaSinceLastTick = numTicksPassed * staminaPerTick;
 
     const maxStamina = this.getMaxStamina(
-      getComponentValue(this.components.Army, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
+      getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.troops,
     );
     const newAmount = Math.min(amount + totalStaminaSinceLastTick, maxStamina);
 
     return {
       entity_id: this.armyEntityId,
-      amount: newAmount,
-      last_refill_tick: BigInt(currentArmiesTick),
+      amount: BigInt(newAmount),
+      updated_tick: BigInt(currentArmiesTick),
     };
   }
 
@@ -99,12 +64,12 @@ export class StaminaManager {
     const staminaRefillConfig = getComponentValue(
       this.components.WorldConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),
-    )?.stamina_refill_config;
-    return staminaRefillConfig?.amount_per_tick || 0;
+    )?.troop_stamina_config;
+    return staminaRefillConfig?.stamina_gain_per_tick || 0;
   }
 }
 
 const DEFAULT_STAMINA = {
-  amount: 0,
+  amount: 0n,
   last_refill_tick: 0n,
 };

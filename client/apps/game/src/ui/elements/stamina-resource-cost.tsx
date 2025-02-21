@@ -43,7 +43,7 @@ export const StaminaResourceCost = ({
         <div className="flex flex-col">
           <div>
             {pathInfo.isExplored ? pathInfo.totalCost : configManager.getExploreStaminaCost()}{" "}
-            <span className={clsx(pathInfo.balanceColor, "font-normal")}>({pathInfo.balance})</span>
+            <span className={clsx(pathInfo.balanceColor, "font-normal")}>({Number(pathInfo.balance)})</span>
           </div>
           <div className="text-xs opacity-75">
             {pathInfo.isExplored ? (

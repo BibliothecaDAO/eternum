@@ -50,10 +50,10 @@ export const TransferView = () => {
         const structureName = getEntityName(structure.entity_id, components);
 
         const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
-        return { ...structure, position: position!, name, owner: getComponentValue(Owner, id) };
+        return { structure, position: position!, name, owner: getComponentValue(Owner, id) };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
-      .sort((a, b) => a.category.localeCompare(b.category));
+      .sort((a, b) => a.structure.category.localeCompare(b.structure.category));
   }, [otherStructuresQuery]);
 
   const otherRealmsQuery = useEntityQuery([Has(Realm), NotValue(Owner, { address: ContractAddress(account.address) })]);
@@ -77,15 +77,15 @@ export const TransferView = () => {
       entitiesList={[
         { entities: playerRealms, name: "Your Realms" },
         {
-          entities: playerStructures.filter((structure) => structure.category === "Hyperstructure"),
+          entities: playerStructures.filter((structure) => structure.structure.category === "Hyperstructure"),
           name: "Your Hyperstructures",
         },
         {
-          entities: playerStructures.filter((structure) => structure.category === "FragmentMine"),
+          entities: playerStructures.filter((structure) => structure.structure.category === "FragmentMine"),
           name: "Your Fragment Mines",
         },
         {
-          entities: playerStructures.filter((structure) => structure.category === "Bank"),
+          entities: playerStructures.filter((structure) => structure.structure.category === "Bank"),
           name: "Your Banks",
         },
         {
@@ -99,8 +99,8 @@ export const TransferView = () => {
         {
           entities: otherStructures.filter((a) =>
             guildOnly
-              ? playersInPlayersGuildAddress.includes(a.owner.address)
-              : !playersInPlayersGuildAddress.includes(a.owner.address),
+              ? playersInPlayersGuildAddress.includes(a?.owner?.address || 0n)
+              : !playersInPlayersGuildAddress.includes(a?.owner?.address || 0n),
           ),
           name: "Other Structures",
         },

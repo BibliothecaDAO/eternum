@@ -59,7 +59,7 @@ export const StructureCard = ({
               navigateToHexView(position);
             }}
           >
-            View {structure?.category}
+            View {structure?.structure.category}
           </Button>
         </div>
         {!showMergeTroopsPopup && (
@@ -89,7 +89,7 @@ export const StructureCard = ({
               <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                structureEntityId={structure!.entity_id}
+                structureEntityId={structure!.entityId}
               />
             )}
           </div>

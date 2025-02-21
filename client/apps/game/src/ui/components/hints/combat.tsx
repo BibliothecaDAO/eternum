@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Combat = () => {
@@ -172,7 +172,9 @@ const TroopRow = ({
       <td className="border border-gold/10 p-2">
         <ResourceIcon resource={type} size="xxl" />
       </td>
-      <td className="border border-gold/10 p-2 text-center">{configManager.getTroopStaminaConfig(resourceId)}</td>
+      <td className="border border-gold/10 p-2 text-center">
+        {configManager.getTroopStaminaConfig(type as TroopType).staminaMax}
+      </td>
       <td className="border border-gold/10 p-2 text-center">{strength}</td>
       <td className="border border-gold/10 p-2 text-center">{health}</td>
     </tr>

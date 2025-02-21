@@ -108,7 +108,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const playerStructures = usePlayerStructures();
 
   const filteredStructures = useMemo(
-    () => playerStructures.filter((structure: PlayerStructure) => !subscriptions[structure.entity_id.toString()]),
+    () =>
+      playerStructures.filter((structure: PlayerStructure) => !subscriptions[structure.structure.entity_id.toString()]),
     [playerStructures, subscriptions],
   );
 
@@ -131,7 +132,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       ...prev,
       [structureEntityId.toString()]: true,
       [ADMIN_BANK_ENTITY_ID.toString()]: true,
-      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entity_id.toString(), true])),
+      ...Object.fromEntries(filteredStructures.map((structure) => [structure.entityId.toString(), true])),
     }));
 
     setLoading(LoadingStateKey.SelectedStructure, true);
@@ -175,7 +176,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         await debouncedGetEntitiesFromTorii(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
-          [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          [...filteredStructures.map((structure) => structure.entityId.toString())],
           [
             "s1_eternum-BuildingQuantityv2",
             "s1_eternum-Hyperstructure",
@@ -193,7 +194,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         await debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
-          [...filteredStructures.map((structure) => structure.entity_id.toString())],
+          [...filteredStructures.map((structure) => structure.entityId.toString())],
           () => setLoading(LoadingStateKey.PlayerStructuresTwoKey, false),
         );
         end = performance.now();
@@ -203,7 +204,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         await debouncedGetDonkeysAndArmiesFromTorii(
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
-          [...playerStructures.map((structure) => structure.entity_id)],
+          [...playerStructures.map((structure) => structure.entityId)],
           () => setLoading(LoadingStateKey.DonkeysAndArmies, false),
         );
         end = performance.now();

@@ -1,5 +1,4 @@
 import { ResourcesIds, TroopType } from "@bibliothecadao/eternum";
-import { Troops } from "./combat-container";
 
 // Helper functions
 export const getTroopResourceId = (troopType: TroopType): number => {
@@ -37,12 +36,4 @@ export const getStaminaDisplay = (
       </div>
     </div>
   );
-};
-
-export const calculateRemainingTroops = (originalTroops: Troops, troopsLost: number, totalTroops: number) => {
-  return {
-    knight_count: Math.ceil(Number(originalTroops.knight_count) * (1 - troopsLost / totalTroops)),
-    paladin_count: Math.ceil(Number(originalTroops.paladin_count) * (1 - troopsLost / totalTroops)),
-    crossbowman_count: Math.ceil(Number(originalTroops.crossbowman_count) * (1 - troopsLost / totalTroops)),
-  };
 };

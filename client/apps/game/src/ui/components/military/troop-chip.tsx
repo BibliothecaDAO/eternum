@@ -25,7 +25,7 @@ export const TroopChip = ({
         } justify-between gap-2 border border-gold/10`}
       >
         <div className="flex items-center gap-2">
-          <ResourceIcon withTooltip={false} resource={troops.type} size={iconSize} />
+          <ResourceIcon withTooltip={false} resource={troops.category} size={iconSize} />
           <div
             className={`${
               Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"

@@ -107,8 +107,8 @@ export const Castle = () => {
             </div>
           </div>
           <div className="mt-6">
-            {structure && structure.category === StructureType[StructureType.Realm] && (
-              <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entity_id} />
+            {structure && structure.structure.category === StructureType[StructureType.Realm] && (
+              <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entityId} />
             )}
           </div>
         </div>

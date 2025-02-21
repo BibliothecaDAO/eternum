@@ -1,6 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -31,6 +32,7 @@ export const BuildingsList = ({
 
   const {
     setup: {
+      components,
       components: { Resource },
     },
   } = useDojo();
@@ -46,12 +48,14 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        if (!resource?.production) return null;
+        const resourceManager = new ResourceManager(components, realm.entityId, resourceId);
+        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick);
+        const production = resourceManager.getProduction();
 
         return {
           resource: resourceId,
-          balance: resource?.balance || 0,
-          production: resource.production,
+          balance: balance,
+          production,
           buildings: buildingsForResource,
           isLabor: resourceId === ResourcesIds.Labor,
         };

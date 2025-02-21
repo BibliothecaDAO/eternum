@@ -8,7 +8,7 @@ import { useDojo } from "../context";
 export const useFragmentMines = () => {
   const {
     setup: {
-      components: { Structure, Position, Owner, EntityName, Building },
+      components: { Structure, Position, Owner, AddressName, Building },
     },
   } = useDojo();
 
@@ -16,7 +16,7 @@ export const useFragmentMines = () => {
     (fragmentMineEntityId) => {
       const fragmentMine = getComponentValue(Structure, fragmentMineEntityId);
       const position = getComponentValue(Position, fragmentMineEntityId);
-      const entityName = getComponentValue(EntityName, fragmentMineEntityId);
+      const entityName = getComponentValue(AddressName, fragmentMineEntityId);
 
       const owner = toHexString(
         getComponentValue(Owner, getEntityIdFromKeys([BigInt(fragmentMine!.entity_id)]))?.address || 0n,

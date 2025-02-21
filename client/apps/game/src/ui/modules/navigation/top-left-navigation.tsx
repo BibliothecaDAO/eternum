@@ -81,7 +81,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return structures
       .map((structure) => ({
         ...structure,
-        isFavorite: favorites.includes(structure.entity_id),
+        isFavorite: favorites.includes(structure.structure.entity_id),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures.length]);
@@ -147,17 +147,21 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectContent className="bg-brown">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
-                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
+                      <button
+                        className="p-1"
+                        type="button"
+                        onClick={() => toggleFavorite(structure.structure.entity_id)}
+                      >
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
                       <SelectItem
                         className="flex justify-between"
                         key={index}
-                        value={structure.entity_id?.toString() || ""}
+                        value={structure.structure.entity_id?.toString() || ""}
                       >
                         <div className="self-center flex gap-4 text-xl">
                           {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.category] : ""}
+                          {IS_MOBILE ? structureIcons[structure.structure.category] : ""}
                         </div>
                       </SelectItem>
                     </div>

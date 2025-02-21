@@ -1,5 +1,4 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -54,7 +53,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entityId || 0);
 
-  const isDefendingArmy = Boolean(army?.protectee);
+  // todo: fix this
+  const isDefendingArmy = false;
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -69,7 +69,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const [troopCount, setTroopCount] = useState<number>(0);
   const [selectedTroopType, setSelectedTroopType] = useState<TroopType | null>(
-    army?.troops.count === 0 ? TroopType.Crossbowman : (army?.troops.type ?? null),
+    army?.troops.count === 0n ? TroopType.Crossbowman : (army?.troops.category as TroopType),
   );
   const [selectedTier, setSelectedTier] = useState<number>(1);
 
@@ -78,7 +78,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   };
 
   const handleTierChange = (tier: number) => {
-    if (army?.troops.count === 0) {
+    if (army?.troops.count === 0n) {
       setSelectedTier(tier);
     }
   };
@@ -141,21 +141,21 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const troops = [
     {
       name: ResourcesIds.Crossbowman,
-      current: army?.troops.type === TroopType.Crossbowman ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
+      current: army?.troops.category === TroopType.Crossbowman ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
       name: ResourcesIds.Knight,
-      current: army?.troops.type === TroopType.Knight ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
+      current: army?.troops.category === TroopType.Knight ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
       name: ResourcesIds.Paladin,
-      current: army?.troops.type === TroopType.Paladin ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
+      current: army?.troops.category === TroopType.Paladin ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
   ].filter((troop) => {
     // If army has no troops, show all troop types
-    if (army?.troops.count === 0) return true;
+    if (army?.troops.count === 0n) return true;
     // If army has troops, only show the current troop type
-    return troopTypeToResourcesId[army?.troops.type ?? TroopType.Crossbowman] === troop.name;
+    return troopTypeToResourcesId[(army?.troops.category as TroopType) ?? TroopType.Crossbowman] === troop.name;
   });
 
   return (
@@ -205,26 +205,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                 />
               </div>
             )}
-            {army.health.current === 0n && !army.protectee && (
-              <div className="flex items-center">
-                {confirmDelete ? (
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      handleDeleteArmy();
-                      setConfirmDelete(false);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                ) : (
-                  <Trash
-                    className="ml-2 self-center m-auto w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-                    onClick={() => setConfirmDelete(true)}
-                  />
-                )}
-              </div>
-            )}
           </div>
 
           {!isDefendingArmy && (
@@ -233,7 +213,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             </div>
           )}
 
-          {army.troops.count === 0 && (
+          {army.troops.count === 0n && (
             <div className="flex justify-center gap-2 mb-4">
               {[1, 2, 3].map((tier) => (
                 <Button
@@ -251,10 +231,10 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
             {troops.map((troop) => {
               const balance = getBalance(owner_entity, troop.name, currentDefaultTick, dojo.setup.components).balance;
               const isCurrentTroopType =
-                army.troops.count === 0
+                army.troops.count === 0n
                   ? selectedTroopType ===
                     Object.entries(troopTypeToResourcesId).find(([_, id]) => id === troop.name)?.[0]
-                  : troopTypeToResourcesId[army.troops.type] === troop.name;
+                  : troopTypeToResourcesId[(army.troops.category as TroopType) ?? TroopType.Crossbowman] === troop.name;
 
               return (
                 <div
@@ -264,7 +244,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                   )}
                   key={troop.name}
                   onClick={() => {
-                    if (army.troops.count === 0) {
+                    if (army.troops.count === 0n) {
                       const troopType = Object.entries(troopTypeToResourcesId).find(
                         ([_, id]) => id === troop.name,
                       )?.[0] as TroopType;

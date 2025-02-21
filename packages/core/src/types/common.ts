@@ -7,7 +7,7 @@ import {
   QuestType,
   RealmLevels,
   ResourcesIds,
-  ResourceTier
+  ResourceTier,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -40,47 +40,38 @@ export type ArrivalInfo = {
 
 export type DojoAccount = Account | AccountInterface;
 
-export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
-  isStructureBattle: boolean;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-};
-
 export type ArmyInfo = {
   entityId: ID;
   troops: Troops;
+  stamina: bigint;
   name: string;
   isMine: boolean;
   isMercenary: boolean;
   isHome: boolean;
-  offset: Position;
-  health: ComponentValue<ClientComponents["Health"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
+  entity_owner_id: ID;
   totalCapacity: bigint;
   weight: bigint;
-  arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
-  stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
   homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
 
-export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type Structure = {
   entityId: ID;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   isMine: boolean;
   isMercenary: boolean;
   name: string;
   ownerName?: string;
-  protector: ArmyInfo | undefined;
+  protectors: ArmyInfo[];
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
 };
 
-export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type PlayerStructure = {
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string;
   category?: string | undefined;
@@ -218,9 +209,13 @@ export interface Health {
 }
 
 export interface Troops {
-  count: number;
-  type: TroopType;
-  tier: 1 | 2 | 3;
+  category: string;
+  tier: string;
+  count: bigint;
+  stamina: {
+    amount: bigint;
+    updated_tick: bigint;
+  };
 }
 
 export enum TroopType {
@@ -532,15 +527,15 @@ export interface Config {
       staminaTravelWheatCost: number;
       staminaTravelFishCost: number;
       staminaTravelStaminaCost: number;
-    },
+    };
     limit: {
       explorerMaxPartyCount: number;
       explorerMaxTroopCount: number;
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
-    },
-  },
+    };
+  };
   settlement: {
     center: number;
     base_distance: number;

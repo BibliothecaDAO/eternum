@@ -12,7 +12,6 @@ import {
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
-  getArmyTroops,
   getBalance,
   ID,
   ResourcesIds,
@@ -101,21 +100,8 @@ export const ActionInfo = memo(() => {
   } = useDojo();
 
   const selectedEntityTroops = useMemo(() => {
-    if (!selectedEntityId) {
-      return {
-        knight_count: 0n,
-        paladin_count: 0n,
-        crossbowman_count: 0n,
-      };
-    }
-    const army = getComponentValue(components.Army, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-    return (
-      army?.troops || {
-        knight_count: 0n,
-        paladin_count: 0n,
-        crossbowman_count: 0n,
-      }
-    );
+    if (!selectedEntityId) return undefined;
+    return getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(selectedEntityId)]));
   }, [selectedEntityId]);
 
   const actionPath = useMemo(() => {
@@ -135,8 +121,8 @@ export const ActionInfo = memo(() => {
 
   const costs = useMemo(
     () => ({
-      travelFoodCosts: computeTravelFoodCosts(getArmyTroops(selectedEntityTroops)),
-      exploreFoodCosts: computeExploreFoodCosts(getArmyTroops(selectedEntityTroops)),
+      travelFoodCosts: selectedEntityTroops ? computeTravelFoodCosts(selectedEntityTroops.troops) : 0,
+      exploreFoodCosts: selectedEntityTroops ? computeExploreFoodCosts(selectedEntityTroops.troops) : 0,
     }),
     [selectedEntityTroops],
   );
@@ -158,5 +144,3 @@ export const ActionInfo = memo(() => {
     </BaseThreeTooltip>
   );
 });
-
-ActionInfo.displayName = "ActionInfo";

@@ -200,7 +200,9 @@ const BaseStructureExtraContent = ({
   }, [entityId]);
 
   const { defensiveArmy, attackingArmy } = useMemo(() => {
-    const defensive = armies.find((army) => army.protectee?.protectee_id);
+    // const defensive = armies.find((army) => army.protectee?.protectee_id);
+    // todo: need to find a way to get defensive armies
+    const defensive = armies;
     const attacking: ArmyInfo[] = [];
 
     const getArmyInfo = (army?: any) => {
