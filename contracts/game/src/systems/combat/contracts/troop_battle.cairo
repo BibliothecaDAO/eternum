@@ -24,7 +24,7 @@ mod troop_battle_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{CombatConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig};
-    use s1_eternum::models::owner::{EntityOwnerTrait, OwnerTrait};
+    use s1_eternum::models::owner::{EntityOwnerTrait, OwnerTrait, OwnerAddressTrait};
     use s1_eternum::models::position::{Coord, CoordTrait, Direction};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{Structure, StructureCategory, StructureTrait};
@@ -43,7 +43,8 @@ mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
-            explorer_aggressor.owner.assert_caller_owner(world);
+            let explorer_aggressor_owner_structure: Structure = world.read_model(explorer_aggressor.owner);
+            explorer_aggressor_owner_structure.owner.assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -104,7 +105,8 @@ mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-            explorer_aggressor.owner.assert_caller_owner(world);
+            let explorer_aggressor_owner_structure: Structure = world.read_model(explorer_aggressor.owner);
+            explorer_aggressor_owner_structure.owner.assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");

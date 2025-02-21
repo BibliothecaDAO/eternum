@@ -49,7 +49,8 @@ mod troop_movement_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            explorer.owner.assert_caller_owner(world);
+            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");

@@ -155,7 +155,6 @@ impl StructureSingleResourceFoodImpl of StructureSingleResourceFoodTrait {
     }
 }
 
-
 #[derive(Introspect, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Resource {

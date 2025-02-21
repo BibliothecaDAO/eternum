@@ -165,7 +165,6 @@ pub impl iTroopImpl of iTroopTrait {
         amount: u128,
         category: TroopType,
         tier: TroopTier,
-        current_tick: u64,
     ) {
         let resource_type = match tier {
             TroopTier::T1 => {
@@ -190,6 +189,10 @@ pub impl iTroopImpl of iTroopTrait {
                 }
             },
         };
+
+        // ensure amount is fully divisible by resource precision
+        assert!(amount % RESOURCE_PRECISION == 0, "amount must be divisible by resource precision");
+        assert!(amount > 0, "amount must be greater than 0");
 
         // burn troop resource to pay for troop
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);

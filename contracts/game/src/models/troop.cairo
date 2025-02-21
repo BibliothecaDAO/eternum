@@ -11,7 +11,7 @@ use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use starknet::ContractAddress;
 
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
 enum TroopType {
     Knight,
     Paladin,
@@ -28,7 +28,7 @@ impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
     }
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
 enum TroopTier {
     T1,
     T2,
@@ -133,12 +133,12 @@ pub impl GuardImpl of GuardTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ExplorerTroops {
     #[key]
     explorer_id: ID,
-    owner: EntityOwner,
+    owner: ID,
     troops: Troops,
     coord: Coord,
 }

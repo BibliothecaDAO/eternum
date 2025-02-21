@@ -18,9 +18,9 @@ trait ITroopManagementSystems<TContractState> {
 
     // explorer
     fn explorer_create(
-        ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128,
+        ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128, spawn_direction: Direction
     ) -> ID;
-    fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128);
+    fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128, home_direction: Direction);
     fn explorer_swap(
         ref self: TContractState,
         from_explorer_id: ID,
@@ -88,9 +88,7 @@ mod troop_management_systems {
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create guard
-            let tick = TickImpl::get_tick_config(ref world);
-            let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure guard slot is valid
             let mut guard: GuardTroops = structure.guards;
@@ -98,6 +96,8 @@ mod troop_management_systems {
 
             // ensure delay from troop defeat is over
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let tick = TickImpl::get_tick_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
             if troops_destroyed_tick.is_non_zero() {
                 let next_troop_update_at = troops_destroyed_tick
                     + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
@@ -174,9 +174,8 @@ mod troop_management_systems {
 
 
         fn explorer_create(
-            ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128,
+            ref self: ContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128, spawn_direction: Direction
         ) -> ID {
-            assert!(amount.is_non_zero(), "amount must be greater than 0");
 
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -186,9 +185,7 @@ mod troop_management_systems {
             structure.owner.assert_caller_owner();
 
             // deduct resources used to create explorer
-            let tick = TickImpl::get_tick_config(ref world);
-            let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure structure has not reached itslimit of troops
             assert!(
@@ -212,9 +209,12 @@ mod troop_management_systems {
             structure.explorers = explorers.span();
             world.write_model(@structure);
 
-            // add explorer to location occupier
-            let coord: Coord = structure.coord;
-            let mut occupier: Occupier = world.read_model((coord.x, coord.y));
+            // ensure spawn location is not occupied
+            let spawn_coord: Coord = structure.coord.neighbor(spawn_direction);
+            let mut occupier: Occupier = world.read_model((spawn_coord.x, spawn_coord.y));
+            assert!(occupier.not_occupied(), "explorer spawn location is occupied");
+
+            // add explorer to spawn location
             occupier.occupier = OccupiedBy::Explorer(explorer_id);
             world.write_model(@occupier);
 
@@ -228,6 +228,8 @@ mod troop_management_systems {
             // set troop stamina
             let mut troops = Troops { category, tier, count: amount, stamina: Stamina { amount: 0, updated_tick: 0 } };
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let tick = TickImpl::get_tick_config(ref world);
+            let current_tick: u64 = tick.current().try_into().unwrap();
             troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // set explorer
@@ -235,9 +237,9 @@ mod troop_management_systems {
                 .write_model(
                     @ExplorerTroops {
                         explorer_id,
-                        coord,
+                        coord: spawn_coord,
                         troops,
-                        owner: EntityOwner { entity_id: explorer_id, entity_owner_id: structure.entity_id },
+                        owner: structure.entity_id,
                     },
                 );
 
@@ -245,7 +247,7 @@ mod troop_management_systems {
         }
 
         fn explorer_add(
-            ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128,
+            ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128, home_direction: Direction
         ) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
@@ -254,17 +256,14 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            explorer.owner.assert_caller_owner(world);
+            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorer is at home
-            let owner_structure_id: ID = explorer.owner.entity_owner_id;
-            let explorer_owner_structure: Structure = world.read_model(owner_structure_id);
             assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
 
             // deduct resources used to create explorer
-            let tick = TickImpl::get_tick_config(ref world);
-            let current_tick: u64 = tick.current().try_into().unwrap();
-            iTroopImpl::make_payment(ref world, owner_structure_id, amount, category, tier, current_tick);
+            iTroopImpl::make_payment(ref world, explorer.owner, amount, category, tier);
 
             // add troops to explorer
             explorer.troops.count += amount;
@@ -296,10 +295,12 @@ mod troop_management_systems {
             // ensure caller address owns both explorers
             // (not necessarily the same structure)
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            from_explorer.owner.assert_caller_owner(world);
+            let from_explorer_owner_structure: Structure = world.read_model(from_explorer.owner);
+            from_explorer_owner_structure.owner.assert_caller_owner();
 
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            to_explorer.owner.assert_caller_owner(world);
+            let to_explorer_owner_structure: Structure = world.read_model(to_explorer.owner);
+            to_explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorers are adjacent to one another
             let to_explorer_coord = to_explorer.coord.neighbor(to_explorer_direction);
@@ -351,7 +352,8 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            explorer.owner.assert_caller_owner(world);
+            let explorer_owner_structure: Structure = world.read_model(explorer.owner);
+            explorer_owner_structure.owner.assert_caller_owner();
 
             // delete explorer
             iExplorerImpl::explorer_delete(ref world, ref explorer);
