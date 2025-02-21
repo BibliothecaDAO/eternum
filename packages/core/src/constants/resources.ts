@@ -284,7 +284,7 @@ export const resources: Array<Resources> = [
     colour: "#F5DEB3",
     id: 29,
     description: "Wheat.",
-    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/254.png?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/29.png?raw=true",
     ticker: "$WHEAT",
   },
   {
@@ -293,7 +293,7 @@ export const resources: Array<Resources> = [
     colour: "#87CEEB",
     id: 30,
     description: "Fish.",
-    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/255.png?raw=true",
+    img: "https://github.com/BibliothecaDAO/eternum/blob/main/client/public/images/resources/30.png?raw=true",
     ticker: "$FISH",
   },
   {

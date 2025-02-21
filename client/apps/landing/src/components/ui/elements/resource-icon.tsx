@@ -50,8 +50,8 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Crossbowman: { component: <img src={`/images/icons/251.png`} />, name: "Crossbowman" },
   Paladin: { component: <img src={`/images/icons/252.png`} />, name: "Paladin" },
   Lords: { component: <img src={`/images/resources/31.png`} />, name: "Lords" },
-  Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
-  Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
+  Wheat: { component: <img src={`/images/resources/29.png`} />, name: "Wheat" },
+  Fish: { component: <img src={`/images/resources/30.png`} />, name: "Fish" },
 
   Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
   House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },
