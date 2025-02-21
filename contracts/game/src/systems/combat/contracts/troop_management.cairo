@@ -20,7 +20,7 @@ trait ITroopManagementSystems<TContractState> {
     fn explorer_create(
         ref self: TContractState, for_structure_id: ID, category: TroopType, tier: TroopTier, amount: u128, spawn_direction: Direction
     ) -> ID;
-    fn explorer_add(ref self: TContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128, home_direction: Direction);
+    fn explorer_add(ref self: TContractState, to_explorer_id: ID, amount: u128, home_direction: Direction);
     fn explorer_swap(
         ref self: TContractState,
         from_explorer_id: ID,
@@ -233,21 +233,25 @@ mod troop_management_systems {
             troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
             // set explorer
+            let explorer: ExplorerTroops = ExplorerTroops {
+                explorer_id,
+                coord: spawn_coord,
+                troops,
+                owner: structure.entity_id,
+            };
             world
                 .write_model(
-                    @ExplorerTroops {
-                        explorer_id,
-                        coord: spawn_coord,
-                        troops,
-                        owner: structure.entity_id,
-                    },
+                    @explorer,
                 );
+
+            // increase troop capacity
+            iExplorerImpl::update_capacity(ref world, explorer_id, explorer, amount, true);
 
             explorer_id
         }
 
         fn explorer_add(
-            ref self: ContractState, to_explorer_id: ID, category: TroopType, tier: TroopTier, amount: u128, home_direction: Direction
+            ref self: ContractState, to_explorer_id: ID, amount: u128, home_direction: Direction
         ) {
             assert!(amount.is_non_zero(), "amount must be greater than 0");
 
@@ -259,11 +263,11 @@ mod troop_management_systems {
             let explorer_owner_structure: Structure = world.read_model(explorer.owner);
             explorer_owner_structure.owner.assert_caller_owner();
 
-            // ensure explorer is at home
-            assert!(explorer_owner_structure.coord == explorer.coord, "explorer not at home structure");
+            // ensure explorer is adjacent to home structure
+            assert!(explorer_owner_structure.coord == explorer.coord.neighbor(home_direction), "explorer not adjacent to home structure");
 
             // deduct resources used to create explorer
-            iTroopImpl::make_payment(ref world, explorer.owner, amount, category, tier);
+            iTroopImpl::make_payment(ref world, explorer.owner, amount, explorer.troops.category, explorer.troops.tier);
 
             // add troops to explorer
             explorer.troops.count += amount;
