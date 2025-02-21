@@ -305,12 +305,15 @@ mod troop_management_systems {
             // ensure caller address owns both explorers
             // (not necessarily the same structure)
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-            let from_explorer_owner_structure: Structure = world.read_model(from_explorer.owner);
-            from_explorer_owner_structure.owner.assert_caller_owner();
-
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            let to_explorer_owner_structure: Structure = world.read_model(to_explorer.owner);
-            to_explorer_owner_structure.owner.assert_caller_owner();
+
+            assert!(
+                from_explorer.owner == to_explorer.owner,
+                "from explorer and to explorer are not owned by the same structure",
+            );
+
+            let mut explorer_owner_structure: Structure = world.read_model(from_explorer.owner);
+            explorer_owner_structure.owner.assert_caller_owner();
 
             // ensure explorers are adjacent to one another
             assert!(
@@ -365,6 +368,11 @@ mod troop_management_systems {
                 to_explorer.troops.count <= troop_limit_config.explorer_max_troop_count.into() * RESOURCE_PRECISION,
                 "reached limit of explorers amount per army",
             );
+
+            // delete from_explorer if count is 0
+            if from_explorer.troops.count.is_zero() {
+                iExplorerImpl::explorer_delete(ref world, ref from_explorer, ref explorer_owner_structure);
+            }
         }
 
         fn explorer_delete(ref self: ContractState, explorer_id: ID) {
