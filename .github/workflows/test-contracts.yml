@@ -35,13 +35,17 @@ jobs:
           ]
       fail-fast: false
     steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.9.2"
+      - name: Set Scarb environment variable
+        run: echo "SCARB=$(which scarb)" >> $GITHUB_ENV
       - name: Download Dojo release artifact
         run: |
           curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.1.2/dojo_v1.1.2_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
-      - name: Checkout repository
-        uses: actions/checkout@v2
       - name: Run Dojo Build
         run: |
           cd contracts/game && sozo build
