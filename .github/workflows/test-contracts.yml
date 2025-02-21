@@ -1,5 +1,6 @@
 name: test-contracts
-
+env:
+  SCARB_VERSION: v2.9.2
 on:
   pull_request:
     paths-ignore:
