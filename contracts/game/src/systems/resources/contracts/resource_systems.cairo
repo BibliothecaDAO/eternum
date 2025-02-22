@@ -37,11 +37,14 @@ pub mod resource_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+    };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -76,8 +79,17 @@ pub mod resource_systems {
             assert(caller_structure_id != recipient_structure_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
-            let mut caller_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, caller_structure_id);
-            caller_structure.owner.assert_caller_owner();
+            // ensure caller owns the structure
+            let caller_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, caller_structure_id,
+            );
+            caller_structure_owner.assert_caller_owner();
+
+            // ensure recipient is a structure
+            let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, recipient_structure_id,
+            );
+            recipient_structure_owner.assert_non_zero();
 
             let mut resources = resources;
             loop {
@@ -128,24 +140,30 @@ pub mod resource_systems {
             assert(sender_structure_id != recipient_structure_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            // ensure sender is a structure
-            let mut sender_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, sender_structure_id);
-            sender_structure.owner.assert_caller_owner();
+            // ensure sender owns the structure
+            let sender_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, sender_structure_id,
+            );
+            sender_structure_owner.assert_caller_owner();
 
             // ensure recipient is a structure
-            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+            let mut recipient_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
                 ref world, recipient_structure_id,
             );
-            recipient_structure.assert_exists();
+            recipient_structure_base.assert_exists();
 
             let mut sender_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, sender_structure_id);
+            let mut sender_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, sender_structure_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 sender_structure_id,
-                sender_structure,
+                sender_structure_owner,
+                sender_structure_base,
                 ref sender_structure_weight,
                 recipient_structure_id,
-                recipient_structure.coord(),
+                recipient_structure_base.coord(),
                 recipient_resource_indexes,
                 resources,
                 false,
@@ -179,14 +197,17 @@ pub mod resource_systems {
             assert(owner_structure_id != recipient_structure_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            // ensure sender is a structure
-            let mut recipient_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+            // ensure recipient (caller ) owns the structure
+            let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, recipient_structure_id,
             );
-            recipient_structure.owner.assert_caller_owner();
+            recipient_structure_owner.assert_caller_owner();
+
+            // ensure owner is a structure
+            let owner_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, owner_structure_id);
+            owner_structure_base.assert_exists();
 
             // check and update allowance
-
             let mut resources_clone = resources.clone();
             loop {
                 match resources_clone.pop_front() {
@@ -209,15 +230,21 @@ pub mod resource_systems {
                 };
             };
 
-            let mut owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, owner_structure_id);
+            let mut owner_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, owner_structure_id,
+            );
             let mut owner_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, owner_structure_id);
+            let recipient_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, recipient_structure_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 owner_structure_id,
-                owner_structure,
+                owner_structure_owner,
+                owner_structure_base,
                 ref owner_structure_weight,
                 recipient_structure_id,
-                recipient_structure.coord(),
+                recipient_structure_base.coord(),
                 recipient_resource_indexes,
                 resources,
                 false,
@@ -233,8 +260,8 @@ pub mod resource_systems {
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
 
             // ensure from_structure is owned by caller
-            let mut from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
-            from_structure.owner.assert_caller_owner();
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            from_structure_owner.assert_caller_owner();
 
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);

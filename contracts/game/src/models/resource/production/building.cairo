@@ -17,10 +17,10 @@ use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureImpl};
+use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-//todo we need to define border of innner hexes
+use starknet::ContractAddress;
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
@@ -578,8 +578,8 @@ pub impl BuildingImpl of BuildingTrait {
     /// and stops receiving bonuses from adjacent buildings.
     ///
     fn pause_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
-        structure.owner.assert_caller_owner();
+        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
+        structure_owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -603,8 +603,8 @@ pub impl BuildingImpl of BuildingTrait {
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
     fn resume_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
-        structure.owner.assert_caller_owner();
+        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
+        structure_owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);
@@ -627,8 +627,8 @@ pub impl BuildingImpl of BuildingTrait {
     /// Destroy building and remove it from the structure
     ///
     fn destroy(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, outer_entity_id);
-        structure.owner.assert_caller_owner();
+        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
+        structure_owner.assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position: Position = world.read_model(outer_entity_id);

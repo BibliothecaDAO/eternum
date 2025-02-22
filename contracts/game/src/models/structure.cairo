@@ -21,9 +21,22 @@ use starknet::ContractAddress;
 pub struct Structure {
     #[key]
     pub entity_id: ID,
+    pub owner: ContractAddress,
     pub base: StructureBase,
     pub troop_guards: GuardTroops,
     pub troop_explorers: Span<ID>,
+}
+
+#[generate_trait]
+pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> ContractAddress {
+        let owner = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"));
+        return owner;
+    }
+
+    fn store(ref owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
+    }
 }
 
 
@@ -37,7 +50,6 @@ pub struct StructureBase {
     pub category: u8,
     pub coord_x: u32,
     pub coord_y: u32,
-    pub owner: ContractAddress,
 }
 
 
@@ -133,6 +145,7 @@ pub impl StructureImpl of StructureTrait {
         };
         Structure {
             entity_id: 0,
+            owner: Zero::zero(),
             base: StructureBase {
                 troop_guard_count: 0,
                 troop_explorer_count: 0,
@@ -142,7 +155,6 @@ pub impl StructureImpl of StructureTrait {
                 category: 0,
                 coord_x: 0,
                 coord_y: 0,
-                owner: Zero::zero(),
             },
             troop_guards: GuardTroops {
                 delta: troops,
@@ -165,7 +177,7 @@ pub impl StructureImpl of StructureTrait {
         structure.base.category = category.into();
         structure.base.coord_x = coord.x;
         structure.base.coord_y = coord.y;
-        structure.base.owner = owner;
+        structure.owner = owner;
 
         match category {
             StructureCategory::Realm => {
