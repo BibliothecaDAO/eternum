@@ -46,6 +46,8 @@ pub struct Building {
 pub struct StructureBuildings {
     #[key]
     pub entity_id: ID,
+    // number of buildings per category in structure
+    // each category takes up to 8 bits
     pub building_count: u128,
     // population
     pub population: Population,
