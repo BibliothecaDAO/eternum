@@ -1,8 +1,7 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait ITradeSystems<T> {
+pub trait ITradeSystems<T> {
     fn create_order(
         ref self: T,
         maker_id: ID,
@@ -26,30 +25,26 @@ trait ITradeSystems<T> {
 }
 
 #[dojo::contract]
-mod trade_systems {
-    use core::poseidon::poseidon_hash_span as hash;
+pub mod trade_systems {
+    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
 
-    use s1_eternum::constants::{DEFAULT_NS, DONKEY_ENTITY_TYPE, REALM_ENTITY_TYPE, ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, Position, PositionTrait, TravelTrait};
-    use s1_eternum::models::realm::Realm;
-    use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
+    use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-    };
+    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl};
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
 
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};

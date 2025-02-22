@@ -1,24 +1,22 @@
-use cubit::f128::types::fixed::{Fixed, FixedTrait, HALF_u128, ONE_u128};
+use core::num::traits::zero::Zero;
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::RESOURCE_PRECISION;
-use s1_eternum::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::owner::EntityOwner;
+use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
-use starknet::ContractAddress;
-
 
 #[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
-enum TroopType {
+pub enum TroopType {
     Knight,
     Paladin,
     Crossbowman,
 }
 
-impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
+pub impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
     fn into(self: TroopType) -> felt252 {
         match self {
             TroopType::Knight => 0,
@@ -29,13 +27,13 @@ impl TroopTypeIntoFelt252 of Into<TroopType, felt252> {
 }
 
 #[derive(PartialEq, Debug, Copy, Drop, Serde, Introspect)]
-enum TroopTier {
+pub enum TroopTier {
     T1,
     T2,
     T3,
 }
 
-impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
+pub impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
     fn into(self: TroopTier) -> felt252 {
         match self {
             TroopTier::T1 => 0,
@@ -47,33 +45,33 @@ impl TroopTierIntoFelt252 of Into<TroopTier, felt252> {
 
 
 #[derive(Copy, Drop, Serde, Introspect)]
-struct Troops {
-    category: TroopType,
-    tier: TroopTier,
-    count: u128,
-    stamina: Stamina,
+pub struct Troops {
+    pub category: TroopType,
+    pub tier: TroopTier,
+    pub count: u128,
+    pub stamina: Stamina,
 }
 
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct GuardTroops {
     // slot 4
-    delta: Troops,
+    pub delta: Troops,
     // slot 3
-    charlie: Troops,
+    pub charlie: Troops,
     // slot 2
-    bravo: Troops,
+    pub bravo: Troops,
     // slot 1
-    alpha: Troops,
-    delta_destroyed_tick: u32,
-    charlie_destroyed_tick: u32,
-    bravo_destroyed_tick: u32,
-    alpha_destroyed_tick: u32,
+    pub alpha: Troops,
+    pub delta_destroyed_tick: u32,
+    pub charlie_destroyed_tick: u32,
+    pub bravo_destroyed_tick: u32,
+    pub alpha_destroyed_tick: u32,
 }
 
 
 #[derive(Copy, Drop, Serde, Introspect, PartialEq)]
-enum GuardSlot {
+pub enum GuardSlot {
     Delta,
     Charlie,
     Bravo,
@@ -137,15 +135,15 @@ pub impl GuardImpl of GuardTrait {
 #[dojo::model]
 pub struct ExplorerTroops {
     #[key]
-    explorer_id: ID,
-    owner: ID,
-    troops: Troops,
-    coord: Coord,
+    pub explorer_id: ID,
+    pub owner: ID,
+    pub troops: Troops,
+    pub coord: Coord,
 }
 
 
 #[generate_trait]
-impl TroopsImpl of TroopsTrait {
+pub impl TroopsImpl of TroopsTrait {
     fn _tier_bonus(ref self: Troops, troop_damage_config: TroopDamageConfig) -> Fixed {
         let T1_DAMAGE_VALUE: Fixed = FixedTrait::new(troop_damage_config.t1_damage_value.into(), false);
         match self.tier {
@@ -545,11 +543,6 @@ impl TroopsImpl of TroopsTrait {
 
 #[cfg(test)]
 mod tests {
-    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
-    use dojo::world::{WorldStorageTrait};
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-    };
     use super::{
         Biome, FixedTrait, RESOURCE_PRECISION, Stamina, StaminaImpl, TroopDamageConfig, TroopLimitConfig,
         TroopStaminaConfig, TroopTier, TroopType, Troops, TroopsTrait,

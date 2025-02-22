@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Opportunist of TaskTrait {
+pub impl Opportunist of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'OPPORTUNIST'

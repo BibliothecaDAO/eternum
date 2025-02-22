@@ -1,16 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait};
-    use s1_eternum::alias::ID;
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::{WorldStorageTrait};
+    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
     use s1_eternum::models::position::{Coord, CoordTrait, Direction, Occupier, OccupierImpl};
-    use s1_eternum::models::resource::resource::{
-        SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-    };
+    use s1_eternum::models::resource::resource::{SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use s1_eternum::models::structure::{Structure, StructureImpl};
     use s1_eternum::models::troop::{ExplorerTroops, TroopTier, TroopType};
     use s1_eternum::models::weight::{Weight};

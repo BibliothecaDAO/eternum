@@ -1,6 +1,4 @@
-use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::get_resource_tier;
 use s1_eternum::{
@@ -36,15 +34,16 @@ trait IHyperstructureSystems<T> {
 
 
 #[dojo::contract]
-mod hyperstructure_systems {
-    use achievement::store::{Store, StoreTrait};
-    use core::array::ArrayIndex;
+pub mod hyperstructure_systems {
+    use achievement::store::{StoreTrait};
+    use core::dict::Felt252Dict;
+    use core::num::traits::zero::Zero;
     use core::poseidon::poseidon_hash_span;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -66,13 +65,10 @@ mod hyperstructure_systems {
                 WorldConfigUtilImpl,
             },
             guild::{GuildMember},
-            hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress}, map::Tile,
-            name::{AddressName}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
-            position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position, PositionIntoCoord}, realm::{Realm},
-            resource::resource::{ResourceList}, season::{Leaderboard},
-            structure::{
-                Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-            },
+            hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
+            name::{AddressName}, owner::{Owner, OwnerAddressTrait}, position::{Coord, PositionIntoCoord},
+            resource::resource::{}, season::{Leaderboard},
+            structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl},
         },
     };
 

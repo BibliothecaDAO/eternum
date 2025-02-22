@@ -39,41 +39,31 @@ trait ITroopManagementSystems<TContractState> {
 
 #[dojo::contract]
 mod troop_management_systems {
-    use core::num::traits::Bounded;
-    use dojo::event::EventStorage;
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::{
-        config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl, TickTrait,
-            TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
-        },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
+        config::{CombatConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl},
+        map::{TileImpl}, owner::{OwnerAddressTrait},
+        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait},
         resource::{
             resource::{
-                Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+                ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
                 StructureSingleResourceFoodImpl, WeightStoreImpl,
             },
-            resource::{ResourceList},
         },
         season::SeasonImpl, stamina::{Stamina, StaminaTrait},
         structure::{
-            Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
-            StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
+            StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+            StructureTroopGuardStoreImpl,
         },
-        troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
-        },
-        weight::{Weight, WeightTrait},
+        troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
-
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
-
-    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
 
     use super::ITroopManagementSystems;
 

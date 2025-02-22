@@ -1,28 +1,22 @@
 use core::fmt::{Display, Error, Formatter};
-use core::num::traits::Bounded;
+use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{
-    GRAMS_PER_KG, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_resource_probabilities, resource_type_name,
-};
+use s1_eternum::constants::{ResourceTypes, resource_type_name};
 use s1_eternum::models::config::WeightConfig;
-use s1_eternum::models::config::{CapacityConfig, ProductionConfig, TickConfig, TickImpl, TickTrait};
-use s1_eternum::models::realm::Realm;
+use s1_eternum::models::config::{TickImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
-use s1_eternum::models::structure::StructureTrait;
-use s1_eternum::models::structure::{Structure, StructureCategory};
 use s1_eternum::models::weight::{Weight, WeightImpl};
-use s1_eternum::utils::math::{is_u256_bit_set, min, set_u256_bit};
 
 
 #[derive(Copy, Drop, Serde)]
 pub struct SingleResource {
-    entity_id: ID,
-    resource_type: u8,
-    balance: u128,
-    production: Production,
-    produces: bool,
+    pub entity_id: ID,
+    pub resource_type: u8,
+    pub balance: u128,
+    pub production: Production,
+    pub produces: bool,
 }
 
 impl SingleResourceDisplay of Display<SingleResource> {
@@ -37,7 +31,7 @@ impl SingleResourceDisplay of Display<SingleResource> {
 
 
 #[generate_trait]
-impl WeightStoreImpl of WeightStoreTrait {
+pub impl WeightStoreImpl of WeightStoreTrait {
     fn retrieve(ref world: WorldStorage, entity_id: ID) -> Weight {
         assert!(entity_id.is_non_zero(), "entity id not found");
         ResourceImpl::read_weight(ref world, entity_id)
@@ -49,7 +43,7 @@ impl WeightStoreImpl of WeightStoreTrait {
 }
 
 #[generate_trait]
-impl ResourceWeightImpl of ResourceWeightTrait {
+pub impl ResourceWeightImpl of ResourceWeightTrait {
     fn grams(ref world: WorldStorage, resource_type: u8) -> u128 {
         let unit_weight_config: WeightConfig = world.read_model(resource_type);
         unit_weight_config.weight_gram
@@ -58,7 +52,7 @@ impl ResourceWeightImpl of ResourceWeightTrait {
 
 
 #[generate_trait]
-impl SingleResourceStoreImpl of SingleResourceStoreTrait {
+pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
     fn retrieve(
         ref world: WorldStorage,
         entity_id: ID,
@@ -73,7 +67,7 @@ impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
         // ensure the balance is updated when entity is a structure
         let mut resource = SingleResource {
-            entity_id, resource_type, balance, production: Zeroable::zero(), produces: structure,
+            entity_id, resource_type, balance, production: Zero::zero(), produces: structure,
         };
         if resource.produces {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
@@ -109,7 +103,7 @@ impl SingleResourceStoreImpl of SingleResourceStoreTrait {
 
 
 #[generate_trait]
-impl SingleResourceImpl of SingleResourceTrait {
+pub impl SingleResourceImpl of SingleResourceTrait {
     #[inline(always)]
     fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
@@ -149,7 +143,7 @@ impl SingleResourceImpl of SingleResourceTrait {
 
 
 #[generate_trait]
-impl StructureSingleResourceFoodImpl of StructureSingleResourceFoodTrait {
+pub impl StructureSingleResourceFoodImpl of StructureSingleResourceFoodTrait {
     fn is_food(resource_type: u8) -> bool {
         resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH
     }
@@ -240,7 +234,7 @@ pub struct Resource {
 
 
 #[generate_trait]
-impl ResourceImpl of ResourceTrait {
+pub impl ResourceImpl of ResourceTrait {
     fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
         return world
             .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));
@@ -377,22 +371,22 @@ impl ResourceImpl of ResourceTrait {
 #[dojo::model]
 pub struct ResourceAllowance {
     #[key]
-    owner_entity_id: ID,
+    pub owner_entity_id: ID,
     #[key]
-    approved_entity_id: ID,
+    pub approved_entity_id: ID,
     #[key]
-    resource_type: u8,
-    amount: u128,
+    pub resource_type: u8,
+    pub amount: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceList {
     #[key]
-    entity_id: ID,
+    pub entity_id: ID,
     #[key]
-    index: u32,
-    resource_type: u8,
-    amount: u128,
+    pub index: u32,
+    pub resource_type: u8,
+    pub amount: u128,
 }
 

@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Conqueror of TaskTrait {
+pub impl Conqueror of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'CONQUEROR'

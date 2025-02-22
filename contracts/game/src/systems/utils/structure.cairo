@@ -1,19 +1,18 @@
-use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
+use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::owner::{Owner};
-use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierImpl, Position};
-use s1_eternum::models::resource::resource::{RESOURCE_PRECISION, ResourceImpl};
+use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierImpl};
+use s1_eternum::models::resource::resource::{ResourceImpl};
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::utils::map::iMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 #[generate_trait]
-impl iStructureImpl of iStructureTrait {
+pub impl iStructureImpl of iStructureTrait {
     fn create(
         ref world: WorldStorage,
         coord: Coord,

@@ -1,58 +1,55 @@
-use core::Zeroable;
-use core::debug::PrintTrait;
-use core::num::traits::Bounded;
+use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig};
-use s1_eternum::models::config::{TickImpl, WeightConfig};
+use s1_eternum::models::config::{TickImpl};
 
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl, StructureTrait};
+use s1_eternum::models::structure::{StructureImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::utils::math::{min};
-use starknet::get_block_timestamp;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 pub struct Production {
     // active building count
-    building_count: u8,
+    pub building_count: u8,
     // production rate per second
-    production_rate: u64,
+    pub production_rate: u64,
     // output amount left to be produced
-    output_amount_left: u128,
+    pub output_amount_left: u128,
     // last time this struct was updated
-    last_updated_at: u32,
+    pub last_updated_at: u32,
 }
 
-impl ProductionZeroable of Zeroable<Production> {
+pub impl ProductionZeroable of Zero<Production> {
     #[inline(always)]
     fn zero() -> Production {
         Production { building_count: 0, production_rate: 0, output_amount_left: 0, last_updated_at: 0 }
     }
     #[inline(always)]
-    fn is_zero(self: Production) -> bool {
-        self.building_count == 0
-            && self.production_rate == 0
-            && self.output_amount_left == 0
-            && self.last_updated_at == 0
+    fn is_zero(self: @Production) -> bool {
+        self.building_count == @0
+            && self.production_rate == @0
+            && self.output_amount_left == @0
+            && self.last_updated_at == @0
     }
 
     #[inline(always)]
-    fn is_non_zero(self: Production) -> bool {
+    fn is_non_zero(self: @Production) -> bool {
         !self.is_zero()
     }
 }
 
 
 #[generate_trait]
-impl ProductionImpl of ProductionTrait {
+pub impl ProductionImpl of ProductionTrait {
     fn has_building(self: @Production) -> bool {
         if ((*self).building_count.is_non_zero()) {
             return true;
@@ -136,7 +133,7 @@ impl ProductionImpl of ProductionTrait {
 
 
 #[generate_trait]
-impl ProductionStrategyImpl of ProductionStrategyTrait {
+pub impl ProductionStrategyImpl of ProductionStrategyTrait {
     // burn other resource for production of labor
     fn burn_other_resource_for_labor_production(
         ref world: WorldStorage, from_entity_id: ID, from_resource_type: u8, from_resource_amount: u128,

@@ -30,48 +30,44 @@ trait IRealmSystems<T> {
 
 #[dojo::contract]
 mod realm_systems {
-    use achievement::store::{Store, StoreTrait};
+    use achievement::store::{StoreTrait};
+    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::REALM_ENTITY_TYPE;
     use s1_eternum::constants::{DEFAULT_NS, WONDER_QUEST_REWARD_BOOST, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{
-        ProductionConfig, QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig, SettlementConfig,
-        SettlementConfigImpl, WorldConfigUtilImpl,
+        QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl};
-    use s1_eternum::models::movable::Movable;
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
-    use s1_eternum::models::quantity::QuantityTracker;
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{Coord};
     use s1_eternum::models::quest::{Quest};
     use s1_eternum::models::realm::{
-        Realm, RealmImpl, RealmNameAndAttrsDecodingImpl, RealmNameAndAttrsDecodingTrait, RealmReferenceImpl,
-        RealmResourcesImpl, RealmResourcesTrait, RealmTrait,
+        Realm, RealmImpl, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl, RealmResourcesImpl, RealmTrait,
     };
-    use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightImpl};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
@@ -377,7 +373,7 @@ mod realm_systems {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash,
                 )) => (contract_address, namespace_hash),
-                _ => (Zeroable::zero(), Zeroable::zero()),
+                _ => (Zero::zero(), Zero::zero()),
             };
 
             // approve bridge to spend lords

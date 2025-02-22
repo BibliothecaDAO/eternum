@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Breeder of TaskTrait {
+pub impl Breeder of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'BREEDER'

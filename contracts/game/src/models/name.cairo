@@ -1,9 +1,7 @@
-use s1_eternum::alias::ID;
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct AddressName {
     #[key]
-    address: felt252,
-    name: felt252,
+    pub address: felt252,
+    pub name: felt252,
 }

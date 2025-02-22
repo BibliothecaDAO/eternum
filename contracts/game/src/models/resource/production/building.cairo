@@ -1,71 +1,64 @@
 use alexandria_math::U128BitShift;
-use core::poseidon::poseidon_hash_span;
-use core::zeroable::Zeroable;
+use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{IWorldDispatcherTrait};
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
-    PopulationConfig, ProductionConfig, TickConfig, TickImpl, TickTrait, WorldConfigUtilImpl,
+    PopulationConfig, ProductionConfig, TickImpl, WorldConfigUtilImpl,
 };
 use s1_eternum::models::owner::{OwnerAddressTrait};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
-use s1_eternum::models::realm::Realm;
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl,
+    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{
-    Structure, StructureBase, StructureBaseStoreImpl, StructureBaseTrait, StructureCategory, StructureImpl,
-    StructureTrait,
-};
+use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-
 //todo we need to define border of innner hexes
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Building {
     #[key]
-    outer_col: u32,
+    pub outer_col: u32,
     #[key]
-    outer_row: u32,
+    pub outer_row: u32,
     #[key]
-    inner_col: u32,
+    pub inner_col: u32,
     #[key]
-    inner_row: u32,
-    category: BuildingCategory,
-    produced_resource_type: u8,
-    bonus_percent: u32,
-    entity_id: ID,
-    outer_entity_id: ID,
-    paused: bool,
+    pub inner_row: u32,
+    pub category: BuildingCategory,
+    pub produced_resource_type: u8,
+    pub bonus_percent: u32,
+    pub entity_id: ID,
+    pub outer_entity_id: ID,
+    pub paused: bool,
 }
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 pub struct StructureBuildings {
     #[key]
-    entity_id: ID,
-    building_count: u128,
+    pub entity_id: ID,
+    pub building_count: u128,
     // population
-    population: Population,
+    pub population: Population,
 }
 
 #[derive(Copy, Drop, Serde, IntrospectPacked)]
 pub struct Population {
-    current: u32,
-    max: u32,
+    pub current: u32,
+    pub max: u32,
 }
 
 #[generate_trait]
-impl PopulationImpl of PopulationTrait {
+pub impl PopulationImpl of PopulationTrait {
     fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
         self.current += amount;
         self.assert_within_capacity(base_population);
@@ -100,7 +93,7 @@ impl PopulationImpl of PopulationTrait {
 
 
 #[generate_trait]
-impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
+pub impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
     fn building_count(self: BuildingCategory, packed: u128) -> u8 {
         let category_felt: felt252 = self.into();
         let category: u128 = category_felt.try_into().unwrap();
@@ -130,7 +123,7 @@ impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
 }
 
 #[derive(PartialEq, Copy, Drop, Serde, Introspect)]
-enum BuildingCategory {
+pub enum BuildingCategory {
     None,
     Castle,
     Resource,
@@ -147,7 +140,7 @@ enum BuildingCategory {
     Storehouse,
 }
 
-impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
+pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
             BuildingCategory::None => 0,
@@ -170,7 +163,7 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
 
 
 #[generate_trait]
-impl BuildingPerksImpl of BuildingPerksTrait {
+pub impl BuildingPerksImpl of BuildingPerksTrait {
     fn grant_capacity_bonus(self: Building, ref world: WorldStorage, add: bool) {
         if self._is_storage_capacity_booster() {
             self._boost_storage_capacity(ref world, add);
@@ -493,7 +486,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 }
 
 #[generate_trait]
-impl BuildingImpl of BuildingTrait {
+pub impl BuildingImpl of BuildingTrait {
     fn center() -> Coord {
         Coord { x: 10, y: 10 }
     }

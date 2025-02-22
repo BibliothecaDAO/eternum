@@ -50,7 +50,7 @@ pub struct ResourceArrivalTracker {
 
 
 #[generate_trait]
-impl ResourceArrivalImpl of ResourceArrivalTrait {
+pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     fn interval_hours() -> u64 {
         2 // resource arrival gate open every 2 hours
     }

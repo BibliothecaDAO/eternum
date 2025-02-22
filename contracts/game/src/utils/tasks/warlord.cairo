@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Warlord of TaskTrait {
+pub impl Warlord of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'WARLORD'

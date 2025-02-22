@@ -1,9 +1,7 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
-use s1_eternum::models::position::{Coord};
 
 #[starknet::interface]
-trait IBankSystems<T> {
+pub trait IBankSystems<T> {
     fn change_owner_amm_fee(ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128);
     fn change_owner_bridge_fee(
         ref self: T, bank_entity_id: ID, owner_bridge_fee_dpt_percent: u16, owner_bridge_fee_wtdr_percent: u16,
@@ -11,34 +9,25 @@ trait IBankSystems<T> {
 }
 
 #[dojo::contract]
-mod bank_systems {
-    use dojo::event::EventStorage;
+pub mod bank_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::owner::{EntityOwner, Owner, OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{Coord, Occupier, OccupierTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-    };
-    use s1_eternum::models::structure::{StructureTrait};
-    use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use s1_eternum::systems::utils::structure::{iStructureImpl};
-
-
-    use traits::Into;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {

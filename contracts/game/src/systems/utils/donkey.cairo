@@ -1,12 +1,9 @@
-use achievement::store::{Store, StoreTrait};
-use core::num::traits::Bounded;
+use achievement::store::{StoreTrait};
 use dojo::event::EventStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
-use s1_eternum::models::owner::{Owner};
-use s1_eternum::models::position::{Coord, CoordTrait};
 use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::utils::tasks::index::{Task, TaskTrait};
