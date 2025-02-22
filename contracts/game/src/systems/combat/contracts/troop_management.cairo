@@ -4,7 +4,7 @@ use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 
 
 #[starknet::interface]
-trait ITroopManagementSystems<TContractState> {
+pub trait ITroopManagementSystems<TContractState> {
     // guard
     fn guard_add(
         ref self: TContractState,
@@ -38,7 +38,7 @@ trait ITroopManagementSystems<TContractState> {
 
 
 #[dojo::contract]
-mod troop_management_systems {
+pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};

@@ -65,23 +65,22 @@ export type Structure = {
   name: string;
   ownerName?: string;
   protectors: ArmyInfo[];
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  owner: ContractAddress;
+  position: Position;
 };
 
 export type PlayerStructure = {
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  position: Position;
   name: string;
   category?: string | undefined;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  owner: ContractAddress;
 };
 
 export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  position: Position;
   name: string;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  owner: ContractAddress;
   resources: ResourcesIds[];
 };
 export interface Prize {
@@ -600,7 +599,7 @@ export interface RealmInfo {
   name: string;
   resources: ResourcesIds[];
   order: number;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  position: Position;
   population?: number | undefined;
   capacity?: number;
   hasCapacity: boolean;

@@ -899,6 +899,7 @@ export default class WorldmapScene extends HexagonScene {
         },
         this.dojo.network.contractComponents as any,
         [],
+        // todo: refactor this
         [
           "s1_eternum-Army",
           "s1_eternum-Position",

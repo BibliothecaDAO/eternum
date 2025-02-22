@@ -651,7 +651,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
+    let { realm_ids, owner, frontend, signer, season_pass_address, lords_resource_index } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -664,7 +664,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCalls = realm_ids.map((realm_id) => ({
       contractAddress: realmSystemsContractAddress,
       entrypoint: "create",
-      calldata: [owner, realm_id, frontend],
+      calldata: [owner, realm_id, frontend, lords_resource_index],
     }));
 
     const approvalCloseForAllCall = {

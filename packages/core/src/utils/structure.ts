@@ -38,18 +38,6 @@ const getStructureInfo = (
   const structure = getComponentValue(components.Structure, entity);
   if (!structure) return;
 
-  const entityOwner = getComponentValue(components.EntityOwner, entity);
-  if (!entityOwner) return;
-
-  const position = getComponentValue(components.Position, entity);
-  if (!position) return;
-
-  const ownerOnChain = getComponentValue(
-    components.Owner,
-    getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]),
-  );
-  const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
-
   // const protectorArmies = [
   //   structure.guards.alpha,
   //   structure.guards.bravo,
@@ -58,7 +46,7 @@ const getStructureInfo = (
   // ];
   const protectors: ArmyInfo[] = [];
 
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([owner?.address]));
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
 
   const name = getEntityName(structure.entity_id, components);
@@ -66,13 +54,12 @@ const getStructureInfo = (
   return {
     entityId: structure.entity_id,
     structure,
-    entityOwner,
-    owner: owner as unknown as any,
+    owner: structure.owner,
     name,
-    position,
+    position: structure.coord,
     protectors,
-    isMine: ContractAddress(owner?.address || 0n) === playerAddress,
-    isMercenary: owner.address === 0n,
+    isMine: ContractAddress(structure?.owner || 0n) === playerAddress,
+    isMercenary: structure.owner === 0n,
     ownerName,
   };
 };

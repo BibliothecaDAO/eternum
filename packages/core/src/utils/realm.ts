@@ -6,22 +6,21 @@ import { BuildingType, CapacityConfig, findResourceIdByTrait, orders } from "../
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { packResources, unpackResources } from "./packed-data";
+import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Realm, Owner, Position } = components;
+  const { Realm, Structure } = components;
   const realm = getComponentValue(Realm, entity);
   if (!realm) return undefined;
 
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
+  const structure = getComponentValue(Structure, entity);
 
   return {
     ...realm,
-    resources: unpackResources(BigInt(realm.produced_resources)),
-    position,
+    resources: unpackValue(BigInt(realm.produced_resources)),
+    position: structure?.coord,
     name: getRealmNameById(realm.realm_id),
-    owner,
+    owner: structure?.owner,
   } as RealmWithPosition;
 };
 
@@ -63,28 +62,23 @@ export const getRealmNameById = (realmId: ID): string => {
 
 export function getRealmInfo(entity: Entity, components: ClientComponents): RealmInfo | undefined {
   const realm = getComponentValue(components.Realm, entity);
-  const owner = getComponentValue(components.Owner, entity);
-  const position = getComponentValue(components.Position, entity);
-  const population = getComponentValue(components.Population, entity);
+  const structure = getComponentValue(components.Structure, entity);
+  const structureBuildings = getComponentValue(components.StructureBuildings, entity);
+
+  const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
+  const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
 
   const storehouses = (() => {
-    const quantity =
-      getComponentValue(
-        components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
-    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
+    return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
   })();
 
-  if (realm && owner && position) {
+  if (realm && structure) {
     const { realm_id, entity_id, produced_resources, order, level } = realm;
 
     const name = getRealmNameById(realm_id);
 
-    const resources = unpackResources(BigInt(produced_resources));
-
-    const { address } = owner;
+    const resources = unpackValue(BigInt(produced_resources));
 
     return {
       realmId: realm_id,
@@ -94,11 +88,14 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       level,
       resources,
       order,
-      position,
-      ...population,
+      position: structure.coord,
+      population: structureBuildings?.population.current,
+      capacity: structureBuildings?.population.max,
       hasCapacity:
-        !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
-      owner: address,
+        !structureBuildings?.population ||
+        structureBuildings.population.max + configManager.getBasePopulationCapacity() >
+          structureBuildings.population.current,
+      owner: structure?.owner,
       ownerName: getRealmAddressName(realm.entity_id, components),
       hasWonder: realm.has_wonder,
     };
@@ -114,7 +111,7 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
 
-  const resourceTypesPacked = BigInt(packResources(resourceIds));
+  const resourceTypesPacked = BigInt(packValues(resourceIds));
 
   const getAttributeValue = (attributeName: string): number => {
     const attribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === attributeName);
