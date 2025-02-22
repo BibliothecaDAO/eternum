@@ -4,8 +4,8 @@ use s1_eternum::alias::ID;
 #[dojo::model]
 pub struct Quest {
     #[key]
-    entity_id: ID,
+    pub entity_id: ID,
     #[key]
-    config_id: ID,
-    completed: bool,
+    pub config_id: ID,
+    pub completed: bool,
 }

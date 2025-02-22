@@ -1,6 +1,6 @@
 use cubit::f128::procgen::simplex3;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use cubit::f128::types::vec3::{Vec3, Vec3Trait};
+use cubit::f128::types::vec3::{Vec3Trait};
 
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
@@ -70,30 +70,30 @@ fn bdepth(biome: Biome) -> Fixed {
 }
 
 mod LEVEL {
-    use cubit::f128::types::fixed::{Fixed, FixedTrait, ONE_u128};
+    use cubit::f128::types::fixed::{Fixed};
     use s1_eternum::utils::map::constants::fixed_constants as fc;
 
-    fn DEEP_OCEAN() -> Fixed {
+    pub fn DEEP_OCEAN() -> Fixed {
         fc::_0_25()
     }
 
-    fn OCEAN() -> Fixed {
+    pub fn OCEAN() -> Fixed {
         fc::_0_5()
     }
 
-    fn SAND() -> Fixed {
+    pub fn SAND() -> Fixed {
         fc::_0_53()
     }
 
-    fn FOREST() -> Fixed {
+    pub fn FOREST() -> Fixed {
         fc::_0_6()
     }
 
-    fn DESERT() -> Fixed {
+    pub fn DESERT() -> Fixed {
         fc::_0_72()
     }
 
-    fn MOUNTAIN() -> Fixed {
+    pub fn MOUNTAIN() -> Fixed {
         fc::_0_8()
     }
 }
@@ -126,7 +126,7 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
 }
 
 
-fn get_biome(col: u128, row: u128) -> Biome {
+pub fn get_biome(col: u128, row: u128) -> Biome {
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -223,7 +223,7 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
 
 #[cfg(test)]
 mod tests {
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    // use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use super::get_biome;
 
     #[test]

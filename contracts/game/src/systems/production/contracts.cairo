@@ -37,24 +37,20 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
-    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-        StructureTrait,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
     };
     use s1_eternum::models::{
-        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction, Position, PositionTrait},
-        realm::{Realm, RealmImpl, RealmResourcesTrait},
-        resource::production::building::{Building, BuildingCategory, BuildingImpl},
-        resource::production::production::{Production, ProductionStrategyImpl, ProductionTrait},
-        resource::resource::{ResourceList},
+        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait}, realm::{Realm, RealmImpl, RealmResourcesTrait},
+        resource::production::building::{BuildingCategory, BuildingImpl},
+        resource::production::production::{ProductionStrategyImpl},
     };
+
 
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {

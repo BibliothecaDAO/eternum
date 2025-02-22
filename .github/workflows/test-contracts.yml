@@ -41,7 +41,7 @@ jobs:
           scarb-version: "2.9.2"
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.1.2/dojo_v1.1.2_linux_amd64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.2.1/dojo_v1.2.1_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
       - name: Run Dojo Test for ${{ matrix.test }}

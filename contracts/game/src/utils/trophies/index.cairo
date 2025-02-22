@@ -282,9 +282,8 @@ pub impl TrophyImpl of TrophyTrait {
         ""
     }
 }
-use core::Into;
 
-pub impl IntoTrophyU8 of core::Into<Trophy, u8> {
+pub impl IntoTrophyU8 of core::traits::Into<Trophy, u8> {
     #[inline]
     fn into(self: Trophy) -> u8 {
         match self {
@@ -313,7 +312,7 @@ pub impl IntoTrophyU8 of core::Into<Trophy, u8> {
     }
 }
 
-pub impl IntoU8Trophy of core::Into<u8, Trophy> {
+pub impl IntoU8Trophy of core::traits::Into<u8, Trophy> {
     #[inline]
     fn into(self: u8) -> Trophy {
         let card: felt252 = self.into();
@@ -343,11 +342,11 @@ pub impl IntoU8Trophy of core::Into<u8, Trophy> {
         }
     }
 }
+// pub impl TrophyPrint of core::debug::PrintTrait<Trophy> {
+//     #[inline]
+//     fn print(self: Trophy) {
+//         self.identifier().print();
+//     }
+// }
 
-pub impl TrophyPrint of core::debug::PrintTrait<Trophy> {
-    #[inline]
-    fn print(self: Trophy) {
-        self.identifier().print();
-    }
-}
 

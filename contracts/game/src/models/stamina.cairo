@@ -1,15 +1,15 @@
-use s1_eternum::alias::ID;
+use core::num::traits::zero::Zero;
 use s1_eternum::models::config::{TroopStaminaConfig};
 use s1_eternum::models::troop::TroopType;
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct Stamina {
-    amount: u64,
-    updated_tick: u64,
+    pub amount: u64,
+    pub updated_tick: u64,
 }
 
 #[generate_trait]
-impl StaminaImpl of StaminaTrait {
+pub impl StaminaImpl of StaminaTrait {
     #[inline(always)]
     fn reset(ref self: Stamina, current_tick: u64) {
         self.amount = 0;

@@ -1,12 +1,13 @@
+use core::dict::Felt252Dict;
+use core::num::traits::zero::Zero;
 use core::poseidon::poseidon_hash_span;
-use s1_eternum::utils::catridge::vrf::IVrfProviderDispatcher;
-use s1_eternum::utils::catridge::vrf::IVrfProviderDispatcherTrait;
 use s1_eternum::utils::catridge::vrf::Source;
-use starknet::ContractAddress;
+use s1_eternum::utils::catridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
 use starknet::TxInfo;
+use starknet::{ContractAddress};
 
 #[generate_trait]
-impl VRFImpl of VRFTrait {
+pub impl VRFImpl of VRFTrait {
     fn seed(player_id: ContractAddress, vrf_provider_address: ContractAddress) -> u256 {
         let tx_info: TxInfo = starknet::get_tx_info().unbox();
 
@@ -39,7 +40,7 @@ impl VRFImpl of VRFTrait {
 ///         A random value within the specified upper_bound.
 ///
 ///
-fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
+pub fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
     let value: u256 = poseidon_hash_span(array![seed.low.into(), seed.high.into(), salt.into()].span()).into();
     let upper_bound: u256 = upper_bound.into();
     return (value % upper_bound).try_into().unwrap();
@@ -71,7 +72,7 @@ fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
 ///
 /// See Also: https://docs.python.org/3/library/random.html#random.choices
 ///
-fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
+pub fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
     population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool, vrf_seed: u256,
 ) -> Span<T> {
     let mut n = population.len();

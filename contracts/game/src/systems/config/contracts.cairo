@@ -1,21 +1,18 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, TradeConfig, TroopDamageConfig,
-    TroopLimitConfig, TroopStaminaConfig,
+    BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+    ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
 };
-use s1_eternum::models::position::Coord;
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
 #[starknet::interface]
-trait IWorldConfig<T> {
+pub trait IWorldConfig<T> {
     fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
 
 
 #[starknet::interface]
-trait ISeasonConfig<T> {
+pub trait ISeasonConfig<T> {
     fn set_season_config(
         ref self: T,
         season_pass_address: starknet::ContractAddress,
@@ -29,56 +26,56 @@ trait ISeasonConfig<T> {
 
 
 #[starknet::interface]
-trait IVRFConfig<T> {
+pub trait IVRFConfig<T> {
     fn set_vrf_config(ref self: T, vrf_provider_address: starknet::ContractAddress);
 }
 
 
 #[starknet::interface]
-trait IQuestConfig<T> {
+pub trait IQuestConfig<T> {
     fn set_quest_reward_config(ref self: T, quest_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
-trait IRealmLevelConfig<T> {
+pub trait IRealmLevelConfig<T> {
     fn set_realm_max_level_config(ref self: T, new_max_level: u8);
     fn set_realm_level_config(ref self: T, level: u8, resources: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
-trait IWeightConfig<T> {
+pub trait IWeightConfig<T> {
     fn set_resource_weight_config(ref self: T, resource_type: u8, weight_gram: u128);
 }
 
 #[starknet::interface]
-trait ICapacityConfig<T> {
+pub trait ICapacityConfig<T> {
     fn set_capacity_config(ref self: T, capacity_config: CapacityConfig);
 }
 
 #[starknet::interface]
-trait ITradeConfig<T> {
+pub trait ITradeConfig<T> {
     fn set_trade_config(ref self: T, trade_config: TradeConfig);
 }
 
 
 #[starknet::interface]
-trait ITickConfig<T> {
+pub trait ITickConfig<T> {
     fn set_tick_config(ref self: T, armies_tick_in_seconds: u64);
 }
 
 #[starknet::interface]
-trait IStaminaConfig<T> {
+pub trait IStaminaConfig<T> {
     fn set_stamina_config(ref self: T, unit_type: u8, max_stamina: u16);
 }
 
 
 #[starknet::interface]
-trait ITransportConfig<T> {
+pub trait ITransportConfig<T> {
     fn set_donkey_speed_config(ref self: T, sec_per_km: u16);
 }
 
 #[starknet::interface]
-trait IHyperstructureConfig<T> {
+pub trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
         ref self: T,
         resources_for_completion: Span<(u8, u128, u128)>,
@@ -90,19 +87,19 @@ trait IHyperstructureConfig<T> {
 }
 
 #[starknet::interface]
-trait IBankConfig<T> {
+pub trait IBankConfig<T> {
     fn set_bank_config(ref self: T, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128);
 }
 
 
 #[starknet::interface]
-trait IMapConfig<T> {
+pub trait IMapConfig<T> {
     fn set_map_config(ref self: T, map_config: MapConfig);
 }
 
 
 #[starknet::interface]
-trait IProductionConfig<T> {
+pub trait IProductionConfig<T> {
     fn set_production_config(
         ref self: T,
         resource_type: u8,
@@ -114,7 +111,7 @@ trait IProductionConfig<T> {
 
 
 #[starknet::interface]
-trait IBuildingConfig<T> {
+pub trait IBuildingConfig<T> {
     fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
     fn set_building_config(
         ref self: T,
@@ -125,20 +122,20 @@ trait IBuildingConfig<T> {
 }
 
 #[starknet::interface]
-trait IBuildingCategoryPopConfig<T> {
+pub trait IBuildingCategoryPopConfig<T> {
     fn set_building_category_pop_config(
         ref self: T, building_category: BuildingCategory, population: u32, capacity: u32,
     );
 }
 
 #[starknet::interface]
-trait IPopulationConfig<T> {
+pub trait IPopulationConfig<T> {
     fn set_population_config(ref self: T, base_population: u32);
 }
 
 
 #[starknet::interface]
-trait IResourceBridgeConfig<T> {
+pub trait IResourceBridgeConfig<T> {
     fn set_resource_bridge_config(ref self: T, resource_bridge_config: ResourceBridgeConfig);
     fn set_resource_bridge_fee_split_config(ref self: T, res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig);
     fn set_resource_bridge_whitelist_config(
@@ -147,7 +144,7 @@ trait IResourceBridgeConfig<T> {
 }
 
 #[starknet::interface]
-trait ISettlementConfig<T> {
+pub trait ISettlementConfig<T> {
     fn set_settlement_config(
         ref self: T,
         center: u32,
@@ -161,7 +158,7 @@ trait ISettlementConfig<T> {
 }
 
 #[starknet::interface]
-trait ITroopConfig<T> {
+pub trait ITroopConfig<T> {
     fn set_troop_config(
         ref self: T,
         troop_damage_config: TroopDamageConfig,
@@ -171,24 +168,23 @@ trait ITroopConfig<T> {
 }
 
 #[starknet::interface]
-trait IBattleConfig<T> {
+pub trait IBattleConfig<T> {
     fn set_battle_config(ref self: T, battle_config: BattleConfig);
 }
 
 #[dojo::contract]
-mod config_systems {
+pub mod config_systems {
     use achievement::components::achievable::AchievableComponent;
+    use core::num::traits::zero::Zero;
 
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
 
-    use s1_eternum::constants::{
-        ARMY_ENTITY_TYPE, DEFAULT_NS, DONKEY_ENTITY_TYPE, ResourceTypes, TravelTypes, WORLD_CONFIG_ID,
-    };
-    use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
         BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
@@ -199,11 +195,11 @@ mod config_systems {
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
-    use s1_eternum::models::position::{Coord, Position, PositionTrait};
     use s1_eternum::models::resource::production::building::{BuildingCategory};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::season::{Season};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
+
 
     // Components
 
@@ -257,7 +253,7 @@ mod config_systems {
     }
 
 
-    fn assert_caller_is_admin(world: WorldStorage) {
+    pub fn assert_caller_is_admin(world: WorldStorage) {
         let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
 
         // ENSURE

@@ -1,4 +1,3 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
@@ -9,36 +8,26 @@ trait ISwapSystems<T> {
 
 #[dojo::contract]
 mod swap_systems {
-    use cubit::f128::math::ops::{mul};
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-    use option::OptionTrait;
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{ResourceTypes};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::config::{TickImpl, TickTrait};
+    use s1_eternum::models::config::{TickImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
-    };
-    use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
-
-    use traits::{Into, TryInto};
 
 
     #[derive(Copy, Drop, Serde)]

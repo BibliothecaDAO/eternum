@@ -8,31 +8,21 @@ trait ITroopMovementSystems<TContractState> {
 
 #[dojo::contract]
 mod troop_movement_systems {
-    use dojo::event::EventStorage;
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig, TickImpl,
-            TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+            CombatConfigImpl, MapConfig, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
-        resource::resource::{
-            ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-        },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
-        structure::{Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureTrait},
-        troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
-        },
-        weight::{Weight, WeightTrait},
+        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction, OccupiedBy, Occupier},
+        resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
+        season::SeasonImpl, structure::{StructureBase, StructureBaseStoreImpl}, troop::{ExplorerTroops, GuardImpl},
+        weight::{Weight},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
-
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
 
 

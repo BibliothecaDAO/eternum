@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Builder of TaskTrait {
+pub impl Builder of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'BUILDER'

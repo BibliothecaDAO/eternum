@@ -1,8 +1,9 @@
+use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::WorldConfigUtilImpl;
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TroopLimitConfig, TroopStaminaConfig};
 
@@ -11,9 +12,9 @@ use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
     WeightStoreImpl,
 };
-use s1_eternum::models::stamina::{Stamina, StaminaImpl};
+use s1_eternum::models::stamina::{StaminaImpl};
 use s1_eternum::models::structure::{
-    Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
 };
 use s1_eternum::models::troop::{

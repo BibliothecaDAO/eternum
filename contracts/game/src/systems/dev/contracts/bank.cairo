@@ -1,9 +1,8 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Coord};
 
 #[starknet::interface]
-trait IBankSystems<T> {
+pub trait IBankSystems<T> {
     fn create_admin_bank(
         ref self: T,
         name: felt252,
@@ -16,38 +15,30 @@ trait IBankSystems<T> {
 }
 
 #[dojo::contract]
-mod dev_bank_systems {
-    use dojo::event::EventStorage;
+pub mod dev_bank_systems {
+    use core::traits::Into;
     use dojo::model::ModelStorage;
 
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use dojo::world::{WorldStorage};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::config::{
-        BankConfig, CombatConfigImpl, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig,
-    };
-    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::config::{CombatConfigImpl, TickImpl, TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::owner::{EntityOwner, Owner};
-    use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, Position};
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::structure::{StructureCategory, StructureImpl};
     use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
 
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
-    use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
-    use traits::Into;
-
-    const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;
-    const ADMIN_BANK_ENTITY_ID: ID = 999999998;
+    pub const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;
+    pub const ADMIN_BANK_ENTITY_ID: ID = 999999998;
 
     #[abi(embed_v0)]
-    impl BankSystemsImpl of super::IBankSystems<ContractState> {
+    pub impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
             ref self: ContractState,
             name: felt252,

@@ -1,25 +1,17 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait IResourceSystems<T> {
+pub trait IResourceSystems<T> {
     fn mint(ref self: T, entity_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
-mod dev_resource_systems {
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-
+pub mod dev_resource_systems {
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::ResourceTypes;
-    use s1_eternum::constants::{WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{WorldConfig};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};

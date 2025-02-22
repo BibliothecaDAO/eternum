@@ -1,8 +1,7 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait IResourceSystems<T> {
+pub trait IResourceSystems<T> {
     fn approve(ref self: T, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
     fn send(
         ref self: T,
@@ -22,38 +21,24 @@ trait IResourceSystems<T> {
 }
 
 #[dojo::contract]
-mod resource_systems {
-    use core::array::ArrayTrait;
+pub mod resource_systems {
     use core::array::SpanTrait;
     use core::num::traits::Bounded;
-    use core::poseidon::poseidon_hash_span as hash;
-    use core::zeroable::Zeroable;
-    use dojo::event::EventStorage;
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
     use s1_eternum::alias::ID;
 
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-    use s1_eternum::models::config::{CapacityConfig, SpeedImpl};
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, Position};
-    use s1_eternum::models::quantity::{Quantity};
-    use s1_eternum::models::realm::Realm;
-    use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
+    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::models::config::{SpeedImpl};
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{ResourceAllowance};
-    use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
-    };
-    use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
