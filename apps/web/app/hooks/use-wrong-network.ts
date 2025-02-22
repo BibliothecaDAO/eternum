@@ -5,7 +5,7 @@ import { env } from "env";
 
 const useIsWrongNetwork = () => {
   const { chain } = useNetwork();
-  const { account } = useAccount();
+  const { account, chainId } = useAccount();
   const [isWrongNetwork, setIsWrongNetwork] = useState<boolean>(false);
 
   function bigintToStringHex(element: bigint | undefined): string {
@@ -20,13 +20,12 @@ const useIsWrongNetwork = () => {
       setIsWrongNetwork(false);
       return;
     }
-    console.log(bigintToStringHex(chain.id), bigintToStringHex(sepolia.id));
     setIsWrongNetwork(
       env.VITE_PUBLIC_CHAIN === "sepolia"
-        ? bigintToStringHex(chain.id) === bigintToStringHex(mainnet.id)
-        : bigintToStringHex(chain.id) === bigintToStringHex(sepolia.id),
+        ? bigintToStringHex(chainId) === bigintToStringHex(mainnet.id)
+        : bigintToStringHex(chainId) === bigintToStringHex(sepolia.id),
     );
-  }, [account, chain]);
+  }, [account, chainId]);
 
   return {
     isWrongNetwork,

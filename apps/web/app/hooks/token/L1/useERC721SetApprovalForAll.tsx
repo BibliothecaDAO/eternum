@@ -24,8 +24,6 @@ export function useERC721SetApprovalForAll({
       contractAddress: `0x${string}`;
       operator: `0x${string}`;
     }) => {
-      console.log(contractAddress, operator);
-
       return await writeContractAsync({
         address: contractAddress,
         abi: ERC721_ABI,

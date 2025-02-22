@@ -81,7 +81,6 @@ const GetDelegateByIDInput = z.object({
 export const getDelegateByID = createServerFn({ method: "GET" })
   .validator((input: unknown) => GetDelegateByIDInput.parse(input))
   .handler(async (ctx) => {
-    console.log(ctx.data.address);
     return db.query.delegates.findFirst({
       where: and(
         eq(delegates.user, ctx.data.address),

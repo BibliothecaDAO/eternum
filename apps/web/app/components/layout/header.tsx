@@ -3,10 +3,17 @@ import { toast } from "@/hooks/use-toast";
 import useIsWrongNetwork from "@/hooks/use-wrong-network";
 import { cn, shortenAddress } from "@/utils/utils";
 import { Separator } from "@radix-ui/react-separator";
-import { useAccount, useDisconnect, useExplorer } from "@starknet-react/core";
+import {
+  useAccount,
+  useDisconnect,
+  useExplorer,
+  useSwitchChain,
+} from "@starknet-react/core";
 import { Link } from "@tanstack/react-router";
 import { env } from "env";
 import { Check, Copy, ExternalLink, Unplug } from "lucide-react";
+
+import { ChainId } from "@realms-world/constants";
 
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
@@ -30,12 +37,19 @@ import { ModeToggle } from "./mode-toggle";
 import { StarknetWalletButton } from "./starknet-wallet-button";
 
 export function Header() {
-  const { address } = useAccount();
+  const { address, connector } = useAccount();
   const { open } = useSidebar();
   const { disconnect } = useDisconnect();
   const explorer = useExplorer();
   const { isWrongNetwork /*, setIsWrongNetwork */ } = useIsWrongNetwork();
-
+  const { switchChainAsync } = useSwitchChain({
+    params: {
+      chainId:
+        env.VITE_PUBLIC_CHAIN === "sepolia"
+          ? (ChainId.SN_SEPOLIA as string)
+          : (ChainId.SN_MAIN as string),
+    },
+  });
   return (
     <header
       className={cn(
@@ -149,6 +163,15 @@ export function Header() {
               <DialogDescription>
                 You are on the wrong network. Please switch to{" "}
                 {env.VITE_PUBLIC_CHAIN}
+                <div className="mt-6 flex items-center gap-2">
+                  {connector?.id == "argentX" && (
+                    <Button onClick={() => switchChainAsync()}>
+                      Switch to {env.VITE_PUBLIC_CHAIN}
+                    </Button>
+                  )}
+                  or
+                  <Button onClick={() => disconnect()}>Disconnect</Button>
+                </div>
               </DialogDescription>
             </DialogContent>
           </Dialog>

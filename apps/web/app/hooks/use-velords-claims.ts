@@ -47,7 +47,7 @@ export default function useVeLordsClaims() {
       BigInt(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
         ((simulateData as any)?.[0]?.transaction_trace?.execute_invocation
-          ?.result[2] ?? "0") as string,
+          ?.result?.[2] ?? "0") as string,
       ),
     [simulateData],
   );

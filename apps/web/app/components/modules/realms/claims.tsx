@@ -109,31 +109,7 @@ export const ClaimRewards = () => {
         </Card>
 
         {/* Total Lords Earned Per Week Card */}
-        <Card className="relative overflow-hidden">
-          {totalLordsEarnedPerWeek > 0 && (
-            <Confetti
-              colors={[
-                "#f6c297",
-                "#f8d0a8",
-                "#f4b688",
-                "#f7c8a0",
-                "#f5c09f",
-                "#f9d8b0",
-                "#f3ae80",
-                "#f2a670",
-                "#f1b080",
-                "#f0c0a0",
-                "#f8e0c0",
-                "#f6b090",
-              ]}
-              opacity={0.5}
-              width={400} // Adjust width as needed
-              height={200} // Adjust height as needed
-              numberOfPieces={100}
-              recycle={true}
-              gravity={0.055}
-            />
-          )}
+        <Card>
           <CardHeader>
             <CardTitle>Total Lords Earned Per Week</CardTitle>
           </CardHeader>
@@ -149,7 +125,31 @@ export const ClaimRewards = () => {
       </div>
 
       {/* Claim Rewards Section */}
-      <Card className="w-1/3">
+      <Card className="relative w-1/3 overflow-hidden">
+        {totalLordsEarnedPerWeek > 0 && (
+          <Confetti
+            colors={[
+              "#f6c297",
+              "#f8d0a8",
+              "#f4b688",
+              "#f7c8a0",
+              "#f5c09f",
+              "#f9d8b0",
+              "#f3ae80",
+              "#f2a670",
+              "#f1b080",
+              "#f0c0a0",
+              "#f8e0c0",
+              "#f6b090",
+            ]}
+            opacity={0.5}
+            width={400} // Adjust width as needed
+            height={200} // Adjust height as needed
+            numberOfPieces={100}
+            recycle={true}
+            gravity={0.055}
+          />
+        )}
         <CardHeader>
           <CardTitle>Claim Rewards</CardTitle>
         </CardHeader>

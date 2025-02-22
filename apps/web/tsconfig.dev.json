@@ -5,7 +5,6 @@
   "files": ["/app/main.tsx"],
   "include": [
     "app/**/*",
-    "trpc/**/*",
     // "__tests__/**/*.test.*"
   ]
 }

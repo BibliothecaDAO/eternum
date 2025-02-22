@@ -21,8 +21,7 @@ export const getBridgeTransactions = createServerFn({ method: "GET" })
   .handler(async (ctx) => {
     const { l1Account, l2Account } = ctx.data;
     const whereFilter: SQL[] = [];
-    console.log("l1Account", l1Account);
-    console.log("l2Account", l2Account);
+
     if (l1Account) {
       whereFilter.push(
         eq(realmsBridgeRequests.from_address, l1Account.toLowerCase()),

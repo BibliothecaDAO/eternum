@@ -104,11 +104,9 @@ export function StarknetProvider({
     },
   });
 
-  const chain = env.VITE_PUBLIC_CHAIN === "mainnet" ? mainnet : sepolia;
-
   return (
     <StarknetConfig
-      chains={[chain]}
+      chains={[mainnet, sepolia]}
       provider={provider}
       connectors={[
         cartridgeController,
