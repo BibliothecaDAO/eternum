@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use core::num::traits::zero::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo::world::{WorldStorageTrait};
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
@@ -21,8 +22,8 @@ mod tests {
     use s1_eternum::utils::testing::helpers::{
         MOCK_CAPACITY_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
         MOCK_TROOP_STAMINA_CONFIG, MOCK_WEIGHT_CONFIG, tgrant_resources, tspawn_simple_realm, tspawn_world,
-        tstore_capacity_config, tstore_production_config, tstore_tick_config, tstore_troop_damage_config,
-        tstore_troop_limit_config, tstore_troop_stamina_config, tstore_weight_config,
+        tstore_capacity_config, tstore_tick_config, tstore_troop_damage_config, tstore_troop_limit_config,
+        tstore_troop_stamina_config, tstore_weight_config,
     };
 
 
@@ -755,7 +756,7 @@ mod tests {
 
         // verify explorer model was deleted
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(explorer.owner == Zeroable::zero(), "explorer model was not deleted");
+        assert!(explorer.owner == Zero::zero(), "explorer model was not deleted");
     }
 
     #[test]
@@ -1388,7 +1389,7 @@ mod tests {
             );
 
         // Set very low troop limit
-        starknet::testing::set_contract_address(Zeroable::zero());
+        starknet::testing::set_contract_address(Zero::zero());
         let mut low_troop_limit = MOCK_TROOP_LIMIT_CONFIG();
         low_troop_limit.explorer_max_troop_count = 1; // Set very low limit
         tstore_troop_limit_config(ref world, low_troop_limit);

@@ -2,7 +2,7 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait ISeasonPass<TState> {
+pub trait ISeasonPass<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
     fn transfer_from(self: @TState, from: ContractAddress, to: ContractAddress, token_id: u256);
     fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -10,13 +10,13 @@ trait ISeasonPass<TState> {
 }
 
 #[starknet::interface]
-trait IERC20<TState> {
+pub trait IERC20<TState> {
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
 }
 
 
 #[starknet::interface]
-trait IRealmSystems<T> {
+pub trait IRealmSystems<T> {
     fn create(
         ref self: T,
         owner: starknet::ContractAddress,
@@ -29,7 +29,7 @@ trait IRealmSystems<T> {
 }
 
 #[dojo::contract]
-mod realm_systems {
+pub mod realm_systems {
     use achievement::store::{StoreTrait};
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
@@ -296,7 +296,7 @@ mod realm_systems {
 
 
     #[generate_trait]
-    impl InternalRealmLogicImpl of InternalRealmLogicTrait {
+    pub impl InternalRealmLogicImpl of InternalRealmLogicTrait {
         fn create_realm(
             ref world: WorldStorage,
             owner: ContractAddress,

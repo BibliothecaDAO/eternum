@@ -543,10 +543,13 @@ pub impl TroopsImpl of TroopsTrait {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Biome, FixedTrait, RESOURCE_PRECISION, Stamina, StaminaImpl, TroopDamageConfig, TroopLimitConfig,
-        TroopStaminaConfig, TroopTier, TroopType, Troops, TroopsTrait,
-    };
+    use cubit::f128::types::fixed::{FixedTrait};
+    use s1_eternum::constants::{RESOURCE_PRECISION};
+    use s1_eternum::models::config::{TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::stamina::{Stamina, StaminaImpl};
+    use s1_eternum::models::troop::{TroopTier, TroopType, Troops, TroopsTrait};
+    use s1_eternum::utils::map::biomes::{Biome};
+
 
     const KNIGHT_MAX_STAMINA: u16 = 120;
     const CROSSBOWMAN_MAX_STAMINA: u16 = 120;
