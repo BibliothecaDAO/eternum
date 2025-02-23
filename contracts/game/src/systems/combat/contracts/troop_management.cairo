@@ -133,6 +133,9 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 troop_stamina_config,
             );
+
+            StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
+            StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
         }
 
 
@@ -527,13 +530,8 @@ pub mod troop_management_systems {
                 troop_limit_config,
                 troop_stamina_config,
             );
-
-            // ensure to_structure_troops count does not exceed max count
-            assert!(
-                to_structure_troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
-                    * RESOURCE_PRECISION,
-                "reached limit of structure guard troop count",
-            );
+            StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
+            StructureBaseStoreImpl::store(ref to_structure_base, ref world, to_structure_id);
         }
 
 

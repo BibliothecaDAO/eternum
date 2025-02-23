@@ -81,10 +81,14 @@ pub impl iGuardImpl of iGuardTrait {
         // update troop count
         troops.count += amount;
 
+        // ensure structure troop count does not exceed max count
+        assert!(
+            troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
+            "reached limit of structure guard troop count",
+        );
+
         // update guard slot and structure
         guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
-        StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
     }
 
 
@@ -322,7 +326,7 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         mut slot_tiers: Span<(GuardSlot, TroopTier, TroopType)>,
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
-        current_tick: u64,
+        tick: TickConfig,
     ) {
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
@@ -340,19 +344,23 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                     let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
                     let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
                     troop_amount += lower_bound;
-
-                    // update guard count
-                    structure_base.troop_guard_count += 1;
-
-                    // set category and tier
                     let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
-                    troops.category = *category;
-                    troops.tier = *tier;
-                    troops.count += troop_amount;
-                    troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
-                    // update troop in guard slot
-                    structure_guards.to_slot(*slot, troops, current_tick);
+                    iGuardImpl::add(
+                        ref world,
+                        structure_id,
+                        ref structure_base,
+                        ref structure_guards,
+                        ref troops,
+                        *slot,
+                        *category,
+                        *tier,
+                        0,
+                        troop_amount,
+                        tick,
+                        troop_limit_config,
+                        troop_stamina_config,
+                    );
                 },
                 Option::None => { break; },
             }

@@ -1951,4 +1951,471 @@ mod tests {
         starknet::testing::set_contract_address(owner);
         troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
     }
+
+
+    #[test]
+    fn test_explorer_guard_swap_partial() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount / 2, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // perform swap
+        let swap_amount = 30_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+
+        // ensure explorer has correct count
+        let new_explorer_amount = (troop_amount / 2) - swap_amount;
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.count, new_explorer_amount, "explorer count mismatch");
+        assert_eq!(explorer.troops.category, TroopType::Knight);
+        assert_eq!(explorer.troops.tier, TroopTier::T1);
+
+        // ensure guard has correct count
+        let new_guard_amount = (troop_amount / 2) + swap_amount;
+        let structure: Structure = world.read_model(realm_entity_id);
+        let guard_troops: Troops = structure.troop_guards.delta;
+        assert_eq!(guard_troops.count, new_guard_amount, "guard count mismatch");
+        assert_eq!(guard_troops.category, TroopType::Knight);
+        assert_eq!(guard_troops.tier, TroopTier::T1);
+
+        // ensure explorer stamina is correct
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // ensure guard stamina is has been reduced to that of the explorer
+        assert_eq!(guard_troops.stamina.amount, explorer.troops.stamina.amount, "stamina mismatch");
+
+        // ensure explorer capacity is correct
+        let explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let explorer_capacity: u128 = new_explorer_amount * MOCK_CAPACITY_CONFIG().troop_capacity.into();
+        assert_eq!(explorer_weight.capacity, explorer_capacity, "explorer capacity is not correct");
+    }
+
+
+    #[test]
+    fn test_explorer_guard_swap_full() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount / 2, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // perform swap
+        let swap_amount = 50_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+
+        // ensure explorer has correct count
+        let new_explorer_amount = 0;
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.count, new_explorer_amount);
+        assert_eq!(explorer.troops.category, TroopType::Knight);
+        assert_eq!(explorer.troops.tier, TroopTier::T1);
+
+        // ensure guard has correct count
+        let new_guard_amount = troop_amount;
+        let structure: Structure = world.read_model(realm_entity_id);
+        let guard_troops: Troops = structure.troop_guards.delta;
+        assert_eq!(guard_troops.count, new_guard_amount);
+        assert_eq!(guard_troops.category, TroopType::Knight);
+        assert_eq!(guard_troops.tier, TroopTier::T1);
+
+        // ensure explorer stamina is correct
+        assert_eq!(explorer.troops.stamina.amount, 0);
+
+        // ensure guard stamina is has been reduced to that of the explorer before death
+        assert_eq!(guard_troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_initial.into());
+
+        // ensure explorer capacity is correct
+        let explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let explorer_capacity: u128 = new_explorer_amount * MOCK_CAPACITY_CONFIG().troop_capacity.into();
+        assert_eq!(explorer_weight.capacity, explorer_capacity);
+    }
+
+    #[test]
+    fn test_explorer_guard_swap_no_guards() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+
+        // create explorer two ticks in the future
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // set caller to owner
+        starknet::testing::set_contract_address(owner);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Paladin, TroopTier::T3, troop_amount, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+        assert_eq!(explorer.troops.category, TroopType::Paladin);
+        assert_eq!(explorer.troops.tier, TroopTier::T3);
+
+        // perform swap
+        let swap_amount = 20_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+
+        // ensure explorer has correct count
+        let new_explorer_amount = troop_amount - swap_amount;
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.count, new_explorer_amount);
+        assert_eq!(explorer.troops.category, TroopType::Paladin);
+        assert_eq!(explorer.troops.tier, TroopTier::T3);
+
+        // ensure guard has correct count
+        let new_guard_amount = swap_amount;
+        let structure: Structure = world.read_model(realm_entity_id);
+        let guard_troops: Troops = structure.troop_guards.delta;
+        assert_eq!(guard_troops.count, new_guard_amount);
+        assert_eq!(guard_troops.category, TroopType::Paladin);
+        assert_eq!(guard_troops.tier, TroopTier::T3);
+
+        // ensure explorer stamina is correct
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_initial.into());
+
+        // ensure guard stamina is has no stamina
+        assert_eq!(guard_troops.stamina.amount, 0);
+
+        // ensure explorer capacity is correct
+        let explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let explorer_capacity: u128 = new_explorer_amount * MOCK_CAPACITY_CONFIG().troop_capacity.into();
+        assert_eq!(explorer_weight.capacity, explorer_capacity);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ("from explorer and structure guard have different categories", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_guard_swap__fails_different_categories() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span(),
+        );
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(
+                realm_entity_id, TroopType::Crossbowman, TroopTier::T1, troop_amount / 2, Direction::NorthWest,
+            );
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // perform swap
+        let swap_amount = 50_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+    }
+
+    #[test]
+    #[should_panic(expected: ("from explorer and structure guard have different tiers", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_guard_swap__fails_different_tiers() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::KNIGHT_T2, troop_amount)].span(),
+        );
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T2, troop_amount / 2, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // perform swap
+        let swap_amount = 50_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+    }
+
+    #[test]
+    #[should_panic(expected: ("explorer is not adjacent to structure", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_guard_swap__fails_not_adjacent() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // setup structure guard
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount * 2)].span());
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount);
+
+        // create explorer in wrong direction
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, Direction::NorthWest);
+
+        // attempt swap with incorrect direction
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::NorthWest, GuardSlot::Delta, troop_amount);
+    }
+
+    #[test]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_guard_swap__fails_not_owner() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 100_000 * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount / 2, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // set unknown caller
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'unknown'>());
+
+        // perform swap
+        let swap_amount = 50_000 * RESOURCE_PRECISION;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+    }
+
+
+    // essentially ensure iGuardImpl::add is called
+    #[test]
+    #[should_panic(expected: ("reached limit of structure guard troop count", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_guard_swap__fails_reached_guard_troops_limit() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set configs
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = 2
+            * MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into()
+            * RESOURCE_PRECISION;
+
+        // grant resources
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // setup structure guard
+        starknet::testing::set_contract_address(owner);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        // create guard two ticks in the future
+        current_tick = current_tick * 2;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        let explorer_id = ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_create(realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount / 2, Direction::NorthWest);
+
+        // ensure explorer has correct stamina
+        let explorer: ExplorerTroops = world.read_model(explorer_id);
+        assert_eq!(explorer.troops.stamina.amount, MOCK_TROOP_STAMINA_CONFIG().stamina_gain_per_tick.into());
+
+        // perform swap
+        let swap_amount = troop_amount / 2;
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .explorer_guard_swap(explorer_id, realm_entity_id, Direction::SouthEast, GuardSlot::Delta, swap_amount);
+    }
 }
