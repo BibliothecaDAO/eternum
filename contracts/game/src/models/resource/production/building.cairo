@@ -48,7 +48,7 @@ pub struct StructureBuildings {
     pub entity_id: ID,
     // number of buildings per category in structure
     // each category takes up to 8 bits
-    pub building_count: u128,
+    pub packed_counts: u128,
     // population
     pub population: Population,
 }
@@ -537,11 +537,11 @@ pub impl BuildingImpl of BuildingTrait {
         // increase building type count for structure
         let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
         let mut all_categories_quantity_packed: u128 = world
-            .read_member(structure_building_ptr, selector!("building_count"));
+            .read_member(structure_building_ptr, selector!("packed_counts"));
         let new_building_category_count: u8 = category.building_count(all_categories_quantity_packed) + 1;
         all_categories_quantity_packed = category
             .set_building_count(all_categories_quantity_packed, new_building_category_count);
-        world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
+        world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
 
         // increase population
         let mut population: Population = world
@@ -652,12 +652,12 @@ pub impl BuildingImpl of BuildingTrait {
         // decrease building type count for realm
         let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
         let mut all_categories_quantity_packed: u128 = world
-            .read_member(structure_building_ptr, selector!("building_count"));
+            .read_member(structure_building_ptr, selector!("packed_counts"));
         let new_building_category_count: u8 = building.category.building_count(all_categories_quantity_packed) - 1;
         all_categories_quantity_packed = building
             .category
             .set_building_count(all_categories_quantity_packed, new_building_category_count);
-        world.write_member(structure_building_ptr, selector!("building_count"), all_categories_quantity_packed);
+        world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
 
         // decrease population
         let mut population: Population = world
