@@ -325,7 +325,11 @@ mod tests {
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
-        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span(),
+        );
 
         ////////////// Create Delta Guard //////////////
 
@@ -340,6 +344,48 @@ mod tests {
         ////////////// ADD DELTA GUARD AGAIN WITH INCORRECT CATEGORY //////////////
         ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
             .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T1, troop_amount / 2);
+    }
+
+    #[test]
+    #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
+    fn test_guard_add__fails_incorrect_tier() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure to be able to create troops
+        tgrant_resources(
+            ref world,
+            realm_entity_id,
+            array![(ResourceTypes::KNIGHT_T1, troop_amount), (ResourceTypes::KNIGHT_T2, troop_amount)].span(),
+        );
+
+        ////////////// Create Delta Guard //////////////
+
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        // set current tick
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
+
+        ////////////// ADD DELTA GUARD AGAIN WITH INCORRECT CATEGORY //////////////
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T2, troop_amount / 2);
     }
 
     #[test]
@@ -378,45 +424,6 @@ mod tests {
         ////////////// Create Charlie Guard //////////////
         ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
             .guard_add(realm_entity_id, GuardSlot::Charlie, TroopType::Knight, TroopTier::T1, troop_amount / 2);
-    }
-
-
-    #[test]
-    #[should_panic(expected: ("incorrect category or tier", 'ENTRYPOINT_FAILED'))]
-    fn test_guard_add__fails_incorrect_tier() {
-        // spawn world
-        let mut world = tspawn_world(namespace_def(), contract_defs());
-
-        // set weight config
-        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
-        tstore_weight_config(ref world, array![MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1)].span());
-        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
-        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
-        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
-        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
-
-        let owner = starknet::contract_address_const::<'structure_owner'>();
-        let realm_coord = Coord { x: 1, y: 1 };
-        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
-        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
-
-        // grant troop resources to the structure to be able to create troops
-        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
-
-        ////////////// Create Delta Guard //////////////
-
-        // set caller address before calling the contract
-        starknet::testing::set_contract_address(owner);
-        // set current tick
-        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
-        starknet::testing::set_block_timestamp(current_tick);
-        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
-            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T1, troop_amount / 2);
-
-        ////////////// ADD DELTA GUARD AGAIN WITH INCORRECT CATEGORY //////////////
-        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
-            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Knight, TroopTier::T2, troop_amount / 2);
     }
 
 
