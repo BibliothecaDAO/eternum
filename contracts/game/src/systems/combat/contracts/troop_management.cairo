@@ -569,10 +569,10 @@ pub mod troop_management_systems {
             );
             let (mut from_structure_troops, from_structure_troops_destroyed_tick): (Troops, u32) = from_structure_guards
                 .from_slot(from_guard_slot);
-            assert!(count <= from_structure_troops.count, "insufficient troops in structure");
 
             // ensure guard is not dead
             assert!(from_structure_troops.count.is_non_zero(), "structure guard is dead");
+            assert!(count <= from_structure_troops.count, "insufficient troops in structure");
 
             // ensure explorer is not dead
             assert!(to_explorer.troops.count.is_non_zero(), "explorer has no troops");
