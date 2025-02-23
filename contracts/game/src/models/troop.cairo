@@ -80,23 +80,40 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
-    fn next_attack_slot(ref self: GuardTroops) -> Option<GuardSlot> {
-        if self.delta.count.is_non_zero() {
-            return Option::Some(GuardSlot::Delta);
-        }
+    fn next_attack_slot(ref self: GuardTroops, max_guards: felt252) -> Option<GuardSlot> {
+        let relevant_slots = match max_guards {
+            0 => panic!("max guards is 0"),
+            1 => { array![GuardSlot::Delta] },
+            2 => { array![GuardSlot::Delta, GuardSlot::Charlie] },
+            3 => { array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo] },
+            4 => { array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo, GuardSlot::Alpha] },
+            _ => {
+                panic!("max guards is greater than 4");
+                array![]
+            },
+        };
 
-        if self.charlie.count.is_non_zero() {
-            return Option::Some(GuardSlot::Charlie);
-        }
+        // Iterate through relevant slots only
+        let mut i: usize = 0;
+        loop {
+            if i == relevant_slots.len() {
+                break Option::None;
+            }
 
-        if self.bravo.count.is_non_zero() {
-            return Option::Some(GuardSlot::Bravo);
-        }
+            let slot = *relevant_slots.at(i);
+            let has_troops = match slot {
+                GuardSlot::Delta => self.delta.count.is_non_zero(),
+                GuardSlot::Charlie => self.charlie.count.is_non_zero(),
+                GuardSlot::Bravo => self.bravo.count.is_non_zero(),
+                GuardSlot::Alpha => self.alpha.count.is_non_zero(),
+            };
 
-        if self.alpha.count.is_non_zero() {
-            return Option::Some(GuardSlot::Alpha);
+            if has_troops {
+                break Option::Some(slot);
+            }
+
+            i += 1;
         }
-        return Option::None;
     }
 
     fn from_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
@@ -592,7 +609,7 @@ mod tests {
     fn TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
         TroopLimitConfig {
             explorer_max_party_count: 20, // hard max of explorers per structure
-            explorer_max_troop_count: 500_000, // hard max of troops per party
+            explorer_guard_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
             mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
