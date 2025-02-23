@@ -514,6 +514,102 @@ mod tests {
 
 
     #[test]
+    fn test_guard_delete() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure to be able to create troops
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span());
+
+        ////////////// Create Crossbowman Delta Guard //////////////
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        // set current tick
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T1, troop_amount);
+
+        ////////////// Delete Crossbowman Delta Guard //////////////
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_delete(realm_entity_id, GuardSlot::Delta);
+
+        // ensure crossbowman guard was deleted from the structure
+        let structure: Structure = world.read_model(realm_entity_id);
+        assert_eq!(structure.base.troop_guard_count, 0);
+
+        // ensure  guard was deleted
+        let structure: Structure = world.read_model(realm_entity_id);
+        assert_eq!(structure.base.troop_guard_count, 0);
+
+        // ensure troop stamina was set to 0
+        let delta_guard: Troops = structure.troop_guards.delta;
+        assert_eq!(delta_guard.stamina.amount, 0);
+        // note: stamina updated tick must be set to 0 else it might be exploited
+        // e.g if we don't set it to 0, and the guard is deleted, then after x ticks,
+        // the guard will be probably be resurrected with max stamina
+        assert_eq!(delta_guard.stamina.updated_tick, 0);
+
+        // ensure delta troop is set correctly
+        assert_eq!(delta_guard.count, 0);
+        assert_eq!(structure.troop_guards.delta_destroyed_tick.into(), 0);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    fn test_guard_delete__fails_not_owner() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+
+        let owner = starknet::contract_address_const::<'structure_owner'>();
+        let realm_coord = Coord { x: 1, y: 1 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+
+        // grant troop resources to the structure to be able to create troops
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span());
+
+        ////////////// Create Crossbowman Delta Guard //////////////
+        // set caller address before calling the contract
+        starknet::testing::set_contract_address(owner);
+        // set current tick
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_add(realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T1, troop_amount);
+
+        // set caller address to an unknown address
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'unkown'>());
+
+        ////////////// Delete Crossbowman Delta Guard //////////////
+        ITroopManagementSystemsDispatcher { contract_address: troop_management_system_addr }
+            .guard_delete(realm_entity_id, GuardSlot::Delta);
+    }
+
+
+    #[test]
     fn test_explorer_create_essentials() {
         // spawn world
         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -1353,7 +1449,7 @@ mod tests {
         let to_explorer_weight_before: Weight = WeightStoreImpl::retrieve(ref world, to_explorer_id);
         // swap troops between explorers
         let swap_amount = 20_000 * RESOURCE_PRECISION;
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, swap_amount);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, swap_amount);
 
         // verify source explorer troops were reduced
         let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -1428,7 +1524,7 @@ mod tests {
 
         // swap out all troops from from_explorer
         starknet::testing::set_contract_address(owner);
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
 
         // check that from_explorer is deleted
         let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -1479,7 +1575,7 @@ mod tests {
 
         // try to swap as non-owner
         starknet::testing::set_contract_address(starknet::contract_address_const::<'not_owner'>());
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
     }
 
     #[test]
@@ -1524,7 +1620,7 @@ mod tests {
                 realm_entity_id, TroopType::Knight, TroopTier::T2, troop_2_initial_amount, Direction::NorthEast,
             );
 
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
     }
 
     #[test]
@@ -1570,7 +1666,7 @@ mod tests {
                 realm_entity_id, TroopType::Crossbowman, TroopTier::T1, troop_2_initial_amount, Direction::NorthEast,
             );
 
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
     }
 
     #[test]
@@ -1612,7 +1708,7 @@ mod tests {
             );
 
         // try to swap more troops than available
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount * 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount * 2);
     }
 
     #[test]
@@ -1660,7 +1756,7 @@ mod tests {
         world.write_model_test(@to_explorer);
 
         // try to swap to an explorer that already has no troops
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount / 2);
     }
 
     #[test]
@@ -1706,7 +1802,7 @@ mod tests {
             );
 
         // try to swap zero troops
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, 0);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, 0);
     }
 
 
@@ -1753,7 +1849,7 @@ mod tests {
             );
 
         // try to swap zero troops
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, RESOURCE_PRECISION - 1);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, RESOURCE_PRECISION - 1);
     }
 
 
@@ -1800,7 +1896,7 @@ mod tests {
             );
 
         // try to swap with incorrect direction (explorers not adjacent)
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::SouthEast, troop_amount / 2);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::SouthEast, troop_amount / 2);
     }
 
     #[test]
@@ -1853,6 +1949,6 @@ mod tests {
 
         // try to swap amount that would exceed max troop limit
         starknet::testing::set_contract_address(owner);
-        troop_systems.explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
+        troop_systems.explorer_explorer_swap(from_explorer_id, to_explorer_id, Direction::East, troop_amount);
     }
 }
