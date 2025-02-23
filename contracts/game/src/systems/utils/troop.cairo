@@ -28,6 +28,32 @@ use starknet::ContractAddress;
 
 
 #[generate_trait]
+pub impl iGuardImpl of iGuardTrait {
+    fn delete(
+        ref world: WorldStorage,
+        structure_id: ID,
+        ref structure_base: StructureBase,
+        ref guards: GuardTroops,
+        ref troops: Troops,
+        troops_destroyed_tick: u32,
+        slot: GuardSlot,
+        current_tick: u64,
+    ) {
+        // clear troop
+        troops.count = 0;
+        troops.stamina.reset(current_tick);
+        // note: mitigate exploits if we decide to change destroy_tick to a different value
+        guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
+        StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
+
+        // reduce structure guard count
+        structure_base.troop_guard_count -= 1;
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+    }
+}
+
+
+#[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
     fn burn_stamina_cost(
         ref world: WorldStorage,

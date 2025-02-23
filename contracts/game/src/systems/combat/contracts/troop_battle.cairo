@@ -25,7 +25,7 @@ mod troop_battle_systems {
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
-    use s1_eternum::systems::utils::{troop::{iExplorerImpl, iTroopImpl}};
+    use s1_eternum::systems::utils::{troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 
@@ -139,7 +139,8 @@ mod troop_battle_systems {
 
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
-            let guard_slot: Option<GuardSlot> = guard_defender.next_attack_slot();
+            let guard_slot: Option<GuardSlot> = guard_defender
+                .next_attack_slot(guarded_structure.troop_max_guard_count.into());
 
             if guard_slot.is_none() {
                 panic!("defender has no troops");
@@ -167,14 +168,24 @@ mod troop_battle_systems {
             explorer_aggressor_troops
                 .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
 
-            // if slot is defeated, update defeated_at and defeated_slot
-            if guard_troops.count.is_zero() {
-                guard_destroyed_tick = tick.current().try_into().unwrap();
-            }
-
             // update guard
-            guard_defender.to_slot(guard_slot, guard_troops, guard_destroyed_tick.try_into().unwrap());
-            StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+            if guard_troops.count.is_zero() {
+                // delete guard
+                iGuardImpl::delete(
+                    ref world,
+                    structure_id,
+                    ref guarded_structure,
+                    ref guard_defender,
+                    ref guard_troops,
+                    tick.current().try_into().unwrap(),
+                    guard_slot,
+                    tick.current(),
+                );
+            } else {
+                // update guard
+                guard_defender.to_slot(guard_slot, guard_troops, guard_destroyed_tick.into());
+                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+            }
 
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
@@ -198,5 +209,7 @@ mod troop_battle_systems {
                 world.write_model(@explorer_aggressor);
             }
         }
+        // note: if we add guard vs explorer, check that attacking guard is
+    // one of relevant slots as implemented in next_attack_slot
     }
 }
