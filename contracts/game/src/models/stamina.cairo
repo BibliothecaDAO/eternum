@@ -13,7 +13,7 @@ pub impl StaminaImpl of StaminaTrait {
     #[inline(always)]
     fn reset(ref self: Stamina, current_tick: u64) {
         self.amount = 0;
-        self.updated_tick = current_tick;
+        self.updated_tick = 0;
     }
 
     #[inline(always)]

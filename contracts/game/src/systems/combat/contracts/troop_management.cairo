@@ -85,28 +85,27 @@ pub mod troop_management_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
-            // deduct resources used to create guard
-            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
-
             // ensure guard slot is valid
-            let mut guard: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
-            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
-
-            // ensure delay from troop defeat is over
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
+            let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            if troops_destroyed_tick.is_non_zero() {
-                let next_troop_update_at = troops_destroyed_tick
-                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
-                assert!(
-                    current_tick >= next_troop_update_at.into(),
-                    "you need to wait for the delay from troop defeat to be over",
-                );
-            }
-
             let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             if troops.count.is_zero() {
+                // ensure delay from troop defeat is over
+                if troops_destroyed_tick.is_non_zero() {
+                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+                    let next_troop_update_at = troops_destroyed_tick
+                        + tick
+                            .convert_from_seconds(troop_limit_config.guard_resurrection_delay.into())
+                            .try_into()
+                            .unwrap();
+                    assert!(
+                        current_tick >= next_troop_update_at.into(),
+                        "you need to wait for the delay from troop defeat to be over",
+                    );
+                }
+
                 // ensure structure has not reached the hard limit of guards
                 assert!(
                     structure_base.troop_guard_count < structure_base.troop_max_guard_count.into(),
@@ -119,15 +118,24 @@ pub mod troop_management_systems {
                 // set category and tier
                 troops.category = category;
                 troops.tier = tier;
+            } else {
+                assert!(troops.category == category && troops.tier == tier, "incorrect category or tier");
             }
+
+            // deduct resources used to create guard
+            iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             troops.count += amount;
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
 
+            // force stamina to be 0 so it isn't gamed
+            // through the refill function and guard deletion
+            troops.stamina.amount = 0;
+
             // update guard slot and structure
-            guard.to_slot(slot, troops, current_tick);
-            StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
+            guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
+            StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
             StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
         }
 
@@ -144,25 +152,14 @@ pub mod troop_management_systems {
             let current_tick: u64 = tick.current().try_into().unwrap();
 
             // ensure guard slot is valid
-            let mut guard: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
-            let (mut troops, troops_destroyed_tick): (Troops, u32) = guard.from_slot(slot);
-
-            // ensure delay from troop defeat is over
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            if troops_destroyed_tick.is_non_zero() {
-                let next_troop_update_at = troops_destroyed_tick
-                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
-                assert!(
-                    current_tick >= next_troop_update_at.into(),
-                    "you need to wait for the delay from troop defeat to be over",
-                );
-            }
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
+            let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
 
             // clear troop
             troops.count = 0;
             troops.stamina.reset(current_tick);
-            guard.to_slot(slot, troops, current_tick);
-            StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
+            guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
+            StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
 
             // reduce structure guard count
             let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
