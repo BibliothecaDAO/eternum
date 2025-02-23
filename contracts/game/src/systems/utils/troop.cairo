@@ -5,7 +5,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::WorldConfigUtilImpl;
-use s1_eternum::models::config::{CapacityConfig, MapConfig, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
 
 use s1_eternum::models::position::{Occupier, OccupierImpl};
 use s1_eternum::models::resource::resource::{
@@ -29,6 +29,65 @@ use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl iGuardImpl of iGuardTrait {
+    fn add(
+        ref world: WorldStorage,
+        structure_id: ID,
+        ref structure_base: StructureBase,
+        ref guards: GuardTroops,
+        ref troops: Troops,
+        slot: GuardSlot,
+        category: TroopType,
+        tier: TroopTier,
+        troops_destroyed_tick: u32,
+        amount: u128,
+        tick: TickConfig,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+    ) {
+        let current_tick: u64 = tick.current();
+        if troops.count.is_zero() {
+            // ensure delay from troop defeat is over
+            if troops_destroyed_tick.is_non_zero() {
+                let next_troop_update_at = troops_destroyed_tick
+                    + tick.convert_from_seconds(troop_limit_config.guard_resurrection_delay.into()).try_into().unwrap();
+                assert!(
+                    current_tick >= next_troop_update_at.into(),
+                    "you need to wait for the delay from troop defeat to be over",
+                );
+            }
+
+            // ensure structure has not reached the hard limit of guards
+            assert!(
+                structure_base.troop_guard_count < structure_base.troop_max_guard_count.into(),
+                "reached limit of guards per structure",
+            );
+
+            // update guard count
+            structure_base.troop_guard_count += 1;
+
+            // set category and tier
+            troops.category = category;
+            troops.tier = tier;
+        }
+
+        // update stamina
+        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+        // force stamina to be 0 so it isn't gamed
+        // through the refill function and guard deletion
+        if troops.count.is_zero() {
+            troops.stamina.amount = 0;
+        }
+
+        // update troop count
+        troops.count += amount;
+
+        // update guard slot and structure
+        guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
+        StructureTroopGuardStoreImpl::store(ref guards, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+    }
+
+
     fn delete(
         ref world: WorldStorage,
         structure_id: ID,

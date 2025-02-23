@@ -104,58 +104,35 @@ pub mod troop_management_systems {
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
-            // ensure guard slot is valid
-            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
-            let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
-            let tick = TickImpl::get_tick_config(ref world);
-            let current_tick: u64 = tick.current().try_into().unwrap();
-            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            if troops.count.is_zero() {
-                // ensure delay from troop defeat is over
-                if troops_destroyed_tick.is_non_zero() {
-                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-                    let next_troop_update_at = troops_destroyed_tick
-                        + tick
-                            .convert_from_seconds(troop_limit_config.guard_resurrection_delay.into())
-                            .try_into()
-                            .unwrap();
-                    assert!(
-                        current_tick >= next_troop_update_at.into(),
-                        "you need to wait for the delay from troop defeat to be over",
-                    );
-                }
-
-                // ensure structure has not reached the hard limit of guards
-                assert!(
-                    structure_base.troop_guard_count < structure_base.troop_max_guard_count.into(),
-                    "reached limit of guards per structure",
-                );
-
-                // update guard count
-                structure_base.troop_guard_count += 1;
-
-                // set category and tier
-                troops.category = category;
-                troops.tier = tier;
-            } else {
-                assert!(troops.category == category && troops.tier == tier, "incorrect category or tier");
-            }
-
             // deduct resources used to create guard
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
-            troops.count += amount;
+            // ensure provided category and tier are correct
+            let mut guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, for_structure_id);
+            let (mut troops, troops_destroyed_tick): (Troops, u32) = guards.from_slot(slot);
+            if troops.count.is_non_zero() {
+                assert!(troops.category == category && troops.tier == tier, "incorrect category or tier");
+            }
+
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
+            let tick = TickImpl::get_tick_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
-
-            // force stamina to be 0 so it isn't gamed
-            // through the refill function and guard deletion
-            troops.stamina.amount = 0;
-
-            // update guard slot and structure
-            guards.to_slot(slot, troops, troops_destroyed_tick.try_into().unwrap());
-            StructureTroopGuardStoreImpl::store(ref guards, ref world, for_structure_id);
-            StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
+            iGuardImpl::add(
+                ref world,
+                for_structure_id,
+                ref structure_base,
+                ref guards,
+                ref troops,
+                slot,
+                category,
+                tier,
+                troops_destroyed_tick,
+                amount,
+                tick,
+                troop_limit_config,
+                troop_stamina_config,
+            );
         }
 
 
@@ -402,6 +379,7 @@ pub mod troop_management_systems {
             to_explorer.troops.stamina.refill(to_explorer.troops.category, troop_stamina_config, current_tick);
             if from_explorer.troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_explorer.troops.stamina.amount;
+                to_explorer.troops.stamina.updated_tick = current_tick;
             }
 
             // update from_explorer model
@@ -429,7 +407,7 @@ pub mod troop_management_systems {
             // update to_explorer model
             world.write_model(@to_explorer);
         }
-    
+
 
         fn explorer_guard_swap(
             ref self: ContractState,
@@ -453,7 +431,7 @@ pub mod troop_management_systems {
             StructureOwnerStoreImpl::retrieve(ref world, to_structure_id).assert_caller_owner();
 
             // ensure explorer is adjacent to structure
-            let to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
             assert!(
                 to_structure_base.coord() == from_explorer.coord.neighbor(to_structure_direction),
                 "explorer is not adjacent to structure",
@@ -465,47 +443,40 @@ pub mod troop_management_systems {
             // ensure explorer is not dead
             assert!(from_explorer.troops.count.is_non_zero(), "from explorer has no troops");
 
-            // ensure guard is not dead
-            let mut to_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, to_structure_id);
-            let (mut to_structure_troops, to_structure_troops_destroyed_tick): (Troops, u32) = to_structure_guards
-                .from_slot(to_guard_slot);
-            assert!(to_structure_troops.count.is_non_zero(), "structure guard is dead");
+            // note: we don't need to check if the guard is dead. if it is,
+            // it will inherit the category and tier of the explorer
 
             // ensure they have the same category and tier
-            assert!(
-                from_explorer.troops.category == to_structure_troops.category,
-                "from explorer and structure guard have different categories",
+            let mut to_structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(
+                ref world, to_structure_id,
             );
-            assert!(
-                from_explorer.troops.tier == to_structure_troops.tier,
-                "from explorer and structure guard have different tiers",
-            );
+            let (mut to_structure_troops, to_structure_troops_destroyed_tick): (Troops, u32) = to_structure_guards
+                .from_slot(to_guard_slot);
+            if to_structure_troops.count.is_non_zero() {
+                assert!(
+                    from_explorer.troops.category == to_structure_troops.category,
+                    "from explorer and structure guard have different categories",
+                );
+                assert!(
+                    from_explorer.troops.tier == to_structure_troops.tier,
+                    "from explorer and structure guard have different tiers",
+                );
+            }
 
-            // update troop counts
+            /////////// Update Explorer ///////////
+            ///////////////////////////////////////
+
+            // update explorer troop counts
             from_explorer.troops.count -= count;
-            to_structure_troops.count += count;
 
             // update explorer troop capacity
             iExplorerImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
 
-            // ensure to_structure_troops count does not exceed max count
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            assert!(
-                to_structure_troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
-                "reached limit of structure guard troop count",
-            );
-
-            // get current tick
+            // update explorer stamina
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-
-            // ensure there is no stamina advantage gained by swapping
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             from_explorer.troops.stamina.refill(from_explorer.troops.category, troop_stamina_config, current_tick);
-            to_structure_troops.stamina.refill(to_structure_troops.category, troop_stamina_config, current_tick);
-            if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
-                to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
-            }
 
             // update explorer model
             if from_explorer.troops.count.is_zero() {
@@ -529,10 +500,40 @@ pub mod troop_management_systems {
                 world.write_model(@from_explorer);
             }
 
-            // update structure guard
-            to_structure_guards
-                .to_slot(to_guard_slot, to_structure_troops, to_structure_troops_destroyed_tick.try_into().unwrap());
-            StructureTroopGuardStoreImpl::store(ref to_structure_guards, ref world, to_structure_id);
+            /////////// Update Structure Guard ///////////
+            /////////////////////////////////////////////
+
+            // ensure there is no stamina advantage gained by swapping
+            to_structure_troops.stamina.refill(to_structure_troops.category, troop_stamina_config, current_tick);
+            if from_explorer.troops.stamina.amount < to_structure_troops.stamina.amount {
+                to_structure_troops.stamina.amount = from_explorer.troops.stamina.amount;
+                to_structure_troops.stamina.updated_tick = current_tick;
+            }
+
+            // add troops to structure guard
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            iGuardImpl::add(
+                ref world,
+                to_structure_id,
+                ref to_structure_base,
+                ref to_structure_guards,
+                ref to_structure_troops,
+                to_guard_slot,
+                from_explorer.troops.category,
+                from_explorer.troops.tier,
+                to_structure_troops_destroyed_tick,
+                count,
+                tick,
+                troop_limit_config,
+                troop_stamina_config,
+            );
+
+            // ensure to_structure_troops count does not exceed max count
+            assert!(
+                to_structure_troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
+                    * RESOURCE_PRECISION,
+                "reached limit of structure guard troop count",
+            );
         }
 
 
@@ -584,7 +585,8 @@ pub mod troop_management_systems {
                 "explorer and structure guard have different categories",
             );
             assert!(
-                to_explorer.troops.tier == from_structure_troops.tier, "explorer and structure guard have different tiers",
+                to_explorer.troops.tier == from_structure_troops.tier,
+                "explorer and structure guard have different tiers",
             );
 
             // update troop counts
@@ -597,7 +599,8 @@ pub mod troop_management_systems {
             // ensure to_explorer count does not exceed max count
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             assert!(
-                to_explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
+                to_explorer.troops.count <= troop_limit_config.explorer_guard_max_troop_count.into()
+                    * RESOURCE_PRECISION,
                 "reached limit of explorer troop count",
             );
 
@@ -611,6 +614,7 @@ pub mod troop_management_systems {
             from_structure_troops.stamina.refill(from_structure_troops.category, troop_stamina_config, current_tick);
             if from_structure_troops.stamina.amount < to_explorer.troops.stamina.amount {
                 to_explorer.troops.stamina.amount = from_structure_troops.stamina.amount;
+                to_explorer.troops.stamina.updated_tick = current_tick;
             }
 
             // update to_explorer model
@@ -632,7 +636,9 @@ pub mod troop_management_systems {
             } else {
                 from_structure_guards
                     .to_slot(
-                        from_guard_slot, from_structure_troops, from_structure_troops_destroyed_tick.try_into().unwrap(),
+                        from_guard_slot,
+                        from_structure_troops,
+                        from_structure_troops_destroyed_tick.try_into().unwrap(),
                     );
                 StructureTroopGuardStoreImpl::store(ref from_structure_guards, ref world, from_structure_id);
             }
