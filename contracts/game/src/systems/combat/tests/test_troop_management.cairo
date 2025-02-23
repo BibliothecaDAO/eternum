@@ -77,7 +77,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -149,7 +149,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -190,7 +190,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -243,7 +243,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -272,7 +272,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -322,7 +322,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -360,7 +360,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -399,7 +399,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -436,7 +436,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(
@@ -529,7 +529,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span());
@@ -586,7 +586,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T1, troop_amount)].span());
@@ -626,7 +626,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -689,7 +689,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant troop resources to the structure to be able to create troops
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -722,7 +722,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant no troop resources
         tgrant_resources(ref world, realm_entity_id, array![].span());
@@ -754,7 +754,7 @@ mod tests {
         let realm_coord = Coord { x: 1, y: 1 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_max_troop_count.into() * RESOURCE_PRECISION;
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
 
         // grant resources to the structure
         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount * 2)].span());
@@ -1944,7 +1944,7 @@ mod tests {
         // Set very low troop limit
         starknet::testing::set_contract_address(Zero::zero());
         let mut low_troop_limit = MOCK_TROOP_LIMIT_CONFIG();
-        low_troop_limit.explorer_max_troop_count = 1; // Set very low limit
+        low_troop_limit.explorer_guard_max_troop_count = 1; // Set very low limit
         tstore_troop_limit_config(ref world, low_troop_limit);
 
         // try to swap amount that would exceed max troop limit
