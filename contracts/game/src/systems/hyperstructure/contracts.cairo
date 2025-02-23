@@ -68,7 +68,7 @@ pub mod hyperstructure_systems {
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
             name::{AddressName}, owner::{Owner, OwnerAddressTrait}, position::{Coord, PositionIntoCoord},
             resource::resource::{}, season::{Leaderboard},
-            structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl},
+            structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
     };
 
@@ -143,9 +143,10 @@ pub mod hyperstructure_systems {
             let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
             let required_shards_amount = shards_resource_config.get_required_amount(0);
 
-            let creator_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, creator_entity_id);
-            creator_structure.owner.assert_caller_owner();
-            creator_structure.assert_exists();
+            let creator_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, creator_entity_id,
+            );
+            creator_structure_owner.assert_caller_owner();
 
             let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, creator_entity_id);
             let shards_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
@@ -224,7 +225,7 @@ pub mod hyperstructure_systems {
                 );
 
             // [Achievement] Hyperstructure Creation
-            let player_id: felt252 = creator_structure.owner.into();
+            let player_id: felt252 = creator_structure_owner.into();
             let task_id: felt252 = Task::Builder.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: current_time);
@@ -241,9 +242,14 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
-            structure.owner.assert_caller_owner();
-            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
+            // ensure caller owns hyperstructure
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, hyperstructure_entity_id,
+            );
+            structure_owner.assert_caller_owner();
+
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+            assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.assert_access(ref world);
@@ -302,7 +308,7 @@ pub mod hyperstructure_systems {
             }
 
             // [Achievement] Hyperstructure Contribution
-            let player_id: felt252 = structure.owner.into();
+            let player_id: felt252 = structure_owner.into();
             let task_id: felt252 = Task::Opportunist.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: timestamp);
@@ -317,8 +323,12 @@ pub mod hyperstructure_systems {
             assert!(co_owners.len() <= 10, "too many co-owners");
 
             // ensure the structure is a hyperstructure
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, hyperstructure_entity_id,
+            );
+            structure_owner.assert_caller_owner();
+
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
-            structure.owner.assert_caller_owner();
             assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let caller = starknet::get_caller_address();
@@ -374,9 +384,13 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the structure is a hyperstructure
-            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
-            structure.owner.assert_caller_owner();
-            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, hyperstructure_entity_id,
+            );
+            structure_owner.assert_caller_owner();
+
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
+            assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
             hyperstructure.access = access;

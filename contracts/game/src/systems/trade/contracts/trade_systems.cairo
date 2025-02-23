@@ -42,12 +42,14 @@ pub mod trade_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+    };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceImpl};
-
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -102,8 +104,8 @@ pub mod trade_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure maker structure is owned by caller
-            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, maker_id);
-            maker_structure.owner.assert_caller_owner();
+            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
+            maker_structure_owner.assert_caller_owner();
 
             // ensure taker structure exists
             if taker_id.is_non_zero() {
@@ -200,8 +202,8 @@ pub mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns taker structure
-            let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.taker_id);
-            taker_structure.owner.assert_caller_owner();
+            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.taker_id);
+            taker_structure_owner.assert_caller_owner();
 
             // ensure trade is not expired
             let now = starknet::get_block_timestamp().try_into().unwrap();
@@ -210,6 +212,12 @@ pub mod trade_systems {
             // ensure caller is the taker if offer is private
             if trade.taker_id.is_non_zero() {
                 assert!(trade.taker_id == taker_id, "not the taker");
+            }
+
+            // ensure taker structure exists if offer is public
+            let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
+            if trade.taker_id.is_zero() {
+                taker_structure.assert_exists();
             }
 
             // ensure buy amount is valid
@@ -281,16 +289,19 @@ pub mod trade_systems {
             let maker_resource_weight: u128 = maker_gives_resource_amount * maker_resource_weight_grams;
             let taker_donkey_amount = iDonkeyImpl::needed_amount(ref world, maker_resource_weight);
             iDonkeyImpl::burn(ref world, taker_id, ref taker_structure_weight, taker_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure.owner);
+            iDonkeyImpl::burn_finialize(ref world, trade.taker_id, taker_donkey_amount, taker_structure_owner);
 
             // update taker structure weight
             taker_structure_weight.store(ref world, trade.taker_id);
 
             // finalize maker donkey burn to pickup lords from taker
+            let mut maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, trade.maker_id,
+            );
             let taker_lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
             let taker_lords_weight: u128 = taker_pays_lords_amount * taker_lords_weight_grams;
             let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_lords_weight);
-            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure.owner);
+            iDonkeyImpl::burn_finialize(ref world, trade.maker_id, maker_donkey_amount, maker_structure_owner);
 
             // update trade and trade count
             trade.maker_gives_max_count -= taker_buys_count;
@@ -328,8 +339,8 @@ pub mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns maker structure
-            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
-            maker_structure.owner.assert_caller_owner();
+            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.maker_id);
+            maker_structure_owner.assert_caller_owner();
 
             // return offered resource to maker balance
             let maker_gives_max_resource_amount = trade.maker_gives_max_count * trade.maker_gives_min_resource_amount;

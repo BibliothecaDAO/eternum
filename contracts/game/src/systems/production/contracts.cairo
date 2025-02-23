@@ -43,13 +43,14 @@ mod production_systems {
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait}, realm::{Realm, RealmImpl, RealmResourcesTrait},
         resource::production::building::{BuildingCategory, BuildingImpl},
         resource::production::production::{ProductionStrategyImpl},
     };
+    use starknet::ContractAddress;
 
 
     #[abi(embed_v0)]
@@ -67,8 +68,12 @@ mod production_systems {
             assert!(realm.realm_id != 0, "entity is not a realm");
 
             // ensure caller owns the realm
-            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            structure.owner.assert_caller_owner();
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+            structure_owner.assert_caller_owner();
+
+            // ensure caller owns the realm
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert!(structure_base.category == StructureCategory::Realm.into(), "entity is not a realm");
 
             // ensure buildings can't be made outside
             // the range of what the realm level allows
@@ -95,7 +100,7 @@ mod production_systems {
             };
 
             let (building, building_count) = BuildingImpl::create(
-                ref world, entity_id, structure.coord(), building_category, produce_resource_type, building_coord,
+                ref world, entity_id, structure_base.coord(), building_category, produce_resource_type, building_coord,
             );
 
             // pay one time cost of the building
@@ -131,10 +136,13 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure entity is a structure
-            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            entity_structure.owner.assert_caller_owner();
-            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
+            // ensure structure is a realm
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
+
+            // ensure caller owns the realm
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+            structure_owner.assert_caller_owner();
 
             assert!(
                 resource_types.len() == resource_amounts.len(),
@@ -155,9 +163,13 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
-            entity_structure.owner.assert_caller_owner();
-            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
+            // ensure structure is a realm
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
+            assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
+
+            // ensure caller owns the realm
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
+            structure_owner.assert_caller_owner();
 
             assert!(
                 labor_amounts.len() == produced_resource_types.len(),
@@ -183,9 +195,13 @@ mod production_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let entity_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
-            entity_structure.owner.assert_caller_owner();
-            assert!(entity_structure.category == StructureCategory::Realm.into(), "structure is not a realm");
+            // ensure structure is a realm
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_entity_id);
+            assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
+
+            // ensure caller owns the realm
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_entity_id);
+            structure_owner.assert_caller_owner();
 
             assert!(
                 produced_resource_types.len() == production_tick_counts.len(),

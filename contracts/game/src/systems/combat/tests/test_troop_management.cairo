@@ -31,14 +31,19 @@ mod tests {
         let ndef = NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
+                // world config
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH), TestResource::Model(m_Resource::TEST_CLASS_HASH),
-                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Realm::TEST_CLASS_HASH),
-                TestResource::Model(m_Tile::TEST_CLASS_HASH), TestResource::Model(m_Occupier::TEST_CLASS_HASH),
-                TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
                 TestResource::Model(m_WeightConfig::TEST_CLASS_HASH),
+                TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
+                // structure, realm and buildings
+                TestResource::Model(m_Structure::TEST_CLASS_HASH),
+                TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
+                TestResource::Model(m_Realm::TEST_CLASS_HASH), TestResource::Model(m_Occupier::TEST_CLASS_HASH),
+                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
+                TestResource::Model(m_Resource::TEST_CLASS_HASH),
+                // other models
+                TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
+                // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
             ]
                 .span(),

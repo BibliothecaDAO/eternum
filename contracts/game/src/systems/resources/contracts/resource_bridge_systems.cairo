@@ -207,7 +207,9 @@ pub mod resource_bridge_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
+    };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::dev::contracts::bank::dev_bank_systems::{ADMIN_BANK_ENTITY_ID};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
@@ -289,12 +291,17 @@ pub mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, ADMIN_BANK_ENTITY_ID,
+            );
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
+
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 ADMIN_BANK_ENTITY_ID,
-                bank_structure,
+                bank_structure_owner,
+                bank_structure_base,
                 ref bank_structure_weight,
                 recipient_realm_id,
                 recipient_structure.coord(),
@@ -375,12 +382,14 @@ pub mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, through_bank_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, through_bank_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 through_bank_id,
-                bank_structure,
+                bank_structure_owner,
+                bank_structure_base,
                 ref bank_structure_weight,
                 recipient_realm_id,
                 recipient_structure.coord(),

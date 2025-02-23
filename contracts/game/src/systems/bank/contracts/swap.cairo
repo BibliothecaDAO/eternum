@@ -1,13 +1,13 @@
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait ISwapSystems<T> {
+pub trait ISwapSystems<T> {
     fn buy(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8);
     fn sell(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8);
 }
 
 #[dojo::contract]
-mod swap_systems {
+pub mod swap_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
@@ -24,10 +24,13 @@ mod swap_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+    };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -102,10 +105,12 @@ mod swap_systems {
 
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
-            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
+                bank_structure_owner,
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,
@@ -188,10 +193,13 @@ mod swap_systems {
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
-
+            let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, bank_entity_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
+                bank_structure_owner,
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,

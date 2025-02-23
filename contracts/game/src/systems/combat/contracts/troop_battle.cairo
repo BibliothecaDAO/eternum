@@ -21,8 +21,8 @@ mod troop_battle_systems {
     use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTroopExplorerStoreImpl,
-        StructureTroopGuardStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
     use s1_eternum::systems::utils::{troop::{iExplorerImpl, iTroopImpl}};
@@ -37,12 +37,9 @@ mod troop_battle_systems {
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
-            let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            explorer_aggressor_owner_structure.owner.assert_caller_owner();
+            // ensure caller owns aggressor
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -82,6 +79,9 @@ mod troop_battle_systems {
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
+                let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_aggressor.owner,
+                );
                 let mut explorer_aggressor_structure_explorers_list: Array<ID> =
                     StructureTroopExplorerStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -128,10 +128,7 @@ mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-            let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            explorer_aggressor_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");

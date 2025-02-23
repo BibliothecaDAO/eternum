@@ -18,8 +18,8 @@ mod troop_movement_systems {
         },
         map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction, OccupiedBy, Occupier},
         resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
-        season::SeasonImpl, structure::{StructureBase, StructureBaseStoreImpl}, troop::{ExplorerTroops, GuardImpl},
-        weight::{Weight},
+        season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
+        troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
@@ -40,8 +40,7 @@ mod troop_movement_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
-            explorer_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");

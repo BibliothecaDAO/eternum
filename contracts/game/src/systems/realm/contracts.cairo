@@ -60,7 +60,7 @@ pub mod realm_systems {
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
@@ -164,11 +164,12 @@ pub mod realm_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure caller owns the realm
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-            structure.owner.assert_caller_owner();
+            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, realm_id);
+            structure_owner.assert_caller_owner();
 
             // ensure entity is a realm
-            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure realm is not already at max level
             let mut realm: Realm = world.read_model(realm_id);
@@ -214,8 +215,9 @@ pub mod realm_systems {
             world.write_model(@realm);
 
             // allow structure one more guard
-            structure.troop_max_guard_count += 1;
-            StructureBaseStoreImpl::store(ref structure, ref world, realm_id);
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+            structure_base.troop_max_guard_count += 1;
+            StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
 
             // [Achievement] Upgrade to max level
             if realm.level == max_level {
@@ -232,11 +234,11 @@ pub mod realm_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure entity is a realm
-            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure caller owns the realm
-            structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, entity_id).assert_caller_owner();
 
             // ensure quest is not already completed
             let mut quest: Quest = world.read_model((entity_id, quest_id));

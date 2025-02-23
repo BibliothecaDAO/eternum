@@ -46,6 +46,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     fn structure_to_structure_delayed(
         ref world: WorldStorage,
         from_structure_id: ID,
+        from_structure_owner: starknet::ContractAddress,
         from_structure: StructureBase,
         ref from_structure_weight: Weight,
         to_structure_id: ID,
@@ -59,7 +60,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ref world,
             true,
             from_structure_id,
-            from_structure.owner,
+            from_structure_owner,
             from_structure.coord(),
             ref from_structure_weight,
             to_structure_id,
