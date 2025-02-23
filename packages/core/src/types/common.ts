@@ -529,7 +529,7 @@ export interface Config {
     };
     limit: {
       explorerMaxPartyCount: number;
-      explorerMaxTroopCount: number;
+      explorerAndGuardMaxTroopCount: number;
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;

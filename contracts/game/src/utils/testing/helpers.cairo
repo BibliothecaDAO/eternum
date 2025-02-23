@@ -54,7 +54,7 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
 pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
     TroopLimitConfig {
         explorer_max_party_count: 20, // hard max of explorers per structure
-        explorer_max_troop_count: 500_000, // hard max of troops per party
+        explorer_guard_max_troop_count: 500_000, // hard max of troops per party
         guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
         mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
         mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary

@@ -293,7 +293,7 @@ pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
     // Troop count per army limits without precision
-    pub explorer_max_troop_count: u32,
+    pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
     pub guard_resurrection_delay: u32,
     // Mercenary bounds without precision

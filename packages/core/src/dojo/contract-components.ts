@@ -1264,7 +1264,7 @@ export function defineContractComponents(world: World) {
           },
           troop_limit_config: {
             explorer_max_party_count: RecsType.Number,
-            explorer_max_troop_count: RecsType.Number,
+            explorer_guard_max_troop_count: RecsType.Number,
             guard_resurrection_delay: RecsType.Number,
             mercenaries_troop_lower_bound: RecsType.Number,
             mercenaries_troop_upper_bound: RecsType.Number,
@@ -1355,7 +1355,7 @@ export function defineContractComponents(world: World) {
               "u16", // TroopStaminaConfig stamina_travel_fish_cost
               "u16", // TroopStaminaConfig stamina_travel_stamina_cost
               "u8", // TroopLimitConfig explorer_max_party_count
-              "u32", // TroopLimitConfig explorer_max_troop_count
+              "u32", // TroopLimitConfig explorer_guard_max_troop_count
               "u32", // TroopLimitConfig guard_resurrection_delay
               "u64", // TroopLimitConfig mercenaries_troop_lower_bound
               "u64", // TroopLimitConfig mercenaries_troop_upper_bound
