@@ -6,7 +6,7 @@ mod tests {
     use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction, Occupier, OccupierImpl};
+    use s1_eternum::models::position::{Coord, CoordTrait, Direction, OccupiedImpl, Occupier};
     use s1_eternum::models::resource::resource::{SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use s1_eternum::models::structure::{Structure, StructureImpl};
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops};

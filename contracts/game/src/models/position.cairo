@@ -217,38 +217,37 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     }
 }
 
-#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq, Debug)]
-pub enum OccupiedBy {
-    #[default]
-    None,
-    Structure: ID,
-    Explorer: ID,
+pub mod OccupiedBy {
+    pub const None: u8 = 0;
+    pub const Structure: u8 = 1;
+    pub const Explorer: u8 = 2;
 }
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
-pub struct Occupier {
+pub struct Occupied {
     #[key]
     pub x: u32,
     #[key]
     pub y: u32,
-    pub occupier: OccupiedBy,
+    pub by_id: ID,
+    pub by_type: u8,
 }
 
 #[generate_trait]
-pub impl OccupierImpl of OccupierTrait {
-    fn key_only(coord: Coord) -> Occupier {
-        Occupier { x: coord.x, y: coord.y, occupier: OccupiedBy::None }
+pub impl OccupiedImpl of OccupiedTrait {
+    fn key_only(coord: Coord) -> Occupied {
+        Occupied { x: coord.x, y: coord.y, by_id: 0, by_type: OccupiedBy::None }
     }
 
     #[inline(always)]
-    fn occupied(self: Occupier) -> bool {
-        self.occupier != OccupiedBy::None
+    fn occupied(self: Occupied) -> bool {
+        self.by_type != OccupiedBy::None && self.by_id != 0
     }
 
     #[inline(always)]
-    fn not_occupied(self: Occupier) -> bool {
-        self.occupier == OccupiedBy::None
+    fn not_occupied(self: Occupied) -> bool {
+        self.by_type == OccupiedBy::None || self.by_id == 0
     }
 }
 
