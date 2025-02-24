@@ -1,6 +1,4 @@
 use s1_eternum::alias::ID;
-use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::structure::StructureCategory;
 use starknet::ContractAddress;
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -127,41 +125,41 @@ pub enum EventType {
 #[dojo::event(historical: false)]
 pub struct SettleRealmData {
     #[key]
-    id: ID,
+    pub id: ID,
     #[key]
-    event_id: EventType,
-    entity_id: ID,
-    owner_address: ContractAddress,
-    owner_name: felt252,
-    realm_name: felt252,
-    produced_resources: u128,
-    cities: u8,
-    harbors: u8,
-    rivers: u8,
-    regions: u8,
-    wonder: u8,
-    order: u8,
-    x: u32,
-    y: u32,
-    timestamp: u64,
+    pub event_id: EventType,
+    pub entity_id: ID,
+    pub owner_address: ContractAddress,
+    pub owner_name: felt252,
+    pub realm_name: felt252,
+    pub produced_resources: u128,
+    pub cities: u8,
+    pub harbors: u8,
+    pub rivers: u8,
+    pub regions: u8,
+    pub wonder: u8,
+    pub order: u8,
+    pub x: u32,
+    pub y: u32,
+    pub timestamp: u64,
 }
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event(historical: false)]
 pub struct CreateGuild {
     #[key]
-    guild_entity_id: ID,
-    guild_name: felt252,
-    timestamp: u64,
+    pub guild_entity_id: ID,
+    pub guild_name: felt252,
+    pub timestamp: u64,
 }
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::event(historical: false)]
 pub struct JoinGuild {
     #[key]
-    guild_entity_id: ID,
+    pub guild_entity_id: ID,
     #[key]
-    address: ContractAddress,
-    guild_name: felt252,
-    timestamp: u64,
+    pub address: ContractAddress,
+    pub guild_name: felt252,
+    pub timestamp: u64,
 }

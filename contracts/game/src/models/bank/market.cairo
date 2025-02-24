@@ -6,10 +6,7 @@ use dojo::meta::introspect::{Member, Struct};
 use dojo::meta::{Introspect, Ty};
 use s1_eternum::alias::ID;
 
-// Starknet imports
-use starknet::ContractAddress;
-
-impl IntrospectFixed of Introspect<Fixed> {
+pub impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]
     fn size() -> Option<usize> {
         Option::Some(2)
@@ -40,16 +37,16 @@ impl IntrospectFixed of Introspect<Fixed> {
 #[dojo::model]
 pub struct Market {
     #[key]
-    bank_entity_id: ID,
+    pub bank_entity_id: ID,
     #[key]
-    resource_type: u8,
-    lords_amount: u128,
-    resource_amount: u128,
-    total_shares: Fixed,
+    pub resource_type: u8,
+    pub lords_amount: u128,
+    pub resource_amount: u128,
+    pub total_shares: Fixed,
 }
 
 #[generate_trait]
-impl MarketImpl of MarketTrait {
+pub impl MarketImpl of MarketTrait {
     fn get_input_price(
         fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128,
     ) -> u128 {

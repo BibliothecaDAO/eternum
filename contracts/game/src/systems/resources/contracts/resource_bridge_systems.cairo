@@ -2,7 +2,7 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IResourceBridgeSystems<T> {
+pub trait IResourceBridgeSystems<T> {
     /// Deposits tokens into the resource bridge, converting them to in-game resources.
     ///
     /// NOTE: this is only to be called by realms_systems and resources are deposited
@@ -189,29 +189,28 @@ pub trait ERC20MintableABI<TState> {
 
 
 #[dojo::contract]
-mod resource_bridge_systems {
-    use dojo::model::{Model, ModelStorage};
+pub mod resource_bridge_systems {
+    use core::num::traits::zero::Zero;
+    use dojo::model::{ModelStorage};
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::bank::bank::Bank;
     use s1_eternum::models::config::{
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigTrait,
-        WorldConfigUtilImpl,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
     use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner};
-    use s1_eternum::models::position::{Coord, Position};
-    use s1_eternum::models::resource::resource::{RESOURCE_PRECISION};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::dev::contracts::bank::dev_bank_systems::{ADMIN_BANK_ENTITY_ID};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, pow};
@@ -251,7 +250,7 @@ mod resource_bridge_systems {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash,
                 )) => (contract_address, namespace_hash),
-                _ => (Zeroable::zero(), Zeroable::zero()),
+                _ => (Zero::zero(), Zero::zero()),
             };
             assert!(caller == realm_systems_address, "only realm systems can call this system");
 
@@ -292,12 +291,17 @@ mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, ADMIN_BANK_ENTITY_ID,
+            );
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, ADMIN_BANK_ENTITY_ID);
+
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 ADMIN_BANK_ENTITY_ID,
-                bank_structure,
+                bank_structure_owner,
+                bank_structure_base,
                 ref bank_structure_weight,
                 recipient_realm_id,
                 recipient_structure.coord(),
@@ -378,12 +382,14 @@ mod resource_bridge_systems {
                 .span();
 
             // player picks up resources with donkey
-            let mut bank_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, through_bank_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, through_bank_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 through_bank_id,
-                bank_structure,
+                bank_structure_owner,
+                bank_structure_base,
                 ref bank_structure_weight,
                 recipient_realm_id,
                 recipient_structure.coord(),

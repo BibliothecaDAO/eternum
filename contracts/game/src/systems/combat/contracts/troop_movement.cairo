@@ -8,31 +8,21 @@ trait ITroopMovementSystems<TContractState> {
 
 #[dojo::contract]
 mod troop_movement_systems {
-    use dojo::event::EventStorage;
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::{
         config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, MapConfig, SpeedConfig, TickConfig, TickImpl,
-            TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+            CombatConfigImpl, MapConfig, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
-        resource::resource::{
-            ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-        },
-        season::SeasonImpl, stamina::{Stamina, StaminaTrait},
-        structure::{Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureTrait},
-        troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
-        },
-        weight::{Weight, WeightTrait},
+        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction, OccupiedBy, Occupier},
+        resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
+        season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
+        troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
-
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
 
 
@@ -50,8 +40,7 @@ mod troop_movement_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
-            explorer_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");

@@ -1,25 +1,19 @@
-use s1_eternum::alias::ID;
-
 #[starknet::interface]
-trait INameSystems<T> {
+pub trait INameSystems<T> {
     fn set_address_name(ref self: T, name: felt252);
 }
 
 #[dojo::contract]
-mod name_systems {
-    use dojo::event::EventStorage;
+pub mod name_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s1_eternum::models::season::SeasonImpl;
 
     #[abi(embed_v0)]
-    impl NameSystemsImpl of super::INameSystems<ContractState> {
+    pub impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(ref self: ContractState, name: felt252) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);

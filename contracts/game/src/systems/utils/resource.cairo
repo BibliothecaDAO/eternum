@@ -1,30 +1,19 @@
-use core::array::ArrayTrait;
 use core::array::SpanTrait;
-use core::num::traits::Bounded;
-use core::zeroable::Zeroable;
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-
+use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use s1_eternum::alias::ID;
+use s1_eternum::models::config::{SpeedImpl};
+use s1_eternum::models::position::{Coord};
 
-use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
-use s1_eternum::models::config::{CapacityConfig, SpeedImpl};
-use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
-use s1_eternum::models::position::{Coord, Position};
-use s1_eternum::models::quantity::{Quantity};
-use s1_eternum::models::realm::Realm;
-use s1_eternum::models::resource::arrivals::{ResourceArrival, ResourceArrivalImpl};
-use s1_eternum::models::resource::resource::{ResourceAllowance};
+use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::season::SeasonImpl;
-use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTrait};
+use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
 use s1_eternum::models::troop::{ExplorerTroops};
-use s1_eternum::models::weight::{Weight, WeightTrait};
+use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::utils::distance::{iDistanceImpl};
 use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
 
@@ -57,6 +46,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     fn structure_to_structure_delayed(
         ref world: WorldStorage,
         from_structure_id: ID,
+        from_structure_owner: starknet::ContractAddress,
         from_structure: StructureBase,
         ref from_structure_weight: Weight,
         to_structure_id: ID,
@@ -70,7 +60,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ref world,
             true,
             from_structure_id,
-            from_structure.owner,
+            from_structure_owner,
             from_structure.coord(),
             ref from_structure_weight,
             to_structure_id,

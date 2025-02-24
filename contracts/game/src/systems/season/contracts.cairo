@@ -1,10 +1,7 @@
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait ISeasonSystems<T> {
+pub trait ISeasonSystems<T> {
     fn register_to_leaderboard(
         ref self: T, hyperstructures_contributed_to: Span<ID>, hyperstructure_shareholder_epochs: Span<(ID, u16)>,
     );
@@ -12,19 +9,16 @@ trait ISeasonSystems<T> {
 }
 
 #[dojo::contract]
-mod season_systems {
-    use core::array::ArrayIndex;
-    use dojo::event::EventStorage;
+pub mod season_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use s1_eternum::{
         alias::ID, constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID},
         models::{
             config::{
-                HyperstructureConfig, HyperstructureResourceConfigTrait, ResourceBridgeFeeSplitConfig,
-                ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
+                HyperstructureResourceConfigTrait, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
+                WorldConfigUtilImpl,
             },
             season::{
                 Leaderboard, LeaderboardEntry, LeaderboardEntryImpl, LeaderboardRegisterContribution,
@@ -32,7 +26,6 @@ mod season_systems {
             },
         },
         systems::{
-            config::contracts::config_systems::assert_caller_is_admin,
             hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
             resources::contracts::resource_bridge_systems::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait},
         },
@@ -42,7 +35,7 @@ mod season_systems {
     pub const SCALING_FACTOR: u256 = 1_000_000;
 
     #[abi(embed_v0)]
-    impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
+    pub impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
         fn register_to_leaderboard(
             ref self: ContractState,
             hyperstructures_contributed_to: Span<ID>,

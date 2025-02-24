@@ -1,5 +1,4 @@
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::world::IWorldDispatcher;
+use cubit::f128::types::fixed::{Fixed};
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
@@ -15,12 +14,11 @@ trait ILiquiditySystems<T> {
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use cubit::f128::types::fixed::{Fixed};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     // Eternum imports
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
@@ -28,17 +26,19 @@ mod liquidity_systems {
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
+    use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use starknet::ContractAddress;
+
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -72,8 +72,8 @@ mod liquidity_systems {
             let bank: Bank = world.read_model(bank_entity_id);
             assert!(bank.exists, "Bank does not exist");
 
-            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            player_structure_base.owner.assert_caller_owner();
+            let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+            player_structure_owner.assert_caller_owner();
 
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
@@ -136,8 +136,8 @@ mod liquidity_systems {
 
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
-            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            player_structure_base.owner.assert_caller_owner();
+            let player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+            player_structure_owner.assert_caller_owner();
 
             let player_liquidity: Liquidity = world
                 .read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
@@ -156,11 +156,15 @@ mod liquidity_systems {
             // burn the resource the player is exchanging for lords
             let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
                 .span();
+            let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, bank_entity_id,
+            );
             let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
+                bank_structure_owner,
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,

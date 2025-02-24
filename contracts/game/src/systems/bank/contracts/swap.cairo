@@ -1,44 +1,36 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait ISwapSystems<T> {
+pub trait ISwapSystems<T> {
     fn buy(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8);
     fn sell(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128, player_resource_index: u8);
 }
 
 #[dojo::contract]
-mod swap_systems {
-    use cubit::f128::math::ops::{mul};
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+pub mod swap_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-    use option::OptionTrait;
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{ResourceTypes};
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::config::{TickImpl, TickTrait};
+    use s1_eternum::models::config::{TickImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops};
-    use s1_eternum::models::weight::{Weight, WeightTrait};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
-
-    use traits::{Into, TryInto};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -113,10 +105,12 @@ mod swap_systems {
 
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
-            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
+                bank_structure_owner,
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,
@@ -199,10 +193,13 @@ mod swap_systems {
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
-
+            let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, bank_entity_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
+                bank_structure_owner,
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,

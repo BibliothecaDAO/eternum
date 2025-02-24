@@ -1,29 +1,27 @@
 use alexandria_math::{BitShift, pow};
-use array::SpanTrait;
-use dojo::model::ModelStorage;
+use core::array::SpanTrait;
+use core::num::traits::zero::Zero;
+use core::traits::Into;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::WORLD_CONFIG_ID;
 use s1_eternum::models::config::{RealmMaxLevelConfig, WorldConfigUtilImpl};
-use starknet::ContractAddress;
-use traits::Into;
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Realm {
     #[key]
-    entity_id: ID,
-    realm_id: ID,
-    produced_resources: u128,
-    order: u8,
-    level: u8,
-    has_wonder: bool,
+    pub entity_id: ID,
+    pub realm_id: ID,
+    pub produced_resources: u128,
+    pub order: u8,
+    pub level: u8,
+    pub has_wonder: bool,
 }
 
 
 #[generate_trait]
-impl RealmImpl of RealmTrait {
+pub impl RealmImpl of RealmTrait {
     fn max_level(self: Realm, world: WorldStorage) -> u8 {
         let realm_max_level_config: RealmMaxLevelConfig = WorldConfigUtilImpl::get_member(
             world, selector!("realm_max_level_config"),
@@ -37,7 +35,7 @@ impl RealmImpl of RealmTrait {
 }
 
 #[generate_trait]
-impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
+pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
     fn BYTE_LEN() -> u256 {
         8 // a byte is 8 bits
     }
@@ -97,7 +95,7 @@ impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
 /// These exactly match what is in the Realms L2 contracts (bibliothecadao/lordship repository).
 ///
 #[generate_trait]
-impl RealmReferenceImpl of RealmReferenceTrait {
+pub impl RealmReferenceImpl of RealmReferenceTrait {
     fn resource_mapping(num: felt252) -> ByteArray {
         match num {
             0 => panic!("zero resource"),
@@ -212,7 +210,7 @@ impl RealmReferenceImpl of RealmReferenceTrait {
 
 
 #[generate_trait]
-impl RealmResourcesImpl of RealmResourcesTrait {
+pub impl RealmResourcesImpl of RealmResourcesTrait {
     fn PACKING_TOTAL_BITS_AVAILABLE() -> u8 {
         128 // 128 bits available for all resources
     }

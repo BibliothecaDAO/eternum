@@ -2,7 +2,7 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait ISeasonPass<TState> {
+pub trait ISeasonPass<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
     fn transfer_from(self: @TState, from: ContractAddress, to: ContractAddress, token_id: u256);
     fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -10,13 +10,13 @@ trait ISeasonPass<TState> {
 }
 
 #[starknet::interface]
-trait IERC20<TState> {
+pub trait IERC20<TState> {
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
 }
 
 
 #[starknet::interface]
-trait IRealmSystems<T> {
+pub trait IRealmSystems<T> {
     fn create(
         ref self: T,
         owner: starknet::ContractAddress,
@@ -29,49 +29,45 @@ trait IRealmSystems<T> {
 }
 
 #[dojo::contract]
-mod realm_systems {
-    use achievement::store::{Store, StoreTrait};
+pub mod realm_systems {
+    use achievement::store::{StoreTrait};
+    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::REALM_ENTITY_TYPE;
     use s1_eternum::constants::{DEFAULT_NS, WONDER_QUEST_REWARD_BOOST, WORLD_CONFIG_ID};
     use s1_eternum::models::config::{
-        ProductionConfig, QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig, SettlementConfig,
-        SettlementConfigImpl, WorldConfigUtilImpl,
+        QuestRewardConfig, RealmLevelConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl};
-    use s1_eternum::models::movable::Movable;
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{Owner, OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierTrait, Position};
-    use s1_eternum::models::quantity::QuantityTracker;
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{Coord};
     use s1_eternum::models::quest::{Quest};
     use s1_eternum::models::realm::{
-        Realm, RealmImpl, RealmNameAndAttrsDecodingImpl, RealmNameAndAttrsDecodingTrait, RealmReferenceImpl,
-        RealmResourcesImpl, RealmResourcesTrait, RealmTrait,
+        Realm, RealmImpl, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl, RealmResourcesImpl, RealmTrait,
     };
-    use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::models::weight::{Weight, WeightImpl};
+    use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
     use s1_eternum::systems::utils::map::iMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
-    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
@@ -168,11 +164,12 @@ mod realm_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure caller owns the realm
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-            structure.owner.assert_caller_owner();
+            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, realm_id);
+            structure_owner.assert_caller_owner();
 
             // ensure entity is a realm
-            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure realm is not already at max level
             let mut realm: Realm = world.read_model(realm_id);
@@ -218,8 +215,9 @@ mod realm_systems {
             world.write_model(@realm);
 
             // allow structure one more guard
-            structure.troop_max_guard_count += 1;
-            StructureBaseStoreImpl::store(ref structure, ref world, realm_id);
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
+            structure_base.troop_max_guard_count += 1;
+            StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
 
             // [Achievement] Upgrade to max level
             if realm.level == max_level {
@@ -236,11 +234,11 @@ mod realm_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure entity is a realm
-            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            assert(structure.category == StructureCategory::Realm.into(), 'entity is not a realm');
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
 
             // ensure caller owns the realm
-            structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, entity_id).assert_caller_owner();
 
             // ensure quest is not already completed
             let mut quest: Quest = world.read_model((entity_id, quest_id));
@@ -300,7 +298,7 @@ mod realm_systems {
 
 
     #[generate_trait]
-    impl InternalRealmLogicImpl of InternalRealmLogicTrait {
+    pub impl InternalRealmLogicImpl of InternalRealmLogicTrait {
         fn create_realm(
             ref world: WorldStorage,
             owner: ContractAddress,
@@ -377,7 +375,7 @@ mod realm_systems {
                 dojo::world::Resource::Contract((
                     contract_address, namespace_hash,
                 )) => (contract_address, namespace_hash),
-                _ => (Zeroable::zero(), Zeroable::zero()),
+                _ => (Zero::zero(), Zero::zero()),
             };
 
             // approve bridge to spend lords

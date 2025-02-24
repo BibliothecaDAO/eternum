@@ -1,11 +1,11 @@
 use core::fmt::{Display, Error, Formatter};
-use core::zeroable::Zeroable;
-use option::OptionTrait;
+use core::num::traits::zero::Zero;
+use core::option::OptionTrait;
+use core::traits::Into;
+use core::traits::TryInto;
 use s1_eternum::alias::ID;
 
 use s1_eternum::utils::number::{NumberTrait};
-use traits::Into;
-use traits::TryInto;
 
 // todo@credence revisit zone calculation
 
@@ -33,23 +33,23 @@ struct Cube {
 
 #[derive(Copy, Drop, Serde, Default, IntrospectPacked)]
 pub struct Travel {
-    blocked: bool,
-    round_trip: bool,
-    start_coord: Coord,
-    next_coord: Coord,
+    pub blocked: bool,
+    pub round_trip: bool,
+    pub start_coord: Coord,
+    pub next_coord: Coord,
 }
 
-impl CubeZeroable of Zeroable<Cube> {
+impl CubeZeroable of Zero<Cube> {
     fn zero() -> Cube {
         Cube { q: 0, r: 0, s: 0 }
     }
     #[inline(always)]
-    fn is_zero(self: Cube) -> bool {
-        self.q == 0 && self.r == 0 && self.s == 0
+    fn is_zero(self: @Cube) -> bool {
+        self.q == @0 && self.r == @0 && self.s == @0
     }
 
     #[inline(always)]
-    fn is_non_zero(self: Cube) -> bool {
+    fn is_non_zero(self: @Cube) -> bool {
         !self.is_zero()
     }
 }
@@ -97,7 +97,7 @@ impl CubeImpl of CubeTrait {
 }
 
 #[derive(Drop, Copy, Serde)]
-enum Direction {
+pub enum Direction {
     East,
     NorthEast,
     NorthWest,
@@ -106,7 +106,7 @@ enum Direction {
     SouthEast,
 }
 
-impl DirectionDisplay of Display<Direction> {
+pub impl DirectionDisplay of Display<Direction> {
     fn fmt(self: @Direction, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!("Direction: ");
         f.buffer.append(@str);
@@ -125,13 +125,13 @@ impl DirectionDisplay of Display<Direction> {
 
 
 #[derive(Copy, Drop, PartialEq, Serde, IntrospectPacked, Debug, Default)]
-struct Coord {
-    x: u32,
-    y: u32,
+pub struct Coord {
+    pub x: u32,
+    pub y: u32,
 }
 
 
-impl CoordDisplay of Display<Coord> {
+pub impl CoordDisplay of Display<Coord> {
     fn fmt(self: @Coord, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!("Coord (x:{}, y:{}) ", self.x, self.y);
         f.buffer.append(@str);
@@ -141,7 +141,7 @@ impl CoordDisplay of Display<Coord> {
 }
 
 #[generate_trait]
-impl CoordImpl of CoordTrait {
+pub impl CoordImpl of CoordTrait {
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
 
@@ -170,23 +170,23 @@ impl CoordImpl of CoordTrait {
 }
 
 
-impl CoordZeroable of Zeroable<Coord> {
+pub impl CoordZeroable of Zero<Coord> {
     fn zero() -> Coord {
         Coord { x: 0, y: 0 }
     }
     #[inline(always)]
-    fn is_zero(self: Coord) -> bool {
-        self.x == 0 && self.y == 0
+    fn is_zero(self: @Coord) -> bool {
+        self.x == @0 && self.y == @0
     }
 
     #[inline(always)]
-    fn is_non_zero(self: Coord) -> bool {
+    fn is_non_zero(self: @Coord) -> bool {
         !self.is_zero()
     }
 }
 
 
-impl CoordIntoCube of Into<Coord, Cube> {
+pub impl CoordIntoCube of Into<Coord, Cube> {
     fn into(self: Coord) -> Cube {
         // https://www.redblobgames.com/grids/hexagons/#conversions-offset
         // convert odd-r to cube coordinates
@@ -202,12 +202,12 @@ impl CoordIntoCube of Into<Coord, Cube> {
     }
 }
 
-trait TravelTrait<T> {
+pub trait TravelTrait<T> {
     fn calculate_distance(self: T, destination: T) -> u128;
     fn calculate_travel_time(self: T, destination: T, sec_per_km: u16) -> u64;
 }
 
-impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
+pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     fn calculate_distance(self: T, destination: T) -> u128 {
         CubeImpl::distance(self.into(), destination.into())
     }
@@ -229,14 +229,14 @@ pub enum OccupiedBy {
 #[dojo::model]
 pub struct Occupier {
     #[key]
-    x: u32,
+    pub x: u32,
     #[key]
-    y: u32,
-    occupier: OccupiedBy,
+    pub y: u32,
+    pub occupier: OccupiedBy,
 }
 
 #[generate_trait]
-impl OccupierImpl of OccupierTrait {
+pub impl OccupierImpl of OccupierTrait {
     fn key_only(coord: Coord) -> Occupier {
         Occupier { x: coord.x, y: coord.y, occupier: OccupiedBy::None }
     }
@@ -257,20 +257,20 @@ impl OccupierImpl of OccupierTrait {
 #[dojo::model]
 pub struct Position {
     #[key]
-    entity_id: ID,
-    x: u32,
-    y: u32,
+    pub entity_id: ID,
+    pub x: u32,
+    pub y: u32,
 }
 
 
-impl PositionIntoCoord of Into<Position, Coord> {
+pub impl PositionIntoCoord of Into<Position, Coord> {
     fn into(self: Position) -> Coord {
         Coord { x: self.x, y: self.y }
     }
 }
 
 
-impl PositionIntoCube of Into<Position, Cube> {
+pub impl PositionIntoCube of Into<Position, Cube> {
     fn into(self: Position) -> Cube {
         Into::<Coord, Cube>::into(Into::<Position, Coord>::into(self))
     }
@@ -278,7 +278,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionImpl of PositionTrait {
+pub impl PositionImpl of PositionTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u32 {
         // use highest and lowest x to divide map into 10 timezones

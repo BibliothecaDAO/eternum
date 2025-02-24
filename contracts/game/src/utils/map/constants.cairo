@@ -1,5 +1,5 @@
 pub mod fixed_constants {
-    use cubit::f128::types::fixed::{Fixed, FixedTrait, HALF_u128, ONE_u128};
+    use cubit::f128::types::fixed::{Fixed, FixedTrait, HALF_u128};
 
     #[inline(always)]
     pub fn _0() -> Fixed {
@@ -56,7 +56,7 @@ pub mod fixed_constants {
     }
 
     #[inline(always)]
-    fn _0_6() -> Fixed {
+    pub fn _0_6() -> Fixed {
         FixedTrait::new(11068046444225730969, false)
     }
 

@@ -7,8 +7,8 @@ use s1_eternum::alias::ID;
 #[dojo::model]
 pub struct Quantity {
     #[key]
-    entity_id: ID,
-    value: u128,
+    pub entity_id: ID,
+    pub value: u128,
 }
 
 // attach it to an entity + entity_type to count the quantity of an entity type
@@ -20,8 +20,8 @@ pub struct Quantity {
 #[dojo::model]
 pub struct QuantityTracker {
     #[key]
-    entity_id: felt252,
-    count: u128,
+    pub entity_id: felt252,
+    pub count: u128,
 }
 
 pub mod QuantityTrackerType {

@@ -1,16 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait};
-    use s1_eternum::alias::ID;
+    use core::num::traits::zero::Zero;
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::{WorldStorageTrait};
+    use dojo_cairo_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
     use s1_eternum::models::position::{Coord, CoordTrait, Direction, Occupier, OccupierImpl};
-    use s1_eternum::models::resource::resource::{
-        SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
-    };
+    use s1_eternum::models::resource::resource::{SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use s1_eternum::models::structure::{Structure, StructureImpl};
     use s1_eternum::models::troop::{ExplorerTroops, TroopTier, TroopType};
     use s1_eternum::models::weight::{Weight};
@@ -25,8 +22,8 @@ mod tests {
     use s1_eternum::utils::testing::helpers::{
         MOCK_CAPACITY_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
         MOCK_TROOP_STAMINA_CONFIG, MOCK_WEIGHT_CONFIG, tgrant_resources, tspawn_simple_realm, tspawn_world,
-        tstore_capacity_config, tstore_production_config, tstore_tick_config, tstore_troop_damage_config,
-        tstore_troop_limit_config, tstore_troop_stamina_config, tstore_weight_config,
+        tstore_capacity_config, tstore_tick_config, tstore_troop_damage_config, tstore_troop_limit_config,
+        tstore_troop_stamina_config, tstore_weight_config,
     };
 
 
@@ -34,14 +31,19 @@ mod tests {
         let ndef = NamespaceDef {
             namespace: DEFAULT_NS_STR(),
             resources: [
+                // world config
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
-                TestResource::Model(m_Structure::TEST_CLASS_HASH), TestResource::Model(m_Resource::TEST_CLASS_HASH),
-                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Realm::TEST_CLASS_HASH),
-                TestResource::Model(m_Tile::TEST_CLASS_HASH), TestResource::Model(m_Occupier::TEST_CLASS_HASH),
-                TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
                 TestResource::Model(m_WeightConfig::TEST_CLASS_HASH),
+                TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
+                // structure, realm and buildings
+                TestResource::Model(m_Structure::TEST_CLASS_HASH),
+                TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
+                TestResource::Model(m_Realm::TEST_CLASS_HASH), TestResource::Model(m_Occupier::TEST_CLASS_HASH),
+                TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
+                TestResource::Model(m_Resource::TEST_CLASS_HASH),
+                // other models
+                TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
+                // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
             ]
                 .span(),
@@ -759,7 +761,7 @@ mod tests {
 
         // verify explorer model was deleted
         let explorer: ExplorerTroops = world.read_model(explorer_id);
-        assert!(explorer.owner == Zeroable::zero(), "explorer model was not deleted");
+        assert!(explorer.owner == Zero::zero(), "explorer model was not deleted");
     }
 
     #[test]
@@ -1392,7 +1394,7 @@ mod tests {
             );
 
         // Set very low troop limit
-        starknet::testing::set_contract_address(Zeroable::zero());
+        starknet::testing::set_contract_address(Zero::zero());
         let mut low_troop_limit = MOCK_TROOP_LIMIT_CONFIG();
         low_troop_limit.explorer_max_troop_count = 1; // Set very low limit
         tstore_troop_limit_config(ref world, low_troop_limit);

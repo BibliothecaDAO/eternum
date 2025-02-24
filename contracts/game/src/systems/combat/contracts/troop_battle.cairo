@@ -1,8 +1,3 @@
-use achievement::store::{Store, StoreTrait};
-use dojo::event::EventStorage;
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Direction};
 
@@ -16,19 +11,17 @@ trait ITroopBattleSystems<T> {
 
 #[dojo::contract]
 mod troop_battle_systems {
-    use achievement::store::{Store, StoreTrait};
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
+    use core::num::traits::zero::Zero;
 
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{CombatConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig};
-    use s1_eternum::models::owner::{EntityOwnerTrait, OwnerAddressTrait, OwnerTrait};
-    use s1_eternum::models::position::{Coord, CoordTrait, Direction};
+    use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{CoordTrait, Direction};
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
@@ -44,12 +37,9 @@ mod troop_battle_systems {
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
-            let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            explorer_aggressor_owner_structure.owner.assert_caller_owner();
+            // ensure caller owns aggressor
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -89,6 +79,9 @@ mod troop_battle_systems {
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
+                let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_aggressor.owner,
+                );
                 let mut explorer_aggressor_structure_explorers_list: Array<ID> =
                     StructureTroopExplorerStoreImpl::retrieve(
                     ref world, explorer_aggressor.owner,
@@ -135,10 +128,7 @@ mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-            let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            explorer_aggressor_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");

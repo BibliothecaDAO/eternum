@@ -1,17 +1,15 @@
-use dojo::model::ModelStorage;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
-use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::owner::{Owner};
-use s1_eternum::models::position::{Coord, OccupiedBy, Occupier};
-use s1_eternum::models::resource::production::building::{Building, BuildingCategory, BuildingImpl};
-use s1_eternum::models::resource::production::production::{ProductionImpl};
+use s1_eternum::models::position::{Coord};
+use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::resource::resource::{
-    Production, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+
+use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;

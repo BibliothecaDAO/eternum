@@ -2,7 +2,7 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IGuildSystems<T> {
+pub trait IGuildSystems<T> {
     fn create_guild(ref self: T, is_public: bool, guild_name: felt252) -> ID;
     fn join_guild(ref self: T, guild_entity_id: ID);
     fn whitelist_player(ref self: T, player_address_to_whitelist: ContractAddress, guild_entity_id: ID);
@@ -12,21 +12,19 @@ trait IGuildSystems<T> {
 }
 
 #[dojo::contract]
-mod guild_systems {
+pub mod guild_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::event::{CreateGuild, JoinGuild};
     use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
     use s1_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
-    use starknet::contract_address::contract_address_const;
 
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
@@ -46,8 +44,9 @@ mod guild_systems {
             let guild_entity_id_felt: felt252 = guild_uuid.into();
 
             world.write_model(@Guild { entity_id: guild_uuid, is_public: is_public, member_count: 1 });
-            world.write_model(@Owner { entity_id: guild_uuid, address: caller_address });
-            world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
+            //todo
+            // world.write_model(@Owner { entity_id: guild_uuid, address: caller_address });
+            // world.write_model(@EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid });
             world.write_model(@AddressName { address: guild_entity_id_felt.try_into().unwrap(), name: guild_name });
             world.write_model(@GuildMember { address: caller_address, guild_entity_id: guild_uuid });
 
@@ -98,9 +97,9 @@ mod guild_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
-
-            let owner: Owner = world.read_model(guild_entity_id);
-            owner.assert_caller_owner();
+            //todo
+            // let owner: Owner = world.read_model(guild_entity_id);
+            // owner.assert_caller_owner();
 
             let address_name: AddressName = world.read_model(player_address_to_whitelist);
             assert(address_name.name != 0, 'Address given is not a player');
@@ -117,47 +116,47 @@ mod guild_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let owner: Owner = world.read_model(guild_entity_id);
-            owner.assert_caller_owner();
+            //todo
+            // let owner: Owner = world.read_model(guild_entity_id);
+            // owner.assert_caller_owner();
 
             let to_player_guild_member_info: GuildMember = world.read_model(to_player_address);
             to_player_guild_member_info.assert_has_guild();
 
             assert(to_player_guild_member_info.guild_entity_id == guild_entity_id, 'Must transfer to guildmember');
-
-            let mut guild_owner: Owner = world.read_model(guild_entity_id);
-            guild_owner.address = to_player_address;
-            world.write_model(@guild_owner);
+            //todo
+        // let mut guild_owner: Owner = world.read_model(guild_entity_id);
+        // guild_owner.address = to_player_address;
+        // world.write_model(@guild_owner);
         }
 
         fn remove_guild_member(ref self: ContractState, player_address_to_remove: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
+            // let caller_address = starknet::get_caller_address();
 
-            let caller_address = starknet::get_caller_address();
+            // let guild_member: GuildMember = world.read_model(player_address_to_remove);
+        // guild_member.assert_has_guild();
 
-            let guild_member: GuildMember = world.read_model(player_address_to_remove);
-            guild_member.assert_has_guild();
+            // let mut guild: Guild = world.read_model(guild_member.guild_entity_id);
+        // let guild_owner: Owner = world.read_model(guild_member.guild_entity_id);
 
-            let mut guild: Guild = world.read_model(guild_member.guild_entity_id);
-            let guild_owner: Owner = world.read_model(guild_member.guild_entity_id);
+            // let isGuildMaster = caller_address == guild_owner.address;
+        // let isSelf = caller_address == player_address_to_remove;
 
-            let isGuildMaster = caller_address == guild_owner.address;
-            let isSelf = caller_address == player_address_to_remove;
+            // assert(isGuildMaster || isSelf, 'Cannot remove guildmember');
 
-            assert(isGuildMaster || isSelf, 'Cannot remove guildmember');
+            // if (isGuildMaster && isSelf) {
+        //     assert(guild.member_count == 1, 'Guild not empty');
 
-            if (isGuildMaster && isSelf) {
-                assert(guild.member_count == 1, 'Guild not empty');
-
-                world.erase_model(@guild);
-                world.erase_model(@guild_member);
-                world.erase_model(@guild_owner);
-            } else {
-                guild.member_count -= 1;
-                world.erase_model(@guild_member);
-                world.write_model(@guild);
-            }
+            //     world.erase_model(@guild);
+        //     world.erase_model(@guild_member);
+        //     // world.erase_model(@guild_owner);
+        // } else {
+        //     guild.member_count -= 1;
+        //     world.erase_model(@guild_member);
+        //     world.write_model(@guild);
+        // }
         }
 
         fn remove_player_from_whitelist(
@@ -169,13 +168,14 @@ mod guild_systems {
             let guild_whitelist: GuildWhitelist = world.read_model((player_address_to_remove, guild_entity_id));
             guild_whitelist.assert_is_whitelisted();
 
-            let caller_address = starknet::get_caller_address();
-            let guild_owner: Owner = world.read_model(guild_entity_id);
+            // let caller_address = starknet::get_caller_address();
+            //todo
+            // let guild_owner: Owner = world.read_model(guild_entity_id);
 
-            assert(
-                (guild_owner.address == caller_address) || (player_address_to_remove == caller_address),
-                'Cannot remove from whitelist',
-            );
+            // assert(
+            //     (guild_owner.address == caller_address) || (player_address_to_remove == caller_address),
+            //     'Cannot remove from whitelist',
+            // );
 
             world
                 .write_model(

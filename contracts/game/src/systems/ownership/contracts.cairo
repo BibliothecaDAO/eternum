@@ -1,4 +1,3 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
@@ -9,14 +8,8 @@ trait IOwnershipSystems<T> {
 
 #[dojo::contract]
 mod ownership_systems {
-    use dojo::event::EventStorage;
-    use dojo::model::ModelStorage;
-
-    use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::owner::{Owner, OwnerImpl, OwnerTrait};
+    use s1_eternum::models::owner::{OwnerImpl};
     use s1_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
 

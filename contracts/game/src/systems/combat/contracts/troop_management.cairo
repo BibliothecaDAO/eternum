@@ -4,7 +4,7 @@ use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 
 
 #[starknet::interface]
-trait ITroopManagementSystems<TContractState> {
+pub trait ITroopManagementSystems<TContractState> {
     // guard
     fn guard_add(
         ref self: TContractState,
@@ -38,42 +38,32 @@ trait ITroopManagementSystems<TContractState> {
 
 
 #[dojo::contract]
-mod troop_management_systems {
-    use core::num::traits::Bounded;
-    use dojo::event::EventStorage;
+pub mod troop_management_systems {
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
+    use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::{
-        config::{
-            BattleConfigTrait, CapacityConfig, CombatConfigImpl, SpeedConfig, TickConfig, TickImpl, TickTrait,
-            TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
-        },
-        map::{Tile, TileImpl}, owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait, Position, PositionTrait},
+        config::{CombatConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl},
+        map::{TileImpl}, owner::{OwnerAddressTrait},
+        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait},
         resource::{
             resource::{
-                Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+                ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
                 StructureSingleResourceFoodImpl, WeightStoreImpl,
             },
-            resource::{ResourceList},
         },
         season::SeasonImpl, stamina::{Stamina, StaminaTrait},
         structure::{
-            Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureTrait,
+            StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
             StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
         },
-        troop::{
-            ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops, TroopsTrait,
-        },
-        weight::{Weight, WeightTrait},
+        troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
     };
     use s1_eternum::systems::utils::map::iMapImpl;
-
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
-
-    use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
 
     use super::ITroopManagementSystems;
 
@@ -93,8 +83,7 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
             // deduct resources used to create guard
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
@@ -116,15 +105,16 @@ mod troop_management_systems {
                 );
             }
 
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             if troops.count.is_zero() {
                 // ensure structure has not reached the hard limit of guards
                 assert!(
-                    structure.troop_guard_count < structure.troop_max_guard_count.into(),
+                    structure_base.troop_guard_count < structure_base.troop_max_guard_count.into(),
                     "reached limit of guards per structure",
                 );
 
                 // update guard count
-                structure.troop_guard_count += 1;
+                structure_base.troop_guard_count += 1;
 
                 // set category and tier
                 troops.category = category;
@@ -138,7 +128,7 @@ mod troop_management_systems {
             // update guard slot and structure
             guard.to_slot(slot, troops, current_tick);
             StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
-            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
+            StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
         }
 
 
@@ -147,8 +137,7 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
             // deduct resources used to create guard
             let tick = TickImpl::get_tick_config(ref world);
@@ -176,8 +165,9 @@ mod troop_management_systems {
             StructureTroopGuardStoreImpl::store(ref guard, ref world, for_structure_id);
 
             // reduce structure guard count
-            structure.troop_guard_count -= 1;
-            StructureBaseStoreImpl::store(ref structure, ref world, for_structure_id);
+            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
+            structure_base.troop_guard_count -= 1;
+            StructureBaseStoreImpl::store(ref structure_base, ref world, for_structure_id);
         }
 
 
@@ -193,13 +183,13 @@ mod troop_management_systems {
             SeasonImpl::assert_season_is_not_over(world);
 
             // ensure caller owns structure
-            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
-            structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
             // deduct resources used to create explorer
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);
 
             // ensure structure has not reached itslimit of troops
+            let mut structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, for_structure_id);
             assert!(
                 structure.troop_explorer_count < structure.troop_max_explorer_count.into(),
                 "reached limit of troops for your structure",
@@ -268,10 +258,10 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
-            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
-            explorer_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
 
             // ensure explorer is adjacent to home structure
+            let explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, explorer.owner);
             assert!(
                 explorer_owner_structure.coord() == explorer.coord.neighbor(home_direction),
                 "explorer not adjacent to home structure",
@@ -318,10 +308,7 @@ mod troop_management_systems {
                 "from explorer and to explorer are not owned by the same structure",
             );
 
-            let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                ref world, from_explorer.owner,
-            );
-            explorer_owner_structure.owner.assert_caller_owner();
+            StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
 
             // ensure explorers are adjacent to one another
             assert!(
@@ -379,6 +366,10 @@ mod troop_management_systems {
 
             // delete from_explorer if count is 0
             if from_explorer.troops.count.is_zero() {
+                let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, from_explorer.owner,
+                );
+
                 let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
                     ref world, from_explorer.owner,
                 )
@@ -399,10 +390,11 @@ mod troop_management_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
+            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+
             let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                 ref world, explorer.owner,
             );
-            explorer_owner_structure.owner.assert_caller_owner();
 
             // delete explorer
             let mut explorer_owner_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(

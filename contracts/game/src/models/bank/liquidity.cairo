@@ -1,9 +1,9 @@
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use cubit::f128::types::fixed::{Fixed};
 use dojo::meta::introspect::{Introspect, Member, Struct, Ty};
 use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
-impl IntrospectFixed of Introspect<Fixed> {
+pub impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]
     fn size() -> Option<usize> {
         Option::Some(2)
@@ -34,10 +34,10 @@ impl IntrospectFixed of Introspect<Fixed> {
 #[dojo::model]
 pub struct Liquidity {
     #[key]
-    bank_entity_id: ID,
+    pub bank_entity_id: ID,
     #[key]
-    player: ContractAddress,
+    pub player: ContractAddress,
     #[key]
-    resource_type: u8,
-    shares: Fixed,
+    pub resource_type: u8,
+    pub shares: Fixed,
 }

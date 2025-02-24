@@ -1,7 +1,5 @@
 use dojo::world::WorldStorage;
-use s1_eternum::models::movable::{MovableImpl};
-use s1_eternum::models::position::{Coord, CoordTrait, TravelTrait};
-use starknet::ContractAddress;
+use s1_eternum::models::position::{Coord, TravelTrait};
 
 
 #[generate_trait]

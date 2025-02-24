@@ -1,4 +1,4 @@
-use debug::PrintTrait;
+use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
@@ -7,9 +7,12 @@ use s1_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 #[generate_trait]
-impl OwnerAddressImpl of OwnerAddressTrait {
+pub impl OwnerAddressImpl of OwnerAddressTrait {
     fn assert_caller_owner(self: ContractAddress) {
         assert(self == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
+    }
+    fn assert_non_zero(self: ContractAddress) {
+        assert!(self.is_non_zero(), "owner is zero");
     }
 }
 
@@ -19,8 +22,8 @@ impl OwnerAddressImpl of OwnerAddressTrait {
 #[dojo::model]
 pub struct Owner {
     #[key]
-    entity_id: ID,
-    address: ContractAddress,
+    pub entity_id: ID,
+    pub address: ContractAddress,
 }
 
 
@@ -29,12 +32,12 @@ pub struct Owner {
 #[dojo::model]
 pub struct EntityOwner {
     #[key]
-    entity_id: ID,
-    entity_owner_id: ID,
+    pub entity_id: ID,
+    pub entity_owner_id: ID,
 }
 
 #[generate_trait]
-impl OwnerImpl of OwnerTrait {
+pub impl OwnerImpl of OwnerTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
@@ -52,7 +55,7 @@ impl OwnerImpl of OwnerTrait {
 }
 
 #[generate_trait]
-impl EntityOwnerImpl of EntityOwnerTrait {
+pub impl EntityOwnerImpl of EntityOwnerTrait {
     fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();

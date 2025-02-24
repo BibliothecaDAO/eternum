@@ -1,21 +1,18 @@
 use cubit::f128::types::fixed::{FixedTrait};
-use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo::world::{WorldStorage, WorldStorageTrait};
-use dojo_cairo_test::{
-    ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
-};
+use dojo::model::{ModelStorageTest};
+use dojo::world::{IWorldDispatcherTrait};
+use dojo::world::{WorldStorage};
+use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{
     CapacityConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig, TickConfig,
     TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl,
+    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};

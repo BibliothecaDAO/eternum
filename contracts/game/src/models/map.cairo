@@ -1,4 +1,3 @@
-use s1_eternum::alias::ID;
 use s1_eternum::models::position::Coord;
 use s1_eternum::utils::map::biomes::Biome;
 
@@ -6,20 +5,20 @@ use s1_eternum::utils::map::biomes::Biome;
 #[dojo::model]
 pub struct Tile {
     #[key]
-    col: u32,
+    pub col: u32,
     #[key]
-    row: u32,
-    biome: Biome,
+    pub row: u32,
+    pub biome: Biome,
 }
 
-impl TileIntoCoord of Into<Tile, Coord> {
+pub impl TileIntoCoord of Into<Tile, Coord> {
     fn into(self: Tile) -> Coord {
         Coord { x: self.col, y: self.row }
     }
 }
 
 #[generate_trait]
-impl TileImpl of TileTrait {
+pub impl TileImpl of TileTrait {
     fn discovered(self: Tile) -> bool {
         self.biome != Biome::None
     }

@@ -6,10 +6,10 @@ use s1_eternum::{alias::ID, constants::WORLD_CONFIG_ID};
 #[dojo::model]
 pub struct Season {
     #[key]
-    config_id: ID,
-    start_at: u64,
-    is_over: bool,
-    ended_at: u64,
+    pub config_id: ID,
+    pub start_at: u64,
+    pub is_over: bool,
+    pub ended_at: u64,
 }
 
 #[generate_trait]
@@ -44,57 +44,57 @@ pub impl SeasonImpl of SeasonTrait {
 #[dojo::model]
 pub struct Leaderboard {
     #[key]
-    config_id: ID,
-    registration_end_timestamp: u64,
-    total_points: u128,
-    total_price_pool: Option<u256>,
-    distribution_started: bool,
+    pub config_id: ID,
+    pub registration_end_timestamp: u64,
+    pub total_points: u128,
+    pub total_price_pool: Option<u256>,
+    pub distribution_started: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LeaderboardRegistered {
     #[key]
-    address: starknet::ContractAddress,
-    registered: bool,
+    pub address: starknet::ContractAddress,
+    pub registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LeaderboardRegisterContribution {
     #[key]
-    address: starknet::ContractAddress,
+    pub address: starknet::ContractAddress,
     #[key]
-    hyperstructure_entity_id: ID,
-    registered: bool,
+    pub hyperstructure_entity_id: ID,
+    pub registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LeaderboardRegisterShare {
     #[key]
-    address: starknet::ContractAddress,
+    pub address: starknet::ContractAddress,
     #[key]
-    hyperstructure_entity_id: ID,
+    pub hyperstructure_entity_id: ID,
     #[key]
-    epoch: u16,
-    registered: bool,
+    pub epoch: u16,
+    pub registered: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LeaderboardRewardClaimed {
     #[key]
-    address: starknet::ContractAddress,
-    claimed: bool,
+    pub address: starknet::ContractAddress,
+    pub claimed: bool,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LeaderboardEntry {
     #[key]
-    address: starknet::ContractAddress,
-    points: u128,
+    pub address: starknet::ContractAddress,
+    pub points: u128,
 }
 
 #[generate_trait]

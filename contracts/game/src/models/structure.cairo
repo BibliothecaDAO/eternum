@@ -1,15 +1,14 @@
-use array::SpanTrait;
+use core::num::traits::zero::Zero;
+use core::traits::Into;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, TickConfig};
 use s1_eternum::models::config::{TickTrait};
-use s1_eternum::models::owner::Owner;
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
-use traits::Into;
 
 
 // todo: obtain each value as needed not all at once
@@ -21,29 +20,41 @@ use traits::Into;
 #[dojo::model]
 pub struct Structure {
     #[key]
-    entity_id: ID,
-    base: StructureBase,
-    troop_guards: GuardTroops,
-    troop_explorers: Span<ID>,
+    pub entity_id: ID,
+    pub owner: ContractAddress,
+    pub base: StructureBase,
+    pub troop_guards: GuardTroops,
+    pub troop_explorers: Span<ID>,
+}
+
+#[generate_trait]
+pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> ContractAddress {
+        let owner = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"));
+        return owner;
+    }
+
+    fn store(ref owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
+    }
 }
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-struct StructureBase {
-    troop_guard_count: u8,
-    troop_explorer_count: u16,
-    troop_max_guard_count: u8,
-    troop_max_explorer_count: u16,
-    created_at: u32,
-    category: u8,
-    coord_x: u32,
-    coord_y: u32,
-    owner: ContractAddress,
+pub struct StructureBase {
+    pub troop_guard_count: u8,
+    pub troop_explorer_count: u16,
+    pub troop_max_guard_count: u8,
+    pub troop_max_explorer_count: u16,
+    pub created_at: u32,
+    pub category: u8,
+    pub coord_x: u32,
+    pub coord_y: u32,
 }
 
 
 #[generate_trait]
-impl StructureBaseImpl of StructureBaseTrait {
+pub impl StructureBaseImpl of StructureBaseTrait {
     fn assert_exists(self: StructureBase) {
         assert!(self.exists(), "entity is not a structure")
     }
@@ -89,7 +100,7 @@ impl StructureBaseImpl of StructureBaseTrait {
 }
 
 #[generate_trait]
-impl StructureBaseStoreImpl of StructureBaseStoreTrait {
+pub impl StructureBaseStoreImpl of StructureBaseStoreTrait {
     fn retrieve(ref world: WorldStorage, structure_id: ID) -> StructureBase {
         let base = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("base"));
         return base;
@@ -101,7 +112,7 @@ impl StructureBaseStoreImpl of StructureBaseStoreTrait {
 }
 
 #[generate_trait]
-impl StructureTroopGuardStoreImpl of StructureTroopGuardStoreTrait {
+pub impl StructureTroopGuardStoreImpl of StructureTroopGuardStoreTrait {
     fn retrieve(ref world: WorldStorage, structure_id: ID) -> GuardTroops {
         let troops = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_guards"));
         return troops;
@@ -113,7 +124,7 @@ impl StructureTroopGuardStoreImpl of StructureTroopGuardStoreTrait {
 }
 
 #[generate_trait]
-impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
+pub impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
     fn retrieve(ref world: WorldStorage, structure_id: ID) -> Span<ID> {
         let explorers = world
             .read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("troop_explorers"));
@@ -127,13 +138,14 @@ impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
 
 
 #[generate_trait]
-impl StructureImpl of StructureTrait {
+pub impl StructureImpl of StructureTrait {
     fn default() -> Structure {
         let troops: Troops = Troops {
             category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
         };
         Structure {
             entity_id: 0,
+            owner: Zero::zero(),
             base: StructureBase {
                 troop_guard_count: 0,
                 troop_explorer_count: 0,
@@ -143,7 +155,6 @@ impl StructureImpl of StructureTrait {
                 category: 0,
                 coord_x: 0,
                 coord_y: 0,
-                owner: Zeroable::zero(),
             },
             troop_guards: GuardTroops {
                 delta: troops,
@@ -166,7 +177,7 @@ impl StructureImpl of StructureTrait {
         structure.base.category = category.into();
         structure.base.coord_x = coord.x;
         structure.base.coord_y = coord.y;
-        structure.base.owner = owner;
+        structure.owner = owner;
 
         match category {
             StructureCategory::Realm => {
@@ -194,7 +205,7 @@ impl StructureImpl of StructureTrait {
 
 
 #[derive(PartialEq, Copy, Drop, Serde, Default)]
-enum StructureCategory {
+pub enum StructureCategory {
     #[default]
     None,
     Realm,
@@ -203,7 +214,7 @@ enum StructureCategory {
     FragmentMine,
 }
 
-impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
+pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
     fn into(self: StructureCategory) -> felt252 {
         match self {
             StructureCategory::None => 0,
@@ -215,7 +226,7 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
     }
 }
 
-impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
+pub impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
     fn into(self: StructureCategory) -> u8 {
         match self {
             StructureCategory::None => 0,
