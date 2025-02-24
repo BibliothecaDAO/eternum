@@ -4,14 +4,13 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID, split_resources_and_probs};
+use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 
 use s1_eternum::models::position::Coord;
 
 use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
-use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
@@ -134,15 +133,15 @@ pub impl SpeedImpl of SpeedTrait {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {
-    pub reward_resource_amount: u128,
+    pub reward_resource_amount: u32,
     // weight of fail
     // the higher, the less likely to find a mine
     // weight of sucess = 1000
     // ex: if set to 5000
-    pub shards_mines_fail_probability: u128,
+    pub shards_mines_fail_probability: u32,
     // Mine discovery rewards
-    pub mine_wheat_grant_amount: u128,
-    pub mine_fish_grant_amount: u128,
+    pub mine_wheat_grant_amount: u32,
+    pub mine_fish_grant_amount: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -224,24 +223,6 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 }
 
-#[generate_trait]
-pub impl MapConfigImpl of MapConfigTrait {
-    fn random_reward(ref world: WorldStorage) -> Span<(u8, u128)> {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-
-        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
-        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
-
-        let explore_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-        let reward_resource_amount: u128 = explore_config.reward_resource_amount;
-        return array![(reward_resource_id, reward_resource_amount)].span();
-    }
-}
-
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
     pub armies_tick_in_seconds: u64,
@@ -293,7 +274,7 @@ pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
     // Troop count per army limits without precision
-    pub explorer_max_troop_count: u32,
+    pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
     pub guard_resurrection_delay: u32,
     // Mercenary bounds without precision

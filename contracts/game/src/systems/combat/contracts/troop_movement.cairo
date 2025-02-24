@@ -2,12 +2,12 @@ use s1_eternum::alias::ID;
 use s1_eternum::models::position::Direction;
 
 #[starknet::interface]
-trait ITroopMovementSystems<TContractState> {
+pub trait ITroopMovementSystems<TContractState> {
     fn explorer_move(ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool);
 }
 
 #[dojo::contract]
-mod troop_movement_systems {
+pub mod troop_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
@@ -33,7 +33,7 @@ mod troop_movement_systems {
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
         fn explorer_move(ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool) {
             // ensure directions are not empty
-            assert!(directions.len().is_non_zero(), "directions must be greater than 0");
+            assert!(directions.len().is_non_zero(), "directions must be more than 0");
 
             let mut world = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
@@ -53,9 +53,10 @@ mod troop_movement_systems {
             let mut biomes: Array<Biome> = array![];
             while true {
                 // ensure next coordinate is not occupied
+                let from = explorer.coord;
                 let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
                 let mut occupier: Occupier = world.read_model((next.x, next.y));
-                assert!(occupier.occupier == OccupiedBy::None, "next coordinate is occupied");
+                assert!(occupier.occupier == OccupiedBy::None, "one of the tiles in path is occupied");
 
                 // add biome to biomes
                 let biome = get_biome(next.x.into(), next.y.into());
@@ -105,7 +106,7 @@ mod troop_movement_systems {
                     explorer_weight.store(ref world, explorer_id);
                 } else {
                     // ensure all tiles passed through during travel are explored
-                    assert!(tile.discovered(), "tile is not explored");
+                    assert!(tile.discovered(), "one of the tiles in path is not explored");
                 }
 
                 // update explorer coordinate
@@ -114,8 +115,18 @@ mod troop_movement_systems {
                 // set explorer as occupier of target coordinate
                 if directions.len().is_zero() {
                     if occupy_destination {
+                        // ensure explorer does not occupy fragment mine
+                        // tile when mines are discovered
                         occupier.occupier = OccupiedBy::Explorer(explorer_id);
                         world.write_model(@occupier);
+                    } else {
+                        // move explorer back to previous coordinate
+                        explorer.coord = from;
+                        // set explorer as occupier of previous coordinate
+                        let previous_occupier = Occupier {
+                            x: from.x, y: from.y, occupier: OccupiedBy::Explorer(explorer_id),
+                        };
+                        world.write_model(@previous_occupier);
                     }
                     break;
                 }

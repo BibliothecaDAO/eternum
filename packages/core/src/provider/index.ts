@@ -1988,7 +1988,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
         // limit config
         limit_config.explorer_max_party_count,
-        limit_config.explorer_max_troop_count,
+        limit_config.explorer_guard_max_troop_count,
         limit_config.guard_resurrection_delay,
         limit_config.mercenaries_troop_lower_bound,
         limit_config.mercenaries_troop_upper_bound,

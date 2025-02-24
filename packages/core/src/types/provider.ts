@@ -514,7 +514,7 @@ export interface TroopStaminaConfigProps {
 
 export interface TroopLimitConfigProps {
   explorer_max_party_count: num.BigNumberish;
-  explorer_max_troop_count: num.BigNumberish;
+  explorer_guard_max_troop_count: num.BigNumberish;
   guard_resurrection_delay: num.BigNumberish;
   mercenaries_troop_lower_bound: num.BigNumberish;
   mercenaries_troop_upper_bound: num.BigNumberish;

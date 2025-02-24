@@ -680,7 +680,7 @@ export const setTroopConfig = async (config: Config) => {
     },
     limit: {
       explorerMaxPartyCount: explorer_max_party_count,
-      explorerMaxTroopCount: explorer_max_troop_count,
+      explorerAndGuardMaxTroopCount: explorer_guard_max_troop_count,
       guardResurrectionDelay: guard_resurrection_delay,
       mercenariesTroopLowerBound: mercenaries_troop_lower_bound,
       mercenariesTroopUpperBound: mercenaries_troop_upper_bound,
@@ -718,7 +718,7 @@ export const setTroopConfig = async (config: Config) => {
     },
     limit_config: {
       explorer_max_party_count: explorer_max_party_count,
-      explorer_max_troop_count: explorer_max_troop_count,
+      explorer_guard_max_troop_count: explorer_guard_max_troop_count,
       guard_resurrection_delay: guard_resurrection_delay,
       mercenaries_troop_lower_bound: mercenaries_troop_lower_bound,
       mercenaries_troop_upper_bound: mercenaries_troop_upper_bound,
@@ -756,7 +756,7 @@ export const setTroopConfig = async (config: Config) => {
     │
     │  ${chalk.yellow("Limit Configuration")}
     │  ${chalk.gray("Max Explorer Party:")}       ${chalk.white(calldata.limit_config.explorer_max_party_count)}
-    │  ${chalk.gray("Max Explorer Troops:")}      ${chalk.white(calldata.limit_config.explorer_max_troop_count)}
+    │  ${chalk.gray("Max Explorer and Guard Troops:")}      ${chalk.white(calldata.limit_config.explorer_guard_max_troop_count)}
     │  ${chalk.gray("Guard Resurrection:")}       ${chalk.white(calldata.limit_config.guard_resurrection_delay)}
     │  ${chalk.gray("Mercenary Min:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_lower_bound)}
     │  ${chalk.gray("Mercenary Max:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_upper_bound)}
@@ -813,20 +813,20 @@ export const setupGlobals = async (config: Config) => {
   // Map Config
   const mapCalldata = {
     signer: config.account,
-    reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
+    reward_amount: config.config.exploration.reward,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     mine_wheat_grant_amount:
-      config.config.exploration.shardsMineInitialWheatBalance * config.config.resources.resourcePrecision,
+      config.config.exploration.shardsMineInitialWheatBalance,
     mine_fish_grant_amount:
-      config.config.exploration.shardsMineInitialFishBalance * config.config.resources.resourcePrecision,
+      config.config.exploration.shardsMineInitialFishBalance 
   };
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
-    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(inGameAmount(mapCalldata.reward_amount, config.config))}
+    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount, config.config)}
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + SHARDS_MINES_WIN_PROBABILITY)) * 100).toFixed(2) + "%")}
-    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(inGameAmount(mapCalldata.mine_wheat_grant_amount, config.config))}
-    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(inGameAmount(mapCalldata.mine_fish_grant_amount, config.config))}
+    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount, config.config)}
+    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount, config.config)}
     └────────────────────────────────`),
   );
 

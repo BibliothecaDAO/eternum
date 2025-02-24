@@ -31,7 +31,9 @@ jobs:
         test:
           [
             models,
-            test_troop_management
+            test_troop_management,
+            test_troop_movement,
+            test_troop_battle,
           ]
       fail-fast: false
     steps:

@@ -34,7 +34,7 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
         return owner;
     }
 
-    fn store(ref owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
+    fn store(owner: ContractAddress, ref world: WorldStorage, structure_id: ID) {
         world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("owner"), owner);
     }
 }
@@ -70,6 +70,11 @@ pub impl StructureBaseImpl of StructureBaseTrait {
 
     fn exists(self: StructureBase) -> bool {
         self.category != StructureCategory::None.into()
+    }
+
+    fn is_not_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) -> bool {
+        let (is_cloaked, _) = self.is_cloaked(battle_config, tick_config);
+        return !is_cloaked;
     }
 
     fn is_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) -> (bool, ByteArray) {

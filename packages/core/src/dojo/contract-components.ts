@@ -1158,10 +1158,10 @@ export function defineContractComponents(world: World) {
             army_sec_per_km: RecsType.Number,
           },
           map_config: {
-            reward_resource_amount: RecsType.BigInt,
-            shards_mines_fail_probability: RecsType.BigInt,
-            mine_wheat_grant_amount: RecsType.BigInt,
-            mine_fish_grant_amount: RecsType.BigInt,
+            reward_resource_amount: RecsType.Number,
+            shards_mines_fail_probability: RecsType.Number,
+            mine_wheat_grant_amount: RecsType.Number,
+            mine_fish_grant_amount: RecsType.Number,
           },
           settlement_config: {
             center: RecsType.Number,
@@ -1234,7 +1234,7 @@ export function defineContractComponents(world: World) {
           },
           troop_limit_config: {
             explorer_max_party_count: RecsType.Number,
-            explorer_max_troop_count: RecsType.Number,
+            explorer_guard_max_troop_count: RecsType.Number,
             guard_resurrection_delay: RecsType.Number,
             mercenaries_troop_lower_bound: RecsType.Number,
             mercenaries_troop_upper_bound: RecsType.Number,
@@ -1271,10 +1271,10 @@ export function defineContractComponents(world: World) {
               "u64", // HyperstructureConfig time_between_shares_change
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // SpeedConfig army_sec_per_km
-              "u128", // MapConfig reward_resource_amount
-              "u128", // MapConfig shards_mines_fail_probability
-              "u128", // MapConfig mine_wheat_grant_amount
-              "u128", // MapConfig mine_fish_grant_amount
+              "u32", // MapConfig reward_resource_amount
+              "u32", // MapConfig shards_mines_fail_probability
+              "u32", // MapConfig mine_wheat_grant_amount
+              "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
               "u32", // SettlementConfig min_first_layer_distance
@@ -1325,7 +1325,7 @@ export function defineContractComponents(world: World) {
               "u16", // TroopStaminaConfig stamina_travel_fish_cost
               "u16", // TroopStaminaConfig stamina_travel_stamina_cost
               "u8", // TroopLimitConfig explorer_max_party_count
-              "u32", // TroopLimitConfig explorer_max_troop_count
+              "u32", // TroopLimitConfig explorer_guard_max_troop_count
               "u32", // TroopLimitConfig guard_resurrection_delay
               "u64", // TroopLimitConfig mercenaries_troop_lower_bound
               "u64", // TroopLimitConfig mercenaries_troop_upper_bound

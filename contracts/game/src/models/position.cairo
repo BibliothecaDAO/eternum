@@ -217,7 +217,7 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     }
 }
 
-#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq, Debug)]
 pub enum OccupiedBy {
     #[default]
     None,
