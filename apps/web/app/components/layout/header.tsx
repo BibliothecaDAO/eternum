@@ -146,8 +146,8 @@ export function Header() {
                     </Button>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Connect to Ethereum</DropdownMenuLabel>
+                {/*} <DropdownMenuSeparator />
+                <DropdownMenuLabel>Connect to Ethereum</DropdownMenuLabel>*/}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

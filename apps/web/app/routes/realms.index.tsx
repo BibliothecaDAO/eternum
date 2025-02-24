@@ -1,5 +1,6 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect } from "react";
+import BridgeIcon from "@/components/icons/bridge.svg?react";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
 import { getRealmsQueryOptions } from "@/lib/getRealms";
@@ -15,7 +16,7 @@ import {
   Link,
   useRouter,
 } from "@tanstack/react-router";
-import { HandCoins, Ship } from "lucide-react";
+import { HandCoins } from "lucide-react";
 
 import { CollectionAddresses } from "@realms-world/constants";
 
@@ -72,7 +73,7 @@ function RealmsComponent() {
       <div className="flex gap-2">
         <Link to={`/realms/bridge`}>
           <Button variant={"outline"} size="lg" className="rounded px-3">
-            <Ship /> Starknet Bridge
+            <BridgeIcon className="!h-5 !w-5" /> Starknet Bridge
           </Button>
         </Link>
         <Link to={`/realms/claims`}>

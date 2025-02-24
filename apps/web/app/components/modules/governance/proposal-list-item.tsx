@@ -57,7 +57,7 @@ export const ProposalListItem = ({
       </div>
 
       {isActive ? (
-        "Vote"
+        "Voting Active"
       ) : (
         <div className="flex flex-col items-end gap-2">
           <Progress

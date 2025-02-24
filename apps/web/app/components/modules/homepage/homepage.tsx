@@ -1,6 +1,7 @@
 import type { Address } from "@starknet-react/core";
 import { Suspense } from "react";
 import { VeLords } from "@/abi/L2/VeLords";
+import BridgeIcon from "@/components/icons/bridge.svg?react";
 import EthereumIcon from "@/components/icons/ethereum.svg?react";
 import LordsIcon from "@/components/icons/lords.svg?react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
@@ -29,7 +30,11 @@ import {
   SUPPORTED_L1_CHAIN_ID,
   SUPPORTED_L2_CHAIN_ID,
 } from "@/utils/utils";
-import { useBalance, useReadContract } from "@starknet-react/core";
+import {
+  useBalance,
+  useReadContract,
+  useSendTransaction,
+} from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Gavel, Plus } from "lucide-react";
@@ -91,9 +96,10 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     token: LORDS[SUPPORTED_L1_CHAIN_ID]?.address as Address,
   });
 
-  const { lordsClaimable } = useVeLordsClaims();
+  const { lordsClaimable, claimCall } = useVeLordsClaims();
 
-  const { balance: l2RealmsBalance } = useL2RealmsClaims();
+  const { balance: l2RealmsBalance, calls: l2RealmsClaimCall } =
+    useL2RealmsClaims();
 
   const { data: ownerLordsLock } = useReadContract({
     address: StakingAddresses.velords[SUPPORTED_L2_CHAIN_ID] as Address,
@@ -102,6 +108,12 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     watch: true,
     args: [address],
   });
+
+  // Prepare the function to send the claim rewards transaction.
+  const { sendAsync: claimAllRewards, isPending: claimIsSubmitting } =
+    useSendTransaction({
+      calls: [...(claimCall ?? []), ...l2RealmsClaimCall],
+    });
 
   return (
     <>
@@ -139,7 +151,12 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                   </span>
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-end">
+              <CardFooter className="flex justify-end gap-2">
+                <Link to={`/realms/bridge`}>
+                  <Button variant="outline" size={"sm"}>
+                    <BridgeIcon className="!h-5 !w-5" /> Bridge
+                  </Button>
+                </Link>
                 <a href="https://market.realms.world/" target="__blank">
                   <Button variant="outline" size={"sm"}>
                     <Gavel /> Marketplace
@@ -218,6 +235,15 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </Badge>
               </Link>
             </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button
+                onClick={() => claimAllRewards()}
+                variant={"outline"}
+                size={"sm"}
+              >
+                Claim All
+              </Button>
+            </CardFooter>
           </Card>
         </div>
 
