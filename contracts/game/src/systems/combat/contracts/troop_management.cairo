@@ -67,7 +67,7 @@ pub mod troop_management_systems {
     use s1_eternum::models::{
         config::{CombatConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl},
         map::{TileImpl}, owner::{OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, OccupiedBy, Occupier, OccupierTrait},
+        position::{Coord, CoordTrait, Direction, Occupied, OccupiedBy, OccupiedTrait},
         resource::{
             resource::{
                 ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
@@ -211,12 +211,13 @@ pub mod troop_management_systems {
 
             // ensure spawn location is not occupied
             let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
-            let mut occupier: Occupier = world.read_model((spawn_coord.x, spawn_coord.y));
-            assert!(occupier.not_occupied(), "explorer spawn location is occupied");
+            let mut occupied: Occupied = world.read_model((spawn_coord.x, spawn_coord.y));
+            assert!(occupied.not_occupied(), "explorer spawn location is occupied");
 
             // add explorer to spawn location
-            occupier.occupier = OccupiedBy::Explorer(explorer_id);
-            world.write_model(@occupier);
+            occupied.by_id = explorer_id;
+            occupied.by_type = OccupiedBy::Explorer;
+            world.write_model(@occupied);
 
             // ensure explorer amount does not exceed max
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);

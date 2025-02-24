@@ -7,7 +7,7 @@ use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::WorldConfigUtilImpl;
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
 
-use s1_eternum::models::position::{Occupier, OccupierImpl};
+use s1_eternum::models::position::{Occupied, OccupiedImpl};
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
     WeightStoreImpl,
@@ -247,11 +247,11 @@ pub impl iExplorerImpl of iExplorerTrait {
         structure_base.troop_explorer_count -= 1;
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
-        let occupier: Occupier = OccupierImpl::key_only(explorer.coord);
+        let occupied: Occupied = OccupiedImpl::key_only(explorer.coord);
         let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
 
         // delete explorer
-        world.erase_model(@occupier);
+        world.erase_model(@occupied);
         world.erase_model(@explorer);
         world.erase_model(@resource);
         // todo: IMPORTANT: check the cost of erasing the resource model

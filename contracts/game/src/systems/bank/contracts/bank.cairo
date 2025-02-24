@@ -19,7 +19,7 @@ pub mod bank_systems {
     use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::position::{Coord, Occupier, OccupierTrait};
+    use s1_eternum::models::position::{Coord, Occupied, OccupiedTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -87,8 +87,8 @@ pub mod bank_systems {
             let bank_entity_id: ID = world.dispatcher.uuid();
 
             // ensure that the coord is not occupied by any other structure
-            let mut occupier: Occupier = world.read_model(coord);
-            assert!(occupier.not_occupied(), "bank location is not empty");
+            let mut occupied: Occupied = world.read_model(coord);
+            assert!(occupied.not_occupied(), "bank location is not empty");
 
             // remove the resources from the realm
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));

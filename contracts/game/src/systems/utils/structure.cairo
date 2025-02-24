@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::position::{Coord, OccupiedBy, Occupier, OccupierImpl};
+use s1_eternum::models::position::{Coord, Occupied, OccupiedBy, OccupiedImpl};
 use s1_eternum::models::resource::resource::{ResourceImpl};
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::weight::{Weight};
@@ -36,15 +36,15 @@ pub impl iStructureImpl of iStructureTrait {
         }
 
         // ensure the coord is not occupied
-        let occupier: Occupier = world.read_model((coord.x, coord.y));
-        assert!(occupier.not_occupied(), "something exists on this coords");
+        let occupied: Occupied = world.read_model((coord.x, coord.y));
+        assert!(occupied.not_occupied(), "something exists on this coords");
 
         // save structure model
         let structure: Structure = StructureImpl::new(structure_id, category, coord, owner);
         world.write_model(@structure);
 
         // save occupier model
-        world.write_model(@Occupier { x: coord.x, y: coord.y, occupier: OccupiedBy::Structure(structure_id) });
+        world.write_model(@Occupied { x: coord.x, y: coord.y, by_id: structure_id, by_type: OccupiedBy::Structure });
 
         // set structure capacity
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
