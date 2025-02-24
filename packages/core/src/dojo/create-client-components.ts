@@ -8,7 +8,6 @@ export function createClientComponents({ contractComponents }: { contractCompone
     ...contractComponents,
     ExplorerTroops: overridableComponent(contractComponents.ExplorerTroops),
     Building: overridableComponent(contractComponents.Building),
-    Position: overridableComponent(contractComponents.Position),
     Tile: overridableComponent(contractComponents.Tile),
     Resource: overridableComponent(contractComponents.Resource),
     Structure: overridableComponent(contractComponents.Structure),

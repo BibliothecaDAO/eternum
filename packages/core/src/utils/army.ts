@@ -17,8 +17,6 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]));
-
       const totalCapacity = getArmyTotalCapacityInKg(Number(explorerTroops.troops.count));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
@@ -26,22 +24,16 @@ export const formatArmies = (
 
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);
-      const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]));
-      const homePosition =
-        realm && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(realm.entity_id)]));
-
+      const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]));
       const structure = getComponentValue(
         components.Structure,
-        getEntityIdFromKeys([BigInt(explorerTroops.owner.entity_id)]),
+        getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]),
       );
 
-      const structurePosition =
-        structure && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(structure.entity_id)]));
+      const isMine = (structure?.owner || 0n) === playerAddress;
+      const isMercenary = structure?.owner === 0n;
 
-      const isMine = (owner?.address || 0n) === playerAddress;
-      const isMercenary = owner === undefined;
-
-      const isHome = structurePosition && position.x === structurePosition.x && position.y === structurePosition.y;
+      const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;
 
       return {
         entityId: explorerTroops.explorer_id,
@@ -49,11 +41,10 @@ export const formatArmies = (
         totalCapacity,
         weight,
         position,
-        entity_owner_id: explorerTroops.owner.entity_id,
+        entity_owner_id: explorerTroops.owner,
         stamina,
-        owner,
+        owner: structure?.owner,
         realm,
-        homePosition,
         isMine,
         isMercenary,
         isHome,

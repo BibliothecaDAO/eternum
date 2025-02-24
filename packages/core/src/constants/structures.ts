@@ -1,6 +1,5 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
-import { ResourceInputs } from "../types";
 
 // Knip ignore tag
 /** @public */
@@ -9,7 +8,6 @@ export enum StructureType {
   Hyperstructure = 2,
   Bank = 3,
   FragmentMine = 4,
-  Settlement = 5,
 }
 
 export enum BuildingType {
@@ -176,12 +174,3 @@ export function determineEntityState(
   }
   return EntityState.Idle; // Default state
 }
-
-export const STRUCTURE_COSTS: ResourceInputs = {
-  [StructureType.Hyperstructure]: [], //todo hyperstructure costs
-  [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
-  [StructureType.Settlement]: [
-    { resource: ResourcesIds.Wheat, amount: 100_000 },
-    { resource: ResourcesIds.Fish, amount: 100_000 },
-  ],
-};

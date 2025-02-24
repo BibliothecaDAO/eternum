@@ -361,5 +361,7 @@ pub mod troop_battle_systems {
                 StructureTroopGuardStoreImpl::store(ref structure_guards_aggressor, ref world, structure_id);
             }
         }
+        // note: if we add guard vs explorer, check that attacking guard is
+    // one of relevant slots as implemented in next_attack_slot
     }
 }

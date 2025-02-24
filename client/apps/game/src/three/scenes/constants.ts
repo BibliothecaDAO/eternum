@@ -77,7 +77,6 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Bank]: BuildingType.Bank,
   [StructureType.Realm]: BuildingType.Castle,
   [StructureType.FragmentMine]: BuildingType.FragmentMine,
-  [StructureType.Settlement]: BuildingType.Castle,
   [StructureType.Hyperstructure]: BuildingType.Castle,
 };
 
@@ -190,7 +189,6 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
   [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Settlement]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
@@ -198,7 +196,6 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
   [StructureType.Bank]: "",
-  [StructureType.Settlement]: "textures/fragment_mine_label.png",
 };
 
 export const MinesMaterialsParams: Record<

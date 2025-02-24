@@ -25,7 +25,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
   const maxStorehouseCapacityKg = useMemo(() => {
-    if (structure?.category !== StructureType[StructureType.Realm]) return Infinity;
+    if (structure?.base.category !== StructureType.Realm) return Infinity;
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);

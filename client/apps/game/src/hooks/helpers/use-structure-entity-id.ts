@@ -2,13 +2,14 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect } from "react";
 
 export const useStructureEntityId = () => {
   const {
     setup: {
-      components: { Structure, Position },
+      components: { Structure, Occupier },
     },
   } = useDojo();
 
@@ -21,11 +22,9 @@ export const useStructureEntityId = () => {
       y: hexPosition.row,
     }).getContract();
 
-    const structureEntity = runQuery([Has(Structure), HasValue(Position, { x: position.x, y: position.y })])
-      .values()
-      .next().value;
+    const occupier = getComponentValue(Occupier, getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]));
 
-    const structure = getComponentValue(Structure, structureEntity ?? ("0" as Entity));
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(occupier?.occupier ?? 0)]));
     const newStructureId = structure?.entity_id;
 
     setStructureEntityId(newStructureId || UNDEFINED_STRUCTURE_ENTITY_ID);

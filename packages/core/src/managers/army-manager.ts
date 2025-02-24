@@ -27,8 +27,7 @@ export class ArmyManager {
 
   private getRealmEntityId(): number {
     return (
-      getComponentValue(this.components.EntityOwner, getEntityIdFromKeys([BigInt(this.armyEntityId)]))
-        ?.entity_owner_id || 0
+      getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(this.armyEntityId)]))?.owner || 0
     );
   }
 

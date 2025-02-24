@@ -141,8 +141,8 @@ const DojoContextProvider = ({
 
   const onSpectatorModeClick = () => {
     const randomRealmEntity = getRandomRealmEntity(value.components);
-    const position = randomRealmEntity && getComponentValue(value.components.Position, randomRealmEntity);
-    position && navigateToHexView(new Position(position));
+    const structureBase = randomRealmEntity && getComponentValue(value.components.Structure, randomRealmEntity)?.base;
+    structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
   };
 
   useEffect(() => {

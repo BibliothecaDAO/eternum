@@ -9,13 +9,13 @@ export function useTravel() {
   } = useDojo();
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(fromId)]));
-    const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(toId)]));
+    const fromPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromId)]));
+    const toPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toId)]));
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(
-        { x: Number(fromPosition.x), y: Number(fromPosition.y) },
-        { x: Number(toPosition.x), y: Number(toPosition.y) },
+        { x: Number(fromPosition.base.coord_x), y: Number(fromPosition.base.coord_y) },
+        { x: Number(toPosition.base.coord_x), y: Number(toPosition.base.coord_y) },
       ) ?? 0;
 
     const onewayTime = Math.floor((distanceFromPosition * secPerKm) / 60);

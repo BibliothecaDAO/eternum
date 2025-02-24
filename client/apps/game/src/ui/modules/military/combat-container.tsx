@@ -14,8 +14,7 @@ import {
   TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { formatBiomeBonus, getStaminaDisplay, getTroopResourceId } from "./combat-utils";
 
@@ -35,11 +34,11 @@ export const CombatContainer = ({
     account: { account },
     setup: {
       components,
-      components: { Position, Structure, ExplorerTroops },
+      components: { Structure, ExplorerTroops, Occupier },
     },
   } = useDojo();
 
-  const targetEntities = useEntityQuery([Has(Position), HasValue(Position, { x: targetHex.x, y: targetHex.y })]);
+  const targetEntity = getComponentValue(Occupier, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
   const staminaCombatConfig = useMemo(() => {
     return configManager.getStaminaCombatConfig();
@@ -47,35 +46,33 @@ export const CombatContainer = ({
 
   const biome = useMemo(() => {
     return Biome.getBiome(targetHex.x, targetHex.y);
-  }, [targetEntities]);
+  }, [targetHex]);
 
   const attackerStamina = useMemo(() => {
     return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
   }, [attackerEntityId]);
 
   const target = useMemo(() => {
-    if (!targetEntities.length) return null;
-
-    const targetEntity = targetEntities[0];
-    const structure = getComponentValue(Structure, targetEntity);
-    const explorer = getComponentValue(ExplorerTroops, targetEntity);
+    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier || 0n)]);
+    const structure = getComponentValue(Structure, occupierId);
+    const explorer = getComponentValue(ExplorerTroops, occupierId);
 
     if (structure) {
       return {
-        info: getStructure(targetEntity, ContractAddress(account.address), components),
+        info: getStructure(occupierId, ContractAddress(account.address), components),
         targetType: TargetType.Structure,
       };
     }
 
     if (explorer) {
       return {
-        info: getArmy(targetEntity, ContractAddress(account.address), components),
+        info: getArmy(occupierId, ContractAddress(account.address), components),
         targetType: TargetType.Army,
       };
     }
 
     return null;
-  }, [targetEntities, account, components]);
+  }, [targetEntity, account, components]);
 
   const defenderStamina = useMemo(() => {
     return new StaminaManager(components, target?.info?.entityId || 0).getStamina(getBlockTimestamp().currentArmiesTick)

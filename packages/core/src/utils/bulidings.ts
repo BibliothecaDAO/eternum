@@ -5,6 +5,6 @@ import { ID } from "../types/common";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
   const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));
-  const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
+  const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
   return buildingCounts[buildingType] || 0;
 };

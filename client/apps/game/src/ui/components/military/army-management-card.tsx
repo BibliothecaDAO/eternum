@@ -41,9 +41,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const {
     account: { account },
     network: { provider },
-    setup: {
-      components: { Position },
-    },
   } = useDojo();
 
   const dojo = useDojo();
@@ -55,8 +52,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   // todo: fix this
   const isDefendingArmy = false;
-
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -81,18 +76,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     if (army?.troops.count === 0n) {
       setSelectedTier(tier);
     }
-  };
-
-  const handleDeleteArmy = async () => {
-    setIsLoading(true);
-
-    try {
-      await armyManager.deleteArmy(account, army?.entityId || 0);
-      setSelectedEntity && setSelectedEntity(null);
-    } catch (e) {
-      console.error(e);
-    }
-    setIsLoading(false);
   };
 
   const handleBuyArmy = async () => {

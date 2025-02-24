@@ -1,6 +1,6 @@
 import { ContractAddress, formatArmies, type ID, type Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@dojoengine/recs";
+import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../";
 
@@ -10,11 +10,7 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
     account: { account },
   } = useDojo();
 
-  const armies = useEntityQuery([
-    Has(components.ExplorerTroops),
-    Has(components.Position),
-    HasValue(components.EntityOwner, { entity_owner_id: structureEntityId }),
-  ]);
+  const armies = useEntityQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
 
   const entityArmies = useMemo(() => {
     return formatArmies(armies, ContractAddress(account.address), components);
@@ -25,22 +21,20 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
   };
 };
 
-export const useArmiesAtPosition = ({ position }: { position: Position }) => {
-  {
-    const {
-      account: { account },
-      setup: { components },
-    } = useDojo();
+export const usePlayerArmyAtPosition = ({ position }: { position: Position }) => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
 
-    const armiesAtPosition = useEntityQuery([
-      Has(components.ExplorerTroops),
-      HasValue(components.Position, { x: position.x, y: position.y }),
-    ]);
+  const armiesAtPosition = useEntityQuery([
+    HasValue(components.ExplorerTroops, { coord: { x: position.x, y: position.y } }),
+  ]);
 
-    const ownArmies = useMemo(() => {
-      return formatArmies(armiesAtPosition, ContractAddress(account.address), components);
-    }, [armiesAtPosition, position.x, position.y]);
+  const ownArmy = useMemo(() => {
+    const armies = formatArmies(armiesAtPosition, ContractAddress(account.address), components);
+    return armies.find((army) => army.isMine);
+  }, [armiesAtPosition, position.x, position.y]);
 
-    return ownArmies;
-  }
+  return ownArmy;
 };

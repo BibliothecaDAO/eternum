@@ -6,7 +6,7 @@ import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision }
 import { FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { HexPosition, ID, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -27,9 +27,9 @@ export class ArmyMovementManager {
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    const entityOwnerId = getComponentValue(this.components.EntityOwner, this.entity);
-    this.wheatManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
-    this.fishManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
+    const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
+    this.wheatManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Wheat);
+    this.fishManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.components, entityId);
   }
 
@@ -100,7 +100,7 @@ export class ArmyMovementManager {
   };
 
   private readonly _getCurrentPosition = () => {
-    const position = getComponentValue(this.components.Position, this.entity);
+    const position = getComponentValue(this.components.ExplorerTroops, this.entity)?.coord;
     return { col: position!.x, row: position!.y };
   };
 
@@ -284,15 +284,6 @@ export class ArmyMovementManager {
     return actionPaths;
   }
 
-  public isMine = (address: ContractAddress) => {
-    const entityOwner = getComponentValue(this.components.EntityOwner, this.entity);
-    let owner = getComponentValue(this.components.Owner, this.entity);
-    if (!owner && entityOwner?.entity_owner_id) {
-      owner = getComponentValue(this.components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-    }
-    return owner?.address === address;
-  };
-
   private readonly _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
@@ -343,12 +334,13 @@ export class ArmyMovementManager {
   };
 
   private readonly _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.components.Position.addOverride(overrideId, {
+    this.components.ExplorerTroops.addOverride(overrideId, {
       entity: this.entity,
       value: {
-        entity_id: this.entityId,
-        x: col,
-        y: row,
+        coord: {
+          x: col,
+          y: row,
+        },
       },
     });
   };
@@ -422,12 +414,13 @@ export class ArmyMovementManager {
     this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
-    this.components.Position.addOverride(overrideId, {
+    this.components.ExplorerTroops.addOverride(overrideId, {
       entity: this.entity,
       value: {
-        entity_id: this.entityId,
-        x: col,
-        y: row,
+        coord: {
+          x: col,
+          y: row,
+        },
       },
     });
     return overrideId;
@@ -436,7 +429,7 @@ export class ArmyMovementManager {
   // only remove visual overrides (linked to models on world map) when the action fails
   private readonly _removeVisualOverride = (overrideId: string) => {
     this.components.Tile.removeOverride(overrideId);
-    this.components.Position.removeOverride(overrideId);
+    this.components.ExplorerTroops.removeOverride(overrideId);
   };
 
   // you can remove all non visual overrides when the action fails or succeeds

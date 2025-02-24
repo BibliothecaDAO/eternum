@@ -28,7 +28,7 @@ export const getPlayerFirstRealm = (components: ClientComponents, address: Contr
   const realms = runQuery([
     Has(components.Structure),
     Has(components.Realm),
-    HasValue(components.Owner, { address: address }),
+    HasValue(components.Structure, { owner: address }),
   ]);
 
   const realm = realms.values().next().value;

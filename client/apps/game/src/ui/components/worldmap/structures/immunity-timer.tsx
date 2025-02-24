@@ -6,7 +6,7 @@ export const ImmunityTimer = ({ structure, className }: { structure: Structure; 
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure.structure, currentBlockTimestamp || 0),
+    () => isStructureImmune(structure.structure.base, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],
   );
 

@@ -7,12 +7,11 @@ import { Position } from "@/types/position";
 import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { TroopChip } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
-import { Exchange } from "@/ui/components/structures/worldmap/structure-card";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { armyHasTroops, ArmyInfo } from "@bibliothecadao/eternum";
-import { useArmiesAtPosition, useDojo } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -206,6 +205,7 @@ export const ArmyChip = ({
   );
 };
 
+// todo: fix this to merge with adjacent hex armies
 const ArmyMergeTroopsPanel = ({
   giverArmy,
   setShowMergeTroopsPopup,
@@ -213,34 +213,32 @@ const ArmyMergeTroopsPanel = ({
   giverArmy: ArmyInfo;
   setShowMergeTroopsPopup: Dispatch<SetStateAction<boolean>>;
 }) => {
-  const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
+  return <div>work in progress</div>;
 
-  const armiesAtPosition = useArmiesAtPosition({ position: giverArmy.position });
+  // const [selectedReceiverArmy, setSelectedReceiverArmy] = useState<ArmyInfo | null>(null);
 
-  const armies = useMemo(() => {
-    return armiesAtPosition.filter((army) => army.entityId !== giverArmy.entityId);
-  }, [giverArmy, armiesAtPosition]);
+  // const armyAtPosition = usePlayerArmyAtPosition({ position: giverArmy.position });
 
-  return (
-    <div className="py-2">
-      <div className="flex flex-row justify-between">
-        <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
-          &lt; Back
-        </Button>
-      </div>
-      {selectedReceiverArmy ? (
-        <Exchange
-          giverArmyName={giverArmy.name}
-          giverArmyEntityId={giverArmy.entityId}
-          takerArmy={selectedReceiverArmy}
-          allowReverse={selectedReceiverArmy.isMine}
-        />
-      ) : (
-        <ArmySelector armies={armies} onSelect={setSelectedReceiverArmy} />
-      )}
-      <div className="text-xxs">swapping only possible on same position</div>
-    </div>
-  );
+  // return (
+  //   <div className="py-2">
+  //     <div className="flex flex-row justify-between">
+  //       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
+  //         &lt; Back
+  //       </Button>
+  //     </div>
+  //     {selectedReceiverArmy ? (
+  //       <Exchange
+  //         giverArmyName={giverArmy.name}
+  //         giverArmyEntityId={giverArmy.entityId}
+  //         takerArmy={selectedReceiverArmy}
+  //         allowReverse={selectedReceiverArmy.isMine}
+  //       />
+  //     ) : (
+  //       armyAtPosition && <ArmySelector armies={[armyAtPosition]} onSelect={setSelectedReceiverArmy} />
+  //     )}
+  //     <div className="text-xxs">swapping only possible on same position</div>
+  //   </div>
+  // );
 };
 
 const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (army: ArmyInfo) => void }) => {

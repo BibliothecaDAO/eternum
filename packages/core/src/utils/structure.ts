@@ -1,4 +1,4 @@
-import { Entity, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, Structure } from "..";
@@ -13,8 +13,9 @@ export const getStructureAtPosition = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const structureAtPosition = runQuery([HasValue(components.Position, { x, y }), Has(components.Structure)]);
-  const structureEntity = Array.from(structureAtPosition)[0];
+  // todo: fix this
+  const occupier = getComponentValue(components.Occupier, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
+  const structureEntity = getEntityIdFromKeys([BigInt(occupier?.occupier || 0n)]);
 
   if (!structureEntity) return;
 
@@ -56,19 +57,19 @@ const getStructureInfo = (
     structure,
     owner: structure.owner,
     name,
-    position: structure.coord,
+    position: { x: structure.base.coord_x, y: structure.base.coord_y },
     protectors,
-    isMine: ContractAddress(structure?.owner || 0n) === playerAddress,
+    isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName,
   };
 };
 
 export const isStructureImmune = (
-  structure: { category: string; created_at: bigint } | undefined,
+  structure: { category: number; created_at: number } | undefined,
   currentTimestamp: number,
 ): boolean => {
-  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+  const structureType = structure?.category as StructureType;
 
   const tickCount = currentTickCount(currentTimestamp);
   const allowAttackTick =
@@ -81,10 +82,10 @@ export const isStructureImmune = (
 };
 
 export const getStructureImmunityTimer = (structure: Structure | undefined, currentBlockTimestamp: number) => {
-  const structureType = StructureType[(structure?.structure.category as keyof typeof StructureType) || 0];
+  const structureType = structure?.structure.base.category as StructureType;
 
   const immunityEndTimestamp =
-    Number(structure?.structure.created_at || 0) +
+    Number(structure?.structure.base.created_at || 0) +
     (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0);
 
   if (!currentBlockTimestamp) return 0;

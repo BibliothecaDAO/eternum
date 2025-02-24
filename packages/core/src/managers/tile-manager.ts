@@ -94,14 +94,18 @@ export class TileManager {
     return building !== undefined && building.category !== BuildingType[BuildingType.None];
   };
 
+  // todo: fix occupier
   structureType = () => {
-    const structures = Array.from(
-      runQuery([Has(this.components.Structure), HasValue(this.components.Position, { x: this.col, y: this.row })]),
+    const occupier = getComponentValue(
+      this.components.Occupier,
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]),
     );
-    if (structures?.length === 1) {
-      const structure = getComponentValue(this.components.Structure, structures[0])!;
-      let category = structure.category;
-      return StructureType[category as keyof typeof StructureType];
+    if (occupier?.occupier) {
+      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(occupier?.occupier)]));
+      if (structure) {
+        let category = structure.base.category;
+        return category as StructureType;
+      }
     }
   };
 
@@ -192,7 +196,7 @@ export class TileManager {
     });
     const quantityOverrideId = uuid();
 
-    const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
+    const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
 
     buildingCounts[buildingType] = (buildingCounts[buildingType] || 0) + 1;
 
@@ -201,7 +205,7 @@ export class TileManager {
     this.components.StructureBuildings.addOverride(quantityOverrideId, {
       entity: realmEntity,
       value: {
-        building_count: BigInt(packedBuildingCount),
+        packed_counts: BigInt(packedBuildingCount),
       },
     });
 
@@ -221,8 +225,8 @@ export class TileManager {
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmPosition = getComponentValue(this.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-    const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+    const realmBase = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base;
+    const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
 
     const currentBuilding = getComponentValue(this.components.Building, entity);
@@ -312,24 +316,23 @@ export class TileManager {
   private _optimisticStructure = (coords: Position, structureType: StructureType) => {
     const overrideId = DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString();
     const entity: Entity = getEntityIdFromKeys([BigInt(DUMMY_HYPERSTRUCTURE_ENTITY_ID)]);
+    const structure = getComponentValue(this.components.Structure, entity);
 
-    this.components.Position.addOverride(overrideId, {
-      entity,
-      value: {
-        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        x: coords.x,
-        y: coords.y,
-      },
-    });
-
-    this.components.Structure.addOverride(overrideId, {
-      entity,
-      value: {
-        category: StructureType[structureType],
-        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        created_at: 0n,
-      },
-    });
+    if (structure) {
+      this.components.Structure.addOverride(overrideId, {
+        entity,
+        value: {
+          base: {
+            ...structure?.base,
+            category: Number(structureType),
+            coord_x: coords.x,
+            coord_y: coords.y,
+            created_at: 0,
+          },
+          entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+        },
+      });
+    }
 
     return { overrideId };
   };
@@ -446,7 +449,6 @@ export class TileManager {
       }
     } catch (error) {
       this.components.Structure.removeOverride(overrideId);
-      this.components.Position.removeOverride(overrideId);
       console.error(error);
       throw error;
     }

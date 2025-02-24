@@ -1,4 +1,4 @@
-import { Entity, getComponentValue } from "@dojoengine/recs";
+import { Entity, getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, gramToKg } from "..";
@@ -18,17 +18,16 @@ export const getRealmWithPosition = (entity: Entity, components: ClientComponent
   return {
     ...realm,
     resources: unpackValue(BigInt(realm.produced_resources)),
-    position: structure?.coord,
+    position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
     name: getRealmNameById(realm.realm_id),
     owner: structure?.owner,
   } as RealmWithPosition;
 };
 
 export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
-  const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  const addressName = owner
-    ? getComponentValue(components.AddressName, getEntityIdFromKeys([owner.address]))
-    : undefined;
+  // use value strict because we know the structure exists
+  const structure = getComponentValueStrict(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
 
   if (addressName) {
     return shortString.decodeShortString(String(addressName.name));
@@ -65,7 +64,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
-  const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
+  const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
   const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
 
   const storehouses = (() => {
@@ -88,7 +87,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       level,
       resources,
       order,
-      position: structure.coord,
+      position: { x: structure.base.coord_x, y: structure.base.coord_y },
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
       hasCapacity:

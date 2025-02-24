@@ -123,20 +123,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    EntityOwner: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, entity_owner_id: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "EntityOwner",
-            types: ["u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
+
     Epoch: (() => {
       return defineComponent(
         world,
@@ -412,27 +399,12 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    Owner: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, address: RecsType.BigInt },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Owner",
-            types: ["u32", "ContractAddress"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     StructureBuildings: (() => {
       return defineComponent(
         world,
         {
           entity_id: RecsType.Number,
-          building_count: RecsType.BigInt,
+          packed_counts: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -449,20 +421,6 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    Position: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.Number, x: RecsType.Number, y: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Position",
-            types: ["u32", "u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     ProductionConfig: (() => {
       return defineComponent(
         world,
@@ -946,15 +904,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+
     ExplorerTroops: (() => {
       return defineComponent(
         world,
         {
           explorer_id: RecsType.Number,
-          owner: {
-            entity_id: RecsType.Number,
-            entity_owner_id: RecsType.Number,
-          },
+          owner: RecsType.Number,
           troops: {
             category: RecsType.String,
             tier: RecsType.String,
@@ -973,8 +929,8 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "ExplorerTroops",
-            types: ["u32", "EntityOwner", "Troops", "Coord"],
-            customTypes: ["EntityOwner", "Troops", "Coord"],
+            types: ["u32", "u32", "enum", "enum", "u128", "u128", "u128", "u32", "u32"],
+            customTypes: ["Troops", "Coord"],
           },
         },
       );
@@ -985,10 +941,18 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          category: RecsType.String,
           owner: RecsType.BigInt,
-          coord: { x: RecsType.Number, y: RecsType.Number },
-          guards: {
+          base: {
+            troop_guard_count: RecsType.Number,
+            troop_explorer_count: RecsType.Number,
+            troop_max_guard_count: RecsType.Number,
+            troop_max_explorer_count: RecsType.Number,
+            created_at: RecsType.Number,
+            category: RecsType.Number,
+            coord_x: RecsType.Number,
+            coord_y: RecsType.Number,
+          },
+          troop_guards: {
             delta: {
               category: RecsType.String,
               tier: RecsType.String,
@@ -1030,13 +994,7 @@ export function defineContractComponents(world: World) {
             bravo_destroyed_tick: RecsType.Number,
             alpha_destroyed_tick: RecsType.Number,
           },
-          limits: {
-            max_explorer_count: RecsType.Number,
-            max_guard_count: RecsType.Number,
-          },
-          created_at: RecsType.BigInt,
-          guard_count: RecsType.Number,
-          explorers: RecsType.NumberArray,
+          troop_explorers: RecsType.NumberArray,
         },
         {
           metadata: {
@@ -1044,8 +1002,13 @@ export function defineContractComponents(world: World) {
             name: "Structure",
             types: [
               "u32",
-              "enum",
               "ContractAddress",
+              "u8",
+              "u16",
+              "u8",
+              "u16",
+              "u32",
+              "u8",
               "u32",
               "u32",
               //delta
@@ -1077,30 +1040,34 @@ export function defineContractComponents(world: World) {
               "u32",
               "u32",
               "u32",
-              //limits
-              "u32",
-              "u32",
-              //created_at
-              "u64",
-              //guard_count
-              "u32",
               //explorers
               "Span<u32>",
             ],
-            customTypes: [
-              "StructureCategory",
-              "Coord",
-              "GuardTroops",
-              "Troops",
-              "TroopType",
-              "TroopTier",
-              "Stamina",
-              "Limits",
-            ],
+            customTypes: ["StructureBase", "GuardTroops", "TroopType", "TroopTier", "Stamina"],
           },
         },
       );
     })(),
+
+    Occupier: (() => {
+      return defineComponent(
+        world,
+        {
+          x: RecsType.Number,
+          y: RecsType.Number,
+          occupier: RecsType.String,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "Occupier",
+            types: ["u32", "u32", "enum"],
+            customTypes: ["OccupiedBy"],
+          },
+        },
+      );
+    })(),
+
     Tile: (() => {
       return defineComponent(
         world,
