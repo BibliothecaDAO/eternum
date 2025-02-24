@@ -80,8 +80,20 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
-    fn next_attack_slot(ref self: GuardTroops, max_guards: felt252) -> Option<GuardSlot> {
-        let relevant_slots = match max_guards {
+    fn assert_functional_slot(ref self: GuardTroops, slot: GuardSlot, max_guards: felt252) {
+        let functional_slots = self.functional_slots(max_guards);
+        let mut is_functional_slot: bool = false;
+        for functional_slot in functional_slots {
+            if functional_slot == slot {
+                is_functional_slot = true;
+                break;
+            }
+        };
+        assert!(is_functional_slot, "slot can't be selected");
+    }
+
+    fn functional_slots(ref self: GuardTroops, max_guards: felt252) -> Array<GuardSlot> {
+        match max_guards {
             0 => panic!("max guards is 0"),
             1 => { array![GuardSlot::Delta] },
             2 => { array![GuardSlot::Delta, GuardSlot::Charlie] },
@@ -91,16 +103,20 @@ pub impl GuardImpl of GuardTrait {
                 panic!("max guards is greater than 4");
                 array![]
             },
-        };
+        }
+    }
+
+    fn next_attack_slot(ref self: GuardTroops, max_guards: felt252) -> Option<GuardSlot> {
+        let functional_slots = self.functional_slots(max_guards);
 
         // Iterate through relevant slots only
         let mut i: usize = 0;
         loop {
-            if i == relevant_slots.len() {
+            if i == functional_slots.len() {
                 break Option::None;
             }
 
-            let slot = *relevant_slots.at(i);
+            let slot = *functional_slots.at(i);
             let has_troops = match slot {
                 GuardSlot::Delta => self.delta.count.is_non_zero(),
                 GuardSlot::Charlie => self.charlie.count.is_non_zero(),
