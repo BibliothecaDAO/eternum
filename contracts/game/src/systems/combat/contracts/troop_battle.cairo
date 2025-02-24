@@ -263,7 +263,10 @@ pub mod troop_battle_systems {
 
             // ensure caller does not own defender
             let mut explorer_defender: ExplorerTroops = world.read_model(explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
+            let explorer_defender_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_defender.owner,
+            );
+            explorer_defender_owner.assert_caller_not_owner();
 
             // ensure explorer has troops
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
@@ -347,7 +350,7 @@ pub mod troop_battle_systems {
                             world, selector!("battle_config"),
                         );
                         if StructureBaseImpl::is_not_cloaked(structure_aggressor_base, battle_config, tick) {
-                            StructureOwnerStoreImpl::store(structure_aggressor_owner, ref world, structure_id);
+                            StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
                         }
                     }
                 }
