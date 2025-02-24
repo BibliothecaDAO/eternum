@@ -117,10 +117,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       return;
     }
 
-    const position = getComponentValue(
+    const structureBase = getComponentValue(
       dojo.setup.components.Structure,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
-    )?.coord;
+    )?.base;
 
     setSubscriptions((prev) => ({
       ...prev,
@@ -133,7 +133,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       dojo.setup,
       structureEntityId.toString(),
       setLoading,
-      position ? { x: position.x, y: position.y } : undefined,
+      structureBase ? { x: structureBase.coord_x, y: structureBase.coord_y } : undefined,
     );
   }, [structureEntityId, subscriptions]);
 

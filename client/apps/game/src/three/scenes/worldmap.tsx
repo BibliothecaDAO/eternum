@@ -140,7 +140,6 @@ export default class WorldmapScene extends HexagonScene {
       );
       if (optimisticStructure) {
         this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
-        this.dojo.components.Position.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
         this.structureManager.structureHexCoords
           .get(optimisticStructure.hexCoords.col)
           ?.delete(optimisticStructure.hexCoords.row);

@@ -18,7 +18,7 @@ export const TransferView = () => {
     account: { account },
     setup: { components },
   } = useDojo();
-  const { Structure, Position, Owner, Realm } = components;
+  const { Structure, Realm } = components;
 
   const playerRealms = usePlayerOwnedRealms();
   const playerStructures = usePlayerStructures();
@@ -34,27 +34,33 @@ export const TransferView = () => {
 
   const otherStructuresQuery = useEntityQuery([
     Has(Structure),
-    Has(Position),
-    Has(Owner),
-    NotValue(Owner, { address: ContractAddress(account.address) }),
+    NotValue(Structure, { owner: ContractAddress(account.address) }),
   ]);
 
   const otherStructures = useMemo(() => {
     return otherStructuresQuery
       .map((id) => {
         const structure = getComponentValue(Structure, id);
-        if (!structure || structure.category === StructureType[StructureType.Realm]) return;
+        if (!structure || structure.base.category === StructureType.Realm) return;
 
         const structureName = getEntityName(structure.entity_id, components);
 
-        const name = structureName ? `${structure?.category} ${structureName}` : structure.category || "";
-        return { structure, position: structure.coord, name, owner: structure.owner };
+        const name = structureName ? `${structure.base.category} ${structureName}` : structure.base.category || "";
+        return {
+          structure,
+          position: { x: structure.base.coord_x, y: structure.base.coord_y },
+          name,
+          owner: structure.owner,
+        };
       })
       .filter((structure): structure is PlayerStructure => structure !== undefined)
-      .sort((a, b) => a.structure.category.localeCompare(b.structure.category));
+      .sort((a, b) => Number(a.structure.base.category) - Number(b.structure.base.category));
   }, [otherStructuresQuery]);
 
-  const otherRealmsQuery = useEntityQuery([Has(Realm), NotValue(Owner, { address: ContractAddress(account.address) })]);
+  const otherRealmsQuery = useEntityQuery([
+    Has(Realm),
+    NotValue(Structure, { owner: ContractAddress(account.address) }),
+  ]);
 
   const otherRealms = useMemo(() => {
     return otherRealmsQuery.map((id) => {
@@ -62,7 +68,7 @@ export const TransferView = () => {
       const structure = getComponentValue(Structure, id);
       return {
         ...realm,
-        position: structure?.coord,
+        position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
         name: getRealmNameById(realm!.realm_id),
         owner: structure?.owner,
       } as RealmWithPosition;
@@ -76,15 +82,19 @@ export const TransferView = () => {
       entitiesList={[
         { entities: playerRealms, name: "Your Realms" },
         {
-          entities: playerStructures.filter((structure) => structure.structure.category === "Hyperstructure"),
+          entities: playerStructures.filter(
+            (structure) => structure.structure.base.category === StructureType.Hyperstructure,
+          ),
           name: "Your Hyperstructures",
         },
         {
-          entities: playerStructures.filter((structure) => structure.structure.category === "FragmentMine"),
+          entities: playerStructures.filter(
+            (structure) => structure.structure.base.category === StructureType.FragmentMine,
+          ),
           name: "Your Fragment Mines",
         },
         {
-          entities: playerStructures.filter((structure) => structure.structure.category === "Bank"),
+          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Bank),
           name: "Your Banks",
         },
         {

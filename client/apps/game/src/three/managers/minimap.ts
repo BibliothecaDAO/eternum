@@ -19,7 +19,6 @@ const LABELS = {
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
     [StructureType.Bank]: "/images/resources/coin.png",
     [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
-    [StructureType.Settlement]: "/textures/realm_label.png",
   },
 };
 
@@ -38,7 +37,6 @@ const MINIMAP_CONFIG = {
       [StructureType.Hyperstructure]: "#FFFFFF",
       [StructureType.Bank]: "#FFFF00",
       [StructureType.FragmentMine]: "#00FFFF",
-      [StructureType.Settlement]: "#FFA500",
     },
   },
   SIZES: {

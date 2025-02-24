@@ -91,8 +91,8 @@ export const StepOne = () => {
 
   const onSpectatorModeClick = () => {
     const randomRealmEntity = getRandomRealmEntity(components);
-    const position = randomRealmEntity && getComponentValue(components.Position, randomRealmEntity);
-    position && navigateToHexView(new Position(position));
+    const structure = randomRealmEntity ? getComponentValue(components.Structure, randomRealmEntity) : undefined;
+    structure && navigateToHexView(new Position({ x: structure.base.coord_x, y: structure.base.coord_y }));
   };
 
   const onPlayModeClick = () => {

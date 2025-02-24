@@ -21,21 +21,20 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
   };
 };
 
-export const useArmyAtPosition = ({ position }: { position: Position }) => {
-  {
-    const {
-      account: { account },
-      setup: { components },
-    } = useDojo();
+export const usePlayerArmyAtPosition = ({ position }: { position: Position }) => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
 
-    const armiesAtPosition = useEntityQuery([
-      HasValue(components.ExplorerTroops, { coord: { x: position.x, y: position.y } }),
-    ]);
+  const armiesAtPosition = useEntityQuery([
+    HasValue(components.ExplorerTroops, { coord: { x: position.x, y: position.y } }),
+  ]);
 
-    const ownArmies = useMemo(() => {
-      return formatArmies(armiesAtPosition, ContractAddress(account.address), components);
-    }, [armiesAtPosition, position.x, position.y]);
+  const ownArmy = useMemo(() => {
+    const armies = formatArmies(armiesAtPosition, ContractAddress(account.address), components);
+    return armies.find((army) => army.isMine);
+  }, [armiesAtPosition, position.x, position.y]);
 
-    return ownArmies;
-  }
+  return ownArmy;
 };

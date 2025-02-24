@@ -62,7 +62,7 @@ export const BuildingEntityDetails = () => {
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
-      selectedStructureInfo?.structureCategory === StructureType[StructureType.Realm],
+      selectedStructureInfo?.structureCategory === StructureType.Realm,
     [selectedBuildingHex.innerCol, selectedBuildingHex.innerRow],
   );
 
@@ -136,8 +136,8 @@ export const BuildingEntityDetails = () => {
   const canDestroyBuilding = useMemo(() => {
     if (buildingState.buildingType !== BuildingType.WorkersHut) return true;
 
-    const realmId = getComponentValue(
-      dojo.setup.components.EntityOwner,
+    const structure = getComponentValue(
+      dojo.setup.components.Structure,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
@@ -145,7 +145,7 @@ export const BuildingEntityDetails = () => {
 
     const population = getComponentValue(
       dojo.setup.components.StructureBuildings,
-      getEntityIdFromKeys([BigInt(realmId?.entity_owner_id || 0)]),
+      getEntityIdFromKeys([BigInt(structure?.entity_id || 0)]),
     );
     return (population?.population.max || 0) - (population?.population.current || 0) >= populationImpact;
   }, [buildingState.buildingType, buildingState.ownerEntityId]);

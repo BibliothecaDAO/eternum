@@ -79,41 +79,25 @@ export class SystemManager {
 
         return query.update$.subscribe((update) => {
           if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-            const army = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+            const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+            if (!explorer) return;
 
-            if (!army) return;
-
-            // const health = getComponentValue(this.setup.components.Health, update.entity);
-            // if (!health) return;
-
-            // const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
-            // if (protectee) return;
-
-            const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
-            if (!entityOwner) return;
-
-            const realm = getComponentValue(
-              this.setup.components.Realm,
-              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-            );
+            const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(explorer.owner)]));
             if (!realm) return;
 
             const owner = getComponentValue(
-              this.setup.components.Owner,
-              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-            );
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(explorer.owner)]),
+            )?.owner;
 
             const addressName = getComponentValue(
               this.setup.components.AddressName,
-              getEntityIdFromKeys([BigInt(owner?.address || 0)]),
+              getEntityIdFromKeys([BigInt(owner || 0)]),
             );
 
             const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
 
-            const guild = getComponentValue(
-              this.setup.components.GuildMember,
-              getEntityIdFromKeys([owner?.address || 0n]),
-            );
+            const guild = getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]));
 
             let guildName = "";
             if (guild?.guild_entity_id) {
@@ -125,15 +109,15 @@ export class SystemManager {
             }
 
             callback({
-              entityId: army.explorer_id,
-              hexCoords: { col: army.coord.x, row: army.coord.y },
+              entityId: explorer.explorer_id,
+              hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
               // todo: fix this
               battleId: 0,
               defender: false,
               // todo: fix this
               currentHealth: 1n,
               order: realm.order,
-              owner: { address: owner?.address || 0n, ownerName, guildName },
+              owner: { address: owner || 0n, ownerName, guildName },
             });
           }
         });
@@ -152,13 +136,13 @@ export class SystemManager {
 
           if (!structure) return;
 
-          const categoryKey = structure.category as keyof typeof StructureType;
+          const category = structure.base.category as StructureType;
 
-          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          const stage = this.getStructureStage(category, structure.entity_id);
 
           return {
             entityId: structure.entity_id,
-            structureType: StructureType[categoryKey],
+            structureType: category,
             stage,
           };
         });
@@ -168,16 +152,11 @@ export class SystemManager {
           const structure = getComponentValue(this.setup.components.Structure, update.entity);
           if (!structure) return;
 
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!position) return;
-
-          const owner = getComponentValue(this.setup.components.Owner, update.entity);
-          const categoryKey = structure.category as keyof typeof StructureType;
-          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          const stage = this.getStructureStage(structure.base.category as StructureType, structure.entity_id);
 
           let level = 0;
           let hasWonder = false;
-          if (StructureType[categoryKey] === StructureType.Realm) {
+          if (structure.base.category === StructureType.Realm) {
             const realm = getComponentValue(this.setup.components.Realm, update.entity);
             level = realm?.level || RealmLevels.Settlement;
             hasWonder = realm?.has_wonder || false;
@@ -185,11 +164,11 @@ export class SystemManager {
 
           return {
             entityId: structure.entity_id,
-            hexCoords: { col: position.x, row: position.y },
-            structureType: StructureType[categoryKey],
+            hexCoords: { col: structure.base.coord_x, row: structure.base.coord_y },
+            structureType: structure.base.category as StructureType,
             stage,
             level,
-            owner: { address: owner?.address || 0n },
+            owner: { address: structure.owner },
             hasWonder,
           };
         });
@@ -202,12 +181,12 @@ export class SystemManager {
       onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
         this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
           const realm = getComponentValue(this.setup.components.Realm, update.entity);
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!realm || !position) return;
+          const structureBase = getComponentValue(this.setup.components.Structure, update.entity)?.base;
+          if (!realm || !structureBase) return;
 
           return {
             level: realm.level,
-            hexCoords: { col: position.x, row: position.y },
+            hexCoords: { col: structureBase.coord_x, row: structureBase.coord_y },
           };
         });
       },

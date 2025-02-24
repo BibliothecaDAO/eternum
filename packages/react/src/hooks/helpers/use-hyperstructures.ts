@@ -41,7 +41,7 @@ export const useHyperstructures = () => {
 
   const hyperstructures = useEntityQuery([Has(Hyperstructure)]).map((hyperstructureEntityId) => {
     const hyperstructure = getComponentValueStrict(Hyperstructure, hyperstructureEntityId);
-    const structure = getComponentValue(Structure, hyperstructureEntityId);
+    const structure = getComponentValueStrict(Structure, hyperstructureEntityId);
     const contributions = hyperstructure ? getContributions(hyperstructure?.entity_id, Contribution) : [];
     const owner = structure?.owner || 0n;
     const isOwner = ContractAddress(owner) === ContractAddress(account.address);
@@ -51,7 +51,7 @@ export const useHyperstructures = () => {
     return {
       ...hyperstructure,
       ...structure,
-      position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
+      position: { x: structure.base.coord_x, y: structure.base.coord_y },
       ...contributions,
       owner,
       isOwner,
@@ -65,7 +65,7 @@ export const useHyperstructures = () => {
     };
   });
 
-  return { hyperstructures };
+  return hyperstructures;
 };
 
 export const useGetHyperstructureProgress = () => {

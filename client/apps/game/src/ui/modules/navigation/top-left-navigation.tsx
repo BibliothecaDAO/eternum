@@ -99,9 +99,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
   const goToHexView = useCallback(
     (entityId: ID) => {
-      const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+      const structurePosition = getComponentValue(
+        setup.components.Structure,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      )?.base;
       if (!structurePosition) return;
-      navigateToHexView(new Position(structurePosition));
+      navigateToHexView(new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }));
     },
     [navigateToHexView],
   );
@@ -109,11 +112,11 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const goToMapView = useCallback(
     (entityId?: ID) => {
       const position = entityId
-        ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
-        : { x: hexPosition.col, y: hexPosition.row };
+        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base
+        : { coord_x: hexPosition.col, coord_y: hexPosition.row };
 
       if (!position) return;
-      navigateToMapView(new Position(position));
+      navigateToMapView(new Position({ x: position.coord_x, y: position.coord_y }));
     },
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
@@ -161,7 +164,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                       >
                         <div className="self-center flex gap-4 text-xl">
                           {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.structure.category] : ""}
+                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
                         </div>
                       </SelectItem>
                     </div>
@@ -186,7 +189,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          structureCategory={StructureType[structure.structureCategory as keyof typeof StructureType]}
+          structureCategory={structure.structureCategory as StructureType}
           className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
         />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">

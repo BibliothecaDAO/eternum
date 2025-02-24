@@ -32,7 +32,7 @@ export const StructureListItem = ({
   const structureArmies = useArmiesByStructure({ structureEntityId: structure.entityId });
 
   const progress =
-    structure.structure.category === StructureType[StructureType.Hyperstructure]
+    structure.structure.base.category === StructureType.Hyperstructure
       ? getHyperstructureProgress(structure.entityId)
       : undefined;
 
@@ -48,11 +48,11 @@ export const StructureListItem = ({
             <div className="h4 text-xl flex flex-row justify-between ">
               <div className="mr-2 text-base">{structure.name}</div>
             </div>
-            {structure.structure.category === StructureType[StructureType.Hyperstructure] && (
+            {structure.structure.base.category === StructureType.Hyperstructure && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
             )}
 
-            {structure.structure.category === StructureType[StructureType.Realm] && (
+            {structure.structure.base.category === StructureType.Realm && (
               <RealmResourcesIO realmEntityId={structure.entityId} />
             )}
           </div>

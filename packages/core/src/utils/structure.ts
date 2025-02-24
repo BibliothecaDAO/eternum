@@ -66,10 +66,10 @@ const getStructureInfo = (
 };
 
 export const isStructureImmune = (
-  structure: { category: string; created_at: bigint } | undefined,
+  structure: { category: number; created_at: number } | undefined,
   currentTimestamp: number,
 ): boolean => {
-  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+  const structureType = structure?.category as StructureType;
 
   const tickCount = currentTickCount(currentTimestamp);
   const allowAttackTick =
