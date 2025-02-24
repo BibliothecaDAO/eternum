@@ -29,10 +29,8 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
     ) -> bool {
-        println!(" \n lottery 1 \n");
         let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
-        println!(" \n lottery 2 \n");
         let success: bool = *random::choices(
             array![true, false].span(),
             array![1000, map_config.shards_mines_fail_probability.into()].span(),
@@ -41,7 +39,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             true,
             vrf_seed,
         )[0];
-        println!(" \n lottery 3 \n");
 
         // return false if lottery fails
         if !success {
@@ -51,7 +48,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
         iStructureImpl::create(ref world, coord, owner, structure_id, StructureCategory::FragmentMine, true);
-        println!(" \n lottery 4 \n");
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();
@@ -59,7 +55,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         iMercenariesImpl::add(
             ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
         );
-        println!(" \n lottery 5 \n");
 
         // allow fragment mine to produce limited amount of shards
         let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
@@ -72,7 +67,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         shards_resource_production.increase_output_amout_left(shards_reward_amount);
         shards_resource.production = shards_resource_production;
         shards_resource.store(ref world);
-        println!(" \n lottery 6 \n");
         // grant wheat to structure
         let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleResourceStoreImpl::retrieve(
@@ -85,7 +79,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
                 wheat_weight_grams,
             );
         wheat_resource.store(ref world);
-        println!(" \n lottery 7 \n");
         // grant fish to structure
         let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
         let mut fish_resource = SingleResourceStoreImpl::retrieve(
@@ -96,10 +89,8 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
                 map_config.mine_fish_grant_amount.into() * RESOURCE_PRECISION, ref structure_weight, fish_weight_grams,
             );
         fish_resource.store(ref world);
-        println!(" \n lottery 8 \n");
         // update structure weight
         structure_weight.store(ref world, structure_id);
-        println!(" \n lottery 9 \n");
         // create shards production building
         BuildingImpl::create(
             ref world,
@@ -109,7 +100,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             Option::Some(ResourceTypes::EARTHEN_SHARD),
             BuildingImpl::center(),
         );
-        println!(" \n lottery 10 \n");
 
         return true;
     }

@@ -328,31 +328,24 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         troop_stamina_config: TroopStaminaConfig,
         tick: TickConfig,
     ) {
-        println!(" \n eeeeeee: \n");
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
         let mut salt: u128 = 1;
-        println!(" \n backkkk: \n");
 
         loop {
             match slot_tiers.pop_front() {
                 Option::Some((
                     slot, tier, category,
                 )) => {
-                    println!(" \n frontttt: \n");
                     let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into()
                         * RESOURCE_PRECISION;
                     let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into()
                         * RESOURCE_PRECISION;
                     let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
-                    println!(" \n seed: {} \n", seed);
-                    println!(" \n salt: {} \n", salt);
                     let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
-                    println!(" \n after random \n");
                     troop_amount += lower_bound;
                     let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
 
-                    println!(" \n zzzzzz: {} \n", troop_amount);
                     iGuardImpl::add(
                         ref world,
                         structure_id,
@@ -368,8 +361,6 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         troop_limit_config,
                         troop_stamina_config,
                     );
-
-                    println!(" \n aaaaaa: {} \n", troops.count);
                 },
                 Option::None => { break; },
             }

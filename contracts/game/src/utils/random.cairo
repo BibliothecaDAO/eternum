@@ -41,7 +41,6 @@ pub impl VRFImpl of VRFTrait {
 ///
 ///
 pub fn random(seed: u256, salt: u128, upper_bound: u128) -> u128 {
-    println!(" \n upper bound: {} \n", upper_bound);
     let value: u256 = poseidon_hash_span(array![seed.low.into(), seed.high.into(), salt.into()].span()).into();
     let upper_bound: u256 = upper_bound.into();
     return (value % upper_bound).try_into().unwrap();
