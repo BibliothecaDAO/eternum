@@ -855,6 +855,7 @@ export default class WorldmapScene extends HexagonScene {
         1000,
         false,
       );
+      // todo: verify that this works with nested struct
       const promisePositions = getEntities(
         this.dojo.network.toriiClient,
         {
@@ -863,32 +864,32 @@ export default class WorldmapScene extends HexagonScene {
             clauses: [
               {
                 Member: {
-                  model: "s1_eternum-Position",
-                  member: "x",
+                  model: "s1_eternum-ExplorerTroops",
+                  member: "coord.x",
                   operator: "Gte",
                   value: { Primitive: { U32: startCol - range } },
                 },
               },
               {
                 Member: {
-                  model: "s1_eternum-Position",
-                  member: "x",
+                  model: "s1_eternum-ExplorerTroops",
+                  member: "coord.x",
                   operator: "Lte",
                   value: { Primitive: { U32: startCol + range } },
                 },
               },
               {
                 Member: {
-                  model: "s1_eternum-Position",
-                  member: "y",
+                  model: "s1_eternum-ExplorerTroops",
+                  member: "coord.y",
                   operator: "Gte",
                   value: { Primitive: { U32: startRow - range } },
                 },
               },
               {
                 Member: {
-                  model: "s1_eternum-Position",
-                  member: "y",
+                  model: "s1_eternum-ExplorerTroops",
+                  member: "coord.y",
                   operator: "Lte",
                   value: { Primitive: { U32: startRow + range } },
                 },
@@ -898,15 +899,7 @@ export default class WorldmapScene extends HexagonScene {
         },
         this.dojo.network.contractComponents as any,
         [],
-        // todo: refactor this
-        [
-          "s1_eternum-Army",
-          "s1_eternum-Position",
-          "s1_eternum-Health",
-          "s1_eternum-EntityOwner",
-          "s1_eternum-Protectee",
-          "s1_eternum-Stamina",
-        ],
+        ["s1_eternum-ExplorerTroops"],
         1000,
         false,
       );

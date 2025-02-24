@@ -48,7 +48,7 @@ export const AllResourceArrivals = memo(
 
       // Move API call outside of state updates
       getEntitiesFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, unsubscribedIds, [
-        "s1_eternum-DetachedResource",
+        "s1_eternum-ResourceList",
       ]).catch((error) => console.error("Fetch failed", error));
     }, [arrivals, subscribedIds, addSubscribedIds]);
 

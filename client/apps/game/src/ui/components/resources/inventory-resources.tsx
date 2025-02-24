@@ -69,7 +69,7 @@ export const InventoryResources = ({
           dojo.network.toriiClient,
           dojo.network.contractComponents as any,
           [entityId.toString()],
-          ["s1_eternum-DetachedResource"],
+          ["s1_eternum-ResourceList"],
         );
         localStorage.setItem(cacheKey, now.toString());
       } catch (error) {

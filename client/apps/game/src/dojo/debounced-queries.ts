@@ -1,11 +1,6 @@
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
-import {
-  addDonkeysAndArmiesSubscription,
-  getEntitiesFromTorii,
-  getMarketFromTorii,
-  getOneKeyModelbyRealmEntityIdFromTorii,
-} from "./queries";
+import { addDonkeysAndArmiesSubscription, getEntitiesFromTorii, getMarketFromTorii } from "./queries";
 
 // Queue class to manage requests
 class RequestQueue {
@@ -50,15 +45,6 @@ class RequestQueue {
 
 const subscriptionQueue = new RequestQueue();
 const marketQueue = new RequestQueue();
-
-export const debouncedGetOneKeyEntitiesByRealmEntityIdFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string[],
-  onComplete?: () => void,
-) => {
-  await subscriptionQueue.add(() => getOneKeyModelbyRealmEntityIdFromTorii(client, components, entityID), onComplete);
-};
 
 export const debouncedGetDonkeysAndArmiesFromTorii = async <S extends Schema>(
   client: ToriiClient,
