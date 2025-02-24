@@ -15,7 +15,7 @@ export const getStructureAtPosition = (
 ): Structure | undefined => {
   // todo: fix this
   const occupier = getComponentValue(components.Occupier, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
-  const structureEntity = getEntityIdFromKeys([BigInt(occupier?.occupier || 0n)]);
+  const structureEntity = getEntityIdFromKeys([BigInt(occupier?.occupier.Structure || 0n)]);
 
   if (!structureEntity) return;
 

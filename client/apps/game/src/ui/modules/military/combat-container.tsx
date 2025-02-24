@@ -53,7 +53,7 @@ export const CombatContainer = ({
   }, [attackerEntityId]);
 
   const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier || 0n)]);
+    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier.Structure || 0n)]);
     const structure = getComponentValue(Structure, occupierId);
     const explorer = getComponentValue(ExplorerTroops, occupierId);
 

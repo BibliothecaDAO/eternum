@@ -100,8 +100,12 @@ export class TileManager {
       this.components.Occupier,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]),
     );
+
     if (occupier?.occupier) {
-      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(occupier?.occupier)]));
+      const structure = getComponentValue(
+        this.components.Structure,
+        getEntityIdFromKeys([BigInt(occupier?.occupier.Structure)]),
+      );
       if (structure) {
         let category = structure.base.category;
         return category as StructureType;

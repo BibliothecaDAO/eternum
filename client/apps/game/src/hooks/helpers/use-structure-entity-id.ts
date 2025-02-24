@@ -24,7 +24,7 @@ export const useStructureEntityId = () => {
 
     const occupier = getComponentValue(Occupier, getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]));
 
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(occupier?.occupier ?? 0)]));
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(occupier?.occupier.Structure ?? 0)]));
     const newStructureId = structure?.entity_id;
 
     setStructureEntityId(newStructureId || UNDEFINED_STRUCTURE_ENTITY_ID);

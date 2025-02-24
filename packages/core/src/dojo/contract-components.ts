@@ -1055,14 +1055,17 @@ export function defineContractComponents(world: World) {
         {
           x: RecsType.Number,
           y: RecsType.Number,
-          occupier: RecsType.String,
+          occupier: {
+            Structure: RecsType.Number,
+            Explorer: RecsType.Number,
+          },
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Occupier",
-            types: ["u32", "u32", "enum"],
-            customTypes: ["OccupiedBy"],
+            types: ["u32", "u32", "u32", "u32"],
+            customTypes: [],
           },
         },
       );
