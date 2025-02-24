@@ -1,6 +1,6 @@
 import { ClientComponents, ContractAddress, getRealmInfo, RealmInfo } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context";
 
@@ -12,11 +12,14 @@ export function usePlayerOwnedRealms(): RealmInfo[] {
 
   const { Realm, Structure } = components;
 
-  const realmEntities = useEntityQuery([Has(Realm), HasValue(Structure, { owner: ContractAddress(account.address) })]);
+  // todo: fix filtering
+  const realmEntities = useEntityQuery([Has(Realm)]);
 
   const realms = useMemo(() => {
     return realmEntities
       .map((entity) => {
+        const structure = getComponentValue(Structure, entity);
+        if (structure?.base.owner !== ContractAddress(account.address)) return;
         return getRealmInfo(entity, components);
       })
       .filter(Boolean) as RealmInfo[];

@@ -1,6 +1,6 @@
 import { ContractAddress, formatArmies, type ID, type Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@dojoengine/recs";
+import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../";
 
@@ -10,11 +10,7 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
     account: { account },
   } = useDojo();
 
-  const armies = useEntityQuery([
-    Has(components.ExplorerTroops),
-    Has(components.Position),
-    HasValue(components.EntityOwner, { entity_owner_id: structureEntityId }),
-  ]);
+  const armies = useEntityQuery([HasValue(components.ExplorerTroops, { owner: structureEntityId })]);
 
   const entityArmies = useMemo(() => {
     return formatArmies(armies, ContractAddress(account.address), components);
@@ -25,7 +21,7 @@ export const useArmiesByStructure = ({ structureEntityId }: { structureEntityId:
   };
 };
 
-export const useArmiesAtPosition = ({ position }: { position: Position }) => {
+export const useArmyAtPosition = ({ position }: { position: Position }) => {
   {
     const {
       account: { account },
@@ -33,8 +29,7 @@ export const useArmiesAtPosition = ({ position }: { position: Position }) => {
     } = useDojo();
 
     const armiesAtPosition = useEntityQuery([
-      Has(components.ExplorerTroops),
-      HasValue(components.Position, { x: position.x, y: position.y }),
+      HasValue(components.ExplorerTroops, { coord: { x: position.x, y: position.y } }),
     ]);
 
     const ownArmies = useMemo(() => {

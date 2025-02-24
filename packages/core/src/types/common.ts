@@ -48,13 +48,12 @@ export type ArmyInfo = {
   isMine: boolean;
   isMercenary: boolean;
   isHome: boolean;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  position: Position;
+  owner: ContractAddress;
   entity_owner_id: ID;
   totalCapacity: bigint;
   weight: bigint;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
-  homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
 
 export type Structure = {

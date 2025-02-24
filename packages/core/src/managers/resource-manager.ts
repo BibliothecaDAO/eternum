@@ -515,7 +515,7 @@ export class ResourceManager {
 
   public getStoreCapacity(): number {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
-    if (structure?.category === StructureType[StructureType.FragmentMine]) return Infinity;
+    if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
     const packedBuildingCount =
