@@ -39,6 +39,7 @@ pub mod dev {
 pub mod combat {
     #[cfg(test)]
     mod tests {
+        mod test_troop_battle;
         mod test_troop_management;
         mod test_troop_movement;
     }
