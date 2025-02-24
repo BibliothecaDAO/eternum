@@ -29,6 +29,6 @@ jobs:
         with:
           tool-versions: contracts/season_pass/.tool-versions
       - run: scarb build
-        working-directory: contracts/season_pass/contracts
+        working-directory: contracts/season_pass
       - run: snforge test
-        working-directory: contracts/season_pass/contracts
+        working-directory: contracts/season_pass
