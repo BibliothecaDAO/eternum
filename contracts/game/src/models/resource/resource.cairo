@@ -389,4 +389,3 @@ pub struct ResourceList {
     pub resource_type: u8,
     pub amount: u128,
 }
-

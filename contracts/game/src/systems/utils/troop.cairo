@@ -126,39 +126,39 @@ pub impl iExplorerImpl of iExplorerTrait {
         mut biomes: Array<Biome>,
         current_tick: u64,
     ) {
-        let stamina_cost = match explore {
-            true => {
-                let mut stamina_cost: u128 = troop_stamina_config.stamina_explore_stamina_cost.into()
-                    * biomes.len().into();
-                loop {
-                    match biomes.pop_front() {
-                        Option::Some(biome) => {
-                            let (add, stamina_bonus) = explorer
-                                .troops
-                                .stamina_movement_bonus(biome, troop_stamina_config);
-                            if add {
-                                stamina_cost += stamina_bonus.into();
-                            } else {
-                                if stamina_bonus.into() > stamina_cost {
-                                    stamina_cost = 0;
-                                } else {
-                                    stamina_cost -= stamina_bonus.into();
-                                }
-                            }
-                        },
-                        Option::None => { break; },
-                    }
-                };
-
-                stamina_cost
-            },
+        let mut stamina_cost: u128 = match explore {
+            true => { troop_stamina_config.stamina_explore_stamina_cost.into() * biomes.len().into() },
             false => troop_stamina_config.stamina_travel_stamina_cost.into() * biomes.len().into(),
         };
 
+        let mut total_additional_stamina_cost: u128 = 0;
+        let mut total_deducted_stamina_cost: u128 = 0;
+        loop {
+            match biomes.pop_front() {
+                Option::Some(biome) => {
+                    let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, troop_stamina_config);
+                    if add {
+                        total_additional_stamina_cost += stamina_bonus.into();
+                    } else {
+                        total_deducted_stamina_cost += stamina_bonus.into();
+                    }
+                },
+                Option::None => { break; },
+            }
+        };
+
+        stamina_cost += total_additional_stamina_cost;
+        if total_deducted_stamina_cost > stamina_cost {
+            stamina_cost = 0;
+        } else {
+            stamina_cost -= total_deducted_stamina_cost;
+        }
         explorer
             .troops
             .stamina
-            .spend(explorer.troops.category, troop_stamina_config, stamina_cost.try_into().unwrap(), current_tick);
+            .spend(
+                explorer.troops.category, troop_stamina_config, stamina_cost.try_into().unwrap(), current_tick, true,
+            );
     }
 
     fn burn_food_cost(
@@ -268,7 +268,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         )
             .at(0);
 
-        return (reward_resource_id, config.reward_resource_amount);
+        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
     }
 }
 
@@ -328,24 +328,31 @@ pub impl iMercenariesImpl of iMercenariesTrait {
         troop_stamina_config: TroopStaminaConfig,
         tick: TickConfig,
     ) {
+        println!(" \n eeeeeee: \n");
         let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         let mut structure_guards: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
         let mut salt: u128 = 1;
+        println!(" \n backkkk: \n");
 
         loop {
             match slot_tiers.pop_front() {
                 Option::Some((
                     slot, tier, category,
                 )) => {
+                    println!(" \n frontttt: \n");
                     let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into()
                         * RESOURCE_PRECISION;
                     let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into()
                         * RESOURCE_PRECISION;
                     let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
+                    println!(" \n seed: {} \n", seed);
+                    println!(" \n salt: {} \n", salt);
                     let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
+                    println!(" \n after random \n");
                     troop_amount += lower_bound;
                     let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
 
+                    println!(" \n zzzzzz: {} \n", troop_amount);
                     iGuardImpl::add(
                         ref world,
                         structure_id,
@@ -361,6 +368,8 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                         troop_limit_config,
                         troop_stamina_config,
                     );
+
+                    println!(" \n aaaaaa: {} \n", troops.count);
                 },
                 Option::None => { break; },
             }

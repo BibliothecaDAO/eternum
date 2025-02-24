@@ -7,7 +7,7 @@ use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_te
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{
-    CapacityConfig, LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig, TickConfig,
+    CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ProductionConfig, TickConfig,
     TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::position::{Coord};
@@ -17,6 +17,14 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};
 
+pub fn MOCK_MAP_CONFIG() -> MapConfig {
+    MapConfig {
+        reward_resource_amount: 750,
+        shards_mines_fail_probability: 5000,
+        mine_wheat_grant_amount: 0,
+        mine_fish_grant_amount: 1,
+    }
+}
 
 pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
     TroopDamageConfig {
@@ -42,11 +50,11 @@ pub fn MOCK_TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
         stamina_crossbowman_max: 140,
         stamina_attack_req: 30,
         stamina_attack_max: 60,
-        stamina_explore_wheat_cost: 780,
-        stamina_explore_fish_cost: 440,
+        stamina_explore_wheat_cost: 2,
+        stamina_explore_fish_cost: 1,
         stamina_explore_stamina_cost: 30, // 30 stamina per hex
-        stamina_travel_wheat_cost: 234,
-        stamina_travel_fish_cost: 885,
+        stamina_travel_wheat_cost: 2,
+        stamina_travel_fish_cost: 1,
         stamina_travel_stamina_cost: 20 // 20 stamina per hex 
     }
 }
@@ -57,7 +65,7 @@ pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
         explorer_guard_max_troop_count: 500_000, // hard max of troops per party
         guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
         mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-        mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
+        mercenaries_troop_upper_bound: 500_000 // max of troops per mercenary
     }
 }
 
@@ -107,9 +115,9 @@ pub fn MOCK_PRODUCTION_CONFIG(
     }
 }
 
-pub fn MOCK_LABOR_PRODUCTION_CONFIG() -> ProductionConfig {
+pub fn MOCK_DEFAULT_PRODUCTION_CONFIG(resource_type: u8) -> ProductionConfig {
     ProductionConfig {
-        resource_type: ResourceTypes::LABOR,
+        resource_type,
         amount_per_building_per_tick: 100,
         labor_burn_strategy: LaborBurnPrStrategy {
             resource_rarity: 0,
@@ -124,6 +132,10 @@ pub fn MOCK_LABOR_PRODUCTION_CONFIG() -> ProductionConfig {
     }
 }
 
+
+pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
+    WorldConfigUtilImpl::set_member(ref world, selector!("map_config"), config);
+}
 
 pub fn tstore_capacity_config(ref world: WorldStorage, capacity_config: CapacityConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), capacity_config);
@@ -185,7 +197,10 @@ pub fn tspawn_simple_realm(
     ref world: WorldStorage, realm_id: ID, owner: starknet::ContractAddress, coord: Coord,
 ) -> ID {
     // set labor production config
-    tstore_production_config(ref world, MOCK_LABOR_PRODUCTION_CONFIG());
+    tstore_production_config(ref world, MOCK_DEFAULT_PRODUCTION_CONFIG(ResourceTypes::LABOR));
+
+    // set earthen shard production config
+    tstore_production_config(ref world, MOCK_DEFAULT_PRODUCTION_CONFIG(ResourceTypes::EARTHEN_SHARD));
 
     // create realm
     let (realm_entity_id, _) = InternalRealmLogicImpl::create_realm(

@@ -143,6 +143,7 @@ mod troop_battle_systems {
                 .next_attack_slot(guarded_structure.troop_max_guard_count.into());
 
             if guard_slot.is_none() {
+                // todo: claim
                 panic!("defender has no troops");
             }
             let guard_slot: GuardSlot = guard_slot.unwrap();

@@ -525,10 +525,22 @@ pub impl TroopsImpl of TroopsTrait {
         // deduct stamina spent
         alpha
             .stamina
-            .spend(alpha.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+            .spend(
+                alpha.category,
+                troop_stamina_config,
+                troop_stamina_config.stamina_attack_req.into(),
+                current_tick,
+                false,
+            );
         bravo
             .stamina
-            .spend(bravo.category, troop_stamina_config, troop_stamina_config.stamina_attack_req.into(), current_tick);
+            .spend(
+                bravo.category,
+                troop_stamina_config,
+                troop_stamina_config.stamina_attack_req.into(),
+                current_tick,
+                false,
+            );
 
         // grant stamina to victor
         if alpha.count.is_zero() || bravo.count.is_zero() {
