@@ -80,6 +80,7 @@ pub enum GuardSlot {
 
 #[generate_trait]
 pub impl GuardImpl of GuardTrait {
+    // todo: test
     fn assert_functional_slot(ref self: GuardTroops, slot: GuardSlot, max_guards: felt252) {
         let functional_slots = self.functional_slots(max_guards);
         let mut is_functional_slot: bool = false;
@@ -92,6 +93,7 @@ pub impl GuardImpl of GuardTrait {
         assert!(is_functional_slot, "slot can't be selected");
     }
 
+    // todo: test
     fn functional_slots(ref self: GuardTroops, max_guards: felt252) -> Array<GuardSlot> {
         match max_guards {
             0 => panic!("max guards is 0"),
@@ -106,6 +108,7 @@ pub impl GuardImpl of GuardTrait {
         }
     }
 
+    // todo: test: critical
     fn next_attack_slot(ref self: GuardTroops, max_guards: felt252) -> Option<GuardSlot> {
         let functional_slots = self.functional_slots(max_guards);
 

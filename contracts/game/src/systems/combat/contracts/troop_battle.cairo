@@ -105,9 +105,6 @@ pub mod troop_battle_systems {
                 world.write_model(@explorer_aggressor);
             }
 
-            println!("\n explorer_aggressor_troops.count: {}", explorer_aggressor_troops.count);
-            println!("\n explorer_defender_troops.count: {}", explorer_defender_troops.count);
-
             if explorer_defender_troops.count.is_zero() {
                 let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_defender.owner,
@@ -138,7 +135,9 @@ pub mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer_id);
+            let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_aggressor.owner,
+            );
             explorer_owner.assert_caller_owner();
 
             // ensure caller does not own defender
@@ -361,7 +360,5 @@ pub mod troop_battle_systems {
                 StructureTroopGuardStoreImpl::store(ref structure_guards_aggressor, ref world, structure_id);
             }
         }
-        // note: if we add guard vs explorer, check that attacking guard is
-    // one of relevant slots as implemented in next_attack_slot
     }
 }

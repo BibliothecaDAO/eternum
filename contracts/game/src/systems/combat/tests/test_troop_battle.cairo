@@ -14,7 +14,7 @@ mod tests {
         Structure, StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
         StructureTroopExplorerStoreImpl,
     };
-    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
+    use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, TroopTier, TroopType, Troops};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::models::{
         config::{m_ProductionConfig, m_WeightConfig, m_WorldConfig}, map::{m_Tile}, position::{m_Occupier},
@@ -351,8 +351,6 @@ mod tests {
     }
 
 
-
-
     #[test]
     #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn test_explorer_vs_explorer__fails_not_owner() {
@@ -458,9 +456,7 @@ mod tests {
         //// SECOND REALM EXPLORER ATTACKS FIRST REALM EXPLORER  ////
         ///////////////////////////////////////////////////////////////////
         // set caller to an unknown address
-        starknet::testing::set_contract_address(
-            starknet::contract_address_const::<'unknown'>(),
-        );
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'unknown'>());
         // grant enough time before attacking to have enough stamina
         starknet::testing::set_block_timestamp(current_tick * 5);
         let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
@@ -469,6 +465,119 @@ mod tests {
     }
 
 
+    #[test]
+    #[should_panic(expected: ("explorers are not adjacent", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_vs_explorer__fails_not_adjacent() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(ref world, first_realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+        tgrant_resources(ref world, second_realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE EXPLORER FOR FIRST REALM  ///////////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::East;
+        let first_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                first_realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction,
+            );
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Knight, TroopTier::T1, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER MOVES TO MEET FIRST REALM EXPLORER  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM EXPLORER  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+
+        let wrong_direction = Direction::NorthEast;
+        troop_battle_systems
+            .attack_explorer_vs_explorer(second_realm_explorer_id, first_realm_explorer_id, wrong_direction);
+    }
 
 
     #[test]
@@ -578,7 +687,6 @@ mod tests {
         let mut second_realm_explorer: ExplorerTroops = world.read_model(second_realm_explorer_id);
         second_realm_explorer.troops.count = 0;
         world.write_model_test(@second_realm_explorer);
-        
 
         //// SECOND REALM EXPLORER ATTACKS FIRST REALM EXPLORER  ////
         ///////////////////////////////////////////////////////////////////
@@ -589,7 +697,6 @@ mod tests {
         troop_battle_systems
             .attack_explorer_vs_explorer(second_realm_explorer_id, first_realm_explorer_id, Direction::West);
     }
-
 
 
     #[test]
@@ -708,5 +815,731 @@ mod tests {
         let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
         troop_battle_systems
             .attack_explorer_vs_explorer(second_realm_explorer_id, first_realm_explorer_id, Direction::West);
+    }
+
+
+    #[test]
+    fn test_explorer_vs_guard_and_guard_dies() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(
+            ref world, first_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+        tgrant_resources(ref world, second_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T2, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Paladin, TroopTier::T3, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, Direction::West);
+
+        // ensure second realm explorer troop count is higher than first realm explorer troop count
+        let first_realm_structure: Structure = world.read_model(first_realm_entity_id);
+        let first_realm_guard_troops: Troops = first_realm_structure.troop_guards.delta;
+        let second_realm_explorer: ExplorerTroops = world.read_model(second_realm_explorer_id);
+        assert!(second_realm_explorer.troops.count > first_realm_guard_troops.count);
+
+        // ensure second realm explorer Occupier model is still occupied by second realm explorer
+        let second_realm_explorer_occupier: Occupier = world.read_model(second_realm_explorer.coord);
+        assert!(second_realm_explorer_occupier.occupier == OccupiedBy::Explorer(second_realm_explorer_id));
+
+        // ensure first realm guard is dead
+        assert!(first_realm_guard_troops.count.is_zero());
+
+        // ensure first realm structure troop guard count is zero
+        assert!(first_realm_structure.base.troop_guard_count.is_zero());
+
+        // ensure first realm structure was claimed by second realm owner
+        let first_realm_structure: Structure = world.read_model(first_realm_entity_id);
+        assert_eq!(first_realm_structure.owner, second_realm_owner);
+    }
+
+
+    #[test]
+    fn test_explorer_vs_guard_and_explorer_dies() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(ref world, first_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+        tgrant_resources(
+            ref world, second_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Paladin, TroopTier::T3, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Crossbowman, TroopTier::T2, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        let second_realm_explorer: ExplorerTroops = world.read_model(second_realm_explorer_id);
+        let second_realm_explorer_coord = second_realm_explorer.coord;
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, Direction::West);
+
+        // ensure second realm explorer troop count is less than first realm explorer troop count
+        let first_realm_structure: Structure = world.read_model(first_realm_entity_id);
+        let first_realm_guard_troops: Troops = first_realm_structure.troop_guards.delta;
+        let second_realm_explorer: ExplorerTroops = world.read_model(second_realm_explorer_id);
+        assert!(second_realm_explorer.troops.count < first_realm_guard_troops.count);
+
+        // ensure second realm explorer Occupier model is deleted
+        let second_realm_explorer_occupier: Occupier = world.read_model(second_realm_explorer_coord);
+        assert_eq!(second_realm_explorer_occupier.occupier, OccupiedBy::None);
+
+        // ensure first realm guard is alive
+        assert_gt!(first_realm_guard_troops.count, 0);
+
+        // ensure first realm structure troop guard count is non-zero
+        assert_gt!(first_realm_structure.base.troop_guard_count, 0);
+    }
+
+    #[test]
+    fn test_explorer_vs_guard_claim_structure_if_guards_has_no_troops() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(
+            ref world, first_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+        tgrant_resources(ref world, second_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T2, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Paladin, TroopTier::T3, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        // set first realm guard troop count to 0
+        starknet::testing::set_contract_address(Zero::zero());
+        let mut first_realm_structure: Structure = world.read_model(first_realm_entity_id);
+        first_realm_structure.troop_guards.delta.count = 0;
+        world.write_model(@first_realm_structure);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, Direction::West);
+
+        // ensure owner of first realm structure is second realm owner
+        let first_realm_structure: Structure = world.read_model(first_realm_entity_id);
+        assert_eq!(first_realm_structure.owner, second_realm_owner);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_vs_guard__fails_not_owner() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(ref world, first_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+        tgrant_resources(
+            ref world, second_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Paladin, TroopTier::T3, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Crossbowman, TroopTier::T2, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        // set caller to an unknown address
+        starknet::testing::set_contract_address(starknet::contract_address_const::<'unknown'>());
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, Direction::West);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ("aggressor has no troops", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_vs_guard__fails_aggressor_has_no_troops() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(
+            ref world, first_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+        tgrant_resources(ref world, second_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T2, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Paladin, TroopTier::T3, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        // set second realm explorer troop count to 0
+        starknet::testing::set_contract_address(Zero::zero());
+        let mut second_realm_explorer: ExplorerTroops = world.read_model(second_realm_explorer_id);
+        second_realm_explorer.troops.count = 0;
+        world.write_model(@second_realm_explorer);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, Direction::West);
+    }
+
+
+    #[test]
+    #[should_panic(expected: ("explorer is not adjacent to structure", 'ENTRYPOINT_FAILED'))]
+    fn test_explorer_vs_guard__fails_not_adjacent() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (troop_battle_system_addr, _) = world.dns(@"troop_battle_systems").unwrap();
+
+        ////////////////  CREATE 1st REALM  ////////////////
+        ////////////////////////////////////////////////////
+
+        let first_realm_owner = starknet::contract_address_const::<'first_realm_owner'>();
+        let first_realm_coord = Coord { x: 80, y: 80 };
+        let first_realm_entity_id = tspawn_simple_realm(ref world, 1, first_realm_owner, first_realm_coord);
+
+        ////////////////  CREATE 2nd REALM  ////////////////
+        ////////////////////////////////////////////////////
+        let directions_from_first_realm_to_second_realm = array![
+            Direction::East, Direction::East, Direction::East, Direction::East,
+        ]
+            .span();
+        let second_realm_owner = starknet::contract_address_const::<'second_realm_owner'>();
+        let mut second_realm_coord = first_realm_coord;
+        for direction in directions_from_first_realm_to_second_realm {
+            second_realm_coord = second_realm_coord.neighbor(*direction);
+        };
+        let second_realm_entity_id = tspawn_simple_realm(ref world, 2, second_realm_owner, second_realm_coord);
+
+        ////////////  GRANT RESOURCES TO BOTH REALMS  /////////////
+        ////////////////////////////////////////////////////////////
+        // grant troop resources to the structures to be able to create troops
+        // first realm gets crossbowmen t2
+        // second realm gets paladins t3
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(
+            ref world, first_realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span(),
+        );
+        tgrant_resources(ref world, second_realm_entity_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+
+        // set current tick
+        let mut current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        ////////////////  CREATE DELTA GUARD FOR FIRST REALM  ///////////
+        /////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(first_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        troop_management_systems
+            .guard_add(first_realm_entity_id, GuardSlot::Delta, TroopType::Crossbowman, TroopTier::T2, troop_amount);
+
+        ////////////  CREATE EXPLORER FOR SECOND REALM  ///////////
+        ///////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let troop_spawn_direction = Direction::West;
+        let second_realm_explorer_id = troop_management_systems
+            .explorer_create(
+                second_realm_entity_id, TroopType::Paladin, TroopTier::T3, troop_amount, troop_spawn_direction,
+            );
+
+        ///////  GRANT FOOD RESOURCES TO SECOND REALM EXPLORER ///////
+        //////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(Zero::zero());
+        let explorer_wheat_amount: u128 = troop_amount * 5;
+        let explorer_fish_amount: u128 = troop_amount * 5;
+        tgrant_resources(
+            ref world,
+            second_realm_explorer_id,
+            array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+        );
+
+        //// SECOND REALM EXPLORER GOES ADJACENT TO FIRST REALM  ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+        let troop_movement_directions = array![Direction::West].span();
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+        troop_movement_systems.explorer_move(second_realm_explorer_id, troop_movement_directions, true);
+
+        //// SECOND REALM EXPLORER ATTACKS FIRST REALM GUARD ////
+        ///////////////////////////////////////////////////////////////////
+        starknet::testing::set_contract_address(second_realm_owner);
+        // grant enough time before attacking to have enough stamina
+        starknet::testing::set_block_timestamp(current_tick * 5);
+        let troop_battle_systems = ITroopBattleSystemsDispatcher { contract_address: troop_battle_system_addr };
+
+        // set the wrong direction
+        let wrong_direction = Direction::NorthEast;
+        troop_battle_systems.attack_explorer_vs_guard(second_realm_explorer_id, first_realm_entity_id, wrong_direction);
     }
 }
