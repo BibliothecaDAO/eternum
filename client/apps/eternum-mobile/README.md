@@ -4,7 +4,6 @@ A mobile game client built with:
 
 - React + TypeScript
 - wouter for routing
-- zustand for state management
 - shadcn/ui components
 - TailwindCSS
 - pnpm package manager
