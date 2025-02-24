@@ -4,7 +4,7 @@ use s1_eternum::models::troop::GuardSlot;
 
 
 #[starknet::interface]
-trait ITroopBattleSystems<T> {
+pub trait ITroopBattleSystems<T> {
     fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
     fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
     fn attack_guard_vs_explorer(
@@ -14,7 +14,7 @@ trait ITroopBattleSystems<T> {
 
 
 #[dojo::contract]
-mod troop_battle_systems {
+pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
 
     use dojo::model::ModelStorage;
@@ -36,7 +36,7 @@ mod troop_battle_systems {
 
 
     #[abi(embed_v0)]
-    impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
+    pub impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
             ref self: ContractState, aggressor_id: ID, defender_id: ID, defender_direction: Direction,
         ) {
@@ -46,6 +46,10 @@ mod troop_battle_systems {
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
             StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
+
+            // ensure caller does not own defender
+            let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -101,6 +105,9 @@ mod troop_battle_systems {
                 world.write_model(@explorer_aggressor);
             }
 
+            println!("\n explorer_aggressor_troops.count: {}", explorer_aggressor_troops.count);
+            println!("\n explorer_defender_troops.count: {}", explorer_defender_troops.count);
+
             if explorer_defender_troops.count.is_zero() {
                 let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                     ref world, explorer_defender.owner,
@@ -133,6 +140,12 @@ mod troop_battle_systems {
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
             let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, explorer_id);
             explorer_owner.assert_caller_owner();
+
+            // ensure caller does not own defender
+            let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, structure_id,
+            );
+            guarded_structure_owner.assert_caller_not_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -249,8 +262,11 @@ mod troop_battle_systems {
             );
             structure_aggressor_owner.assert_caller_owner();
 
-            // ensure explorer has troops
+            // ensure caller does not own defender
             let mut explorer_defender: ExplorerTroops = world.read_model(explorer_id);
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
+
+            // ensure explorer has troops
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
 
             // ensure structure is allowed to use guard slot
