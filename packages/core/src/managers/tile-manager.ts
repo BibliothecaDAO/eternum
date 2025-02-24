@@ -17,7 +17,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { SystemCalls } from "../dojo/create-system-calls";
-import { HexPosition, ID, Position } from "../types";
+import { HexPosition, ID, OccupiedBy, Position } from "../types";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -94,18 +94,14 @@ export class TileManager {
     return building !== undefined && building.category !== BuildingType[BuildingType.None];
   };
 
-  // todo: fix occupier
   structureType = () => {
     const occupier = getComponentValue(
-      this.components.Occupier,
+      this.components.Occupied,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]),
     );
 
-    if (occupier?.occupier) {
-      const structure = getComponentValue(
-        this.components.Structure,
-        getEntityIdFromKeys([BigInt(occupier?.occupier.Structure)]),
-      );
+    if (occupier?.by_type === OccupiedBy.Structure) {
+      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(occupier?.by_id)]));
       if (structure) {
         let category = structure.base.category;
         return category as StructureType;

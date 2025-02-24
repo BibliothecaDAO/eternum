@@ -202,7 +202,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   end = performance.now();
   console.log("event query", end - start);
 
-  // Sync Occupier model
+  // Sync Occupied model
   start = performance.now();
   try {
     await getEntities(
@@ -211,12 +211,12 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
         Keys: {
           keys: [undefined, undefined],
           pattern_matching: "FixedLen",
-          models: ["s1_eternum-Occupier"],
+          models: ["s1_eternum-Occupied"],
         },
       },
       setup.network.contractComponents as any,
       [],
-      ["s1_eternum-Occupier"],
+      ["s1_eternum-Occupied"],
       40_000,
       false,
     );
@@ -368,13 +368,17 @@ export const syncPlayerStructuresData = async (
           "s1_eternum-StructureBuildings",
         ],
         structures.map((structure) => ({ x: structure.position.x, y: structure.position.y })),
-        () => setLoading(LoadingStateKey.PlayerStructuresOneKey, false),
+        () => {
+          setLoading(LoadingStateKey.PlayerStructuresOneKey, false);
+          setLoading(LoadingStateKey.PlayerStructuresTwoKey, false);
+        },
       );
       let end = performance.now();
       console.log("[composite] buildings query", end - start);
     } catch (error) {
       console.error("Failed to fetch structure entities:", error);
       setLoading(LoadingStateKey.PlayerStructuresOneKey, false);
+      setLoading(LoadingStateKey.PlayerStructuresTwoKey, false);
       throw error; // Re-throw to be caught by outer try-catch
     }
 

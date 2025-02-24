@@ -34,11 +34,11 @@ export const CombatContainer = ({
     account: { account },
     setup: {
       components,
-      components: { Structure, ExplorerTroops, Occupier },
+      components: { Structure, ExplorerTroops, Occupied },
     },
   } = useDojo();
 
-  const targetEntity = getComponentValue(Occupier, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetEntity = getComponentValue(Occupied, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
   const staminaCombatConfig = useMemo(() => {
     return configManager.getStaminaCombatConfig();
@@ -53,7 +53,7 @@ export const CombatContainer = ({
   }, [attackerEntityId]);
 
   const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier.Structure || 0n)]);
+    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.by_id || 0n)]);
     const structure = getComponentValue(Structure, occupierId);
     const explorer = getComponentValue(ExplorerTroops, occupierId);
 

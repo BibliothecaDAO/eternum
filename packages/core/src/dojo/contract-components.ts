@@ -597,7 +597,10 @@ export function defineContractComponents(world: World) {
           WHEAT_BALANCE: RecsType.BigInt,
           FISH_BALANCE: RecsType.BigInt,
           LORDS_BALANCE: RecsType.BigInt,
-          weight: RecsType.Number,
+          weight: {
+            capacity: RecsType.BigInt,
+            weight: RecsType.BigInt,
+          },
           STONE_PRODUCTION: {
             building_count: RecsType.Number,
             production_rate: RecsType.BigInt,
@@ -825,12 +828,14 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Resource",
-            // todo: check if this is correct
-            types: Array(74)
-              .fill("u128")
-              .concat(["u32"])
-              .concat(Array(37).fill(["u32", "u128", "u128", "u32"]).flat()),
-            customTypes: [],
+            types: [
+              "u32", // entity_id
+              ...Array(37).fill("u128"), // balances
+              "u128",
+              "u128", // weight
+              ...Array(37).fill(["u32", "u128", "u128", "u32"]).flat(), // productions
+            ],
+            customTypes: ["Weight", "Production"],
           },
         },
       );
@@ -1049,22 +1054,20 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    Occupier: (() => {
+    Occupied: (() => {
       return defineComponent(
         world,
         {
           x: RecsType.Number,
           y: RecsType.Number,
-          occupier: {
-            Structure: RecsType.Number,
-            Explorer: RecsType.Number,
-          },
+          by_id: RecsType.Number,
+          by_type: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "Occupier",
-            types: ["u32", "u32", "u32", "u32"],
+            name: "Occupied",
+            types: ["u32", "u32", "u32", "u8"],
             customTypes: [],
           },
         },

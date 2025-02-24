@@ -123,6 +123,7 @@ export class ResourceManager {
 
   public balanceWithProduction(currentTick: number): number {
     const resource = this._getResource();
+    console.log({ resource });
     const balance = this.balance();
     const amountProduced = this._amountProduced(resource, currentTick);
     const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced);
@@ -133,14 +134,17 @@ export class ResourceManager {
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]);
     const currentBalance = this.balance();
     const weight = configManager.getResourceWeight(this.resourceId);
-    const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || 0;
+    const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
 
     switch (this.resourceId) {
       case ResourcesIds.Stone:
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             STONE_BALANCE: currentBalance + change,
           },
         });
@@ -149,7 +153,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             COAL_BALANCE: currentBalance + change,
           },
         });
@@ -158,7 +165,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             WOOD_BALANCE: currentBalance + change,
           },
         });
@@ -167,7 +177,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             COPPER_BALANCE: currentBalance + change,
           },
         });
@@ -176,7 +189,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             IRONWOOD_BALANCE: currentBalance + change,
           },
         });
@@ -185,7 +201,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             OBSIDIAN_BALANCE: currentBalance + change,
           },
         });
@@ -194,7 +213,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             GOLD_BALANCE: currentBalance + change,
           },
         });
@@ -203,7 +225,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             SILVER_BALANCE: currentBalance + change,
           },
         });
@@ -212,7 +237,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             MITHRAL_BALANCE: currentBalance + change,
           },
         });
@@ -221,7 +249,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             ALCHEMICAL_SILVER_BALANCE: currentBalance + change,
           },
         });
@@ -230,7 +261,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             COLD_IRON_BALANCE: currentBalance + change,
           },
         });
@@ -239,7 +273,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             DEEP_CRYSTAL_BALANCE: currentBalance + change,
           },
         });
@@ -248,7 +285,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             RUBY_BALANCE: currentBalance + change,
           },
         });
@@ -257,7 +297,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             DIAMONDS_BALANCE: currentBalance + change,
           },
         });
@@ -266,7 +309,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             HARTWOOD_BALANCE: currentBalance + change,
           },
         });
@@ -275,7 +321,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             IGNIUM_BALANCE: currentBalance + change,
           },
         });
@@ -284,7 +333,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             TWILIGHT_QUARTZ_BALANCE: currentBalance + change,
           },
         });
@@ -293,7 +345,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             TRUE_ICE_BALANCE: currentBalance + change,
           },
         });
@@ -302,7 +357,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             ADAMANTINE_BALANCE: currentBalance + change,
           },
         });
@@ -311,7 +369,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             SAPPHIRE_BALANCE: currentBalance + change,
           },
         });
@@ -320,7 +381,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             ETHEREAL_SILICA_BALANCE: currentBalance + change,
           },
         });
@@ -329,7 +393,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             DRAGONHIDE_BALANCE: currentBalance + change,
           },
         });
@@ -338,7 +405,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             LABOR_BALANCE: currentBalance + change,
           },
         });
@@ -347,7 +417,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             EARTHEN_SHARD_BALANCE: currentBalance + change,
           },
         });
@@ -356,7 +429,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             DONKEY_BALANCE: currentBalance + change,
           },
         });
@@ -365,7 +441,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             KNIGHT_T1_BALANCE: currentBalance + change,
           },
         });
@@ -374,7 +453,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             KNIGHT_T2_BALANCE: currentBalance + change,
           },
         });
@@ -383,7 +465,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             KNIGHT_T3_BALANCE: currentBalance + change,
           },
         });
@@ -392,7 +477,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             CROSSBOWMAN_T1_BALANCE: currentBalance + change,
           },
         });
@@ -401,7 +489,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             CROSSBOWMAN_T2_BALANCE: currentBalance + change,
           },
         });
@@ -410,7 +501,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             CROSSBOWMAN_T3_BALANCE: currentBalance + change,
           },
         });
@@ -419,7 +513,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             PALADIN_T1_BALANCE: currentBalance + change,
           },
         });
@@ -428,7 +525,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             PALADIN_T2_BALANCE: currentBalance + change,
           },
         });
@@ -437,7 +537,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             PALADIN_T3_BALANCE: currentBalance + change,
           },
         });
@@ -446,7 +549,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             WHEAT_BALANCE: currentBalance + change,
           },
         });
@@ -455,7 +561,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             FISH_BALANCE: currentBalance + change,
           },
         });
@@ -464,7 +573,10 @@ export class ResourceManager {
         this.components.Resource.addOverride(overrideId, {
           entity,
           value: {
-            weight: currentWeight + weight,
+            weight: {
+              ...currentWeight,
+              weight: currentWeight.weight + BigInt(weight),
+            },
             LORDS_BALANCE: currentBalance + change,
           },
         });
@@ -640,9 +752,6 @@ export class ResourceManager {
   }
 
   private _getResource() {
-    return getComponentValue(
-      this.components.Resource,
-      getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]),
-    );
+    return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
   }
 }

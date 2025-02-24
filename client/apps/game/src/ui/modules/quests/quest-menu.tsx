@@ -17,7 +17,7 @@ export const QuestsMenu = memo(() => {
     },
   } = useDojo();
 
-  const questsLoaded = useUIStore((state) => state.loadingStates.playerStructuresTwoKey);
+  const questsLoading = useUIStore((state) => state.loadingStates.playerStructuresTwoKey);
 
   useStartingTutorial();
 
@@ -78,7 +78,7 @@ export const QuestsMenu = memo(() => {
   };
 
   const handleClaimMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (questsLoaded) return;
+    if (questsLoading) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const tooltipWidth = 300;
@@ -103,11 +103,11 @@ export const QuestsMenu = memo(() => {
 
   return (
     unclaimedQuestsCount > 0 &&
-    !questsLoaded && (
+    !questsLoading && (
       <div className="absolute right-0 px-4 top-full mt-2">
         <div
           className={clsx("flex gap-2 bg-brown/90 border border-gold/30 rounded-full px-4 h-10 md:h-12 py-2", {
-            "opacity-50 pointer-events-none": questsLoaded,
+            "opacity-50 pointer-events-none": questsLoading,
           })}
         >
           <Button
@@ -115,14 +115,14 @@ export const QuestsMenu = memo(() => {
             isLoading={isLoading}
             className={clsx("claim-selector text-sm !font-bold capitalize", {
               "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-                currentQuest?.status === QuestStatus.Completed && !questsLoaded,
+                currentQuest?.status === QuestStatus.Completed && !questsLoading,
             })}
             onClick={handleClaimQuest}
             onMouseEnter={handleClaimMouseEnter}
-            onMouseLeave={() => !questsLoaded && setTooltip(null)}
-            disabled={currentQuest?.status !== QuestStatus.Completed || questsLoaded}
+            onMouseLeave={() => !questsLoading && setTooltip(null)}
+            disabled={currentQuest?.status !== QuestStatus.Completed || questsLoading}
           >
-            {questsLoaded ? "Loading..." : "Claim"}
+            {questsLoading ? "Loading..." : "Claim"}
           </Button>
 
           <div className="h-full flex items-center">
@@ -133,19 +133,19 @@ export const QuestsMenu = memo(() => {
             onClick={() => handleStart()}
             variant="outline"
             disabled={
-              (currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle) || questsLoaded
+              (currentQuest?.status === QuestStatus.Completed && currentQuest.id !== QuestType.Settle) || questsLoading
             }
             className={clsx("tutorial-selector relative text-sm capitalize", {
               "!border-gold/70 !text-brown !bg-gold hover:!bg-gold/70 animate-pulse hover:animate-none":
-                currentQuest?.status !== QuestStatus.Completed && !questsLoaded,
+                currentQuest?.status !== QuestStatus.Completed && !questsLoading,
             })}
           >
-            <span className="font-semibold">{questsLoaded ? "Loading..." : currentQuest?.name}</span>
+            <span className="font-semibold">{questsLoading ? "Loading..." : currentQuest?.name}</span>
             <div
               className={clsx(
                 "absolute rounded-full border border-green/30 bg-green/90 text-brown px-1.5 md:px-2 text-[0.6rem] md:text-xxs z-[100] font-bold -top-1 -right-1",
                 {
-                  "animate-bounce": !questsLoaded,
+                  "animate-bounce": !questsLoading,
                 },
               )}
             >
@@ -163,25 +163,25 @@ export const QuestsMenu = memo(() => {
                 className="text-sm font-semibold capitalize"
                 onClick={handleClaimAllQuests}
                 variant="red"
-                disabled={questsLoaded}
+                disabled={questsLoading}
               >
-                {questsLoaded ? "Loading..." : "Skip All Quests"}
+                {questsLoading ? "Loading..." : "Skip All Quests"}
               </Button>
               <Button
                 className="text-sm font-semibold capitalize"
                 onClick={handleClaimQuest}
                 variant="red"
-                disabled={questsLoaded}
+                disabled={questsLoading}
               >
-                {questsLoaded ? "Loading..." : "Confirm"}
+                {questsLoading ? "Loading..." : "Confirm"}
               </Button>
               <Button
                 variant="primary"
                 className="text-sm font-semibold capitalize"
                 onClick={() => setSkipQuest(false)}
-                disabled={questsLoaded}
+                disabled={questsLoading}
               >
-                {questsLoaded ? "Loading..." : "Cancel"}
+                {questsLoading ? "Loading..." : "Cancel"}
               </Button>
             </div>
           ) : (
@@ -189,9 +189,9 @@ export const QuestsMenu = memo(() => {
               variant="primary"
               className="text-sm font-semibold capitalize w-6"
               onClick={() => setSkipQuest(true)}
-              disabled={questsLoaded}
+              disabled={questsLoading}
             >
-              {questsLoaded ? "..." : "Skip"}
+              {questsLoading ? "..." : "Skip"}
             </Button>
           )}
         </div>

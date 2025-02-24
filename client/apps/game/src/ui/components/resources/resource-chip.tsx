@@ -81,17 +81,17 @@ export const ResourceChip = ({
     }
   }, [resourceManager, currentTick, isActive]);
 
-  const icon = useMemo(
-    () => (
+  const icon = useMemo(() => {
+    console.log("Resource ID:", resourceId, "trait", findResourceById(resourceId)?.trait);
+    return (
       <ResourceIcon
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait as string}
         size="sm"
         className="mr-3 self-center"
       />
-    ),
-    [resourceId, isLabor],
-  );
+    );
+  }, [resourceId, isLabor]);
 
   const reachedMaxCap = useMemo(() => {
     return maxAmountStorable === balance && isActive;

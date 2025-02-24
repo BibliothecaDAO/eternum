@@ -866,7 +866,7 @@
     },
     "limit": {
       "explorerMaxPartyCount": 10,
-      "explorerMaxTroopCount": 10,
+      "explorerAndGuardMaxTroopCount": 500000,
       "guardResurrectionDelay": 86400,
       "mercenariesTroopLowerBound": 3000,
       "mercenariesTroopUpperBound": 6000
@@ -1332,7 +1332,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x1deef1a18e0684134109a0108f98a610d510b9c5ebc9339d6127df4f6225f8",
+    "season_pool_fee_recipient": "0x2ad697e7bd544d2554a0a89c95e036b2c8b6f4e7289cccf2590ac03fc46b5d5",
     "max_bank_fee_dpt_percent": 0,
     "max_bank_fee_wtdr_percent": 0
   },
@@ -1582,129 +1582,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x1389318bb2e58e655d97f26de79dcef0e57cc790480dc06ba7a31f3b4614358",
-      "realms": "0x180886c7b2a97234a2153395b929b3735e0a46aca030445194ac889f0d2b559",
-      "lords": "0x1c85cf14470a58b2e4af5a38911ba2cc788e388c88eb3a71912edfa922237d8",
+      "seasonPass": "0x474a049451ade4be789dba6f63abf269a2beb448a473826428b5d9481db9a5f",
+      "realms": "0x777cf5d19aa7e2aa11c3aaf8377fe54a40134bcf2f5d6a82406b7475a3f3091",
+      "lords": "0x46c23d7f7d656afb74afc510f4a49e160c752e7dc1af64987392b8cc47264a3",
       "resources": {
         "STONE": [
           1,
-          "0x6934fecf140d1ebdee07f046a7018e511ca4ea53cabd07c67564237206fc16a"
+          "0x40e69f010364b383c81dc9711b9525c8642c125a75f9c517301f9783db1992c"
         ],
         "COAL": [
           2,
-          "0x4f8a67a530270ce8e519dcea1268e2f2b8d0e9704a9a295bf6c4e151ca4d871"
+          "0x4d16c45c2e8cf93b4e4e48bd94d6d9b05ec74d3d85e28c72d0fa6eb49f2041d"
         ],
         "WOOD": [
           3,
-          "0x1b1369c22019216d3f88290c1a3c6655e30269c23f14e60a8e9c1a9ea8ab34c"
+          "0x486cc9389d49c82b08e2320182928a776782489da7361eb61cecf36b730188a"
         ],
         "COPPER": [
           4,
-          "0x56e2dea2e5945277617d3e7c77f55ae2586f25f8565902082863fb9640c9ea2"
+          "0xbd16bf2c7782222aa265bf5ee801d63260b17959dbe9dac8b0d9430041c3c2"
         ],
         "IRONWOOD": [
           5,
-          "0x7d12b57ead4267b1cc11457b9e07f455b4734508a6be1e56c9e83752fb6dca6"
+          "0x76633cc86d9db1809ed240d4da907790c49f5ff5d39b9954c50e286b0d944f1"
         ],
         "OBSIDIAN": [
           6,
-          "0x13a310e52bc46f4bd252603f8ea9668afee846c289c6ecdf16dc97e7c1f5e3f"
+          "0x15a5b95996ca6952e2775a254f8907a14cd25f1981b8e079f049c2486899585"
         ],
         "GOLD": [
           7,
-          "0x1ee26112d71d2f5fffa50c6f734d667684455d9f08e73665f0a22abb4bc2add"
+          "0x3b6af1abc0109461fef1d214e7ba21e4eb00e9d5ed93a03dbb007bfb2da5b84"
         ],
         "SILVER": [
           8,
-          "0x3966ec31c45a08581f31a2ffc2e9144d61ba30ebc7994ba16222d274c1c9f1f"
+          "0x58576adc6af1d541009d9296ae029a8be2524c663bc5736eb1b2871c526386f"
         ],
         "MITHRAL": [
           9,
-          "0x113892d77d72ba588a51d35ac7bf20a339287b2673e0075296cedf805c0e504"
+          "0x347fd2372e0ab03fc867b1e492f4678345bd77b35c4bd6cce1abe099254527"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x636313d0317f91f86a5aa6f50a8617789678a1fa410674e6a469d05f4aa765b"
+          "0x6e66ca3aac04f80220fa380247a172915c7489e8f52a63675f8b2f88aa0729b"
         ],
         "COLDIRON": [
           11,
-          "0x650040808018f962c4305e064fe23c72918adf1854711b8682ed50d05286d78"
+          "0x584a715aa16fb4b958b849593142c6e14e30959482e75089672bf74b4902e2f"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x78776ddb7c3cda0736ae430662102a734a0af3458582bb27b23da80731aa869"
+          "0x3a2160d50691b5a1ac127585448d095d687bff3cb042e7d14895a298bdb1953"
         ],
         "RUBY": [
           13,
-          "0x5d2e27ea5869ea2b2fb780ba56630b25b8d8eaf88d8258433f4b9597739b79"
+          "0x77fcbeaab32829542a568ffdc91cfa93b0b8b4a03d1c18036a71792cabc3616"
         ],
         "DIAMONDS": [
           14,
-          "0x40ff4ebc93b6b2969aef065234f916498f1d0e0f2b111c6b0f22ef6fd42a2"
+          "0x78e234cb0a84fc122d55279a7e5e2c5c6496c0479aac50056f3efc9ceb4b2e0"
         ],
         "HARTWOOD": [
           15,
-          "0x15706bd12089a1fb34fa7424f0c45ade8ff7109a828e8d4a7e9d5f9183932f1"
+          "0x6070b78c53a93f2fce48a174f8a3cfe1717c131d414020a5c53db1e0f5fa27e"
         ],
         "IGNIUM": [
           16,
-          "0x144e9dee75f9482d8e21d5423b98521ce553f6934ad8f1b188b3fc6a4d20f60"
+          "0x147f267d3f4aecaec8acd0c1a6fddecc78af95f4a421ce373f1688de79f16d1"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x448ea8d378d76fd7d9904d4aee3b3e4e4c8241934acba9fb3d593b13c4127a1"
+          "0x389d98e46d3e6dc09b4107b906bfbd4ad588c9ae8724958d0240d525d344ada"
         ],
         "TRUEICE": [
           18,
-          "0x25af2971489eb178ecd789105e8e4066d8381ce1793d5073f928316fc9b0359"
+          "0x6cc297534d58c0ba7703bfff555f4af6470b79cbef910ade0ee0de29848b83b"
         ],
         "ADAMANTINE": [
           19,
-          "0x20cec9708e961aa57b1deec81851175f318ed43279e995f02ad54191cf201bc"
+          "0x3b1dba228492a05b811d667b7e57e04918d33dcede78875a6d9229d993481bb"
         ],
         "SAPPHIRE": [
           20,
-          "0x2d65ede661c5e4e0c388a1ec3724ae042dc3c0ea935c1484ee529a936bc00ad"
+          "0x108f1abd563709ef97c1b0cde165fe152c0508f6a5cfaeb135f0ef2a12a04a"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x607547a261f2fab5ea9cf0ad016460d53a3d95fb0a961df88f40eddaf55b151"
+          "0x5549d278ca6b212c242bb5e12e2b71bbac21d7795fba74aa015aa4fb2f1fc11"
         ],
         "DRAGONHIDE": [
           22,
-          "0x3af2182be1758eb75307b7a7f754c851392ee29b59f683940e2c893b60d208c"
+          "0x22eb6929d5041283f3d129e567dd0a6e71094e98336906c9522b97ec0ca0f3b"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x5144c839e1cb2581786e6b381c707e09998184f40703c8ded2bb50951e51858"
+          "0x419d2099f10b6d66c409b971cc4eafa69a687ec44f0654868e1055647a7210f"
         ],
         "DONKEY": [
           25,
-          "0x4cb0a41679e4c32f805055c52de49f015c4032484224a69a83db0d5c417749e"
+          "0x4a66f740a4ded60b994a0eac1261d234a3abd6e3c122fd9df512da01c152b9e"
         ],
         "KNIGHT": [
           26,
-          "0x1998c6204f77c7f60637986ba3a2fede44e8e254ccc1b3b927101783fb84ca6"
+          "0x413d6257cfcb3e3c85d0defdfb695a23f5d642df753bd30b770972281720922"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x63cc531b98bb54b0afce0fdf453464bbcf6d317c469acd7bef522eadc7e1e61"
+          "0x2292e915c004982b8a27a648d8068671f1a2abea317f7a6579e1064b11b46ac"
         ],
         "PALADIN": [
           32,
-          "0x320f9902c3cdb29a1570b3f59a77a2683d0760c984d7225de1697aae5db99b6"
+          "0x27f228c891255d311e70ff6588660bac098272127c00057f3c06fff5ec610f1"
         ],
         "WHEAT": [
           35,
-          "0x777556ac139647505595fef50565491eb8e0faa7aacaffbab2671a42f2bf616"
+          "0x40b62940d8537766665500ae9ae5ab7dfd6e7bda897cd142ca4b0eedb74c56d"
         ],
         "FISH": [
           36,
-          "0x1132e917f03aed34e88d0a0fa7d83247ae1b27930b4292377656e3802f70b67"
+          "0x4c3235f6163abb860832a99f5c238821ff508e4208b8084a2fae5a2a00a6c70"
         ],
         "LORDS": [
           37,
-          "0x1c85cf14470a58b2e4af5a38911ba2cc788e388c88eb3a71912edfa922237d8"
+          "0x46c23d7f7d656afb74afc510f4a49e160c752e7dc1af64987392b8cc47264a3"
         ]
       }
     },
@@ -3191,8 +3191,8 @@
           ]
         },
         {
-          "address": "0x3b5af083473eaaf49c84261c4f4a073bdfe4c565d5ca53a1c338a67674add19",
-          "class_hash": "0x3cbe80559027d87b907d56d6648f7f8c149c67a9e7c40104eeccceb422a67ef",
+          "address": "0x4bd83a0cca20d10419a1f4b6831e550f997fdcd6a58d6b2ad596e4fcb719755",
+          "class_hash": "0x71244c859faa8227a0955656eb22e272a4cf34cbb9528d1e521e8908b7e08ca",
           "abi": [
             {
               "type": "impl",
@@ -3392,19 +3392,19 @@
               "members": [
                 {
                   "name": "reward_resource_amount",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u32"
                 },
                 {
                   "name": "shards_mines_fail_probability",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u32"
                 },
                 {
                   "name": "mine_wheat_grant_amount",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u32"
                 },
                 {
                   "name": "mine_fish_grant_amount",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u32"
                 }
               ]
             },
@@ -3933,7 +3933,7 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "explorer_max_troop_count",
+                  "name": "explorer_guard_max_troop_count",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4449,8 +4449,8 @@
           ]
         },
         {
-          "address": "0x2841c5e7659e95cc1c713441036cafeb0226f5fd26e1a3a70da1fd73562bf39",
-          "class_hash": "0x743703d7be43e04e9d5af17925db3e0d8f13ef567013c29439bfb9c4b911d50",
+          "address": "0x9bccf9a6549f1fef52b6993e9ed1f890c6ecd52389bc02ee7e0f95e644df5d",
+          "class_hash": "0x40ec5456fdd1780d551e8be61bea91ed66dbe0426d383f5217394e1dd0bcd3d",
           "abi": [
             {
               "type": "impl",
@@ -4687,8 +4687,8 @@
           ]
         },
         {
-          "address": "0x356cd01046df7b943c3bd916e9aa8a68127dab71f8afb18da6baad26b8934a",
-          "class_hash": "0x4d74e7a4e59eecae04d6d3d7629b0c63d994b9f46dfb3dbcf0993328194bc38",
+          "address": "0x4d27a6c019017c6ac12ea7014a51ebae4da538d20778ce40c2fb1d150dde5ec",
+          "class_hash": "0x3432be60d1055e2925eb37d58313c3bc287b15aed92433a8c0a4ba1a90287a2",
           "abi": [
             {
               "type": "impl",
@@ -5200,8 +5200,8 @@
           ]
         },
         {
-          "address": "0x7b07e364ff6d0f7845181858f782db17af9e7abf1217e08dfb977277f003a2c",
-          "class_hash": "0x75dd877a877b75aba5ed4f7646b91f1605dce427f549112bbe37bdc1a890687",
+          "address": "0x7df047c2229e88294e69e5e2db16708d893107b661cdb6640efc72f3986a062",
+          "class_hash": "0x4b106fc15429868f7acbbc1bb1246cd0ab67bd1e5dc05c25107eae60bd29277",
           "abi": [
             {
               "type": "impl",
@@ -5577,8 +5577,8 @@
           ]
         },
         {
-          "address": "0x2ff296699f076e5f5457eb73dd52b8d6f37c77e30b61f594772adba393c9d69",
-          "class_hash": "0xb08c31300aa29635d1e97ae2c5a5a54e8b864c63e5e32ae090b96b08f67622",
+          "address": "0x4088399858eaca0f00d793b846749cecc1ae747456f8685fdaab588d876ca1f",
+          "class_hash": "0xdaa26a4cfc1a55cd8f95526f382687369f4ff2c9d9a774646a1750d1505253",
           "abi": [
             {
               "type": "impl",
@@ -6254,8 +6254,8 @@
           ]
         },
         {
-          "address": "0x624805664eb0fbb4835d80616294105b5916c29e55d9b6198c1fd4b46e0d536",
-          "class_hash": "0x63c7e100bdbfae521ca9939ede49a891510e5e1c36845b6337cfed3700160c",
+          "address": "0x484bd8285d25654eabe3bda95ad8b8f9edb4abfefedfacbac60db439ce06cdf",
+          "class_hash": "0x6ab9ea370f5325a3db225db89e63689a2e156e49dae24bb5765fb301f67b88c",
           "abi": [
             {
               "type": "impl",
@@ -6730,8 +6730,8 @@
           ]
         },
         {
-          "address": "0x65d27fdfcb3df94d553bdadc77da33a0d5b4e126e70db15575f432cbf60bf0a",
-          "class_hash": "0x7128bd77e8903508f91cf3c57aaa1435710859a348990061c729afa43509616",
+          "address": "0x5ca211c63234be927a10be81e53843a337f1e3f60cc66c68ca9e2697aee51bd",
+          "class_hash": "0x65d30078c10e91b9fb79a85640ab94762702e0e6c141b8de479659c943c7fd3",
           "abi": [
             {
               "type": "impl",
@@ -6976,8 +6976,8 @@
           ]
         },
         {
-          "address": "0x778bd1a459eea85dbcc9ce37335673e370f0e71a955e8811df5766c4cfb6601",
-          "class_hash": "0x4fed53f0eb407e0e8cc254909163425c162a06516f0c5fb3b7dcb5a82e9836",
+          "address": "0x7012fd179c4743c1966db706abf36e4eddf6a000960a577f4d1de96d2bcc07a",
+          "class_hash": "0x641e6fd0501f09f950d4dd515bc4d5c562c41b27155925750353995baecdb63",
           "abi": [
             {
               "type": "impl",
@@ -7281,8 +7281,8 @@
           ]
         },
         {
-          "address": "0x12bc0af262d5218c95f8abf691a720d0c94b1405065af2f38763e54270c6a87",
-          "class_hash": "0x2d950a696d5358d2cc589e22baa51c8f830a008191fb64198e69ee787b7f632",
+          "address": "0x1ae24bea494ad19e0089f810e75ccdae371845cc1a91d8604134e2d04a2e56",
+          "class_hash": "0x195dad970dcab0fa4ca03b874a3d63ef40cc720094ca8e255b20b505392054a",
           "abi": [
             {
               "type": "impl",
@@ -7584,8 +7584,8 @@
           ]
         },
         {
-          "address": "0x1deef1a18e0684134109a0108f98a610d510b9c5ebc9339d6127df4f6225f8",
-          "class_hash": "0x40a70c1ad65fb2ba4575aef5afbc560638ae81b0b4f05e34d1174e35a7bd6d4",
+          "address": "0x2ad697e7bd544d2554a0a89c95e036b2c8b6f4e7289cccf2590ac03fc46b5d5",
+          "class_hash": "0x75326860af75097e261b95e36ffdd369b35a59f9e75f99c1c2588c446768051",
           "abi": [
             {
               "type": "impl",
@@ -7821,8 +7821,8 @@
           ]
         },
         {
-          "address": "0x1e0d4a52edb29de50a068338eeffc4f575f53aafae2f1920a539ac99dc28235",
-          "class_hash": "0xeaa25a005e8d548f1d10a734a4177e319352df99830e67c812f357fc3976e1",
+          "address": "0x3892673441b9f2d822357c1548a4b814c6ed1d5486b7fa7d3673f1212fdfa32",
+          "class_hash": "0x1dfb12e71727fdd36c33120557581a07d27d24cab1ace5984f97ac4428b3173",
           "abi": [
             {
               "type": "impl",
@@ -8066,8 +8066,8 @@
           ]
         },
         {
-          "address": "0x286be7055c9bed78d1d85e03bfc3f8ca9a47747b7e9a13cbed945dacc6efe4d",
-          "class_hash": "0xe1aed9a77e47c252df07eaa9f2dfbb35404a7dd258548c6b2cecd04eac4504",
+          "address": "0x68367dfe301626bbccd854951fc08f2c345111a34f819a90d84dfb3c70cb959",
+          "class_hash": "0x3848374ffb2cc2501440f0a1e7c7ed5ece9ce56f2c1d76e30b7863d3df2497c",
           "abi": [
             {
               "type": "impl",
@@ -8336,8 +8336,8 @@
           ]
         },
         {
-          "address": "0x72e3c5a73b762cbf2e56cb4e003c6c09cd88e16fc0a815b520eca8fb55f07d4",
-          "class_hash": "0x1869e5b77021f9d0d99be10145d7140353c0e21331c9dc64062fa66a9701e2",
+          "address": "0x7eff82f6fd6268b102f0a6479bd7f60d524f591731dbc913e528e97986cb5bb",
+          "class_hash": "0x2e199aadcca77df5429ae243dcfc99fe22d5c283d60ac0bf3dfd6e28072077c",
           "abi": [
             {
               "type": "impl",
@@ -8425,6 +8425,28 @@
               ]
             },
             {
+              "type": "enum",
+              "name": "s1_eternum::models::troop::GuardSlot",
+              "variants": [
+                {
+                  "name": "Delta",
+                  "type": "()"
+                },
+                {
+                  "name": "Charlie",
+                  "type": "()"
+                },
+                {
+                  "name": "Bravo",
+                  "type": "()"
+                },
+                {
+                  "name": "Alpha",
+                  "type": "()"
+                }
+              ]
+            },
+            {
               "type": "interface",
               "name": "s1_eternum::systems::combat::contracts::troop_battle::ITroopBattleSystems",
               "items": [
@@ -8462,6 +8484,30 @@
                     },
                     {
                       "name": "structure_direction",
+                      "type": "s1_eternum::models::position::Direction"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "attack_guard_vs_explorer",
+                  "inputs": [
+                    {
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "structure_guard_slot",
+                      "type": "s1_eternum::models::troop::GuardSlot"
+                    },
+                    {
+                      "name": "explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "explorer_direction",
                       "type": "s1_eternum::models::position::Direction"
                     }
                   ],
@@ -8591,12 +8637,13 @@
           "systems": [
             "attack_explorer_vs_explorer",
             "attack_explorer_vs_guard",
+            "attack_guard_vs_explorer",
             "upgrade"
           ]
         },
         {
-          "address": "0x5e0de255ff90de4aa9d5d93dfbc2ec2b9914619ee631d88f3500a27ae02504e",
-          "class_hash": "0x1ca2877036632a9246864c9cb428e0e6012726652abfaa735bd996035ad23a9",
+          "address": "0x6b222e6e3961f51eecaed67c6d5c92444e88260a6f83481b48be95a6bf95ed0",
+          "class_hash": "0x7f6281354fe8096c37a849c47c2d50ded99e2dabf3d277255d762a8cd3a2043",
           "abi": [
             {
               "type": "impl",
@@ -8843,7 +8890,19 @@
                 },
                 {
                   "type": "function",
-                  "name": "explorer_swap",
+                  "name": "explorer_delete",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "explorer_explorer_swap",
                   "inputs": [
                     {
                       "name": "from_explorer_id",
@@ -8867,11 +8926,55 @@
                 },
                 {
                   "type": "function",
-                  "name": "explorer_delete",
+                  "name": "explorer_guard_swap",
                   "inputs": [
                     {
-                      "name": "explorer_id",
+                      "name": "from_explorer_id",
                       "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "to_structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "to_structure_direction",
+                      "type": "s1_eternum::models::position::Direction"
+                    },
+                    {
+                      "name": "to_guard_slot",
+                      "type": "s1_eternum::models::troop::GuardSlot"
+                    },
+                    {
+                      "name": "count",
+                      "type": "core::integer::u128"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "guard_explorer_swap",
+                  "inputs": [
+                    {
+                      "name": "from_structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "from_guard_slot",
+                      "type": "s1_eternum::models::troop::GuardSlot"
+                    },
+                    {
+                      "name": "to_explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "to_explorer_direction",
+                      "type": "s1_eternum::models::position::Direction"
+                    },
+                    {
+                      "name": "count",
+                      "type": "core::integer::u128"
                     }
                   ],
                   "outputs": [],
@@ -9002,14 +9105,16 @@
             "guard_delete",
             "explorer_create",
             "explorer_add",
-            "explorer_swap",
             "explorer_delete",
+            "explorer_explorer_swap",
+            "explorer_guard_swap",
+            "guard_explorer_swap",
             "upgrade"
           ]
         },
         {
-          "address": "0x71ceff19c2b6d867d42b40350e5dae260cd5d073848ff8ea2d6d1f179f95524",
-          "class_hash": "0x211d5a8bc9345b8c72960b1fefa4b1338a0f7ae5f5ce4843c80ba41f7c28f03",
+          "address": "0x6fc82ea11adb71827d7669e1f96cb3a4ca0e04e1d7164a7f713587c113c2404",
+          "class_hash": "0x4f0b890ac5db3157839c89590aed0aa8e17fb706552995d54fa5926435350e7",
           "abi": [
             {
               "type": "impl",
@@ -9411,9 +9516,9 @@
         },
         {
           "members": [],
-          "class_hash": "0xe062110cf5abebd3455755528a5eb741e212b81911b26e1eb05124ea9dbec4",
-          "tag": "s1_eternum-Occupier",
-          "selector": "0xa6a69db66eb8c1a061934f831ae3d3d56b2cf1e87c7b4c6bb2a4952a46638e"
+          "class_hash": "0x4d2d429194e03ee44fdc7b34cf8ce7c5a26df710d0640417654092b674b6faa",
+          "tag": "s1_eternum-Occupied",
+          "selector": "0x2353ef0ac128b8737e8d6082b1697ae974bab2499439db3d5113f8947cce314"
         },
         {
           "members": [],
@@ -9555,7 +9660,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x12a6b843be9f455a5095fc7087dfe04f7b36b107c2b0fcedf0e073003f5c049",
+          "class_hash": "0x27b3c4567cd21ce5d28b6eafab1d7c19bcb6d8ddecca653e36d7c28c675895f",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

@@ -306,16 +306,19 @@ export class ArmyMovementManager {
     });
   };
 
-  private readonly _optimisticCapacityUpdate = (overrideId: string, capacity: number) => {
+  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeight: number) => {
     const resource = getComponentValue(this.components.Resource, this.entity);
-    const weight = resource?.weight;
+    const weight = resource?.weight || { capacity: 0n, weight: 0n };
 
     this.components.Resource.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
         ...resource,
-        weight: (weight || 0) + capacity,
+        weight: {
+          ...weight,
+          weight: BigInt((weight?.weight || 0).toString()) + BigInt(additionalWeight),
+        },
       },
     });
   };

@@ -10,7 +10,7 @@ import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
@@ -74,12 +74,13 @@ export const LeftNavigationModule = memo(() => {
       ),
     [structureEntityId, account.address, components],
   );
+
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
 
   const isRealm = useMemo(
-    () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",
+    () => Boolean(structureInfo) && structureInfo?.structureCategory === StructureType.Realm,
     [structureInfo],
   );
 

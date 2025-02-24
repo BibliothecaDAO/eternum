@@ -40,6 +40,12 @@ export type ArrivalInfo = {
 
 export type DojoAccount = Account | AccountInterface;
 
+export enum OccupiedBy {
+  None = 0,
+  Structure = 1,
+  Explorer = 2,
+}
+
 export type ArmyInfo = {
   entityId: ID;
   troops: Troops;

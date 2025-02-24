@@ -21,8 +21,10 @@ export const DepositResources = ({ arrival, resources }: DepositResourcesProps) 
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
-  const weight =
-    useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(arrival.entityId)]))?.weight || 0;
+  const weight = useComponentValue(
+    dojo.setup.components.Resource,
+    getEntityIdFromKeys([BigInt(arrival.entityId)]),
+  )?.weight;
 
   const depositManager = useMemo(() => {
     return new ResourceInventoryManager(dojo.setup.components, dojo.network.provider, arrival.entityId);
@@ -49,9 +51,9 @@ export const DepositResources = ({ arrival, resources }: DepositResourcesProps) 
         variant="primary"
         withoutSound
       >
-        {resources.length === 0 && weight > 0
+        {resources.length === 0 && weight?.weight && weight.weight > 0n
           ? "Resources syncing..."
-          : resources.length === 0 && weight === 0
+          : resources.length === 0 && weight?.weight && weight.weight === 0n
             ? "No resources to deposit"
             : "Deposit Resources"}
       </Button>
