@@ -80,13 +80,7 @@ pub mod dev_bank_systems {
             let tick = TickImpl::get_tick_config(ref world);
             let seed = 'JUPITERJUPITER'.into() - starknet::get_block_timestamp().into();
             iMercenariesImpl::add(
-                ref world,
-                ADMIN_BANK_ENTITY_ID,
-                seed,
-                slot_tiers,
-                troop_limit_config,
-                troop_stamina_config,
-                tick.current(),
+                ref world, ADMIN_BANK_ENTITY_ID, seed, slot_tiers, troop_limit_config, troop_stamina_config, tick,
             );
 
             ADMIN_BANK_ENTITY_ID

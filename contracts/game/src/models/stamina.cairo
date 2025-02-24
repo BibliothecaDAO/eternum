@@ -13,7 +13,7 @@ pub impl StaminaImpl of StaminaTrait {
     #[inline(always)]
     fn reset(ref self: Stamina, current_tick: u64) {
         self.amount = 0;
-        self.updated_tick = current_tick;
+        self.updated_tick = 0;
     }
 
     #[inline(always)]
@@ -42,11 +42,16 @@ pub impl StaminaImpl of StaminaTrait {
         troop_stamina_config: TroopStaminaConfig,
         amount: u64,
         current_tick: u64,
+        throw_error: bool,
     ) {
         // reduce stamina
         self.refill(troop_type, troop_stamina_config, current_tick);
         if amount > self.amount {
-            self.amount = 0;
+            if throw_error {
+                panic!("insufficient stamina, you need: {}, and have: {}", amount, self.amount);
+            } else {
+                self.amount = 0;
+            }
         } else {
             self.amount -= amount;
         }
