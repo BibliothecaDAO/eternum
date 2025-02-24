@@ -47,7 +47,7 @@ const getStructureInfo = (
   // ];
   const protectors: ArmyInfo[] = [];
 
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.base.owner]));
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
 
   const name = getEntityName(structure.entity_id, components);
@@ -55,12 +55,12 @@ const getStructureInfo = (
   return {
     entityId: structure.entity_id,
     structure,
-    owner: structure.base.owner,
+    owner: structure.owner,
     name,
     position: { x: structure.base.coord_x, y: structure.base.coord_y },
     protectors,
-    isMine: ContractAddress(structure.base.owner) === playerAddress,
-    isMercenary: structure.base.owner === 0n,
+    isMine: ContractAddress(structure.owner) === playerAddress,
+    isMercenary: structure.owner === 0n,
     ownerName,
   };
 };

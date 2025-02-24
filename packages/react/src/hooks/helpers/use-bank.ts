@@ -17,7 +17,7 @@ export const useBank = () => {
   const structure = getComponentValueStrict(Structure, entity);
   const bank = getComponentValueStrict(Bank, entity);
 
-  const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(structure.base.owner)]));
+  const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(structure.owner)]));
 
   return {
     entityId: structure.entity_id,

@@ -196,7 +196,7 @@ export class TileManager {
     });
     const quantityOverrideId = uuid();
 
-    const buildingCounts = unpackValue(structureBuildings?.building_count || 0n);
+    const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
 
     buildingCounts[buildingType] = (buildingCounts[buildingType] || 0) + 1;
 
@@ -205,7 +205,7 @@ export class TileManager {
     this.components.StructureBuildings.addOverride(quantityOverrideId, {
       entity: realmEntity,
       value: {
-        building_count: BigInt(packedBuildingCount),
+        packed_counts: BigInt(packedBuildingCount),
       },
     });
 

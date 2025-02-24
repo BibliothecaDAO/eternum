@@ -30,8 +30,8 @@ export const formatArmies = (
         getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]),
       );
 
-      const isMine = (structure?.base.owner || 0n) === playerAddress;
-      const isMercenary = structure?.base.owner === 0n;
+      const isMine = (structure?.owner || 0n) === playerAddress;
+      const isMercenary = structure?.owner === 0n;
 
       const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;
 
@@ -43,7 +43,7 @@ export const formatArmies = (
         position,
         entity_owner_id: explorerTroops.owner,
         stamina,
-        owner: structure?.base.owner,
+        owner: structure?.owner,
         realm,
         isMine,
         isMercenary,

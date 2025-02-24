@@ -520,7 +520,7 @@ export class ResourceManager {
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
     const packedBuildingCount =
       getComponentValue(this.components.StructureBuildings, getEntityIdFromKeys([BigInt(this.entityId || 0)]))
-        ?.building_count || 0n;
+        ?.packed_counts || 0n;
 
     const quantity = unpackValue(packedBuildingCount)[BuildingType.Storehouse] || 0;
 

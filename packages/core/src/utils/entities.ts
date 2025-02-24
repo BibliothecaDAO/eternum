@@ -29,9 +29,9 @@ export const getEntityInfo = (
   if (explorer) {
     owner = explorer.owner;
     const structureOwner = getComponentValue(Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
-    owner = structureOwner?.base.owner;
+    owner = structureOwner?.owner;
   } else if (structure) {
-    owner = structure.base.owner;
+    owner = structure.owner;
   }
 
   const realm = getComponentValue(Realm, getEntityIdFromKeys([entityIdBigInt]));
@@ -115,6 +115,6 @@ export const getAddressNameFromEntity = (entityId: ID, components: ClientCompone
 export const getAddressFromEntity = (entityId: ID, components: ClientComponents): ContractAddress | undefined => {
   const explorerTroops = getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]));
   return explorerTroops?.owner
-    ? getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]))?.base.owner
+    ? getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]))?.owner
     : undefined;
 };

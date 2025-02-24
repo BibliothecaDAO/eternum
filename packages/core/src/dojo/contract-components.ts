@@ -404,7 +404,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          building_count: RecsType.BigInt,
+          packed_counts: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -941,6 +941,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
+          owner: RecsType.BigInt,
           base: {
             troop_guard_count: RecsType.Number,
             troop_explorer_count: RecsType.Number,
@@ -950,7 +951,6 @@ export function defineContractComponents(world: World) {
             category: RecsType.Number,
             coord_x: RecsType.Number,
             coord_y: RecsType.Number,
-            owner: RecsType.BigInt,
           },
           troop_guards: {
             delta: {
@@ -1002,15 +1002,15 @@ export function defineContractComponents(world: World) {
             name: "Structure",
             types: [
               "u32",
-              "u8",
-              "u16",
-              "u8",
-              "u16",
-              "u32",
-              "u8",
-              "u32",
-              "u32",
               "ContractAddress",
+              "u8",
+              "u16",
+              "u8",
+              "u16",
+              "u32",
+              "u8",
+              "u32",
+              "u32",
               //delta
               "enum",
               "enum",

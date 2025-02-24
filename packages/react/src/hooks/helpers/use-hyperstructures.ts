@@ -43,7 +43,7 @@ export const useHyperstructures = () => {
     const hyperstructure = getComponentValueStrict(Hyperstructure, hyperstructureEntityId);
     const structure = getComponentValue(Structure, hyperstructureEntityId);
     const contributions = hyperstructure ? getContributions(hyperstructure?.entity_id, Contribution) : [];
-    const owner = structure?.base.owner || 0n;
+    const owner = structure?.owner || 0n;
     const isOwner = ContractAddress(owner) === ContractAddress(account.address);
     const entityName = getComponentValue(AddressName, hyperstructureEntityId);
     const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!, components) : "";

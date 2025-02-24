@@ -32,7 +32,7 @@ export const useFragmentMines = () => {
     return {
       ...fragmentMine,
       position: { x: fragmentMine.base.coord_x, y: fragmentMine.base.coord_y },
-      owner: fragmentMine.base.owner,
+      owner: fragmentMine.owner,
       ...building,
       name: entityName
         ? shortString.decodeShortString(entityName.name.toString())
