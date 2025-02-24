@@ -4,14 +4,13 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID, split_resources_and_probs};
+use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 
 use s1_eternum::models::position::Coord;
 
 use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
-use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
