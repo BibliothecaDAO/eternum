@@ -1,6 +1,6 @@
 //import { formatAddress } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { and, desc, eq, like, sql } from "@realms-world/db";

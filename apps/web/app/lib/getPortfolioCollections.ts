@@ -1,6 +1,6 @@
 import type { PortfolioCollectionsApiResponse } from "@/types/ark";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const ARK_MARKETPLACE_API_URL = `https://api.marketplace${
@@ -12,7 +12,7 @@ const ARK_MARKETPLACE_API_URL = `https://api.marketplace${
 /* -------------------------------------------------------------------------- */
 
 const GetPortfolioCollectionsInput = z.object({
-  address: z.string(),
+  address: z.string().optional(),
   collectionAddress: z.string().optional(),
   itemsPerPage: z.number().optional(),
   page: z.number().optional(),

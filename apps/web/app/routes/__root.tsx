@@ -43,13 +43,13 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: "width=device-width, initial-scale=1",
       },
       ...seo({
-        title: "Realms.World | Account Portal",
+        title: "RW | Account Portal",
         description: `Interact with your Realms and Lords on the various ecosystem projects. `,
       }),
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      /*{
+      {
         rel: "apple-touch-icon",
         sizes: "180x180",
         href: "/apple-touch-icon.png",
@@ -66,7 +66,17 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         sizes: "16x16",
         href: "/favicon-16x16.png",
       },
-      { rel: "icon", href: "/favicon.ico" },*/
+      {
+        rel: "icon",
+        href: "/favicon.ico",
+        sizes: "32x32",
+      },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/icon.svg",
+      },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   component: RootComponent,

@@ -45,6 +45,7 @@ import { useAccount as useL1Account, useBalance as useL1Balance } from "wagmi";
 import {
   CollectionAddresses,
   LORDS,
+  SnapshotSpaceAddresses,
   StakingAddresses,
 } from "@realms-world/constants";
 
@@ -286,7 +287,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           </Card>
           <div className="mt-2 flex justify-end">
             <a
-              href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62/proposals"
+              href={`https://snapshot.box/#/sn:${SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID]}/proposals`}
               target="__blank"
             >
               <Button variant="outline" size={"sm"}>

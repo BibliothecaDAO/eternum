@@ -26,7 +26,7 @@ export const StarknetWalletButton = ({
     >
       <div className="flex items-center">
         {lastConnector ? (
-          <img className="pr-2" src={getConnectorIcon(lastConnector.id)} />
+          <img className="w-7 pr-2" src={getConnectorIcon(lastConnector.id)} />
         ) : null}
         <p className="mx-auto">{label ?? "Connect wallet"}</p>
         {lastConnector ? (

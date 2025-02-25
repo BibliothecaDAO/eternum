@@ -1,6 +1,6 @@
 import type { paths } from "@reservoir0x/reservoir-sdk";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
@@ -13,9 +13,11 @@ const SUPPORTED_L1_CHAIN_ID =
   process.env.VITE_PUBLIC_CHAIN === "sepolia"
     ? ChainId.SEPOLIA
     : ChainId.MAINNET;
-const RESERVOIR_API_URL = `https://api${
-  process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
-}.reservoir.tools`;
+const RESERVOIR_API_URL = new URL(
+  `https://api${
+    process.env.VITE_PUBLIC_CHAIN === "sepolia" ? "-sepolia" : ""
+  }.reservoir.tools`,
+);
 
 /* -------------------------------------------------------------------------- */
 /*                          getL1Realms Endpoint                              */
@@ -34,7 +36,7 @@ export const getL1Realms = createServerFn<
   .validator((input: unknown) => GetL1RealmsInput.parse(input))
   .handler(async (ctx) => {
     const response = await fetch(
-      `${RESERVOIR_API_URL}/users/${ctx.data.address}/tokens/v10?collection=${
+      `${RESERVOIR_API_URL}users/${ctx.data.address}/tokens/v10?collection=${
         CollectionAddresses[Collections.REALMS][SUPPORTED_L1_CHAIN_ID]
       }&limit=100&includeAttributes=true`,
       {
@@ -46,21 +48,23 @@ export const getL1Realms = createServerFn<
         },
       },
     );
-    const data = (await response.json()) as
+    return (await response.json()) as
       | paths["/users/{user}/tokens/v10"]["get"]["responses"]["200"]["schema"]
       | null;
-    return data;
   });
 
 export const getL1RealmsQueryOptions = (
   input?: z.infer<typeof GetL1RealmsInput>,
-) =>
-  queryOptions({
+) => {
+  console.log(input);
+  return queryOptions({
     queryKey: ["getL1Realms", input?.address],
-    queryFn: () => getL1Realms({ data: input ?? {} }),
+    queryFn: () =>
+      input?.address != undefined ? getL1Realms({ data: input }) : null,
     refetchInterval: 10000,
     enabled: !!input?.address,
   });
+};
 
 export const getL1UsersRealms = createServerFn<
   "GET",

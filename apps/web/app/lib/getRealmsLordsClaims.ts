@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { desc, eq } from "@realms-world/db";

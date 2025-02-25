@@ -152,3 +152,11 @@ export const StakingAddresses: Readonly<
       "0x48c774a0f71120aeffcb520fa4a08e1659c17abb46a792ea1e1bbbcf5ef38f3",
   },
 };
+
+export const SnapshotSpaceAddresses: Readonly<
+  Partial<Record<ChainId, string>>
+> = {
+  [ChainId.SN_MAIN]:
+    "0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",
+  [ChainId.SN_SEPOLIA]: "",
+};

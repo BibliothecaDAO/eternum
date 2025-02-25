@@ -7,7 +7,7 @@ import {
 } from "@/utils/helpers";*/
 import { graphql } from "@/gql";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { execute } from "./queries/execute";

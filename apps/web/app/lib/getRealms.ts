@@ -1,6 +1,6 @@
 import type { PortfolioTokensApiResponse } from "@/types/ark";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const ARK_MARKETPLACE_API_URL = `https://api.marketplace${
@@ -27,29 +27,26 @@ export const getRealms = createServerFn({ method: "GET" })
       itemsPerPage = 100,
       page = 1,
     } = ctx.data;
-    if (address) {
-      const queryParams = [
-        `items_per_page=${itemsPerPage}`,
-        `page=${page}`,
-        collectionAddress ? `collection=${collectionAddress}` : null,
-      ]
-        .filter(Boolean)
-        .join("&");
+    const queryParams = [
+      `items_per_page=${itemsPerPage}`,
+      `page=${page}`,
+      collectionAddress ? `collection=${collectionAddress}` : null,
+    ]
+      .filter(Boolean)
+      .join("&");
 
-      const response = await fetch(
-        `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
+    const response = await fetch(
+      `${ARK_MARKETPLACE_API_URL}/portfolio/${address}?${queryParams}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
         },
-      );
-      const data = (await response.json()) as PortfolioTokensApiResponse;
-      return data;
-    }
-    return null;
+      },
+    );
+    const data = (await response.json()) as PortfolioTokensApiResponse;
+    return data;
   });
 
 export const getRealmsQueryOptions = (input: z.infer<typeof GetRealmsInput>) =>
@@ -61,5 +58,5 @@ export const getRealmsQueryOptions = (input: z.infer<typeof GetRealmsInput>) =>
       input.page,
       input.itemsPerPage,
     ],
-    queryFn: () => getRealms({ data: input }),
+    queryFn: () => (input.address ? getRealms({ data: input }) : null),
   });

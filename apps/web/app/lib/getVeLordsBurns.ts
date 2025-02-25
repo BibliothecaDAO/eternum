@@ -1,6 +1,6 @@
 import type { SQL } from "@realms-world/db";
 import { queryOptions } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/start";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { and, eq } from "@realms-world/db";

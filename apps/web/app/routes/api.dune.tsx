@@ -1,6 +1,6 @@
 import { DuneClient } from "@duneanalytics/client-sdk";
-import { json } from "@tanstack/start";
-import { createAPIFileRoute } from "@tanstack/start/api";
+import { json } from "@tanstack/react-start";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
 
 import { db } from "@realms-world/db/client";
 import { velords_burns, velords_supply } from "@realms-world/db/schema";
