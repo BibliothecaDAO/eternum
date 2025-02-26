@@ -10,7 +10,7 @@ trait ILiquiditySystems<T> {
         ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed, player_resource_index: u8,
     );
 }
-
+// todo: discuss: liquidity can be used to shield funds from realm raid and cpature
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
