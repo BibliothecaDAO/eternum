@@ -78,7 +78,7 @@ DB_DIR="torii.$NETWORK.db"
 TORII_CONFIG="torii-$NETWORK.toml"
 
 # Torii settings
-DEFAULT_WORLD_ADDRESS="0x03d0f49b4610e129be4b13cac43e53074accdeee4db844166d15d1d631f05fd7"
+DEFAULT_WORLD_ADDRESS="0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
 DEFAULT_RPC_URL="http://localhost:8080"
 WORLD_ADDRESS=$DEFAULT_WORLD_ADDRESS  # Will be overridden by args if provided
 RPC_URL=${RPC_URL:-$DEFAULT_RPC_URL}  # Use env var or default
