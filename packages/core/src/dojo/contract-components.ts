@@ -25,17 +25,13 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          owner_fee_num: RecsType.BigInt,
-          owner_fee_denom: RecsType.BigInt,
-          owner_bridge_fee_dpt_percent: RecsType.Number,
-          owner_bridge_fee_wtdr_percent: RecsType.Number,
           exists: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Bank",
-            types: ["u32", "u128", "u128", "u16", "u16", "bool"],
+            types: ["u32", "bool"],
             customTypes: [],
           },
         },
@@ -343,7 +339,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          bank_entity_id: RecsType.Number,
           player: RecsType.BigInt,
           resource_type: RecsType.Number,
           shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
@@ -352,7 +347,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Liquidity",
-            types: ["u32", "ContractAddress", "u8", "u128", "bool"],
+            types: ["ContractAddress", "u8", "u128", "bool"],
             customTypes: ["Fixed"],
           },
         },
@@ -362,7 +357,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          bank_entity_id: RecsType.Number,
           resource_type: RecsType.Number,
           lords_amount: RecsType.BigInt,
           resource_amount: RecsType.BigInt,
@@ -372,7 +366,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Market",
-            types: ["u32", "u8", "u128", "u128", "u128", "bool"],
+            types: ["u8", "u128", "u128", "u128", "bool"],
             customTypes: ["Fixed"],
           },
         },
@@ -1179,9 +1173,10 @@ export function defineContractComponents(world: World) {
             armies_tick_in_seconds: RecsType.Number,
           },
           bank_config: {
-            lords_cost: RecsType.BigInt,
-            lp_fee_num: RecsType.BigInt,
-            lp_fee_denom: RecsType.BigInt,
+            lp_fee_num: RecsType.Number,
+            lp_fee_denom: RecsType.Number,
+            owner_fee_num: RecsType.Number,
+            owner_fee_denom: RecsType.Number,
           },
           population_config: {
             base_population: RecsType.Number,
@@ -1286,9 +1281,10 @@ export function defineContractComponents(world: World) {
               "u32", // SettlementConfig current_side
               "u32", // SettlementConfig current_point_on_side
               "u64", // TickConfig armies_tick_in_seconds
-              "u128", // BankConfig lords_cost
-              "u128", // BankConfig lp_fee_num
-              "u128", // BankConfig lp_fee_denom
+              "u32", // BankConfig lp_fee_num
+              "u32", // BankConfig lp_fee_denom
+              "u32", // BankConfig owner_fee_num
+              "u32", // BankConfig owner_fee_denom
               "u32", // PopulationConfig base_population
               "bool", // ResourceBridgeConfig deposit_paused
               "bool", // ResourceBridgeConfig withdraw_paused

@@ -1,9 +1,18 @@
+use core::num::traits::Bounded;
 use s1_eternum::alias::ID;
 
+
+// todo: ensure there are no clashes with other ids
 // Config ID to fetch global configs
-pub const WORLD_CONFIG_ID: ID = 999999999;
-pub const HYPERSTRUCTURE_CONFIG_ID: ID = 999999998;
-pub const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999997;
+
+pub const WORLD_CONFIG_ID: ID = Bounded::MAX;
+pub const REGIONAL_BANK_ONE_ID: ID = Bounded::MAX - 1;
+pub const REGIONAL_BANK_TWO_ID: ID = Bounded::MAX - 2;
+pub const REGIONAL_BANK_THREE_ID: ID = Bounded::MAX - 3;
+pub const REGIONAL_BANK_FOUR_ID: ID = Bounded::MAX - 4;
+pub const REGIONAL_BANK_FIVE_ID: ID = Bounded::MAX - 5;
+pub const REGIONAL_BANK_SIX_ID: ID = Bounded::MAX - 6;
+
 
 pub const GRAMS_PER_KG: u128 = 1_000;
 
@@ -407,14 +416,6 @@ pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     return (resource_types.span(), resource_probabilities.span());
 }
 
-
-// DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
-// DISCUSS: register each new entity_type to the system by creating an entity containing the config
-// components Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when
-// creating it
-pub const DONKEY_ENTITY_TYPE: u32 = 256;
-pub const REALM_ENTITY_TYPE: u32 = 257;
-pub const ARMY_ENTITY_TYPE: u32 = 258;
 
 pub mod LevelIndex {
     pub const FOOD: u8 = 1;

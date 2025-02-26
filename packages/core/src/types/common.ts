@@ -475,8 +475,7 @@ export interface Config {
     lpFeesDenominator: number; // %
     ownerFeesNumerator: number;
     ownerFeesDenominator: number; // %
-    ownerBridgeFeeOnDepositPercent: number;
-    ownerBridgeFeeOnWithdrawalPercent: number;
+    maxNumBanks: number;
     ammStartingLiquidity: { [key in ResourcesIds]?: number };
     lordsLiquidityPerResource: number;
   };

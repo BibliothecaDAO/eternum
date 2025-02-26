@@ -447,9 +447,10 @@ pub struct MultipleResourceBurnPrStrategy {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BankConfig {
-    pub lords_cost: u128,
-    pub lp_fee_num: u128,
-    pub lp_fee_denom: u128,
+    pub lp_fee_num: u32,
+    pub lp_fee_denom: u32,
+    pub owner_fee_num: u32,
+    pub owner_fee_denom: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
