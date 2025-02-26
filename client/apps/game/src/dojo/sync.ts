@@ -40,7 +40,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities);
+    if (logging) console.log("Entity updated", fetchedEntities, data);
 
     // Merge new data with existing data for this entity
     entityBatch[fetchedEntities] = {
@@ -79,7 +79,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
   // const sync = await syncEntitiesDebounced(
-  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], true, false);
 
   setLoading(LoadingStateKey.Config, true);
   try {

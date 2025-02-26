@@ -1,4 +1,4 @@
-import { getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BuildingType,
@@ -237,10 +237,9 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         // todo: need to fix this
-        const worldConfig = getComponentValueStrict(
-          this.components.WorldConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        );
+        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+        if (!worldConfig) return;
 
         const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
 

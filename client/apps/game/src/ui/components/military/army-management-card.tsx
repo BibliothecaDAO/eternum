@@ -12,7 +12,6 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   ArmyManager,
-  configManager,
   Direction,
   divideByPrecision,
   getBalance,
@@ -47,7 +46,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
   } = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const maxTroopCountPerArmy = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
+  // const maxTroopCountPerArmy = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -77,10 +76,10 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
     if (isExplorer) {
       if (army) {
         if (army.isHome) {
-          armyManager.addTroopsToExplorer(account, army.entityId, troopType, troopTier, troopCount);
+          await armyManager.addTroopsToExplorer(account, army.entityId, troopType, troopTier, troopCount);
         }
       } else {
-        armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, Direction.NORTH_EAST);
+        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, Direction.NORTH_EAST);
       }
     } else {
       // armyManager.addTroopsToGuard(account, 0, troopType, troopTier, troopCount);
@@ -221,7 +220,12 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
           disabled={!canCreate}
           variant="primary"
           isLoading={isLoading}
-          onClick={() => handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount)}
+          onClick={() =>
+            handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount).finally(() => {
+              setTroopCount(0);
+              setIsLoading(false);
+            })
+          }
         >
           {army ? (army.isHome ? "Reinforce army" : "Must be at Base to Reinforce") : "Create Army"}
         </Button>

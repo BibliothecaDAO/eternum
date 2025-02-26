@@ -55,7 +55,7 @@ import {
   TROOP_T3_DAMAGE_MULTIPLIER,
   TROOP_TRAVEL_FISH_COST,
   TROOP_TRAVEL_STAMINA_COST,
-  TROOP_TRAVEL_WHEAT_COST
+  TROOP_TRAVEL_WHEAT_COST,
 } from "./utils/troop";
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
@@ -162,12 +162,6 @@ export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
 export const EternumGlobalConfig: Config = {
-  stamina: {
-    travelCost: STAMINA_TRAVEL_COST,
-    exploreCost: STAMINA_EXPLORE_COST,
-    refillPerTick: STAMINA_REFILL_PER_TICK,
-    startBoostTickCount: STAMINA_START_BOOST_TICK_COUNT,
-  },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     resourceMultiplier: RESOURCE_PRECISION,

@@ -12,7 +12,7 @@ const DEFENSE_NAMES = {
 };
 
 export interface DefenseTroop {
-  id: ID;
+  slot: ID;
   troops: Troops;
 }
 
@@ -116,13 +116,12 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
             <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1.5">
               {Array.from({ length: maxDefenses }).map((_, index) => {
                 const defense = defenseTroops[index];
-                console.log({ defense });
-                const id = defense?.id;
+                const slot = defense?.slot;
 
                 return (
                   <Draggable
-                    key={id}
-                    draggableId={`slot-${id}`}
+                    key={slot}
+                    draggableId={`slot-${slot}`}
                     index={index}
                     isDragDisabled={!defense || cooldownSlots.includes(index)}
                   >

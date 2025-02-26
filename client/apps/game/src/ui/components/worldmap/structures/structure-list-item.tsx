@@ -1,7 +1,7 @@
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import { ArmyInfo, Structure, StructureType } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, useGetHyperstructureProgress } from "@bibliothecadao/react";
+import { useGetHyperstructureProgress, useGuardsByStructure } from "@bibliothecadao/react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 
 type StructureListItemProps = {
@@ -29,7 +29,7 @@ export const StructureListItem = ({
 }: StructureListItemProps) => {
   const getHyperstructureProgress = useGetHyperstructureProgress();
 
-  const structureArmies = useArmiesByStructure({ structureEntityId: structure.entityId });
+  const guards = useGuardsByStructure({ structureEntityId: structure.entityId });
 
   const progress =
     structure.structure.base.category === StructureType.Hyperstructure
@@ -59,8 +59,8 @@ export const StructureListItem = ({
           <div className="flex flex-col content-center w-[55%]">
             {/* {structure.protector && <TroopChip troops={structure.protector?.troops} />} */}
             <CompactDefenseDisplay
-              troops={structureArmies.entityArmies.map((army) => ({
-                id: army.entityId,
+              troops={guards.map((army) => ({
+                slot: army.slot,
                 troops: army.troops,
               }))}
             />

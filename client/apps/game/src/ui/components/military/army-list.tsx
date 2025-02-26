@@ -13,7 +13,7 @@ import {
   StructureType,
   TileManager,
 } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, useDojo } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 import { StructureDefence } from "./structure-defence";
 
@@ -27,11 +27,13 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   });
   const existingBuildings = tileManager.existingBuildings();
 
-  const { entityArmies: structureArmies } = useArmiesByStructure({
+  const explorers = useExplorersByStructure({
     structureEntityId: structure?.structure.entity_id || 0,
   });
 
-  console.log({ structureArmies });
+  const guards = useGuardsByStructure({
+    structureEntityId: structure?.structure.entity_id || 0,
+  });
 
   const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
 
@@ -39,7 +41,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const maxAmountOfArmies = useMemo(() => {
     const maxWithBuildings =
-      troopConfig.troop_limit_config.explorer_max_party_count +
+      structure.structure.base.troop_max_explorer_count +
       existingBuildings.filter(
         (building) =>
           building.category === BuildingType[BuildingType.ArcheryRange] ||
@@ -53,19 +55,17 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   }, [existingBuildings]);
 
   const numberAttackingArmies = useMemo(() => {
-    return structureArmies.length;
-  }, [structureArmies]);
+    return explorers.length;
+  }, [explorers]);
 
-  // todo: fix this
   const numberDefensiveArmies = useMemo(() => {
-    return structureArmies.length;
-  }, [structureArmies]);
+    return guards.length;
+  }, [guards]);
 
   const isRealm = structure.category === StructureType.Realm;
 
   const armyManager = useMemo(() => {
     if (!structure.structure.entity_id) return null;
-    console.log({ structure });
     return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.structure.entity_id);
   }, [structure.structure.entity_id, dojo.network.provider, dojo.setup.components]);
 
@@ -78,21 +78,17 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </div>
       </Headline>
 
-      <div className="grid grid-cols-3 gap-4 p-3 bg-brown/90 rounded-md">
+      <div className="grid grid-cols-2 gap-4 p-3 bg-brown/90 rounded-md">
         <div className="text-center">
-          <div className="text-sm text-gold">Attacking</div>
-          <div className="text-lg font-bold text-gold/90">{numberAttackingArmies}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-sm text-gold">Defending</div>
+          <div className="text-sm text-gold">Explorers</div>
           <div className="text-lg font-bold text-gold/90">
-            {numberDefensiveArmies / troopConfig.troop_limit_config.max_defense_armies}
+            {numberAttackingArmies} / {structure.structure.base.troop_max_explorer_count}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-sm text-gold">Total</div>
+          <div className="text-sm text-gold">Guards</div>
           <div className="text-lg font-bold text-gold/90">
-            {numberAttackingArmies} / {maxAmountOfArmies}
+            {numberDefensiveArmies} / {structure.structure.base.troop_max_guard_count}
           </div>
         </div>
       </div>
@@ -143,7 +139,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </Headline>
 
         <div className="space-y-3">
-          {structureArmies.map((army) => (
+          {explorers.map((army) => (
             <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
           ))}
         </div>
@@ -158,8 +154,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
         <StructureDefence
           maxDefenses={4}
-          troops={structureArmies.map((army) => ({
-            id: army.entityId,
+          troops={guards.map((army) => ({
+            slot: army.slot,
             troops: army.troops,
           }))}
           cooldownSlots={[3]}

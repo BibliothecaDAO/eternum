@@ -285,7 +285,7 @@ export class ArmyMovementManager {
     return actionPaths;
   }
 
-  private readonly _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
+  private readonly _optimisticExplorerUpdate = (overrideId: string, staminaCost: number, newPosition: HexPosition) => {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
 
@@ -296,10 +296,15 @@ export class ArmyMovementManager {
       entity: this.entity,
       value: {
         ...explorerTroops,
+        coord: {
+          x: newPosition.col,
+          y: newPosition.row,
+        },
         troops: {
-          ...explorerTroops?.troops,
+          ...explorerTroops.troops,
           stamina: {
-            amount: stamina.amount - BigInt(cost),
+            ...explorerTroops.troops.stamina,
+            amount: stamina.amount - BigInt(staminaCost),
             updated_tick: stamina.updated_tick,
           },
         },
@@ -337,18 +342,6 @@ export class ArmyMovementManager {
     });
   };
 
-  private readonly _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.components.ExplorerTroops.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        coord: {
-          x: col,
-          y: row,
-        },
-      },
-    });
-  };
-
   private readonly _optimisticExplore = (
     blockTimestamp: number,
     col: number,
@@ -357,9 +350,8 @@ export class ArmyMovementManager {
   ) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
+    this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
     this._optimisticTileUpdate(overrideId, col, row);
-    this._optimisticPositionUpdate(overrideId, col, row);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -425,18 +417,9 @@ export class ArmyMovementManager {
       row,
     });
 
-    this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
+    this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
-    this.components.ExplorerTroops.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        coord: {
-          x: col,
-          y: row,
-        },
-      },
-    });
     return overrideId;
   };
 

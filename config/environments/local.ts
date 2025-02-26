@@ -16,10 +16,17 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 export const LocalEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   // no stamina cost
-  stamina: {
-    ...CommonEternumGlobalConfig.stamina,
-    travelCost: 0,
-    exploreCost: 0,
+  troop: {
+    ...CommonEternumGlobalConfig.troop,
+    stamina: {
+      ...CommonEternumGlobalConfig.troop.stamina,
+      staminaTravelStaminaCost: 0,
+      staminaExploreStaminaCost: 0,
+    },
+    damage: {
+      ...CommonEternumGlobalConfig.troop.damage,
+      damageC0: BigInt(0),
+    },
   },
   // cheap hyperstructures
   hyperstructures: {

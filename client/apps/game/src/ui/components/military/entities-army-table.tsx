@@ -9,7 +9,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
 import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, usePlayerStructures } from "@bibliothecadao/react";
+import { useExplorersByStructure, usePlayerStructures } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
   const playerStructures = usePlayerStructures();
@@ -46,9 +46,9 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   if (!structureEntityId) {
     return <div>Entity not found</div>;
   }
-  const { entityArmies } = useArmiesByStructure({ structureEntityId });
+  const explorers = useExplorersByStructure({ structureEntityId });
 
-  const totalTroops = entityArmies.reduce(
+  const totalTroops = explorers.reduce(
     (acc, army: ArmyInfo) => {
       return {
         crossbowmen: acc.crossbowmen + (army.troops.category === TroopType.Crossbowman ? Number(army.troops.count) : 0),
@@ -59,12 +59,12 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
     { crossbowmen: 0, paladins: 0, knights: 0 },
   );
 
-  if (entityArmies.length === 0) {
+  if (explorers.length === 0) {
     return <div className="m-auto">No armies</div>;
   }
 
   const armyElements = () => {
-    return entityArmies.map((army: ArmyInfo) => {
+    return explorers.map((army: ArmyInfo) => {
       return <ArmyChip key={army.entityId} army={army} showButtons />;
     });
   };

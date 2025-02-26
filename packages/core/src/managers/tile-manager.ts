@@ -215,6 +215,7 @@ export class TileManager {
     this.components.StructureBuildings.addOverride(quantityOverrideId, {
       entity: realmEntity,
       value: {
+        ...structureBuildings,
         packed_counts: BigInt(packedBuildingCount),
       },
     });
@@ -244,6 +245,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...currentBuilding,
         outer_col: outercol,
         outer_row: outerrow,
         inner_col: col,
@@ -262,9 +264,12 @@ export class TileManager {
 
     const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
 
+    const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
+
     this.components.StructureBuildings.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
+        ...currentStructureBuildings,
         population: {
           current:
             (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.current || 0) -
@@ -286,6 +291,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...building,
         outer_col: building?.outer_col,
         outer_row: building?.outer_row,
         inner_col: building?.inner_col,
@@ -308,6 +314,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...building,
         outer_col: building?.outer_col,
         outer_row: building?.outer_row,
         inner_col: building?.inner_col,
@@ -332,12 +339,12 @@ export class TileManager {
       this.components.Structure.addOverride(overrideId, {
         entity,
         value: {
+          ...structure,
           base: {
             ...structure?.base,
             category: Number(structureType),
             coord_x: coords.x,
             coord_y: coords.y,
-            created_at: 0,
           },
           entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
         },
@@ -383,6 +390,7 @@ export class TileManager {
     } catch (error) {
       this.components.Building.removeOverride(overrideId);
       this.components.StructureBuildings.removeOverride(populationOverrideId);
+      this.components.Structure.removeOverride(overrideId);
 
       console.error(error);
       throw error;

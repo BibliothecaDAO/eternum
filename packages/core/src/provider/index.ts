@@ -1491,7 +1491,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     let callData: Call[] = [];
 
-    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined) {
+    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       const requestTwoCall: Call = {
         contractAddress: this.VRF_PROVIDER_ADDRESS!,
         entrypoint: "request_random",

@@ -31,12 +31,16 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
   const remainingCapacity = useMemo(() => armyTotalCapacity - army.weight, [army]);
 
   const capacityColor = useMemo(() => {
+    const exploreReward = configManager.getExploreReward();
     if (army.weight >= armyTotalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(Math.floor(configManager.getExploreReward()))) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(Math.floor(exploreReward))) return CapacityColor.MEDIUM;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 
-  const weightPercentage = useMemo(() => ((Number(army.weight) / Number(armyTotalCapacity)) * 100).toFixed(0), [army]);
+  const weightPercentage = useMemo(() => {
+    const percentage = ((Number(army.weight) / Number(armyTotalCapacity)) * 100).toFixed(0);
+    return percentage;
+  }, [army]);
 
   return (
     <div className={`flex flex-row text-xxs ${className}`}>

@@ -459,12 +459,6 @@ export interface ProductionByLaborParams {
 }
 
 export interface Config {
-  stamina: {
-    travelCost: number;
-    exploreCost: number;
-    refillPerTick: number;
-    startBoostTickCount: number;
-  };
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;

@@ -18,12 +18,14 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   // no stamina cost
-  stamina: {
-    ...CommonEternumGlobalConfig.stamina,
-    travelCost: 0,
-    exploreCost: 0,
+  troop: {
+    ...CommonEternumGlobalConfig.troop,
+    stamina: {
+      ...CommonEternumGlobalConfig.troop.stamina,
+      staminaTravelStaminaCost: 0,
+      staminaExploreStaminaCost: 0,
+    },
   },
-  // cheap hyperstructures
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
     hyperstructureCreationCosts: [{ resource_tier: ResourceTier.Lords, min_amount: 3_000, max_amount: 3_000 }],

@@ -16,7 +16,7 @@ import {
   type Config as EternumConfig,
   type ResourceInputs,
   type ResourceOutputs,
-  type ResourceWhitelistConfig
+  type ResourceWhitelistConfig,
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
@@ -126,7 +126,6 @@ export class GameConfigDeployer {
     );
   }
 }
-
 
 export const setQuestRewardConfig = async (config: Config) => {
   console.log(
@@ -808,10 +807,8 @@ export const setupGlobals = async (config: Config) => {
     signer: config.account,
     reward_amount: config.config.exploration.reward,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
-    mine_wheat_grant_amount:
-      config.config.exploration.shardsMineInitialWheatBalance,
-    mine_fish_grant_amount:
-      config.config.exploration.shardsMineInitialFishBalance 
+    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
+    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
   console.log(
     chalk.cyan(`
@@ -915,6 +912,11 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
+  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
+    return;
+  }
+
   console.log(
     chalk.cyan(`
   🎲 VRF Configuration
@@ -1137,14 +1139,14 @@ export const createBanks = async (config: Config) => {
   );
 
   let banks = [];
-  let bank_coords =   []
+  let bank_coords = [];
   // Find coordinates x steps from center in each direction
   const stepsFromCenter = 80;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
     bank_coords.push({ x: coord.x, y: coord.y });
   }
-    
+
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
     banks.push({
       name: `${config.config.banks.name} ${i + 1}`,

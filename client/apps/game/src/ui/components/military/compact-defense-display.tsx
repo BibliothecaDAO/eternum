@@ -13,9 +13,9 @@ export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefense
     <div className={`flex gap-1 items-center flex-wrap ${className}`}>
       {troops.map((defense) => (
         <div
-          key={defense.id}
+          key={defense.slot}
           className="flex items-center bg-brown-900/90 border border-gold/20 rounded-md px-1.5 py-0.5"
-          title={`Defense Slot ${defense.id}`}
+          title={`Defense Slot ${defense.slot}`}
         >
           <ResourceIcon
             withTooltip={false}

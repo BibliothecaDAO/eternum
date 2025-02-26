@@ -32,6 +32,7 @@ export class ArmyManager {
       value: {
         ...army,
         troops: {
+          ...army.troops,
           category: army.troops.category,
           tier: army.troops.tier,
           count: BigInt(army.troops.count) + BigInt(troopCount),
@@ -64,10 +65,10 @@ export class ArmyManager {
 
     if (guard) {
       const guardKey = ["alpha", "bravo", "charlie", "delta"][guardSlot];
-
       this.components.Structure.addOverride(overrideId, {
         entity: structureEntity,
         value: {
+          ...structure,
           troop_guards: {
             ...structure.troop_guards,
             [guardKey]: {
@@ -118,13 +119,13 @@ export class ArmyManager {
   }
 
   // don't need to multiply by precision here because the explorer_add function already does it
-  public addTroopsToExplorer(
+  public async addTroopsToExplorer(
     signer: Account | AccountInterface,
     armyEntityId: ID,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
-  ): void {
+  ): Promise<void> {
     this.provider.explorer_add({
       signer,
       to_explorer_id: armyEntityId,
@@ -136,14 +137,14 @@ export class ArmyManager {
   }
 
   // don't need to multiply by precision here because the guard_add function already does it
-  public addTroopsToGuard(
+  public async addTroopsToGuard(
     signer: Account | AccountInterface,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
     slot: number,
-  ): void {
-    this.provider.guard_add({
+  ): Promise<void> {
+    await this.provider.guard_add({
       signer,
       for_structure_id: this.realmEntityId,
       slot,
@@ -156,14 +157,14 @@ export class ArmyManager {
   }
 
   // don't need to multiply by precision here because the explorer_create function already does it
-  public createExplorerArmy(
+  public async createExplorerArmy(
     signer: Account | AccountInterface,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
     spawnDirection: Direction,
-  ): void {
-    this.provider.explorer_create({
+  ): Promise<void> {
+    await this.provider.explorer_create({
       signer,
       for_structure_id: this.realmEntityId,
       category: Object.keys(TroopType).indexOf(troopType),
