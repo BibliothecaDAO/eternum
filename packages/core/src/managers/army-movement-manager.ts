@@ -202,7 +202,8 @@ export class ArmyMovementManager {
 
       let actionType;
       if (isMine) {
-        actionType = ActionType.Help;
+        // TODO: put back attack action when finish dev
+        actionType = ActionType.Attack;
       } else if (canAttack) {
         actionType = ActionType.Attack;
       } else if (biome) {

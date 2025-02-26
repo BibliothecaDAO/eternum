@@ -1,5 +1,5 @@
 import { BiomeType } from "../constants";
-import { TroopType } from "../types";
+import { TroopTier, TroopType } from "../types";
 
 export class Percentage {
   static _100() {
@@ -15,7 +15,7 @@ export interface Army {
   stamina: number;
   troopCount: number;
   troopType: TroopType;
-  tier: 1 | 2 | 3;
+  tier: TroopTier;
 }
 
 export interface CombatParameters {
@@ -79,13 +79,13 @@ export class CombatSimulator {
     return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   }
 
-  private static getTierValue(tier: 1 | 2 | 3): number {
+  private static getTierValue(tier: TroopTier): number {
     switch (tier) {
-      case 1:
+      case TroopTier.T1:
         return this.BASE_T1_VALUE;
-      case 2:
+      case TroopTier.T2:
         return this.BASE_T1_VALUE * 2.5;
-      case 3:
+      case TroopTier.T3:
         return this.BASE_T1_VALUE * 7;
     }
   }

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -7,6 +8,7 @@ import {
   ContractAddress,
   divideByPrecision,
   getArmy,
+  getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
   getStructure,
   getTroopResourceId,
@@ -17,7 +19,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatBiomeBonus, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
@@ -35,10 +37,15 @@ export const CombatContainer = ({
   const {
     account: { account },
     setup: {
+      systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
       components,
       components: { Structure, ExplorerTroops, Occupied },
     },
   } = useDojo();
+
+  const [loading, setLoading] = useState(false);
+
+  const selectedHex = useUIStore((state) => state.selectedHex);
 
   const targetEntity = getComponentValue(Occupied, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
@@ -76,6 +83,8 @@ export const CombatContainer = ({
     return null;
   }, [targetEntity, account, components]);
 
+  console.log({ target });
+
   const defenderStamina = useMemo(() => {
     return new StaminaManager(components, target?.info?.entityId || 0).getStamina(getBlockTimestamp().currentArmiesTick)
       .amount;
@@ -112,7 +121,7 @@ export const CombatContainer = ({
       stamina: Number(attackerStamina),
       troopCount: Number(attackerArmyComponent.troops.count),
       troopType: attackerArmyComponent.troops.category as TroopType,
-      tier: Number(attackerArmyComponent.troops.tier) as 1 | 2 | 3,
+      tier: attackerArmyComponent.troops.tier as TroopTier,
     };
 
     const defenderArmy = {
@@ -120,7 +129,7 @@ export const CombatContainer = ({
       stamina: Number(defenderStamina),
       troopCount: Number(targetArmy.troops.count),
       troopType: targetArmy.troops.category as TroopType,
-      tier: Number(targetArmy.troops.tier) as 1 | 2 | 3,
+      tier: targetArmy.troops.tier as TroopTier,
     };
 
     const params = CombatSimulator.getDefaultParameters();
@@ -177,6 +186,15 @@ export const CombatContainer = ({
     };
   }, [attackerEntityId]);
 
+  const troopResourceId = useMemo(() => {
+    return getTroopResourceId(
+      attackerArmyData?.troops.category as TroopType,
+      attackerArmyData?.troops.tier as TroopTier,
+    );
+  }, [attackerArmyData]);
+
+  console.log({ troopResourceId });
+
   const targetArmyData = useMemo(() => {
     if (!target?.info?.entityId) return null;
     const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(target.info.entityId)]));
@@ -190,6 +208,30 @@ export const CombatContainer = ({
       },
     };
   }, [target]);
+
+  // todo: add this to a manager
+  const onAttack = async () => {
+    if (!selectedHex) return;
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
+    if (!direction) return;
+
+    console.log({ selectedHex, targetHex, direction });
+
+    try {
+      setLoading(true);
+
+      await attack_explorer_vs_explorer({
+        signer: account,
+        aggressor_id: attackerEntityId,
+        defender_id: target?.info?.entityId || 0,
+        defender_direction: direction,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
@@ -350,8 +392,7 @@ export const CombatContainer = ({
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
           disabled={attackerStamina < staminaCombatConfig.staminaCost}
-          // todo: add attack tx
-          onClick={() => console.log("ATTACKKKKKK")}
+          onClick={onAttack}
         >
           {attackerStamina >= staminaCombatConfig.staminaCost
             ? "Attack!"
