@@ -88,7 +88,7 @@ pub trait IHyperstructureConfig<T> {
 
 #[starknet::interface]
 pub trait IBankConfig<T> {
-    fn set_bank_config(ref self: T, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128);
+    fn set_bank_config(ref self: T, lp_fee_num: u32, lp_fee_denom: u32, owner_fee_num: u32, owner_fee_denom: u32);
 }
 
 
@@ -506,13 +506,18 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl BankConfigImpl of super::IBankConfig<ContractState> {
-        fn set_bank_config(ref self: ContractState, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128) {
+        fn set_bank_config(
+            ref self: ContractState, lp_fee_num: u32, lp_fee_denom: u32, owner_fee_num: u32, owner_fee_denom: u32,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("bank_config"), BankConfig { lords_cost, lp_fee_num, lp_fee_denom },
-            );
+            let mut bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
+            bank_config.lp_fee_num = lp_fee_num;
+            bank_config.lp_fee_denom = lp_fee_denom;
+            bank_config.owner_fee_num = owner_fee_num;
+            bank_config.owner_fee_denom = owner_fee_denom;
+            WorldConfigUtilImpl::set_member(ref world, selector!("bank_config"), bank_config);
         }
     }
 

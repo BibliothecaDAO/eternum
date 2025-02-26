@@ -1,6 +1,5 @@
 use cubit::f128::types::fixed::{Fixed};
 use dojo::meta::introspect::{Introspect, Member, Struct, Ty};
-use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 pub impl IntrospectFixed of Introspect<Fixed> {
@@ -33,8 +32,6 @@ pub impl IntrospectFixed of Introspect<Fixed> {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Liquidity {
-    #[key]
-    pub bank_entity_id: ID,
     #[key]
     pub player: ContractAddress,
     #[key]
