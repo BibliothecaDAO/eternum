@@ -184,10 +184,11 @@ pub impl iExplorerImpl of iExplorerTrait {
         let fish_burn_amount: u128 = fish_cost * explorer.troops.count.into();
 
         // spend wheat resource
-        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
+        // todo: revisit who should pay food cost
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.owner);
         let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
         let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer.explorer_id, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, false,
+            ref world, explorer.owner, ResourceTypes::WHEAT, ref explorer_weight, wheat_weight_grams, true,
         );
         wheat_resource.spend(wheat_burn_amount, ref explorer_weight, wheat_weight_grams);
         wheat_resource.store(ref world);
@@ -195,13 +196,13 @@ pub impl iExplorerImpl of iExplorerTrait {
         // spend fish resource
         let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
         let mut fish_resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer.explorer_id, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, false,
+            ref world, explorer.owner, ResourceTypes::FISH, ref explorer_weight, fish_weight_grams, true,
         );
         fish_resource.spend(fish_burn_amount, ref explorer_weight, fish_weight_grams);
         fish_resource.store(ref world);
 
         // update explorer weight
-        explorer_weight.store(ref world, explorer.explorer_id);
+        explorer_weight.store(ref world, explorer.owner);
     }
 
     fn update_capacity(
