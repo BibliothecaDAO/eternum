@@ -16,7 +16,7 @@ export const getHighlightColorForAction = (actionType: ActionType): THREE.Vector
     case ActionType.Help:
       return new THREE.Vector3(1.5, 0.0, 1.5); // More intense purple
     case ActionType.Build:
-      return new THREE.Vector3(0.0, 0.0, 1.5); // More intense blue
+      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
     default:
       return new THREE.Vector3(1.5, 1.5, 1.5); // More intense white
   }

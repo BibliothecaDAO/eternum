@@ -11,7 +11,6 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { armyHasTroops, ArmyInfo } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -60,8 +59,9 @@ export const ArmyChip = ({
   className?: string;
   showButtons?: boolean;
 }) => {
-  const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  console.log({ army });
 
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);

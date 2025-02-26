@@ -749,3 +749,161 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
   /** Account executing the transaction */
   signer: Account | AccountInterface;
 }
+
+/**
+ * Properties for moving an explorer
+ */
+export interface ExplorerMoveProps extends SystemSigner {
+  /** ID of the explorer to move */
+  explorer_id: number;
+  /** Array of directions to move in */
+  directions: number[];
+  /** Whether to explore new tiles along the way */
+  explore: boolean;
+}
+
+/**
+ * Properties for swapping troops between explorers
+ */
+export interface ExplorerExplorerSwapProps extends SystemSigner {
+  /** ID of the explorer sending troops */
+  from_explorer_id: number;
+  /** ID of the explorer receiving troops */
+  to_explorer_id: number;
+  /** Direction to the receiving explorer */
+  to_explorer_direction: number;
+  /** Number of troops to swap */
+  count: number;
+}
+
+/**
+ * Properties for swapping troops from explorer to guard
+ */
+export interface ExplorerGuardSwapProps extends SystemSigner {
+  /** ID of the explorer sending troops */
+  from_explorer_id: number;
+  /** ID of the structure receiving troops */
+  to_structure_id: number;
+  /** Direction to the receiving structure */
+  to_structure_direction: number;
+  /** Guard slot to place troops in */
+  to_guard_slot: number;
+  /** Number of troops to swap */
+  count: number;
+}
+
+/**
+ * Properties for swapping troops from guard to explorer
+ */
+export interface GuardExplorerSwapProps extends SystemSigner {
+  /** ID of the structure sending troops */
+  from_structure_id: number;
+  /** Guard slot to take troops from */
+  from_guard_slot: number;
+  /** ID of the explorer receiving troops */
+  to_explorer_id: number;
+  /** Direction to the receiving explorer */
+  to_explorer_direction: number;
+  /** Number of troops to swap */
+  count: number;
+}
+
+/**
+ * Properties for explorer vs explorer attack
+ */
+export interface AttackExplorerVsExplorerProps extends SystemSigner {
+  /** ID of the attacking explorer */
+  aggressor_id: number;
+  /** ID of the defending explorer */
+  defender_id: number;
+  /** Direction to the defender */
+  defender_direction: number;
+}
+
+/**
+ * Properties for explorer vs guard attack
+ */
+export interface AttackExplorerVsGuardProps extends SystemSigner {
+  /** ID of the attacking explorer */
+  explorer_id: number;
+  /** ID of the structure with defending guard */
+  structure_id: number;
+  /** Direction to the structure */
+  structure_direction: number;
+}
+
+/**
+ * Properties for guard vs explorer attack
+ */
+export interface AttackGuardVsExplorerProps extends SystemSigner {
+  /** ID of the structure with attacking guard */
+  structure_id: number;
+  /** Guard slot of the attacking troops */
+  structure_guard_slot: number;
+  /** ID of the defending explorer */
+  explorer_id: number;
+  /** Direction to the explorer */
+  explorer_direction: number;
+}
+
+/**
+ * Properties for adding troops to a guard
+ */
+export interface GuardAddProps extends SystemSigner {
+  /** ID of the structure to add guard troops to */
+  for_structure_id: number;
+  /** Guard slot to place troops in */
+  slot: number;
+  /** Type of troops to add */
+  category: number;
+  /** Tier of troops to add */
+  tier: number;
+  /** Number of troops to add */
+  amount: number;
+}
+
+/**
+ * Properties for deleting guard troops
+ */
+export interface GuardDeleteProps extends SystemSigner {
+  /** ID of the structure to remove guard troops from */
+  for_structure_id: number;
+  /** Guard slot to remove troops from */
+  slot: number;
+}
+
+/**
+ * Properties for creating an explorer
+ */
+export interface ExplorerCreateProps extends SystemSigner {
+  /** ID of the structure creating the explorer */
+  for_structure_id: number;
+  /** Type of troops to add */
+  category: number;
+  /** Tier of troops to add */
+  tier: number;
+  /** Number of troops to add */
+  amount: number;
+  /** Direction to spawn the explorer */
+  spawn_direction: number;
+}
+
+/**
+ * Properties for adding troops to an explorer
+ */
+export interface ExplorerAddProps extends SystemSigner {
+  /** ID of the explorer to add troops to */
+  to_explorer_id: number;
+  /** Number of troops to add */
+  amount: number;
+  /** Direction to the explorer's home */
+  home_direction: number;
+}
+
+/**
+ * Properties for deleting an explorer
+ */
+export interface ExplorerDeleteProps extends SystemSigner {
+  /** ID of the explorer to delete */
+  explorer_id: number;
+}

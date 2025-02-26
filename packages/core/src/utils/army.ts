@@ -1,9 +1,9 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ArmyInfo, getArmyTotalCapacityInKg } from "..";
+import { ArmyInfo, divideByPrecision, getArmyTotalCapacityInKg, ResourcesIds } from "..";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, TroopInfo, TroopsLegacy, TroopType } from "../types";
+import { ContractAddress, ID, TroopInfo, TroopsLegacy, TroopTier, TroopType } from "../types";
 
 export const formatArmies = (
   armies: Entity[],
@@ -13,11 +13,13 @@ export const formatArmies = (
   return armies
     .map((armyEntityId) => {
       const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntityId);
+      console.log({ explorerTroops });
+
       if (!explorerTroops) return undefined;
 
       const position = explorerTroops.coord;
 
-      const totalCapacity = getArmyTotalCapacityInKg(Number(explorerTroops.troops.count));
+      const totalCapacity = getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
       const weight = resource ? resource.weight : 0n;
@@ -83,4 +85,15 @@ export const getDominantTroopInfo = (troops: TroopsLegacy): TroopInfo => {
     return { type: TroopType.Crossbowman, count: Number(crossbowman_count), label: "Crossbowmen" };
   }
   return { type: TroopType.Paladin, count: Number(paladin_count), label: "Paladins" };
+};
+
+export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
+  switch (troopType) {
+    case TroopType.Knight:
+      return ResourcesIds.Knight;
+    case TroopType.Crossbowman:
+      return ResourcesIds.Crossbowman;
+    case TroopType.Paladin:
+      return ResourcesIds.Paladin;
+  }
 };

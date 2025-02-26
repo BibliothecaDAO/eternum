@@ -6,7 +6,8 @@ import {
   BiomeType,
   CombatParameters,
   CombatSimulator,
-  ResourcesIds,
+  getTroopResourceId,
+  TroopTier,
   TroopType,
   type Army,
 } from "@bibliothecadao/eternum";
@@ -19,16 +20,6 @@ interface ArmyInputProps {
 }
 
 const MAX_TROOPS_PER_ARMY = 500_000;
-
-const TROOP_RESOURCES = [
-  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
-  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
-];
-
-const getTroopResourceId = (troopType: TroopType): number => {
-  return TROOP_RESOURCES.find((t) => t.type === troopType)?.resourceId || ResourcesIds.Knight;
-};
 
 const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
   return (
@@ -229,7 +220,7 @@ export const CombatSimulationPanel = () => {
               key={label}
               className="relative p-4 rounded-lg border border-gold/10"
               style={{
-                backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(data.army.troopType)}.png)`,
+                backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}

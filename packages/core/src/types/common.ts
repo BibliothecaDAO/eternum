@@ -8,6 +8,7 @@ import {
   RealmLevels,
   ResourcesIds,
   ResourceTier,
+  StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -68,6 +69,7 @@ export type Structure = {
   isMine: boolean;
   isMercenary: boolean;
   name: string;
+  category: StructureType;
   ownerName?: string;
   protectors: ArmyInfo[];
   owner: ContractAddress;
@@ -78,7 +80,7 @@ export type PlayerStructure = {
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   position: Position;
   name: string;
-  category?: string | undefined;
+  category: StructureType;
   owner: ContractAddress;
 };
 
@@ -220,6 +222,12 @@ export interface Troops {
     amount: bigint;
     updated_tick: bigint;
   };
+}
+
+export enum TroopTier {
+  T1 = "T1",
+  T2 = "T2",
+  T3 = "T3",
 }
 
 export enum TroopType {

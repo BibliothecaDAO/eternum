@@ -246,7 +246,7 @@ export const resources: Array<Resources> = [
     ticker: "$DONKEY",
   },
   {
-    trait: "Knight T1",
+    trait: "Knight",
     value: 250,
     colour: "#ec4899",
     id: ResourcesIds.Knight,
@@ -255,7 +255,7 @@ export const resources: Array<Resources> = [
     ticker: "$KNIGHT1",
   },
   {
-    trait: "Knight T2",
+    trait: "KnightT2",
     value: 251,
     colour: "#ec4899",
     id: ResourcesIds.KnightT2,
@@ -264,7 +264,7 @@ export const resources: Array<Resources> = [
     ticker: "$KNIGHT2",
   },
   {
-    trait: "Knight T3",
+    trait: "KnightT3",
     value: 252,
     colour: "#ec4899",
     id: ResourcesIds.KnightT3,
@@ -273,7 +273,7 @@ export const resources: Array<Resources> = [
     ticker: "$KNIGHT3",
   },
   {
-    trait: "Crossbowman T1",
+    trait: "Crossbowman",
     value: 253,
     colour: "#ec4899",
     id: ResourcesIds.Crossbowman,
@@ -282,7 +282,7 @@ export const resources: Array<Resources> = [
     ticker: "$CROSS1",
   },
   {
-    trait: "Crossbowman T2",
+    trait: "CrossbowmanT2",
     value: 254,
     colour: "#ec4899",
     id: ResourcesIds.CrossbowmanT2,
@@ -291,7 +291,7 @@ export const resources: Array<Resources> = [
     ticker: "$CROSS2",
   },
   {
-    trait: "Crossbowman T3",
+    trait: "CrossbowmanT3",
     value: 255,
     colour: "#ec4899",
     id: ResourcesIds.CrossbowmanT3,
@@ -300,7 +300,7 @@ export const resources: Array<Resources> = [
     ticker: "$CROSS3",
   },
   {
-    trait: "Paladin T1",
+    trait: "Paladin",
     value: 256,
     colour: "#ec4899",
     id: ResourcesIds.Paladin,
@@ -309,7 +309,7 @@ export const resources: Array<Resources> = [
     ticker: "$PLDN1",
   },
   {
-    trait: "Paladin T2",
+    trait: "PaladinT2",
     value: 257,
     colour: "#ec4899",
     id: ResourcesIds.PaladinT2,
@@ -318,7 +318,7 @@ export const resources: Array<Resources> = [
     ticker: "$PLDN2",
   },
   {
-    trait: "Paladin T3",
+    trait: "PaladinT3",
     value: 258,
     colour: "#ec4899",
     id: ResourcesIds.PaladinT3,

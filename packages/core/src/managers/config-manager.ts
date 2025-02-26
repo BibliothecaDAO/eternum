@@ -1,4 +1,4 @@
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
@@ -238,43 +238,63 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         // todo: need to fix this
-        const troopConfig = getComponentValue(
+        const worldConfig = getComponentValueStrict(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        ) as any;
+        );
+
+        const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
 
         return {
-          health: troopConfig?.health ?? 0,
-          knightStrength: troopConfig?.knight_strength ?? 0,
-          paladinStrength: troopConfig?.paladin_strength ?? 0,
-          crossbowmanStrength: troopConfig?.crossbowman_strength ?? 0,
-          advantagePercent: troopConfig?.advantage_percent ?? 0,
-          disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
-          maxTroopCount: this.divideByPrecision(troopConfig?.max_troop_count ?? 0),
-          pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
-          baseArmyNumberForStructure: troopConfig?.army_free_per_structure ?? 0,
-          armyExtraPerMilitaryBuilding: troopConfig?.army_extra_per_building ?? 0,
-          maxArmiesPerStructure: troopConfig?.army_max_per_structure ?? 0,
-          battleLeaveSlashNum: troopConfig?.battle_leave_slash_num ?? 0,
-          battleLeaveSlashDenom: troopConfig?.battle_leave_slash_denom ?? 0,
-          battleTimeScale: troopConfig?.battle_time_scale ?? 0,
+          troop_damage_config,
+          troop_limit_config: {
+            ...troop_limit_config,
+            troops_per_military_building: 1,
+            max_defense_armies: 4,
+          },
+          troop_stamina_config,
         };
       },
       {
-        health: 0,
-        knightStrength: 0,
-        paladinStrength: 0,
-        crossbowmanStrength: 0,
-        advantagePercent: 0,
-        disadvantagePercent: 0,
-        maxTroopCount: 0,
-        pillageHealthDivisor: 0,
-        baseArmyNumberForStructure: 0,
-        armyExtraPerMilitaryBuilding: 0,
-        maxArmiesPerStructure: 0,
-        battleLeaveSlashNum: 0,
-        battleLeaveSlashDenom: 0,
-        battleTimeScale: 0,
+        // Default config structure matching the expected types
+        troop_damage_config: {
+          damage_biome_bonus_num: 0,
+          damage_beta_small: 0,
+          damage_beta_large: 0,
+          damage_scaling_factor: 0n,
+          damage_c0: 0n,
+          damage_delta: 0n,
+          t1_damage_value: 0n,
+          t2_damage_multiplier: 0n,
+          t3_damage_multiplier: 0n,
+        },
+
+        troop_limit_config: {
+          explorer_max_party_count: 0,
+          explorer_guard_max_troop_count: 0,
+          guard_resurrection_delay: 0,
+          mercenaries_troop_lower_bound: 0,
+          mercenaries_troop_upper_bound: 0,
+          troops_per_military_building: 0,
+          max_defense_armies: 0,
+        },
+
+        troop_stamina_config: {
+          stamina_gain_per_tick: 0,
+          stamina_initial: 0,
+          stamina_bonus_value: 0,
+          stamina_knight_max: 0,
+          stamina_paladin_max: 0,
+          stamina_crossbowman_max: 0,
+          stamina_attack_req: 0,
+          stamina_attack_max: 0,
+          stamina_explore_wheat_cost: 0,
+          stamina_explore_fish_cost: 0,
+          stamina_explore_stamina_cost: 0,
+          stamina_travel_wheat_cost: 0,
+          stamina_travel_fish_cost: 0,
+          stamina_travel_stamina_cost: 0,
+        },
       },
     );
   }
@@ -296,9 +316,14 @@ export class ClientConfigManager {
     }, 0);
   }
 
-  // todo: need to get this from config
   getMinTravelStaminaCost() {
-    return 10;
+    return this.getValueOrDefault(() => {
+      const staminaConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
+    }, 1);
   }
 
   getResourceBridgeFeeSplitConfig() {

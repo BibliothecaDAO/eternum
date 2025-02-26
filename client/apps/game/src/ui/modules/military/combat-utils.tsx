@@ -1,15 +1,3 @@
-import { ResourcesIds, TroopType } from "@bibliothecadao/eternum";
-
-// Helper functions
-export const getTroopResourceId = (troopType: TroopType): number => {
-  const TROOP_RESOURCES = [
-    { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
-    { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
-    { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
-  ];
-  return TROOP_RESOURCES.find((t) => t.type === troopType)?.resourceId || ResourcesIds.Knight;
-};
-
 export const formatBiomeBonus = (bonus: number) => {
   const percentage = ((bonus - 1) * 100).toFixed(0);
   if (percentage === "0") return "No bonus";

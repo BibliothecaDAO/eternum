@@ -9,14 +9,16 @@ import {
   getArmy,
   getEntityIdFromKeys,
   getStructure,
+  getTroopResourceId,
   ID,
   StaminaManager,
+  TroopTier,
   TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { formatBiomeBonus, getStaminaDisplay, getTroopResourceId } from "./combat-utils";
+import { formatBiomeBonus, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
   Structure,
@@ -170,7 +172,7 @@ export const CombatContainer = ({
       troops: {
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
-        tier: Number(army?.troops.tier) as 1 | 2 | 3,
+        tier: army?.troops.tier as TroopTier,
       },
     };
   }, [attackerEntityId]);
@@ -184,7 +186,7 @@ export const CombatContainer = ({
       troops: {
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
-        tier: Number(army?.troops.tier) as 1 | 2 | 3,
+        tier: army?.troops.tier as TroopTier,
       },
     };
   }, [target]);
@@ -299,7 +301,8 @@ export const CombatContainer = ({
                 style={{
                   backgroundImage: originalTroops
                     ? `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(
-                        originalTroops.category,
+                        originalTroops.category as TroopType,
+                        originalTroops.tier as TroopTier,
                       )}.png)`
                     : undefined,
                   backgroundSize: "cover",

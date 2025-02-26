@@ -61,6 +61,7 @@ const getStructureInfo = (
     isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName,
+    category: structure.base.category,
   };
 };
 

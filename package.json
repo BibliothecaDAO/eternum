@@ -24,7 +24,7 @@
     "seasonpass:deploy:local": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh",
     "seasonresources:deploy:local": "cd ./contracts/season_resources/ext/scripts && ./deploy.sh",
     "toml:update:local": "cd ./contracts/game && ./ext/scripts/update-toml.sh torii-local.toml ../common/addresses/local.json",
-    "indexer:start:local": "pnpm run toml:update:local && cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080",
+    "indexer:start:local": "pnpm run toml:update:local && cd ./contracts/game && ./ext/scripts/indexer.sh --network local --rpc http://127.0.0.1:8080 --world 0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74",
     "config:deploy:local": "pnpm run build:packages && pnpm --dir ./config run local",
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",

@@ -123,7 +123,6 @@ export class ResourceManager {
 
   public balanceWithProduction(currentTick: number): number {
     const resource = this._getResource();
-    console.log({ resource });
     const balance = this.balance();
     const amountProduced = this._amountProduced(resource, currentTick);
     const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced);
@@ -668,87 +667,87 @@ export class ResourceManager {
   }
 
   public balance(): bigint {
-    const resource = this._getResource();
-    if (!resource) return 0n;
+    // const resource = this._getResource();
+    return BigInt(multiplyByPrecision(10000000));
 
-    switch (this.resourceId) {
-      case ResourcesIds.Stone:
-        return resource.STONE_BALANCE;
-      case ResourcesIds.Coal:
-        return resource.COAL_BALANCE;
-      case ResourcesIds.Wood:
-        return resource.WOOD_BALANCE;
-      case ResourcesIds.Copper:
-        return resource.COPPER_BALANCE;
-      case ResourcesIds.Ironwood:
-        return resource.IRONWOOD_BALANCE;
-      case ResourcesIds.Obsidian:
-        return resource.OBSIDIAN_BALANCE;
-      case ResourcesIds.Gold:
-        return resource.GOLD_BALANCE;
-      case ResourcesIds.Silver:
-        return resource.SILVER_BALANCE;
-      case ResourcesIds.Mithral:
-        return resource.MITHRAL_BALANCE;
-      case ResourcesIds.AlchemicalSilver:
-        return resource.ALCHEMICAL_SILVER_BALANCE;
-      case ResourcesIds.ColdIron:
-        return resource.COLD_IRON_BALANCE;
-      case ResourcesIds.DeepCrystal:
-        return resource.DEEP_CRYSTAL_BALANCE;
-      case ResourcesIds.Ruby:
-        return resource.RUBY_BALANCE;
-      case ResourcesIds.Diamonds:
-        return resource.DIAMONDS_BALANCE;
-      case ResourcesIds.Hartwood:
-        return resource.HARTWOOD_BALANCE;
-      case ResourcesIds.Ignium:
-        return resource.IGNIUM_BALANCE;
-      case ResourcesIds.TwilightQuartz:
-        return resource.TWILIGHT_QUARTZ_BALANCE;
-      case ResourcesIds.TrueIce:
-        return resource.TRUE_ICE_BALANCE;
-      case ResourcesIds.Adamantine:
-        return resource.ADAMANTINE_BALANCE;
-      case ResourcesIds.Sapphire:
-        return resource.SAPPHIRE_BALANCE;
-      case ResourcesIds.EtherealSilica:
-        return resource.ETHEREAL_SILICA_BALANCE;
-      case ResourcesIds.Dragonhide:
-        return resource.DRAGONHIDE_BALANCE;
-      case ResourcesIds.Labor:
-        return resource.LABOR_BALANCE;
-      case ResourcesIds.AncientFragment:
-        return resource.EARTHEN_SHARD_BALANCE;
-      case ResourcesIds.Donkey:
-        return resource.DONKEY_BALANCE;
-      case ResourcesIds.Knight:
-        return resource.KNIGHT_T1_BALANCE;
-      case ResourcesIds.KnightT2:
-        return resource.KNIGHT_T2_BALANCE;
-      case ResourcesIds.KnightT3:
-        return resource.KNIGHT_T3_BALANCE;
-      case ResourcesIds.Crossbowman:
-        return resource.CROSSBOWMAN_T1_BALANCE;
-      case ResourcesIds.CrossbowmanT2:
-        return resource.CROSSBOWMAN_T2_BALANCE;
-      case ResourcesIds.CrossbowmanT3:
-        return resource.CROSSBOWMAN_T3_BALANCE;
-      case ResourcesIds.Paladin:
-        return resource.PALADIN_T1_BALANCE;
-      case ResourcesIds.PaladinT2:
-        return resource.PALADIN_T2_BALANCE;
-      case ResourcesIds.PaladinT3:
-        return resource.PALADIN_T3_BALANCE;
-      case ResourcesIds.Wheat:
-        return resource.WHEAT_BALANCE;
-      case ResourcesIds.Fish:
-        return resource.FISH_BALANCE;
-      case ResourcesIds.Lords:
-        return resource.LORDS_BALANCE;
-      default:
-        return 0n;
-    }
+    // switch (this.resourceId) {
+    //   case ResourcesIds.Stone:
+    //     return resource.STONE_BALANCE;
+    //   case ResourcesIds.Coal:
+    //     return resource.COAL_BALANCE;
+    //   case ResourcesIds.Wood:
+    //     return resource.WOOD_BALANCE;
+    //   case ResourcesIds.Copper:
+    //     return resource.COPPER_BALANCE;
+    //   case ResourcesIds.Ironwood:
+    //     return resource.IRONWOOD_BALANCE;
+    //   case ResourcesIds.Obsidian:
+    //     return resource.OBSIDIAN_BALANCE;
+    //   case ResourcesIds.Gold:
+    //     return resource.GOLD_BALANCE;
+    //   case ResourcesIds.Silver:
+    //     return resource.SILVER_BALANCE;
+    //   case ResourcesIds.Mithral:
+    //     return resource.MITHRAL_BALANCE;
+    //   case ResourcesIds.AlchemicalSilver:
+    //     return resource.ALCHEMICAL_SILVER_BALANCE;
+    //   case ResourcesIds.ColdIron:
+    //     return resource.COLD_IRON_BALANCE;
+    //   case ResourcesIds.DeepCrystal:
+    //     return resource.DEEP_CRYSTAL_BALANCE;
+    //   case ResourcesIds.Ruby:
+    //     return resource.RUBY_BALANCE;
+    //   case ResourcesIds.Diamonds:
+    //     return resource.DIAMONDS_BALANCE;
+    //   case ResourcesIds.Hartwood:
+    //     return resource.HARTWOOD_BALANCE;
+    //   case ResourcesIds.Ignium:
+    //     return resource.IGNIUM_BALANCE;
+    //   case ResourcesIds.TwilightQuartz:
+    //     return resource.TWILIGHT_QUARTZ_BALANCE;
+    //   case ResourcesIds.TrueIce:
+    //     return resource.TRUE_ICE_BALANCE;
+    //   case ResourcesIds.Adamantine:
+    //     return resource.ADAMANTINE_BALANCE;
+    //   case ResourcesIds.Sapphire:
+    //     return resource.SAPPHIRE_BALANCE;
+    //   case ResourcesIds.EtherealSilica:
+    //     return resource.ETHEREAL_SILICA_BALANCE;
+    //   case ResourcesIds.Dragonhide:
+    //     return resource.DRAGONHIDE_BALANCE;
+    //   case ResourcesIds.Labor:
+    //     return resource.LABOR_BALANCE;
+    //   case ResourcesIds.AncientFragment:
+    //     return resource.EARTHEN_SHARD_BALANCE;
+    //   case ResourcesIds.Donkey:
+    //     return resource.DONKEY_BALANCE;
+    //   case ResourcesIds.Knight:
+    //     return resource.KNIGHT_T1_BALANCE;
+    //   case ResourcesIds.KnightT2:
+    //     return resource.KNIGHT_T2_BALANCE;
+    //   case ResourcesIds.KnightT3:
+    //     return resource.KNIGHT_T3_BALANCE;
+    //   case ResourcesIds.Crossbowman:
+    //     return resource.CROSSBOWMAN_T1_BALANCE;
+    //   case ResourcesIds.CrossbowmanT2:
+    //     return resource.CROSSBOWMAN_T2_BALANCE;
+    //   case ResourcesIds.CrossbowmanT3:
+    //     return resource.CROSSBOWMAN_T3_BALANCE;
+    //   case ResourcesIds.Paladin:
+    //     return resource.PALADIN_T1_BALANCE;
+    //   case ResourcesIds.PaladinT2:
+    //     return resource.PALADIN_T2_BALANCE;
+    //   case ResourcesIds.PaladinT3:
+    //     return resource.PALADIN_T3_BALANCE;
+    //   case ResourcesIds.Wheat:
+    //     return resource.WHEAT_BALANCE;
+    //   case ResourcesIds.Fish:
+    //     return resource.FISH_BALANCE;
+    //   case ResourcesIds.Lords:
+    //     return resource.LORDS_BALANCE;
+    //   default:
+    //     return 0n;
+    // }
   }
 
   private _getResource() {

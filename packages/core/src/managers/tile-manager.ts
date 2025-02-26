@@ -194,13 +194,23 @@ export class TileManager {
         },
       },
     });
+
     const quantityOverrideId = uuid();
 
     const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
 
+    // Ensure array has values at all indices up to buildingType
+    while (buildingCounts.length <= buildingType) {
+      buildingCounts.push(0);
+    }
     buildingCounts[buildingType] = (buildingCounts[buildingType] || 0) + 1;
 
-    const packedBuildingCount = packValues(buildingCounts);
+    let packedBuildingCount;
+    try {
+      packedBuildingCount = packValues(buildingCounts);
+    } catch (error) {
+      packedBuildingCount = "0"; // Default fallback value
+    }
 
     this.components.StructureBuildings.addOverride(quantityOverrideId, {
       entity: realmEntity,

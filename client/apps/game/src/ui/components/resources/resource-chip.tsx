@@ -82,7 +82,6 @@ export const ResourceChip = ({
   }, [resourceManager, currentTick, isActive]);
 
   const icon = useMemo(() => {
-    console.log("Resource ID:", resourceId, "trait", findResourceById(resourceId)?.trait);
     return (
       <ResourceIcon
         withTooltip={false}

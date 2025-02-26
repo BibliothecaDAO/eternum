@@ -116,6 +116,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
             <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1.5">
               {Array.from({ length: maxDefenses }).map((_, index) => {
                 const defense = defenseTroops[index];
+                console.log({ defense });
                 const id = defense?.id;
 
                 return (

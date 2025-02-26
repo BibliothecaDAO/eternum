@@ -8,6 +8,7 @@ export const getRemainingCapacityInKg = (troopsCount: number, weightInKg: number
   return totalCapacity - BigInt(weightInKg); // in kg
 };
 
+// number of troops needs to be divided by precision
 export const getArmyTotalCapacityInKg = (troopsCount: number) => {
   // Convert weight_gram to kg and multiply by number of troops
   const capacity = configManager.getCapacityConfig(CapacityConfig.Army);

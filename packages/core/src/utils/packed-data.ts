@@ -3,6 +3,11 @@ export function unpackValue(packedValue: bigint): number[] {
 
   const unpackedNumbers: number[] = [];
 
+  // Return empty array if packedValue is 0
+  if (packedValue === 0n) {
+    return unpackedNumbers;
+  }
+
   let remainingValue = BigInt(packedValue);
 
   while (remainingValue > 0n) {
