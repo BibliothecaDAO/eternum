@@ -7,7 +7,7 @@ pub impl iMapImpl of iMapTrait {
     fn explore(ref world: WorldStorage, ref tile: Tile, biome: Biome) {
         tile.biome = biome;
         world.write_model(@tile);
-        // todo add event
+        // todo add event {if not already explored}
     }
 }
 
