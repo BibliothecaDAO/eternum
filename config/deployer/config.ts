@@ -22,7 +22,6 @@ import {
 import chalk from "chalk";
 
 import fs from "fs";
-import { env } from "process";
 import { Account } from "starknet";
 import type { Chain } from "utils/utils";
 import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
@@ -73,7 +72,7 @@ export class GameConfigDeployer {
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await createAdminBank(config);
+    await createBanks(config);
     await mintResources(config);
     await addLiquidity(config);
   }
@@ -179,23 +178,16 @@ export const setWorldConfig = async (config: Config) => {
    🌎 WORLD CONFIGURATION ⚡
   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`),
   );
-
-  if (!env.VITE_PUBLIC_MASTER_ADDRESS) {
-    throw new Error("VITE_PUBLIC_MASTER_ADDRESS is not set");
-  }
-
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow(`Realm Address`)}
-    │  ${chalk.gray(`${config.config.setup!.addresses.realms}`)}
-    │  ${chalk.gray(`Admin Address`)}
-    │     ${chalk.gray(`${env.VITE_PUBLIC_MASTER_ADDRESS}`)}
+    ┌─ ${chalk.yellow(`Admin Address`)}
+    │  ${chalk.gray(`${config.account.address}`)}
     └────────────────────────────────`),
   );
 
   const tx = await config.provider.set_world_config({
     signer: config.account,
-    admin_address: env.VITE_PUBLIC_MASTER_ADDRESS!,
+    admin_address: config.account.address,
   });
 
   console.log(
@@ -771,7 +763,8 @@ export const setTroopConfig = async (config: Config) => {
 export const setupGlobals = async (config: Config) => {
   const bankCalldata = {
     signer: config.account,
-    lords_cost: config.config.banks.lordsCost * config.config.resources.resourcePrecision,
+    owner_fee_num: config.config.banks.ownerFeesNumerator,
+    owner_fee_denom: config.config.banks.ownerFeesDenominator,
     lp_fee_num: config.config.banks.lpFeesNumerator,
     lp_fee_denom: config.config.banks.lpFeesDenominator,
   };
@@ -785,8 +778,8 @@ export const setupGlobals = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Bank Parameters")}
-    │  ${chalk.gray("LORDS Cost:")}        ${chalk.white(inGameAmount(bankCalldata.lords_cost, config.config))}
     │  ${chalk.gray("LP Fee Rate:")}       ${chalk.white(`${bankCalldata.lp_fee_num}/${bankCalldata.lp_fee_denom}`)}
+    │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${bankCalldata.owner_fee_num}/${bankCalldata.owner_fee_denom}`)}
     └────────────────────────────────`),
   );
 
@@ -823,10 +816,10 @@ export const setupGlobals = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
-    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount, config.config)}
+    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + SHARDS_MINES_WIN_PROBABILITY)) * 100).toFixed(2) + "%")}
-    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount, config.config)}
-    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount, config.config)}
+    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
+    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
     └────────────────────────────────`),
   );
 
@@ -1136,36 +1129,48 @@ export const setSettlementConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const createAdminBank = async (config: Config) => {
+export const createBanks = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  🏦 Admin Bank Creation
+  🏦 Bank Creation
   ═══════════════════════`),
   );
 
-  const calldata = {
+  let banks = [];
+  for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
+    banks.push({
+      name: `${config.config.banks.name} ${i + 1}`,
+      coord: { x: FELT_CENTER + i, y: FELT_CENTER }, // todo determine locations
+      guard_slot: 0, // delta
+      troop_tier: 1, // T2
+      troop_type: 2, // Crossbowman
+    });
+  }
+  let calldata = {
     signer: config.account,
-    name: config.config.banks.name,
-    coord: { x: FELT_CENTER, y: FELT_CENTER },
-    owner_fee_num: config.config.banks.ownerFeesNumerator,
-    owner_fee_denom: config.config.banks.ownerFeesDenominator,
-    owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
-    owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
+    banks,
   };
 
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Bank Parameters")}
-    │  ${chalk.gray("Name:")}              ${chalk.white(calldata.name)}
-    │  ${chalk.gray("Location:")}          ${chalk.white(`(${FELT_CENTER}, ${FELT_CENTER})`)}
-    │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${calldata.owner_fee_num}/${calldata.owner_fee_denom}`)}
-    │  ${chalk.gray("Bridge Fee (In):")}   ${chalk.white((calldata.owner_bridge_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%")}
-    │  ${chalk.gray("Bridge Fee (Out):")}  ${chalk.white((calldata.owner_bridge_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%")}
-    └────────────────────────────────`),
-  );
+  let guard_slot_names = ["Delta", "Charlie", "Bravo", "Alpha"];
+  let troop_tier_names = ["T1", "T2", "T3"];
+  let troop_type_names = ["Knight", "Paladin", "Crossbowman"];
 
-  const tx = await config.provider.create_admin_bank(calldata);
-  console.log(chalk.green(`\n    ✔ Bank created successfully `) + chalk.gray(tx.statusReceipt) + "\n");
+  for (const bank of calldata.banks) {
+    console.log("\n");
+    console.log(
+      chalk.cyan(`
+    ┌─ ${chalk.yellow("Bank Parameters")}
+    │  ${chalk.gray("Name:")}              ${chalk.white(bank.name)}
+    │  ${chalk.gray("Location:")}          ${chalk.white(`(${bank.coord.x}, ${bank.coord.y})`)}
+    │  ${chalk.gray("Guard Slot:")}        ${chalk.white(guard_slot_names[bank.guard_slot])}
+    │  ${chalk.gray("Troop Tier:")}        ${chalk.white(troop_tier_names[bank.troop_tier])}
+    │  ${chalk.gray("Troop Type:")}        ${chalk.white(troop_type_names[bank.troop_type])}
+    └────────────────────────────────`),
+    );
+  }
+
+  const tx = await config.provider.create_banks(calldata);
+  console.log(chalk.green(`\n    ✔ Banks created successfully `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const mintResources = async (config: Config) => {

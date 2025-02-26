@@ -87,8 +87,6 @@ export const BANK_LP_FEES_NUMERATOR = 15;
 export const BANK_LP_FEES_DENOMINATOR = 100;
 export const BANK_OWNER_FEES_NUMERATOR = 15;
 export const BANK_OWNER_FEES_DENOMINATOR = 100;
-export const BANK_OWNER_BRIDGE_FEE_ON_DEPOSIT_PERCENT = 1000;
-export const BANK_OWNER_BRIDGE_FEE_ON_WITHDRAWAL_PERCENT = 1000;
 
 // ----- Population Capacity ----- //
 export const WORKER_HUTS_CAPACITY = 5;
@@ -158,6 +156,7 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
 export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
+export const MAX_NUM_BANKS = 6;
 
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
@@ -187,8 +186,7 @@ export const EternumGlobalConfig: Config = {
     lpFeesDenominator: BANK_LP_FEES_DENOMINATOR,
     ownerFeesNumerator: BANK_OWNER_FEES_NUMERATOR,
     ownerFeesDenominator: BANK_OWNER_FEES_DENOMINATOR,
-    ownerBridgeFeeOnDepositPercent: BANK_OWNER_BRIDGE_FEE_ON_DEPOSIT_PERCENT,
-    ownerBridgeFeeOnWithdrawalPercent: BANK_OWNER_BRIDGE_FEE_ON_WITHDRAWAL_PERCENT,
+    maxNumBanks: MAX_NUM_BANKS,
     ammStartingLiquidity: AMM_STARTING_LIQUIDITY,
     lordsLiquidityPerResource: LORDS_LIQUIDITY_PER_RESOURCE,
   },
