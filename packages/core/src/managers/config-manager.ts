@@ -1,7 +1,6 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
   BuildingType,
   CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
@@ -10,7 +9,7 @@ import {
   ResourcesIds,
   ResourceTier,
   StructureType,
-  WORLD_CONFIG_ID,
+  WORLD_CONFIG_ID
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -362,13 +361,11 @@ export class ClientConfigManager {
         )?.bank_config;
 
         return {
-          lordsCost: this.divideByPrecision(Number(bankConfig?.lords_cost)),
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
           lpFeesDenominator: Number(bankConfig?.lp_fee_denom ?? 0),
         };
       },
       {
-        lordsCost: 0,
         lpFeesNumerator: 0,
         lpFeesDenominator: 0,
       },
@@ -376,10 +373,13 @@ export class ClientConfigManager {
   }
 
   getAdminBankOwnerFee() {
-    const adminBank = getComponentValue(this.components.Bank, getEntityIdFromKeys([ADMIN_BANK_ENTITY_ID]));
 
-    const numerator = Number(adminBank?.owner_fee_num) ?? 0;
-    const denominator = Number(adminBank?.owner_fee_denom) ?? 0;
+    const bankConfig = getComponentValue(
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.bank_config;
+    const numerator = Number(bankConfig?.owner_fee_num) ?? 0;
+    const denominator = Number(bankConfig?.owner_fee_denom) ?? 0;
     return numerator / denominator;
   }
 

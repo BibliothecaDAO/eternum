@@ -1140,12 +1140,13 @@ export const createBanks = async (config: Config) => {
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
     banks.push({
       name: `${config.config.banks.name} ${i + 1}`,
-      coord: { x: FELT_CENTER + i, y: FELT_CENTER }, // todo determine locations
+      coord: { x: FELT_CENTER + (i * 3), y: FELT_CENTER }, // todo determine locations
       guard_slot: 0, // delta
       troop_tier: 1, // T2
       troop_type: 2, // Crossbowman
     });
   }
+
   let calldata = {
     signer: config.account,
     banks,
