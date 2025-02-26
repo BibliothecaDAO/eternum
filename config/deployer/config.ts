@@ -1139,7 +1139,7 @@ export const createBanks = async (config: Config) => {
   let banks = [];
   let bank_coords =   []
   // Find coordinates x steps from center in each direction
-  const stepsFromCenter = 40;
+  const stepsFromCenter = 80;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
   for (const [_, coord] of Object.entries(distantCoordinates)) {
     bank_coords.push({ x: coord.x, y: coord.y });
