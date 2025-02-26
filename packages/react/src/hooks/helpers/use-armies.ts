@@ -1,5 +1,5 @@
-import { ContractAddress, formatArmies, type ID, type Position } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
+import { ContractAddress, formatArmies, getEntityIdFromKeys, OccupiedBy, type Position } from "@bibliothecadao/eternum";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../";
@@ -27,14 +27,20 @@ export const usePlayerArmyAtPosition = ({ position }: { position: Position }) =>
     setup: { components },
   } = useDojo();
 
-  const armiesAtPosition = useEntityQuery([
-    HasValue(components.ExplorerTroops, { coord: { x: position.x, y: position.y } }),
-  ]);
+  const entityAtPosition = useComponentValue(
+    components.Occupied,
+    getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]),
+  );
 
   const ownArmy = useMemo(() => {
-    const armies = formatArmies(armiesAtPosition, ContractAddress(account.address), components);
+    if (!entityAtPosition || entityAtPosition.by_type !== OccupiedBy.Explorer) return null;
+    const armies = formatArmies(
+      [getEntityIdFromKeys([BigInt(entityAtPosition.by_id)])],
+      ContractAddress(account.address),
+      components,
+    );
     return armies.find((army) => army.isMine);
-  }, [armiesAtPosition, position.x, position.y]);
+  }, [entityAtPosition, position.x, position.y]);
 
   return ownArmy;
 };

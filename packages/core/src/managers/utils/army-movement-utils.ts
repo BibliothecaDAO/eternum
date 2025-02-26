@@ -3,6 +3,7 @@ import { CapacityConfig, ResourcesIds } from "../../constants";
 import { Troops, TroopType } from "../../types";
 import { divideByPrecision, gramToKg } from "../../utils";
 
+// troop count without precision
 export const getRemainingCapacityInKg = (troopsCount: number, weightInKg: number) => {
   const totalCapacity = getArmyTotalCapacityInKg(troopsCount); // in kg
   return totalCapacity - BigInt(weightInKg); // in kg

@@ -104,6 +104,7 @@ export class ArmyMovementManager {
     return { col: position!.x, row: position!.y };
   };
 
+  // getFood is without precision
   public getFood(currentDefaultTick: number) {
     const wheatBalance = this.wheatManager.balanceWithProduction(currentDefaultTick);
     const fishBalance = this.fishManager.balanceWithProduction(currentDefaultTick);
@@ -389,12 +390,14 @@ export class ArmyMovementManager {
     const overrideId = this._optimisticExplore(blockTimestamp, path[1].col, path[1].row, currentArmiesTick);
 
     this.provider
-      .explore({
-        unit_id: this.entityId,
-        direction,
+      .explorer_move({
+        explorer_id: this.entityId,
+        directions: [direction],
+        explore: true,
         signer,
       })
       .catch((e) => {
+        console.log({ e });
         // remove all visual overrides only when the action fails
         this._removeVisualOverride(overrideId);
         this._removeNonVisualOverrides(overrideId);
@@ -413,6 +416,14 @@ export class ArmyMovementManager {
     currentArmiesTick: number,
   ) => {
     const overrideId = uuid();
+
+    console.log({
+      overrideId,
+      staminaCost: configManager.getTravelStaminaCost() * pathLength,
+      currentArmiesTick,
+      col,
+      row,
+    });
 
     this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
@@ -481,12 +492,14 @@ export class ArmyMovementManager {
       .filter((d) => d !== undefined) as number[];
 
     this.provider
-      .travel_hex({
+      .explorer_move({
         signer,
-        travelling_entity_id: this.entityId,
+        explorer_id: this.entityId,
         directions,
+        explore: false,
       })
-      .catch(() => {
+      .catch((e) => {
+        console.log({ e });
         this._removeVisualOverride(overrideId);
         this._removeNonVisualOverrides(overrideId);
       })
@@ -510,13 +523,11 @@ export class ArmyMovementManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
-    const resource = getComponentValue(this.components.Resource, this.entity);
-    if (!resource) return 0;
+    const armyWeight = getComponentValue(this.components.Resource, this.entity)?.weight.weight || 0;
 
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     if (!explorerTroops) return 0;
-    const armyWeight = resource.weight;
 
-    return getRemainingCapacityInKg(Number(explorerTroops.troops.count), Number(armyWeight));
+    return getRemainingCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)), Number(armyWeight));
   };
 }

@@ -9,7 +9,7 @@ import {
   ResourcesIds,
   ResourceTier,
   StructureType,
-  WORLD_CONFIG_ID
+  WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -229,7 +229,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.map_config;
 
-      return this.divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
+      return Number(exploreConfig?.reward_resource_amount ?? 0);
     }, 0);
   }
 
@@ -398,7 +398,6 @@ export class ClientConfigManager {
   }
 
   getAdminBankOwnerFee() {
-
     const bankConfig = getComponentValue(
       this.components.WorldConfig,
       getEntityIdFromKeys([WORLD_CONFIG_ID]),

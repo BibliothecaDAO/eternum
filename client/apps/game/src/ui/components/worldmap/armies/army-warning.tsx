@@ -5,7 +5,6 @@ import {
   ArmyMovementManager,
   computeExploreFoodCosts,
   configManager,
-  multiplyByPrecision,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -26,8 +25,8 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
 
   const { missingWheat, missingFish, notEnoughFood } = useMemo(() => {
-    const missingWheat = Math.max(0, multiplyByPrecision(exploreFoodCosts.wheatPayAmount) - food.wheat);
-    const missingFish = Math.max(0, multiplyByPrecision(exploreFoodCosts.fishPayAmount) - food.fish);
+    const missingWheat = Math.max(0, exploreFoodCosts.wheatPayAmount - food.wheat);
+    const missingFish = Math.max(0, exploreFoodCosts.fishPayAmount - food.fish);
     const notEnoughFood = missingWheat > 0 || missingFish > 0;
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);

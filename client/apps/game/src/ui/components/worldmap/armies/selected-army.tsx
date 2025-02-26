@@ -28,6 +28,8 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
     position: new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }).getContract(),
   });
 
+  console.log({ playerArmy });
+
   useEffect(() => {
     if (selectedHex) {
       updateSelectedEntityId(playerArmy?.entityId || 0);

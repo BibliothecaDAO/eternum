@@ -777,8 +777,7 @@
     "lpFeesDenominator": 100,
     "ownerFeesNumerator": 15,
     "ownerFeesDenominator": 100,
-    "ownerBridgeFeeOnDepositPercent": 1000,
-    "ownerBridgeFeeOnWithdrawalPercent": 1000,
+    "maxNumBanks": 6,
     "ammStartingLiquidity": {
       "1": 500000,
       "2": 500000,
@@ -1332,7 +1331,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x642d50f02d37d302276c2997a699fcf5956386893dba8762c9b5a6f9f264da6",
+    "season_pool_fee_recipient": "0x272cf755822a2922cafdba7c680a1b1fd5591433d8c80e4da394035f5065a7f",
     "max_bank_fee_dpt_percent": 0,
     "max_bank_fee_wtdr_percent": 0
   },
@@ -1582,9 +1581,9 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x3312b5c7016a9ef79dc5b4281ff017a2b6d5eafa9237930e84cb76c91c5d283",
-      "realms": "0x2f3a33f957b1d5e95da7ffcde1a5b1c397f70249bc19a55b45d25316dcc7a3",
-      "lords": "0x1b4dad5d3fb18240ac396c6e842685f81f0dedc267f7152781e7cef8b5805c4",
+      "seasonPass": "0x63f990f3ad7821ebe576dc1ffb596bab47956e24749f7ca4e2b9a0ed68626bd",
+      "realms": "0x453acebaaeefa3810d696179ae96e699d67a72d651930116af68d034af50a37",
+      "lords": "0x4815a6afe6353d0657a7efe8ac1e81d4142f939ef43ba71b5693b2e47eef941",
       "resources": {
         "STONE": [
           1,
@@ -3022,8 +3021,8 @@
       },
       "contracts": [
         {
-          "address": "0x5a9e2231e49e0cb11e8e015b1bcca73b97fbede2799703fc1aa440050969ab2",
-          "class_hash": "0x345b4aa6183c5da0295eadc482157ce53e724ac46492f6cbebb295215fdf498",
+          "address": "0x15edd9583ebde93897657385e7187d6ffb0526770c53174204e1c9d52c2c55b",
+          "class_hash": "0x3f4f3d1aaf7c5905d17f591811909ccb3aa92fd934f86b60f0cb1c61dcae9f7",
           "abi": [
             {
               "type": "impl",
@@ -3081,47 +3080,141 @@
               "interface_name": "s1_eternum::systems::bank::contracts::bank::IBankSystems"
             },
             {
+              "type": "struct",
+              "name": "s1_eternum::models::position::Coord",
+              "members": [
+                {
+                  "name": "x",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "y",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::models::troop::GuardSlot",
+              "variants": [
+                {
+                  "name": "Delta",
+                  "type": "()"
+                },
+                {
+                  "name": "Charlie",
+                  "type": "()"
+                },
+                {
+                  "name": "Bravo",
+                  "type": "()"
+                },
+                {
+                  "name": "Alpha",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::models::troop::TroopTier",
+              "variants": [
+                {
+                  "name": "T1",
+                  "type": "()"
+                },
+                {
+                  "name": "T2",
+                  "type": "()"
+                },
+                {
+                  "name": "T3",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::models::troop::TroopType",
+              "variants": [
+                {
+                  "name": "Knight",
+                  "type": "()"
+                },
+                {
+                  "name": "Paladin",
+                  "type": "()"
+                },
+                {
+                  "name": "Crossbowman",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::systems::bank::contracts::bank::BankCreateParams",
+              "members": [
+                {
+                  "name": "name",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "coord",
+                  "type": "s1_eternum::models::position::Coord"
+                },
+                {
+                  "name": "guard_slot",
+                  "type": "s1_eternum::models::troop::GuardSlot"
+                },
+                {
+                  "name": "troop_tier",
+                  "type": "s1_eternum::models::troop::TroopTier"
+                },
+                {
+                  "name": "troop_type",
+                  "type": "s1_eternum::models::troop::TroopType"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<core::integer::u32>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<core::integer::u32>"
+                }
+              ]
+            },
+            {
               "type": "interface",
               "name": "s1_eternum::systems::bank::contracts::bank::IBankSystems",
               "items": [
                 {
                   "type": "function",
-                  "name": "change_owner_amm_fee",
+                  "name": "create_banks",
                   "inputs": [
                     {
-                      "name": "bank_entity_id",
-                      "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "new_owner_fee_num",
-                      "type": "core::integer::u128"
-                    },
-                    {
-                      "name": "new_owner_fee_denom",
-                      "type": "core::integer::u128"
+                      "name": "banks",
+                      "type": "core::array::Span::<s1_eternum::systems::bank::contracts::bank::BankCreateParams>"
                     }
                   ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "change_owner_bridge_fee",
-                  "inputs": [
+                  "outputs": [
                     {
-                      "name": "bank_entity_id",
-                      "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "owner_bridge_fee_dpt_percent",
-                      "type": "core::integer::u16"
-                    },
-                    {
-                      "name": "owner_bridge_fee_wtdr_percent",
-                      "type": "core::integer::u16"
+                      "type": "core::array::Span::<core::integer::u32>"
                     }
                   ],
-                  "outputs": [],
                   "state_mutability": "external"
                 }
               ]
@@ -3245,14 +3338,13 @@
           "tag": "s1_eternum-bank_systems",
           "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
           "systems": [
-            "change_owner_amm_fee",
-            "change_owner_bridge_fee",
+            "create_banks",
             "upgrade"
           ]
         },
         {
-          "address": "0x1c96af6ecf0fca841f6277cebd6a55db570805b7b9f72478c85b5eac821bd26",
-          "class_hash": "0x71244c859faa8227a0955656eb22e272a4cf34cbb9528d1e521e8908b7e08ca",
+          "address": "0x13380cb428f672b430755ca491e85f41e49e51a44f3eabe9162783d13397ae7",
+          "class_hash": "0x45822de55b6fe19725824413365c2717874209b177ba843f87141fb7653b070",
           "abi": [
             {
               "type": "impl",
@@ -3765,16 +3857,20 @@
                   "name": "set_bank_config",
                   "inputs": [
                     {
-                      "name": "lords_cost",
-                      "type": "core::integer::u128"
-                    },
-                    {
                       "name": "lp_fee_num",
-                      "type": "core::integer::u128"
+                      "type": "core::integer::u32"
                     },
                     {
                       "name": "lp_fee_denom",
-                      "type": "core::integer::u128"
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "owner_fee_num",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "owner_fee_denom",
+                      "type": "core::integer::u32"
                     }
                   ],
                   "outputs": [],
@@ -4509,246 +4605,8 @@
           ]
         },
         {
-          "address": "0x3cf548379eea148f3e9dfd4f3279d367dfd9258d7dce0de203b4c287ab772d1",
-          "class_hash": "0x40ec5456fdd1780d551e8be61bea91ed66dbe0426d383f5217394e1dd0bcd3d",
-          "abi": [
-            {
-              "type": "impl",
-              "name": "dev_bank_systems__ContractImpl",
-              "interface_name": "dojo::contract::interface::IContract"
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::interface::IContract",
-              "items": []
-            },
-            {
-              "type": "impl",
-              "name": "dev_bank_systems__DeployedContractImpl",
-              "interface_name": "dojo::meta::interface::IDeployedResource"
-            },
-            {
-              "type": "struct",
-              "name": "core::byte_array::ByteArray",
-              "members": [
-                {
-                  "name": "data",
-                  "type": "core::array::Array::<core::bytes_31::bytes31>"
-                },
-                {
-                  "name": "pending_word",
-                  "type": "core::felt252"
-                },
-                {
-                  "name": "pending_word_len",
-                  "type": "core::integer::u32"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "dojo::meta::interface::IDeployedResource",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "dojo_name",
-                  "inputs": [],
-                  "outputs": [
-                    {
-                      "type": "core::byte_array::ByteArray"
-                    }
-                  ],
-                  "state_mutability": "view"
-                }
-              ]
-            },
-            {
-              "type": "impl",
-              "name": "BankSystemsImpl",
-              "interface_name": "s1_eternum::systems::dev::contracts::bank::IBankSystems"
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::position::Coord",
-              "members": [
-                {
-                  "name": "x",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "y",
-                  "type": "core::integer::u32"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "s1_eternum::systems::dev::contracts::bank::IBankSystems",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "create_admin_bank",
-                  "inputs": [
-                    {
-                      "name": "name",
-                      "type": "core::felt252"
-                    },
-                    {
-                      "name": "coord",
-                      "type": "s1_eternum::models::position::Coord"
-                    },
-                    {
-                      "name": "owner_fee_num",
-                      "type": "core::integer::u128"
-                    },
-                    {
-                      "name": "owner_fee_denom",
-                      "type": "core::integer::u128"
-                    },
-                    {
-                      "name": "owner_bridge_fee_dpt_percent",
-                      "type": "core::integer::u16"
-                    },
-                    {
-                      "name": "owner_bridge_fee_wtdr_percent",
-                      "type": "core::integer::u16"
-                    }
-                  ],
-                  "outputs": [
-                    {
-                      "type": "core::integer::u32"
-                    }
-                  ],
-                  "state_mutability": "external"
-                }
-              ]
-            },
-            {
-              "type": "function",
-              "name": "dojo_init",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "impl",
-              "name": "WorldProviderImpl",
-              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
-            },
-            {
-              "type": "struct",
-              "name": "dojo::world::iworld::IWorldDispatcher",
-              "members": [
-                {
-                  "name": "contract_address",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::components::world_provider::IWorldProvider",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "world_dispatcher",
-                  "inputs": [],
-                  "outputs": [
-                    {
-                      "type": "dojo::world::iworld::IWorldDispatcher"
-                    }
-                  ],
-                  "state_mutability": "view"
-                }
-              ]
-            },
-            {
-              "type": "impl",
-              "name": "UpgradeableImpl",
-              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
-            },
-            {
-              "type": "interface",
-              "name": "dojo::contract::components::upgradeable::IUpgradeable",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "upgrade",
-                  "inputs": [
-                    {
-                      "name": "new_class_hash",
-                      "type": "core::starknet::class_hash::ClassHash"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                }
-              ]
-            },
-            {
-              "type": "constructor",
-              "name": "constructor",
-              "inputs": []
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-              "kind": "struct",
-              "members": [
-                {
-                  "name": "class_hash",
-                  "type": "core::starknet::class_hash::ClassHash",
-                  "kind": "data"
-                }
-              ]
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "enum",
-              "variants": [
-                {
-                  "name": "Upgraded",
-                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
-                  "kind": "nested"
-                }
-              ]
-            },
-            {
-              "type": "event",
-              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "enum",
-              "variants": []
-            },
-            {
-              "type": "event",
-              "name": "s1_eternum::systems::dev::contracts::bank::dev_bank_systems::Event",
-              "kind": "enum",
-              "variants": [
-                {
-                  "name": "UpgradeableEvent",
-                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-                  "kind": "nested"
-                },
-                {
-                  "name": "WorldProviderEvent",
-                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-                  "kind": "nested"
-                }
-              ]
-            }
-          ],
-          "init_calldata": [],
-          "tag": "s1_eternum-dev_bank_systems",
-          "selector": "0x653ceec4af5e357119149b66228aece89c47a9c85dbba76955cec24e809f191",
-          "systems": [
-            "create_admin_bank",
-            "upgrade"
-          ]
-        },
-        {
-          "address": "0x1fcd6db1a2bbcdbc3a8be66ea1bd0c74c67c3ae933a138a8adbe29be3061c54",
-          "class_hash": "0x3432be60d1055e2925eb37d58313c3bc287b15aed92433a8c0a4ba1a90287a2",
+          "address": "0x777800226c18a1ead7972d3a6bc232157e008735b6f679b7ea869a30d625d15",
+          "class_hash": "0x5cdfabab8bd712bdc284697f0b67e89a873f78706e63023518959c4937a388e",
           "abi": [
             {
               "type": "impl",
@@ -4961,8 +4819,8 @@
           ]
         },
         {
-          "address": "0x58aeecfa2f01561d3a64b7921d0c2617795f269c5cf9f8c1b805f276d0feec4",
-          "class_hash": "0x46e2d80c31653e91bde66d7c7edf8b375278d0151353e4507f90b9280a0a137",
+          "address": "0x5f0d9b3c9c29f27045cbde8be491cd9b5d7eab2ecce0eada14fa41554e9b198",
+          "class_hash": "0x7c6dc9d38f341ead1a0a08c103c4e4d22fc6d2b8cc501e079281ffc4ddcdce1",
           "abi": [
             {
               "type": "impl",
@@ -5260,8 +5118,8 @@
           ]
         },
         {
-          "address": "0x6093ef1b9a8e3c1bda03f8a8d7711110c2f83ae63bc82db9ea697a963171c3c",
-          "class_hash": "0x4b106fc15429868f7acbbc1bb1246cd0ab67bd1e5dc05c25107eae60bd29277",
+          "address": "0x574cfe11eb5845d5aa9c5cf5e4066f23c6bd0fc0d474b4171e53dceae06dbc3",
+          "class_hash": "0x1d959c39b7d6adb0738f21133d1f1469aea5124c4da1cab15eff5f91bc18df4",
           "abi": [
             {
               "type": "impl",
@@ -5637,8 +5495,8 @@
           ]
         },
         {
-          "address": "0x93b2e2e70b36c9c6961b589a2a2f81206a773f083fb189a6c84fd20375101f",
-          "class_hash": "0xdaa26a4cfc1a55cd8f95526f382687369f4ff2c9d9a774646a1750d1505253",
+          "address": "0x70138a54cd454c641f727db7c3c63c3da9d16919daeb2b787821f0884d8c212",
+          "class_hash": "0x42cc6457b447739e4bb4f182dddd77ec0bc41493ecff75e2532cfbb5e81109b",
           "abi": [
             {
               "type": "impl",
@@ -5910,8 +5768,8 @@
           ]
         },
         {
-          "address": "0x14cab3026ddf0d4d8a41d21315792c43040874a8400a40ba3014f52d96214e2",
-          "class_hash": "0x4c1ecb20b39e9d5dea61a80332b179ad6efbd92d6b613b7e25b1182d3486cdb",
+          "address": "0x305f6092647f07610747f46e10778d2b1f33cf266d4e25f9dbb0794053f71f0",
+          "class_hash": "0x5134e707c350a01db2ae5dbb39ca77b40cb06d5e3a6babc98e8f1463932ec9c",
           "abi": [
             {
               "type": "impl",
@@ -6314,8 +6172,8 @@
           ]
         },
         {
-          "address": "0xb1456b30616d45419c44b293e978eb9fffdc33d37d498e90ce2b3f1faeb44b",
-          "class_hash": "0x6ab9ea370f5325a3db225db89e63689a2e156e49dae24bb5765fb301f67b88c",
+          "address": "0x115432900a8f1c3dfd8a41e7a3ddde12e39f43e1cbccf0f53a921165359e17a",
+          "class_hash": "0x77bcc494accd9ec1179a9694693643f72e9a5b18b786af7d32d61a2a4f8d1c8",
           "abi": [
             {
               "type": "impl",
@@ -6790,8 +6648,8 @@
           ]
         },
         {
-          "address": "0x34ad4742ae01a4b67900e6d14fd84befc47bcde4701fb1cf3ffd4bc7335dfe0",
-          "class_hash": "0x129306d78e1809558b91114f78aba66bb5c8638ceefc96dc3528da39aba41a1",
+          "address": "0x7842352464ddc1e13ccca1ca8b22f026ac9c8a624e8ab107b3ed97c65555999",
+          "class_hash": "0x2e49aad1dba782a8c869d18369e130ed3d86e1a0d50c169440c9835729ad11c",
           "abi": [
             {
               "type": "impl",
@@ -7036,8 +6894,8 @@
           ]
         },
         {
-          "address": "0x2a3bf8e62e031cd69a0f3d19c455eff256d348640bc6c9ac564425b3627611d",
-          "class_hash": "0x7bee6eb4525fbc3633a09b9c449ef00239647b53480795b8953f7dd4e16adfb",
+          "address": "0x249782d0a6ab2c1a9a8f8203f092a186a0d8f9ae1f5a2ea3927ad4ea454e554",
+          "class_hash": "0x14ca9c476327279e1b08c78bae11c6261ce687adb6918128b12f5acd87e6414",
           "abi": [
             {
               "type": "impl",
@@ -7341,8 +7199,8 @@
           ]
         },
         {
-          "address": "0x51031a1361b4b661b0ae9eb80718d3487600fb4d72018b5cc0eb5decfc9859e",
-          "class_hash": "0x195dad970dcab0fa4ca03b874a3d63ef40cc720094ca8e255b20b505392054a",
+          "address": "0x25010e94e75ebc82bdb7db361969fdb893a70c4f4a66e21501804e910f828f2",
+          "class_hash": "0x166d0dcd095f90b2106a639cd93419c43c921582e3686da8e927084aaf5431d",
           "abi": [
             {
               "type": "impl",
@@ -7644,8 +7502,8 @@
           ]
         },
         {
-          "address": "0x642d50f02d37d302276c2997a699fcf5956386893dba8762c9b5a6f9f264da6",
-          "class_hash": "0x75326860af75097e261b95e36ffdd369b35a59f9e75f99c1c2588c446768051",
+          "address": "0x272cf755822a2922cafdba7c680a1b1fd5591433d8c80e4da394035f5065a7f",
+          "class_hash": "0x41288612bce5a8599255607b9cec9fb263b6cb474a1a94c0ab62e239d358523",
           "abi": [
             {
               "type": "impl",
@@ -7881,8 +7739,8 @@
           ]
         },
         {
-          "address": "0x409e898702af6b897b11b75980ca202b3079f113cee23d99f1c46fb5e4e9977",
-          "class_hash": "0x1dfb12e71727fdd36c33120557581a07d27d24cab1ace5984f97ac4428b3173",
+          "address": "0x22a8d64cff5ea658bb877f40c421271c148db60ba005e2dfdaed4607c129dc1",
+          "class_hash": "0x59c53a810db4b1dfc346bb3085fd615371bc36973bd287319e1df2587b79c85",
           "abi": [
             {
               "type": "impl",
@@ -7952,7 +7810,7 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "entity_id",
+                      "name": "structure_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -7980,7 +7838,7 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "entity_id",
+                      "name": "structure_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -8126,8 +7984,8 @@
           ]
         },
         {
-          "address": "0x1774818c108ace9a076a88f90eb94c8696d215e962c7d35a230b1f73088c5c6",
-          "class_hash": "0x3848374ffb2cc2501440f0a1e7c7ed5ece9ce56f2c1d76e30b7863d3df2497c",
+          "address": "0x54e222002e340bf83ecd26752c519f36dfc96d8915bc730176da99a31bfb852",
+          "class_hash": "0x463a3619be0388e7abd9ed1b1087e15a7f322506db16db08383537c3d444838",
           "abi": [
             {
               "type": "impl",
@@ -8396,8 +8254,8 @@
           ]
         },
         {
-          "address": "0xdf7667bf72db581d4046c5a8d7fd92f13e1824845c3655afe25df19782581f",
-          "class_hash": "0x2e199aadcca77df5429ae243dcfc99fe22d5c283d60ac0bf3dfd6e28072077c",
+          "address": "0x4925037d41648baf8a70562c103837024ea6100ea926af46fb352002c4c60a",
+          "class_hash": "0x34175a7c830830c30cec8634ab5fb2b83329eebaa55e41621867c8f8c7ca731",
           "abi": [
             {
               "type": "impl",
@@ -8702,8 +8560,8 @@
           ]
         },
         {
-          "address": "0x4058397c08bb67d3056800d9883ff5a70b732cd9466ca3025dfe1d765a6a256",
-          "class_hash": "0x7f6281354fe8096c37a849c47c2d50ded99e2dabf3d277255d762a8cd3a2043",
+          "address": "0x3b755a76eeeca37c2f5a23138cacdfebfa5eab8ebc99394ec9c635be26bb4d8",
+          "class_hash": "0x7973263645aab9c9eece363a4371e6953b7d6559a9b6aa90c7cbd27b78a6947",
           "abi": [
             {
               "type": "impl",
@@ -9173,8 +9031,8 @@
           ]
         },
         {
-          "address": "0x5bfe220f01bf9db33269b72543cd280179e2bcbfeab8f4ddb26049cd8cbb622",
-          "class_hash": "0x4f0b890ac5db3157839c89590aed0aa8e17fb706552995d54fa5926435350e7",
+          "address": "0x17af43b3d2e957bdb54f5b584a7a1773ae3ca2253971f09731559efec4d0482",
+          "class_hash": "0x488fc5bdc2ef510ed9772d04554d547ffe3322a99d5c3792a45c53e29da87a4",
           "abi": [
             {
               "type": "impl",
@@ -9445,7 +9303,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x1fab75a540f95d81f25832e8b4407c828d9b5197e4df3773d276c5e250685b7",
+          "class_hash": "0x6f322f448ec21c754782456870006a1ee00283174bdb045e1e4a495cd92c151",
           "tag": "s1_eternum-Bank",
           "selector": "0x46318cd2cff6337f8934ee9e3cbe3ecf1ccb5b1b57dd1711f3b1eb7d7327aab"
         },
@@ -9559,13 +9417,13 @@
         },
         {
           "members": [],
-          "class_hash": "0x5cd40169d8e155f4612b2d15138ff3823c32aa87871dd0823fa00693fdff2e9",
+          "class_hash": "0x371fe0e24d91ad0e997ea148519290e8002169e98907921da5df664ca49f1ed",
           "tag": "s1_eternum-Liquidity",
           "selector": "0x4ba2cf13ce80401e973629d0ba586aad1cae4ac3cf68ed3140f3373d361659"
         },
         {
           "members": [],
-          "class_hash": "0x2c542a13ea7814cc7933e0fc4035e85f71a2fe90204f02acb181dcfe587fa7e",
+          "class_hash": "0x550d258c4532530eae32e17cd296a25aaa2db628421b260717e7e7727f1a4dc",
           "tag": "s1_eternum-Market",
           "selector": "0x1fcfb4aa02fa062c2f9fe4a658759a4cbe73fc5db42c595184e770c9076750a"
         },
@@ -9721,7 +9579,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x27b3c4567cd21ce5d28b6eafab1d7c19bcb6d8ddecca653e36d7c28c675895f",
+          "class_hash": "0x4d43d267c85dc0e6d5ea242107d554295ed53e7f73b8bf1e076fd852422f746",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

@@ -13,8 +13,6 @@ export const formatArmies = (
   return armies
     .map((armyEntityId) => {
       const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntityId);
-      console.log({ explorerTroops });
-
       if (!explorerTroops) return undefined;
 
       const position = explorerTroops.coord;
@@ -27,12 +25,10 @@ export const formatArmies = (
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);
       const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]));
-      const structure = getComponentValue(
-        components.Structure,
-        getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]),
-      );
+      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;
+
       const isMercenary = structure?.owner === 0n;
 
       const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;

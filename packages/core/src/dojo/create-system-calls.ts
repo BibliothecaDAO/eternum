@@ -110,20 +110,12 @@ export function createSystemCalls({
     await provider.transfer_resources(props);
   };
 
-  const travel_hex = async (props: SystemProps.TravelHexProps) => {
-    await provider.travel_hex(props);
-  };
-
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
 
   const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
     await provider.set_entity_name(props);
-  };
-
-  const explore = async (props: SystemProps.ExploreProps) => {
-    await provider.explore(props);
   };
 
   const create_building = async (props: SystemProps.CreateBuildingProps) => {
@@ -314,7 +306,6 @@ export function createSystemCalls({
     sell_resources: withAuth(sell_resources),
     buy_resources: withAuth(buy_resources),
     change_bank_owner_fee: withAuth(change_bank_owner_fee),
-    explore: withAuth(explore),
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
     isLive: isLive,
@@ -325,7 +316,6 @@ export function createSystemCalls({
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     transfer_resources: withAuth(transfer_resources),
-    travel_hex: withAuth(travel_hex),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),

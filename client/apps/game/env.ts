@@ -30,7 +30,7 @@ const envSchema = z.object({
     .optional(),
 
   // VRF
-  VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x"),
+  VITE_PUBLIC_VRF_PROVIDER_ADDRESS: z.string().startsWith("0x").optional().default("0x0"),
 
   VITE_PUBLIC_SLOT: z.string(),
 

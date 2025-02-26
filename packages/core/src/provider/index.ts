@@ -830,37 +830,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an entity in a hex direction
-   *
-   * @param props - Properties for hex traveling
-   * @param props.travelling_entity_id - ID of the entity that is traveling
-   * @param props.directions - Array of hex directions to travel
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Move entity 123 in hex directions [1, 2, 3]
-   * {
-   *   travelling_entity_id: 123,
-   *   directions: [1, 2, 3],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async travel_hex(props: SystemProps.TravelHexProps) {
-    const { travelling_entity_id, directions, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
-      entrypoint: "travel_hex",
-      calldata: [travelling_entity_id, directions],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
    * Set a name for an address
    *
    * @param props - Properties for setting address name
@@ -928,57 +897,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       _transactionDetails: { value: transactionDetails },
     });
     return call;
-  }
-
-  /**
-   * Explore in a direction from a unit's position
-   *
-   * @param props - Properties for exploring
-   * @param props.unit_id - ID of the unit doing the exploration
-   * @param props.direction - Direction to explore in
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Explore in direction 1 with unit 123
-   * {
-   *   unit_id: 123,
-   *   direction: 1,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async explore(props: SystemProps.ExploreProps) {
-    const { unit_id, direction, signer } = props;
-
-    let callData: Call[] = [];
-
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestTwoCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
-      };
-
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
-      };
-
-      callData = [requestTwoCall, requestRandomCall];
-    }
-
-    const exploreCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-      entrypoint: "explore",
-      calldata: [unit_id, direction],
-    };
-
-    const call = this.createProviderCall(signer, [...callData, exploreCall]);
-
-    return await this.promiseQueue.enqueue(call);
   }
 
   /**
@@ -1571,11 +1489,31 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async explorer_move(props: SystemProps.ExplorerMoveProps) {
     const { explorer_id, directions, explore, signer } = props;
 
-    const call = this.createProviderCall(signer, {
+    let callData: Call[] = [];
+
+    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined) {
+      const requestTwoCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      };
+
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      };
+
+      callData = [requestTwoCall, requestRandomCall];
+    }
+
+    const moveCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
       entrypoint: "explorer_move",
       calldata: [explorer_id, directions, explore ? 1 : 0],
-    });
+    };
+
+    const call = this.createProviderCall(signer, [...callData, moveCall]);
 
     return await this.promiseQueue.enqueue(call);
   }
