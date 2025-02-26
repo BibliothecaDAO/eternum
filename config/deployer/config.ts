@@ -4,7 +4,7 @@ import {
   BuildingType,
   CapacityConfig,
   EternumProvider,
-  FELT_CENTER,
+  HexGrid,
   QuestType,
   ResourcesIds,
   ResourceTier,
@@ -16,7 +16,7 @@ import {
   type Config as EternumConfig,
   type ResourceInputs,
   type ResourceOutputs,
-  type ResourceWhitelistConfig,
+  type ResourceWhitelistConfig
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
@@ -1137,10 +1137,18 @@ export const createBanks = async (config: Config) => {
   );
 
   let banks = [];
+  let bank_coords =   []
+  // Find coordinates x steps from center in each direction
+  const stepsFromCenter = 40;
+  const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
+  for (const [_, coord] of Object.entries(distantCoordinates)) {
+    bank_coords.push({ x: coord.x, y: coord.y });
+  }
+    
   for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
     banks.push({
       name: `${config.config.banks.name} ${i + 1}`,
-      coord: { x: FELT_CENTER + (i * 3), y: FELT_CENTER }, // todo determine locations
+      coord: bank_coords[i],
       guard_slot: 0, // delta
       troop_tier: 1, // T2
       troop_type: 2, // Crossbowman
