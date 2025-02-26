@@ -251,16 +251,17 @@ export interface CreateBankProps extends SystemSigner {
   owner_bridge_fee_wtdr_percent: num.BigNumberish;
 }
 
-export interface CreateAdminBankProps extends SystemSigner {
-  name: string;
-  coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  owner_fee_num: num.BigNumberish;
-  owner_fee_denom: num.BigNumberish;
-  owner_bridge_fee_dpt_percent: num.BigNumberish;
-  owner_bridge_fee_wtdr_percent: num.BigNumberish;
+export interface CreateAdminBanksProps extends SystemSigner {
+  banks: {
+    name: string;
+    coord: {
+      x: num.BigNumberish;
+      y: num.BigNumberish;
+    };
+    guard_slot: num.BigNumberish;
+    troop_tier: num.BigNumberish;
+    troop_type: num.BigNumberish;
+  }[];
 }
 
 export interface OpenAccountProps extends SystemSigner {
@@ -479,9 +480,10 @@ interface LaborBurnProductionStrategy {
 }
 
 export interface SetBankConfigProps extends SystemSigner {
-  lords_cost: num.BigNumberish;
   lp_fee_num: num.BigNumberish;
   lp_fee_denom: num.BigNumberish;
+  owner_fee_num: num.BigNumberish;
+  owner_fee_denom: num.BigNumberish;
 }
 
 export interface SetBattleConfigProps extends SystemSigner {

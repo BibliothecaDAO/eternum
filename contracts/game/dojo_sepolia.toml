@@ -18,7 +18,6 @@ website = "https://eternum.realms.world/"
     "s1_eternum-bank_systems",
     "s1_eternum-production_systems",
     "s1_eternum-config_systems",
-    "s1_eternum-dev_bank_systems",
     "s1_eternum-dev_realm_systems",
     "s1_eternum-guild_systems",
     "s1_eternum-hyperstructure_systems",

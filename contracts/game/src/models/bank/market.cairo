@@ -1,10 +1,8 @@
 // External imports
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::meta::introspect::{Member, Struct};
-
 // Dojo imports
 use dojo::meta::{Introspect, Ty};
-use s1_eternum::alias::ID;
 
 pub impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]
@@ -36,8 +34,6 @@ pub impl IntrospectFixed of Introspect<Fixed> {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Market {
-    #[key]
-    pub bank_entity_id: ID,
     #[key]
     pub resource_type: u8,
     pub lords_amount: u128,

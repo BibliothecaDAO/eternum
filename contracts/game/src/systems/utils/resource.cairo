@@ -20,29 +20,6 @@ use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
 #[generate_trait]
 pub impl iResourceTransferImpl of iResourceTransferTrait {
     #[inline(always)]
-    fn structure_to_structure_instant(
-        ref world: WorldStorage,
-        from_structure_id: ID,
-        from_structure: StructureBase,
-        ref from_structure_weight: Weight,
-        to_structure_id: ID,
-        to_structure: StructureBase,
-        ref to_structure_weight: Weight,
-        mut resources: Span<(u8, u128)>,
-    ) {
-        Self::_instant_transfer(
-            ref world,
-            from_structure_id,
-            ref from_structure_weight,
-            to_structure_id,
-            ref to_structure_weight,
-            resources,
-            false,
-        );
-    }
-
-
-    #[inline(always)]
     fn structure_to_structure_delayed(
         ref world: WorldStorage,
         from_structure_id: ID,
@@ -50,10 +27,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         from_structure: StructureBase,
         ref from_structure_weight: Weight,
         to_structure_id: ID,
+        to_structure_owner: starknet::ContractAddress,
         to_structure_coord: Coord,
+        ref to_structure_weight: Weight,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
-        free: bool,
+        mint: bool,
         pickup: bool,
     ) {
         Self::_delayed_transfer(
@@ -64,10 +43,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             from_structure.coord(),
             ref from_structure_weight,
             to_structure_id,
+            to_structure_owner,
             to_structure_coord,
+            ref to_structure_weight,
             to_structure_resource_indexes,
             resources,
-            free,
+            mint,
             pickup,
         );
     }
@@ -101,6 +82,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref from_troop_weight: Weight,
         to_structure_id: ID,
         to_structure_coord: Coord,
+        to_structure_owner: starknet::ContractAddress,
+        ref to_structure_weight: Weight,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         pickup: bool,
@@ -113,7 +96,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             from_troop.coord,
             ref from_troop_weight,
             to_structure_id,
+            to_structure_owner,
             to_structure_coord,
+            ref to_structure_weight,
             to_structure_resource_indexes,
             resources,
             false,
@@ -129,7 +114,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_id: ID,
         ref to_weight: Weight,
         mut resources: Span<(u8, u128)>,
-        free: bool,
+        mint: bool,
     ) {
         let mut resources_clone = resources.clone();
 
@@ -141,7 +126,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     // spend from from_resource balance
                     let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
-                    if free == false {
+                    if mint == false {
                         let mut from_resource = SingleResourceStoreImpl::retrieve(
                             ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
                         );
@@ -160,7 +145,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             }
         };
 
-        if free == false {
+        if mint == false {
             // update from_resource weight
             from_weight.store(ref world, from_id);
         }
@@ -178,10 +163,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         from_coord: Coord,
         ref from_weight: Weight,
         to_id: ID,
+        to_owner: starknet::ContractAddress,
         to_coord: Coord,
+        ref to_weight: Weight,
         mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
-        free: bool,
+        mint: bool,
         pickup: bool,
     ) {
         assert!(from_id != 0, "from entity does not exist");
@@ -218,7 +205,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     let resource_weight: u128 = resource_amount * resource_weight_grams;
                     total_resources_weight += resource_weight;
 
-                    if free == false {
+                    if mint == false {
                         let mut from_entity_resource = SingleResourceStoreImpl::retrieve(
                             ref world, from_id, resource_type, ref from_weight, resource_weight_grams, from_structure,
                         );
@@ -252,15 +239,24 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             to_structure_resource_arrival_total_amount,
         );
 
-        if free == false {
-            // burn enough donkeys to carry resources from from_structure to to_structure
-            let from_entity_donkey_amount = iDonkeyImpl::needed_amount(ref world, total_resources_weight);
-            iDonkeyImpl::burn(ref world, from_id, ref from_weight, from_entity_donkey_amount);
-            iDonkeyImpl::burn_finialize(ref world, from_id, from_entity_donkey_amount, from_owner);
-
-            // update from_structure weight
-            from_weight.store(ref world, from_id);
+        // determine which entity is providing the donkeys
+        let mut donkey_provider_id = from_id;
+        let mut donkey_provider_weight = from_weight;
+        let mut donkey_provider_owner = from_owner;
+        if pickup {
+            donkey_provider_id = to_id;
+            donkey_provider_weight = to_weight;
+            donkey_provider_owner = to_owner;
         }
+
+        // burn enough donkeys to carry resources from A to B
+        let donkey_amount = iDonkeyImpl::needed_amount(ref world, total_resources_weight);
+        iDonkeyImpl::burn(ref world, donkey_provider_id, ref donkey_provider_weight, donkey_amount);
+        iDonkeyImpl::burn_finialize(ref world, donkey_provider_id, donkey_amount, donkey_provider_owner);
+
+        // update both structures weights
+        from_weight.store(ref world, from_id);
+        to_weight.store(ref world, to_id);
     }
 
     fn deliver_arrivals(

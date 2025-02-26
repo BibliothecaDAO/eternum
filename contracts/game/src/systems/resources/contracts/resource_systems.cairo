@@ -156,6 +156,10 @@ pub mod resource_systems {
             let mut sender_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
                 ref world, sender_structure_id,
             );
+            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, recipient_structure_id);
+            let recipient_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, recipient_structure_id,
+            );
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 sender_structure_id,
@@ -163,7 +167,9 @@ pub mod resource_systems {
                 sender_structure_base,
                 ref sender_structure_weight,
                 recipient_structure_id,
+                recipient_structure_owner,
                 recipient_structure_base.coord(),
+                ref recipient_structure_weight,
                 recipient_resource_indexes,
                 resources,
                 false,
@@ -237,6 +243,7 @@ pub mod resource_systems {
             let recipient_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
                 ref world, recipient_structure_id,
             );
+            let mut recipient_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, recipient_structure_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 owner_structure_id,
@@ -244,7 +251,9 @@ pub mod resource_systems {
                 owner_structure_base,
                 ref owner_structure_weight,
                 recipient_structure_id,
+                recipient_structure_owner,
                 recipient_structure_base.coord(),
+                ref recipient_structure_weight,
                 recipient_resource_indexes,
                 resources,
                 false,

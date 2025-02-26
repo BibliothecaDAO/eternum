@@ -1149,27 +1149,22 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const {
-      name,
-      coord,
-      owner_fee_num,
-      owner_fee_denom,
-      owner_bridge_fee_dpt_percent,
-      owner_bridge_fee_wtdr_percent,
-      signer,
-    } = props;
+  public async create_banks(props: SystemProps.CreateAdminBanksProps) {
+    const { banks, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
-      entrypoint: "create_admin_bank",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
+      entrypoint: "create_banks",
       calldata: [
-        name,
-        coord,
-        owner_fee_num,
-        owner_fee_denom,
-        owner_bridge_fee_dpt_percent,
-        owner_bridge_fee_wtdr_percent,
+        banks.length,
+        ...banks.flatMap((bank) => [
+          bank.name,
+          bank.coord.x,
+          bank.coord.y,
+          bank.guard_slot,
+          bank.troop_tier,
+          bank.troop_type,
+        ]),
       ],
     });
   }
@@ -1932,12 +1927,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
-    const { lords_cost, lp_fee_num, lp_fee_denom, signer } = props;
+    const { lp_fee_num, lp_fee_denom, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_bank_config",
-      calldata: [lords_cost, lp_fee_num, lp_fee_denom],
+      calldata: [lp_fee_num, lp_fee_denom, owner_fee_num, owner_fee_denom],
     });
   }
 

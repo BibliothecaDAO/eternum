@@ -10,7 +10,7 @@ trait ILiquiditySystems<T> {
         ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed, player_resource_index: u8,
     );
 }
-
+// todo: discuss: liquidity can be used to shield funds from realm raid and cpature
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
@@ -35,7 +35,6 @@ mod liquidity_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use starknet::ContractAddress;
 
@@ -69,15 +68,19 @@ mod liquidity_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
+            // ensure bank exists
             let bank: Bank = world.read_model(bank_entity_id);
             assert!(bank.exists, "Bank does not exist");
 
+            // ensure caller owns structure adding liquidity
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             player_structure_owner.assert_caller_owner();
 
+            // ensure lords are not added as liquidity
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
-            let mut market: Market = world.read_model((bank_entity_id, resource_type));
+            // get market for resource type
+            let mut market: Market = world.read_model(resource_type);
             let (cost_lords, cost_resource_amount, liquidity_shares, total_shares) = market
                 .add_liquidity(lords_amount, resource_amount);
 
@@ -88,7 +91,7 @@ mod liquidity_systems {
             // update market
             world.write_model(@market);
 
-            // todo : tie lp liwquidity to an id instead of just burning it
+            // todo : tie lp liquidity to an id instead of just burning it
 
             // burn the resource the player is exchanging lping with lords
             let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
@@ -107,15 +110,14 @@ mod liquidity_systems {
             player_lords_resource.spend(cost_lords, ref player_structure_weight, lords_weight_grams);
             player_lords_resource.store(ref world);
 
-            // update player liquidity
-            let player = starknet::get_caller_address();
-            let mut player_liquidity: Liquidity = world.read_model((bank_entity_id, player, resource_type));
+            // increase player liquidity
+            let mut player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
             player_liquidity.shares += liquidity_shares;
 
             world.write_model(@player_liquidity);
 
             InternalLiquiditySystemsImpl::emit_event(
-                ref world, market, entity_id, cost_lords, cost_resource_amount, true,
+                ref world, market, bank_entity_id, entity_id, cost_lords, cost_resource_amount, true,
             );
         }
 
@@ -131,21 +133,25 @@ mod liquidity_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
+            // ensure bank exists
             let bank: Bank = world.read_model(bank_entity_id);
             assert!(bank.exists, "Bank does not exist");
 
+            // ensure resource type is not lords
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
+            // ensure caller owns structure removing liquidity
             let player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             player_structure_owner.assert_caller_owner();
 
-            let player_liquidity: Liquidity = world
-                .read_model((bank_entity_id, starknet::get_caller_address(), resource_type));
+            // ensure player has enough liquidity
+            let player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
-            let mut market: Market = world.read_model((bank_entity_id, resource_type));
+            // get market for resource type
+            let mut market: Market = world.read_model(resource_type);
             let (payout_lords, payout_resource_amount, total_shares) = market.remove_liquidity(shares);
-
+            // reduce market liquidity
             market.lords_amount -= payout_lords;
             market.resource_amount -= payout_resource_amount;
             market.total_shares = total_shares;
@@ -161,6 +167,8 @@ mod liquidity_systems {
             );
             let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
                 bank_entity_id,
@@ -168,24 +176,28 @@ mod liquidity_systems {
                 bank_structure_base,
                 ref bank_structure_weight,
                 entity_id,
-                bank_structure_base.coord(),
+                player_structure_owner,
+                player_structure_base.coord(),
+                ref player_structure_weight,
                 array![player_resource_index].span(),
                 resources,
                 true,
                 true,
             );
 
-            // update bonk strutcure weight
-            bank_structure_weight.store(ref world, bank_entity_id);
-
-            // update player liquidity
-            let player = starknet::get_caller_address();
-            let mut player_liquidity: Liquidity = world.read_model((bank_entity_id, player, resource_type));
+            // reduce player liquidity
+            let mut player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
             player_liquidity.shares -= shares;
-            world.write_model(@player_liquidity);
+
+            // if player has no liquidity, erase model
+            if player_liquidity.shares.mag == 0 {
+                world.erase_model(@player_liquidity);
+            } else {
+                world.write_model(@player_liquidity);
+            }
 
             InternalLiquiditySystemsImpl::emit_event(
-                ref world, market, entity_id, payout_lords, payout_resource_amount, false,
+                ref world, market, bank_entity_id, entity_id, payout_lords, payout_resource_amount, false,
             );
         }
     }
@@ -195,6 +207,7 @@ mod liquidity_systems {
         fn emit_event(
             ref world: WorldStorage,
             market: Market,
+            bank_entity_id: ID,
             entity_id: ID,
             lords_amount: u128,
             resource_amount: u128,
@@ -208,12 +221,12 @@ mod liquidity_systems {
             world
                 .emit_event(
                     @LiquidityEvent {
-                        bank_entity_id: market.bank_entity_id,
+                        bank_entity_id,
                         entity_id,
                         resource_type: market.resource_type,
                         lords_amount,
                         resource_amount,
-                        resource_price: resource_price,
+                        resource_price,
                         add,
                         timestamp: starknet::get_block_timestamp(),
                     },

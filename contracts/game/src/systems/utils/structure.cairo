@@ -4,7 +4,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::position::{Coord, Occupied, OccupiedBy, OccupiedImpl};
+use s1_eternum::models::position::{Coord, CoordImpl, Direction, Occupied, OccupiedBy, OccupiedImpl};
 use s1_eternum::models::resource::resource::{ResourceImpl};
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::weight::{Weight};
@@ -34,6 +34,25 @@ pub impl iStructureImpl of iStructureTrait {
             let biome: Biome = get_biome(coord.x.into(), coord.y.into());
             iMapImpl::explore(ref world, ref tile, biome);
         }
+
+        // explore all tiles around the structure
+        let structure_surrounding = array![
+            Direction::East,
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::West,
+            Direction::SouthWest,
+            Direction::SouthEast,
+        ];
+        for direction in structure_surrounding {
+            //todo: merge tile and Occupied
+            let coord: Coord = coord.neighbor(direction);
+            let mut tile: Tile = world.read_model((coord.x, coord.y));
+            if !tile.discovered() {
+                let biome: Biome = get_biome(coord.x.into(), coord.y.into());
+                iMapImpl::explore(ref world, ref tile, biome);
+            }
+        };
 
         // ensure the coord is not occupied
         let occupied: Occupied = world.read_model((coord.x, coord.y));
