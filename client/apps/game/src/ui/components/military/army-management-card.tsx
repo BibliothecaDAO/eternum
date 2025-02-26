@@ -36,10 +36,11 @@ type ArmyCreateProps = {
   army: ArmyInfo | undefined;
   armyManager: ArmyManager;
   isExplorer: boolean;
+  guardSlot?: number;
   onCancel?: () => void;
 };
 
-export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCancel }: ArmyCreateProps) => {
+export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardSlot, onCancel }: ArmyCreateProps) => {
   const {
     setup: { components },
     account: { account },
@@ -71,6 +72,8 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
   };
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
+    console.log({ isExplorer, troopType, troopTier, troopCount, guardSlot });
+
     setIsLoading(true);
 
     if (isExplorer) {
@@ -82,7 +85,9 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
         await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, Direction.NORTH_EAST);
       }
     } else {
-      // armyManager.addTroopsToGuard(account, 0, troopType, troopTier, troopCount);
+      if (guardSlot !== undefined) {
+        await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
+      }
     }
 
     setTroopCount(0);
@@ -103,12 +108,12 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
       canCreate = false;
     }
 
-    if (army && !army.isHome) {
+    if (isExplorer && army && !army.isHome) {
       canCreate = false;
     }
 
     setCanCreate(canCreate);
-  }, [troopCount, selectedTroopType, army?.isHome, owner_entity, currentDefaultTick, components]);
+  }, [troopCount, selectedTroopType, army?.isHome, owner_entity, currentDefaultTick, components, isExplorer]);
 
   const troops = [
     {
@@ -227,7 +232,15 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, onCanc
             })
           }
         >
-          {army ? (army.isHome ? "Reinforce army" : "Must be at Base to Reinforce") : "Create Army"}
+          {isExplorer
+            ? army
+              ? army.isHome
+                ? "Reinforce army"
+                : "Must be at Base to Reinforce"
+              : "Create Army"
+            : army
+              ? "Add Troops"
+              : "Add Defense"}
         </Button>
         {onCancel && (
           <Button variant="danger" className="w-1/2" onClick={onCancel}>

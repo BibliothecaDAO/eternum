@@ -39,9 +39,14 @@ export const useGuardsByStructure = ({ structureEntityId }: { structureEntityId:
     // Extract guard troops from the structure
     const guards = [
       {
+        slot: 0,
+        troops: structure.troop_guards.delta,
+        destroyedTick: structure.troop_guards.delta_destroyed_tick,
+      },
+      {
         slot: 1,
-        troops: structure.troop_guards.alpha,
-        destroyedTick: structure.troop_guards.alpha_destroyed_tick,
+        troops: structure.troop_guards.charlie,
+        destroyedTick: structure.troop_guards.charlie_destroyed_tick,
       },
       {
         slot: 2,
@@ -50,13 +55,8 @@ export const useGuardsByStructure = ({ structureEntityId }: { structureEntityId:
       },
       {
         slot: 3,
-        troops: structure.troop_guards.charlie,
-        destroyedTick: structure.troop_guards.charlie_destroyed_tick,
-      },
-      {
-        slot: 4,
-        troops: structure.troop_guards.delta,
-        destroyedTick: structure.troop_guards.delta_destroyed_tick,
+        troops: structure.troop_guards.alpha,
+        destroyedTick: structure.troop_guards.alpha_destroyed_tick,
       },
     ];
 

@@ -153,6 +153,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </Headline>
 
         <StructureDefence
+          structureId={structure.structure.entity_id || 0}
           maxDefenses={4}
           troops={guards.map((army) => ({
             slot: army.slot,

@@ -232,8 +232,8 @@ export enum TroopTier {
 
 export enum TroopType {
   Knight = "Knight",
-  Crossbowman = "Crossbowman",
   Paladin = "Paladin",
+  Crossbowman = "Crossbowman",
 }
 
 export type TroopInfo = {

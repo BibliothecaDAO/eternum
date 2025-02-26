@@ -234,67 +234,66 @@ export class ClientConfigManager {
   }
 
   getTroopConfig() {
-    return this.getValueOrDefault(
-      () => {
-        // todo: need to fix this
-        const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-        if (!worldConfig) return;
-
-        const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
-
-        return {
-          troop_damage_config,
-          troop_limit_config: {
-            ...troop_limit_config,
-            troops_per_military_building: 1,
-            max_defense_armies: 4,
-          },
-          troop_stamina_config,
-        };
+    // Default config structure matching the expected types
+    const defaultTroopConfig = {
+      troop_damage_config: {
+        damage_biome_bonus_num: 0,
+        damage_beta_small: 0,
+        damage_beta_large: 0,
+        damage_scaling_factor: 0n,
+        damage_c0: 0n,
+        damage_delta: 0n,
+        t1_damage_value: 0n,
+        t2_damage_multiplier: 0n,
+        t3_damage_multiplier: 0n,
       },
-      {
-        // Default config structure matching the expected types
-        troop_damage_config: {
-          damage_biome_bonus_num: 0,
-          damage_beta_small: 0,
-          damage_beta_large: 0,
-          damage_scaling_factor: 0n,
-          damage_c0: 0n,
-          damage_delta: 0n,
-          t1_damage_value: 0n,
-          t2_damage_multiplier: 0n,
-          t3_damage_multiplier: 0n,
-        },
 
+      troop_limit_config: {
+        explorer_max_party_count: 0,
+        explorer_guard_max_troop_count: 0,
+        guard_resurrection_delay: 0,
+        mercenaries_troop_lower_bound: 0,
+        mercenaries_troop_upper_bound: 0,
+        troops_per_military_building: 0,
+        max_defense_armies: 0,
+      },
+
+      troop_stamina_config: {
+        stamina_gain_per_tick: 0,
+        stamina_initial: 0,
+        stamina_bonus_value: 0,
+        stamina_knight_max: 0,
+        stamina_paladin_max: 0,
+        stamina_crossbowman_max: 0,
+        stamina_attack_req: 0,
+        stamina_attack_max: 0,
+        stamina_explore_wheat_cost: 0,
+        stamina_explore_fish_cost: 0,
+        stamina_explore_stamina_cost: 0,
+        stamina_travel_wheat_cost: 0,
+        stamina_travel_fish_cost: 0,
+        stamina_travel_stamina_cost: 0,
+      },
+    };
+
+    return this.getValueOrDefault(() => {
+      // todo: need to fix this
+      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+      if (!worldConfig) return defaultTroopConfig;
+
+      const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
+
+      return {
+        troop_damage_config,
         troop_limit_config: {
-          explorer_max_party_count: 0,
-          explorer_guard_max_troop_count: 0,
-          guard_resurrection_delay: 0,
-          mercenaries_troop_lower_bound: 0,
-          mercenaries_troop_upper_bound: 0,
-          troops_per_military_building: 0,
-          max_defense_armies: 0,
+          ...troop_limit_config,
+          troops_per_military_building: 1,
+          max_defense_armies: 4,
         },
-
-        troop_stamina_config: {
-          stamina_gain_per_tick: 0,
-          stamina_initial: 0,
-          stamina_bonus_value: 0,
-          stamina_knight_max: 0,
-          stamina_paladin_max: 0,
-          stamina_crossbowman_max: 0,
-          stamina_attack_req: 0,
-          stamina_attack_max: 0,
-          stamina_explore_wheat_cost: 0,
-          stamina_explore_fish_cost: 0,
-          stamina_explore_stamina_cost: 0,
-          stamina_travel_wheat_cost: 0,
-          stamina_travel_fish_cost: 0,
-          stamina_travel_stamina_cost: 0,
-        },
-      },
-    );
+        troop_stamina_config,
+      };
+    }, defaultTroopConfig);
   }
 
   getBattleGraceTickCount(category: StructureType) {

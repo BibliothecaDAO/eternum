@@ -1,7 +1,10 @@
+import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
 import Button from "@/ui/elements/button";
-import { ID, Troops } from "@bibliothecadao/eternum";
+import { ArmyManager, ID, Troops } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { ArmyCreate } from "./army-management-card";
 import { TroopChip } from "./troop-chip";
 
 const DEFENSE_NAMES = {
@@ -20,6 +23,7 @@ interface StructureDefenceProps {
   maxDefenses: number; // 1-4
   troops: DefenseTroop[];
   cooldownSlots?: number[]; // Slots with active cooldown [1, 4]
+  structureId: ID;
 }
 
 interface CooldownTimerProps {
@@ -55,16 +59,20 @@ const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
         <div className="flex items-center gap-2">
           <div className="text-xs self-center">{timeString}</div>
         </div>
-        <div className="text-xs text-gold/60 self-center uppercase tracking-wider">Cooldown</div>
+        <div className="text-xs text-gold/60 self-center uppercase tracking-wider">Cooldown (WIP)</div>
       </div>
     </div>
   );
 };
 
-export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: StructureDefenceProps) => {
+export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], structureId }: StructureDefenceProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);
+  const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
+
+  const dojo = useDojo();
+  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, structureId);
 
   useEffect(() => {
     setDefenseTroops(troops);
@@ -95,6 +103,25 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
     setIsReordering(false);
   };
 
+  const toggleDefenseExpansion = (index: number) => {
+    setExpandedSlot(expandedSlot === index ? null : index);
+  };
+
+  // Convert DefenseTroop to ArmyInfo-like structure for ArmyCreate
+  const getArmyInfoForSlot = (slot: number) => {
+    const defense = defenseTroops.find((d) => d.slot === slot);
+
+    console.log({ defense, slot });
+    return defense
+      ? {
+          entityId: defense.slot,
+          troops: defense.troops,
+          isHome: true,
+          name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
+        }
+      : undefined;
+  };
+
   return (
     <div className="p-3 bg-brown-900/80 rounded-lg border border-gold/10">
       <div className="flex justify-end">
@@ -117,48 +144,99 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [] }: St
               {Array.from({ length: maxDefenses }).map((_, index) => {
                 const defense = defenseTroops[index];
                 const slot = defense?.slot;
+                const isExpanded = expandedSlot === index;
 
                 return (
-                  <Draggable
-                    key={slot}
-                    draggableId={`slot-${slot}`}
-                    index={index}
-                    isDragDisabled={!defense || cooldownSlots.includes(index)}
-                  >
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={`flex items-center gap-3 p-1.5 rounded-md transition-colors ${
-                          snapshot.isDragging ? "bg-brown-800/90" : "hover:bg-brown-800/50"
-                        }`}
-                      >
-                        <div className="w-28 flex items-center gap-1.5">
-                          <div className="w-1 h-1 rounded-full bg-gold/40" />
-                          <div className="text-xs text-gold/80 font-medium">
-                            {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                  <div key={slot || `empty-${index}`} className="mb-2">
+                    <Draggable
+                      key={slot || `empty-${index}`}
+                      draggableId={`slot-${slot || `empty-${index}`}`}
+                      index={index}
+                      isDragDisabled={!defense || cooldownSlots.includes(index) || isExpanded}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`flex items-center gap-3 p-1.5 rounded-md transition-colors ${
+                            snapshot.isDragging
+                              ? "bg-brown-800/90"
+                              : isExpanded
+                                ? "bg-brown-800/70"
+                                : "hover:bg-brown-800/50"
+                          }`}
+                        >
+                          <div className="w-28 flex items-center gap-1.5">
+                            <div className="w-1 h-1 rounded-full bg-gold/40" />
+                            <div className="text-xs text-gold/80 font-medium">
+                              {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                            </div>
+                          </div>
+
+                          <div className="flex-1 relative">
+                            {cooldownSlots.includes(index) ? (
+                              <CooldownTimer slot={index} time={24 * 60 * 60} />
+                            ) : defense ? (
+                              <div className="relative">
+                                <TroopChip
+                                  troops={defense.troops}
+                                  iconSize="sm"
+                                  className="flex-1 hover:border-gold/40 transition-colors"
+                                />
+                                <button
+                                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                                    isExpanded ? "bg-gold/40" : "bg-gold/20 hover:bg-gold/40"
+                                  } rounded-full p-1 transition-colors`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDefenseExpansion(index);
+                                  }}
+                                >
+                                  <PlusIcon className="w-4 h-4 fill-gold" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                className="flex-1 px-3 py-2 bg-brown-900/50 border border-gold/20 rounded-md text-gold/40 text-xs hover:border-gold/40 transition-colors flex justify-between items-center cursor-pointer"
+                                onClick={() => toggleDefenseExpansion(index)}
+                              >
+                                <span>Empty Defense Slot</span>
+                                <PlusIcon className="w-4 h-4 fill-gold" />
+                              </div>
+                            )}
                           </div>
                         </div>
+                      )}
+                    </Draggable>
 
-                        <div className="flex-1">
-                          {cooldownSlots.includes(index) ? (
-                            <CooldownTimer slot={index} time={24 * 60 * 60} />
-                          ) : defense ? (
-                            <TroopChip
-                              troops={defense.troops}
-                              iconSize="sm"
-                              className="flex-1 hover:border-gold/40 transition-colors"
-                            />
-                          ) : (
-                            <div className="flex-1 px-3 py-2 bg-brown-900/50 border border-gold/20 rounded-md text-gold/40 text-xs hover:border-gold/40 transition-colors">
-                              Empty Defense Slot
-                            </div>
-                          )}
+                    {isExpanded && (
+                      <div className="mt-2 p-3 bg-brown-800/50 border border-gold/20 rounded-md">
+                        <div className="flex justify-between items-center mb-3">
+                          <h3 className="text-gold font-bold text-sm">
+                            {defense ? "Update Defense" : "Add Defense"}:{" "}
+                            {DEFENSE_NAMES[index as keyof typeof DEFENSE_NAMES]}
+                          </h3>
+                          <Button
+                            variant="secondary"
+                            onClick={() => setExpandedSlot(null)}
+                            className="px-2 py-1 text-xs"
+                          >
+                            Close
+                          </Button>
                         </div>
+
+                        <ArmyCreate
+                          owner_entity={structureId}
+                          army={getArmyInfoForSlot(index) as any}
+                          armyManager={armyManager}
+                          isExplorer={false}
+                          guardSlot={index}
+                          onCancel={() => setExpandedSlot(null)}
+                        />
                       </div>
                     )}
-                  </Draggable>
+                  </div>
                 );
               })}
               {provided.placeholder}

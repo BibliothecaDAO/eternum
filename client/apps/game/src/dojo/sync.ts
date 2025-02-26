@@ -79,7 +79,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
   // const sync = await syncEntitiesDebounced(
-  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], true, false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
