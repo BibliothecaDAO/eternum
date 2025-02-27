@@ -625,8 +625,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { realm_entity_id, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-      entrypoint: "upgrade_level",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-structure_systems`),
+      entrypoint: "level_up",
       calldata: [realm_entity_id],
     });
 
