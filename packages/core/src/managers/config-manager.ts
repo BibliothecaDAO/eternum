@@ -296,6 +296,49 @@ export class ClientConfigManager {
     }, defaultTroopConfig);
   }
 
+  getCombatConfig() {
+    return this.getValueOrDefault(
+      () => {
+        const combatConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_damage_config;
+
+        const troopStaminaConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
+
+        return {
+          stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
+          stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
+          damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
+          damage_beta_small: combatConfig?.damage_beta_small ?? 0,
+          damage_beta_large: combatConfig?.damage_beta_large ?? 0,
+          damage_scaling_factor: combatConfig?.damage_scaling_factor ?? 0n,
+          damage_c0: combatConfig?.damage_c0 ?? 0n,
+          damage_delta: combatConfig?.damage_delta ?? 0n,
+          t1_damage_value: combatConfig?.t1_damage_value ?? 0n,
+          t2_damage_multiplier: combatConfig?.t2_damage_multiplier ?? 0n,
+          t3_damage_multiplier: combatConfig?.t3_damage_multiplier ?? 0n,
+        };
+      },
+      {
+        stamina_bonus_value: 0,
+        stamina_attack_req: 0,
+        damage_biome_bonus_num: 0,
+        damage_beta_small: 0,
+        damage_beta_large: 0,
+        damage_scaling_factor: BigInt(0),
+        damage_c0: BigInt(0),
+        damage_delta: BigInt(0),
+        t1_damage_value: BigInt(0),
+        t2_damage_multiplier: BigInt(0),
+        t3_damage_multiplier: BigInt(0),
+      },
+    );
+  }
+
   getBattleGraceTickCount(category: StructureType) {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(

@@ -811,7 +811,7 @@
   },
   "tick": {
     "defaultTickIntervalInSeconds": 1,
-    "armiesTickIntervalInSeconds": 3600
+    "armiesTickIntervalInSeconds": 300
   },
   "carryCapacityGram": {
     "0": 0,

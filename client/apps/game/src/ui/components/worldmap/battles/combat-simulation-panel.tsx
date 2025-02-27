@@ -11,7 +11,7 @@ import {
   TroopType,
   type Army,
 } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface ArmyInputProps {
   label: string;
@@ -148,7 +148,9 @@ export const CombatSimulationPanel = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const simulationResult = CombatSimulator.simulateBattleWithParams(attacker, defender, biome, parameters);
+  const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
+
+  const simulationResult = combatSimulator.simulateBattleWithParams(attacker, defender, biome);
 
   // Calculate remaining troops based on damage
   const attackerTroopsLost = Math.min(attacker.troopCount, Math.ceil(simulationResult.defenderDamage));
@@ -176,6 +178,7 @@ export const CombatSimulationPanel = () => {
         <label className="flex flex-col">
           <span className="text-sm font-medium text-gold/80 mb-1">Select Biome</span>
           <SelectBiome
+            combatSimulator={combatSimulator}
             onSelect={(newBiome) => {
               if (newBiome) {
                 setBiome(newBiome as BiomeType);
@@ -263,14 +266,14 @@ export const CombatSimulationPanel = () => {
                       <div className="text-sm font-medium mb-1">Biome Bonus</div>
                       <div
                         className={`text-xl font-bold ${
-                          CombatSimulator.getBiomeBonus(data.army.troopType, biome) > 1
+                          combatSimulator.getBiomeBonus(data.army.troopType, biome) > 1
                             ? "text-green-400"
-                            : CombatSimulator.getBiomeBonus(data.army.troopType, biome) < 1
+                            : combatSimulator.getBiomeBonus(data.army.troopType, biome) < 1
                               ? "text-red-400"
                               : "text-gold/50"
                         }`}
                       >
-                        {((CombatSimulator.getBiomeBonus(data.army.troopType, biome) - 1) * 100).toFixed(0)}%
+                        {((combatSimulator.getBiomeBonus(data.army.troopType, biome) - 1) * 100).toFixed(0)}%
                       </div>
                     </div>
                   </div>

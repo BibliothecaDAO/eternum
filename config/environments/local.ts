@@ -15,6 +15,11 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
  */
 export const LocalEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
+  tick: {
+    ...CommonEternumGlobalConfig.tick,
+    // 5 minutes
+    armiesTickIntervalInSeconds: 300,
+  },
   // no stamina cost
   troop: {
     ...CommonEternumGlobalConfig.troop,
