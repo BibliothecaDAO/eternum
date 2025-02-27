@@ -27,7 +27,7 @@ pub struct Structure {
     pub troop_explorers: Span<ID>,
     pub resources_packed: u128,
     pub metadata: StructureMetadata,
-    pub category: u8
+    pub category: u8,
 }
 
 #[generate_trait]

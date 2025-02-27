@@ -236,6 +236,8 @@ pub mod troop_management_systems {
             };
             world.write_model(@explorer);
 
+            // initialize explorer resource model
+            ResourceImpl::initialize(ref world, explorer_id);
             // increase troop capacity
             iExplorerImpl::update_capacity(ref world, explorer_id, explorer, amount, true);
 

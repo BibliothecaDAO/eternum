@@ -18,7 +18,7 @@ pub impl iMapImpl of iMapTrait {
         tile.occupier_is_structure = match category {
             TileOccupier::None => false,
             TileOccupier::Explorer => false,
-            _ => true
+            _ => true,
         };
         world.write_model(@tile);
         // todo add event {if not already explored}
