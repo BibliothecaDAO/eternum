@@ -189,8 +189,9 @@ pub mod config_systems {
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
         MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonBridgeConfig,
-        SettlementConfig, SpeedConfig, StructureLevelConfig, StructureMaxLevelConfig, StartingResourcesConfig, TickConfig, TradeConfig,
-        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig,
+        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
