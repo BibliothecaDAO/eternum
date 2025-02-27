@@ -1,27 +1,28 @@
-import { EvmStream } from "@apibara/evm";
-import { defineIndexer } from "@apibara/indexer";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
-
 //import type { ApibaraRuntimeConfig } from "apibara/types";
 import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
 } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { encodeEventTopics, parseAbi, decodeEventLog, numberToHex } from "viem";
-import { uint256 } from "starknet";
-import { db } from "@realms-world/db/poolClient";
-import {
-  realmsBridgeRequests,
-  realmsBridgeEvents,
-} from "@realms-world/db/schema";
+import { EvmStream } from "@apibara/evm";
+import { defineIndexer } from "@apibara/indexer";
 import { useLogger } from "@apibara/indexer/plugins";
-import { env } from "../env";
+import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { uint256 } from "starknet";
+import { decodeEventLog, encodeEventTopics, numberToHex, parseAbi } from "viem";
+
 import {
   ChainId,
-  STARKNET_MESSAGING,
   REALMS_BRIDGE_ADDRESS,
+  STARKNET_MESSAGING,
 } from "@realms-world/constants";
+import { db } from "@realms-world/db/poolClient";
+import {
+  realmsBridgeEvents,
+  realmsBridgeRequests,
+} from "@realms-world/db/schema";
+
+import { env } from "../env";
 
 const abi = parseAbi([
   "event LogMessageToL2(address indexed fromAddress, uint256 indexed toAddress,uint256 indexed selector,uint256[] payload,uint256 nonce,uint256 fee)",
@@ -130,7 +131,7 @@ export function createIndexer<
         "Transforming block | orderKey: ",
         endCursor?.orderKey,
         " | finality: ",
-        finality
+        finality,
       );
 
       for (const log of logs) {

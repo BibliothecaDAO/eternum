@@ -1,23 +1,25 @@
-import { StarknetStream, decodeEvent, getSelector } from "@apibara/starknet";
-import { defineIndexer } from "@apibara/indexer";
-import { useLogger } from "@apibara/indexer/plugins";
-import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
-import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 //import type { ApibaraRuntimeConfig } from "apibara/types";
 import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
 } from "drizzle-orm";
-import { db } from "@realms-world/db/poolClient";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import type { Abi } from "starknet";
+import { defineIndexer } from "@apibara/indexer";
+import { useLogger } from "@apibara/indexer/plugins";
+import { drizzleStorage, useDrizzleStorage } from "@apibara/plugin-drizzle";
+import { decodeEvent, getSelector, StarknetStream } from "@apibara/starknet";
 import { uint256 } from "starknet";
-import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
-import { env } from "../env";
 import { numberToHex } from "viem";
+
+import { ChainId, REALMS_BRIDGE_ADDRESS } from "@realms-world/constants";
+import { db } from "@realms-world/db/poolClient";
 import {
   realmsBridgeEvents,
   realmsBridgeRequests,
 } from "@realms-world/db/schema";
+
+import { env } from "../env";
 
 export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
   return createIndexer({ database: db });
@@ -72,7 +74,7 @@ export function createIndexer<
         "Transforming block | orderKey: ",
         endCursor?.orderKey,
         " | finality: ",
-        finality
+        finality,
       );
 
       for (const event of events) {

@@ -16,6 +16,6 @@
         "@/*": ["./*"]
       }
     },
-    "include": ["**/*.ts", ".apibara/types"],
+    "include": [".", "./.apibara/types"],
     "exclude": ["node_modules"]
   }
