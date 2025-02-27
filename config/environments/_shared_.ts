@@ -21,7 +21,7 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TOTAL_COSTS,
 } from "./utils/hyperstructure";
-import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./utils/levels";
+import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
@@ -299,6 +299,7 @@ export const EternumGlobalConfig: Config = {
   startingResources: STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
+  villageMaxLevel: VILLAGE_MAX_LEVEL,
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

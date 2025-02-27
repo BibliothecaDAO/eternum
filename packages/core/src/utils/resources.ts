@@ -62,8 +62,8 @@ export const getResourcesFromBalance = (
 };
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
-  const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  const resourcesProduced = realm ? unpackValue(realm.produced_resources) : [];
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];
 
   // todo: fix
   return getStartingResources(resourcesProduced, [], []);

@@ -20,7 +20,6 @@ pub mod swap_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::constants::{ResourceTypes};
-    use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
     use s1_eternum::models::config::{TickImpl};
@@ -30,7 +29,7 @@ pub mod swap_systems {
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
@@ -70,12 +69,12 @@ pub mod swap_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank: Bank = world.read_model(bank_entity_id);
-            assert!(bank.exists, "Bank does not exist");
-
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             player_structure_base.assert_exists();
+
+            // ensure structure is a bank
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // ensure caller owns structure
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -162,13 +161,12 @@ pub mod swap_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure bank exists
-            let bank: Bank = world.read_model(bank_entity_id);
-            assert!(bank.exists, "Bank does not exist");
-
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             player_structure_base.assert_exists();
+
+            // ensure structure is a bank
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // ensure caller owns structure
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(

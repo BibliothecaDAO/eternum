@@ -235,6 +235,12 @@ pub struct Resource {
 
 #[generate_trait]
 pub impl ResourceImpl of ResourceTrait {
+    fn initialize(ref world: WorldStorage, entity_id: ID) {
+        let mut resource: Resource = Default::default();
+        resource.entity_id = entity_id;
+        world.write_model(@resource);
+    }
+
     fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
         return world
             .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));

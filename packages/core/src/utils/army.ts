@@ -24,7 +24,6 @@ export const formatArmies = (
 
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);
-      const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(explorerTroops.explorer_id)]));
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;
@@ -42,7 +41,7 @@ export const formatArmies = (
         entity_owner_id: explorerTroops.owner,
         stamina,
         owner: structure?.owner,
-        realm,
+        structure,
         isMine,
         isMercenary,
         isHome,

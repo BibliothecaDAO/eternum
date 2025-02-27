@@ -47,19 +47,19 @@ const ArmyInfoLabelCard = ({ army }: ArmyInfoLabelProps) => {
     setup: { components },
   } = useDojo();
 
-  const { realm, entityId, entity_owner_id, troops } = army;
+  const { structure, entityId, entity_owner_id, troops } = army;
 
-  const realmId = realm?.realm_id || 0;
+  const realmId = structure?.metadata.realm_id || 0;
+
+  const structureInfo = useMemo(() => {
+    if (structure) {
+      return getStructure(structure.entity_id, ContractAddress(address), components);
+    }
+  }, [structure]);
 
   const attackerAddressName = entity_owner_id ? getRealmAddressName(entity_owner_id, components) : "";
 
   const originRealmName = getRealmNameById(realmId);
-
-  const structure = useMemo(() => {
-    if (entity_owner_id) {
-      return getStructure(entity_owner_id, ContractAddress(address), components);
-    }
-  }, [entity_owner_id]);
 
   return (
     <BaseThreeTooltip
@@ -84,7 +84,7 @@ const ArmyInfoLabelCard = ({ army }: ArmyInfoLabelProps) => {
         <div className="w-full h-full flex flex-col mt-2 space-y-2">
           <TroopChip troops={troops} />
         </div>
-        {structure && <ImmunityTimer structure={structure} />}
+        {structureInfo && <ImmunityTimer structure={structureInfo} />}
       </div>
     </BaseThreeTooltip>
   );

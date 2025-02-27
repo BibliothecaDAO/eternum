@@ -107,22 +107,20 @@ export const computeTrades = (entityIds: Entity[], currentBlockTimestamp: number
       if (trade) {
         const { takerGets, makerGets } = getTradeResources(trade.trade_id, components);
 
-        const makerRealm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
+        const makerStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(trade.maker_id)]));
         const makerName = getComponentValue(
           components.AddressName,
           getEntityIdFromKeys([BigInt(trade.maker_id)]),
         )?.name;
 
-        const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
-
         if (trade.expires_at > currentBlockTimestamp) {
           return {
             makerName: shortString.decodeShortString(makerName?.toString() || ""),
-            originName: getRealmNameById(realm?.realm_id || 0),
+            originName: getRealmNameById(makerStructure?.metadata.realm_id || 0),
             tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,
-            makerOrder: makerRealm?.order,
+            makerOrder: makerStructure?.metadata.order,
             expiresAt: Number(trade.expires_at),
             takerGets,
             makerGets,

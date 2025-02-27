@@ -13,8 +13,8 @@ export const getStructureAtPosition = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const occupier = getComponentValue(components.Occupied, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
-  const structureEntity = getEntityIdFromKeys([BigInt(occupier?.by_id || 0n)]);
+  const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
+  const structureEntity = getEntityIdFromKeys([BigInt(tile?.occupier_id || 0n)]);
 
   if (!structureEntity) return;
 

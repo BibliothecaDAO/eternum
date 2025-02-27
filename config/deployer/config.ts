@@ -41,7 +41,7 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
@@ -60,7 +60,7 @@ export class GameConfigDeployer {
     await setBattleConfig(config);
     await setTroopConfig(config);
     await setRealmUpgradeConfig(config);
-    await setRealmMaxLevelConfig(config);
+    await setStructureMaxLevelConfig(config);
     await setupGlobals(config);
     await setCapacityConfig(config);
     await setSpeedConfig(config);
@@ -529,31 +529,34 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     }
   }
 
-  const tx = await config.provider.set_realm_level_config({ signer: config.account, calls: calldataArray });
+  const tx = await config.provider.set_structure_level_config({ signer: config.account, calls: calldataArray });
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setRealmMaxLevelConfig = async (config: Config) => {
+export const setStructureMaxLevelConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
   👑 Realm Level Configuration
   ═══════════════════════════`),
   );
 
-  const new_max_level = config.config.realmMaxLevel - 1;
+  const realm_max_level = config.config.realmMaxLevel - 1;
+  const village_max_level = config.config.villageMaxLevel - 1;
   const calldata = {
     signer: config.account,
-    new_max_level,
+    realm_max_level,
+    village_max_level,
   };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Level Cap")}
-    │  ${chalk.gray("Maximum Level:")}     ${chalk.white(calldata.new_max_level)}
+    ┌─ ${chalk.yellow("Levels Cap")}
+    │  ${chalk.gray(" Realm Maximum Level:")}     ${chalk.white(calldata.realm_max_level)}
+    │  ${chalk.gray(" Village Maximum Level:")}     ${chalk.white(calldata.village_max_level)}
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_realm_max_level_config(calldata);
+  const tx = await config.provider.set_structure_max_level_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };

@@ -3,7 +3,6 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::ErrorMessages;
-use s1_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 #[generate_trait]
@@ -69,11 +68,6 @@ pub impl EntityOwnerImpl of EntityOwnerTrait {
     fn owner_address(self: EntityOwner, world: WorldStorage) -> ContractAddress {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.address
-    }
-
-    fn get_realm_id(self: EntityOwner, world: WorldStorage) -> ID {
-        let realm: Realm = world.read_model(self.entity_owner_id);
-        realm.realm_id
     }
 }
 // #[cfg(test)]

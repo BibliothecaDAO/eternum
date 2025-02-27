@@ -66,8 +66,8 @@ pub mod hyperstructure_systems {
             },
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
-            name::{AddressName}, owner::{Owner, OwnerAddressTrait}, position::{Coord, PositionIntoCoord},
-            resource::resource::{}, season::{Leaderboard},
+            map::{TileOccupier}, name::{AddressName}, owner::{Owner, OwnerAddressTrait},
+            position::{Coord, PositionIntoCoord}, resource::resource::{}, season::{Leaderboard},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
     };
@@ -178,7 +178,15 @@ pub mod hyperstructure_systems {
 
             // create the hyperstructure structure
             IStructureImpl::create(
-                ref world, coord, starknet::get_caller_address(), new_uuid, StructureCategory::Hyperstructure, true,
+                ref world,
+                coord,
+                starknet::get_caller_address(),
+                new_uuid,
+                StructureCategory::Hyperstructure,
+                true,
+                array![].span(),
+                Default::default(),
+                TileOccupier::Hyperstructure,
             );
 
             world

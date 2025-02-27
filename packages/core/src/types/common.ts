@@ -43,8 +43,13 @@ export type DojoAccount = Account | AccountInterface;
 
 export enum OccupiedBy {
   None = 0,
-  Structure = 1,
-  Explorer = 2,
+  RealmRegular = 1,
+  RealmWonder = 2,
+  Hyperstructure = 3,
+  FragmentMine = 4,
+  Village = 5,
+  Bank = 6,
+  Explorer = 7,
 }
 
 export type ArmyInfo = {
@@ -60,7 +65,7 @@ export type ArmyInfo = {
   entity_owner_id: ID;
   totalCapacity: bigint;
   weight: bigint;
-  realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
 };
 
 export type Structure = {
@@ -84,7 +89,7 @@ export type PlayerStructure = {
   owner: ContractAddress;
 };
 
-export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   position: Position;
   name: string;
   owner: ContractAddress;
@@ -590,6 +595,7 @@ export interface Config {
   startingResources: ResourceCost[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+  villageMaxLevel: number;
 
   // Config for calling the setup function
   setup?: {

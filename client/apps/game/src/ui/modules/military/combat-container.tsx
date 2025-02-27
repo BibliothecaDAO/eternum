@@ -39,7 +39,7 @@ export const CombatContainer = ({
     setup: {
       systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
       components,
-      components: { Structure, ExplorerTroops, Occupied },
+      components: { Structure, ExplorerTroops, Tile },
     },
   } = useDojo();
 
@@ -47,11 +47,11 @@ export const CombatContainer = ({
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const targetEntity = getComponentValue(Occupied, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
-  const staminaCombatConfig = useMemo(() => {
-    return configManager.getStaminaCombatConfig();
-  }, [components]);
+  const combatConfig = useMemo(() => {
+    return configManager.getCombatConfig();
+  }, []);
 
   const biome = useMemo(() => {
     return Biome.getBiome(targetHex.x, targetHex.y);
@@ -62,7 +62,7 @@ export const CombatContainer = ({
   }, [attackerEntityId]);
 
   const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.by_id || 0n)]);
+    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]);
     const structure = getComponentValue(Structure, occupierId);
     const explorer = getComponentValue(ExplorerTroops, occupierId);
 
@@ -101,6 +101,8 @@ export const CombatContainer = ({
       </div>
     );
   }
+  const params = configManager.getCombatConfig();
+  const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
@@ -132,8 +134,7 @@ export const CombatContainer = ({
       tier: targetArmy.troops.tier as TroopTier,
     };
 
-    const params = CombatSimulator.getDefaultParameters();
-    const result = CombatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome, params);
+    const result = combatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome);
 
     const attackerTroopsLost = Math.min(attackerArmy.troopCount, Math.ceil(result.defenderDamage));
     const defenderTroopsLost = Math.min(defenderArmy.troopCount, Math.ceil(result.attackerDamage));
@@ -144,14 +145,13 @@ export const CombatContainer = ({
     const winner =
       attackerTroopsLeft === 0 ? defenderArmy.entity_id : defenderTroopsLeft === 0 ? attackerArmy.entity_id : null;
 
-    let newAttackerStamina = Number(attackerStamina) - staminaCombatConfig.staminaCost;
-    let newDefenderStamina =
-      Number(defenderStamina) - Math.min(staminaCombatConfig.staminaCost, Number(defenderStamina));
+    let newAttackerStamina = Number(attackerStamina) - combatConfig.stamina_attack_req;
+    let newDefenderStamina = Number(defenderStamina) - combatConfig.stamina_attack_req;
 
     if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
-      newDefenderStamina += staminaCombatConfig.staminaBonus;
+      newDefenderStamina += combatConfig.stamina_bonus_value;
     } else if (defenderTroopsLeft <= 0 && attackerTroopsLeft > 0) {
-      newAttackerStamina += staminaCombatConfig.staminaBonus;
+      newAttackerStamina += combatConfig.stamina_bonus_value;
     }
 
     return {
@@ -207,13 +207,15 @@ export const CombatContainer = ({
         tier: army?.troops.tier as TroopTier,
       },
     };
-  }, [target]);
+  }, [target, combatSimulator]);
 
   // todo: add this to a manager
   const onAttack = async () => {
+    console.log({ selectedHex, targetHex });
     if (!selectedHex) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    if (!direction) return;
+    console.log({ direction });
+    if (direction === null) return;
 
     console.log({ selectedHex, targetHex, direction });
 
@@ -241,9 +243,9 @@ export const CombatContainer = ({
           <div>
             <h3 className="text-lg font-semibold text-gold">Terrain: {biome}</h3>
             <div className="mt-2 grid grid-cols-3 gap-4 text-sm text-gold/80">
-              <div>Knights: {formatBiomeBonus(CombatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
-              <div>Crossbowmen: {formatBiomeBonus(CombatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
-              <div>Paladins: {formatBiomeBonus(CombatSimulator.getBiomeBonus(TroopType.Paladin, biome))}</div>
+              <div>Knights: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
+              <div>Crossbowmen: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
+              <div>Paladins: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Paladin, biome))}</div>
             </div>
           </div>
         </div>
@@ -258,9 +260,9 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {TroopType[attackerArmyData.troops.category]}
+                    {TroopType[attackerArmyData.troops.category as TroopType]}
                     <span className="ml-2 text-xs">
-                      {formatBiomeBonus(CombatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
+                      {formatBiomeBonus(combatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
                     </span>
                   </div>
                   <div className="text-xl font-bold">{divideByPrecision(attackerArmyData.troops.count)}</div>
@@ -286,9 +288,9 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {TroopType[targetArmyData.troops.category]}
+                    {TroopType[targetArmyData.troops.category as TroopType]}
                     <span className="ml-2 text-xs">
-                      {formatBiomeBonus(CombatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
+                      {formatBiomeBonus(combatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
                     </span>
                   </div>
                   <div className="text-xl font-bold">{divideByPrecision(targetArmyData.troops.count)}</div>
@@ -372,12 +374,12 @@ export const CombatContainer = ({
                       </div>
                     </div>
 
-                    {getStaminaDisplay(currentStamina, newStamina, isWinner, staminaCombatConfig.staminaBonus)}
+                    {getStaminaDisplay(currentStamina, newStamina, isWinner, combatConfig.stamina_bonus_value)}
                   </div>
 
                   <div className="text-gold/80">
                     <div className="text-sm font-medium mb-1">Biome Bonus</div>
-                    <div>{formatBiomeBonus(CombatSimulator.getBiomeBonus(originalTroops.category, biome))}</div>
+                    <div>{formatBiomeBonus(combatSimulator.getBiomeBonus(originalTroops.category, biome))}</div>
                   </div>
                 </div>
               </div>
@@ -391,12 +393,12 @@ export const CombatContainer = ({
         <Button
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
-          disabled={attackerStamina < staminaCombatConfig.staminaCost}
+          disabled={attackerStamina < combatConfig.stamina_attack_req}
           onClick={onAttack}
         >
-          {attackerStamina >= staminaCombatConfig.staminaCost
+          {attackerStamina >= combatConfig.stamina_attack_req
             ? "Attack!"
-            : `Not Enough Stamina (${staminaCombatConfig.staminaCost} Required)`}
+            : `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`}
         </Button>
       </div>
     </div>

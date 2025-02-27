@@ -36,7 +36,7 @@ pub struct WorldConfig {
     pub population_config: PopulationConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
-    pub realm_max_level_config: RealmMaxLevelConfig,
+    pub structure_max_level_config: StructureMaxLevelConfig,
     pub building_general_config: BuildingGeneralConfig,
     pub troop_damage_config: TroopDamageConfig,
     pub troop_stamina_config: TroopStaminaConfig,
@@ -594,13 +594,14 @@ pub struct ResourceBridgeWhitelistConfig {
 
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct RealmMaxLevelConfig {
-    pub max_level: u8,
+pub struct StructureMaxLevelConfig {
+    pub realm_max: u8,
+    pub village_max: u8,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct RealmLevelConfig {
+pub struct StructureLevelConfig {
     #[key]
     pub level: u8,
     pub required_resources_id: ID,

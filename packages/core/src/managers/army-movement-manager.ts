@@ -3,7 +3,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
-import { FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
+import { BiomeTypeToId, FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
 import { HexPosition, ID, TravelTypes, TroopType } from "../types";
@@ -338,7 +338,7 @@ export class ArmyMovementManager {
       value: {
         col,
         row,
-        biome: Biome.getBiome(col, row),
+        biome: BiomeTypeToId[Biome.getBiome(col, row)],
       },
     });
   };

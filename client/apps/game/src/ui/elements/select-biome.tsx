@@ -4,6 +4,7 @@ import { BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
+  combatSimulator: CombatSimulator;
   onSelect: (biome: BiomeType | null) => void;
   className?: string;
   defaultValue?: BiomeType;
@@ -16,6 +17,7 @@ const TROOP_RESOURCES = [
 ];
 
 export const SelectBiome: React.FC<SelectBiomeProps> = ({
+  combatSimulator,
   onSelect,
   className,
   defaultValue = BiomeType.Grassland,
@@ -58,7 +60,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
               <div className="flex gap-8">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = CombatSimulator.getBiomeBonus(type, selectedBiome as BiomeType);
+                  const bonus = combatSimulator.getBiomeBonus(type, selectedBiome as BiomeType);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
@@ -88,7 +90,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>
               <div className="flex gap-8 ml-10">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = CombatSimulator.getBiomeBonus(type, biome);
+                  const bonus = combatSimulator.getBiomeBonus(type, biome);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />

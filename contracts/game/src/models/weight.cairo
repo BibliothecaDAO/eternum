@@ -1,7 +1,7 @@
 use core::num::traits::Bounded;
 use core::num::traits::zero::Zero;
 
-#[derive(Introspect, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq)]
 pub struct Weight {
     pub capacity: u128,
     pub weight: u128,

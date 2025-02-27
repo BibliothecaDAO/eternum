@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::utils::math::{is_u64_bit_set, set_u64_bit};
@@ -45,12 +46,26 @@ pub struct ResourceArrivalTracker {
     slot_10_tracker: u64,
     slot_11_tracker: u64,
     slot_12_tracker: u64,
+    initialized: bool,
     total_amount: u128,
 }
 
 
 #[generate_trait]
 pub impl ResourceArrivalImpl of ResourceArrivalTrait {
+    fn initialize(ref world: WorldStorage, structure_id: ID, day: u64) {
+        let mut resource_arrival_model: ResourceArrival = Zero::zero();
+        resource_arrival_model.structure_id = structure_id;
+        resource_arrival_model.day = day;
+        world.write_model(@resource_arrival_model);
+
+        let mut resource_arrival_tracker_model: ResourceArrivalTracker = Default::default();
+        resource_arrival_tracker_model.structure_id = structure_id;
+        resource_arrival_tracker_model.day = day;
+        resource_arrival_tracker_model.initialized = true;
+        world.write_model(@resource_arrival_tracker_model);
+    }
+
     fn interval_hours() -> u64 {
         2 // resource arrival gate open every 2 hours
     }
@@ -181,6 +196,15 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         total_amount: u128,
     ) {
         let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
+
+        // read the resource arrival tracker initialized flag
+        // todo: check if this allows people create empty resource arrival models
+        let initialized: bool = world
+            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("initialized"));
+        if !initialized {
+            Self::initialize(ref world, structure_id, day);
+        }
+
         world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
         world
             .write_member(
@@ -213,5 +237,49 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             12 => (selector!("slot_12"), selector!("slot_12_tracker")),
             _ => panic!("exceeds max hours"),
         }
+    }
+}
+
+
+impl ResourceArrivalZero of Zero<ResourceArrival> {
+    fn zero() -> ResourceArrival {
+        let zero_span: Span<(u8, u128)> = array![].span();
+        return ResourceArrival {
+            structure_id: 0,
+            day: 0,
+            slot_1: zero_span,
+            slot_2: zero_span,
+            slot_3: zero_span,
+            slot_4: zero_span,
+            slot_5: zero_span,
+            slot_6: zero_span,
+            slot_7: zero_span,
+            slot_8: zero_span,
+            slot_9: zero_span,
+            slot_10: zero_span,
+            slot_11: zero_span,
+            slot_12: zero_span,
+        };
+    }
+
+    fn is_zero(self: @ResourceArrival) -> bool {
+        (*self.structure_id).is_zero()
+            && (*self.day).is_zero()
+            && (*self.slot_1).is_empty()
+            && (*self.slot_2).is_empty()
+            && (*self.slot_3).is_empty()
+            && (*self.slot_4).is_empty()
+            && (*self.slot_5).is_empty()
+            && (*self.slot_6).is_empty()
+            && (*self.slot_7).is_empty()
+            && (*self.slot_8).is_empty()
+            && (*self.slot_9).is_empty()
+            && (*self.slot_10).is_empty()
+            && (*self.slot_11).is_empty()
+            && (*self.slot_12).is_empty()
+    }
+
+    fn is_non_zero(self: @ResourceArrival) -> bool {
+        !self.is_zero()
     }
 }

@@ -36,9 +36,9 @@ pub trait IStartingResourcesConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IRealmLevelConfig<T> {
-    fn set_realm_max_level_config(ref self: T, new_max_level: u8);
-    fn set_realm_level_config(ref self: T, level: u8, resources: Span<(u8, u128)>);
+pub trait IStructureLevelConfig<T> {
+    fn set_structure_max_level_config(ref self: T, realm_max: u8, village_max: u8);
+    fn set_structure_level_config(ref self: T, level: u8, resources: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
@@ -187,9 +187,9 @@ pub mod config_systems {
     use s1_eternum::models::config::{
         BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
-        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, RealmLevelConfig, RealmMaxLevelConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
-        SeasonBridgeConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, TickConfig, TradeConfig,
+        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonBridgeConfig,
+        SettlementConfig, SpeedConfig, StructureLevelConfig, StructureMaxLevelConfig, StartingResourcesConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
@@ -635,17 +635,17 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmLevelConfigImpl of super::IRealmLevelConfig<ContractState> {
-        fn set_realm_max_level_config(ref self: ContractState, new_max_level: u8) {
+    impl StructureLevelConfigImpl of super::IStructureLevelConfig<ContractState> {
+        fn set_structure_max_level_config(ref self: ContractState, realm_max: u8, village_max: u8) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("realm_max_level_config"), RealmMaxLevelConfig { max_level: new_max_level },
+                ref world, selector!("structure_max_level_config"), StructureMaxLevelConfig { realm_max, village_max },
             );
         }
 
-        fn set_realm_level_config(ref self: ContractState, level: u8, mut resources: Span<(u8, u128)>) {
+        fn set_structure_level_config(ref self: ContractState, level: u8, mut resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
@@ -666,7 +666,7 @@ pub mod config_systems {
 
             world
                 .write_model(
-                    @RealmLevelConfig {
+                    @StructureLevelConfig {
                         level,
                         required_resources_id: resource_list_id.into(),
                         required_resource_count: resource_list_count.try_into().unwrap(),

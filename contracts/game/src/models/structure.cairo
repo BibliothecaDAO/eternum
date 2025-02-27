@@ -1,9 +1,9 @@
+use alexandria_math::{BitShift};
 use core::num::traits::zero::Zero;
 use core::traits::Into;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
-
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{BattleConfig, TickConfig};
+use s1_eternum::models::config::{BattleConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
 use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::Stamina;
@@ -25,6 +25,9 @@ pub struct Structure {
     pub base: StructureBase,
     pub troop_guards: GuardTroops,
     pub troop_explorers: Span<ID>,
+    pub resources_packed: u128,
+    pub metadata: StructureMetadata,
+    pub category: u8,
 }
 
 #[generate_trait]
@@ -50,8 +53,15 @@ pub struct StructureBase {
     pub category: u8,
     pub coord_x: u32,
     pub coord_y: u32,
+    pub level: u8,
 }
 
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+pub struct StructureMetadata {
+    pub realm_id: u16,
+    pub order: u8,
+    pub has_wonder: bool,
+}
 
 #[generate_trait]
 pub impl StructureBaseImpl of StructureBaseTrait {
@@ -102,6 +112,19 @@ pub impl StructureBaseImpl of StructureBaseTrait {
 
         return (false, "");
     }
+
+    fn max_level(self: StructureBase, world: WorldStorage) -> u8 {
+        let structure_max_level_config: StructureMaxLevelConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("structure_max_level_config"),
+        );
+        if self.category == StructureCategory::Realm.into() {
+            return structure_max_level_config.realm_max;
+        } else if self.category == StructureCategory::Village.into() {
+            return structure_max_level_config.village_max;
+        } else {
+            0
+        }
+    }
 }
 
 #[generate_trait]
@@ -141,9 +164,33 @@ pub impl StructureTroopExplorerStoreImpl of StructureTroopExplorerStoreTrait {
     }
 }
 
+#[generate_trait]
+pub impl StructureResourcesPackedStoreImpl of StructureResourcesPackedStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> u128 {
+        let resources_packed = world
+            .read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("resources_packed"));
+        return resources_packed;
+    }
+
+    fn store(self: u128, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("resources_packed"), self);
+    }
+}
 
 #[generate_trait]
-pub impl StructureImpl of StructureTrait {
+pub impl StructureMetadataStoreImpl of StructureMetadataStoreTrait {
+    fn retrieve(ref world: WorldStorage, structure_id: ID) -> StructureMetadata {
+        let metadata = world.read_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("metadata"));
+        return metadata;
+    }
+
+    fn store(self: StructureMetadata, ref world: WorldStorage, structure_id: ID) {
+        world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!("metadata"), self);
+    }
+}
+
+
+pub impl StructureDefaultImpl of Default<Structure> {
     fn default() -> Structure {
         let troops: Troops = Troops {
             category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Stamina { amount: 0, updated_tick: 0 },
@@ -160,6 +207,7 @@ pub impl StructureImpl of StructureTrait {
                 category: 0,
                 coord_x: 0,
                 coord_y: 0,
+                level: 0,
             },
             troop_guards: GuardTroops {
                 delta: troops,
@@ -172,18 +220,34 @@ pub impl StructureImpl of StructureTrait {
                 alpha_destroyed_tick: 0,
             },
             troop_explorers: array![].span(),
+            resources_packed: 0,
+            metadata: Default::default(),
+            category: 0,
         }
     }
+}
 
-    fn new(entity_id: ID, category: StructureCategory, coord: Coord, owner: ContractAddress) -> Structure {
+
+#[generate_trait]
+pub impl StructureImpl of StructureTrait {
+    fn new(
+        entity_id: ID,
+        category: StructureCategory,
+        coord: Coord,
+        owner: ContractAddress,
+        resources_packed: u128,
+        metadata: StructureMetadata,
+    ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
-        let mut structure: Structure = Self::default();
+        let mut structure: Structure = Default::default();
         structure.entity_id = entity_id;
+        structure.category = category.into();
         structure.base.category = category.into();
         structure.base.coord_x = coord.x;
         structure.base.coord_y = coord.y;
         structure.owner = owner;
-
+        structure.resources_packed = resources_packed;
+        structure.metadata = metadata;
         match category {
             StructureCategory::Realm => {
                 structure.base.troop_max_explorer_count = 1;
@@ -201,6 +265,10 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_explorer_count = 0;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
+            StructureCategory::Village => { // todo: check if this is correct
+                structure.base.troop_max_explorer_count = 1;
+                structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
+            },
             _ => { panic!("invalid structure category"); },
         }
         structure.base.created_at = starknet::get_block_timestamp().try_into().unwrap();
@@ -217,6 +285,7 @@ pub enum StructureCategory {
     Hyperstructure,
     Bank,
     FragmentMine,
+    Village,
 }
 
 pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
@@ -227,6 +296,7 @@ pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Hyperstructure => 2,
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
+            StructureCategory::Village => 5,
         }
     }
 }
@@ -239,6 +309,79 @@ pub impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
             StructureCategory::Hyperstructure => 2,
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
+            StructureCategory::Village => 5,
         }
+    }
+}
+
+
+#[generate_trait]
+pub impl StructureResourcesImpl of StructureResourcesTrait {
+    fn PACKING_TOTAL_BITS_AVAILABLE() -> u8 {
+        128 // 128 bits available for all resources
+    }
+
+    fn PACKING_MAX_BITS_PER_RESOURCE() -> u8 {
+        8 // 8 bits available per resource
+    }
+
+    fn PACKING_MASK_SIZE() -> u8 {
+        0xFF // max value for a u8
+    }
+
+    fn pack_resource_types(resource_types: Span<u8>) -> u128 {
+        // ensure all resources can be packed into a u128
+        let max_resources: u8 = Self::PACKING_TOTAL_BITS_AVAILABLE() / Self::PACKING_MAX_BITS_PER_RESOURCE();
+        assert!(resource_types.len() <= max_resources.into(), "resources are too many to be packed into a u128");
+
+        // pack the resources into a u128
+        let mut produced_resources: u128 = 0;
+        for resource_type in resource_types {
+            // ensure resource type is not zero
+            assert!((*resource_type).is_non_zero(), "resource type is zero");
+
+            // shift left to make space for the new resource
+            let masked_produced_resources = BitShift::shl(
+                produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into(),
+            );
+
+            // add the new resource
+            let new_produced_resources = masked_produced_resources | (*resource_type).into();
+
+            // update the packed value
+            produced_resources = new_produced_resources;
+        };
+        produced_resources
+    }
+
+
+    fn unpack_resource_types(mut produced_resources: u128) -> Span<u8> {
+        // Iterate over each resource type
+        let mut resource_types = array![];
+        while produced_resources > 0 {
+            // extract the first 8 bits
+            let resource_type = produced_resources & Self::PACKING_MASK_SIZE().into();
+            resource_types.append(resource_type.try_into().unwrap());
+
+            // shift right by 8 bits
+            produced_resources = BitShift::shr(produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
+        };
+
+        resource_types.span()
+    }
+
+    fn produces_resource(mut packed: u128, check_resource_type: u8) -> bool {
+        let mut contains_resource = false;
+        while packed > 0 {
+            // extract the first 8 bits
+            let resource_type: u8 = (packed & Self::PACKING_MASK_SIZE().into()).try_into().unwrap();
+            if resource_type == check_resource_type {
+                contains_resource = true;
+                break;
+            }
+            // shift right by 8 bits
+            packed = BitShift::shr(packed, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
+        };
+        contains_resource
     }
 }

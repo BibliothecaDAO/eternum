@@ -1,38 +1,7 @@
 use alexandria_math::{BitShift, pow};
 use core::array::SpanTrait;
-use core::num::traits::zero::Zero;
 use core::traits::Into;
-use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{RealmMaxLevelConfig, WorldConfigUtilImpl};
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct Realm {
-    #[key]
-    pub entity_id: ID,
-    pub realm_id: ID,
-    pub produced_resources: u128,
-    pub order: u8,
-    pub level: u8,
-    pub has_wonder: bool,
-}
-
-
-#[generate_trait]
-pub impl RealmImpl of RealmTrait {
-    fn max_level(self: Realm, world: WorldStorage) -> u8 {
-        let realm_max_level_config: RealmMaxLevelConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("realm_max_level_config"),
-        );
-        realm_max_level_config.max_level
-    }
-
-    fn assert_is_set(self: Realm) {
-        assert(self.realm_id != 0, 'Entity is not a realm');
-    }
-}
+use s1_eternum::models::config::{WorldConfigUtilImpl};
 
 #[generate_trait]
 pub impl RealmNameAndAttrsDecodingImpl of RealmNameAndAttrsDecodingTrait {
@@ -205,79 +174,6 @@ pub impl RealmReferenceImpl of RealmReferenceTrait {
             51 => "Sky Mast",
             _ => panic!("max wonder num exceeded"),
         }
-    }
-}
-
-
-#[generate_trait]
-pub impl RealmResourcesImpl of RealmResourcesTrait {
-    fn PACKING_TOTAL_BITS_AVAILABLE() -> u8 {
-        128 // 128 bits available for all resources
-    }
-
-    fn PACKING_MAX_BITS_PER_RESOURCE() -> u8 {
-        8 // 8 bits available per resource
-    }
-
-    fn PACKING_MASK_SIZE() -> u8 {
-        0xFF // max value for a u8
-    }
-
-    fn pack_resource_types(resource_types: Span<u8>) -> u128 {
-        // ensure all resources can be packed into a u128
-        let max_resources: u8 = Self::PACKING_TOTAL_BITS_AVAILABLE() / Self::PACKING_MAX_BITS_PER_RESOURCE();
-        assert!(resource_types.len() <= max_resources.into(), "resources are too many to be packed into a u128");
-
-        // pack the resources into a u128
-        let mut produced_resources: u128 = 0;
-        for resource_type in resource_types {
-            // ensure resource type is not zero
-            assert!((*resource_type).is_non_zero(), "resource type is zero");
-
-            // shift left to make space for the new resource
-            let masked_produced_resources = BitShift::shl(
-                produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into(),
-            );
-
-            // add the new resource
-            let new_produced_resources = masked_produced_resources | (*resource_type).into();
-
-            // update the packed value
-            produced_resources = new_produced_resources;
-        };
-        produced_resources
-    }
-
-
-    fn unpack_resource_types(mut produced_resources: u128) -> Span<u8> {
-        // Iterate over each resource type
-        let mut resource_types = array![];
-        while produced_resources > 0 {
-            // extract the first 8 bits
-            let resource_type = produced_resources & Self::PACKING_MASK_SIZE().into();
-            resource_types.append(resource_type.try_into().unwrap());
-
-            // shift right by 8 bits
-            produced_resources = BitShift::shr(produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
-
-        resource_types.span()
-    }
-
-    fn produces_resource(self: Realm, check_resource_type: u8) -> bool {
-        let mut packed = self.produced_resources;
-        let mut contains_resource = false;
-        while packed > 0 {
-            // extract the first 8 bits
-            let resource_type: u8 = (packed & Self::PACKING_MASK_SIZE().into()).try_into().unwrap();
-            if resource_type == check_resource_type {
-                contains_resource = true;
-                break;
-            }
-            // shift right by 8 bits
-            packed = BitShift::shr(packed, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        };
-        contains_resource
     }
 }
 // #[cfg(test)]

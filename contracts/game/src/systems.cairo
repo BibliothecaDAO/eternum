@@ -3,6 +3,18 @@ pub mod config {
     #[cfg(test)]
     mod tests;
 }
+
+pub mod village {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod structure {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod realm {
     pub mod contracts;
     #[cfg(test)]

@@ -1,4 +1,5 @@
 import {
+  BiomeIdToType,
   BiomeType,
   ClientComponents,
   configManager,
@@ -26,10 +27,9 @@ import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/con
 import {
   ArmySystemUpdate,
   BuildingSystemUpdate,
-  RealmSystemUpdate,
   StructureProgress,
   StructureSystemUpdate,
-  TileSystemUpdate,
+  TileSystemUpdate
 } from "../types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
@@ -82,13 +82,10 @@ export class SystemManager {
             const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
             if (!explorer) return;
 
-            const realm = getComponentValue(this.setup.components.Realm, getEntityIdFromKeys([BigInt(explorer.owner)]));
-            if (!realm) return;
+            const structure = getComponentValue(this.setup.components.Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
+            if (!structure) return;
 
-            const owner = getComponentValue(
-              this.setup.components.Structure,
-              getEntityIdFromKeys([BigInt(explorer.owner)]),
-            )?.owner;
+            const owner = structure.owner;
 
             const addressName = getComponentValue(
               this.setup.components.AddressName,
@@ -116,7 +113,7 @@ export class SystemManager {
               defender: false,
               // todo: fix this
               currentHealth: 1n,
-              order: realm.order,
+              order: structure.metadata.order,
               owner: { address: owner || 0n, ownerName, guildName },
             });
           }
@@ -157,9 +154,8 @@ export class SystemManager {
           let level = 0;
           let hasWonder = false;
           if (structure.base.category === StructureType.Realm) {
-            const realm = getComponentValue(this.setup.components.Realm, update.entity);
-            level = realm?.level || RealmLevels.Settlement;
-            hasWonder = realm?.has_wonder || false;
+            level = structure.base.level || RealmLevels.Settlement;
+            hasWonder = structure.metadata.has_wonder || false;
           }
 
           return {
@@ -176,23 +172,6 @@ export class SystemManager {
     };
   }
 
-  public get Realm() {
-    return {
-      onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
-          const realm = getComponentValue(this.setup.components.Realm, update.entity);
-          const structureBase = getComponentValue(this.setup.components.Structure, update.entity)?.base;
-          if (!realm || !structureBase) return;
-
-          return {
-            level: realm.level,
-            hexCoords: { col: structureBase.coord_x, row: structureBase.coord_y },
-          };
-        });
-      },
-    };
-  }
-
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
@@ -200,11 +179,12 @@ export class SystemManager {
           const newState = update.value[0];
           const prevState = update.value[1];
 
+          const newStateBiomeType = BiomeIdToType[newState?.biome];
           const { col, row } = prevState || newState;
           return {
             hexCoords: { col, row },
             removeExplored: !newState,
-            biome: newState?.biome === "None" ? BiomeType.Grassland : newState?.biome || BiomeType.Grassland,
+            biome: newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
           };
         });
       },

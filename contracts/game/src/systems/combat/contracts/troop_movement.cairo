@@ -16,7 +16,7 @@ pub mod troop_movement_systems {
         config::{
             CombatConfigImpl, MapConfig, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction, Occupied, OccupiedBy},
+        map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction},
         resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
         season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
         troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
@@ -46,8 +46,8 @@ pub mod troop_movement_systems {
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
             // remove explorer from current occupier
-            let occupied = Occupied { x: explorer.coord.x, y: explorer.coord.y, by_id: 0, by_type: OccupiedBy::None };
-            world.erase_model(@occupied);
+            let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
+            IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
@@ -55,14 +55,13 @@ pub mod troop_movement_systems {
                 // ensure next coordinate is not occupied
                 let from = explorer.coord;
                 let next = explorer.coord.neighbor(*(directions.pop_front().unwrap()));
-                let mut occupied: Occupied = world.read_model((next.x, next.y));
-                assert!(occupied.by_type == OccupiedBy::None, "one of the tiles in path is occupied");
+                let mut tile: Tile = world.read_model((next.x, next.y));
+                assert!(tile.not_occupied(), "one of the tiles in path is occupied");
 
                 // add biome to biomes
                 let biome = get_biome(next.x.into(), next.y.into());
                 biomes.append(biome);
 
-                let mut tile: Tile = world.read_model((next.x, next.y));
                 let mut occupy_destination: bool = true;
                 if explore {
                     // ensure only one tile can be explored
@@ -117,17 +116,14 @@ pub mod troop_movement_systems {
                     if occupy_destination {
                         // ensure explorer does not occupy fragment mine
                         // tile when mines are discovered
-                        occupied.by_id = explorer_id;
-                        occupied.by_type = OccupiedBy::Explorer;
-                        world.write_model(@occupied);
+                        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
                     } else {
                         // move explorer back to previous coordinate
                         explorer.coord = from;
                         // set explorer as occupier of previous coordinate
-                        let previous_occupier = Occupied {
-                            x: from.x, y: from.y, by_id: explorer_id, by_type: OccupiedBy::Explorer,
-                        };
-                        world.write_model(@previous_occupier);
+                        let mut from_tile: Tile = world.read_model((from.x, from.y));
+                        IMapImpl::occupy(ref world, ref from_tile, TileOccupier::Explorer, explorer_id);
+                        world.write_model(@from_tile);
                     }
                     break;
                 }

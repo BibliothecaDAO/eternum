@@ -203,7 +203,7 @@ pub fn tspawn_simple_realm(
     tstore_production_config(ref world, MOCK_DEFAULT_PRODUCTION_CONFIG(ResourceTypes::EARTHEN_SHARD));
 
     // create realm
-    let (realm_entity_id, _, _) = InternalRealmLogicImpl::create_realm(
+    let realm_entity_id = InternalRealmLogicImpl::create_realm(
         ref world, owner, realm_id, array![], 1, 0, 1, coord.into(),
     );
 
@@ -222,7 +222,7 @@ pub fn tspawn_realm(
     coord: Coord,
 ) -> ID {
     // create realm
-    let (realm_entity_id, _, _) = InternalRealmLogicImpl::create_realm(
+    let realm_entity_id = InternalRealmLogicImpl::create_realm(
         ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(),
     );
 

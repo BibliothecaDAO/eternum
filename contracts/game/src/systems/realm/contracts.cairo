@@ -24,12 +24,10 @@ pub trait IRealmSystems<T> {
         frontend: ContractAddress,
         lords_resource_index: u8,
     ) -> ID;
-    fn upgrade_level(ref self: T, realm_id: ID);
 }
 
 #[dojo::contract]
 pub mod realm_systems {
-    use achievement::store::{StoreTrait};
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -41,26 +39,23 @@ pub mod realm_systems {
         DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
     };
     use s1_eternum::models::config::{
-        RealmLevelConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
-        WorldConfigUtilImpl,
+        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
-    use s1_eternum::models::map::{Tile, TileImpl};
+    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::realm::{
-        Realm, RealmImpl, RealmNameAndAttrsDecodingImpl, RealmReferenceImpl, RealmResourcesImpl, RealmTrait,
-    };
+    use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-    use s1_eternum::models::resource::resource::{ResourceImpl, ResourceList};
+    use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
@@ -111,7 +106,7 @@ pub mod realm_systems {
 
             // create realm
             let mut coord: Coord = InternalRealmLogicImpl::get_new_location(ref world);
-            let (entity_id, realm_produced_resources_packed, has_wonder) = InternalRealmLogicImpl::create_realm(
+            let structure_id = InternalRealmLogicImpl::create_realm(
                 ref world, owner, realm_id, resources, order, 0, wonder, coord,
             );
 
@@ -125,14 +120,14 @@ pub mod realm_systems {
                 InternalRealmLogicImpl::bridge_lords_into_realm(
                     ref world,
                     season_addresses_config.lords_address,
-                    entity_id,
+                    structure_id,
                     lords_amount_attached,
                     frontend,
                     lords_resource_index,
                 );
             }
 
-            InternalRealmLogicImpl::get_starting_resources(ref world, entity_id, has_wonder);
+            InternalRealmLogicImpl::get_starting_resources(ref world, structure_id);
 
             // emit realm settle event
             let address_name: AddressName = world.read_model(owner);
@@ -141,11 +136,11 @@ pub mod realm_systems {
                     @SettleRealmData {
                         id: world.dispatcher.uuid(),
                         event_id: EventType::SettleRealm,
-                        entity_id,
+                        entity_id: structure_id,
                         owner_address: owner,
                         owner_name: address_name.name,
                         realm_name: realm_name,
-                        produced_resources: realm_produced_resources_packed,
+                        produced_resources: 0, // why?
                         cities,
                         harbors,
                         rivers,
@@ -158,76 +153,7 @@ pub mod realm_systems {
                     },
                 );
 
-            entity_id.into()
-        }
-
-
-        fn upgrade_level(ref self: ContractState, realm_id: ID) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-
-            // ensure caller owns the realm
-            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, realm_id);
-            structure_owner.assert_caller_owner();
-
-            // ensure entity is a realm
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
-
-            // ensure realm is not already at max level
-            let mut realm: Realm = world.read_model(realm_id);
-            let max_level = realm.max_level(world);
-            assert(realm.level < max_level, 'realm is already at max level');
-
-            // make payment to upgrade to next level
-            let next_level = realm.level + 1;
-            let realm_level_config: RealmLevelConfig = world.read_model(next_level);
-            let required_resources_id = realm_level_config.required_resources_id;
-            let required_resource_count = realm_level_config.required_resource_count;
-
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, realm_id);
-            let mut index = 0;
-            loop {
-                if index == required_resource_count {
-                    break;
-                }
-
-                let mut required_resource: ResourceList = world.read_model((required_resources_id, index));
-
-                // burn resource from realm
-                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, required_resource.resource_type);
-                let mut realm_resource = SingleResourceStoreImpl::retrieve(
-                    ref world,
-                    realm_id,
-                    required_resource.resource_type,
-                    ref structure_weight,
-                    resource_weight_grams,
-                    true,
-                );
-                realm_resource.spend(required_resource.amount, ref structure_weight, resource_weight_grams);
-                realm_resource.store(ref world);
-
-                index += 1;
-            };
-
-            // update structure weight
-            structure_weight.store(ref world, realm_id);
-
-            // set new level
-            realm.level = next_level;
-            world.write_model(@realm);
-
-            // allow structure one more guard
-            let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm_id);
-            structure_base.troop_max_guard_count += 1;
-            StructureBaseStoreImpl::store(ref structure_base, ref world, realm_id);
-
-            // [Achievement] Upgrade to max level
-            if realm.level == max_level {
-                let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Maximalist.identifier();
-                let store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
-            }
+            structure_id.into()
         }
     }
 
@@ -243,35 +169,33 @@ pub mod realm_systems {
             level: u8,
             wonder: u8,
             coord: Coord,
-        ) -> (ID, u128, bool) {
-            // create realm
-
-            let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
-            let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
-            let entity_id = world.dispatcher.uuid();
-
+        ) -> ID {
             // create structure
-            IStructureImpl::create(ref world, coord, owner, entity_id, StructureCategory::Realm, false);
+            let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
+            let structure_id = world.dispatcher.uuid();
+            let mut tile_occupier = TileOccupier::RealmRegular;
+            if has_wonder {
+                tile_occupier = TileOccupier::RealmWonder;
+            }
 
-            // create realm
-            world
-                .write_model(
-                    @Realm {
-                        entity_id: entity_id.into(),
-                        realm_id,
-                        produced_resources: realm_produced_resources_packed,
-                        order,
-                        level,
-                        has_wonder,
-                    },
-                );
+            IStructureImpl::create(
+                ref world,
+                coord,
+                owner,
+                structure_id,
+                StructureCategory::Realm,
+                false,
+                resources.span(),
+                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder },
+                tile_occupier.into(),
+            );
 
             // place castle building
             BuildingImpl::create(
-                ref world, entity_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),
+                ref world, structure_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),
             );
 
-            (entity_id, realm_produced_resources_packed, has_wonder)
+            structure_id
         }
 
         fn collect_season_pass(season_pass_address: ContractAddress, realm_id: ID) {
@@ -299,7 +223,7 @@ pub mod realm_systems {
         fn bridge_lords_into_realm(
             ref world: WorldStorage,
             lords_address: ContractAddress,
-            realm_entity_id: ID,
+            realm_structure_id: ID,
             amount: u256,
             frontend: ContractAddress,
             lords_resource_index: u8,
@@ -318,7 +242,7 @@ pub mod realm_systems {
 
             // deposit lords
             IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit_initial(lords_address, realm_entity_id, amount, frontend, lords_resource_index);
+                .deposit_initial(lords_address, realm_structure_id, amount, frontend, lords_resource_index);
         }
 
 
@@ -342,7 +266,8 @@ pub mod realm_systems {
                 // correct location when a troop is on it
                 coord = settlement_config.get_next_settlement_coord();
                 let tile: Tile = world.read_model((coord.x, coord.y));
-                if !tile.discovered() {
+                if tile.not_occupied() {
+                    // todo: critical: check that structure can settle directly beside another
                     found_coords = true;
                 }
             };
@@ -353,8 +278,9 @@ pub mod realm_systems {
             return coord;
         }
 
-        fn get_starting_resources(ref world: WorldStorage, entity_id: ID, has_wonder: bool) {
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+        fn get_starting_resources(ref world: WorldStorage, structure_id: ID) {
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
 
             let resources_ids = all_resource_ids();
             for resource_id in resources_ids {
@@ -365,18 +291,18 @@ pub mod realm_systems {
                     continue;
                 }
 
-                if has_wonder {
+                if structure_metadata.has_wonder {
                     resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
                 }
 
                 let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_id);
                 let mut realm_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, entity_id, resource_id, ref structure_weight, resource_weight_grams, true,
+                    ref world, structure_id, resource_id, ref structure_weight, resource_weight_grams, true,
                 );
                 realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
                 realm_resource.store(ref world);
             };
-            structure_weight.store(ref world, entity_id);
+            structure_weight.store(ref world, structure_id);
         }
     }
 }

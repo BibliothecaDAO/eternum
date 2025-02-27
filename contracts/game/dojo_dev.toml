@@ -16,6 +16,7 @@ website = "https://alpha-eternum.realms.world/"
 [writers]
 "s1_eternum" = [
     "s1_eternum-bank_systems",
+    "s1_eternum-structure_systems",
     "s1_eternum-production_systems",
     "s1_eternum-config_systems",
     "s1_eternum-dev_resource_systems",

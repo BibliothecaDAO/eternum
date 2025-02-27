@@ -282,8 +282,3 @@
 //         assert!(resource.balance > 0, "Resource should not be fully consumed");
 //     }
 // }
-
-// // #[test]
-// #[available_gas(3000000000000)]
-// fn realm_test_starting_resources() {
-// }

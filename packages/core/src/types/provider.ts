@@ -553,8 +553,9 @@ export interface setRealmUpgradeConfigProps extends SystemSigner {
   }[];
 }
 
-export interface SetRealmMaxLevelConfigProps extends SystemSigner {
-  new_max_level: num.BigNumberish;
+export interface SetStructureMaxLevelConfigProps extends SystemSigner {
+  realm_max_level: num.BigNumberish;
+  village_max_level: num.BigNumberish;
 }
 
 export interface SetWorldConfigProps extends SystemSigner {

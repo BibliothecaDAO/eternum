@@ -17,7 +17,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { SystemCalls } from "../dojo/create-system-calls";
-import { HexPosition, ID, OccupiedBy, Position } from "../types";
+import { HexPosition, ID, Position } from "../types";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -43,13 +43,13 @@ export class TileManager {
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
-    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    return (realm?.level || RealmLevels.Settlement) as RealmLevels;
+    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return (structure?.base.level || RealmLevels.Settlement) as RealmLevels;
   };
 
   getWonder = (realmEntityId: number) => {
-    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    return realm?.has_wonder || false;
+    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return structure?.metadata.has_wonder || false;
   };
 
   existingBuildings = () => {
@@ -95,13 +95,13 @@ export class TileManager {
   };
 
   structureType = () => {
-    const occupier = getComponentValue(
-      this.components.Occupied,
+    const tile = getComponentValue(
+      this.components.Tile,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]),
     );
 
-    if (occupier?.by_type === OccupiedBy.Structure) {
-      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(occupier?.by_id)]));
+    if (tile?.occupier_is_structure) {
+      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));
       if (structure) {
         let category = structure.base.category;
         return category as StructureType;

@@ -15,7 +15,7 @@ export const getEntityInfo = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const { Structure, ExplorerTroops, Realm } = components;
+  const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
   const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
@@ -34,11 +34,9 @@ export const getEntityInfo = (
     owner = structure.owner;
   }
 
-  const realm = getComponentValue(Realm, getEntityIdFromKeys([entityIdBigInt]));
-
   const capacityCategoryId = explorer
     ? CapacityConfig.Army
-    : realm
+    : structure
       ? CapacityConfig.Storehouse
       : structure
         ? CapacityConfig.Structure
@@ -65,17 +63,16 @@ export const getEntityInfo = (
   };
 };
 
-const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
-  const baseName = getRealmNameById(realm.realm_id);
-  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
+const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+  const baseName = getRealmNameById(structure.metadata.realm_id);
+  return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
   const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
-  const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityId)]));
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-  if (structure?.base.category === StructureType.Realm && realm) {
-    return getRealmName(realm);
+  if (structure?.base.category === StructureType.Realm) {
+    return getRealmName(structure);
   }
 
   if (entityName) {

@@ -676,6 +676,7 @@ export default class WorldmapScene extends HexagonScene {
     this.interactiveHexManager.clearHexes();
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
+      None: [],
       Ocean: [],
       DeepOcean: [],
       Beach: [],

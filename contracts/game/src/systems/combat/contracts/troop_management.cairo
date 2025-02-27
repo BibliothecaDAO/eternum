@@ -66,8 +66,7 @@ pub mod troop_management_systems {
     use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::{
         config::{CombatConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl},
-        map::{TileImpl}, owner::{OwnerAddressTrait},
-        position::{Coord, CoordTrait, Direction, Occupied, OccupiedBy, OccupiedTrait},
+        map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
         resource::{
             resource::{
                 ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
@@ -211,13 +210,11 @@ pub mod troop_management_systems {
 
             // ensure spawn location is not occupied
             let spawn_coord: Coord = structure.coord().neighbor(spawn_direction);
-            let mut occupied: Occupied = world.read_model((spawn_coord.x, spawn_coord.y));
-            assert!(occupied.not_occupied(), "explorer spawn location is occupied");
+            let mut tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
+            assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
-            // add explorer to spawn location
-            occupied.by_id = explorer_id;
-            occupied.by_type = OccupiedBy::Explorer;
-            world.write_model(@occupied);
+            // set explorer as occupier of tile
+            IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
 
             // ensure explorer amount does not exceed max
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -239,6 +236,8 @@ pub mod troop_management_systems {
             };
             world.write_model(@explorer);
 
+            // initialize explorer resource model
+            ResourceImpl::initialize(ref world, explorer_id);
             // increase troop capacity
             iExplorerImpl::update_capacity(ref world, explorer_id, explorer, amount, true);
 

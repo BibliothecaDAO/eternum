@@ -26,9 +26,9 @@ pub mod bank_systems {
         DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
         REGIONAL_BANK_THREE_ID, REGIONAL_BANK_TWO_ID,
     };
-    use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
+    use s1_eternum::models::map::{TileOccupier};
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -65,13 +65,20 @@ pub mod bank_systems {
             for bank in banks {
                 // create the bank structure
                 let bank_entity_id = bank_ids.pop_front().unwrap();
-                IStructureImpl::create(ref world, *bank.coord, caller, bank_entity_id, StructureCategory::Bank, false);
+                IStructureImpl::create(
+                    ref world,
+                    *bank.coord,
+                    caller,
+                    bank_entity_id,
+                    StructureCategory::Bank,
+                    false,
+                    array![].span(),
+                    Default::default(),
+                    TileOccupier::Bank,
+                );
 
                 // save bank name model
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });
-
-                // save bank model
-                world.write_model(@Bank { entity_id: bank_entity_id, exists: true });
 
                 // add guards to structure
                 let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);

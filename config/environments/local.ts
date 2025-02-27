@@ -16,6 +16,11 @@ import { multiplyStartingResources } from "./utils/resource";
  */
 export const LocalEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
+  tick: {
+    ...CommonEternumGlobalConfig.tick,
+    // 5 minutes
+    armiesTickIntervalInSeconds: 300,
+  },
   // no stamina cost
   troop: {
     ...CommonEternumGlobalConfig.troop,
@@ -23,10 +28,6 @@ export const LocalEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.troop.stamina,
       staminaTravelStaminaCost: 0,
       staminaExploreStaminaCost: 0,
-    },
-    damage: {
-      ...CommonEternumGlobalConfig.troop.damage,
-      damageC0: BigInt(0),
     },
   },
   // cheap hyperstructures
