@@ -37,7 +37,7 @@ pub mod bank_systems {
     use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
-    use s1_eternum::systems::utils::structure::{iStructureImpl};
+    use s1_eternum::systems::utils::structure::{IStructureImpl};
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
 
     const MAX_BANK_COUNT: u8 = 6;
@@ -65,7 +65,7 @@ pub mod bank_systems {
             for bank in banks {
                 // create the bank structure
                 let bank_entity_id = bank_ids.pop_front().unwrap();
-                iStructureImpl::create(ref world, *bank.coord, caller, bank_entity_id, StructureCategory::Bank, false);
+                IStructureImpl::create(ref world, *bank.coord, caller, bank_entity_id, StructureCategory::Bank, false);
 
                 // save bank name model
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });

@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { QuestStatus, QuestType } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
-import { useQuests } from "./use-quests";
+
 import { questSteps, useTutorial } from "./use-tutorial";
 
 export const QUEST_DETAILS = {
@@ -57,14 +57,12 @@ export const useStartingTutorial = () => {
   const { handleStart } = useTutorial(questSteps.get(QuestType.Settle));
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
-  const quests = useQuests();
 
-  const settleQuest = quests.find((quest) => quest.id === QuestType.Settle);
   const tutorialCompleted = localStorage.getItem("tutorial") === "completed";
 
   useEffect(() => {
-    if (!tutorialCompleted && settleQuest?.status !== QuestStatus.Claimed && !showBlankOverlay) {
+    if (!tutorialCompleted && !showBlankOverlay) {
       handleStart();
     }
-  }, [settleQuest?.status, showBlankOverlay, handleStart]);
+  }, [tutorialCompleted, showBlankOverlay, handleStart]);
 };

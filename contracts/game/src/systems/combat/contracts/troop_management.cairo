@@ -81,7 +81,7 @@ pub mod troop_management_systems {
         },
         troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
     };
-    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
 
     use super::ITroopManagementSystems;

@@ -1,4 +1,4 @@
-pub mod catridge;
+pub mod cartridge;
 pub mod map;
 pub mod math;
 pub mod number;

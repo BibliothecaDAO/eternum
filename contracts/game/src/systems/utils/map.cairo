@@ -3,7 +3,7 @@ use dojo::world::WorldStorage;
 use s1_eternum::models::map::Tile;
 use s1_eternum::utils::map::biomes::Biome;
 #[generate_trait]
-pub impl iMapImpl of iMapTrait {
+pub impl IMapImpl of IMapTrait {
     fn explore(ref world: WorldStorage, ref tile: Tile, biome: Biome) {
         tile.biome = biome;
         world.write_model(@tile);

@@ -5,7 +5,6 @@ import {
   CapacityConfig,
   EternumProvider,
   HexGrid,
-  QuestType,
   ResourcesIds,
   ResourceTier,
   scaleResourceCostMinMax,
@@ -50,7 +49,7 @@ export class GameConfigDeployer {
     await setWorldConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
-    await setQuestRewardConfig(config);
+    await setStartingResourcesConfig(config);
     await setSeasonConfig(config);
     await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
@@ -127,45 +126,33 @@ export class GameConfigDeployer {
   }
 }
 
-export const setQuestRewardConfig = async (config: Config) => {
+export const setStartingResourcesConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  🏆 Quest Rewards Configuration 
+  🏆 Starting Resources Configuration 
   ═══════════════════════════════`),
   );
 
   const calldataArray = [];
-  let scaledQuestResources = scaleResourceInputs(
-    config.config.questResources,
-    config.config.resources.resourcePrecision,
-  );
-
-  for (const questId of Object.keys(scaledQuestResources) as unknown as QuestType[]) {
-    const resources = scaledQuestResources[questId];
+  for (const elem of Object.values(config.config.startingResources)) {
     const calldata = {
-      quest_id: questId,
-      resources: resources,
+      resource: elem.resource,
+      amount: elem.amount * config.config.resources.resourcePrecision,
     };
 
     console.log(
       chalk.cyan(`
-    ✧ Quest ${chalk.yellow(calldata.quest_id)} Rewards:`),
+    ✧ Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
     );
 
-    calldata.resources.forEach((r) => {
-      console.log(
-        chalk.cyan(
-          `      ∙ ${chalk.cyan(inGameAmount(r.amount, config.config))} ${chalk.yellow(ResourcesIds[r.resource])}`,
-        ),
-      );
-    });
+    console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
 
     calldataArray.push(calldata);
   }
 
-  const tx = await config.provider.set_quest_reward_config({
+  const tx = await config.provider.set_starting_resources_config({
     signer: config.account,
-    calls: calldataArray,
+    startingResources: calldataArray,
   });
 
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));

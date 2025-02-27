@@ -8,11 +8,11 @@ use s1_eternum::models::position::{Coord, CoordImpl, Direction, Occupied, Occupi
 use s1_eternum::models::resource::resource::{ResourceImpl};
 use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
 use s1_eternum::models::weight::{Weight};
-use s1_eternum::systems::utils::map::iMapImpl;
+use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 #[generate_trait]
-pub impl iStructureImpl of iStructureTrait {
+pub impl IStructureImpl of IStructureTrait {
     fn create(
         ref world: WorldStorage,
         coord: Coord,
@@ -32,7 +32,7 @@ pub impl iStructureImpl of iStructureTrait {
 
             // explore the tile
             let biome: Biome = get_biome(coord.x.into(), coord.y.into());
-            iMapImpl::explore(ref world, ref tile, biome);
+            IMapImpl::explore(ref world, ref tile, biome);
         }
 
         // explore all tiles around the structure

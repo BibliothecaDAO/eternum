@@ -22,12 +22,12 @@ import {
   HYPERSTRUCTURE_TOTAL_COSTS,
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./utils/levels";
-import { QUEST_RESOURCES } from "./utils/quest";
 import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   RESOURCE_PRODUCTION_THROUGH_LABOR,
   RESOURCES_WEIGHTS_GRAM,
+  STARTING_RESOURCES,
 } from "./utils/resource";
 import {
   TROOP_BASE_DAMAGE,
@@ -296,7 +296,7 @@ export const EternumGlobalConfig: Config = {
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
   },
-  questResources: QUEST_RESOURCES,
+  startingResources: STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   setup: {

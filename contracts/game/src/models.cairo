@@ -8,7 +8,6 @@ pub mod name;
 pub mod owner;
 pub mod position;
 pub mod quantity;
-pub mod quest;
 pub mod realm;
 pub mod season;
 pub mod stamina;

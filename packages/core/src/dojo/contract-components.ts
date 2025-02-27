@@ -486,29 +486,15 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Quest: (() => {
+    StartingResourcesConfig: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, config_id: RecsType.Number, completed: RecsType.Boolean },
+        { resource_type: RecsType.Number, resource_amount: RecsType.BigInt },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "Quest",
-            types: ["u32", "u32", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    QuestRewardConfig: (() => {
-      return defineComponent(
-        world,
-        { quest_id: RecsType.Number, resource_list_id: RecsType.Number, resource_list_count: RecsType.Number },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "QuestRewardConfig",
-            types: ["u32", "u32", "u32"],
+            name: "StartingResourcesConfig",
+            types: ["u8", "u128"],
             customTypes: [],
           },
         },

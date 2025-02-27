@@ -21,7 +21,7 @@ pub mod troop_movement_systems {
         season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
         troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
     };
-    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
 
@@ -72,7 +72,7 @@ pub mod troop_movement_systems {
                     assert!(!tile.discovered(), "tile is already explored");
 
                     // set tile as explored
-                    iMapImpl::explore(ref world, ref tile, biome);
+                    IMapImpl::explore(ref world, ref tile, biome);
 
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));

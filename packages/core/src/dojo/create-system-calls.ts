@@ -154,10 +154,6 @@ export function createSystemCalls({
     await provider.remove_liquidity(props);
   };
 
-  const claim_quest = async (props: SystemProps.ClaimQuestProps) => {
-    await provider.claim_quest(props);
-  };
-
   const mint_resources = async (props: SystemProps.MintResourcesProps) => {
     await provider.mint_resources(props);
   };
@@ -331,7 +327,6 @@ export function createSystemCalls({
     register_to_leaderboard: withAuth(register_to_leaderboard),
     claim_leaderboard_rewards: withAuth(claim_leaderboard_rewards),
 
-    claim_quest: withAuth(claim_quest),
     mint_resources: withAuth(mint_resources),
 
     create_guild: withAuth(create_guild),
