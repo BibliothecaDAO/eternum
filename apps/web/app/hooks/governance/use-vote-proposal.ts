@@ -1,17 +1,13 @@
 import type { Proposal } from "@/gql/graphql";
 import type { Choice } from "@/types/snapshot";
-import { useCallback, useMemo, useState } from "react";
-import { SnapshotSpace } from "@/abi/L2/SnapshotSpace";
+import { useCallback, useState } from "react";
 import { StarkTxAuthenticator } from "@/abi/L2/StarkTxAuthenticator";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import {
   useAccount,
   useContract,
   useSendTransaction,
 } from "@starknet-react/core";
-import { CairoCustomEnum, Call, shortString } from "starknet";
-
-import { SnapshotSpaceAddresses } from "@realms-world/constants";
+import { CairoCustomEnum, shortString } from "starknet";
 
 import { useIPFSPin } from "../use-ipfs-pin";
 
@@ -36,7 +32,7 @@ export function getUserAddressEnum(
 export function useVoteProposal(proposal: Proposal) {
   const { address } = useAccount();
   const [selectedChoice, setSelectedChoice] = useState<Choice | null>(null);
-  const { pinToIPFS, isLoading, error, result } = useIPFSPin();
+  const { pinToIPFS } = useIPFSPin();
 
   const { contract } = useContract({
     abi: StarkTxAuthenticator,
