@@ -1,9 +1,26 @@
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
-import { HexPosition } from "@bibliothecadao/eternum";
+import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
+
+export const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
+  switch (actionType) {
+    case ActionType.Explore:
+      return new THREE.Vector3(0.0, 1.5, 1.5); // More intense cyan
+    case ActionType.Move:
+      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
+    case ActionType.Attack:
+      return new THREE.Vector3(2.0, 0.0, 0.0); // More intense red
+    case ActionType.Help:
+      return new THREE.Vector3(1.5, 0.0, 1.5); // More intense purple
+    case ActionType.Build:
+      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
+    default:
+      return new THREE.Vector3(1.5, 1.5, 1.5); // More intense white
+  }
+};
 
 export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
@@ -13,7 +30,7 @@ export class HighlightHexManager {
     this.material = highlightHexMaterial;
   }
 
-  highlightHexes(hexes: HexPosition[]) {
+  highlightHexes(actionPaths: ActionPath[]) {
     // Remove existing highlights
     this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];
@@ -22,9 +39,10 @@ export class HighlightHexManager {
     const bigHexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 
-    hexes.forEach((hex) => {
-      const position = getWorldPositionForHex(hex);
+    actionPaths.forEach((hex) => {
+      const position = getWorldPositionForHex(hex.hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
+      highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
       highlightMesh.position.set(position.x, 0.3, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
       highlightMesh.renderOrder = 5;

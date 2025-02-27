@@ -1,6 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ArmyInfo, configManager, getArmyNumberOfTroops } from "@bibliothecadao/eternum";
+import { ArmyInfo, configManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { formatNumber, formatStringNumber } from "../utils/utils";
 
@@ -19,9 +19,11 @@ type ArmyCapacityProps = {
 export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapacityProps) => {
   if (!army) return null;
 
-  const totalTroops = getArmyNumberOfTroops(army);
+  console.log({ army });
+
+  const totalTroops = BigInt(army.troops.count);
   const remainingTroops = totalTroops - deductedTroops;
-  const capacityRatio = Math.floor(Number(remainingTroops) / Number(totalTroops));
+  const capacityRatio = Number(remainingTroops) / Number(totalTroops);
 
   const armyTotalCapacity = isFinite(capacityRatio) ? BigInt(Number(army.totalCapacity) * capacityRatio) : 0n;
 
@@ -29,12 +31,16 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
   const remainingCapacity = useMemo(() => armyTotalCapacity - army.weight, [army]);
 
   const capacityColor = useMemo(() => {
+    const exploreReward = configManager.getExploreReward();
     if (army.weight >= armyTotalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(Math.floor(configManager.getExploreReward()))) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(Math.floor(exploreReward))) return CapacityColor.MEDIUM;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 
-  const weightPercentage = useMemo(() => ((Number(army.weight) / Number(armyTotalCapacity)) * 100).toFixed(0), [army]);
+  const weightPercentage = useMemo(() => {
+    const percentage = ((Number(army.weight) / Number(armyTotalCapacity)) * 100).toFixed(0);
+    return percentage;
+  }, [army]);
 
   return (
     <div className={`flex flex-row text-xxs ${className}`}>

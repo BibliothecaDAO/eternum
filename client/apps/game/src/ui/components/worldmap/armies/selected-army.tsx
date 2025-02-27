@@ -3,8 +3,8 @@ import { Position } from "@/types/position";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { HexPosition } from "@bibliothecadao/eternum";
-import { useArmiesAtPosition, useQuery } from "@bibliothecadao/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePlayerArmyAtPosition, useQuery } from "@bibliothecadao/react";
+import { useEffect } from "react";
 import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmy = () => {
@@ -18,53 +18,25 @@ export const SelectedArmy = () => {
 };
 
 const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
-  const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
   const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
-
-  const [selectedArmyIndex, setSelectedArmyIndex] = useState(0);
 
   useEffect(() => {
     if (!selectedHex) updateSelectedEntityId(null);
   }, [selectedHex, updateSelectedEntityId]);
 
-  const armies = useArmiesAtPosition({
+  const playerArmy = usePlayerArmyAtPosition({
     position: new Position({ x: selectedHex?.col || 0, y: selectedHex?.row || 0 }).getContract(),
   });
 
-  // player armies that are not in battle
-  const playerArmies = useMemo(() => armies.filter((army) => army.isMine && army.battle_id === 0), [armies]);
-
-  useEffect(() => {
-    setSelectedArmyIndex(0);
-  }, [playerArmies]);
+  console.log({ playerArmy });
 
   useEffect(() => {
     if (selectedHex) {
-      updateSelectedEntityId(playerArmies[selectedArmyIndex]?.entity_id || 0);
+      updateSelectedEntityId(playerArmy?.entityId || 0);
     }
-  }, [selectedArmyIndex, playerArmies, updateSelectedEntityId, selectedHex]);
+  }, [playerArmy]);
 
-  const ownArmy = useMemo(
-    () => playerArmies.find((army) => army.entity_id === selectedEntityId),
-    [playerArmies, selectedEntityId],
-  );
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
-        event.preventDefault();
-        setSelectedArmyIndex((prevIndex) => (prevIndex + 1) % playerArmies.length);
-      }
-    },
-    [playerArmies.length],
-  );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
-  if (!ownArmy || playerArmies.length === 0) return null;
+  if (!playerArmy) return null;
 
   return (
     <div
@@ -76,19 +48,11 @@ const SelectedArmyContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
         bottom-0 opacity-100
       `}
     >
-      <div>
-        {playerArmies.length > 1 && (
-          <div className="flex flex-row justify-between mt-2">
-            <div className="px-2 py-1 text-sm rounded-tl animate-pulse">Press Tab to cycle through armies</div>
-            <div className="px-2 py-1 text-sm rounded-bl ">
-              Army {selectedArmyIndex + 1}/{playerArmies.length}
-            </div>
-          </div>
-        )}
-        <ArmyWarning army={ownArmy!} />
-        <ArmyChip className="w-[27rem] bg-black/90" army={ownArmy} showButtons={false} />
+      <div className="flex flex-col gap-2 w-[27rem]">
+        <ArmyWarning army={playerArmy} />
+        <ArmyChip className="bg-black/90" army={playerArmy} showButtons={false} />
         <InventoryResources
-          entityId={ownArmy!.entity_id}
+          entityId={playerArmy.entityId}
           className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
           resourcesIconSize="xs"
         />

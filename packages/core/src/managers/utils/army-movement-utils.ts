@@ -1,60 +1,41 @@
-import { type ComponentValue } from "@dojoengine/recs";
 import { configManager } from "..";
-import { RESOURCE_PRECISION, ResourcesIds } from "../../constants";
-import { ClientComponents } from "../../dojo/create-client-components";
+import { CapacityConfig, ResourcesIds } from "../../constants";
+import { Troops, TroopType } from "../../types";
 import { divideByPrecision, gramToKg } from "../../utils";
 
-export const getRemainingCapacityInKg = (
-  army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
-  armyWeight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined,
-) => {
-  const totalCapacity = getArmyTotalCapacityInKg(army, capacity); // in kg
-  const weight = getArmyWeightInKg(armyWeight); // in kg
-  return totalCapacity - weight; // in kg
+// troop count without precision
+export const getRemainingCapacityInKg = (troopsCount: number, weightInKg: number) => {
+  const totalCapacity = getArmyTotalCapacityInKg(troopsCount); // in kg
+  return totalCapacity - BigInt(weightInKg); // in kg
 };
 
-export const getArmyTotalCapacityInKg = (
-  army: ComponentValue<ClientComponents["Army"]["schema"]>,
-  capacity: ComponentValue<ClientComponents["CapacityConfig"]["schema"]>,
-) => {
+// number of troops needs to be divided by precision
+export const getArmyTotalCapacityInKg = (troopsCount: number) => {
   // Convert weight_gram to kg and multiply by number of troops
-  return BigInt(gramToKg(Number(capacity.weight_gram))) * getArmyNumberOfTroops(army); // in kg
+  const capacity = configManager.getCapacityConfig(CapacityConfig.Army);
+  return BigInt(gramToKg(Number(capacity))) * BigInt(troopsCount); // in kg
 };
 
-const getArmyWeightInKg = (weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined) => {
-  if (!weight) return 0n;
-  return BigInt(gramToKg(Number(weight.value))); // in kg
-};
+export const computeTravelFoodCosts = (troops: Troops) => {
+  let foodConsumption;
+  const troopCount = divideByPrecision(Number(troops.count));
 
-export const getArmyNumberOfTroops = (army: ComponentValue<ClientComponents["Army"]["schema"]>) => {
-  const knights = army.troops.knight_count || 0n;
-  const crossbowmen = army.troops.crossbowman_count || 0n;
-  const paladins = army.troops.paladin_count || 0n;
-  return (knights + crossbowmen + paladins) / BigInt(RESOURCE_PRECISION);
-};
+  switch (troops.category) {
+    case TroopType.Paladin:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+      break;
+    case TroopType.Knight:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+      break;
+    case TroopType.Crossbowman:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+      break;
+    default:
+      throw new Error("Invalid troop type");
+  }
 
-export const computeTravelFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
-
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
-
-  const paladinWheatConsumption = paladinFoodConsumption.travelWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.travelWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.travelWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.travelFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.travelFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.travelFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+  const wheatPayAmount = foodConsumption.travelWheatBurnAmount * troopCount;
+  const fishPayAmount = foodConsumption.travelFishBurnAmount * troopCount;
 
   return {
     wheatPayAmount,
@@ -62,27 +43,26 @@ export const computeTravelFoodCosts = (
   };
 };
 
-export const computeExploreFoodCosts = (
-  troops: ComponentValue<ClientComponents["Army"]["schema"]["troops"]> | undefined,
-) => {
-  const paladinFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
-  const knightFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
-  const crossbowmanFoodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+export const computeExploreFoodCosts = (troops: Troops) => {
+  let foodConsumption;
+  const troopCount = divideByPrecision(Number(troops.count));
 
-  const paladinCount = divideByPrecision(Number(troops?.paladin_count));
-  const knightCount = divideByPrecision(Number(troops?.knight_count));
-  const crossbowmanCount = divideByPrecision(Number(troops?.crossbowman_count));
+  switch (troops.category) {
+    case TroopType.Paladin:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Paladin);
+      break;
+    case TroopType.Knight:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Knight);
+      break;
+    case TroopType.Crossbowman:
+      foodConsumption = configManager.getTravelFoodCostConfig(ResourcesIds.Crossbowman);
+      break;
+    default:
+      throw new Error("Invalid troop type");
+  }
 
-  const paladinWheatConsumption = paladinFoodConsumption.exploreWheatBurnAmount * paladinCount;
-  const knightWheatConsumption = knightFoodConsumption.exploreWheatBurnAmount * knightCount;
-  const crossbowmanWheatConsumption = crossbowmanFoodConsumption.exploreWheatBurnAmount * crossbowmanCount;
-
-  const paladinFishConsumption = paladinFoodConsumption.exploreFishBurnAmount * paladinCount;
-  const knightFishConsumption = knightFoodConsumption.exploreFishBurnAmount * knightCount;
-  const crossbowmanFishConsumption = crossbowmanFoodConsumption.exploreFishBurnAmount * crossbowmanCount;
-
-  const wheatPayAmount = paladinWheatConsumption + knightWheatConsumption + crossbowmanWheatConsumption;
-  const fishPayAmount = paladinFishConsumption + knightFishConsumption + crossbowmanFishConsumption;
+  const wheatPayAmount = foodConsumption.exploreWheatBurnAmount * troopCount;
+  const fishPayAmount = foodConsumption.exploreFishBurnAmount * troopCount;
 
   return {
     wheatPayAmount,

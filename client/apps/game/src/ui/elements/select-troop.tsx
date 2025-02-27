@@ -10,16 +10,16 @@ interface SelectTroopProps {
 }
 
 const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
+  { type: TroopType.Knight, resourceId: ResourcesIds.Knight },
+  { type: TroopType.Crossbowman, resourceId: ResourcesIds.Crossbowman },
+  { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
 const formatTroopName = (type: string) => {
   return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 };
 
-export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, defaultValue = TroopType.KNIGHT }) => {
+export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, defaultValue = TroopType.Knight }) => {
   const [selectedTroop, setSelectedTroop] = useState<string>(defaultValue?.toString() || "");
 
   // Call onSelect with default value on mount
@@ -34,7 +34,7 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
       value={selectedTroop}
       onValueChange={(value) => {
         setSelectedTroop(value);
-        onSelect(value as TroopType);
+        onSelect(TroopType[value as keyof typeof TroopType]);
       }}
     >
       <SelectTrigger className={className}>
@@ -43,8 +43,12 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
             <div className="flex items-center">
               <ResourceIcon
                 resource={
-                  resources.find((r) => r.id === TROOP_RESOURCES.find((t) => t.type === selectedTroop)?.resourceId)
-                    ?.trait || ""
+                  resources.find(
+                    (r) =>
+                      r.id ===
+                      TROOP_RESOURCES.find((t) => t.type === TroopType[selectedTroop as keyof typeof TroopType])
+                        ?.resourceId,
+                  )?.trait || ""
                 }
                 size="md"
               />
@@ -55,10 +59,10 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
       </SelectTrigger>
       <SelectContent>
         {TROOP_RESOURCES.map(({ type, resourceId }) => (
-          <SelectItem key={type} value={type}>
+          <SelectItem key={type} value={TroopType[type]}>
             <div className="flex items-center">
               <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="md" />
-              <span className="ml-2">{formatTroopName(type)}</span>
+              <span className="ml-2">{formatTroopName(TroopType[type])}</span>
             </div>
           </SelectItem>
         ))}

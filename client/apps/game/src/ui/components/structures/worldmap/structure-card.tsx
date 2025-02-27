@@ -1,32 +1,20 @@
 import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ResourceExchange } from "@/ui/components/hyperstructures/resource-exchange";
 import { ImmunityTimer } from "@/ui/components/worldmap/structures/immunity-timer";
 import { StructureListItem } from "@/ui/components/worldmap/structures/structure-list-item";
-import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
-import { NumberInput } from "@/ui/elements/number-input";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/elements/tabs";
-import { getTotalTroops } from "@/ui/modules/military/battle-view/battle-history";
-import { currencyFormat, formatNumber, formatStringNumber } from "@/ui/utils/utils";
 import {
   ArmyInfo,
-  configManager,
   ContractAddress,
-  getArmy,
   getGuildFromPlayerAddress,
   getStructureAtPosition,
   ID,
-  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
-import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const StructureCard = ({
@@ -55,8 +43,8 @@ export const StructureCard = ({
   );
 
   const playerGuild = useMemo(
-    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner.address || 0n), dojo.setup.components),
-    [structure?.owner.address],
+    () => getGuildFromPlayerAddress(ContractAddress(structure?.owner || 0n), dojo.setup.components),
+    [structure?.owner],
   );
 
   return (
@@ -71,7 +59,7 @@ export const StructureCard = ({
               navigateToHexView(position);
             }}
           >
-            View {structure?.category}
+            View {structure?.structure.base.category}
           </Button>
         </div>
         {!showMergeTroopsPopup && (
@@ -101,7 +89,7 @@ export const StructureCard = ({
               <StructureMergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                structureEntityId={structure!.entity_id}
+                structureEntityId={structure!.entityId}
               />
             )}
           </div>
@@ -132,7 +120,7 @@ const StructureMergeTroopsPanel = ({
       <TroopExchange
         giverArmyName={giverArmy.name}
         takerArmy={takerArmy}
-        giverArmyEntityId={giverArmy.entity_id}
+        giverArmyEntityId={giverArmy.entityId}
         structureEntityId={structureEntityId}
       />
     </div>
@@ -145,14 +133,6 @@ type TroopsProps = {
   giverArmyEntityId: ID;
   structureEntityId?: ID;
   allowReverse?: boolean;
-};
-
-const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
-  return {
-    [ResourcesIds.Crossbowman]: troops.crossbowman_count,
-    [ResourcesIds.Knight]: troops.knight_count,
-    [ResourcesIds.Paladin]: troops.paladin_count,
-  };
 };
 
 export const Exchange = ({
@@ -201,287 +181,9 @@ const TroopExchange = ({
   takerArmy,
   allowReverse,
 }: TroopsProps) => {
-  const {
-    setup: {
-      account: { account },
-      components,
-      systemCalls: { army_merge_troops, create_army },
-      network: { world },
-    },
-  } = useDojo();
-
-  const { Army, Protector } = components;
-
-  const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
-
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
-    [ResourcesIds.Crossbowman]: 0n,
-    [ResourcesIds.Knight]: 0n,
-    [ResourcesIds.Paladin]: 0n,
-  });
-
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId || 0)]));
-
-  const protectorArmyTroops = useComponentValue(
-    Army,
-    getEntityIdFromKeys([BigInt(takerArmy?.entity_id || protector?.army_id || 0)]),
-  )?.troops;
-
-  const attackerArmyTroops = useComponentValue(Army, getEntityIdFromKeys([BigInt(giverArmyEntityId)]))!.troops;
-
-  const totalTroopsReceiver = useMemo(() => {
-    return (
-      BigInt(Object.values(attackerArmyTroops || {}).reduce((a, b) => Number(a) + Number(b), 0)) /
-      BigInt(configManager.getResourcePrecision())
-    );
-  }, [attackerArmyTroops]);
-
-  // only use attackerArmyTroops because defending armies don't have troops limits
-  const remainingTroops = useMemo(() => {
-    const totalTroopsGiven = Object.values(troopsGiven).reduce((a, b) => a + b, 0n);
-    const totalTroops = totalTroopsGiven + totalTroopsReceiver;
-    return BigInt(maxTroopCountPerArmy) > totalTroops ? BigInt(maxTroopCountPerArmy) - totalTroops : 0n;
-  }, [troopsGiven, totalTroopsReceiver]);
-
-  const getMaxTroopCountForAttackingArmy = (amount: bigint, troopId: string) => {
-    return Math.min(Number(amount), Number(remainingTroops) + Number(troopsGiven[Number(troopId)]));
-  };
-
-  const createProtector = async () => {
-    setLoading(true);
-    await create_army({
-      signer: account,
-      is_defensive_army: true,
-      army_owner_id: structureEntityId!,
-    });
-    setLoading(false);
-  };
-
-  const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
-
-  const getArmyWithAddress = (armyId: ID) => getArmy(armyId, ContractAddress(account.address), components);
-
-  const protectorArmy = useMemo(
-    () => takerArmy || getArmyWithAddress(protector?.army_id || 0),
-    [takerArmy, protector?.army_id],
-  );
-  const giverArmy = useMemo(() => getArmyWithAddress(giverArmyEntityId), [giverArmyEntityId]);
-
-  const mergeTroops = async () => {
-    setLoading(true);
-
-    const fromArmy = transferDirection === "to" ? giverArmy : protectorArmy;
-    const toArmy = transferDirection === "to" ? protectorArmy : giverArmy;
-    const transferedTroops = {
-      knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(configManager.getResourcePrecision()),
-      paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(configManager.getResourcePrecision()),
-      crossbowman_count: troopsGiven[ResourcesIds.Crossbowman] * BigInt(configManager.getResourcePrecision()),
-    };
-    await army_merge_troops({
-      signer: account,
-      from_army_id: fromArmy?.entity_id ?? 0n,
-      to_army_id: toArmy?.entity_id ?? 0n,
-      troops: transferedTroops,
-    }).then(() => {
-      if (
-        fromArmy &&
-        !Boolean(fromArmy?.protectee) &&
-        getTotalTroops(fromArmy.troops) - getTotalTroops(transferedTroops) === 0
-      ) {
-        world.deleteEntity(getEntityIdFromKeys([BigInt(fromArmy?.entity_id || 0)]));
-      }
-    });
-    setLoading(false);
-    setTroopsGiven({
-      [ResourcesIds.Crossbowman]: 0n,
-      [ResourcesIds.Knight]: 0n,
-      [ResourcesIds.Paladin]: 0n,
-    });
-  };
-
-  const handleTroopsGivenChange = (resourceId: string, amount: bigint) => {
-    setTroopsGiven((prev) => ({ ...prev, [resourceId]: amount }));
-  };
-
   return (
-    <div className="flex flex-col">
-      {transferDirection === "from" && (
-        <>
-          <div className="text-xs text-yellow-500 mb-2">
-            ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
-          </div>
-          <div className="text-xs mb-2">Total troops in attacking army: {Number(totalTroopsReceiver)}</div>
-        </>
-      )}
-      <div className="flex flex-row justify-around items-center">
-        <div className="w-[60%] mr-1 bg-gold/20">
-          <p className="pt-2 pb-1 text-center">{giverArmyName}</p>
-          <ArmyCapacity
-            army={transferDirection === "to" ? giverArmy : protectorArmy}
-            className="flex justify-center"
-            deductedTroops={Object.values(troopsGiven).reduce((a, b) => a + b, 0n)}
-          />
-          {Object.entries(troopsToFormat(attackerArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
-            return (
-              <div
-                className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
-                key={resourceId}
-              >
-                <Troop className="col-span-1" troopId={Number(resourceId)} />
-
-                <div className="flex flex-col text-xs text-center self-center font-bold col-span-2">
-                  <p>Avail.</p>
-                  <p
-                    className={`${
-                      transferDirection === "to" &&
-                      troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()) !== 0n
-                        ? "text-red"
-                        : ""
-                    }`}
-                  >
-                    {transferDirection === "to"
-                      ? `[${currencyFormat(
-                          Number(
-                            amount - troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()),
-                          ),
-                          0,
-                        )}]`
-                      : `[${currencyFormat(Number(amount), 0)}]`}
-                  </p>
-                </div>
-
-                {transferDirection === "to" && (
-                  <NumberInput
-                    className="col-span-3 rounded-lg"
-                    max={Number(amount) / configManager.getResourcePrecision()}
-                    min={0}
-                    step={100}
-                    value={Number(troopsGiven[Number(resourceId)])}
-                    onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
-                  />
-                )}
-                {transferDirection === "from" && (
-                  <div
-                    className={`text-lg font-bold col-span-3 text-center ${
-                      troopsGiven[Number(resourceId)] !== 0n ? `text-green` : ""
-                    }`}
-                  >{`+${troopsGiven[Number(resourceId)].toLocaleString()}`}</div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="w-[60%] ml-1 bg-gold/20">
-          <p className="pt-2 pb-1 text-center">Transfer {transferDirection}</p>
-          {!protector && !takerArmy ? (
-            <Button variant={"primary"} onClick={createProtector}>
-              Create defending army
-            </Button>
-          ) : (
-            protectorArmyTroops &&
-            Object.entries(troopsToFormat(protectorArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
-              return (
-                <div
-                  className="grid grid-cols-6 hover:bg-gold/30 justify-around items-center h-12 gap-2 px-1 mb-1"
-                  key={resourceId}
-                >
-                  <Troop troopId={Number(resourceId)} />
-
-                  <div className="flex flex-col text-xs text-center self-center font-bold col-span-2">
-                    <p>Avail.</p>
-                    <p
-                      className={`${
-                        transferDirection === "from" &&
-                        troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()) !== 0n
-                          ? "text-red"
-                          : ""
-                      }`}
-                    >
-                      {transferDirection === "from"
-                        ? `[${currencyFormat(
-                            Number(
-                              amount - troopsGiven[Number(resourceId)] * BigInt(configManager.getResourcePrecision()),
-                            ),
-                            0,
-                          )}]`
-                        : `[${currencyFormat(Number(amount), 0)}]`}
-                    </p>
-                  </div>
-                  {transferDirection === "from" && (
-                    <NumberInput
-                      className="col-span-3 rounded-lg"
-                      max={getMaxTroopCountForAttackingArmy(amount, resourceId)}
-                      min={0}
-                      step={100}
-                      value={Number(troopsGiven[Number(resourceId)])}
-                      onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
-                    />
-                  )}
-                  {transferDirection === "to" && (
-                    <div
-                      className={`text-lg font-bold col-span-3 text-center ${
-                        troopsGiven[Number(resourceId)] !== 0n ? `text-green` : ""
-                      }`}
-                    >{`+${troopsGiven[Number(resourceId)]}`}</div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-      {allowReverse && allowReverse === true && (
-        <div className="mt-3 w-full flex justify-center">
-          <Button
-            className="self-center m-auto h-[3vh] p-4"
-            size="md"
-            onClick={() => {
-              setTransferDirection(transferDirection === "to" ? "from" : "to");
-              setTroopsGiven({
-                [ResourcesIds.Crossbowman]: 0n,
-                [ResourcesIds.Knight]: 0n,
-                [ResourcesIds.Paladin]: 0n,
-              });
-            }}
-          >
-            <ArrowRight size={24} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
-          </Button>
-        </div>
-      )}
-
-      <Button
-        onClick={mergeTroops}
-        isLoading={loading}
-        variant="primary"
-        className="mt-3"
-        disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || (!protector && !takerArmy)}
-      >
-        Reinforce
-      </Button>
-    </div>
-  );
-};
-
-const Troop = ({ troopId, className }: { troopId: number; className?: string }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
-  return (
-    <div
-      onMouseEnter={() => {
-        setTooltip({
-          position: "top",
-          content: <>{ResourcesIds[troopId]}</>,
-        });
-      }}
-      onMouseLeave={() => {
-        setTooltip(null);
-      }}
-      className={`flex flex-col font-bold ${className}`}
-    >
-      <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
+    <div>
+      <div>Troop exchange functionality is currently a work in progress...</div>
     </div>
   );
 };

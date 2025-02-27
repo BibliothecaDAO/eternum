@@ -1,10 +1,9 @@
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
-import { ContractAddress, getAddressFromEntity, getAddressNameFromEntity, ID, world } from "@bibliothecadao/eternum";
+import { ContractAddress, getAddressFromEntity, ID, world } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useState } from "react";
 import { MessageIcon } from "../social/player-id";
 import { EVENT_NOTIF_STORAGE_KEY, EVENT_STREAM_SIZE } from "./constants";
@@ -21,38 +20,12 @@ export const EventStream = () => {
   const [activeTab, setActiveTab] = useState<"all" | "personal">("all");
   const [hasNewEvents, setHasNewEvents] = useState(false);
 
+  // todo: fix this
   const createEvent = useCallback(
     (entity: Entity, component: Component<any>, eventType: EventType): EventData | undefined => {
       const componentValue = getComponentValue(component, entity);
-      const armyEntityId =
-        componentValue?.entity_id ||
-        componentValue?.joiner_army_entity_id ||
-        componentValue?.leaver_army_entity_id ||
-        componentValue?.claimer_army_entity_id ||
-        componentValue?.pillager_army_entity_id ||
-        componentValue?.attacker_army_entity_id ||
-        0;
-      const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(armyEntityId)]));
-      const entityId =
-        componentValue?.entity_owner_id ||
-        componentValue?.entity_id ||
-        componentValue?.taker_id ||
-        componentValue?.contributor_entity_id ||
-        0;
 
-      if (entityId === 0 && !entityOwner) return;
-
-      const position = armyEntityId
-        ? getComponentValue(components.Position, getEntityIdFromKeys([BigInt(armyEntityId)]))
-        : getComponentValue(components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-
-      const name = entityOwner
-        ? getAddressNameFromEntity(entityOwner?.entity_owner_id, components)
-        : getAddressNameFromEntity(entityId, components);
-
-      const owner = entityOwner
-        ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
-        : getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityId)]));
+      const owner = undefined;
 
       const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) => getAddressFromEntity(id, components));
       const isPersonal = to === ContractAddress(account.address);
@@ -60,11 +33,11 @@ export const EventStream = () => {
       return {
         to,
         action: eventDetails[eventType].getAction(componentValue! as any, isPersonal),
-        name,
+        name: "",
         eventType,
         timestamp: componentValue?.timestamp || 0,
-        position,
-        address: owner?.address,
+        position: { x: 0, y: 0 },
+        address: owner,
       };
     },
     [account.address],

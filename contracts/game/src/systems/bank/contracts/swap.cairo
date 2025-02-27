@@ -1,35 +1,39 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 
 #[starknet::interface]
-trait ISwapSystems<T> {
-    fn buy(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;
-    fn sell(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;
+pub trait ISwapSystems<T> {
+    fn buy(
+        ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128, player_resource_index: u8,
+    );
+    fn sell(
+        ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128, player_resource_index: u8,
+    );
 }
 
 #[dojo::contract]
-mod swap_systems {
-    use cubit::f128::math::ops::{mul};
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+pub mod swap_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-    use option::OptionTrait;
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{RESOURCE_PRECISION, DEFAULT_NS};
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use s1_eternum::models::bank::bank::{Bank};
+    use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
+    use s1_eternum::constants::{ResourceTypes};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig};
-    use s1_eternum::models::config::{TickImpl, TickTrait};
-    use s1_eternum::models::resource::resource::{Resource, ResourceImpl, ResourceTrait};
+    use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{TickImpl};
+    use s1_eternum::models::owner::OwnerAddressTrait;
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
-    use traits::{Into, TryInto};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
+    };
+    use s1_eternum::models::weight::{Weight};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use starknet::ContractAddress;
 
 
     #[derive(Copy, Drop, Serde)]
@@ -54,29 +58,56 @@ mod swap_systems {
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
-        fn buy(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
+        fn buy(
+            ref self: ContractState,
+            bank_entity_id: ID,
+            structure_id: ID,
+            resource_type: u8,
+            amount: u128,
+            player_resource_index: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank: Bank = world.read_model(bank_entity_id);
-            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
+            // ensure player entity is a structure
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            player_structure_base.assert_exists();
+
+            // ensure structure is a bank
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
+
+            // ensure caller owns structure
+            let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, structure_id,
+            );
+            player_structure_owner.assert_caller_owner();
 
             // get lords price of resource expressed to be bought from amm
-            let mut market: Market = world.read_model((bank_entity_id, resource_type));
-            let lords_cost_from_amm = market.buy(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
+            let mut market: Market = world.read_model(resource_type);
+            let lords_cost_from_amm = market
+                .buy(bank_config.lp_fee_num.into(), bank_config.lp_fee_denom.into(), amount);
             let lps_fee = lords_cost_from_amm - market.buy(0, 1, amount);
-            let bank_lords_fee_amount = (lords_cost_from_amm * bank.owner_fee_num) / bank.owner_fee_denom;
+            let bank_lords_fee_amount = (lords_cost_from_amm * bank_config.owner_fee_num.into())
+                / bank_config.owner_fee_denom.into();
             let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
-            // udpate player lords
-            let mut player_lords = ResourceImpl::get(ref world, (entity_id, ResourceTypes::LORDS));
-            player_lords.burn(total_lords_cost);
-            player_lords.save(ref world);
+            // burn the resource the player is exchanging for lords
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut player_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, ResourceTypes::LORDS, ref player_structure_weight, lords_weight_grams, true,
+            );
+            player_resource.spend(total_lords_cost, ref player_structure_weight, lords_weight_grams);
+            player_resource.store(ref world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
-            bank_lords.add(bank_lords_fee_amount);
-            bank_lords.save(ref world);
+            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            let mut bank_lords_resource = SingleResourceStoreImpl::retrieve(
+                ref world, bank_entity_id, ResourceTypes::LORDS, ref bank_structure_weight, lords_weight_grams, true,
+            );
+            bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
+            bank_lords_resource.store(ref world);
 
             // update market liquidity
             market.lords_amount += lords_cost_from_amm;
@@ -85,52 +116,92 @@ mod swap_systems {
 
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
-            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
-                ref world, bank_entity_id, entity_id, resources
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, bank_entity_id);
+            iResourceTransferImpl::structure_to_structure_delayed(
+                ref world,
+                bank_entity_id,
+                bank_structure_owner,
+                bank_structure_base,
+                ref bank_structure_weight,
+                structure_id,
+                player_structure_owner,
+                player_structure_base.coord(),
+                ref player_structure_weight,
+                array![player_resource_index].span(),
+                resources,
+                true,
+                true,
             );
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 ref world,
                 market,
-                entity_id,
+                bank_entity_id,
+                structure_id,
                 lords_cost_from_amm,
                 amount,
                 bank_lords_fee_amount,
                 lps_fee,
                 market.buy(0, 1, RESOURCE_PRECISION),
-                true
+                true,
             );
-
-            // return donkey entity id
-            donkey_id
         }
 
 
-        fn sell(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
+        fn sell(
+            ref self: ContractState,
+            bank_entity_id: ID,
+            structure_id: ID,
+            resource_type: u8,
+            amount: u128,
+            player_resource_index: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            let bank: Bank = world.read_model(bank_entity_id);
-            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
+            // ensure player entity is a structure
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            player_structure_base.assert_exists();
+
+            // ensure structure is a bank
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
+
+            // ensure caller owns structure
+            let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, structure_id,
+            );
+            player_structure_owner.assert_caller_owner();
 
             // get lords received from amm after resource amount is sold
-            let mut market: Market = world.read_model((bank_entity_id, resource_type));
-            let lords_received_from_amm = market.sell(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
+            let mut market: Market = world.read_model(resource_type);
+            let lords_received_from_amm = market
+                .sell(bank_config.lp_fee_num.into(), bank_config.lp_fee_denom.into(), amount);
             let lps_fee = market.sell(0, 1, amount) - lords_received_from_amm;
 
-            let bank_lords_fee_amount = (lords_received_from_amm * bank.owner_fee_num) / bank.owner_fee_denom;
+            let bank_lords_fee_amount = (lords_received_from_amm * bank_config.owner_fee_num.into())
+                / bank_config.owner_fee_denom.into();
             let total_lords_received = lords_received_from_amm - bank_lords_fee_amount;
 
             // burn the resource the player is exchanging for lords
-            let mut player_resource = ResourceImpl::get(ref world, (entity_id, resource_type));
-            player_resource.burn(amount);
-            player_resource.save(ref world);
+            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let player_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut player_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource_type, ref player_structure_weight, player_resource_weight_grams, true,
+            );
+            player_resource.spend(amount, ref player_structure_weight, player_resource_weight_grams);
+            player_resource.store(ref world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceImpl::get(ref world, (bank_entity_id, ResourceTypes::LORDS));
-            bank_lords.add(bank_lords_fee_amount);
-            bank_lords.save(ref world);
+            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+            let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+            let mut bank_lords_resource = SingleResourceStoreImpl::retrieve(
+                ref world, bank_entity_id, ResourceTypes::LORDS, ref bank_structure_weight, lords_weight_grams, true,
+            );
+            bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
+            bank_lords_resource.store(ref world);
 
             // update market liquidity
             market.lords_amount -= lords_received_from_amm;
@@ -139,25 +210,39 @@ mod swap_systems {
 
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
-            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
-                ref world, bank_entity_id, entity_id, resources
+            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, bank_entity_id,
+            );
+            iResourceTransferImpl::structure_to_structure_delayed(
+                ref world,
+                bank_entity_id,
+                bank_structure_owner,
+                bank_structure_base,
+                ref bank_structure_weight,
+                structure_id,
+                player_structure_owner,
+                player_structure_base.coord(),
+                ref player_structure_weight,
+                array![player_resource_index].span(),
+                resources,
+                true,
+                true,
             );
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 ref world,
                 market,
-                entity_id,
+                bank_entity_id,
+                structure_id,
                 total_lords_received,
                 amount,
                 bank_lords_fee_amount,
                 lps_fee,
                 market.buy(0, 1, RESOURCE_PRECISION),
-                false
+                false,
             );
-
-            // return donkey_id
-            donkey_id
         }
     }
 
@@ -166,6 +251,7 @@ mod swap_systems {
         fn emit_event(
             ref world: WorldStorage,
             market: Market,
+            bank_entity_id: ID,
             entity_id: ID,
             lords_amount: u128,
             resource_amount: u128,
@@ -178,7 +264,7 @@ mod swap_systems {
                 .emit_event(
                     @SwapEvent {
                         id: world.dispatcher.uuid(),
-                        bank_entity_id: market.bank_entity_id,
+                        bank_entity_id: bank_entity_id,
                         entity_id,
                         resource_type: market.resource_type,
                         lords_amount,
@@ -187,8 +273,8 @@ mod swap_systems {
                         lp_fees,
                         resource_price: market.quote_amount(RESOURCE_PRECISION),
                         buy,
-                        timestamp: starknet::get_block_timestamp()
-                    }
+                        timestamp: starknet::get_block_timestamp(),
+                    },
                 );
         }
     }

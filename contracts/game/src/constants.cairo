@@ -1,44 +1,36 @@
+use core::num::traits::Bounded;
 use s1_eternum::alias::ID;
 
 
+// todo: ensure there are no clashes with other ids
 // Config ID to fetch global configs
-const WORLD_CONFIG_ID: ID = 999999999;
-const BUILDING_CONFIG_ID: ID = 999999998;
-const TRANSPORT_CONFIG_ID: ID = 999999996;
-const ROAD_CONFIG_ID: ID = 999999995;
-const COMBAT_CONFIG_ID: ID = 999999994;
-const REALM_LEVELING_CONFIG_ID: ID = 999999993;
-const HYPERSTRUCTURE_CONFIG_ID: ID = 999999992;
-const REALM_FREE_MINT_CONFIG_ID: ID = 999999991;
-const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999990;
-const POPULATION_CONFIG_ID: ID = 999999989;
 
-// 8 bits
-const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
-const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
+pub const WORLD_CONFIG_ID: ID = Bounded::MAX;
+pub const REGIONAL_BANK_ONE_ID: ID = Bounded::MAX - 1;
+pub const REGIONAL_BANK_TWO_ID: ID = Bounded::MAX - 2;
+pub const REGIONAL_BANK_THREE_ID: ID = Bounded::MAX - 3;
+pub const REGIONAL_BANK_FOUR_ID: ID = Bounded::MAX - 4;
+pub const REGIONAL_BANK_FIVE_ID: ID = Bounded::MAX - 5;
+pub const REGIONAL_BANK_SIX_ID: ID = Bounded::MAX - 6;
 
-// leveling tiers
-const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
-const REALM_LEVELING_START_TIER: u64 = 1;
 
-const GRAMS_PER_KG: u128 = 1_000;
+pub const GRAMS_PER_KG: u128 = 1_000;
 
 // max realms per user
-const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
+pub const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 
 // resource precision
-const RESOURCE_PRECISION: u128 = 1_000_000_000;
-
+pub const RESOURCE_PRECISION: u128 = 1_000_000_000;
 
 // WONDER QUEST REWARD BOOST
-const WONDER_QUEST_REWARD_BOOST: u128 = 3;
+pub const WONDER_QUEST_REWARD_BOOST: u128 = 3;
 
 // pillage config
 // TODO: Move to Onchain config
-const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
+pub const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
 // Note: Please update this list whenever ResourceTypes are updated
-fn all_resource_ids() -> Array<u8> {
+pub fn all_resource_ids() -> Array<u8> {
     array![
         //
         1,
@@ -76,46 +68,53 @@ fn all_resource_ids() -> Array<u8> {
 }
 
 // Note: Please update the all_resources_ids list whenever ResourceTypes are updated
-mod ResourceTypes {
-    const STONE: u8 = 1;
-    const COAL: u8 = 2;
-    const WOOD: u8 = 3;
-    const COPPER: u8 = 4;
-    const IRONWOOD: u8 = 5;
-    const OBSIDIAN: u8 = 6;
-    const GOLD: u8 = 7;
-    const SILVER: u8 = 8;
-    const MITHRAL: u8 = 9;
-    const ALCHEMICAL_SILVER: u8 = 10;
-    const COLD_IRON: u8 = 11;
-    const DEEP_CRYSTAL: u8 = 12;
-    const RUBY: u8 = 13;
-    const DIAMONDS: u8 = 14;
-    const HARTWOOD: u8 = 15;
-    const IGNIUM: u8 = 16;
-    const TWILIGHT_QUARTZ: u8 = 17;
-    const TRUE_ICE: u8 = 18;
-    const ADAMANTINE: u8 = 19;
-    const SAPPHIRE: u8 = 20;
-    const ETHEREAL_SILICA: u8 = 21;
-    const DRAGONHIDE: u8 = 22;
+pub mod ResourceTypes {
+    pub const STONE: u8 = 1;
+    pub const COAL: u8 = 2;
+    pub const WOOD: u8 = 3;
+    pub const COPPER: u8 = 4;
+    pub const IRONWOOD: u8 = 5;
+    pub const OBSIDIAN: u8 = 6;
+    pub const GOLD: u8 = 7;
+    pub const SILVER: u8 = 8;
+    pub const MITHRAL: u8 = 9;
+    pub const ALCHEMICAL_SILVER: u8 = 10;
+    pub const COLD_IRON: u8 = 11;
+    pub const DEEP_CRYSTAL: u8 = 12;
+    pub const RUBY: u8 = 13;
+    pub const DIAMONDS: u8 = 14;
+    pub const HARTWOOD: u8 = 15;
+    pub const IGNIUM: u8 = 16;
+    pub const TWILIGHT_QUARTZ: u8 = 17;
+    pub const TRUE_ICE: u8 = 18;
+    pub const ADAMANTINE: u8 = 19;
+    pub const SAPPHIRE: u8 = 20;
+    pub const ETHEREAL_SILICA: u8 = 21;
+    pub const DRAGONHIDE: u8 = 22;
 
     // THE RESOURCE IDS ABOVE MUST MATCH THE
     // RESOURCE IDS IN THE SEASON PASS
 
-    const LABOR: u8 = 23;
-    const EARTHEN_SHARD: u8 = 24;
-    const DONKEY: u8 = 25;
-    const KNIGHT: u8 = 26;
-    const CROSSBOWMAN: u8 = 27;
-    const PALADIN: u8 = 28;
-    const WHEAT: u8 = 29;
-    const FISH: u8 = 30;
-    const LORDS: u8 = 31;
+    //todo: should labor be bridgeable?
+    pub const LABOR: u8 = 23;
+    pub const EARTHEN_SHARD: u8 = 24;
+    pub const DONKEY: u8 = 25;
+    pub const KNIGHT_T1: u8 = 26;
+    pub const KNIGHT_T2: u8 = 27;
+    pub const KNIGHT_T3: u8 = 28;
+    pub const CROSSBOWMAN_T1: u8 = 29;
+    pub const CROSSBOWMAN_T2: u8 = 30;
+    pub const CROSSBOWMAN_T3: u8 = 31;
+    pub const PALADIN_T1: u8 = 32;
+    pub const PALADIN_T2: u8 = 33;
+    pub const PALADIN_T3: u8 = 34;
+    pub const WHEAT: u8 = 35;
+    pub const FISH: u8 = 36;
+    pub const LORDS: u8 = 37;
 }
 
 
-fn resource_type_name(resource_type: u8) -> ByteArray {
+pub fn resource_type_name(resource_type: u8) -> ByteArray {
     if resource_type == 1 {
         "STONE"
     } else if resource_type == 2 {
@@ -167,16 +166,28 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
     } else if resource_type == 25 {
         "DONKEY"
     } else if resource_type == 26 {
-        "KNIGHT"
+        "T1 KNIGHT"
     } else if resource_type == 27 {
-        "CROSSBOWMAN"
+        "T2 KNIGHT"
     } else if resource_type == 28 {
-        "PALADIN"
+        "T3 KNIGHT"
     } else if resource_type == 29 {
-        "WHEAT"
+        "T1 CROSSBOWMAN"
     } else if resource_type == 30 {
-        "FISH"
+        "T2 CROSSBOWMAN"
     } else if resource_type == 31 {
+        "T3 CROSSBOWMAN"
+    } else if resource_type == 32 {
+        "T1 PALADIN"
+    } else if resource_type == 33 {
+        "T2 PALADIN"
+    } else if resource_type == 34 {
+        "T3 PALADIN"
+    } else if resource_type == 35 {
+        "WHEAT"
+    } else if resource_type == 36 {
+        "FISH"
+    } else if resource_type == 37 {
         "LORDS"
     } else {
         format!("{} (unknown resource name)", resource_type)
@@ -184,24 +195,30 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
 }
 
 
-mod ResourceTiers {
-    const LORDS: u8 = 1;
-    const MILITARY: u8 = 2;
-    const TRANSPORT: u8 = 3;
-    const FOOD: u8 = 4;
-    const COMMON: u8 = 5;
-    const UNCOMMON: u8 = 6;
-    const RARE: u8 = 7;
-    const UNIQUE: u8 = 8;
-    const MYTHIC: u8 = 9;
+pub mod ResourceTiers {
+    pub const LORDS: u8 = 1;
+    pub const MILITARY: u8 = 2;
+    pub const TRANSPORT: u8 = 3;
+    pub const FOOD: u8 = 4;
+    pub const COMMON: u8 = 5;
+    pub const UNCOMMON: u8 = 6;
+    pub const RARE: u8 = 7;
+    pub const UNIQUE: u8 = 8;
+    pub const MYTHIC: u8 = 9;
 }
 
-fn get_resource_tier(resource_type: u8) -> u8 {
+pub fn get_resource_tier(resource_type: u8) -> u8 {
     if resource_type == ResourceTypes::LORDS || resource_type == ResourceTypes::EARTHEN_SHARD {
         ResourceTiers::LORDS
-    } else if resource_type == ResourceTypes::KNIGHT
-        || resource_type == ResourceTypes::CROSSBOWMAN
-        || resource_type == ResourceTypes::PALADIN {
+    } else if resource_type == ResourceTypes::KNIGHT_T1
+        || resource_type == ResourceTypes::KNIGHT_T2
+        || resource_type == ResourceTypes::KNIGHT_T3
+        || resource_type == ResourceTypes::CROSSBOWMAN_T1
+        || resource_type == ResourceTypes::CROSSBOWMAN_T2
+        || resource_type == ResourceTypes::CROSSBOWMAN_T3
+        || resource_type == ResourceTypes::PALADIN_T1
+        || resource_type == ResourceTypes::PALADIN_T2
+        || resource_type == ResourceTypes::PALADIN_T3 {
         ResourceTiers::MILITARY
     } else if resource_type == ResourceTypes::DONKEY {
         ResourceTiers::TRANSPORT
@@ -241,7 +258,7 @@ fn get_resource_tier(resource_type: u8) -> u8 {
 }
 
 
-fn get_resources_without_earthenshards() -> Span<u8> {
+pub fn get_resources_without_earthenshards() -> Span<u8> {
     return array![
         ResourceTypes::WOOD,
         ResourceTypes::STONE,
@@ -267,9 +284,15 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         ResourceTypes::DRAGONHIDE,
         ResourceTypes::LABOR,
         ResourceTypes::DONKEY,
-        ResourceTypes::KNIGHT,
-        ResourceTypes::CROSSBOWMAN,
-        ResourceTypes::PALADIN,
+        ResourceTypes::KNIGHT_T1,
+        ResourceTypes::KNIGHT_T2,
+        ResourceTypes::KNIGHT_T3,
+        ResourceTypes::CROSSBOWMAN_T1,
+        ResourceTypes::CROSSBOWMAN_T2,
+        ResourceTypes::CROSSBOWMAN_T3,
+        ResourceTypes::PALADIN_T1,
+        ResourceTypes::PALADIN_T2,
+        ResourceTypes::PALADIN_T3,
         ResourceTypes::LORDS,
         ResourceTypes::WHEAT,
         ResourceTypes::FISH,
@@ -277,7 +300,7 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         .span();
 }
 
-fn get_hyperstructure_construction_resources() -> Span<u8> {
+pub fn get_hyperstructure_construction_resources() -> Span<u8> {
     return array![
         ResourceTypes::WOOD,
         ResourceTypes::STONE,
@@ -300,12 +323,12 @@ fn get_hyperstructure_construction_resources() -> Span<u8> {
         ResourceTypes::ALCHEMICAL_SILVER,
         ResourceTypes::ADAMANTINE,
         ResourceTypes::MITHRAL,
-        ResourceTypes::DRAGONHIDE
+        ResourceTypes::DRAGONHIDE,
     ]
         .span();
 }
 
-fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
+pub fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
     return array![
         (ResourceTypes::WOOD, 100),
         (ResourceTypes::STONE, 127),
@@ -329,19 +352,24 @@ fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 9120),
         (ResourceTypes::MITHRAL, 13553),
         (ResourceTypes::DRAGONHIDE, 21792),
-        (ResourceTypes::EARTHEN_SHARD, 2098)
+        (ResourceTypes::EARTHEN_SHARD, 2098),
     ]
         .span();
 }
 
-fn get_resources_without_earthenshards_probs() -> Span<u128> {
-    // 35
-    return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();
+pub fn get_resources_without_earthenshards_probs() -> Span<u128> {
+    // 36
+    return array![
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ]
+        .span();
 }
 
 
+// todo: confrm probabilities. esp earthen shards
+
 /// Get resource occurence probabilities
-fn get_resource_probabilities() -> Span<(u8, u128)> {
+pub fn get_resource_probabilities() -> Span<(u8, u128)> {
     return array![
         (ResourceTypes::WOOD, 2018108),
         (ResourceTypes::STONE, 1585915),
@@ -365,20 +393,20 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
-        (ResourceTypes::EARTHEN_SHARD, 22133), // SHARDS
+        (ResourceTypes::EARTHEN_SHARD, 22133) // SHARDS
     ]
         .span();
 }
 
 
-fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
+pub fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     let mut zipped = get_resource_probabilities();
     let mut resource_types = array![];
     let mut resource_probabilities = array![];
     loop {
         match zipped.pop_front() {
             Option::Some((
-                resource_type, probability
+                resource_type, probability,
             )) => {
                 resource_types.append(*resource_type);
                 resource_probabilities.append(*probability);
@@ -391,40 +419,27 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 }
 
 
-// DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
-// DISCUSS: register each new entity_type to the system by creating an entity containing the config
-// components Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when
-// creating it
-const DONKEY_ENTITY_TYPE: u32 = 256;
-const REALM_ENTITY_TYPE: u32 = 257;
-const ARMY_ENTITY_TYPE: u32 = 258;
-
-mod LevelIndex {
-    const FOOD: u8 = 1;
-    const RESOURCE: u8 = 2;
-    const TRAVEL: u8 = 3;
-    const COMBAT: u8 = 4;
+pub mod LevelIndex {
+    pub const FOOD: u8 = 1;
+    pub const RESOURCE: u8 = 2;
+    pub const TRAVEL: u8 = 3;
+    pub const COMBAT: u8 = 4;
 }
 
-mod ErrorMessages {
-    const NOT_OWNER: felt252 = 'Not Owner';
+pub mod ErrorMessages {
+    pub const NOT_OWNER: felt252 = 'Not Owner';
 }
 
-mod TickIds {
-    const DEFAULT: u8 = 0;
-    const ARMIES: u8 = 1;
-}
-
-mod TravelTypes {
-    const EXPLORE: u8 = 0;
-    const TRAVEL: u8 = 1;
+pub mod TravelTypes {
+    pub const EXPLORE: u8 = 0;
+    pub const TRAVEL: u8 = 1;
 }
 
 
-fn DEFAULT_NS() -> @ByteArray {
+pub fn DEFAULT_NS() -> @ByteArray {
     @"s1_eternum"
 }
 
-fn DEFAULT_NS_STR() -> ByteArray {
+pub fn DEFAULT_NS_STR() -> ByteArray {
     "s1_eternum"
 }

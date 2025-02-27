@@ -16,7 +16,6 @@ import {
   ContractAddress,
   formatTime,
   getEntityInfo,
-  getRealmInfo,
   ID,
   PlayerStructure,
   StructureType,
@@ -82,7 +81,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return structures
       .map((structure) => ({
         ...structure,
-        isFavorite: favorites.includes(structure.entity_id),
+        isFavorite: favorites.includes(structure.structure.entity_id),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures.length]);
@@ -100,9 +99,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
   const goToHexView = useCallback(
     (entityId: ID) => {
-      const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+      const structurePosition = getComponentValue(
+        setup.components.Structure,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      )?.base;
       if (!structurePosition) return;
-      navigateToHexView(new Position(structurePosition));
+      navigateToHexView(new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }));
     },
     [navigateToHexView],
   );
@@ -110,18 +112,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const goToMapView = useCallback(
     (entityId?: ID) => {
       const position = entityId
-        ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
-        : { x: hexPosition.col, y: hexPosition.row };
+        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base
+        : { coord_x: hexPosition.col, coord_y: hexPosition.row };
 
       if (!position) return;
-      navigateToMapView(new Position(position));
+      navigateToMapView(new Position({ x: position.coord_x, y: position.coord_y }));
     },
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
-
-  const realmInfo = useMemo(() => {
-    return getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components);
-  }, [structureEntityId, setup.components]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
@@ -152,17 +150,21 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectContent className="bg-brown">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
-                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
+                      <button
+                        className="p-1"
+                        type="button"
+                        onClick={() => toggleFavorite(structure.structure.entity_id)}
+                      >
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
                       <SelectItem
                         className="flex justify-between"
                         key={index}
-                        value={structure.entity_id?.toString() || ""}
+                        value={structure.structure.entity_id?.toString() || ""}
                       >
                         <div className="self-center flex gap-4 text-xl">
                           {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.category] : ""}
+                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
                         </div>
                       </SelectItem>
                     </div>
@@ -187,7 +189,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          structureCategory={StructureType[structure.structureCategory as keyof typeof StructureType]}
+          structureCategory={structure.structureCategory as StructureType}
           className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
         />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">

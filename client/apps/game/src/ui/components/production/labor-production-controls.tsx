@@ -6,13 +6,11 @@ import { getLaborConfig } from "@/utils/labor";
 import {
   divideByPrecision,
   findResourceById,
-  getEntityIdFromKeys,
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
 export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
@@ -73,7 +71,8 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
       .filter((id) => typeof id === "number")
       .map((id) => ({
         id: id as number,
-        balance: getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId), BigInt(id)]))?.balance || 0,
+        // todo: fix this
+        balance: 0,
       }));
   }, [realm.entityId]);
 

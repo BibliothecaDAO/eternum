@@ -11,9 +11,8 @@ import {
   configManager,
   ContractAddress,
   divideByPrecision,
-  DONKEY_ENTITY_TYPE,
+  EntityType,
   getBalance,
-  getStructure,
   ID,
   MarketManager,
   multiplyByPrecision,
@@ -52,10 +51,11 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const bankProtector = useMemo(() => {
-    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
-    return structure?.protector;
-  }, [bankEntityId]);
+  // todo: fix this
+  // const bankProtector = useMemo(() => {
+  //   const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
+  //   return structure?.protector;
+  // }, [bankEntityId]);
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -118,29 +118,13 @@ export const ResourceSwap = ({
       });
     };
 
-    if (bankProtector?.battle_id) {
-      // If there's a bank protector in battle, resolve battle first then perform swap
-      setup.systemCalls
-        .battle_resolve({
-          signer: account,
-          battle_id: bankProtector.battle_id,
-          army_id: bankProtector.entity_id,
-        })
-        .then(performSwap)
-        .finally(() => {
-          playLordsSound();
-          setIsLoading(false);
-          setOpenConfirmation(false);
-        });
-    } else {
-      // If no bank protector, just perform swap
-      performSwap().finally(() => {
-        playLordsSound();
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
-    }
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
+    // If no bank protector, just perform swap
+    performSwap().finally(() => {
+      playLordsSound();
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
+  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
@@ -270,7 +254,7 @@ export const ResourceSwap = ({
                 travelTime={computeTravelTime(
                   bankEntityId,
                   entityId,
-                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+                  configManager.getSpeedConfig(EntityType.DONKEY),
                   true,
                 )}
                 setCanCarry={setCanCarry}

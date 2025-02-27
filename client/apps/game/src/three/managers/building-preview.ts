@@ -63,9 +63,7 @@ export class BuildingPreview {
   ): THREE.Group | null {
     if (!group || !building) return null;
     const categoryMap = this.buildingModels.get(group);
-    console.log("categoryMap", categoryMap);
     if (categoryMap) {
-      console.log("building", categoryMap.get(building + ""));
       return categoryMap.get(building + "") || null;
     }
     return null;

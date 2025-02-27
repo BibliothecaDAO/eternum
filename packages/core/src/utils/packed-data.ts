@@ -1,7 +1,12 @@
-export function unpackResources(packedValue: bigint): number[] {
+export function unpackValue(packedValue: bigint): number[] {
   const MAX_BITS_PER_VALUE = 8;
 
   const unpackedNumbers: number[] = [];
+
+  // Return empty array if packedValue is 0
+  if (packedValue === 0n) {
+    return unpackedNumbers;
+  }
 
   let remainingValue = BigInt(packedValue);
 
@@ -13,7 +18,7 @@ export function unpackResources(packedValue: bigint): number[] {
   return unpackedNumbers;
 }
 
-export function packResources(numbers: number[]) {
+export function packValues(numbers: number[]) {
   const MAX_BITS = 128;
   const MAX_BITS_PER_VALUE = 8;
 

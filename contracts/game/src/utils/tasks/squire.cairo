@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Squire of TaskTrait {
+pub impl Squire of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'SQUIRE'

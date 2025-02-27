@@ -3,9 +3,6 @@ import { LiquidityTable } from "@/ui/components/bank/liquidity-table";
 import { ResourceSwap } from "@/ui/components/bank/swap";
 import { Tabs } from "@/ui/elements/tab";
 import { ID } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 
 type BankListProps = {
@@ -15,15 +12,7 @@ type BankListProps = {
 };
 
 export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }: BankListProps) => {
-  const {
-    setup: {
-      components: { Position },
-    },
-  } = useDojo();
-
   const [selectedTab, setSelectedTab] = useState(0);
-
-  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(bankEntityId)]));
 
   const tabs = useMemo(
     () => [
@@ -52,7 +41,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
         ),
       },
     ],
-    [structureEntityId, position],
+    [structureEntityId],
   );
 
   const liquidityTable = useMemo(() => {

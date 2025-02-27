@@ -8,7 +8,7 @@ import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview
 import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
-import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
+import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -158,7 +158,12 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
 
 export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
   const [settleRealm, setSettleRealm] = useState(false);
-  const bottomChildren = useMemo(() => <SeasonPassButton setSettleRealm={setSettleRealm} />, [setSettleRealm]);
+  const bottomChildren = useMemo(() => {
+    if (env.VITE_PUBLIC_CHAIN === "local") {
+      return <LocalStepOne />;
+    }
+    return <SeasonPassButton setSettleRealm={setSettleRealm} />;
+  }, [setSettleRealm]);
 
   return (
     <>

@@ -1,96 +1,82 @@
-use alexandria_data_structures::array_ext::ArrayTraitExt;
-use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
-use s1_eternum::alias::ID;
-use s1_eternum::{
-    models::{combat::Army, config::{StaminaConfig, StaminaRefillConfig, TickConfig, TickImpl}},
-    constants::{ResourceTypes, TravelTypes, WORLD_CONFIG_ID}
-};
+use core::num::traits::zero::Zero;
+use s1_eternum::models::config::{TroopStaminaConfig};
+use s1_eternum::models::troop::TroopType;
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
+#[derive(Introspect, Copy, Drop, Serde)]
 pub struct Stamina {
-    #[key]
-    entity_id: ID,
-    amount: u16,
-    last_refill_tick: u64,
+    pub amount: u64,
+    pub updated_tick: u64,
 }
 
 #[generate_trait]
-impl StaminaImpl of StaminaTrait {
-    fn handle_stamina_costs(army_entity_id: ID, stamina_cost: u16, ref world: WorldStorage) {
-        let mut stamina: Stamina = world.read_model((army_entity_id));
-        stamina.refill_if_next_tick(ref world);
-        stamina.assert_enough_stamina(stamina_cost);
-        stamina.substract_costs(stamina_cost, ref world);
+pub impl StaminaImpl of StaminaTrait {
+    #[inline(always)]
+    fn reset(ref self: Stamina, current_tick: u64) {
+        self.amount = 0;
+        self.updated_tick = 0;
     }
 
-    fn refill_if_next_tick(ref self: Stamina, ref world: WorldStorage) {
-        let armies_tick_config = TickImpl::get_armies_tick_config(ref world);
-        if (self.last_refill_tick != armies_tick_config.current()) {
-            self.refill(ref world);
-        }
-    }
-
-    fn drain(ref self: Stamina, ref world: WorldStorage) {
-        self.refill_if_next_tick(ref world);
-        self.substract_costs(self.amount, ref world);
-    }
-
-    fn substract_costs(ref self: Stamina, costs: u16, ref world: WorldStorage) {
-        self.amount -= costs;
-        self.sset(ref world);
-    }
-
-    fn sset(ref self: Stamina, ref world: WorldStorage) {
-        world.write_model(@self);
-    }
-
-    fn max(ref self: Stamina, ref world: WorldStorage) -> u16 {
-        let army: Army = world.read_model(self.entity_id);
-        let troops = army.troops;
-        let mut maxes = array![];
-
-        if (troops.knight_count > 0) {
-            let knight_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::KNIGHT));
-            maxes.append(knight_config.max_stamina);
-        }
-        if (troops.paladin_count > 0) {
-            let paladin_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::PALADIN));
-            maxes.append(paladin_config.max_stamina);
-        }
-        if (troops.crossbowman_count > 0) {
-            let crossbowman_config: StaminaConfig = world.read_model((WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN));
-            maxes.append(crossbowman_config.max_stamina);
+    #[inline(always)]
+    fn refill(ref self: Stamina, troop_type: TroopType, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
+        if (self.updated_tick == current_tick) {
+            return;
         }
 
-        if maxes.len() > 0 {
-            maxes.min().unwrap()
+        if (self.updated_tick.is_zero()) {
+            // initialize stamina
+            self.amount = troop_stamina_config.stamina_initial.into();
+            self.updated_tick = current_tick;
         } else {
-            0
+            // refill stamina
+            let num_ticks_passed: u64 = current_tick - self.updated_tick;
+            let additional_stamina: u64 = num_ticks_passed * troop_stamina_config.stamina_gain_per_tick.into();
+            self.amount = core::cmp::min(self.amount + additional_stamina, Self::max(troop_type, troop_stamina_config));
+            self.updated_tick = current_tick;
         }
     }
 
-    fn refill(ref self: Stamina, ref world: WorldStorage) {
-        let stamina_refill_config: StaminaRefillConfig = world.read_model(WORLD_CONFIG_ID);
-        let stamina_per_tick = stamina_refill_config.amount_per_tick;
+    #[inline(always)]
+    fn spend(
+        ref self: Stamina,
+        troop_type: TroopType,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+        throw_error: bool,
+    ) {
+        // reduce stamina
+        self.refill(troop_type, troop_stamina_config, current_tick);
+        if amount > self.amount {
+            if throw_error {
+                panic!("insufficient stamina, you need: {}, and have: {}", amount, self.amount);
+            } else {
+                self.amount = 0;
+            }
+        } else {
+            self.amount -= amount;
+        }
+    }
 
-        let current_tick = TickImpl::get_armies_tick_config(ref world).current();
-        let num_ticks_passed = current_tick - self.last_refill_tick;
-
-        let total_stamina = num_ticks_passed * stamina_per_tick.into();
-        let total_stamina_since_last_tick: u16 = match total_stamina.try_into() {
-            Option::Some(value) => value,
-            Option::None => { self.max(ref world) }
-        };
-
-        self.amount = core::cmp::min(self.amount + total_stamina_since_last_tick, self.max(ref world));
-        self.last_refill_tick = current_tick;
-        self.sset(ref world);
+    #[inline(always)]
+    fn add(
+        ref self: Stamina,
+        troop_type: TroopType,
+        troop_stamina_config: TroopStaminaConfig,
+        amount: u64,
+        current_tick: u64,
+    ) {
+        // increase stamina, limited to max of troop type stamina
+        self.refill(troop_type, troop_stamina_config, current_tick);
+        self.amount = core::cmp::min(self.amount + amount, Self::max(troop_type, troop_stamina_config));
     }
 
 
-    fn assert_enough_stamina(self: Stamina, cost: u16) {
-        assert(self.amount >= cost, 'not enough stamina');
+    #[inline(always)]
+    fn max(troop_type: TroopType, troop_stamina_config: TroopStaminaConfig) -> u64 {
+        match troop_type {
+            TroopType::Knight => troop_stamina_config.stamina_knight_max.into(),
+            TroopType::Paladin => troop_stamina_config.stamina_paladin_max.into(),
+            TroopType::Crossbowman => troop_stamina_config.stamina_crossbowman_max.into(),
+        }
     }
 }

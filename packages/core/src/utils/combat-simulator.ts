@@ -1,3 +1,6 @@
+import { BiomeType } from "../constants";
+import { TroopTier, TroopType } from "../types";
+
 export class Percentage {
   static _100() {
     return 10_000;
@@ -8,107 +11,162 @@ export class Percentage {
   }
 }
 
-export enum TroopType {
-  KNIGHT = "knight",
-  CROSSBOWMAN = "crossbowman",
-  PALADIN = "paladin",
-}
-
-export enum Biome {
-  OCEAN = "ocean",
-  DEEP_OCEAN = "deep_ocean",
-  BEACH = "beach",
-  GRASSLAND = "grassland",
-  SHRUBLAND = "shrubland",
-  SUBTROPICAL_DESERT = "subtropical_desert",
-  TEMPERATE_DESERT = "temperate_desert",
-  TROPICAL_RAINFOREST = "tropical_rainforest",
-  TROPICAL_SEASONAL_FOREST = "tropical_seasonal_forest",
-  TEMPERATE_RAINFOREST = "temperate_rainforest",
-  TEMPERATE_DECIDUOUS_FOREST = "temperate_deciduous_forest",
-  TUNDRA = "tundra",
-  TAIGA = "taiga",
-  SNOW = "snow",
-  BARE = "bare",
-  SCORCHED = "scorched",
-}
-
 export interface Army {
   stamina: number;
   troopCount: number;
   troopType: TroopType;
-  tier: 1 | 2 | 3;
+  tier: TroopTier;
 }
 
 export interface CombatParameters {
-  baseT1Value: number;
-  staminaAttackThreshold: number;
-  baseDamageFactor: number;
-  betaSmall: number;
-  betaLarge: number;
-  c0: number;
-  delta: number;
+  damage_biome_bonus_num: number;
+  damage_beta_small: bigint;
+  damage_beta_large: bigint;
+  damage_scaling_factor: bigint;
+  damage_c0: bigint;
+  damage_delta: bigint;
+  t1_damage_value: bigint;
+  t2_damage_multiplier: bigint;
+  t3_damage_multiplier: bigint;
+  stamina_attack_req: number;
 }
 
 export class CombatSimulator {
-  private static readonly BASE_T1_VALUE = 100; // Adjust this baseline value as needed
-  private static readonly STAMINA_ATTACK_THRESHOLD = 30;
-  //   private static readonly MAX_STAMINA_BONUS = 0.3; // 30%
-  private static readonly BASE_DAMAGE_FACTOR = 3.5;
+  private readonly t1DamageValue: number;
+  private readonly t2DamageMultiplier: number;
+  private readonly t3DamageMultiplier: number;
+  private readonly staminaAttackThreshold: number;
+  private readonly baseDamageFactor: number;
+  private readonly betaSmall: number;
+  private readonly betaLarge: number;
+  private readonly c0: number;
+  private readonly delta: number;
+  private readonly biomeBonusNum: number;
 
-  // Combat scaling parameters
-  private static readonly BETA_SMALL = 0.25;
-  private static readonly BETA_LARGE = 0.12;
-  private static readonly C0 = 100_000; // Transition point
-  private static readonly DELTA = 50_000; // Transition width
+  // private static readonly STAMINA_ATTACK_THRESHOLD = 30;
+  // private static readonly BASE_DAMAGE_FACTOR = 3.5;
+  // private static readonly BETA_SMALL = 0.25;
+  // private static readonly BETA_LARGE = 0.12;
+  // private static readonly C0 = 100_000; // Transition point
+  // private static readonly DELTA = 50_000; // T
 
-  public static getBiomeBonus(troopType: TroopType, biome: Biome): number {
-    const biomeModifiers: Record<Biome, Record<TroopType, number>> = {
-      [Biome.OCEAN]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: -0.3 },
-      [Biome.DEEP_OCEAN]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: -0.3 },
-      [Biome.BEACH]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: 0 },
-      [Biome.GRASSLAND]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SHRUBLAND]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SUBTROPICAL_DESERT]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TEMPERATE_DESERT]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TROPICAL_RAINFOREST]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.TROPICAL_SEASONAL_FOREST]: {
-        [TroopType.KNIGHT]: 0.3,
-        [TroopType.CROSSBOWMAN]: 0,
-        [TroopType.PALADIN]: -0.3,
+  constructor(params: CombatParameters) {
+    this.t1DamageValue = Number(params.t1_damage_value) / 2 ** 64; // 100
+    this.t2DamageMultiplier = Number(params.t2_damage_multiplier) / 2 ** 64; // 2.5
+    this.t3DamageMultiplier = Number(params.t3_damage_multiplier) / 2 ** 64; // 7
+    this.staminaAttackThreshold = params.stamina_attack_req; // 30
+    this.baseDamageFactor = Number(params.damage_scaling_factor) / 2 ** 64; // 3.5
+    this.betaSmall = Number(params.damage_beta_small) / 2 ** 64; // 0.25
+    this.betaLarge = Number(params.damage_beta_large) / 2 ** 64; // 0.12
+    this.c0 = Number(params.damage_c0); // 0
+    this.delta = Number(params.damage_delta) / 2 ** 64; // 50000
+    this.biomeBonusNum = params.damage_biome_bonus_num / 10000; // 0.3
+  }
+
+  public getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
+    const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
+      [BiomeType.Ocean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: this.biomeBonusNum,
+        [TroopType.Paladin]: -this.biomeBonusNum,
       },
-      [Biome.TEMPERATE_RAINFOREST]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.TEMPERATE_DECIDUOUS_FOREST]: {
-        [TroopType.KNIGHT]: 0.3,
-        [TroopType.CROSSBOWMAN]: 0,
-        [TroopType.PALADIN]: -0.3,
+      [BiomeType.DeepOcean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: this.biomeBonusNum,
+        [TroopType.Paladin]: -this.biomeBonusNum,
       },
-      [Biome.TUNDRA]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: 0.3 },
-      [Biome.TAIGA]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
-      [Biome.SNOW]: { [TroopType.KNIGHT]: -0.3, [TroopType.CROSSBOWMAN]: 0.3, [TroopType.PALADIN]: 0 },
-      [Biome.BARE]: { [TroopType.KNIGHT]: 0, [TroopType.CROSSBOWMAN]: -0.3, [TroopType.PALADIN]: 0.3 },
-      [Biome.SCORCHED]: { [TroopType.KNIGHT]: 0.3, [TroopType.CROSSBOWMAN]: 0, [TroopType.PALADIN]: -0.3 },
+      [BiomeType.Beach]: {
+        [TroopType.Knight]: -this.biomeBonusNum,
+        [TroopType.Crossbowman]: this.biomeBonusNum,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Grassland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -this.biomeBonusNum,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.Shrubland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -this.biomeBonusNum,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.SubtropicalDesert]: {
+        [TroopType.Knight]: -this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.TemperateDesert]: {
+        [TroopType.Knight]: -this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.TropicalRainForest]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
+      [BiomeType.TropicalSeasonalForest]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
+      [BiomeType.TemperateRainForest]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
+      [BiomeType.TemperateDeciduousForest]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
+      [BiomeType.Tundra]: {
+        [TroopType.Knight]: -this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.Taiga]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
+      [BiomeType.Snow]: {
+        [TroopType.Knight]: -this.biomeBonusNum,
+        [TroopType.Crossbowman]: this.biomeBonusNum,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Bare]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -this.biomeBonusNum,
+        [TroopType.Paladin]: this.biomeBonusNum,
+      },
+      [BiomeType.Scorched]: {
+        [TroopType.Knight]: this.biomeBonusNum,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -this.biomeBonusNum,
+      },
     };
 
     return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   }
 
-  private static getTierValue(tier: 1 | 2 | 3): number {
+  private getTierValue(tier: TroopTier): number {
     switch (tier) {
-      case 1:
-        return this.BASE_T1_VALUE;
-      case 2:
-        return this.BASE_T1_VALUE * 2.5;
-      case 3:
-        return this.BASE_T1_VALUE * 7;
+      case TroopTier.T1:
+        return this.t1DamageValue;
+      case TroopTier.T2:
+        return this.t1DamageValue * this.t2DamageMultiplier;
+      case TroopTier.T3:
+        return this.t1DamageValue * this.t3DamageMultiplier;
     }
   }
 
-  private static calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
+  private calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
     if (isAttacker) {
-      if (stamina < this.STAMINA_ATTACK_THRESHOLD) return 0;
+      if (stamina < this.staminaAttackThreshold) return 0;
       // max stamina bonus is 30%
-      const extraStamina = Math.min(stamina - this.STAMINA_ATTACK_THRESHOLD, this.STAMINA_ATTACK_THRESHOLD);
+      const extraStamina = Math.min(stamina - this.staminaAttackThreshold, this.staminaAttackThreshold);
       return 1 + extraStamina / 100;
     } else {
       // Defender stamina penalty
@@ -116,17 +174,16 @@ export class CombatSimulator {
     }
   }
 
-  private static calculateEffectiveBeta(totalTroops: number): number {
+  private calculateEffectiveBeta(totalTroops: number): number {
     return (
-      this.BETA_SMALL -
-      (this.BETA_SMALL - this.BETA_LARGE) * ((Math.tanh((totalTroops - this.C0) / this.DELTA) + 1) / 2)
+      this.betaSmall - (this.betaSmall - this.betaLarge) * ((Math.tanh((totalTroops - this.c0) / this.delta) + 1) / 2)
     );
   }
 
-  public static simulateBattle(
+  public simulateBattle(
     attacker: Army,
     defender: Army,
-    biome: Biome,
+    biome: BiomeType,
   ): { attackerDamage: number; defenderDamage: number } {
     const totalTroops = attacker.troopCount + defender.troopCount;
     const betaEff = this.calculateEffectiveBeta(totalTroops);
@@ -137,7 +194,7 @@ export class CombatSimulator {
 
     // Calculate attacker damage
     const attackerDamage =
-      (this.BASE_DAMAGE_FACTOR *
+      (this.baseDamageFactor *
         attacker.troopCount *
         (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
         this.calculateStaminaModifier(attacker.stamina, true) *
@@ -146,7 +203,7 @@ export class CombatSimulator {
 
     // Calculate defender damage
     const defenderDamage =
-      (this.BASE_DAMAGE_FACTOR *
+      (this.baseDamageFactor *
         defender.troopCount *
         (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
         this.calculateStaminaModifier(defender.stamina, false) *
@@ -159,52 +216,27 @@ export class CombatSimulator {
     };
   }
 
-  // Add getter for default parameters
   public static getDefaultParameters(): CombatParameters {
     return {
-      baseT1Value: this.BASE_T1_VALUE,
-      staminaAttackThreshold: this.STAMINA_ATTACK_THRESHOLD,
-      baseDamageFactor: this.BASE_DAMAGE_FACTOR,
-      betaSmall: this.BETA_SMALL,
-      betaLarge: this.BETA_LARGE,
-      c0: this.C0,
-      delta: this.DELTA,
+      damage_biome_bonus_num: 3000,
+      damage_beta_small: 25000000000000000000n,
+      damage_beta_large: 12000000000000000000n,
+      damage_scaling_factor: 35000000000000000000n,
+      damage_c0: 0n,
+      damage_delta: 50000n,
+      t1_damage_value: 100n,
+      t2_damage_multiplier: 250n,
+      t3_damage_multiplier: 700n,
+      stamina_attack_req: 30,
     };
   }
 
-  // Add a method to simulate with custom parameters
-  public static simulateBattleWithParams(
+  // Static method to simulate with default parameters
+  public simulateBattleWithParams(
     attacker: Army,
     defender: Army,
-    biome: Biome,
-    params: CombatParameters,
+    biome: BiomeType,
   ): { attackerDamage: number; defenderDamage: number } {
-    const totalTroops = attacker.troopCount + defender.troopCount;
-    const betaEff =
-      params.betaSmall -
-      (params.betaSmall - params.betaLarge) * ((Math.tanh((totalTroops - params.c0) / params.delta) + 1) / 2);
-
-    // Calculate attacker damage
-    const attackerDamage =
-      (params.baseDamageFactor *
-        attacker.troopCount *
-        (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
-        this.calculateStaminaModifier(attacker.stamina, true) *
-        this.getBiomeBonus(attacker.troopType, biome)) /
-      Math.pow(totalTroops, betaEff);
-
-    // Calculate defender damage
-    const defenderDamage =
-      (params.baseDamageFactor *
-        defender.troopCount *
-        (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
-        this.calculateStaminaModifier(defender.stamina, false) *
-        this.getBiomeBonus(defender.troopType, biome)) /
-      Math.pow(totalTroops, betaEff);
-
-    return {
-      attackerDamage,
-      defenderDamage,
-    };
+    return this.simulateBattle(attacker, defender, biome);
   }
 }

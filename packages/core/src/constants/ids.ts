@@ -1,4 +1,8 @@
-export const WORLD_CONFIG_ID = 999999999n;
+const MAX_U32 = BigInt(2) ** BigInt(32) - BigInt(1);
+export const WORLD_CONFIG_ID = MAX_U32;
+
+
+// todo delete everything below
 export const HYPERSTRUCTURE_CONFIG_ID = 999999992n;
 export const BUILDING_CATEGORY_POPULATION_CONFIG_ID = 999999990n;
 export const POPULATION_CONFIG_ID = 999999989n;

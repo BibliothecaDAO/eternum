@@ -57,9 +57,7 @@ const getTxMessage = (type: TransactionType) => {
       return "👑 Pledged LORDS tokens";
     case TransactionType.APPROVE:
       return "📜 Authorized resource transfer";
-    case TransactionType.CREATE_BANK:
-      return "🏰 Established new royal bank";
-    case TransactionType.CREATE_ADMIN_BANK:
+    case TransactionType.CREATE_BANKS:
       return "🏰 Established royal treasury";
     case TransactionType.SET_CO_OWNERS:
       return "📜 Updated co-owners";

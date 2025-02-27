@@ -2,71 +2,16 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { DojoAccount } from "..";
-import {
-  CapacityConfigCategory,
-  FELT_CENTER,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-  ResourcesIds,
-} from "../constants";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
+import { BiomeTypeToId, FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexPosition, ID, TravelTypes } from "../types";
-import { multiplyByPrecision } from "../utils";
+import { HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
-
-export class TravelPaths {
-  private readonly paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
-
-  constructor() {
-    this.paths = new Map();
-  }
-
-  set(key: string, value: { path: HexPosition[]; isExplored: boolean }): void {
-    this.paths.set(key, value);
-  }
-
-  deleteAll(): void {
-    this.paths.clear();
-  }
-
-  get(key: string): { path: HexPosition[]; isExplored: boolean } | undefined {
-    return this.paths.get(key);
-  }
-
-  has(key: string): boolean {
-    return this.paths.has(key);
-  }
-
-  values(): IterableIterator<{ path: HexPosition[]; isExplored: boolean }> {
-    return this.paths.values();
-  }
-
-  getHighlightedHexes(): Array<{ col: number; row: number }> {
-    return Array.from(this.paths.values()).map(({ path }) => ({
-      col: path[path.length - 1].col - FELT_CENTER,
-      row: path[path.length - 1].row - FELT_CENTER,
-    }));
-  }
-
-  isHighlighted(row: number, col: number): boolean {
-    return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
-  }
-
-  getPaths(): Map<string, { path: HexPosition[]; isExplored: boolean }> {
-    return this.paths;
-  }
-
-  static posKey(pos: HexPosition, normalized = false): string {
-    const col = normalized ? pos.col + FELT_CENTER : pos.col;
-    const row = normalized ? pos.row + FELT_CENTER : pos.row;
-    return `${col},${row}`;
-  }
-}
 
 export class ArmyMovementManager {
   private readonly entity: Entity;
@@ -82,10 +27,25 @@ export class ArmyMovementManager {
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    const entityOwnerId = getComponentValue(this.components.EntityOwner, this.entity);
-    this.wheatManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Wheat);
-    this.fishManager = new ResourceManager(this.components, entityOwnerId!.entity_owner_id, ResourcesIds.Fish);
+    const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
+    this.wheatManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Wheat);
+    this.fishManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Fish);
     this.staminaManager = new StaminaManager(this.components, entityId);
+  }
+
+  private _getTroopType(): TroopType {
+    // const entityArmy = getComponentValue(this.components.Army, this.entity);
+    // const knightCount = entityArmy?.troops?.knight_count ?? 0;
+    // const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
+    // const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
+
+    // if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
+    //   return TroopType.Knight;
+    // }
+    // if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
+    //   return TroopType.Crossbowman;
+    // }
+    return TroopType.Paladin;
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
@@ -95,14 +55,19 @@ export class ArmyMovementManager {
       return false;
     }
 
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const exploreFoodCosts = computeExploreFoodCosts(entityArmy?.troops);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const exploreFoodCosts = entityArmy
+      ? computeExploreFoodCosts(entityArmy?.troops)
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
     const { wheat, fish } = this.getFood(currentDefaultTick);
 
-    if (fish < multiplyByPrecision(exploreFoodCosts.fishPayAmount)) {
+    if (fish < exploreFoodCosts.fishPayAmount) {
       return false;
     }
-    if (wheat < multiplyByPrecision(exploreFoodCosts.wheatPayAmount)) {
+    if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
 
@@ -115,115 +80,252 @@ export class ArmyMovementManager {
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
-    const travelStaminaCost = configManager.getTravelStaminaCost();
+    // Calculate minimum stamina cost across all biomes for this troop type
+    const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
+    const maxStaminaSteps = Math.floor(Number(stamina.amount) / minTravelStaminaCost);
 
-    const maxStaminaSteps = travelStaminaCost
-      ? Math.floor((stamina.amount || 0) / configManager.getTravelStaminaCost())
-      : 999;
-
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
-    const travelFoodCosts = computeTravelFoodCosts(entityArmy?.troops);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const travelFoodCosts = entityArmy
+      ? computeTravelFoodCosts(entityArmy.troops)
+      : {
+          wheatPayAmount: 0,
+          fishPayAmount: 0,
+        };
 
     const { wheat, fish } = this.getFood(currentDefaultTick);
-    const maxTravelWheatSteps = Math.floor(wheat / multiplyByPrecision(travelFoodCosts.wheatPayAmount));
-    const maxTravelFishSteps = Math.floor(fish / multiplyByPrecision(travelFoodCosts.fishPayAmount));
+    const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
+    const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
 
   private readonly _getCurrentPosition = () => {
-    const position = getComponentValue(this.components.Position, this.entity);
+    const position = getComponentValue(this.components.ExplorerTroops, this.entity)?.coord;
     return { col: position!.x, row: position!.y };
   };
 
+  // getFood is without precision
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.wheatManager.balance(currentDefaultTick);
-    const fishBalance = this.fishManager.balance(currentDefaultTick);
+    const wheatBalance = this.wheatManager.balanceWithProduction(currentDefaultTick);
+    const fishBalance = this.fishManager.balanceWithProduction(currentDefaultTick);
 
     return {
-      wheat: wheatBalance,
-      fish: fishBalance,
+      wheat: divideByPrecision(wheatBalance),
+      fish: divideByPrecision(fishBalance),
     };
   }
 
-  public findPaths(
-    exploredHexes: Map<number, Set<number>>,
+  // todo : refactor to use stamina config
+  public static staminaDrain(biome: BiomeType, troopType: TroopType) {
+    const baseStaminaCost = 20; // Base cost to move to adjacent hex
+
+    // Biome-specific modifiers per troop type
+    switch (biome) {
+      case BiomeType.Ocean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.DeepOcean:
+        return baseStaminaCost - 10; // -10 for all troops
+      case BiomeType.Beach:
+        return baseStaminaCost; // No modifier
+      case BiomeType.Grassland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Shrubland:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.SubtropicalDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TemperateDesert:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.TropicalRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TropicalSeasonalForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateRainForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.TemperateDeciduousForest:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Tundra:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Taiga:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
+      case BiomeType.Snow:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? 0 : 10);
+      case BiomeType.Bare:
+        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
+      case BiomeType.Scorched:
+        return baseStaminaCost + 10; // +10 for all troops
+      default:
+        return baseStaminaCost;
+    }
+  }
+
+  public findActionPaths(
+    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, boolean>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
-  ): TravelPaths {
+  ): ActionPaths {
+    const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
+    if (armyStamina === 0n) return new ActionPaths();
+
+    const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
+    // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
 
-    const priorityQueue: Array<{ position: HexPosition; distance: number; path: HexPosition[] }> = [
-      { position: startPos, distance: 0, path: [startPos] },
-    ];
-    const travelPaths = new TravelPaths();
-    const shortestDistances = new Map<string, number>();
+    const actionPaths = new ActionPaths();
+    const lowestStaminaUse = new Map<string, number>();
+    const priorityQueue: Array<{ position: HexPosition; staminaUsed: number; distance: number; path: ActionPath[] }> =
+      [];
+
+    // Process initial neighbors instead of start position
+    const neighbors = getNeighborHexes(startPos.col, startPos.row);
+    for (const { col, row } of neighbors) {
+      const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+      if (!isExplored && !canExplore) continue;
+
+      const isMine = isArmyMine || isStructureMine;
+      const canAttack = (hasArmy || hasStructure) && !isMine;
+
+      const staminaCost = biome
+        ? ArmyMovementManager.staminaDrain(biome, troopType)
+        : configManager.getExploreStaminaCost();
+
+      if (staminaCost > armyStamina) continue;
+
+      let actionType;
+      if (isMine) {
+        // TODO: put back attack action when finish dev
+        actionType = ActionType.Attack;
+      } else if (canAttack) {
+        actionType = ActionType.Attack;
+      } else if (biome) {
+        actionType = ActionType.Move;
+      } else {
+        actionType = ActionType.Explore;
+      }
+
+      priorityQueue.push({
+        position: { col, row },
+        staminaUsed: staminaCost,
+        distance: 1,
+        path: [
+          { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
+          {
+            hex: { col, row },
+            actionType,
+            biomeType: biome,
+            staminaCost,
+          },
+        ],
+      });
+    }
 
     while (priorityQueue.length > 0) {
-      priorityQueue.sort((a, b) => a.distance - b.distance); // This makes the queue work as a priority queue
-      const { position: current, distance, path } = priorityQueue.shift()!;
-      const currentKey = TravelPaths.posKey(current);
+      priorityQueue.sort((a, b) => a.staminaUsed - b.staminaUsed);
+      const { position: current, staminaUsed, distance, path } = priorityQueue.shift()!;
+      const currentKey = ActionPaths.posKey(current);
 
-      if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
-        shortestDistances.set(currentKey, distance);
+      if (!lowestStaminaUse.has(currentKey) || staminaUsed < lowestStaminaUse.get(currentKey)!) {
+        lowestStaminaUse.set(currentKey, staminaUsed);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        if (path.length >= 2) {
-          travelPaths.set(currentKey, { path, isExplored });
-        }
-        if (!isExplored) continue;
+        const hasArmy = armyHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
+        const hasStructure = structureHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
 
-        const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined
+        actionPaths.set(currentKey, path);
+
+        // cannot go through these hexes so need to stop here
+        if (!isExplored || hasArmy || hasStructure) continue;
+
+        const neighbors = getNeighborHexes(current.col, current.row);
         for (const { col, row } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ col, row });
+          const neighborKey = ActionPaths.posKey({ col, row });
           const nextDistance = distance + 1;
-          const nextPath = [...path, { col, row }];
+
+          if (nextDistance > maxHex) continue;
 
           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-          if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
-            if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
-              priorityQueue.push({ position: { col, row }, distance: nextDistance, path: nextPath });
-            }
+          const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+          const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
+
+          if (!isExplored || hasArmy || hasStructure) continue;
+
+          const staminaCost = ArmyMovementManager.staminaDrain(biome!, troopType);
+          const nextStaminaUsed = staminaUsed + staminaCost;
+
+          if (nextStaminaUsed > armyStamina) continue;
+
+          if (!lowestStaminaUse.has(neighborKey) || nextStaminaUsed < lowestStaminaUse.get(neighborKey)!) {
+            priorityQueue.push({
+              position: { col, row },
+              staminaUsed: nextStaminaUsed,
+              distance: nextDistance,
+              path: [
+                ...path,
+                {
+                  hex: { col, row },
+                  actionType: biome ? ActionType.Move : ActionType.Explore,
+                  biomeType: biome,
+                  staminaCost,
+                },
+              ],
+            });
           }
         }
       }
     }
 
-    return travelPaths;
+    return actionPaths;
   }
 
-  public isMine = (address: ContractAddress) => {
-    const entityOwner = getComponentValue(this.components.EntityOwner, this.entity);
-    let owner = getComponentValue(this.components.Owner, this.entity);
-    if (!owner && entityOwner?.entity_owner_id) {
-      owner = getComponentValue(this.components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-    }
-    return owner?.address === address;
-  };
+  private readonly _optimisticExplorerUpdate = (overrideId: string, staminaCost: number, newPosition: HexPosition) => {
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const stamina = explorerTroops?.troops.stamina;
 
-  private readonly _optimisticStaminaUpdate = (overrideId: string, cost: number, currentArmiesTick: number) => {
-    const stamina = this.staminaManager.getStamina(currentArmiesTick);
+    if (!stamina) return;
 
     // substract the costs
-    this.components.Stamina.addOverride(overrideId, {
+    this.components.ExplorerTroops.addOverride(overrideId, {
       entity: this.entity,
       value: {
-        entity_id: stamina.entity_id,
-        last_refill_tick: stamina.last_refill_tick,
-        amount: stamina.amount - cost,
+        ...explorerTroops,
+        coord: {
+          x: newPosition.col,
+          y: newPosition.row,
+        },
+        troops: {
+          ...explorerTroops.troops,
+          stamina: {
+            ...explorerTroops.troops.stamina,
+            amount: stamina.amount - BigInt(staminaCost),
+            updated_tick: stamina.updated_tick,
+          },
+        },
       },
     });
   };
 
-  private readonly _optimisticCapacityUpdate = (overrideId: string, capacity: number) => {
-    const currentWeight = getComponentValue(this.components.Weight, this.entity);
+  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeight: number) => {
+    const resource = getComponentValue(this.components.Resource, this.entity);
+    const weight = resource?.weight || { capacity: 0n, weight: 0n };
 
-    this.components.Weight.addOverride(overrideId, {
+    this.components.Resource.addOverride(overrideId, {
       entity: this.entity,
       value: {
         entity_id: this.entityId,
-        value: (currentWeight?.value || 0n) + BigInt(capacity),
+        ...resource,
+        weight: {
+          ...weight,
+          weight: BigInt((weight?.weight || 0).toString()) + BigInt(additionalWeight),
+        },
       },
     });
   };
@@ -236,30 +338,7 @@ export class ArmyMovementManager {
       value: {
         col,
         row,
-        explored_by_id: this.entityId,
-        explored_at: BigInt(Math.floor(Date.now() / 1000)),
-        biome: "None",
-      },
-    });
-  };
-
-  private readonly _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
-    this.components.Position.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        entity_id: this.entityId,
-        x: col,
-        y: row,
-      },
-    });
-  };
-
-  private readonly _optimisticArrivalTimeUpdate = (blockTimestamp: number, overrideId: string) => {
-    this.components.ArrivalTime.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        entity_id: this.entityId,
-        arrives_at: BigInt(blockTimestamp || 0),
+        biome: BiomeTypeToId[Biome.getBiome(col, row)],
       },
     });
   };
@@ -272,10 +351,8 @@ export class ArmyMovementManager {
   ) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, configManager.getExploreStaminaCost(), currentArmiesTick);
+    this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
     this._optimisticTileUpdate(overrideId, col, row);
-    this._optimisticPositionUpdate(overrideId, col, row);
-    this._optimisticArrivalTimeUpdate(blockTimestamp, overrideId);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -306,12 +383,14 @@ export class ArmyMovementManager {
     const overrideId = this._optimisticExplore(blockTimestamp, path[1].col, path[1].row, currentArmiesTick);
 
     this.provider
-      .explore({
-        unit_id: this.entityId,
-        direction,
+      .explorer_move({
+        explorer_id: this.entityId,
+        directions: [direction],
+        explore: true,
         signer,
       })
       .catch((e) => {
+        console.log({ e });
         // remove all visual overrides only when the action fails
         this._removeVisualOverride(overrideId);
         this._removeNonVisualOverrides(overrideId);
@@ -331,44 +410,43 @@ export class ArmyMovementManager {
   ) => {
     const overrideId = uuid();
 
-    this._optimisticStaminaUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, currentArmiesTick);
-    this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
-    this._optimisticArrivalTimeUpdate(blockTimestamp, overrideId);
-
-    this.components.Position.addOverride(overrideId, {
-      entity: this.entity,
-      value: {
-        entity_id: this.entityId,
-        x: col,
-        y: row,
-      },
+    console.log({
+      overrideId,
+      staminaCost: configManager.getTravelStaminaCost() * pathLength,
+      currentArmiesTick,
+      col,
+      row,
     });
+
+    this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
+    this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
+
     return overrideId;
   };
 
   // only remove visual overrides (linked to models on world map) when the action fails
   private readonly _removeVisualOverride = (overrideId: string) => {
     this.components.Tile.removeOverride(overrideId);
-    this.components.Position.removeOverride(overrideId);
+    this.components.ExplorerTroops.removeOverride(overrideId);
   };
 
   // you can remove all non visual overrides when the action fails or succeeds
   private readonly _removeNonVisualOverrides = (overrideId: string) => {
-    this.components.Stamina.removeOverride(overrideId);
     this.components.Resource.removeOverride(overrideId);
-    this.components.Weight.removeOverride(overrideId);
-    this.components.ArrivalTime.removeOverride(overrideId);
+    this.components.ExplorerTroops.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
-    const entityArmy = getComponentValue(this.components.Army, this.entity);
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
+    if (!entityArmy) return;
     let costs = { wheatPayAmount: 0, fishPayAmount: 0 };
     if (travelType === TravelTypes.Explore) {
-      costs = computeExploreFoodCosts(entityArmy?.troops);
+      costs = computeExploreFoodCosts(entityArmy.troops);
     } else {
-      costs = computeTravelFoodCosts(entityArmy?.troops);
+      costs = computeTravelFoodCosts(entityArmy.troops);
     }
 
+    // need to add back precision for optimistic resource update
     this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
     this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };
@@ -398,12 +476,14 @@ export class ArmyMovementManager {
       .filter((d) => d !== undefined) as number[];
 
     this.provider
-      .travel_hex({
+      .explorer_move({
         signer,
-        travelling_entity_id: this.entityId,
+        explorer_id: this.entityId,
         directions,
+        explore: false,
       })
-      .catch(() => {
+      .catch((e) => {
+        console.log({ e });
         this._removeVisualOverride(overrideId);
         this._removeNonVisualOverrides(overrideId);
       })
@@ -427,16 +507,11 @@ export class ArmyMovementManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
-    const armyCapacity = getComponentValue(
-      this.components.CapacityConfig,
-      getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]),
-    );
-    const armyWeight = getComponentValue(this.components.Weight, this.entity);
+    const armyWeight = getComponentValue(this.components.Resource, this.entity)?.weight.weight || 0;
 
-    const armyEntity = getComponentValue(this.components.Army, this.entity);
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    if (!explorerTroops) return 0;
 
-    if (!armyEntity || !armyCapacity) return 0n;
-
-    return getRemainingCapacityInKg(armyEntity, armyCapacity, armyWeight);
+    return getRemainingCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)), Number(armyWeight));
   };
 }

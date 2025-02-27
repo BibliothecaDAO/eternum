@@ -1,4 +1,4 @@
-import { ClientComponents, ContractAddress, getRealmInfo, RealmInfo } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, getRealmInfo, RealmInfo, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -10,10 +10,9 @@ export function usePlayerOwnedRealms(): RealmInfo[] {
     setup: { components },
   } = useDojo();
 
-  const { Realm, Owner } = components;
+  const { Structure } = components;
 
-  const realmEntities = useEntityQuery([Has(Realm), HasValue(Owner, { address: ContractAddress(account.address) })]);
-
+  const realmEntities = useEntityQuery([Has(Structure), HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm })]);
   const realms = useMemo(() => {
     return realmEntities
       .map((entity) => {
@@ -28,18 +27,18 @@ export function usePlayerOwnedRealms(): RealmInfo[] {
 export const useRealms = () => {
   const {
     setup: {
-      components: { Realm },
+      components: { Structure },
     },
   } = useDojo();
 
-  const realmEntities = useEntityQuery([Has(Realm)]);
+  const realmEntities = useEntityQuery([Has(Structure), HasValue(Structure, { category: StructureType.Realm })]);
 
   const realms = useMemo(() => {
     return realmEntities
       .map((entity) => {
-        return getComponentValue(Realm, entity);
+        return getComponentValue(Structure, entity);
       })
-      .filter(Boolean) as ComponentValue<ClientComponents["Realm"]["schema"]>[];
+      .filter(Boolean) as ComponentValue<ClientComponents["Structure"]["schema"]>[];
   }, [realmEntities]);
 
   return realms;

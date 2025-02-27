@@ -76,7 +76,7 @@ class PromiseQueue {
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  private readonly BATCH_DELAY = 2000; // ms to wait for batching
+  //   private readonly BATCH_DELAY = 2000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 3; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
@@ -91,9 +91,9 @@ class PromiseQueue {
           clearTimeout(this.batchTimeout);
         }
 
-        this.batchTimeout = setTimeout(() => {
-          this.processQueue();
-        }, this.BATCH_DELAY);
+        // this.batchTimeout = setTimeout(() => {
+        this.processQueue();
+        // }, this.BATCH_DELAY);
       }
     });
   }
@@ -235,7 +235,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     if (typeof window !== "undefined") {
       console.log({ signer, transactionDetails });
     }
-    const tx = await this.execute(signer, transactionDetails, NAMESPACE);
+    const tx = await this.execute(signer, transactionDetails, NAMESPACE, { version: 3 });
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
 
     // Get the transaction type based on the entrypoint name
@@ -625,8 +625,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { realm_entity_id, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-      entrypoint: "upgrade_level",
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-structure_systems`),
+      entrypoint: "level_up",
       calldata: [realm_entity_id],
     });
 
@@ -651,7 +651,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
+    let { realm_ids, owner, frontend, signer, season_pass_address, lords_resource_index } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -664,7 +664,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCalls = realm_ids.map((realm_id) => ({
       contractAddress: realmSystemsContractAddress,
       entrypoint: "create",
-      calldata: [owner, realm_id, frontend],
+      calldata: [owner, realm_id, frontend, lords_resource_index],
     }));
 
     const approvalCloseForAllCall = {
@@ -830,37 +830,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Move an entity in a hex direction
-   *
-   * @param props - Properties for hex traveling
-   * @param props.travelling_entity_id - ID of the entity that is traveling
-   * @param props.directions - Array of hex directions to travel
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Move entity 123 in hex directions [1, 2, 3]
-   * {
-   *   travelling_entity_id: 123,
-   *   directions: [1, 2, 3],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async travel_hex(props: SystemProps.TravelHexProps) {
-    const { travelling_entity_id, directions, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
-      entrypoint: "travel_hex",
-      calldata: [travelling_entity_id, directions],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
    * Set a name for an address
    *
    * @param props - Properties for setting address name
@@ -931,51 +900,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Explore in a direction from a unit's position
-   *
-   * @param props - Properties for exploring
-   * @param props.unit_id - ID of the unit doing the exploration
-   * @param props.direction - Direction to explore in
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Explore in direction 1 with unit 123
-   * {
-   *   unit_id: 123,
-   *   direction: 1,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async explore(props: SystemProps.ExploreProps) {
-    const { unit_id, direction, signer } = props;
-
-    const requestTwoCall: Call = {
-      contractAddress: this.VRF_PROVIDER_ADDRESS!,
-      entrypoint: "request_random",
-      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_systems`), 0, signer.address],
-    };
-
-    const requestRandomCall: Call = {
-      contractAddress: this.VRF_PROVIDER_ADDRESS!,
-      entrypoint: "request_random",
-      calldata: [getContractByName(this.manifest, `${NAMESPACE}-map_generation_systems`), 0, signer.address],
-    };
-
-    const exploreCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
-      entrypoint: "explore",
-      calldata: [unit_id, direction],
-    };
-
-    const call = this.createProviderCall(signer, [requestTwoCall, requestRandomCall, exploreCall]);
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
    * Create a new building
    *
    * @param props - Properties for creating building
@@ -1003,7 +927,6 @@ export class EternumProvider extends EnhancedDojoProvider {
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, produce_resource_type, signer } = props;
-    ["62", "1", "0", "4", "1"];
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
@@ -1118,58 +1041,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create a new bank
-   *
-   * @param props - Properties for creating a bank
-   * @param props.realm_entity_id - ID of the realm entity creating the bank
-   * @param props.coord - Coordinates for the bank location
-   * @param props.owner_fee_num - Numerator for owner fee calculation
-   * @param props.owner_fee_denom - Denominator for owner fee calculation
-   * @param props.owner_bridge_fee_dpt_percent - Owner bridge fee percentage for deposits
-   * @param props.owner_bridge_fee_wtdr_percent - Owner bridge fee percentage for withdrawals
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create a bank with 1% fees
-   * {
-   *   realm_entity_id: 123,
-   *   coord: 456,
-   *   owner_fee_num: 1,
-   *   owner_fee_denom: 100,
-   *   owner_bridge_fee_dpt_percent: 100,
-   *   owner_bridge_fee_wtdr_percent: 100,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async create_bank(props: SystemProps.CreateBankProps) {
-    const {
-      realm_entity_id,
-      coord,
-      owner_fee_num,
-      owner_fee_denom,
-      owner_bridge_fee_dpt_percent,
-      owner_bridge_fee_wtdr_percent,
-      signer,
-    } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
-      entrypoint: "create_bank",
-      calldata: [
-        realm_entity_id,
-        coord,
-        owner_fee_num,
-        owner_fee_denom,
-        owner_bridge_fee_dpt_percent,
-        owner_bridge_fee_wtdr_percent,
-      ],
-    });
-  }
-
-  /**
    * Create an admin bank
    *
    * @param props - Properties for creating an admin bank
@@ -1196,57 +1067,23 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const {
-      name,
-      coord,
-      owner_fee_num,
-      owner_fee_denom,
-      owner_bridge_fee_dpt_percent,
-      owner_bridge_fee_wtdr_percent,
-      signer,
-    } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
-      entrypoint: "create_admin_bank",
-      calldata: [
-        name,
-        coord,
-        owner_fee_num,
-        owner_fee_denom,
-        owner_bridge_fee_dpt_percent,
-        owner_bridge_fee_wtdr_percent,
-      ],
-    });
-  }
-
-  /**
-   * Open a new bank account
-   *
-   * @param props - Properties for opening an account
-   * @param props.realm_entity_id - ID of the realm entity opening the account
-   * @param props.bank_entity_id - ID of the bank where account will be opened
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Open account at bank 456 for realm 123
-   * {
-   *   realm_entity_id: 123,
-   *   bank_entity_id: 456,
-   *   signer: account
-   * }
-   * ```
-   */
-  public async open_account(props: SystemProps.OpenAccountProps) {
-    const { realm_entity_id, bank_entity_id, signer } = props;
+  public async create_banks(props: SystemProps.CreateAdminBanksProps) {
+    const { banks, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
-      entrypoint: "open_account",
-      calldata: [realm_entity_id, bank_entity_id],
+      entrypoint: "create_banks",
+      calldata: [
+        banks.length,
+        ...banks.flatMap((bank) => [
+          bank.name,
+          bank.coord.x,
+          bank.coord.y,
+          bank.guard_slot,
+          bank.troop_tier,
+          bank.troop_type,
+        ]),
+      ],
     });
   }
 
@@ -1457,193 +1294,295 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Create a new army
+   * Add troops to a guard slot
    *
-   * @param props - Properties for creating an army
-   * @param props.army_owner_id - ID of the entity that will own the army
-   * @param props.is_defensive_army - Whether this is a defensive army
+   * @param props - Properties for adding troops to a guard
+   * @param props.for_structure_id - ID of the structure to add guard troops to
+   * @param props.slot - Guard slot to place troops in
+   * @param props.category - Type of troops to add
+   * @param props.tier - Tier of troops to add
+   * @param props.amount - Number of troops to add
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Create a defensive army for entity 123
-   * {
-   *   army_owner_id: 123,
-   *   is_defensive_army: true,
-   *   signer: account
-   * }
-   * ```
    */
-  public async create_army(props: SystemProps.ArmyCreateProps) {
-    const { army_owner_id, is_defensive_army, signer } = props;
+  public async guard_add(props: SystemProps.GuardAddProps) {
+    const { for_structure_id, slot, category, tier, amount, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
-      entrypoint: "army_create",
-      calldata: [army_owner_id, is_defensive_army],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "guard_add",
+      calldata: [for_structure_id, slot, category, tier, amount],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async delete_army(props: SystemProps.ArmyDeleteProps) {
-    const { army_id, signer } = props;
+  /**
+   * Delete troops from a guard slot
+   *
+   * @param props - Properties for deleting guard troops
+   * @param props.for_structure_id - ID of the structure to remove guard troops from
+   * @param props.slot - Guard slot to remove troops from
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async guard_delete(props: SystemProps.GuardDeleteProps) {
+    const { for_structure_id, slot, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
-      entrypoint: "army_delete",
-      calldata: [army_id],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "guard_delete",
+      calldata: [for_structure_id, slot],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async army_buy_troops(props: SystemProps.ArmyBuyTroopsProps) {
-    const { army_id, payer_id, troops, signer } = props;
+  /**
+   * Create a new explorer with troops
+   *
+   * @param props - Properties for creating an explorer
+   * @param props.for_structure_id - ID of the structure creating the explorer
+   * @param props.category - Type of troops to add
+   * @param props.tier - Tier of troops to add
+   * @param props.amount - Number of troops to add
+   * @param props.spawn_direction - Direction to spawn the explorer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt with the new explorer ID
+   */
+  public async explorer_create(props: SystemProps.ExplorerCreateProps) {
+    const { for_structure_id, category, tier, amount, spawn_direction, signer } = props;
+    console.log({ props });
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
-      entrypoint: "army_buy_troops",
-      calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "explorer_create",
+      calldata: [for_structure_id, category, tier, amount, spawn_direction],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async army_merge_troops(props: SystemProps.ArmyMergeTroopsProps) {
-    const { from_army_id, to_army_id, troops, signer } = props;
+  /**
+   * Add troops to an existing explorer
+   *
+   * @param props - Properties for adding troops to an explorer
+   * @param props.to_explorer_id - ID of the explorer to add troops to
+   * @param props.amount - Number of troops to add
+   * @param props.home_direction - Direction to the explorer's home
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_add(props: SystemProps.ExplorerAddProps) {
+    const { to_explorer_id, amount, home_direction, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_systems`),
-      entrypoint: "army_merge_troops",
-      calldata: [from_army_id, to_army_id, troops],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "explorer_add",
+      calldata: [to_explorer_id, amount, home_direction],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async battle_start(props: SystemProps.BattleStartProps) {
-    const { attacking_army_id, defending_army_id, signer } = props;
+  /**
+   * Delete an explorer and its troops
+   *
+   * @param props - Properties for deleting an explorer
+   * @param props.explorer_id - ID of the explorer to delete
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_delete(props: SystemProps.ExplorerDeleteProps) {
+    const { explorer_id, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-      entrypoint: "battle_start",
-      calldata: [attacking_army_id, defending_army_id],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "explorer_delete",
+      calldata: [explorer_id],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async battle_resolve(props: SystemProps.BattleResolveProps) {
-    const { battle_id, army_id, signer } = props;
+  /**
+   * Swap troops between two explorers
+   *
+   * @param props - Properties for swapping troops between explorers
+   * @param props.from_explorer_id - ID of the explorer sending troops
+   * @param props.to_explorer_id - ID of the explorer receiving troops
+   * @param props.to_explorer_direction - Direction to the receiving explorer
+   * @param props.count - Number of troops to swap
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_explorer_swap(props: SystemProps.ExplorerExplorerSwapProps) {
+    const { from_explorer_id, to_explorer_id, to_explorer_direction, count, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-      entrypoint: "battle_resolve",
-      calldata: [battle_id, army_id],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "explorer_explorer_swap",
+      calldata: [from_explorer_id, to_explorer_id, to_explorer_direction, count],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async battle_force_start(props: SystemProps.BattleForceStartProps) {
-    const { battle_id, defending_army_id, signer } = props;
+  /**
+   * Swap troops from an explorer to a guard
+   *
+   * @param props - Properties for swapping troops from explorer to guard
+   * @param props.from_explorer_id - ID of the explorer sending troops
+   * @param props.to_structure_id - ID of the structure receiving troops
+   * @param props.to_structure_direction - Direction to the receiving structure
+   * @param props.to_guard_slot - Guard slot to place troops in
+   * @param props.count - Number of troops to swap
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_guard_swap(props: SystemProps.ExplorerGuardSwapProps) {
+    const { from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count, signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-      entrypoint: "battle_force_start",
-      calldata: [battle_id, defending_army_id],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-  public async battle_join(props: SystemProps.BattleJoinProps) {
-    const { battle_id, battle_side, army_id, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-      entrypoint: "battle_join",
-      calldata: [battle_id, battle_side, army_id],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  public async battle_leave(props: SystemProps.BattleLeaveProps) {
-    const { battle_id, army_ids, signer } = props;
-
-    return await this.executeAndCheckTransaction(
-      signer,
-      army_ids.map((army_id) => ({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-        entrypoint: "battle_leave",
-        calldata: [battle_id, army_id],
-      })),
-    );
-  }
-
-  public async battle_pillage(props: SystemProps.BattlePillageProps) {
-    const { army_id, structure_id, signer } = props;
-
-    const calls = await buildVrfCalls({
-      account: signer,
-      call: {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
-        entrypoint: "battle_pillage",
-        calldata: [army_id, structure_id],
-      },
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
-    });
-
-    return await this.executeAndCheckTransaction(signer, calls);
-  }
-
-  public async battle_claim(props: SystemProps.BattleClaimProps) {
-    const { army_id, structure_id, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-      entrypoint: "battle_claim",
-      calldata: [army_id, structure_id],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "explorer_guard_swap",
+      calldata: [from_explorer_id, to_structure_id, to_structure_direction, to_guard_slot, count],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async battle_claim_and_leave(props: SystemProps.BattleClaimAndLeaveProps) {
-    const { army_id, structure_id, battle_id, signer } = props;
+  /**
+   * Swap troops from a guard to an explorer
+   *
+   * @param props - Properties for swapping troops from guard to explorer
+   * @param props.from_structure_id - ID of the structure sending troops
+   * @param props.from_guard_slot - Guard slot to take troops from
+   * @param props.to_explorer_id - ID of the explorer receiving troops
+   * @param props.to_explorer_direction - Direction to the receiving explorer
+   * @param props.count - Number of troops to swap
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async guard_explorer_swap(props: SystemProps.GuardExplorerSwapProps) {
+    const { from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-        entrypoint: "battle_leave",
-        calldata: [battle_id, army_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-        entrypoint: "battle_claim",
-        calldata: [army_id, structure_id],
-      },
-    ]);
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+      entrypoint: "guard_explorer_swap",
+      calldata: [from_structure_id, from_guard_slot, to_explorer_id, to_explorer_direction, count],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
-  public async battle_leave_and_pillage(props: SystemProps.BattleLeaveAndRaidProps) {
-    const { army_id, structure_id, battle_id, signer } = props;
+  /**
+   * Move an explorer along a path of directions
+   *
+   * @param props - Properties for moving an explorer
+   * @param props.explorer_id - ID of the explorer to move
+   * @param props.directions - Array of directions to move in
+   * @param props.explore - Whether to explore new tiles along the way
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async explorer_move(props: SystemProps.ExplorerMoveProps) {
+    const { explorer_id, directions, explore, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_systems`),
-        entrypoint: "battle_leave",
-        calldata: [battle_id, army_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-battle_pillage_systems`),
-        entrypoint: "battle_pillage",
-        calldata: [army_id, structure_id],
-      },
-    ]);
+    let callData: Call[] = [];
+
+    if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestTwoCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      };
+
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
+      };
+
+      callData = [requestTwoCall, requestRandomCall];
+    }
+
+    const moveCall: Call = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`),
+      entrypoint: "explorer_move",
+      calldata: [explorer_id, directions, explore ? 1 : 0],
+    };
+
+    const call = this.createProviderCall(signer, [...callData, moveCall]);
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Attack an explorer with another explorer
+   *
+   * @param props - Properties for explorer vs explorer attack
+   * @param props.aggressor_id - ID of the attacking explorer
+   * @param props.defender_id - ID of the defending explorer
+   * @param props.defender_direction - Direction to the defender
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_explorer_vs_explorer(props: SystemProps.AttackExplorerVsExplorerProps) {
+    const { aggressor_id, defender_id, defender_direction, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+      entrypoint: "attack_explorer_vs_explorer",
+      calldata: [aggressor_id, defender_id, defender_direction],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Attack a guard with an explorer
+   *
+   * @param props - Properties for explorer vs guard attack
+   * @param props.explorer_id - ID of the attacking explorer
+   * @param props.structure_id - ID of the structure with defending guard
+   * @param props.structure_direction - Direction to the structure
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
+    const { explorer_id, structure_id, structure_direction, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+      entrypoint: "attack_explorer_vs_guard",
+      calldata: [explorer_id, structure_id, structure_direction],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Attack an explorer with a guard
+   *
+   * @param props - Properties for guard vs explorer attack
+   * @param props.structure_id - ID of the structure with attacking guard
+   * @param props.structure_guard_slot - Guard slot of the attacking troops
+   * @param props.explorer_id - ID of the defending explorer
+   * @param props.explorer_direction - Direction to the explorer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_guard_vs_explorer(props: SystemProps.AttackGuardVsExplorerProps) {
+    const { structure_id, structure_guard_slot, explorer_id, explorer_direction, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+      entrypoint: "attack_guard_vs_explorer",
+      calldata: [structure_id, structure_guard_slot, explorer_id, explorer_direction],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
@@ -1759,22 +1698,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const { config_id, reward_amount, shards_mines_fail_probability, signer } = props;
+    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } =
+      props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [config_id, reward_amount, shards_mines_fail_probability],
-    });
-  }
-
-  public async set_travel_stamina_cost_config(props: SystemProps.SetTravelStaminaCostConfigProps) {
-    const { travel_type, cost, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_travel_stamina_cost_config",
-      calldata: [travel_type, cost],
+      calldata: [reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount],
     });
   }
 
@@ -1840,10 +1770,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       season_pool_fee_on_wtdr_percent,
       client_fee_on_dpt_percent,
       client_fee_on_wtdr_percent,
-      velords_fee_recipient,
-      season_pool_fee_recipient,
       max_bank_fee_dpt_percent,
       max_bank_fee_wtdr_percent,
+      velords_fee_recipient,
+      season_pool_fee_recipient,
       signer,
     } = props;
 
@@ -1851,41 +1781,41 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_resource_bridge_fee_split_config",
       calldata: [
-        0, // config id
         velords_fee_on_dpt_percent,
         velords_fee_on_wtdr_percent,
         season_pool_fee_on_dpt_percent,
         season_pool_fee_on_wtdr_percent,
         client_fee_on_dpt_percent,
         client_fee_on_wtdr_percent,
-        velords_fee_recipient,
-        season_pool_fee_recipient,
         max_bank_fee_dpt_percent,
         max_bank_fee_wtdr_percent,
+        velords_fee_recipient,
+        season_pool_fee_recipient,
       ],
     });
   }
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
-    const { category, weight_gram, signer } = props;
+    const { structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_capacity_config",
-      calldata: [category, weight_gram],
+      calldata: [structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity],
     });
   }
 
-  public async set_speed_config(props: SystemProps.SetSpeedConfigProps) {
-    const { entity_type, sec_per_km, signer } = props;
+  public async set_donkey_speed_config(props: SystemProps.SetDonkeySpeedConfigProps) {
+    const { sec_per_km, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_speed_config",
-      calldata: [entity_type, sec_per_km],
+      entrypoint: "set_donkey_speed_config",
+      calldata: [sec_per_km],
     });
   }
 
-  public async set_weight_config(props: SystemProps.SetWeightConfigProps) {
+  public async set_resource_weight_config(props: SystemProps.SetWeightConfigProps) {
     const { calls, signer } = props;
 
     return await this.executeAndCheckTransaction(
@@ -1893,7 +1823,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_weight_config",
+          entrypoint: "set_resource_weight_config",
           calldata: [call.entity_type, call.weight_gram],
         };
       }),
@@ -1901,12 +1831,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { tick_id, tick_interval_in_seconds, signer } = props;
+    const { tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_tick_config",
-      calldata: [tick_id, tick_interval_in_seconds],
+      calldata: [tick_interval_in_seconds],
     });
   }
 
@@ -1921,10 +1851,10 @@ export class EternumProvider extends EnhancedDojoProvider {
           call.resource_type,
           call.amount_per_building_per_tick,
           call.labor_burn_strategy.resource_rarity,
-          call.labor_burn_strategy.depreciation_percent_num,
-          call.labor_burn_strategy.depreciation_percent_denom,
           call.labor_burn_strategy.wheat_burn_per_labor,
           call.labor_burn_strategy.fish_burn_per_labor,
+          call.labor_burn_strategy.depreciation_percent_num,
+          call.labor_burn_strategy.depreciation_percent_denom,
           call.predefined_resource_burn_cost.length,
           ...call.predefined_resource_burn_cost.flatMap(({ resource, amount }) => [resource, amount]),
         ],
@@ -1935,12 +1865,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
-    const { lords_cost, lp_fee_num, lp_fee_denom, signer } = props;
+    const { lp_fee_num, lp_fee_denom, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_bank_config",
-      calldata: [lords_cost, lp_fee_num, lp_fee_denom],
+      calldata: [lp_fee_num, lp_fee_denom, owner_fee_num, owner_fee_denom],
     });
   }
 
@@ -1957,57 +1887,56 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_troop_config(props: SystemProps.SetTroopConfigProps) {
-    const {
-      signer,
-      config_id,
-      health,
-      knight_strength,
-      paladin_strength,
-      crossbowman_strength,
-      advantage_percent,
-      disadvantage_percent,
-      max_troop_count,
-      pillage_health_divisor,
-      army_free_per_structure,
-      army_extra_per_military_building,
-      army_max_per_structure,
-      battle_leave_slash_num,
-      battle_leave_slash_denom,
-      battle_time_scale,
-      battle_max_time_seconds,
-    } = props;
+    const { signer, stamina_config, limit_config, damage_config } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_troop_config",
       calldata: [
-        config_id,
-        health,
-        knight_strength,
-        paladin_strength,
-        crossbowman_strength,
-        advantage_percent,
-        disadvantage_percent,
-        max_troop_count,
-        pillage_health_divisor,
-        army_free_per_structure,
-        army_extra_per_military_building,
-        army_max_per_structure,
-        battle_leave_slash_num,
-        battle_leave_slash_denom,
-        battle_time_scale,
-        battle_max_time_seconds,
+        // damage config
+        damage_config.damage_biome_bonus_num,
+        damage_config.damage_beta_small,
+        damage_config.damage_beta_large,
+        damage_config.damage_scaling_factor,
+        damage_config.damage_c0,
+        damage_config.damage_delta,
+        damage_config.t1_damage_value,
+        damage_config.t2_damage_multiplier,
+        damage_config.t3_damage_multiplier,
+
+        // stamina config
+        stamina_config.stamina_gain_per_tick,
+        stamina_config.stamina_initial,
+        stamina_config.stamina_bonus_value,
+        stamina_config.stamina_knight_max,
+        stamina_config.stamina_paladin_max,
+        stamina_config.stamina_crossbowman_max,
+        stamina_config.stamina_attack_req,
+        stamina_config.stamina_attack_max,
+        stamina_config.stamina_explore_wheat_cost,
+        stamina_config.stamina_explore_fish_cost,
+        stamina_config.stamina_explore_stamina_cost,
+        stamina_config.stamina_travel_wheat_cost,
+        stamina_config.stamina_travel_fish_cost,
+        stamina_config.stamina_travel_stamina_cost,
+
+        // limit config
+        limit_config.explorer_max_party_count,
+        limit_config.explorer_guard_max_troop_count,
+        limit_config.guard_resurrection_delay,
+        limit_config.mercenaries_troop_lower_bound,
+        limit_config.mercenaries_troop_upper_bound,
       ],
     });
   }
 
   public async set_battle_config(props: SystemProps.SetBattleConfigProps) {
-    const { signer, config_id, regular_immunity_ticks, hyperstructure_immunity_ticks, battle_delay_seconds } = props;
+    const { signer, regular_immunity_ticks, hyperstructure_immunity_ticks } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_battle_config",
-      calldata: [config_id, regular_immunity_ticks, hyperstructure_immunity_ticks, battle_delay_seconds],
+      calldata: [regular_immunity_ticks, hyperstructure_immunity_ticks],
     });
   }
 
@@ -2046,7 +1975,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_realm_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
+  public async set_structure_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
     const { calls, signer } = props;
 
     return await this.executeAndCheckTransaction(
@@ -2054,7 +1983,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_realm_level_config",
+          entrypoint: "set_structure_level_config",
           calldata: [
             call.level,
             call.cost_of_level.length,
@@ -2065,13 +1994,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     );
   }
 
-  public async set_realm_max_level_config(props: SystemProps.SetRealmMaxLevelConfigProps) {
-    const { new_max_level, signer } = props;
+  public async set_world_config(props: SystemProps.SetWorldConfigProps) {
+    const { admin_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_realm_max_level_config",
-      calldata: [new_max_level],
+      entrypoint: "set_world_config",
+      calldata: [admin_address],
+    });
+  }
+
+  public async set_structure_max_level_config(props: SystemProps.SetStructureMaxLevelConfigProps) {
+    const { realm_max_level, village_max_level, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_structure_max_level_config",
+      calldata: [realm_max_level, village_max_level],
     });
   }
 
@@ -2229,32 +2168,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_refill_config",
       calldata: [amount_per_tick, start_boost_tick_count],
-    });
-  }
-
-  public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
-    const {
-      knights_lower_bound,
-      knights_upper_bound,
-      paladins_lower_bound,
-      paladins_upper_bound,
-      crossbowmen_lower_bound,
-      crossbowmen_upper_bound,
-      rewards,
-      signer,
-    } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_mercenaries_config",
-      calldata: [
-        knights_lower_bound,
-        knights_upper_bound,
-        paladins_lower_bound,
-        paladins_upper_bound,
-        crossbowmen_lower_bound,
-        crossbowmen_upper_bound,
-        rewards,
-      ],
     });
   }
 

@@ -1,13 +1,14 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
+  BiomeType,
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   QuestType,
   RealmLevels,
   ResourcesIds,
   ResourceTier,
-  TroopFoodConsumption,
+  StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -40,54 +41,58 @@ export type ArrivalInfo = {
 
 export type DojoAccount = Account | AccountInterface;
 
-export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
-  isStructureBattle: boolean;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-};
+export enum OccupiedBy {
+  None = 0,
+  RealmRegular = 1,
+  RealmWonder = 2,
+  Hyperstructure = 3,
+  FragmentMine = 4,
+  Village = 5,
+  Bank = 6,
+  Explorer = 7,
+}
 
-export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
+export type ArmyInfo = {
+  entityId: ID;
+  troops: Troops;
+  stamina: bigint;
   name: string;
   isMine: boolean;
   isMercenary: boolean;
   isHome: boolean;
-  offset: Position;
-  health: ComponentValue<ClientComponents["Health"]["schema"]>;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
+  position: Position;
+  owner: ContractAddress;
+  entity_owner_id: ID;
   totalCapacity: bigint;
   weight: bigint;
-  arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
-  stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
-  realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
-  homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
 };
 
-export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+export type Structure = {
+  entityId: ID;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   isMine: boolean;
   isMercenary: boolean;
   name: string;
+  category: StructureType;
   ownerName?: string;
-  protector: ArmyInfo | undefined;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  protectors: ArmyInfo[];
+  owner: ContractAddress;
+  position: Position;
 };
 
-export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+export type PlayerStructure = {
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  position: Position;
   name: string;
-  category?: string | undefined;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  category: StructureType;
+  owner: ContractAddress;
 };
 
-export type RealmWithPosition = ComponentValue<ClientComponents["Realm"]["schema"]> & {
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  position: Position;
   name: string;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  owner: ContractAddress;
   resources: ResourcesIds[];
 };
 export interface Prize {
@@ -162,6 +167,13 @@ export enum ClaimStatus {
 
 export type HexPosition = { col: number; row: number };
 
+export type HexTileInfo = {
+  col: number;
+  row: number;
+  staminaCost: number;
+  biomeType: BiomeType | undefined;
+};
+
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
@@ -206,6 +218,34 @@ export interface Health {
   current: bigint;
   lifetime: bigint;
 }
+
+export interface Troops {
+  category: string;
+  tier: string;
+  count: bigint;
+  stamina: {
+    amount: bigint;
+    updated_tick: bigint;
+  };
+}
+
+export enum TroopTier {
+  T1 = "T1",
+  T2 = "T2",
+  T3 = "T3",
+}
+
+export enum TroopType {
+  Knight = "Knight",
+  Paladin = "Paladin",
+  Crossbowman = "Crossbowman",
+}
+
+export type TroopInfo = {
+  type: TroopType;
+  count: number;
+  label: string;
+};
 
 export interface CombatResultInterface {
   attackerRealmEntityId: ID;
@@ -424,12 +464,6 @@ export interface ProductionByLaborParams {
 }
 
 export interface Config {
-  stamina: {
-    travelCost: number;
-    exploreCost: number;
-    refillPerTick: number;
-    startBoostTickCount: number;
-  };
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;
@@ -448,8 +482,7 @@ export interface Config {
     lpFeesDenominator: number; // %
     ownerFeesNumerator: number;
     ownerFeesDenominator: number; // %
-    ownerBridgeFeeOnDepositPercent: number;
-    ownerBridgeFeeOnWithdrawalPercent: number;
+    maxNumBanks: number;
     ammStartingLiquidity: { [key in ResourcesIds]?: number };
     lordsLiquidityPerResource: number;
   };
@@ -460,12 +493,14 @@ export interface Config {
   exploration: {
     reward: number;
     shardsMinesFailProbability: number;
+    shardsMineInitialWheatBalance: number;
+    shardsMineInitialFishBalance: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;
     armiesTickIntervalInSeconds: number; // 1 hour
   };
-  carryCapacityGram: Record<CapacityConfigCategory, bigint | number | string>;
+  carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
     donkey: number;
     army: number;
@@ -476,47 +511,40 @@ export interface Config {
     delaySeconds: number;
   };
   troop: {
-    // The 7,200 health value makes battles last up to 20 hours at a maximum.
-    // This max will be reached if both armies are very similar in strength and health
-    // To reduce max battle time by 4x for example, change the health to (7,200 / 4)
-    // which will make the max battle time = 5 hours.
-    health: number;
-    knightStrength: number;
-    paladinStrength: number;
-    crossbowmanStrength: number;
-    advantagePercent: number;
-    disadvantagePercent: number;
-    maxTroopCount: number;
-    baseArmyNumberForStructure: number;
-    armyExtraPerMilitaryBuilding: number;
-    // Max attacking armies per structure = 6 + 1 defensive army
-    maxArmiesPerStructure: number; // 3 + (3 * 1) = 7 // benefits from at most 3 military buildings
-    // By setting the divisor to 8, the max health that can be taken from the weaker army
-    // during pillage is 100 / 8 = 12.5%. Adjust this value to change that.
-    //
-    // The closer the armies are in strength and health, the closer they both
-    // get to losing 12.5% each. If an army is far stronger than the order,
-    // they lose a small percentage (closer to 0% health loss) while the
-    // weak army's loss is closer to 12.5%.
-    pillageHealthDivisor: number;
-
-    // 25%
-    battleLeaveSlashNum: number;
-    battleLeaveSlashDenom: number;
-    // 1_000. multiply this number by 2 to reduce battle time by 2x, etc.
-    battleTimeReductionScale: number;
-    battleMaxTimeSeconds: number;
-    troopStaminas: { [key: number]: number };
-    troopFoodConsumption: Record<number, TroopFoodConsumption>;
-  };
-  mercenaries: {
-    knights_lower_bound: number;
-    knights_upper_bound: number;
-    paladins_lower_bound: number;
-    paladins_upper_bound: number;
-    crossbowmen_lower_bound: number;
-    crossbowmen_upper_bound: number;
-    rewards: Array<ResourceCost>;
+    damage: {
+      t1DamageValue: bigint;
+      t2DamageMultiplier: bigint;
+      t3DamageMultiplier: bigint;
+      damageBiomeBonusNum: number;
+      damageScalingFactor: bigint;
+      damageC0: bigint;
+      damageDelta: bigint;
+      damageBetaSmall: bigint;
+      damageBetaLarge: bigint;
+    };
+    stamina: {
+      staminaGainPerTick: number;
+      staminaInitial: number;
+      staminaBonusValue: number;
+      staminaKnightMax: number;
+      staminaPaladinMax: number;
+      staminaCrossbowmanMax: number;
+      staminaAttackReq: number;
+      staminaAttackMax: number;
+      staminaExploreWheatCost: number;
+      staminaExploreFishCost: number;
+      staminaExploreStaminaCost: number;
+      staminaTravelWheatCost: number;
+      staminaTravelFishCost: number;
+      staminaTravelStaminaCost: number;
+    };
+    limit: {
+      explorerMaxPartyCount: number;
+      explorerAndGuardMaxTroopCount: number;
+      guardResurrectionDelay: number;
+      mercenariesTroopLowerBound: number;
+      mercenariesTroopUpperBound: number;
+    };
   };
   settlement: {
     center: number;
@@ -567,6 +595,7 @@ export interface Config {
   questResources: { [key in QuestType]: ResourceCost[] };
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
+  villageMaxLevel: number;
 
   // Config for calling the setup function
   setup?: {
@@ -582,7 +611,7 @@ export interface RealmInfo {
   name: string;
   resources: ResourcesIds[];
   order: number;
-  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+  position: Position;
   population?: number | undefined;
   capacity?: number;
   hasCapacity: boolean;

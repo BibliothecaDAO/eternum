@@ -5,7 +5,7 @@ default = "s1_eternum"
 ## local
 account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
 private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
-rpc_url = "https://api.cartridge.gg/x/slot-old-star/katana"
+rpc_url = "https://api.cartridge.gg/x/slot-bright-gate/katana"
 
 [world]
 seed = "s1_eternum"
@@ -17,19 +17,13 @@ website = "https://alpha-eternum.realms.world/"
 [writers]
 "s1_eternum" = [
     "s1_eternum-bank_systems",
-    "s1_eternum-battle_pillage_systems",
-    "s1_eternum-battle_systems",
+    "s1_eternum-structure_systems",
     "s1_eternum-production_systems",
     "s1_eternum-config_systems",
-    "s1_eternum-dev_bank_systems",
-    "s1_eternum-dev_realm_systems",
     "s1_eternum-dev_resource_systems",
-    "s1_eternum-donkey_systems",
     "s1_eternum-guild_systems",
     "s1_eternum-hyperstructure_systems",
     "s1_eternum-liquidity_systems",
-    "s1_eternum-map_systems",
-    "s1_eternum-map_generation_systems",
     "s1_eternum-name_systems",
     "s1_eternum-ownership_systems",
     "s1_eternum-realm_systems",
@@ -37,8 +31,8 @@ website = "https://alpha-eternum.realms.world/"
     "s1_eternum-resource_systems",
     "s1_eternum-swap_systems",
     "s1_eternum-trade_systems",
-    "s1_eternum-travel_systems",
-    "s1_eternum-troop_systems",
-	"s1_eternum-battle_utils_systems",
+    "s1_eternum-troop_management_systems",
+	"s1_eternum-troop_battle_systems",
+    "s1_eternum-troop_movement_systems",
 	"s1_eternum-season_systems"
 ]

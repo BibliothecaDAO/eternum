@@ -1,13 +1,10 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   BuildingType,
-  CapacityConfigCategory,
+  CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   HYPERSTRUCTURE_CONFIG_ID,
-  POPULATION_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
   ResourceTier,
@@ -15,7 +12,7 @@ import {
   WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
-import { Config, TickIds, TravelTypes } from "../types";
+import { Config, EntityType, TickIds, TroopType } from "../types";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -208,75 +205,146 @@ export class ClientConfigManager {
   getTravelStaminaCost() {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(
-        this.components.TravelStaminaCostConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Travel)]),
-      );
-      return staminaConfig?.cost ?? 0;
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
     }, 1);
   }
 
   getExploreStaminaCost() {
     return this.getValueOrDefault(() => {
       const staminaConfig = getComponentValue(
-        this.components.TravelStaminaCostConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TravelTypes.Explore)]),
-      );
-      return staminaConfig?.cost ?? 0;
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_explore_stamina_cost ?? 0;
     }, 1);
   }
 
   getExploreReward() {
     return this.getValueOrDefault(() => {
-      const exploreConfig = getComponentValue(this.components.MapConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const exploreConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.map_config;
 
-      return this.divideByPrecision(Number(exploreConfig?.reward_resource_amount ?? 0));
+      return Number(exploreConfig?.reward_resource_amount ?? 0);
     }, 0);
   }
 
   getTroopConfig() {
+    // Default config structure matching the expected types
+    const defaultTroopConfig = {
+      troop_damage_config: {
+        damage_biome_bonus_num: 0,
+        damage_beta_small: 0n,
+        damage_beta_large: 0n,
+        damage_scaling_factor: 0n,
+        damage_c0: 0n,
+        damage_delta: 0n,
+        t1_damage_value: 0n,
+        t2_damage_multiplier: 0n,
+        t3_damage_multiplier: 0n,
+      },
+
+      troop_limit_config: {
+        explorer_max_party_count: 0,
+        explorer_guard_max_troop_count: 0,
+        guard_resurrection_delay: 0,
+        mercenaries_troop_lower_bound: 0,
+        mercenaries_troop_upper_bound: 0,
+        troops_per_military_building: 0,
+        max_defense_armies: 0,
+      },
+
+      troop_stamina_config: {
+        stamina_gain_per_tick: 0,
+        stamina_initial: 0,
+        stamina_bonus_value: 0,
+        stamina_knight_max: 0,
+        stamina_paladin_max: 0,
+        stamina_crossbowman_max: 0,
+        stamina_attack_req: 0,
+        stamina_attack_max: 0,
+        stamina_explore_wheat_cost: 0,
+        stamina_explore_fish_cost: 0,
+        stamina_explore_stamina_cost: 0,
+        stamina_travel_wheat_cost: 0,
+        stamina_travel_fish_cost: 0,
+        stamina_travel_stamina_cost: 0,
+      },
+    };
+
+    return this.getValueOrDefault(() => {
+      // todo: need to fix this
+      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+
+      if (!worldConfig) return defaultTroopConfig;
+
+      const { troop_damage_config, troop_limit_config, troop_stamina_config } = worldConfig;
+
+      return {
+        troop_damage_config,
+        troop_limit_config: {
+          ...troop_limit_config,
+          troops_per_military_building: 1,
+          max_defense_armies: 4,
+        },
+        troop_stamina_config,
+      };
+    }, defaultTroopConfig);
+  }
+
+  getCombatConfig() {
     return this.getValueOrDefault(
       () => {
-        const troopConfig = getComponentValue(this.components.TroopConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const combatConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_damage_config;
+
+        const troopStaminaConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
 
         return {
-          health: troopConfig?.health ?? 0,
-          knightStrength: troopConfig?.knight_strength ?? 0,
-          paladinStrength: troopConfig?.paladin_strength ?? 0,
-          crossbowmanStrength: troopConfig?.crossbowman_strength ?? 0,
-          advantagePercent: troopConfig?.advantage_percent ?? 0,
-          disadvantagePercent: troopConfig?.disadvantage_percent ?? 0,
-          maxTroopCount: this.divideByPrecision(troopConfig?.max_troop_count ?? 0),
-          pillageHealthDivisor: troopConfig?.pillage_health_divisor ?? 0,
-          baseArmyNumberForStructure: troopConfig?.army_free_per_structure ?? 0,
-          armyExtraPerMilitaryBuilding: troopConfig?.army_extra_per_building ?? 0,
-          maxArmiesPerStructure: troopConfig?.army_max_per_structure ?? 0,
-          battleLeaveSlashNum: troopConfig?.battle_leave_slash_num ?? 0,
-          battleLeaveSlashDenom: troopConfig?.battle_leave_slash_denom ?? 0,
-          battleTimeScale: troopConfig?.battle_time_scale ?? 0,
+          stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
+          stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
+          damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
+          damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
+          damage_beta_large: combatConfig?.damage_beta_large ?? 0n,
+          damage_scaling_factor: combatConfig?.damage_scaling_factor ?? 0n,
+          damage_c0: combatConfig?.damage_c0 ?? 0n,
+          damage_delta: combatConfig?.damage_delta ?? 0n,
+          t1_damage_value: combatConfig?.t1_damage_value ?? 0n,
+          t2_damage_multiplier: combatConfig?.t2_damage_multiplier ?? 0n,
+          t3_damage_multiplier: combatConfig?.t3_damage_multiplier ?? 0n,
         };
       },
       {
-        health: 0,
-        knightStrength: 0,
-        paladinStrength: 0,
-        crossbowmanStrength: 0,
-        advantagePercent: 0,
-        disadvantagePercent: 0,
-        maxTroopCount: 0,
-        pillageHealthDivisor: 0,
-        baseArmyNumberForStructure: 0,
-        armyExtraPerMilitaryBuilding: 0,
-        maxArmiesPerStructure: 0,
-        battleLeaveSlashNum: 0,
-        battleLeaveSlashDenom: 0,
-        battleTimeScale: 0,
+        stamina_bonus_value: 0,
+        stamina_attack_req: 0,
+        damage_biome_bonus_num: 0,
+        damage_beta_small: 0n,
+        damage_beta_large: 0n,
+        damage_scaling_factor: 0n,
+        damage_c0: 0n,
+        damage_delta: 0n,
+        t1_damage_value: 0n,
+        t2_damage_multiplier: 0n,
+        t3_damage_multiplier: 0n,
       },
     );
   }
 
   getBattleGraceTickCount(category: StructureType) {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const battleConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.battle_config;
       switch (category) {
         case StructureType.Hyperstructure:
           return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
@@ -288,23 +356,24 @@ export class ClientConfigManager {
     }, 0);
   }
 
-  getBattleDelay() {
+  getMinTravelStaminaCost() {
     return this.getValueOrDefault(() => {
-      const battleConfig = getComponentValue(this.components.BattleConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-
-      return Number(battleConfig?.battle_delay_seconds ?? 0);
-    }, 0);
+      const staminaConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.troop_stamina_config;
+      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
+    }, 1);
   }
 
   getResourceBridgeFeeSplitConfig() {
     return this.getValueOrDefault(
       () => {
         const resourceBridgeFeeSplitConfig = getComponentValue(
-          this.components.ResourceBridgeFeeSplitConfig,
+          this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        );
+        )?.res_bridge_fee_split_config;
         return {
-          config_id: Number(resourceBridgeFeeSplitConfig?.config_id ?? WORLD_CONFIG_ID),
           velords_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_dpt_percent ?? 0),
           velords_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.velords_fee_on_wtdr_percent ?? 0),
           season_pool_fee_on_dpt_percent: Number(resourceBridgeFeeSplitConfig?.season_pool_fee_on_dpt_percent ?? 0),
@@ -318,7 +387,6 @@ export class ClientConfigManager {
         };
       },
       {
-        config_id: Number(WORLD_CONFIG_ID),
         velords_fee_on_dpt_percent: 0,
         velords_fee_on_wtdr_percent: 0,
         season_pool_fee_on_dpt_percent: 0,
@@ -336,27 +404,34 @@ export class ClientConfigManager {
   getTick(tickId: TickIds) {
     return this.getValueOrDefault(() => {
       const tickConfig = getComponentValue(
-        this.components.TickConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(tickId)]),
-      );
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.tick_config;
 
-      return Number(tickConfig?.tick_interval_in_seconds ?? 0);
+      if (tickId === TickIds.Armies) {
+        return Number(tickConfig?.armies_tick_in_seconds ?? 0);
+      } else if (tickId === TickIds.Default) {
+        return 1;
+      } else {
+        throw new Error("Undefined tick id in getTick");
+      }
     }, 0);
   }
 
   getBankConfig() {
     return this.getValueOrDefault(
       () => {
-        const bankConfig = getComponentValue(this.components.BankConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const bankConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.bank_config;
 
         return {
-          lordsCost: this.divideByPrecision(Number(bankConfig?.lords_cost)),
           lpFeesNumerator: Number(bankConfig?.lp_fee_num ?? 0),
           lpFeesDenominator: Number(bankConfig?.lp_fee_denom ?? 0),
         };
       },
       {
-        lordsCost: 0,
         lpFeesNumerator: 0,
         lpFeesDenominator: 0,
       },
@@ -364,10 +439,12 @@ export class ClientConfigManager {
   }
 
   getAdminBankOwnerFee() {
-    const adminBank = getComponentValue(this.components.Bank, getEntityIdFromKeys([ADMIN_BANK_ENTITY_ID]));
-
-    const numerator = Number(adminBank?.owner_fee_num) ?? 0;
-    const denominator = Number(adminBank?.owner_fee_denom) ?? 0;
+    const bankConfig = getComponentValue(
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.bank_config;
+    const numerator = Number(bankConfig?.owner_fee_num) ?? 0;
+    const denominator = Number(bankConfig?.owner_fee_denom) ?? 0;
     return numerator / denominator;
   }
 
@@ -377,21 +454,44 @@ export class ClientConfigManager {
     return bankConfig.lpFeesNumerator / bankConfig.lpFeesDenominator;
   }
 
-  getCapacityConfig(category: CapacityConfigCategory) {
+  getCapacityConfig(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
-      const capacityConfig = getComponentValue(this.components.CapacityConfig, getEntityIdFromKeys([BigInt(category)]));
-      return Number(capacityConfig?.weight_gram ?? 0);
+      const capacityConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.capacity_config;
+
+      switch (category) {
+        case CapacityConfig.Structure:
+          return Number(capacityConfig?.structure_capacity ?? 0);
+        case CapacityConfig.Donkey:
+          return Number(capacityConfig?.donkey_capacity ?? 0);
+        case CapacityConfig.Army:
+          return Number(capacityConfig?.troop_capacity ?? 0);
+        case CapacityConfig.Storehouse:
+          return Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+        case CapacityConfig.None:
+          return 0;
+        default:
+          throw new Error("Invalid capacity config category");
+      }
     }, 0);
   }
 
   getSpeedConfig(entityType: number): number {
     return this.getValueOrDefault(() => {
       const speedConfig = getComponentValue(
-        this.components.SpeedConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(entityType)]),
-      );
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.speed_config;
 
-      return speedConfig?.sec_per_km ?? 0;
+      if (entityType === EntityType.DONKEY) {
+        return Number(speedConfig?.donkey_sec_per_km ?? 0);
+      } else if (entityType === EntityType.TROOP) {
+        return Number(speedConfig?.army_sec_per_km ?? 0);
+      } else {
+        throw new Error("Undefined entity type in getSpeedConfig");
+      }
     }, 0);
   }
 
@@ -403,7 +503,7 @@ export class ClientConfigManager {
       () => {
         const buildingConfig = getComponentValue(
           this.components.BuildingCategoryPopConfig,
-          getEntityIdFromKeys([BUILDING_CATEGORY_POPULATION_CONFIG_ID, BigInt(buildingId)]),
+          getEntityIdFromKeys([BigInt(buildingId)]),
         );
 
         return {
@@ -417,14 +517,23 @@ export class ClientConfigManager {
       },
     );
   }
+  getBuildingGeneralConfig() {
+    return this.getValueOrDefault(
+      () =>
+        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_general_config,
+      {
+        base_cost_percent_increase: 0,
+      },
+    );
+  }
 
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
         const hyperstructureConfig = getComponentValue(
-          this.components.HyperstructureConfig,
+          this.components.WorldConfig,
           getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]),
-        );
+        )?.hyperstructure_config;
 
         return {
           timeBetweenSharesChange: hyperstructureConfig?.time_between_shares_change ?? 0,
@@ -503,7 +612,7 @@ export class ClientConfigManager {
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
       return (
-        getComponentValue(this.components.PopulationConfig, getEntityIdFromKeys([POPULATION_CONFIG_ID]))
+        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.population_config
           ?.base_population ?? 0
       );
     }, 0);
@@ -524,15 +633,15 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         const travelFoodCostConfig = getComponentValue(
-          this.components.TravelFoodCostConfig,
-          getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopType)]),
-        );
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
 
         return {
-          exploreWheatBurnAmount: Number(travelFoodCostConfig?.explore_wheat_burn_amount) ?? 0,
-          exploreFishBurnAmount: Number(travelFoodCostConfig?.explore_fish_burn_amount) ?? 0,
-          travelWheatBurnAmount: Number(travelFoodCostConfig?.travel_wheat_burn_amount) ?? 0,
-          travelFishBurnAmount: Number(travelFoodCostConfig?.travel_fish_burn_amount) ?? 0,
+          exploreWheatBurnAmount: Number(travelFoodCostConfig?.stamina_explore_wheat_cost) ?? 0,
+          exploreFishBurnAmount: Number(travelFoodCostConfig?.stamina_explore_fish_cost) ?? 0,
+          travelWheatBurnAmount: Number(travelFoodCostConfig?.stamina_travel_wheat_cost) ?? 0,
+          travelFishBurnAmount: Number(travelFoodCostConfig?.stamina_travel_fish_cost) ?? 0,
         };
       },
       {
@@ -544,14 +653,49 @@ export class ClientConfigManager {
     );
   }
 
-  getTroopStaminaConfig(troopId: number) {
-    return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.StaminaConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(troopId)]),
-      );
-      return staminaConfig?.max_stamina ?? 0;
-    }, 0);
+  getStaminaCombatConfig() {
+    return {
+      staminaCost: 30,
+      staminaBonus: 30,
+    };
+  }
+
+  getTroopStaminaConfig(troopType: TroopType) {
+    return this.getValueOrDefault(
+      () => {
+        const staminaConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.troop_stamina_config;
+
+        switch (troopType) {
+          case TroopType.Knight:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_knight_max ?? 0,
+            };
+          case TroopType.Crossbowman:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_crossbowman_max ?? 0,
+            };
+          case TroopType.Paladin:
+            return {
+              staminaInitial: staminaConfig?.stamina_initial ?? 0,
+              staminaMax: staminaConfig?.stamina_paladin_max ?? 0,
+            };
+          default:
+            return {
+              staminaInitial: 0,
+              staminaMax: 0,
+            };
+        }
+      },
+      {
+        staminaInitial: 0,
+        staminaMax: 0,
+      },
+    );
   }
 
   getResourceRarity(resourceId: ResourcesIds) {
@@ -577,9 +721,9 @@ export class ClientConfigManager {
   getBuildingBaseCostPercentIncrease() {
     return this.getValueOrDefault(() => {
       const buildingGeneralConfig = getComponentValue(
-        this.components.BuildingGeneralConfig,
+        this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      );
+      )?.building_general_config;
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
   }
@@ -588,9 +732,9 @@ export class ClientConfigManager {
     return this.getValueOrDefault(
       () => {
         const seasonBridgeConfig = getComponentValue(
-          this.components.SeasonBridgeConfig,
+          this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        );
+        )?.season_bridge_config;
         return {
           closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
         };

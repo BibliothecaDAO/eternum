@@ -1,11 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type ArmyManager } from "@/three/managers/army-manager";
-import { type BattleManager } from "@/three/managers/battle-manager";
-import { type Biome, BIOME_COLORS } from "@/three/managers/biome";
+import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { FELT_CENTER } from "@/ui/config";
-import { StructureType } from "@bibliothecadao/eternum";
+import { BiomeType, StructureType } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
@@ -14,7 +12,6 @@ const LABELS = {
   ARMY: "/textures/army_label.png",
   MY_ARMY: "/textures/my_army_label.png",
   MY_REALM: "/textures/my_realm_label.png",
-  BATTLE: "/textures/battle_label.png",
   MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
   REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
@@ -22,13 +19,12 @@ const LABELS = {
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
     [StructureType.Bank]: "/images/resources/31.png",
     [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
-    [StructureType.Settlement]: "/textures/realm_label.png",
   },
 };
 
 const MINIMAP_CONFIG = {
   MIN_ZOOM_RANGE: 75,
-  MAX_ZOOM_RANGE: 300,
+  MAX_ZOOM_RANGE: 600,
   MAP_COLS_WIDTH: 200,
   MAP_ROWS_HEIGHT: 100,
   EXPANDED_MODIFIER: 0.5,
@@ -41,11 +37,9 @@ const MINIMAP_CONFIG = {
       [StructureType.Hyperstructure]: "#FFFFFF",
       [StructureType.Bank]: "#FFFF00",
       [StructureType.FragmentMine]: "#00FFFF",
-      [StructureType.Settlement]: "#FFA500",
     },
   },
   SIZES: {
-    BATTLE: 12,
     STRUCTURE: 10,
     ARMY: 10,
     CAMERA: {
@@ -62,11 +56,9 @@ class Minimap {
   private canvas!: HTMLCanvasElement;
   private context!: CanvasRenderingContext2D;
   private camera!: THREE.PerspectiveCamera;
-  private exploredTiles!: Map<number, Set<number>>;
+  private exploredTiles!: Map<number, Map<number, BiomeType>>;
   private structureManager!: StructureManager;
   private armyManager!: ArmyManager;
-  private battleManager!: BattleManager;
-  private biome!: Biome;
   private mapCenter: { col: number; row: number } = { col: 250, row: 150 };
   private mapSize: { width: number; height: number } = {
     width: MINIMAP_CONFIG.MAP_COLS_WIDTH,
@@ -81,7 +73,6 @@ class Minimap {
   private BORDER_WIDTH_PERCENT = MINIMAP_CONFIG.BORDER_WIDTH_PERCENT;
   private structureSize!: { width: number; height: number };
   private armySize!: { width: number; height: number };
-  private battleSize!: { width: number; height: number };
   private cameraSize!: {
     topSideWidth: number;
     bottomSideWidth: number;
@@ -93,18 +84,16 @@ class Minimap {
 
   constructor(
     worldmapScene: WorldmapScene,
-    exploredTiles: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
     camera: THREE.PerspectiveCamera,
     structureManager: StructureManager,
     armyManager: ArmyManager,
-    battleManager: BattleManager,
-    biome: Biome,
   ) {
     this.worldmapScene = worldmapScene;
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.loadLabelImages();
-      this.initializeCanvas(structureManager, exploredTiles, armyManager, biome, camera, battleManager);
+      this.initializeCanvas(structureManager, exploredTiles, armyManager, camera);
       this.canvas.addEventListener("canvasResized", this.handleResize);
     });
   }
@@ -125,18 +114,14 @@ class Minimap {
 
   private initializeCanvas(
     structureManager: StructureManager,
-    exploredTiles: Map<number, Set<number>>,
+    exploredTiles: Map<number, Map<number, BiomeType>>,
     armyManager: ArmyManager,
-    biome: Biome,
     camera: THREE.PerspectiveCamera,
-    battleManager: BattleManager,
   ) {
     this.context = this.canvas.getContext("2d")!;
     this.structureManager = structureManager;
     this.exploredTiles = exploredTiles;
     this.armyManager = armyManager;
-    this.battleManager = battleManager;
-    this.biome = biome;
     this.camera = camera;
     this.scaleX = this.canvas.width / this.mapSize.width;
     this.scaleY = this.canvas.height / this.mapSize.height;
@@ -187,10 +172,6 @@ class Minimap {
       width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
       height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
     };
-    this.battleSize = {
-      width: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.BATTLE * this.scaleX * modifier,
-    };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
       bottomSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -212,20 +193,18 @@ class Minimap {
     this.drawExploredTiles();
     this.drawStructures();
     this.drawArmies();
-    this.drawBattles();
     this.drawCamera();
   }
 
   private drawExploredTiles() {
     this.exploredTiles.forEach((rows, col) => {
-      rows.forEach((row) => {
+      rows.forEach((biome, row) => {
         const cacheKey = `${col},${row}`;
         let biomeColor;
 
         if (this.biomeCache.has(cacheKey)) {
           biomeColor = this.biomeCache.get(cacheKey)!;
         } else {
-          const biome = this.biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
           biomeColor = BIOME_COLORS[biome].getStyle();
           this.biomeCache.set(cacheKey, biomeColor);
         }
@@ -292,27 +271,6 @@ class Minimap {
           scaledRow - this.armySize.height / 2,
           this.armySize.width,
           this.armySize.height,
-        );
-      }
-    });
-  }
-
-  private drawBattles() {
-    const allBattles = this.battleManager.getAll();
-    allBattles.forEach((battle) => {
-      const { x: col, y: row } = battle.position.getNormalized();
-      const cacheKey = `${col},${row}`;
-      if (this.scaledCoords.has(cacheKey)) {
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        const labelImg = this.labelImages.get("BATTLE");
-        if (!labelImg) return;
-
-        this.context.drawImage(
-          labelImg,
-          scaledCol - this.battleSize.width * (row % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.battleSize.height / 2,
-          this.battleSize.width,
-          this.battleSize.height,
         );
       }
     });
@@ -459,7 +417,6 @@ class Minimap {
     // Load army labels
     this.loadImage("ARMY", LABELS.ARMY);
     this.loadImage("MY_ARMY", LABELS.MY_ARMY);
-    this.loadImage("BATTLE", LABELS.BATTLE);
     this.loadImage("MY_REALM", LABELS.MY_REALM);
     this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
     this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);

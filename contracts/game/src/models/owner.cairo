@@ -1,30 +1,47 @@
+use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::ErrorMessages;
-use s1_eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
+#[generate_trait]
+pub impl OwnerAddressImpl of OwnerAddressTrait {
+    fn assert_caller_owner(self: ContractAddress) {
+        assert(self == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
+    }
+    fn assert_caller_not_owner(self: ContractAddress) {
+        assert!(self != Zero::zero(), "owner is zero");
+        assert(self != starknet::get_caller_address(), 'caller is owner');
+    }
+
+    fn assert_non_zero(self: ContractAddress) {
+        assert!(self.is_non_zero(), "owner is zero");
+    }
+}
+
+
 // contract address owning an entity
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Owner {
     #[key]
-    entity_id: ID,
-    address: ContractAddress,
+    pub entity_id: ID,
+    pub address: ContractAddress,
 }
 
+
 // entity owning an entity
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct EntityOwner {
     #[key]
-    entity_id: ID,
-    entity_owner_id: ID,
+    pub entity_id: ID,
+    pub entity_owner_id: ID,
 }
 
 #[generate_trait]
-impl OwnerImpl of OwnerTrait {
+pub impl OwnerImpl of OwnerTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
@@ -42,7 +59,7 @@ impl OwnerImpl of OwnerTrait {
 }
 
 #[generate_trait]
-impl EntityOwnerImpl of EntityOwnerTrait {
+pub impl EntityOwnerImpl of EntityOwnerTrait {
     fn assert_caller_owner(self: EntityOwner, world: WorldStorage) {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.assert_caller_owner();
@@ -52,53 +69,48 @@ impl EntityOwnerImpl of EntityOwnerTrait {
         let owner: Owner = world.read_model(self.entity_owner_id);
         owner.address
     }
-
-    fn get_realm_id(self: EntityOwner, world: WorldStorage) -> ID {
-        let realm: Realm = world.read_model(self.entity_owner_id);
-        realm.realm_id
-    }
 }
+// #[cfg(test)]
+// mod tests {
+//     use dojo::model::{ModelStorage, ModelStorageTest, ModelValueStorage};
+//     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+//     use dojo::world::{WorldStorage, WorldStorageTrait};
+//     use dojo_cairo_test::{ContractDefTrait, NamespaceDef, TestResource};
+//     use s1_eternum::alias::ID;
+//     use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
+//     use s1_eternum::models::realm::Realm;
+//     use s1_eternum::utils::testing::world::spawn_eternum;
+//     use starknet::contract_address_const;
 
-#[cfg(test)]
-mod tests {
-    use dojo::model::{ModelStorage, ModelValueStorage, ModelStorageTest};
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
-    use dojo_cairo_test::{NamespaceDef, TestResource, ContractDefTrait};
-    use s1_eternum::alias::ID;
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner, OwnerTrait};
-    use s1_eternum::models::realm::Realm;
-    use s1_eternum::utils::testing::world::spawn_eternum;
-    use starknet::contract_address_const;
+//     #[test]
+//     fn owner_test_entity_owner_get_realm_id() {
+//         let mut world = spawn_eternum();
 
-    #[test]
-    fn owner_test_entity_owner_get_realm_id() {
-        let mut world = spawn_eternum();
+//         world
+//             .write_model_test(
+//                 @Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0, has_wonder: false },
+//             );
+//         world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
-        world
-            .write_model_test(
-                @Realm { entity_id: 1, realm_id: 3, produced_resources: 0, order: 0, level: 0, has_wonder: false, }
-            );
-        world.write_model_test(@EntityOwner { entity_id: 2, entity_owner_id: 1 });
+//         let entity_owner: EntityOwner = world.read_model(2);
+//         let realm_id = entity_owner.get_realm_id(world);
 
-        let entity_owner: EntityOwner = world.read_model(2);
-        let realm_id = entity_owner.get_realm_id(world);
+//         assert(realm_id == 3, 'wrong realm id');
+//     }
 
-        assert(realm_id == 3, 'wrong realm id');
-    }
+//     #[test]
+//     #[should_panic(expected: "new owner is zero")]
+//     fn owner_test_set_zero_owner() {
+//         let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
+//         owner.transfer(contract_address_const::<0>());
+//     }
 
-    #[test]
-    #[should_panic(expected: "new owner is zero")]
-    fn owner_test_set_zero_owner() {
-        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
-        owner.transfer(contract_address_const::<0>());
-    }
+//     #[test]
+//     #[should_panic(expected: "current owner and new owner are the same")]
+//     fn owner_test_set_same_owner() {
+//         let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
+//         owner.transfer(contract_address_const::<1>());
+//     }
+// }
 
 
-    #[test]
-    #[should_panic(expected: "current owner and new owner are the same")]
-    fn owner_test_set_same_owner() {
-        let mut owner = Owner { entity_id: 199999, address: contract_address_const::<1>() };
-        owner.transfer(contract_address_const::<1>());
-    }
-}

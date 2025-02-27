@@ -10,10 +10,10 @@ import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ContractAddress, getEntityInfo } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerArrivalsNotifications, useQuery } from "@bibliothecadao/react";
+import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
-import { Suspense, lazy, memo, useEffect, useMemo } from "react";
+import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
 
 const EntityDetails = lazy(() =>
@@ -36,9 +36,10 @@ const WorldStructuresMenu = lazy(() =>
   })),
 );
 
-const AllResourceArrivals = lazy(() =>
-  import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
-);
+// todo: implement this with new arrivals logic
+// const AllResourceArrivals = lazy(() =>
+//   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
+// );
 
 export const LeftNavigationModule = memo(() => {
   const {
@@ -58,7 +59,10 @@ export const LeftNavigationModule = memo(() => {
   const { isMapView } = useQuery();
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications(currentBlockTimestamp);
+  // todo: need to implement this
+  // const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications(currentBlockTimestamp);
+  const arrivedNotificationLength = 0;
+  const arrivals: any[] = [];
 
   const structureInfo = useMemo(
     () =>
@@ -70,12 +74,13 @@ export const LeftNavigationModule = memo(() => {
       ),
     [structureEntityId, account.address, components],
   );
+
   const structureIsMine = useMemo(() => structureInfo.isMine, [structureInfo]);
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
 
   const isRealm = useMemo(
-    () => Boolean(structureInfo) && String(structureInfo?.structureCategory) === "Realm",
+    () => Boolean(structureInfo) && structureInfo?.structureCategory === StructureType.Realm,
     [structureInfo],
   );
 
@@ -248,7 +253,7 @@ export const LeftNavigationModule = memo(() => {
                 <StructureConstructionMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />}
+              {/* {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />} */}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>

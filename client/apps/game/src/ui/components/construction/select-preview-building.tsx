@@ -12,12 +12,12 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
   BuildingType,
-  CapacityConfigCategory,
-  ClientComponents,
+  CapacityConfig,
   configManager,
   divideByPrecision,
   findResourceById,
   getBalance,
+  getBuildingQuantity,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ID,
@@ -26,10 +26,9 @@ import {
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
-  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
-import { Component, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -385,8 +384,8 @@ export const ResourceInfo = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   let cost = configManager.resourceInputs[resourceId];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
-  if (resourceId == ResourcesIds.Donkey && realm?.has_wonder) {
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
@@ -526,14 +525,14 @@ export const BuildingInfo = ({
   const capacity = buildingPopCapacityConfig.capacity;
 
   const carryCapacity =
-    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfigCategory.Storehouse) : 0;
+    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfig.Storehouse) : 0;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
-  if (buildingId == BuildingType.Market && realm?.has_wonder && ongoingCost.length > 0) {
+  if (buildingId == BuildingType.Market && structure?.metadata.has_wonder && ongoingCost.length > 0) {
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
@@ -673,21 +672,13 @@ const getConsumedBy = (resourceProduced: ResourcesIds) => {
 };
 
 const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
-  const buildingGeneralConfig = getComponentValue(
-    dojo.setup.components.BuildingGeneralConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID]),
-  );
-
+  const buildingGeneralConfig = configManager.getBuildingGeneralConfig();
   if (!buildingGeneralConfig) {
     return;
   }
   const buildingType = resourceIdToBuildingCategory(resourceId);
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingType ?? 0,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingType, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -704,11 +695,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
 const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
   const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease();
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingCategory,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -720,18 +707,6 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
     updatedCosts.push({ resource: cost.resource, amount: totalCost });
   });
   return updatedCosts;
-};
-
-const getBuildingQuantity = (
-  outerEntityId: ID,
-  buildingCategory: BuildingType,
-  buildingQuantityComponent: Component<ClientComponents["BuildingQuantityv2"]["schema"]>,
-) => {
-  const buildingQuantity = getComponentValue(
-    buildingQuantityComponent,
-    getEntityIdFromKeys([BigInt(outerEntityId), BigInt(buildingCategory)]),
-  );
-  return buildingQuantity?.value;
 };
 
 const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {

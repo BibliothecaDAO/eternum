@@ -19,7 +19,6 @@ export async function setupNetwork(
   const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress);
 
   const toriiClient = await torii.createClient({
-    rpcUrl: config.rpcUrl,
     toriiUrl: config.toriiUrl,
     relayUrl: config.relayUrl,
     worldAddress: config.manifest.world.address || "",

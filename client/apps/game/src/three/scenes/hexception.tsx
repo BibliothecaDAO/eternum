@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { createPausedLabel, gltfLoader } from "@/three/helpers/utils";
-import { BIOME_COLORS, Biome, BiomeType } from "@/three/managers/biome";
+import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { BuildingPreview } from "@/three/managers/building-preview";
 import { SMALL_DETAILS_NAME } from "@/three/managers/instanced-model";
 import { SceneManager } from "@/three/scene-manager";
@@ -13,7 +13,10 @@ import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
+  ActionType,
   BUILDINGS_CENTER,
+  Biome,
+  BiomeType,
   BuildingType,
   HexPosition,
   RealmLevels,
@@ -102,7 +105,6 @@ export default class HexceptionScene extends HexagonScene {
   private pillars: THREE.InstancedMesh | null = null;
   private buildings: any = [];
   centerColRow: number[] = [0, 0];
-  private biome!: Biome;
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
@@ -125,7 +127,6 @@ export default class HexceptionScene extends HexagonScene {
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
-    this.biome = new Biome();
     this.buildingPreview = new BuildingPreview(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -171,7 +172,12 @@ export default class HexceptionScene extends HexagonScene {
       (building) => {
         if (building) {
           this.buildingPreview?.setPreviewBuilding(building as any);
-          this.highlightHexManager.highlightHexes(this.highlights);
+          this.highlightHexManager.highlightHexes(
+            this.highlights.map((hex) => ({
+              hex: { col: hex.col, row: hex.row },
+              actionType: ActionType.Build,
+            })),
+          );
         } else {
           this.clearBuildingMode();
         }
@@ -264,7 +270,7 @@ export default class HexceptionScene extends HexagonScene {
     );
 
     this.realmSubscription?.unsubscribe();
-    this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
+    this.realmSubscription = this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
       if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
         this.structureStage = update.level as RealmLevels;
         this.removeCastleFromScene();
@@ -315,7 +321,7 @@ export default class HexceptionScene extends HexagonScene {
         try {
           await this.tileManager.placeBuilding(
             account!,
-            this.state.structureEntityId,
+            useUIStore.getState().structureEntityId,
             buildingType.type,
             normalizedCoords,
             buildingType.resource,
@@ -435,6 +441,7 @@ export default class HexceptionScene extends HexagonScene {
     const dummy = new THREE.Object3D();
     this.updateCastleLevel();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+      None: [],
       Ocean: [],
       DeepOcean: [],
       Beach: [],
@@ -616,7 +623,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
-    const biome = this.biome.getBiome(targetHex.col, targetHex.row);
+    const biome = Biome.getBiome(targetHex.col, targetHex.row);
     const buildableAreaBiome = "Grassland";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 

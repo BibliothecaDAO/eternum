@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Explorer of TaskTrait {
+pub impl Explorer of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'EXPLORER'

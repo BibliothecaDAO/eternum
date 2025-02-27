@@ -1,20 +1,21 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
+import { ArmyCreate } from "@/ui/components/military/army-management-card";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { BuildingType, configManager, PlayerStructure, StructureType, TileManager } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, useDojo } from "@bibliothecadao/react";
+import {
+  ArmyManager,
+  BuildingType,
+  configManager,
+  PlayerStructure,
+  StructureType,
+  TileManager,
+} from "@bibliothecadao/eternum";
+import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
-
-const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
-
-enum Loading {
-  None,
-  CreateDefensive,
-  CreateAttacking,
-}
+import { StructureDefence } from "./structure-defence";
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const dojo = useDojo();
@@ -26,98 +27,84 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   });
   const existingBuildings = tileManager.existingBuildings();
 
-  const { entityArmies: structureArmies } = useArmiesByStructure({
-    structureEntityId: structure?.entity_id || 0,
+  const explorers = useExplorersByStructure({
+    structureEntityId: structure?.structure.entity_id || 0,
   });
 
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { create_army },
-    },
-  } = useDojo();
+  const guards = useGuardsByStructure({
+    structureEntityId: structure?.structure.entity_id || 0,
+  });
 
-  const troopConfig = configManager.getTroopConfig();
+  const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
 
-  const [loading, setLoading] = useState<Loading>(Loading.None);
+  const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
 
-  const maxAmountOfAttackingArmies = useMemo(() => {
+  const maxAmountExplorerArmies = useMemo(() => {
     const maxWithBuildings =
-      troopConfig.baseArmyNumberForStructure +
+      structure.structure.base.troop_max_explorer_count +
       existingBuildings.filter(
         (building) =>
           building.category === BuildingType[BuildingType.ArcheryRange] ||
           building.category === BuildingType[BuildingType.Barracks] ||
           building.category === BuildingType[BuildingType.Stable],
       ).length *
-        troopConfig.armyExtraPerMilitaryBuilding;
+        troopConfig.troop_limit_config.troops_per_military_building;
     // remove 1 to force to create defensive army first
-    const hardMax = troopConfig.maxArmiesPerStructure - 1;
+    const hardMax = troopConfig.troop_limit_config.explorer_max_party_count - 1;
     return Math.min(maxWithBuildings, hardMax);
   }, [existingBuildings]);
 
-  const numberAttackingArmies = useMemo(() => {
-    return structureArmies.filter((army) => !army.protectee).length;
-  }, [structureArmies]);
+  const totalExplorersCount = useMemo(() => {
+    return explorers.length;
+  }, [explorers]);
 
-  const numberDefensiveArmies = useMemo(() => {
-    return structureArmies.filter((army) => army.protectee).length;
-  }, [structureArmies]);
+  const totalGuards = useMemo(() => {
+    return guards.length;
+  }, [guards]);
 
-  const canCreateProtector = useMemo(
-    () => numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES,
-    [numberDefensiveArmies],
-  );
+  const isRealm = structure.category === StructureType.Realm;
 
-  const isRealm = structure.category === StructureType[StructureType.Realm];
+  const armyManager = useMemo(() => {
+    if (!structure.structure.entity_id) return null;
+    return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.structure.entity_id);
+  }, [structure.structure.entity_id, dojo.network.provider, dojo.setup.components]);
 
-  const handleCreateArmy = (is_defensive_army: boolean) => {
-    if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
-    setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
-    create_army({
-      signer: account,
-      army_owner_id: structure.entity_id,
-      is_defensive_army,
-    }).finally(() => {
-      setLoading(Loading.None);
-    });
-  };
   return (
-    <div className="military-panel-selector p-2">
+    <div className="military-panel-selector p-4 bg-brown/90 rounded-lg">
       <Headline>
-        <div className="flex gap-2">
-          <div className="self-center text-lg">{structure.name}</div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="text-xl font-bold text-gold">{structure.name}</div>
           <HintModalButton section={HintSection.Combat} />
         </div>
       </Headline>
 
-      {/* <div className="px-3 py-2 bg-redish/20 font-bold">
-        Build military buildings to increase your current max number of attacking armies. Realms can support up to{" "}
-        {troopConfig.maxArmiesPerStructure - 1} attacking armies.
-      </div> */}
-
-      <div className="flex justify-between">
-        <div
-          className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"}`}
-        >
-          {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
+      <div className="grid grid-cols-2 gap-4 p-3 bg-brown/90 rounded-md">
+        <div className="text-center">
+          <div className="text-sm text-gold">Explorers</div>
+          <div className="text-lg font-bold text-gold/90">
+            {totalExplorersCount} / {structure.structure.base.troop_max_explorer_count}
+          </div>
         </div>
-
-        <div
-          className={`mt-2 font-bold ${
-            numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
-          }`}
-        >
-          {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
+        <div className="text-center">
+          <div className="text-sm text-gold">Guards</div>
+          <div className="text-lg font-bold text-gold/90">
+            {totalGuards} / {structure.structure.base.troop_max_guard_count}
+          </div>
         </div>
       </div>
 
-      <div className="flex justify-between my-4">
+      <div className="gap-4 my-6 border-2 border-gold/50 rounded-lg p-4">
         <div
+          className="flex justify-center items-center p-4 "
           onMouseEnter={() => {
             if (!isRealm) {
               setTooltip({
                 content: "Can only create attacking armies on realms",
+                position: "top",
+              });
+            } else if (totalExplorersCount >= maxAmountExplorerArmies) {
+              setTooltip({
+                content: "Maximum number of armies reached",
                 position: "top",
               });
             }
@@ -125,30 +112,56 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
           onMouseLeave={() => setTooltip(null)}
         >
           <Button
-            isLoading={loading === Loading.CreateAttacking}
             variant="primary"
-            onClick={() => handleCreateArmy(false)}
-            disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies || !isRealm}
-            className="attack-army-selector"
+            disabled={!isRealm || totalExplorersCount >= maxAmountExplorerArmies}
+            className="attack-army-selector px-6 py-2 text-lg"
+            onClick={() => setShowTroopSelection(!showTroopSelection)}
           >
-            Create attacking Army
+            {showTroopSelection ? "Create Attack Army" : "Create Attack Army"}
           </Button>
         </div>
 
-        <Button
-          className="defense-army-selector"
-          isLoading={loading === Loading.CreateDefensive}
-          variant="primary"
-          onClick={() => handleCreateArmy(true)}
-          disabled={loading !== Loading.None || !canCreateProtector}
-        >
-          Create Defense Army
-        </Button>
+        {showTroopSelection && armyManager && (
+          <ArmyCreate
+            owner_entity={structure.structure.entity_id || 0}
+            army={undefined}
+            armyManager={armyManager}
+            isExplorer={true}
+          />
+        )}
       </div>
 
-      {structureArmies.map((army) => (
-        <ArmyChip key={army.entity_id} className="my-2" army={army} showButtons />
-      ))}
+      <div className="space-y-4">
+        <Headline>
+          <div className="flex items-center gap-3">
+            <div className="text-lg font-bold text-gold">Armies</div>
+          </div>
+        </Headline>
+
+        <div className="space-y-3">
+          {explorers.map((army) => (
+            <ArmyChip key={army.entityId} className="w-full" army={army} showButtons />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        <Headline>
+          <div className="flex items-center gap-3">
+            <div className="text-lg font-bold text-gold">Structure Defenses</div>
+          </div>
+        </Headline>
+
+        <StructureDefence
+          structureId={structure.structure.entity_id || 0}
+          maxDefenses={structure.structure.base.troop_max_guard_count}
+          troops={guards.map((army) => ({
+            slot: army.slot,
+            troops: army.troops,
+          }))}
+          cooldownSlots={[3]}
+        />
+      </div>
     </div>
   );
 };
