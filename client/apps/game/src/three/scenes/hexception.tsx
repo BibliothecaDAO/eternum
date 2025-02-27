@@ -441,6 +441,7 @@ export default class HexceptionScene extends HexagonScene {
     const dummy = new THREE.Object3D();
     this.updateCastleLevel();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+      None: [],
       Ocean: [],
       DeepOcean: [],
       Beach: [],
