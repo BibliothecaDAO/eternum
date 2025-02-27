@@ -1,9 +1,9 @@
-import { Entity, getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { ArmyInfo, divideByPrecision, getArmyTotalCapacityInKg, ResourcesIds } from "..";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, TroopInfo, TroopsLegacy, TroopTier, TroopType } from "../types";
+import { ContractAddress, ID, TroopTier, TroopType } from "../types";
 
 export const formatArmies = (
   armies: Entity[],
@@ -70,18 +70,6 @@ export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: nu
   );
 };
 
-export const getDominantTroopInfo = (troops: TroopsLegacy): TroopInfo => {
-  const { knight_count, crossbowman_count, paladin_count } = troops;
-
-  if (knight_count >= crossbowman_count && knight_count >= paladin_count) {
-    return { type: TroopType.Knight, count: Number(knight_count), label: "Knights" };
-  }
-  if (crossbowman_count >= knight_count && crossbowman_count >= paladin_count) {
-    return { type: TroopType.Crossbowman, count: Number(crossbowman_count), label: "Crossbowmen" };
-  }
-  return { type: TroopType.Paladin, count: Number(paladin_count), label: "Paladins" };
-};
-
 export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
   switch (troopType) {
     case TroopType.Knight:
@@ -91,4 +79,35 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
     case TroopType.Paladin:
       return ResourcesIds.Paladin;
   }
+};
+
+export const getGuardsByStructure = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+  if (!structure?.troop_guards) return [];
+
+  // Extract guard troops from the structure
+  const guards = [
+    {
+      slot: 0,
+      troops: structure.troop_guards.delta,
+      destroyedTick: structure.troop_guards.delta_destroyed_tick,
+    },
+    {
+      slot: 1,
+      troops: structure.troop_guards.charlie,
+      destroyedTick: structure.troop_guards.charlie_destroyed_tick,
+    },
+    {
+      slot: 2,
+      troops: structure.troop_guards.bravo,
+      destroyedTick: structure.troop_guards.bravo_destroyed_tick,
+    },
+    {
+      slot: 3,
+      troops: structure.troop_guards.alpha,
+      destroyedTick: structure.troop_guards.alpha_destroyed_tick,
+    },
+  ];
+
+  // Filter out guards with no troops
+  return guards.filter((guard) => guard.troops.count > 0n);
 };

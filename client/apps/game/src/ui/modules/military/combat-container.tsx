@@ -10,7 +10,7 @@ import {
   getArmy,
   getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
-  getStructure,
+  getGuardsByStructure,
   getTroopResourceId,
   ID,
   StaminaManager,
@@ -68,14 +68,16 @@ export const CombatContainer = ({
 
     if (structure) {
       return {
-        info: getStructure(occupierId, ContractAddress(account.address), components),
+        info: getGuardsByStructure(structure)[0]?.troops,
+        id: targetEntity?.occupier_id,
         targetType: TargetType.Structure,
       };
     }
 
     if (explorer) {
       return {
-        info: getArmy(occupierId, ContractAddress(account.address), components),
+        info: getArmy(occupierId, ContractAddress(account.address), components)?.troops,
+        id: targetEntity?.occupier_id,
         targetType: TargetType.Army,
       };
     }
@@ -83,55 +85,62 @@ export const CombatContainer = ({
     return null;
   }, [targetEntity, account, components]);
 
-  console.log({ target });
+  // Get the current army states for display
+  const attackerArmyData = useMemo(() => {
+    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
 
-  const defenderStamina = useMemo(() => {
-    return new StaminaManager(components, target?.info?.entityId || 0).getStamina(getBlockTimestamp().currentArmiesTick)
-      .amount;
+    return {
+      troops: {
+        count: Number(army?.troops.count || 0),
+        category: army?.troops.category as TroopType,
+        tier: army?.troops.tier as TroopTier,
+        stamina: army?.troops.stamina,
+      },
+    };
+  }, [attackerEntityId]);
+
+  const targetArmyData = useMemo(() => {
+    return {
+      troops: {
+        count: Number(target?.info?.count || 0),
+        category: target?.info?.category as TroopType,
+        tier: target?.info?.tier as TroopTier,
+        stamina: target?.info?.stamina,
+      },
+    };
   }, [target]);
 
-  // If target is a structure, show WIP message
-  if (target?.targetType === TargetType.Structure) {
-    return (
-      <div className="flex flex-col items-center justify-center p-6 max-w-4xl mx-auto">
-        <div className="p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm text-center">
-          <h3 className="text-2xl font-bold text-gold mb-4">Structure Combat</h3>
-          <p className="text-gold/80">Combat against structures is currently being worked on. Check back soon!</p>
-        </div>
-      </div>
-    );
-  }
+  const defenderStamina = useMemo(() => {
+    if (!target?.info?.stamina) return 0;
+    const maxStamina = StaminaManager.getMaxStamina(target?.info);
+    return StaminaManager.getStamina(
+      target?.info?.stamina,
+      maxStamina,
+      getBlockTimestamp().currentArmiesTick,
+      components,
+    ).amount;
+  }, [target]);
+
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
-    if (!target || target.targetType === TargetType.Structure) return null;
-
-    const targetId = target.info?.entityId;
-    if (!targetId) return null;
-
-    const targetArmy = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(targetId)]));
-
-    const attackerArmyComponent = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-
-    if (!attackerArmyComponent || !targetArmy) return null;
-
     // Convert game armies to simulator armies
     const attackerArmy = {
       entity_id: attackerEntityId,
       stamina: Number(attackerStamina),
-      troopCount: Number(attackerArmyComponent.troops.count),
-      troopType: attackerArmyComponent.troops.category as TroopType,
-      tier: attackerArmyComponent.troops.tier as TroopTier,
+      troopCount: Number(attackerArmyData.troops.count),
+      troopType: attackerArmyData.troops.category as TroopType,
+      tier: attackerArmyData.troops.tier as TroopTier,
     };
 
     const defenderArmy = {
-      entity_id: targetId,
+      entity_id: target?.id || 0,
       stamina: Number(defenderStamina),
-      troopCount: Number(targetArmy.troops.count),
-      troopType: targetArmy.troops.category as TroopType,
-      tier: targetArmy.troops.tier as TroopTier,
+      troopCount: Number(targetArmyData.troops.count),
+      troopType: targetArmyData.troops.category as TroopType,
+      tier: targetArmyData.troops.tier as TroopTier,
     };
 
     const result = combatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome);
@@ -167,65 +176,63 @@ export const CombatContainer = ({
         defenderTroops: defenderArmy.troopCount - defenderTroopsLost,
       }),
     };
-  }, [attackerEntityId, target, account, components, attackerStamina, defenderStamina]);
+  }, [
+    attackerEntityId,
+    target,
+    account,
+    components,
+    attackerStamina,
+    defenderStamina,
+    attackerArmyData,
+    targetArmyData,
+    biome,
+    combatConfig,
+    combatSimulator,
+  ]);
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
 
-  // Get the current army states for display
-  const attackerArmyData = useMemo(() => {
-    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-
-    return {
-      ...army,
-      troops: {
-        count: Number(army?.troops.count || 0),
-        category: army?.troops.category as TroopType,
-        tier: army?.troops.tier as TroopTier,
-      },
-    };
-  }, [attackerEntityId]);
-
-  const troopResourceId = useMemo(() => {
-    return getTroopResourceId(
-      attackerArmyData?.troops.category as TroopType,
-      attackerArmyData?.troops.tier as TroopTier,
-    );
-  }, [attackerArmyData]);
-
-  console.log({ troopResourceId });
-
-  const targetArmyData = useMemo(() => {
-    if (!target?.info?.entityId) return null;
-    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(target.info.entityId)]));
-
-    return {
-      ...army,
-      troops: {
-        count: Number(army?.troops.count || 0),
-        category: army?.troops.category as TroopType,
-        tier: army?.troops.tier as TroopTier,
-      },
-    };
-  }, [target, combatSimulator]);
-
-  // todo: add this to a manager
   const onAttack = async () => {
-    console.log({ selectedHex, targetHex });
+    if (!selectedHex) return;
+    if (target?.targetType === TargetType.Army) {
+      await onExplorerVsExplorerAttack();
+    } else {
+      await onExplorerVsGuardAttack();
+    }
+  };
+
+  const onExplorerVsGuardAttack = async () => {
     if (!selectedHex) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    console.log({ direction });
     if (direction === null) return;
-
-    console.log({ selectedHex, targetHex, direction });
 
     try {
       setLoading(true);
+      await attack_explorer_vs_guard({
+        signer: account,
+        explorer_id: attackerEntityId,
+        structure_id: target?.id || 0,
+        structure_direction: direction,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const onExplorerVsExplorerAttack = async () => {
+    if (!selectedHex) return;
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
+    if (direction === null) return;
+
+    try {
+      setLoading(true);
       await attack_explorer_vs_explorer({
         signer: account,
         aggressor_id: attackerEntityId,
-        defender_id: target?.info?.entityId || 0,
+        defender_id: target?.id || 0,
         defender_direction: direction,
       });
     } catch (error) {
@@ -321,8 +328,17 @@ export const CombatContainer = ({
                 isWinner: winner === attackerEntityId,
                 originalTroops: attackerArmyData.troops,
                 currentStamina: Number(
-                  new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick)
-                    .amount,
+                  StaminaManager.getStamina(
+                    attackerArmyData.troops.stamina || { amount: 0n, updated_tick: 0n },
+                    StaminaManager.getMaxStamina({
+                      count: BigInt(attackerArmyData.troops.count),
+                      category: attackerArmyData.troops.category,
+                      tier: attackerArmyData.troops.tier,
+                      stamina: attackerArmyData.troops.stamina || { amount: 0n, updated_tick: 0n },
+                    }),
+                    getBlockTimestamp().currentArmiesTick,
+                    components,
+                  ).amount,
                 ),
                 newStamina: battleSimulation?.newAttackerStamina || 0,
               },
@@ -332,8 +348,20 @@ export const CombatContainer = ({
                 isWinner: winner !== null && winner !== attackerEntityId,
                 originalTroops: targetArmyData.troops,
                 currentStamina: Number(
-                  new StaminaManager(components, target?.info?.entityId || 0).getStamina(
+                  StaminaManager.getStamina(
+                    target?.info?.stamina || { amount: 0n, updated_tick: 0n },
+                    StaminaManager.getMaxStamina(
+                      target?.info
+                        ? {
+                            count: BigInt(Number(target.info.count || 0)),
+                            category: target.info.category,
+                            tier: target.info.tier,
+                            stamina: target.info.stamina || { amount: 0n, updated_tick: 0n },
+                          }
+                        : undefined,
+                    ),
                     getBlockTimestamp().currentArmiesTick,
+                    components,
                   ).amount,
                 ),
                 newStamina: battleSimulation?.newDefenderStamina || 0,
@@ -393,6 +421,7 @@ export const CombatContainer = ({
         <Button
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
+          isLoading={loading}
           disabled={attackerStamina < combatConfig.stamina_attack_req}
           onClick={onAttack}
         >
