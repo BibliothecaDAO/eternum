@@ -838,7 +838,7 @@
       "damageScalingFactor": "64563604257983430656",
       "damageBetaSmall": "4611686018427387904",
       "damageBetaLarge": "2213609288845146193",
-      "damageC0": "0",
+      "damageC0": "1844674407370955161600000",
       "damageDelta": "922337203685477580800000"
     },
     "stamina": {

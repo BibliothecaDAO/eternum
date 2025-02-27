@@ -43,6 +43,13 @@ export class CombatSimulator {
   private readonly delta: number;
   private readonly biomeBonusNum: number;
 
+  // private static readonly STAMINA_ATTACK_THRESHOLD = 30;
+  // private static readonly BASE_DAMAGE_FACTOR = 3.5;
+  // private static readonly BETA_SMALL = 0.25;
+  // private static readonly BETA_LARGE = 0.12;
+  // private static readonly C0 = 100_000; // Transition point
+  // private static readonly DELTA = 50_000; // T
+
   constructor(params: CombatParameters) {
     this.t1DamageValue = Number(params.t1_damage_value) / 2 ** 64; // 100
     this.t2DamageMultiplier = Number(params.t2_damage_multiplier) / 2 ** 64; // 2.5

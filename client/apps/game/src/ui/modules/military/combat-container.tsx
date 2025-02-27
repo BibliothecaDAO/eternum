@@ -101,7 +101,7 @@ export const CombatContainer = ({
       </div>
     );
   }
-  const params = CombatSimulator.getDefaultParameters();
+  const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
 
   // Simulate battle outcome
@@ -211,9 +211,11 @@ export const CombatContainer = ({
 
   // todo: add this to a manager
   const onAttack = async () => {
+    console.log({ selectedHex, targetHex });
     if (!selectedHex) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
-    if (!direction) return;
+    console.log({ direction });
+    if (direction === null) return;
 
     console.log({ selectedHex, targetHex, direction });
 
@@ -258,7 +260,7 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {TroopType[attackerArmyData.troops.category]}
+                    {TroopType[attackerArmyData.troops.category as TroopType]}
                     <span className="ml-2 text-xs">
                       {formatBiomeBonus(combatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
                     </span>
@@ -286,7 +288,7 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
-                    {TroopType[targetArmyData.troops.category]}
+                    {TroopType[targetArmyData.troops.category as TroopType]}
                     <span className="ml-2 text-xs">
                       {formatBiomeBonus(combatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
                     </span>

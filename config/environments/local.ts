@@ -28,10 +28,6 @@ export const LocalEternumGlobalConfig: Config = {
       staminaTravelStaminaCost: 0,
       staminaExploreStaminaCost: 0,
     },
-    damage: {
-      ...CommonEternumGlobalConfig.troop.damage,
-      damageC0: BigInt(0),
-    },
   },
   // cheap hyperstructures
   hyperstructures: {

@@ -1164,8 +1164,8 @@ export function defineContractComponents(world: World) {
           },
           troop_damage_config: {
             damage_biome_bonus_num: RecsType.Number,
-            damage_beta_small: RecsType.Number,
-            damage_beta_large: RecsType.Number,
+            damage_beta_small: RecsType.BigInt,
+            damage_beta_large: RecsType.BigInt,
             damage_scaling_factor: RecsType.BigInt,
             damage_c0: RecsType.BigInt,
             damage_delta: RecsType.BigInt,
@@ -1193,8 +1193,8 @@ export function defineContractComponents(world: World) {
             explorer_max_party_count: RecsType.Number,
             explorer_guard_max_troop_count: RecsType.Number,
             guard_resurrection_delay: RecsType.Number,
-            mercenaries_troop_lower_bound: RecsType.Number,
-            mercenaries_troop_upper_bound: RecsType.Number,
+            mercenaries_troop_lower_bound: RecsType.BigInt,
+            mercenaries_troop_upper_bound: RecsType.BigInt,
           },
           capacity_config: {
             structure_capacity: RecsType.Number,
