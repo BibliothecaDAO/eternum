@@ -1,13 +1,14 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { TroopTier } from "@bibliothecadao/eternum";
 import React, { useState } from "react";
 
 interface SelectTierProps {
-  onSelect: (tier: number | null) => void;
+  onSelect: (tier: TroopTier | null) => void;
   className?: string;
-  defaultValue?: number;
+  defaultValue?: TroopTier;
 }
 
-export const SelectTier: React.FC<SelectTierProps> = ({ onSelect, className, defaultValue = 1 }) => {
+export const SelectTier: React.FC<SelectTierProps> = ({ onSelect, className, defaultValue = TroopTier.T1 }) => {
   const [selectedTier, setSelectedTier] = useState<string>(defaultValue?.toString() || "");
 
   // Call onSelect with default value on mount
@@ -22,17 +23,17 @@ export const SelectTier: React.FC<SelectTierProps> = ({ onSelect, className, def
       value={selectedTier}
       onValueChange={(value) => {
         setSelectedTier(value);
-        onSelect(value ? parseInt(value) : null);
+        onSelect(value as TroopTier);
       }}
     >
       <SelectTrigger className={className}>
         <SelectValue placeholder="Select tier" />
       </SelectTrigger>
       <SelectContent>
-        {[1, 2, 3].map((tier) => (
+        {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
           <SelectItem key={tier} value={tier.toString()}>
             <div className="flex items-center">
-              <span>Tier {tier}</span>
+              <span>{tier}</span>
             </div>
           </SelectItem>
         ))}

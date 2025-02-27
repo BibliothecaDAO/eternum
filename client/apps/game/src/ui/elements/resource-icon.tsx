@@ -75,7 +75,6 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
-  Donkey: { component: <img src={`/images/resources/${ResourcesIds.Donkey}.png`} />, name: "Donkey" },
 
   Donkey: { component: <img src={`/images/buildings/thumb/trade.png`} />, name: "Donkey" },
   House: { component: <img src={`/images/buildings/thumb/house.png`} />, name: "House" },

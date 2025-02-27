@@ -20,7 +20,6 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@dojoengine/core": "1.0.0-alpha.24",
     "@latticexyz/utils": "^2.0.0-next.12",
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",
