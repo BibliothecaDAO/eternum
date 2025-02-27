@@ -42,6 +42,7 @@ export class CombatSimulator {
 
   public static getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
     const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
       [BiomeType.Ocean]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: -0.3 },
       [BiomeType.DeepOcean]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: -0.3 },
       [BiomeType.Beach]: { [TroopType.Knight]: -0.3, [TroopType.Crossbowman]: 0.3, [TroopType.Paladin]: 0 },

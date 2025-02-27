@@ -1,4 +1,5 @@
 import {
+  BiomeIdToType,
   BiomeType,
   ClientComponents,
   configManager,
@@ -178,11 +179,12 @@ export class SystemManager {
           const newState = update.value[0];
           const prevState = update.value[1];
 
+          const newStateBiomeType = BiomeIdToType[newState?.biome];
           const { col, row } = prevState || newState;
           return {
             hexCoords: { col, row },
             removeExplored: !newState,
-            biome: newState?.biome === "None" ? BiomeType.Grassland : newState?.biome || BiomeType.Grassland,
+            biome: newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
           };
         });
       },

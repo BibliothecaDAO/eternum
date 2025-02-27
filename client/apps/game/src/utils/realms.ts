@@ -3,9 +3,6 @@ import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
 
 export const getRandomRealmEntity = (components: ClientComponents) => {
-  if (!components?.Realm) {
-    throw new Error("Invalid components: Realm component is required");
-  }
   
   const realms = runQuery([Has(components.Structure), HasValue(components.Structure, { category: StructureType.Realm })]);
 

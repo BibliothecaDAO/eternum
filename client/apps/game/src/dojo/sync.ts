@@ -282,8 +282,6 @@ const configModels = [
 
 const singleKeyModels = [
   "s1_eternum-AddressName",
-  "s1_eternum-Realm",
-  "s1_eternum-Bank",
   "s1_eternum-Trade",
   "s1_eternum-Structure",
   "s1_eternum-Hyperstructure",
