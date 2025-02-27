@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x15edd9583ebde93897657385e7187d6ffb0526770c53174204e1c9d52c2c55b",
-      "class_hash": "0x3f4f3d1aaf7c5905d17f591811909ccb3aa92fd934f86b60f0cb1c61dcae9f7",
+      "address": "0x1a919532c1556277d956055e8b9fba91ab5c86436ccb1f52894c15c41841d19",
+      "class_hash": "0x44ee3234868aba31ded1f1c35b47b96fd4311f7ff78cd6c3956798ca1662133",
       "abi": [
         {
           "type": "impl",
@@ -1634,8 +1634,8 @@
       ]
     },
     {
-      "address": "0x13380cb428f672b430755ca491e85f41e49e51a44f3eabe9162783d13397ae7",
-      "class_hash": "0x45822de55b6fe19725824413365c2717874209b177ba843f87141fb7653b070",
+      "address": "0x7453d519c3a00bf4e6b0c2a0868feee9ec83b9cf79e9f7150b80cbbb3bcf9af",
+      "class_hash": "0x4b2c75bfa14a5b1c3602910ed01844765707178d642d7bcb4027b3749aa5227",
       "abi": [
         {
           "type": "impl",
@@ -2626,19 +2626,23 @@
         },
         {
           "type": "impl",
-          "name": "RealmLevelConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IRealmLevelConfig"
+          "name": "StructureLevelConfigImpl",
+          "interface_name": "s1_eternum::systems::config::contracts::IStructureLevelConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IRealmLevelConfig",
+          "name": "s1_eternum::systems::config::contracts::IStructureLevelConfig",
           "items": [
             {
               "type": "function",
-              "name": "set_realm_max_level_config",
+              "name": "set_structure_max_level_config",
               "inputs": [
                 {
-                  "name": "new_max_level",
+                  "name": "realm_max",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "village_max",
                   "type": "core::integer::u8"
                 }
               ],
@@ -2647,7 +2651,7 @@
             },
             {
               "type": "function",
-              "name": "set_realm_level_config",
+              "name": "set_structure_level_config",
               "inputs": [
                 {
                   "name": "level",
@@ -2888,16 +2892,16 @@
         "set_resource_bridge_config",
         "set_resource_bridge_fee_split_config",
         "set_resource_bridge_whitelist_config",
-        "set_realm_max_level_config",
-        "set_realm_level_config",
+        "set_structure_max_level_config",
+        "set_structure_level_config",
         "set_settlement_config",
         "set_trade_config",
         "upgrade"
       ]
     },
     {
-      "address": "0x777800226c18a1ead7972d3a6bc232157e008735b6f679b7ea869a30d625d15",
-      "class_hash": "0x5cdfabab8bd712bdc284697f0b67e89a873f78706e63023518959c4937a388e",
+      "address": "0x6a39b05e679ee82f2961ef37b17630d1271fafcd84bee9fd0ac6d8c86de85fc",
+      "class_hash": "0x4c89317c4a178426231a0ec8659687326314cfd2dfe7d6091d52dd3a3da98fd",
       "abi": [
         {
           "type": "impl",
@@ -3409,8 +3413,8 @@
       ]
     },
     {
-      "address": "0x574cfe11eb5845d5aa9c5cf5e4066f23c6bd0fc0d474b4171e53dceae06dbc3",
-      "class_hash": "0x1d959c39b7d6adb0738f21133d1f1469aea5124c4da1cab15eff5f91bc18df4",
+      "address": "0x45a5db32d92dc6d6c18a0555ea56cccd3ba470bff93b56dc368fd8f87f470aa",
+      "class_hash": "0x62c6c88dac6e6cbf113f51dc69651651448a42d3876aad2ca855edf67daa6c",
       "abi": [
         {
           "type": "impl",
@@ -3786,8 +3790,8 @@
       ]
     },
     {
-      "address": "0x70138a54cd454c641f727db7c3c63c3da9d16919daeb2b787821f0884d8c212",
-      "class_hash": "0x42cc6457b447739e4bb4f182dddd77ec0bc41493ecff75e2532cfbb5e81109b",
+      "address": "0x55ac95a516be48f098d87b72ebd6a1ce3c021b62e178a2e5e9153714c149449",
+      "class_hash": "0x225bdf3142d6cb10ac8c13e5d60b7985a8df0325c920c26ad3b0553ef99bcdd",
       "abi": [
         {
           "type": "impl",
@@ -4463,8 +4467,8 @@
       ]
     },
     {
-      "address": "0x115432900a8f1c3dfd8a41e7a3ddde12e39f43e1cbccf0f53a921165359e17a",
-      "class_hash": "0x77bcc494accd9ec1179a9694693643f72e9a5b18b786af7d32d61a2a4f8d1c8",
+      "address": "0x11e455fb14d1873a17b0f7da5be4d2b4a1fe67d47ed90b0ccfaffd542a7fa01",
+      "class_hash": "0x5e58b95f89ca8dcef1aa195d94196590399bae7da895cee8f2dd10abb4bf9c7",
       "abi": [
         {
           "type": "impl",
@@ -4680,7 +4684,7 @@
               "name": "create_building",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4692,7 +4696,7 @@
                   "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
-                  "name": "produce_resource_type",
+                  "name": "requested_resource_type",
                   "type": "core::option::Option::<core::integer::u8>"
                 }
               ],
@@ -4704,7 +4708,7 @@
               "name": "destroy_building",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4720,7 +4724,7 @@
               "name": "pause_building_production",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4736,7 +4740,7 @@
               "name": "resume_building_production",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4752,7 +4756,7 @@
               "name": "burn_other_resources_for_labor_production",
               "inputs": [
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4772,7 +4776,7 @@
               "name": "burn_labor_resources_for_other_production",
               "inputs": [
                 {
-                  "name": "from_entity_id",
+                  "name": "from_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4792,7 +4796,7 @@
               "name": "burn_other_predefined_resources_for_resources",
               "inputs": [
                 {
-                  "name": "from_entity_id",
+                  "name": "from_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -4939,8 +4943,8 @@
       ]
     },
     {
-      "address": "0x7842352464ddc1e13ccca1ca8b22f026ac9c8a624e8ab107b3ed97c65555999",
-      "class_hash": "0x2e49aad1dba782a8c869d18369e130ed3d86e1a0d50c169440c9835729ad11c",
+      "address": "0x4c4f295604ca7321a2fbc387f68796787bc3f84be88489c02f363e3760d565f",
+      "class_hash": "0x2ef2bf0068291660a55c1597e60d37458334bcab31b3def1a0b8e224863b26",
       "abi": [
         {
           "type": "impl",
@@ -5031,18 +5035,6 @@
             },
             {
               "type": "function",
-              "name": "upgrade_level",
-              "inputs": [
-                {
-                  "name": "realm_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
               "name": "quest_claim",
               "inputs": [
                 {
@@ -5050,7 +5042,7 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "entity_id",
+                  "name": "structure_id",
                   "type": "core::integer::u32"
                 }
               ],
@@ -5179,14 +5171,13 @@
       "selector": "0x3b4cc14cbb49692c85e1b132ac8536fe7d0d1361cd2fb5ba8df29f726ca02d2",
       "systems": [
         "create",
-        "upgrade_level",
         "quest_claim",
         "upgrade"
       ]
     },
     {
-      "address": "0x249782d0a6ab2c1a9a8f8203f092a186a0d8f9ae1f5a2ea3927ad4ea454e554",
-      "class_hash": "0x14ca9c476327279e1b08c78bae11c6261ce687adb6918128b12f5acd87e6414",
+      "address": "0x7f8078a52df2d5c510e4d3ea36d07286de2e45ae09b10be94c6c6ca8f225ab5",
+      "class_hash": "0x2c8bdf8fa8cc899630758b8df607e690183b3def02193ac0b1a5e83f1965747",
       "abi": [
         {
           "type": "impl",
@@ -5490,8 +5481,8 @@
       ]
     },
     {
-      "address": "0x25010e94e75ebc82bdb7db361969fdb893a70c4f4a66e21501804e910f828f2",
-      "class_hash": "0x166d0dcd095f90b2106a639cd93419c43c921582e3686da8e927084aaf5431d",
+      "address": "0x7c2f348a39db1a1cbacd2e485fdc5d1d7ad345777c2d919b215331327e80597",
+      "class_hash": "0x169e0f3a28c8039ba6892a76ef76c3fdf05b78f747f60e8b33ad58074729a92",
       "abi": [
         {
           "type": "impl",
@@ -5793,8 +5784,8 @@
       ]
     },
     {
-      "address": "0x272cf755822a2922cafdba7c680a1b1fd5591433d8c80e4da394035f5065a7f",
-      "class_hash": "0x41288612bce5a8599255607b9cec9fb263b6cb474a1a94c0ab62e239d358523",
+      "address": "0x74e679c4f741417432c5f7402606749041c7b635b758942c46fc8d02efbfc12",
+      "class_hash": "0x21d93155db0ab98f980abe260e71edc97e7bde646e5926c466d572a9b958f16",
       "abi": [
         {
           "type": "impl",
@@ -6030,8 +6021,208 @@
       ]
     },
     {
-      "address": "0x22a8d64cff5ea658bb877f40c421271c148db60ba005e2dfdaed4607c129dc1",
-      "class_hash": "0x59c53a810db4b1dfc346bb3085fd615371bc36973bd287319e1df2587b79c85",
+      "address": "0x2e4e4d4f37d521e1ead0c9635737bbc3153d2249a889d111d82897d86549966",
+      "class_hash": "0x6e60d6d225719d608e116c765b9ec8d4212fe8a97c06a2694c82bcfe38a8a8b",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "structure_systems__ContractImpl",
+          "interface_name": "dojo::contract::interface::IContract"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::IContract",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "structure_systems__DeployedContractImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "StructureSystemsImpl",
+          "interface_name": "s1_eternum::systems::structure::contracts::IStructureSystems"
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::systems::structure::contracts::IStructureSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "level_up",
+              "inputs": [
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradeableImpl",
+          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "name": "constructor",
+          "inputs": []
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::systems::structure::contracts::structure_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "init_calldata": [],
+      "tag": "s1_eternum-structure_systems",
+      "selector": "0x15f0efd5ca9fd9dc6685e7555bc35ed59422d97e19589d4b218b5f7a36096fd",
+      "systems": [
+        "level_up",
+        "upgrade"
+      ]
+    },
+    {
+      "address": "0x5e2e90fed2a5b39f2759253cf2d72de602c2d0195a8a641d323b04696d49495",
+      "class_hash": "0x7ad3eea4606b02689acf6ce064d2aca708b69608045d1b6af55b85b93b57ab3",
       "abi": [
         {
           "type": "impl",
@@ -6275,8 +6466,8 @@
       ]
     },
     {
-      "address": "0x54e222002e340bf83ecd26752c519f36dfc96d8915bc730176da99a31bfb852",
-      "class_hash": "0x463a3619be0388e7abd9ed1b1087e15a7f322506db16db08383537c3d444838",
+      "address": "0x7c7befdda88f7ec347df1a105557f955a390e34ed9120c74b9a334913ce8d24",
+      "class_hash": "0x71c9506c167eff7355cc1aabae26eeefef932f5b64eb45fb3d7dab0592bc309",
       "abi": [
         {
           "type": "impl",
@@ -6545,8 +6736,8 @@
       ]
     },
     {
-      "address": "0x1c2cb1a81f1e987a9cf927a899110fa838baf1e0f6e177e2775c092d5ffa43e",
-      "class_hash": "0x3ab3aa9bcd92501f305ed08e51999ae925a2a762471e44518bb12a1bb99dbf6",
+      "address": "0x1e0594151b3a39d99bc49c7065b8ca6efa05de1adbdac64e68dfd985193c3bd",
+      "class_hash": "0x6da66e15b80ab3fd014c28b5ec83c2dfdd06797db2745b43dce5e8cb95d795d",
       "abi": [
         {
           "type": "impl",
@@ -6851,8 +7042,8 @@
       ]
     },
     {
-      "address": "0x3b755a76eeeca37c2f5a23138cacdfebfa5eab8ebc99394ec9c635be26bb4d8",
-      "class_hash": "0x7973263645aab9c9eece363a4371e6953b7d6559a9b6aa90c7cbd27b78a6947",
+      "address": "0x57f9d38360ff39228db78ba21aec0b1002eeecc6bb734b7a52b3dd539fddc6f",
+      "class_hash": "0x734536b75e092822f5d6c2e1fc9cadba4802e47afdc266350b7a81748f5c848",
       "abi": [
         {
           "type": "impl",
@@ -7322,8 +7513,8 @@
       ]
     },
     {
-      "address": "0x57fa940f39379dcaac4df4c9391a310f2479eac6a1e5db00bf77704fe8320a9",
-      "class_hash": "0x45273e65aab987561262b5da6d93c4505f6806a1829524ca144160fbdd00734",
+      "address": "0x57b3a3d704f7070b39f585b6b4c2859db40aab744fc666618d7650d8f826724",
+      "class_hash": "0x3e05740fb59e8682fc4ad738e74a4bfacc44d0da199c329320ca2822172a0a7",
       "abi": [
         {
           "type": "impl",
@@ -7582,6 +7773,244 @@
         "explorer_move",
         "upgrade"
       ]
+    },
+    {
+      "address": "0xe3db79f1076049c5472f8d8aaea2150719d2902be81eb9c7fa9a449614d7d8",
+      "class_hash": "0x6b1b27fc11bc5f11b0d8b3d9c76a645e3e39c5347feca27cf0864c29b676718",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "village_systems__ContractImpl",
+          "interface_name": "dojo::contract::interface::IContract"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::interface::IContract",
+          "items": []
+        },
+        {
+          "type": "impl",
+          "name": "village_systems__DeployedContractImpl",
+          "interface_name": "dojo::meta::interface::IDeployedResource"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::meta::interface::IDeployedResource",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "VillageSystemsImpl",
+          "interface_name": "s1_eternum::systems::village::contracts::IVillageSystems"
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::position::Direction",
+          "variants": [
+            {
+              "name": "East",
+              "type": "()"
+            },
+            {
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::systems::village::contracts::IVillageSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "create",
+              "inputs": [
+                {
+                  "name": "connected_realm",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "direction",
+                  "type": "s1_eternum::models::position::Direction"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_init",
+          "inputs": [],
+          "outputs": [],
+          "state_mutability": "view"
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::iworld::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::world_provider::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world_dispatcher",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::iworld::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradeableImpl",
+          "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::contract::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "constructor",
+          "name": "constructor",
+          "inputs": []
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "s1_eternum::systems::village::contracts::village_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "init_calldata": [],
+      "tag": "s1_eternum-village_systems",
+      "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
+      "systems": [
+        "create",
+        "upgrade"
+      ]
     }
   ],
   "libraries": [],
@@ -7591,12 +8020,6 @@
       "class_hash": "0x2960faeb02acf265fc837e0c95a2f401def7bfc31dfaa1eb46d57f28c3859a5",
       "tag": "s1_eternum-AddressName",
       "selector": "0x42709c94217aac1ce5900d6bb822dc5e203071e9f184165b4d32144ff0e326c"
-    },
-    {
-      "members": [],
-      "class_hash": "0x6f322f448ec21c754782456870006a1ee00283174bdb045e1e4a495cd92c151",
-      "tag": "s1_eternum-Bank",
-      "selector": "0x46318cd2cff6337f8934ee9e3cbe3ecf1ccb5b1b57dd1711f3b1eb7d7327aab"
     },
     {
       "members": [],
@@ -7726,12 +8149,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x4d2d429194e03ee44fdc7b34cf8ce7c5a26df710d0640417654092b674b6faa",
-      "tag": "s1_eternum-Occupied",
-      "selector": "0x2353ef0ac128b8737e8d6082b1697ae974bab2499439db3d5113f8947cce314"
-    },
-    {
-      "members": [],
       "class_hash": "0x57e88f42c409d05e7d30b68f1aa7380c34f867feb4472eeecafbc99d7b1711c",
       "tag": "s1_eternum-Owner",
       "selector": "0x35bfd77bc5bbf7f39cbe2c9ced8de632af641500a672e876dffbc89cc10441d"
@@ -7780,18 +8197,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x6817f9c56fdceadd6d2b3decf55569f954274cf3a7d3ccc50423a4798e7b29d",
-      "tag": "s1_eternum-Realm",
-      "selector": "0x6b15a2a9c9d60eefc6c82731f77ae2167b6abc68a909e06ed4f0a0c20a447ae"
-    },
-    {
-      "members": [],
-      "class_hash": "0x70f3c6208e4a8b809a151b001dba2dc3805db78f2f480f46fb2066219e8223d",
-      "tag": "s1_eternum-RealmLevelConfig",
-      "selector": "0x7a5266268ba6febaa9248d1ec5543f7731c07391553c9d9b089023790344d78"
-    },
-    {
-      "members": [],
       "class_hash": "0x661d3ba20e97caf85b8fa2ecfd9d443547cee1516414292728ae35b6f4f38a8",
       "tag": "s1_eternum-Resource",
       "selector": "0x6bd14dc16a7f05252fcf2fb66630b8f05d39d75b36f55013334a4b3bb8fec57"
@@ -7834,7 +8239,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x16a1e765dfe21ba602a2dea40c594010bb88cae7b5fd91fccbc4fafc7bf72dd",
+      "class_hash": "0x3e8b93fafe20be0a45fcfed505afeeffc373f76703218a432621e2de65638df",
       "tag": "s1_eternum-Structure",
       "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
     },
@@ -7846,7 +8251,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x75feffce130500f9d7fdc2112288688fe4b752d2e82c30b818e56d153433d2a",
+      "class_hash": "0x1bfb9ec6e48401af022fe3dd1ddc1008eee008b828fa3196e5a1171d4493fcd",
+      "tag": "s1_eternum-StructureLevelConfig",
+      "selector": "0x7f6fed1579394a741a2796f415fb2acc0360e9424dcc284f6205b6e255e5a12"
+    },
+    {
+      "members": [],
+      "class_hash": "0x179fd1b4797731823ba2c33884df88d2efa40e643684ecde5fcaa4520fc3052",
       "tag": "s1_eternum-Tile",
       "selector": "0x66c306156fe0c5b2785192d61977ac8475e3cb3dbc5d68f5547ade25fe1f4f2"
     },
@@ -7870,7 +8281,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x4d43d267c85dc0e6d5ea242107d554295ed53e7f73b8bf1e076fd852422f746",
+      "class_hash": "0x19e8c360f4659ce63b510dd6fd48fb3dd957da32344d7c021e24d2078c047d4",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     }
