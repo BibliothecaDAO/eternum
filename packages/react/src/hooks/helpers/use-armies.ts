@@ -3,8 +3,7 @@ import {
   formatArmies,
   getEntityIdFromKeys,
   ID,
-  OccupiedBy,
-  type Position,
+  type Position
 } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
@@ -74,14 +73,14 @@ export const usePlayerArmyAtPosition = ({ position }: { position: Position }) =>
   } = useDojo();
 
   const entityAtPosition = useComponentValue(
-    components.Occupied,
+    components.Tile,
     getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]),
   );
 
   const ownArmy = useMemo(() => {
-    if (!entityAtPosition || entityAtPosition.by_type !== OccupiedBy.Explorer) return null;
+    if (!entityAtPosition || entityAtPosition.occupier_is_structure) return null;
     const armies = formatArmies(
-      [getEntityIdFromKeys([BigInt(entityAtPosition.by_id)])],
+      [getEntityIdFromKeys([BigInt(entityAtPosition.occupier_id)])],
       ContractAddress(account.address),
       components,
     );

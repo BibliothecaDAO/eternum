@@ -23,7 +23,6 @@ mod liquidity_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
-    use s1_eternum::models::bank::bank::{Bank};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::owner::{OwnerAddressTrait};
@@ -32,7 +31,7 @@ mod liquidity_systems {
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
@@ -68,13 +67,13 @@ mod liquidity_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure bank exists
-            let bank: Bank = world.read_model(bank_entity_id);
-            assert!(bank.exists, "Bank does not exist");
-
             // ensure caller owns structure adding liquidity
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             player_structure_owner.assert_caller_owner();
+
+            // ensure structure is a bank
+            let player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // ensure lords are not added as liquidity
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
@@ -133,16 +132,16 @@ mod liquidity_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure bank exists
-            let bank: Bank = world.read_model(bank_entity_id);
-            assert!(bank.exists, "Bank does not exist");
-
             // ensure resource type is not lords
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
             // ensure caller owns structure removing liquidity
             let player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
             player_structure_owner.assert_caller_owner();
+
+            // ensure structure is a bank
+            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // ensure player has enough liquidity
             let player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
@@ -167,7 +166,6 @@ mod liquidity_systems {
             );
             let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
-            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
             let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,

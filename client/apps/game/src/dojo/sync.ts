@@ -202,7 +202,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   end = performance.now();
   console.log("event query", end - start);
 
-  // Sync Occupied model
+  // Sync Tile model
   start = performance.now();
   try {
     await getEntities(
@@ -211,20 +211,20 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
         Keys: {
           keys: [undefined, undefined],
           pattern_matching: "FixedLen",
-          models: ["s1_eternum-Occupied"],
+          models: ["s1_eternum-Tile"],
         },
       },
       setup.network.contractComponents as any,
       [],
-      ["s1_eternum-Occupied"],
+      ["s1_eternum-Tile"],
       40_000,
       false,
     );
   } catch (error) {
-    console.error("[sync] Error fetching occupier entities:", error);
+    console.error("[sync] Error fetching tile entities:", error);
   }
   end = performance.now();
-  console.log("[sync] occupier query", end - start);
+  console.log("[sync] tile query", end - start);
 };
 
 const configClauses: Clause[] = [
@@ -274,7 +274,7 @@ const configModels = [
   "s1_eternum-BuildingCategoryPopConfig",
   "s1_eternum-QuestRewardConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
-  "s1_eternum-RealmLevelConfig",
+  "s1_eternum-StructureLevelConfig",
   "s1_eternum-ResourceList",
   "s1_eternum-LeaderboardRegisterContribution",
   "s1_eternum-LeaderboardRegisterShare",

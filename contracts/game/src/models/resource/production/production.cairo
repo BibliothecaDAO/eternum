@@ -16,7 +16,7 @@ use s1_eternum::models::structure::{StructureImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::utils::math::{min};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq)]
 pub struct Production {
     // active building count
     pub building_count: u8,

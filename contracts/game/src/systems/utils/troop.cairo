@@ -6,8 +6,8 @@ use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::WorldConfigUtilImpl;
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::map::{Tile, TileOccupier};
 
-use s1_eternum::models::position::{Occupied, OccupiedImpl};
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
     WeightStoreImpl,
@@ -21,6 +21,7 @@ use s1_eternum::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
+use s1_eternum::systems::utils::map::iMapImpl;
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
@@ -248,13 +249,16 @@ pub impl iExplorerImpl of iExplorerTrait {
         structure_base.troop_explorer_count -= 1;
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
-        let occupied: Occupied = OccupiedImpl::key_only(explorer.coord);
-        let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
+        // remove explorer from tile
+        let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
+        iMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
-        // delete explorer
-        world.erase_model(@occupied);
-        world.erase_model(@explorer);
+        // erase explorer resource model
+        let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);
         world.erase_model(@resource);
+
+        // erase explorer model
+        world.erase_model(@explorer);
         // todo: IMPORTANT: check the cost of erasing the resource model
 
     }

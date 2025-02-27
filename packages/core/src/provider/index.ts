@@ -1975,7 +1975,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_realm_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
+  public async set_structure_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
     const { calls, signer } = props;
 
     return await this.executeAndCheckTransaction(
@@ -1983,7 +1983,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_realm_level_config",
+          entrypoint: "set_structure_level_config",
           calldata: [
             call.level,
             call.cost_of_level.length,
@@ -2004,13 +2004,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_realm_max_level_config(props: SystemProps.SetRealmMaxLevelConfigProps) {
-    const { new_max_level, signer } = props;
+  public async set_structure_max_level_config(props: SystemProps.SetStructureMaxLevelConfigProps) {
+    const { realm_max_level, village_max_level, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_realm_max_level_config",
-      calldata: [new_max_level],
+      entrypoint: "set_structure_max_level_config",
+      calldata: [realm_max_level, village_max_level],
     });
   }
 

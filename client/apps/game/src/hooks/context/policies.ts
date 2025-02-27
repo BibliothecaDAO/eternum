@@ -249,12 +249,12 @@ export const policies: ContractPolicies = {
         entrypoint: "set_resource_bridge_whitelist_config",
       },
       {
-        name: "set_realm_max_level_config",
-        entrypoint: "set_realm_max_level_config",
+        name: "set_structure_max_level_config",
+        entrypoint: "set_structure_max_level_config",
       },
       {
-        name: "set_realm_level_config",
-        entrypoint: "set_realm_level_config",
+        name: "set_structure_level_config",
+        entrypoint: "set_structure_level_config",
       },
       {
         name: "set_settlement_config",

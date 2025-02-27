@@ -1,4 +1,5 @@
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ContractAddress, Player, PlayerInfo } from "../types";
 import { getEntityName } from "./entities";
@@ -10,7 +11,7 @@ export const getPlayerInfo = (
   playersByRank: [bigint, number][],
   components: ClientComponents,
 ): PlayerInfo[] => {
-  const { Realm, GuildMember, Hyperstructure, Structure } = components;
+  const { GuildMember, Hyperstructure, Structure } = components;
 
   const totalPoints = playersByRank.reduce((sum, [, points]) => sum + points, 0);
 
@@ -48,7 +49,7 @@ export const getPlayerInfo = (
       rank: rankIndex === -1 ? Number.MAX_SAFE_INTEGER : rankIndex + 1,
       percentage: calculatePlayerSharePercentage(points, totalPoints),
       lords: 0,
-      realms: runQuery([Has(Realm), HasValue(Structure, { owner: player.address })]).size,
+      realms: runQuery([HasValue(Structure, { owner: player.address, category: StructureType.Realm })]).size,
       // todo: fix this if possible in efficient way
       mines: 0,
       hyperstructures: runQuery([Has(Hyperstructure), HasValue(Structure, { owner: player.address })]).size,

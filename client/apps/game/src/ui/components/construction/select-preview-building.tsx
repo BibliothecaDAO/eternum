@@ -384,8 +384,8 @@ export const ResourceInfo = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   let cost = configManager.resourceInputs[resourceId];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
-  if (resourceId == ResourcesIds.Donkey && realm?.has_wonder) {
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
@@ -530,9 +530,9 @@ export const BuildingInfo = ({
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
-  if (buildingId == BuildingType.Market && realm?.has_wonder && ongoingCost.length > 0) {
+  if (buildingId == BuildingType.Market && structure?.metadata.has_wonder && ongoingCost.length > 0) {
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 

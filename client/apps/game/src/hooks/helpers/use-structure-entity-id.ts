@@ -9,7 +9,7 @@ import { useEffect } from "react";
 export const useStructureEntityId = () => {
   const {
     setup: {
-      components: { Structure, Occupied },
+      components: { Structure, Tile },
     },
   } = useDojo();
 
@@ -23,9 +23,9 @@ export const useStructureEntityId = () => {
       y: hexPosition.row,
     }).getContract();
 
-    const occupier = getComponentValue(Occupied, getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]));
+    const tile = getComponentValue(Tile, getEntityIdFromKeys([BigInt(position.x), BigInt(position.y)]));
 
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(occupier?.by_id ?? 0n)]));
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id ?? 0n)]));
 
     const newStructureId = structure?.entity_id;
 

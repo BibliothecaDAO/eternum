@@ -3,10 +3,12 @@ use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
-use s1_eternum::models::map::{Tile, TileImpl};
-use s1_eternum::models::position::{Coord, CoordImpl, Direction, Occupied, OccupiedBy, OccupiedImpl};
+use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{ResourceImpl};
-use s1_eternum::models::structure::{Structure, StructureCategory, StructureImpl};
+use s1_eternum::models::structure::{
+    Structure, StructureCategory, StructureImpl, StructureMetadata, StructureResourcesImpl,
+};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::utils::map::iMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
@@ -20,9 +22,14 @@ pub impl iStructureImpl of iStructureTrait {
         structure_id: ID,
         category: StructureCategory,
         assert_tile_explored: bool,
+        resources: Span<u8>,
+        metadata: StructureMetadata,
+        tile_occupier: TileOccupier,
     ) {
-        // ensure tile has already been explored
+        // ensure the tile is not occupied
         let mut tile: Tile = world.read_model((coord.x, coord.y));
+        assert!(tile.not_occupied(), "something exists on this coords");
+
         if assert_tile_explored {
             // ensure tile is explored
             assert!(tile.discovered(), "tile not explored");
@@ -45,30 +52,29 @@ pub impl iStructureImpl of iStructureTrait {
             Direction::SouthEast,
         ];
         for direction in structure_surrounding {
-            //todo: merge tile and Occupied
-            let coord: Coord = coord.neighbor(direction);
-            let mut tile: Tile = world.read_model((coord.x, coord.y));
-            if !tile.discovered() {
-                let biome: Biome = get_biome(coord.x.into(), coord.y.into());
-                iMapImpl::explore(ref world, ref tile, biome);
+            let neighbor_coord: Coord = coord.neighbor(direction);
+            let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
+            if !neighbor_tile.discovered() {
+                let biome: Biome = get_biome(neighbor_coord.x.into(), neighbor_coord.y.into());
+                iMapImpl::explore(ref world, ref neighbor_tile, biome);
             }
         };
 
-        // ensure the coord is not occupied
-        let occupied: Occupied = world.read_model((coord.x, coord.y));
-        assert!(occupied.not_occupied(), "something exists on this coords");
-
         // save structure model
-        let structure: Structure = StructureImpl::new(structure_id, category, coord, owner);
+        let structure_resources_packed: u128 = StructureResourcesImpl::pack_resource_types(resources);
+        let structure: Structure = StructureImpl::new(
+            structure_id, category, coord, owner, structure_resources_packed, metadata,
+        );
         world.write_model(@structure);
 
-        // save occupier model
-        world.write_model(@Occupied { x: coord.x, y: coord.y, by_id: structure_id, by_type: OccupiedBy::Structure });
+        // set tile occupier
+        iMapImpl::occupy(ref world, ref tile, tile_occupier, structure_id);
 
         // set structure capacity
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
         let capacity: u128 = capacity_config.structure_capacity.into() * RESOURCE_PRECISION;
         let structure_weight: Weight = Weight { capacity, weight: 0 };
+        ResourceImpl::initialize(ref world, structure_id);
         ResourceImpl::write_weight(ref world, structure_id, structure_weight);
     }
 }

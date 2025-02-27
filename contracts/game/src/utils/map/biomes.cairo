@@ -47,6 +47,59 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
         }
     }
 }
+
+
+impl BiomeIntoU8 of Into<Biome, u8> {
+    fn into(self: Biome) -> u8 {
+        match self {
+            Biome::None => 0,
+            Biome::DeepOcean => 1,
+            Biome::Ocean => 2,
+            Biome::Beach => 3,
+            Biome::Scorched => 4,
+            Biome::Bare => 5,
+            Biome::Tundra => 6,
+            Biome::Snow => 7,
+            Biome::TemperateDesert => 8,
+            Biome::Shrubland => 9,
+            Biome::Taiga => 10,
+            Biome::Grassland => 11,
+            Biome::TemperateDeciduousForest => 12,
+            Biome::TemperateRainForest => 13,
+            Biome::SubtropicalDesert => 14,
+            Biome::TropicalSeasonalForest => 15,
+            Biome::TropicalRainForest => 16,
+        }
+    }
+}
+
+
+impl U8IntoBiome of Into<u8, Biome> {
+    fn into(self: u8) -> Biome {
+        match self {
+            0 => Biome::None,
+            1 => Biome::DeepOcean,
+            2 => Biome::Ocean,
+            3 => Biome::Beach,
+            4 => Biome::Scorched,
+            5 => Biome::Bare,
+            6 => Biome::Tundra,
+            7 => Biome::Snow,
+            8 => Biome::TemperateDesert,
+            9 => Biome::Shrubland,
+            10 => Biome::Taiga,
+            11 => Biome::Grassland,
+            12 => Biome::TemperateDeciduousForest,
+            13 => Biome::TemperateRainForest,
+            14 => Biome::SubtropicalDesert,
+            15 => Biome::TropicalSeasonalForest,
+            16 => Biome::TropicalRainForest,
+            _ => panic!("invalid biome"),
+        }
+    }
+}
+
+
 fn bdepth(biome: Biome) -> Fixed {
     match biome {
         Biome::None => FixedTrait::ZERO(),

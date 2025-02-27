@@ -36,6 +36,35 @@ export enum BiomeType {
   TropicalRainForest = "TropicalRainForest",
 }
 
+// Mapping from BiomeType to numeric ID (matching Cairo contract values)
+export const BiomeTypeToId: Record<BiomeType, number> = {
+  [BiomeType.DeepOcean]: 1,
+  [BiomeType.Ocean]: 2,
+  [BiomeType.Beach]: 3,
+  [BiomeType.Scorched]: 4,
+  [BiomeType.Bare]: 5,
+  [BiomeType.Tundra]: 6,
+  [BiomeType.Snow]: 7,
+  [BiomeType.TemperateDesert]: 8,
+  [BiomeType.Shrubland]: 9,
+  [BiomeType.Taiga]: 10,
+  [BiomeType.Grassland]: 11,
+  [BiomeType.TemperateDeciduousForest]: 12,
+  [BiomeType.TemperateRainForest]: 13,
+  [BiomeType.SubtropicalDesert]: 14,
+  [BiomeType.TropicalSeasonalForest]: 15,
+  [BiomeType.TropicalRainForest]: 16,
+};
+
+// Mapping from numeric ID to BiomeType
+export const BiomeIdToType: Record<number, BiomeType> = Object.entries(BiomeTypeToId).reduce(
+  (acc, [type, id]) => ({
+    ...acc,
+    [id]: type as BiomeType,
+  }),
+  {} as Record<number, BiomeType>
+);
+
 export enum Direction {
   EAST,
   NORTH_EAST,
