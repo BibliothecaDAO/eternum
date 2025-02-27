@@ -23,14 +23,7 @@ pub impl TileIntoCoord of Into<Tile, Coord> {
 #[generate_trait]
 pub impl TileImpl of TileTrait {
     fn keys_only(coord: Coord) -> Tile {
-        Tile { 
-            col: coord.x, 
-            row: coord.y, 
-            biome: 0, 
-            occupier_id: 0, 
-            occupier_type: 0,
-            occupier_is_structure: false,
-        }
+        Tile { col: coord.x, row: coord.y, biome: 0, occupier_id: 0, occupier_type: 0, occupier_is_structure: false }
     }
 
     fn discovered(self: Tile) -> bool {
