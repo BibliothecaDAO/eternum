@@ -91,7 +91,7 @@
     "@dojoengine/create-burner": "1.1.2",
     "@dojoengine/react": "1.1.2",
     "@dojoengine/recs": "^2.0.13",
-    "@dojoengine/state": "1.1.2",
+    "@dojoengine/state": "1.2.0",
     "@dojoengine/torii-client": "1.1.2",
     "@dojoengine/torii-wasm": "1.1.2",
     "@dojoengine/utils": "1.1.2"
@@ -99,7 +99,7 @@
   "devDependencies": {
     "@bibliothecadao/eternum": "workspace:^",
     "@bibliothecadao/react": "workspace:^",
-    "@dojoengine/core": "1.1.2",
+    "@dojoengine/core": "1.2.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.18",

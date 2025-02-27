@@ -39,7 +39,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
 
-  const maxAmountOfArmies = useMemo(() => {
+  const maxAmountExplorerArmies = useMemo(() => {
     const maxWithBuildings =
       structure.structure.base.troop_max_explorer_count +
       existingBuildings.filter(
@@ -54,11 +54,11 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     return Math.min(maxWithBuildings, hardMax);
   }, [existingBuildings]);
 
-  const numberAttackingArmies = useMemo(() => {
+  const totalExplorersCount = useMemo(() => {
     return explorers.length;
   }, [explorers]);
 
-  const numberDefensiveArmies = useMemo(() => {
+  const totalGuards = useMemo(() => {
     return guards.length;
   }, [guards]);
 
@@ -82,13 +82,13 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         <div className="text-center">
           <div className="text-sm text-gold">Explorers</div>
           <div className="text-lg font-bold text-gold/90">
-            {numberAttackingArmies} / {structure.structure.base.troop_max_explorer_count}
+            {totalExplorersCount} / {structure.structure.base.troop_max_explorer_count}
           </div>
         </div>
         <div className="text-center">
           <div className="text-sm text-gold">Guards</div>
           <div className="text-lg font-bold text-gold/90">
-            {numberDefensiveArmies} / {structure.structure.base.troop_max_guard_count}
+            {totalGuards} / {structure.structure.base.troop_max_guard_count}
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
                 content: "Can only create attacking armies on realms",
                 position: "top",
               });
-            } else if (numberAttackingArmies + numberDefensiveArmies >= maxAmountOfArmies) {
+            } else if (totalExplorersCount >= maxAmountExplorerArmies) {
               setTooltip({
                 content: "Maximum number of armies reached",
                 position: "top",
@@ -113,7 +113,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         >
           <Button
             variant="primary"
-            disabled={!isRealm || numberAttackingArmies + numberDefensiveArmies >= maxAmountOfArmies}
+            disabled={!isRealm || totalExplorersCount >= maxAmountExplorerArmies}
             className="attack-army-selector px-6 py-2 text-lg"
             onClick={() => setShowTroopSelection(!showTroopSelection)}
           >
@@ -154,7 +154,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
         <StructureDefence
           structureId={structure.structure.entity_id || 0}
-          maxDefenses={4}
+          maxDefenses={structure.structure.base.troop_max_guard_count}
           troops={guards.map((army) => ({
             slot: army.slot,
             troops: army.troops,

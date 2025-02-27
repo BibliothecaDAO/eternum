@@ -24,8 +24,8 @@ importers:
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.7.3)(zod@3.24.2)
       '@dojoengine/state':
-        specifier: 1.1.2
-        version: 1.1.2(@types/node@20.17.19)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.7.3)(zod@3.24.2)
+        specifier: 1.2.0
+        version: 1.2.0(@types/node@20.17.19)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.7.3)(zod@3.24.2)
       '@dojoengine/torii-client':
         specifier: 1.1.2
         version: 1.1.2
@@ -61,8 +61,8 @@ importers:
         specifier: workspace:^
         version: link:packages/react
       '@dojoengine/core':
-        specifier: 1.1.2
-        version: 1.1.2(encoding@0.1.13)(typescript@5.7.3)
+        specifier: 1.2.0
+        version: 1.2.0(encoding@0.1.13)(typescript@5.7.3)
       '@types/node':
         specifier: ^20.11.10
         version: 20.17.19
@@ -448,9 +448,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@dojoengine/core':
-        specifier: 1.0.0-alpha.24
-        version: 1.0.0-alpha.24(starknet@6.23.1(encoding@0.1.13))(typescript@5.7.3)
       '@latticexyz/utils':
         specifier: ^2.0.0-next.12
         version: 2.2.20
@@ -1243,14 +1240,12 @@ packages:
     bundledDependencies:
       - is-unicode-supported
 
-  '@dojoengine/core@1.0.0-alpha.24':
-    resolution: {integrity: sha512-ABxUtqQOsrTm8HYvR8pICfQ+MX99ZRSW1QkOyjRy4PbB+8A9heq2bMBqVrFhgMYFdEti9Z8aXNbt+uJ985SSqg==}
-    hasBin: true
-    peerDependencies:
-      starknet: 6.11.0
-
   '@dojoengine/core@1.1.2':
     resolution: {integrity: sha512-sma9Zb7yXtZway1GQOWUvo9OjSNGtW5x0pY2HTOaStxWQfLnp476KQLvEqdx5IuQYsIDezYybmZBzIkZMzAGRw==}
+    hasBin: true
+
+  '@dojoengine/core@1.2.0':
+    resolution: {integrity: sha512-MFlOf84E61FNh3/qSlq0Iwy0BkbcBwhBzLe1w/t970Jkk3KATEnYe3yx+pUCvyshhsRBJdpZ1GozWnFHMp66QQ==}
     hasBin: true
 
   '@dojoengine/create-burner@1.1.2':
@@ -1282,11 +1277,22 @@ packages:
     peerDependencies:
       starknet: 6.21.0
 
+  '@dojoengine/state@1.2.0':
+    resolution: {integrity: sha512-nhBulCnrHvmAshDlJR6ppuid0a0L5x7fTLkMbh5bZ1PfYwr3kQmvqB1WGR3LP8k/YvmB3tDcU9smMqsU083bhg==}
+    peerDependencies:
+      starknet: 6.23.1
+
   '@dojoengine/torii-client@1.1.2':
     resolution: {integrity: sha512-e0gUKqYgm7Stmz01lF56KMV41jkaA8Jmpsq3gtPTHp8xETJccHRya8qWHzZObp18vUSwJhXn8z1Q2ByIPom30Q==}
 
+  '@dojoengine/torii-client@1.2.0':
+    resolution: {integrity: sha512-K4CzuryXU1tgQi50v5lRlD75NtdD7Km0lgGGZ6UnPRBhs/AeX8twpY+CfcVv/Jl14NWXLOynzGmEYCw9eG4A2A==}
+
   '@dojoengine/torii-wasm@1.1.2':
     resolution: {integrity: sha512-O+adMhmCTzi8bG8fzBcOTYqd40Cvz13MHoWuhmxyBLBy6AKe7xmrT0vlWyeBSDCbMuq5D6sWzv6OYmPovSaKcw==}
+
+  '@dojoengine/torii-wasm@1.2.0':
+    resolution: {integrity: sha512-KrmODQb8ELE+bIi5gqv1qXktfnjwjaVTQaDSefAU/D0gwSCWL1mowgMSecy4EPARr8Wk0rVBzmhzs7ZOlPVt4g==}
 
   '@dojoengine/utils@1.1.2':
     resolution: {integrity: sha512-QmwV9/X4vXqFzB9p/ZVACsR/jAoegFGYlrXjpxXDBuGT3bOYL/3e9WQzHg85z6g0PYLwiwOBFXRy4uKr0RFyZw==}
@@ -9962,20 +9968,21 @@ snapshots:
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
-  '@dojoengine/core@1.0.0-alpha.24(starknet@6.23.1(encoding@0.1.13))(typescript@5.7.3)':
-    dependencies:
-      '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.2)
-      starknet: 6.23.1(encoding@0.1.13)
-      zod: 3.24.2
-    transitivePeerDependencies:
-      - bufferutil
-      - typescript
-      - utf-8-validate
-
   '@dojoengine/core@1.1.2(encoding@0.1.13)(typescript@5.7.3)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.2)
       starknet: 6.21.0(encoding@0.1.13)
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+
+  '@dojoengine/core@1.2.0(encoding@0.1.13)(typescript@5.7.3)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.2)
+      starknet: 6.23.1(encoding@0.1.13)
       zod: 3.24.2
     transitivePeerDependencies:
       - bufferutil
@@ -10081,11 +10088,43 @@ snapshots:
       - utf-8-validate
       - zod
 
+  '@dojoengine/state@1.2.0(@types/node@20.17.19)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.7.3)(zod@3.24.2)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(typescript@5.7.3)(zod@3.24.2)
+      '@dojoengine/torii-client': 1.2.0
+      starknet: 6.23.1(encoding@0.1.13)
+      vitest: 1.6.1(@types/node@20.17.19)(terser@5.39.0)
+    transitivePeerDependencies:
+      - '@edge-runtime/vm'
+      - '@types/node'
+      - '@vitest/browser'
+      - '@vitest/ui'
+      - bufferutil
+      - happy-dom
+      - jsdom
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+      - zod
+
   '@dojoengine/torii-client@1.1.2':
     dependencies:
       '@dojoengine/torii-wasm': 1.1.2
 
+  '@dojoengine/torii-client@1.2.0':
+    dependencies:
+      '@dojoengine/torii-wasm': 1.2.0
+
   '@dojoengine/torii-wasm@1.1.2': {}
+
+  '@dojoengine/torii-wasm@1.2.0': {}
 
   '@dojoengine/utils@1.1.2(starknet@6.23.1(encoding@0.1.13))(typescript@5.7.3)(zod@3.24.2)':
     dependencies:
