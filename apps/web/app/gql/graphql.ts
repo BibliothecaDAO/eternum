@@ -2962,7 +2962,17 @@ export enum _Metadata_OrderBy {
   Value = 'value'
 }
 
-export type ProposalFieldsFragment = { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number | null>, strategies: Array<string | null>, strategies_params: Array<string | null>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string | null>, labels: Array<string | null> } | null } & { ' $fragmentName'?: 'ProposalFieldsFragment' };
+export type ProposalFieldsFragment = { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number | null>, strategies: Array<string | null>, strategies_params: Array<string | null>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string | null>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string | null>, executors: Array<string | null>, executors_types: Array<string | null>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null } | null> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null } | null> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string | null>, labels: Array<string | null> } | null } & { ' $fragmentName'?: 'ProposalFieldsFragment' };
+
+export type ProposalQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+export type ProposalQuery = { __typename?: 'Query', proposal?: (
+    { __typename?: 'Proposal' }
+    & { ' $fragmentRefs'?: { 'ProposalFieldsFragment': ProposalFieldsFragment } }
+  ) | null };
 
 export type ProposalsQueryVariables = Exact<{
   first: Scalars['Int']['input'];
@@ -3009,6 +3019,40 @@ export const ProposalFieldsFragmentDoc = new TypedDocumentString(`
     fragment proposalFields on Proposal {
   id
   proposal_id
+  space {
+    id
+    controller
+    authenticators
+    metadata {
+      id
+      name
+      avatar
+      voting_power_symbol
+      treasuries
+      executors
+      executors_types
+      executors_strategies {
+        id
+        address
+        destination_address
+        type
+        treasury_chain
+        treasury
+      }
+    }
+    strategies_parsed_metadata {
+      index
+      data {
+        id
+        name
+        description
+        decimals
+        symbol
+        token
+        payload
+      }
+    }
+  }
   author {
     id
     address_type
@@ -3072,6 +3116,92 @@ export const VoteFieldsFragmentDoc = new TypedDocumentString(`
   tx
 }
     `, {"fragmentName":"voteFields"}) as unknown as TypedDocumentString<VoteFieldsFragment, unknown>;
+export const ProposalDocument = new TypedDocumentString(`
+    query Proposal($id: String!) {
+  proposal(id: $id) {
+    ...proposalFields
+  }
+}
+    fragment proposalFields on Proposal {
+  id
+  proposal_id
+  space {
+    id
+    controller
+    authenticators
+    metadata {
+      id
+      name
+      avatar
+      voting_power_symbol
+      treasuries
+      executors
+      executors_types
+      executors_strategies {
+        id
+        address
+        destination_address
+        type
+        treasury_chain
+        treasury
+      }
+    }
+    strategies_parsed_metadata {
+      index
+      data {
+        id
+        name
+        description
+        decimals
+        symbol
+        token
+        payload
+      }
+    }
+  }
+  author {
+    id
+    address_type
+  }
+  quorum
+  execution_hash
+  metadata {
+    id
+    title
+    body
+    discussion
+    execution
+    choices
+    labels
+  }
+  start
+  min_end
+  max_end
+  snapshot
+  scores_1
+  scores_2
+  scores_3
+  scores_total
+  execution_time
+  execution_strategy
+  execution_strategy_type
+  execution_destination
+  timelock_veto_guardian
+  strategies_indices
+  strategies
+  strategies_params
+  created
+  edited
+  tx
+  execution_tx
+  veto_tx
+  vote_count
+  execution_ready
+  executed
+  vetoed
+  completed
+  cancelled
+}`) as unknown as TypedDocumentString<ProposalQuery, ProposalQueryVariables>;
 export const ProposalsDocument = new TypedDocumentString(`
     query Proposals($first: Int!, $skip: Int!, $where: Proposal_filter) {
   proposals(
@@ -3087,6 +3217,40 @@ export const ProposalsDocument = new TypedDocumentString(`
     fragment proposalFields on Proposal {
   id
   proposal_id
+  space {
+    id
+    controller
+    authenticators
+    metadata {
+      id
+      name
+      avatar
+      voting_power_symbol
+      treasuries
+      executors
+      executors_types
+      executors_strategies {
+        id
+        address
+        destination_address
+        type
+        treasury_chain
+        treasury
+      }
+    }
+    strategies_parsed_metadata {
+      index
+      data {
+        id
+        name
+        description
+        decimals
+        symbol
+        token
+        payload
+      }
+    }
+  }
   author {
     id
     address_type

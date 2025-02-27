@@ -1,6 +1,9 @@
 import { getProposalsQueryOptions } from "@/lib/getProposals";
 import { getUserVotesQueryOptions } from "@/lib/getUserVotes";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+
+import { SnapshotSpaceAddresses } from "@realms-world/constants";
 
 import { ProposalListItem } from "./proposal-list-item";
 
@@ -13,9 +16,7 @@ export function ProposalList({
 }) {
   const { data: proposalsQuery } = useSuspenseQuery(
     getProposalsQueryOptions({
-      spaceIds: [
-        "0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",
-      ],
+      spaceIds: [SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string],
       limit,
       skip: 0,
       current: 1,
@@ -26,9 +27,7 @@ export function ProposalList({
 
   const { data: userVotesQuery } = useQuery(
     getUserVotesQueryOptions({
-      spaceIds: [
-        "0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",
-      ],
+      spaceIds: [SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID] as string],
       limit,
       skip: 0,
       voter: delegateId ?? "",

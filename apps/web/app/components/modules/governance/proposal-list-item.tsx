@@ -1,11 +1,12 @@
 import type { Proposal } from "@/gql/graphql";
 import { Progress } from "@/components/ui/progress";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
-import { formatLockEndTime } from "@/utils/time";
 import { shortenAddress } from "@/utils/utils";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircle2, XCircle } from "lucide-react";
+
+import { ProposalVoteAction } from "./proposal-vote-action";
 
 export const ProposalListItem = ({
   proposal,
@@ -34,7 +35,11 @@ export const ProposalListItem = ({
 
   return (
     <div className="mx-4 flex items-center border-b py-[14px] last:border-b-0">
-      <div className="mr-4 w-0 flex-auto">
+      <Link
+        to={`/proposal/$id`}
+        params={{ id: proposal.proposal_id.toString() }}
+        className="mr-4 w-0 flex-auto"
+      >
         <div className="flex space-x-2">
           <div className="mb-1 items-center leading-6 md:flex md:min-w-0">
             <h4 className="my-0 text-lg font-semibold">
@@ -54,10 +59,10 @@ export const ProposalListItem = ({
             {isActive ? "left" : "ago"}
           </span>
         </div>
-      </div>
+      </Link>
 
       {isActive ? (
-        "Voting Active"
+        <ProposalVoteAction proposal={proposal} />
       ) : (
         <div className="flex flex-col items-end gap-2">
           <Progress
@@ -65,7 +70,8 @@ export const ProposalListItem = ({
               (Number(proposal.scores_1) / Number(proposal.scores_total)) * 100
             }
             max={Number(proposal.scores_total)}
-            className="w-30"
+            className="w-30 bg-red-500/60"
+            indicatorColor="bg-green-500"
           />
 
           <div>

@@ -6,9 +6,12 @@ import {
   joinHighlightProposal,
 } from "@/utils/helpers";*/
 import { graphql } from "@/gql";
+import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+
+import { SnapshotSpaceAddresses } from "@realms-world/constants";
 
 import { execute } from "./queries/execute";
 
@@ -16,6 +19,40 @@ graphql(`
   fragment proposalFields on Proposal {
     id
     proposal_id
+    space {
+      id
+      controller
+      authenticators
+      metadata {
+        id
+        name
+        avatar
+        voting_power_symbol
+        treasuries
+        executors
+        executors_types
+        executors_strategies {
+          id
+          address
+          destination_address
+          type
+          treasury_chain
+          treasury
+        }
+      }
+      strategies_parsed_metadata {
+        index
+        data {
+          id
+          name
+          description
+          decimals
+          symbol
+          token
+          payload
+        }
+      }
+    }
     author {
       id
       address_type
@@ -60,6 +97,14 @@ graphql(`
     cancelled
   }
 `);
+export const PROPOSAL_QUERY = graphql(`
+  query Proposal($id: String!) {
+    proposal(id: $id) {
+      ...proposalFields
+    }
+  }
+`);
+
 const PROPOSALS_QUERY = graphql(`
   query Proposals($first: Int!, $skip: Int!, $where: Proposal_filter) {
     proposals(
@@ -181,4 +226,42 @@ export const getProposalsQueryOptions = (
       input.searchQuery,
     ],
     queryFn: () => getProposals({ data: input }),
+  });
+
+/* -------------------------------------------------------------------------- */
+/*                   getProposal Server Function                             */
+/* -------------------------------------------------------------------------- */
+
+// Define a Zod schema for the proposal request input.
+const LoadProposalInput = z.object({
+  id: z.string(),
+});
+
+/**
+ * This function fetches a single proposal by ID
+ */
+export const getProposal = createServerFn({ method: "POST" })
+  .validator((input: unknown) => LoadProposalInput.parse(input))
+  .handler(async (ctx) => {
+    const { id } = ctx.data;
+
+    // Fetch a single proposal using the generic fetch helper
+    const proposalData = await execute(PROPOSAL_QUERY, {
+      id: `${SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID]}/${id}`,
+    });
+
+    // Return the proposal data
+    return proposalData;
+  });
+
+/* -------------------------------------------------------------------------- */
+/*                   React Query Options for getProposal                     */
+/* -------------------------------------------------------------------------- */
+
+export const getProposalQueryOptions = (
+  input: z.infer<typeof LoadProposalInput>,
+) =>
+  queryOptions({
+    queryKey: ["loadProposal", input.id],
+    queryFn: () => getProposal({ data: input }),
   });

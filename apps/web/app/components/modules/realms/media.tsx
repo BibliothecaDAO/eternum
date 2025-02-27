@@ -1,9 +1,9 @@
 import { useState } from "react";
-
-import { env } from "env";
+import { AnimatedMap } from "@/components/icons/AnimatedMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/utils";
-import { AnimatedMap } from "@/components/icons/AnimatedMap";
+import { env } from "env";
+
 //import { cn } from "@realms-world/utils";
 //import { Skeleton } from "@realms-world/ui/components/ui/skeleton";
 //import { AnimatedMap } from "./AnimatedMap";
@@ -25,7 +25,7 @@ function getMediaSrc(
   mediaKey?: string | null,
   thumbnailKey?: string | null,
   width?: number,
-  height?: number
+  height?: number,
 ) {
   if (thumbnailKey) {
     return `${env.VITE_PUBLIC_IMAGE_CDN_URL}/${thumbnailKey}`;
@@ -35,15 +35,24 @@ function getMediaSrc(
     const resolutionParam = `:${width}:${height}`;
     return `${env.VITE_PUBLIC_IMAGE_PROXY_URL}/_/rs:fit${resolutionParam}/plain/${env.VITE_PUBLIC_IMAGE_CDN_URL}/${mediaKey}`;
   }
-  return src?.replace("ipfs://", env.VITE_PUBLIC_IPFS_GATEWAY ?? "");
+
+  // Handle IPFS URL transformation
+  if (src?.startsWith("ipfs://")) {
+    const ipfsGateway = env.VITE_PUBLIC_IPFS_GATEWAY ?? "https://ipfs.io/ipfs/";
+    const transformedUrl = src.replace("ipfs://", ipfsGateway);
+    console.log("Transforming IPFS URL:", src, "to:", transformedUrl);
+    return transformedUrl;
+  }
+
+  return src;
 }
 
 function MediaPlaceholder({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center bg-secondary",
-        className
+        "bg-secondary flex shrink-0 items-center justify-center",
+        className,
       )}
     >
       <AnimatedMap />
@@ -62,7 +71,7 @@ export default function Media({
   //priority = false,
 }: MediaProps) {
   const [status, setStatus] = useState<"loading" | "error" | "loaded">(
-    "loading"
+    "loading",
   );
   const mediaSrc = getMediaSrc(src, mediaKey, thumbnailKey, width, height);
   const mediaFormat = mediaSrc?.split(".").pop() === "mp4" ? "video" : "image";
