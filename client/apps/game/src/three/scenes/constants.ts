@@ -78,6 +78,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Realm]: BuildingType.Castle,
   [StructureType.FragmentMine]: BuildingType.FragmentMine,
   [StructureType.Hyperstructure]: BuildingType.Castle,
+  [StructureType.Village]: BuildingType.Castle,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -152,6 +153,7 @@ export const buildingModelPaths = {
 };
 
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
+  None: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
   TemperateDeciduousForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
@@ -189,6 +191,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
   [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
@@ -196,6 +199,7 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
   [StructureType.Bank]: "",
+  [StructureType.Village]: "",
 };
 
 export const MinesMaterialsParams: Record<

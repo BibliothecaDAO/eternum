@@ -3,15 +3,13 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcherTrait};
-
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
     PopulationConfig, ProductionConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::owner::{OwnerAddressTrait};
-use s1_eternum::models::position::{Coord, CoordTrait, Direction, Position, PositionTrait};
+use s1_eternum::models::position::{Coord, CoordTrait, Direction};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -20,7 +18,6 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
-use starknet::ContractAddress;
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
@@ -579,17 +576,10 @@ pub impl BuildingImpl of BuildingTrait {
     /// stops consuming resources, stops giving bonuses to adjacent buildings,
     /// and stops receiving bonuses from adjacent buildings.
     ///
-    fn pause_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
-        structure_owner.assert_caller_owner();
-
-        // check that the outer entity has a position
-        let outer_entity_position: Position = world.read_model(outer_entity_id);
-        outer_entity_position.assert_not_zero();
-
+    fn pause_production(ref world: WorldStorage, outer_entity_coord: Coord, inner_coord: Coord) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
-            .read_model((outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y));
+            .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
         assert!(building.entity_id != 0, "building does not exist");
         assert!(building.paused == false, "building production is already paused");
 
@@ -604,17 +594,10 @@ pub impl BuildingImpl of BuildingTrait {
     /// When you restart production, the building resumes producing resources,
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
-    fn resume_production(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) {
-        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
-        structure_owner.assert_caller_owner();
-
-        // check that the outer entity has a position
-        let outer_entity_position: Position = world.read_model(outer_entity_id);
-        outer_entity_position.assert_not_zero();
-
+    fn resume_production(ref world: WorldStorage, outer_entity_coord: Coord, inner_coord: Coord) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
-            .read_model((outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y));
+            .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
         assert!(building.entity_id != 0, "building does not exist");
 
         assert!(building.exists(), "building is not active");
@@ -628,17 +611,12 @@ pub impl BuildingImpl of BuildingTrait {
 
     /// Destroy building and remove it from the structure
     ///
-    fn destroy(ref world: WorldStorage, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
-        let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, outer_entity_id);
-        structure_owner.assert_caller_owner();
-
-        // check that the outer entity has a position
-        let outer_entity_position: Position = world.read_model(outer_entity_id);
-        outer_entity_position.assert_not_zero();
-
+    fn destroy(
+        ref world: WorldStorage, outer_entity_id: ID, outer_entity_coord: Coord, inner_coord: Coord,
+    ) -> BuildingCategory {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
-            .read_model((outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y));
+            .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
         assert!(building.entity_id != 0, "building does not exist");
 
         // stop production related to building

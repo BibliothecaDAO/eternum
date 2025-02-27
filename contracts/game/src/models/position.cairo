@@ -217,40 +217,6 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
     }
 }
 
-pub mod OccupiedBy {
-    pub const None: u8 = 0;
-    pub const Structure: u8 = 1;
-    pub const Explorer: u8 = 2;
-}
-
-#[derive(Introspect, PartialEq, Copy, Drop, Serde, Default)]
-#[dojo::model]
-pub struct Occupied {
-    #[key]
-    pub x: u32,
-    #[key]
-    pub y: u32,
-    pub by_id: ID,
-    pub by_type: u8,
-}
-
-#[generate_trait]
-pub impl OccupiedImpl of OccupiedTrait {
-    fn key_only(coord: Coord) -> Occupied {
-        Occupied { x: coord.x, y: coord.y, by_id: 0, by_type: OccupiedBy::None }
-    }
-
-    #[inline(always)]
-    fn occupied(self: Occupied) -> bool {
-        self.by_type != OccupiedBy::None && self.by_id != 0
-    }
-
-    #[inline(always)]
-    fn not_occupied(self: Occupied) -> bool {
-        self.by_type == OccupiedBy::None || self.by_id == 0
-    }
-}
-
 
 #[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]

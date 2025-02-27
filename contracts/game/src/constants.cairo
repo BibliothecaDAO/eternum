@@ -366,6 +366,8 @@ pub fn get_resources_without_earthenshards_probs() -> Span<u128> {
 }
 
 
+// todo: confrm probabilities. esp earthen shards
+
 /// Get resource occurence probabilities
 pub fn get_resource_probabilities() -> Span<(u8, u128)> {
     return array![

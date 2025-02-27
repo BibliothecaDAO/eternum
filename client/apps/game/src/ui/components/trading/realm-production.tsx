@@ -18,7 +18,7 @@ export const RealmProduction = () => {
 
   const realmsProduction = useMemo(() => {
     return realms.map((realm) => {
-      const resourcesProduced = unpackValue(realm.produced_resources);
+      const resourcesProduced = unpackValue(realm.resources_packed);
 
       return {
         ...realm,

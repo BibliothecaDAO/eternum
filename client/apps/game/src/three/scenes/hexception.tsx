@@ -270,7 +270,7 @@ export default class HexceptionScene extends HexagonScene {
     );
 
     this.realmSubscription?.unsubscribe();
-    this.realmSubscription = this.systemManager.Realm.onUpdate((update: RealmSystemUpdate) => {
+    this.realmSubscription = this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
       if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
         this.structureStage = update.level as RealmLevels;
         this.removeCastleFromScene();
@@ -441,6 +441,7 @@ export default class HexceptionScene extends HexagonScene {
     const dummy = new THREE.Object3D();
     this.updateCastleLevel();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+      None: [],
       Ocean: [],
       DeepOcean: [],
       Beach: [],

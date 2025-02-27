@@ -2,6 +2,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
+use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
@@ -47,7 +48,17 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
-        iStructureImpl::create(ref world, coord, owner, structure_id, StructureCategory::FragmentMine, true);
+        iStructureImpl::create(
+            ref world,
+            coord,
+            owner,
+            structure_id,
+            StructureCategory::FragmentMine,
+            true,
+            array![].span(),
+            Default::default(),
+            TileOccupier::FragmentMine,
+        );
         // add guards to structure
         // slot must start from delta, to charlie, to beta, to alpha
         let slot_tiers = array![(GuardSlot::Delta, TroopTier::T2, TroopType::Paladin)].span();

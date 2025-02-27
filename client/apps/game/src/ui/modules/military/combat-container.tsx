@@ -39,7 +39,7 @@ export const CombatContainer = ({
     setup: {
       systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
       components,
-      components: { Structure, ExplorerTroops, Occupied },
+      components: { Structure, ExplorerTroops, Tile },
     },
   } = useDojo();
 
@@ -47,7 +47,7 @@ export const CombatContainer = ({
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const targetEntity = getComponentValue(Occupied, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -62,7 +62,7 @@ export const CombatContainer = ({
   }, [attackerEntityId]);
 
   const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.by_id || 0n)]);
+    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]);
     const structure = getComponentValue(Structure, occupierId);
     const explorer = getComponentValue(ExplorerTroops, occupierId);
 

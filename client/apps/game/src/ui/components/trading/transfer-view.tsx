@@ -18,7 +18,7 @@ export const TransferView = () => {
     account: { account },
     setup: { components },
   } = useDojo();
-  const { Structure, Realm } = components;
+  const { Structure } = components;
 
   const playerRealms = usePlayerOwnedRealms();
   const playerStructures = usePlayerStructures();
@@ -58,18 +58,17 @@ export const TransferView = () => {
   }, [otherStructuresQuery]);
 
   const otherRealmsQuery = useEntityQuery([
-    Has(Realm),
-    NotValue(Structure, { owner: ContractAddress(account.address) }),
+    Has(Structure),
+    NotValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm }),
   ]);
 
   const otherRealms = useMemo(() => {
     return otherRealmsQuery.map((id) => {
-      const realm = getComponentValue(Realm, id);
       const structure = getComponentValue(Structure, id);
       return {
-        ...realm,
+        ...structure?.metadata,
         position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
-        name: getRealmNameById(realm!.realm_id),
+        name: structure ? getRealmNameById(structure.metadata.realm_id) : "",
         owner: structure?.owner,
       } as RealmWithPosition;
     });

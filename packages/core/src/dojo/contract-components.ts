@@ -20,23 +20,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Bank: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.Number,
-          exists: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Bank",
-            types: ["u32", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Building: (() => {
       return defineComponent(
         world,
@@ -514,35 +497,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Realm: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.Number,
-          realm_id: RecsType.Number,
-          produced_resources: RecsType.BigInt,
-          order: RecsType.Number,
-          level: RecsType.Number,
-          has_wonder: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Realm",
-            types: ["u32", "u32", "u128", "u8", "u8", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    RealmLevelConfig: (() => {
+    StructureLevelConfig: (() => {
       return defineComponent(
         world,
         { level: RecsType.Number, required_resources_id: RecsType.Number, required_resource_count: RecsType.Number },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "RealmLevelConfig",
+            name: "StructureLevelConfig",
             types: ["u8", "u32", "u8"],
             customTypes: [],
           },
@@ -950,6 +912,7 @@ export function defineContractComponents(world: World) {
             category: RecsType.Number,
             coord_x: RecsType.Number,
             coord_y: RecsType.Number,
+            level: RecsType.Number,
           },
           troop_guards: {
             delta: {
@@ -994,6 +957,13 @@ export function defineContractComponents(world: World) {
             alpha_destroyed_tick: RecsType.Number,
           },
           troop_explorers: RecsType.NumberArray,
+          resources_packed: RecsType.BigInt,
+          metadata: {
+            realm_id: RecsType.Number,
+            order: RecsType.Number,
+            has_wonder: RecsType.Boolean,
+          },
+          category: RecsType.Number,
         },
         {
           metadata: {
@@ -1010,6 +980,7 @@ export function defineContractComponents(world: World) {
               "u8",
               "u32",
               "u32",
+              "u8",
               //delta
               "enum",
               "enum",
@@ -1041,28 +1012,13 @@ export function defineContractComponents(world: World) {
               "u32",
               //explorers
               "Span<u32>",
+              "u128",
+              "u16",
+              "u8",
+              "bool",
+              "u8",
             ],
-            customTypes: ["StructureBase", "GuardTroops", "TroopType", "TroopTier", "Stamina"],
-          },
-        },
-      );
-    })(),
-
-    Occupied: (() => {
-      return defineComponent(
-        world,
-        {
-          x: RecsType.Number,
-          y: RecsType.Number,
-          by_id: RecsType.Number,
-          by_type: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Occupied",
-            types: ["u32", "u32", "u32", "u8"],
-            customTypes: [],
+            customTypes: ["StructureBase", "GuardTroops", "TroopType", "TroopTier", "Stamina", "StructureMetadata"],
           },
         },
       );
@@ -1074,14 +1030,17 @@ export function defineContractComponents(world: World) {
         {
           col: RecsType.Number,
           row: RecsType.Number,
-          biome: RecsType.String,
+          biome: RecsType.Number,
+          occupier_id: RecsType.Number,
+          occupier_type: RecsType.Number,
+          occupier_is_structure: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Tile",
-            types: ["u32", "u32", "enum"],
-            customTypes: ["Biome"],
+            types: ["u32", "u32", "u8", "u32", "u8", "bool"],
+            customTypes: [],
           },
         },
       );
@@ -1197,7 +1156,7 @@ export function defineContractComponents(world: World) {
             velords_fee_recipient: RecsType.BigInt,
             season_pool_fee_recipient: RecsType.BigInt,
           },
-          realm_max_level_config: {
+          structure_max_level_config: {
             max_level: RecsType.Number,
           },
           building_general_config: {
@@ -1298,7 +1257,8 @@ export function defineContractComponents(world: World) {
               "u16", // ResourceBridgeFeeSplitConfig max_bank_fee_wtdr_percent
               "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
-              "u8", // RealmMaxLevelConfig max_level
+              "u8", // StructureMaxLevelConfig realm_max
+              "u8", // StructureMaxLevelConfig village_max
               "u16", // BuildingGeneralConfig base_cost_percent_increase
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small

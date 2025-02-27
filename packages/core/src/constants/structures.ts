@@ -8,6 +8,7 @@ export enum StructureType {
   Hyperstructure = 2,
   Bank = 3,
   FragmentMine = 4,
+  Village = 5
 }
 
 export enum BuildingType {

@@ -2,24 +2,22 @@ import { Entity, getComponentValue, getComponentValueStrict } from "@dojoengine/
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, gramToKg } from "..";
-import { BuildingType, CapacityConfig, findResourceIdByTrait, orders } from "../constants";
+import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Realm, Structure } = components;
-  const realm = getComponentValue(Realm, entity);
-  if (!realm) return undefined;
-
+  const {  Structure } = components;
   const structure = getComponentValue(Structure, entity);
+  if (structure?.base.category !== StructureType.Realm) return undefined;
 
   return {
-    ...realm,
-    resources: unpackValue(BigInt(realm.produced_resources)),
+    ...structure,
+    resources: unpackValue(BigInt(structure.resources_packed)),
     position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
-    name: getRealmNameById(realm.realm_id),
+    name: getRealmNameById(structure.metadata.realm_id),
     owner: structure?.owner,
   } as RealmWithPosition;
 };
@@ -60,7 +58,6 @@ export const getRealmNameById = (realmId: ID): string => {
 };
 
 export function getRealmInfo(entity: Entity, components: ClientComponents): RealmInfo | undefined {
-  const realm = getComponentValue(components.Realm, entity);
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
@@ -72,8 +69,12 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
   })();
 
-  if (realm && structure) {
-    const { realm_id, entity_id, produced_resources, order, level } = realm;
+  if (structure) {
+    const realm_id = structure.metadata.realm_id;
+    const order = structure.metadata.order;
+    const level = structure.base.level;
+    const entity_id = structure.entity_id;
+    const produced_resources = structure.resources_packed;
 
     const name = getRealmNameById(realm_id);
 
@@ -95,8 +96,8 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
           structureBuildings.population.current,
       owner: structure?.owner,
-      ownerName: getRealmAddressName(realm.entity_id, components),
-      hasWonder: realm.has_wonder,
+      ownerName: getRealmAddressName(entity_id, components),
+      hasWonder: structure.metadata.has_wonder,
     };
   }
 }
