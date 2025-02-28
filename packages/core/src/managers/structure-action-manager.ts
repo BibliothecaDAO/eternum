@@ -2,10 +2,10 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BiomeType, FELT_CENTER, getNeighborHexes } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { ID } from "../types";
+import { HexEntityInfo, ID } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
-export class StructureManager {
+export class StructureActionManager {
   private readonly entity: Entity;
 
   constructor(
@@ -28,7 +28,7 @@ export class StructureManager {
    * @returns ActionPaths object containing possible attack actions
    */
   public findActionPaths(
-    armyHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
   ): ActionPaths {
     const actionPaths = new ActionPaths();
@@ -48,10 +48,11 @@ export class StructureManager {
       if (!isExplored) continue;
 
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      // todo: add this back when finish debug
+      // const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
 
       // Check if there's an army that can be attacked (not owned by the structure owner)
-      if (hasArmy && !isArmyMine) {
+      if (hasArmy) {
         const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
         // Create an attack action path

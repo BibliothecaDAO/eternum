@@ -22,15 +22,17 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  ArmyMovementManager,
+  ArmyActionManager,
   Biome,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   getNeighborOffsets,
+  HexEntityInfo,
   HexPosition,
   ID,
   SetupResult,
+  StructureActionManager,
   TileManager,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
@@ -57,9 +59,9 @@ export default class WorldmapScene extends HexagonScene {
   private structureManager: StructureManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   // normalized positions and if they are allied or not
-  private armyHexes: Map<number, Map<number, boolean>> = new Map();
+  private armyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // normalized positions and if they are allied or not
-  private structureHexes: Map<number, Map<number, boolean>> = new Map();
+  private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private tileManager: TileManager;
@@ -110,6 +112,11 @@ export default class WorldmapScene extends HexagonScene {
         }
       },
     );
+
+    useAccountStore.subscribe((state) => {
+      const account = state.account;
+      console.log({ account });
+    });
 
     useUIStore.subscribe(
       (state) => state.structureEntityId,
@@ -169,14 +176,6 @@ export default class WorldmapScene extends HexagonScene {
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
 
-    // subscribe to changes in the selected army coming from React
-    useUIStore.subscribe(
-      (state) => state.armyActions.selectedEntityId,
-      (selectedEntityId) => {
-        this.onArmySelection(selectedEntityId);
-      },
-    );
-
     if (!IS_MOBILE) {
       this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
     }
@@ -221,7 +220,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
@@ -259,6 +258,7 @@ export default class WorldmapScene extends HexagonScene {
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    console.log("onHexagonClick", hexCoords);
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
     if (overlay && !overlayClick) {
@@ -272,6 +272,18 @@ export default class WorldmapScene extends HexagonScene {
       this.handleStructurePlacement(hexCoords);
     } else {
       this.handleHexSelection(hexCoords);
+    }
+
+    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const account = ContractAddress(useAccountStore.getState().account?.address || "");
+
+    if (army?.owner === account) {
+      this.onArmySelection(army.id);
+    } else if (structure?.owner === account) {
+      this.onStructureSelection(structure.id);
+    } else {
+      this.clearSelection();
     }
   }
 
@@ -322,7 +334,7 @@ export default class WorldmapScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
-    const { selectedEntityId, actionPaths } = this.state.armyActions;
+    const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
       if (actionPath && account) {
@@ -344,15 +356,17 @@ export default class WorldmapScene extends HexagonScene {
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (selectedPath.length > 0) {
-      const armyMovementManager = new ArmyMovementManager(
+      const armyActionManager = new ArmyActionManager(
         this.dojo.components,
         this.dojo.network.provider,
         selectedEntityId,
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-      armyMovementManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
+      armyActionManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
       this.state.updateHoveredHex(null);
     }
+    // clear after movement
+    this.clearSelection();
   }
 
   private onArmyAttack(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
@@ -362,7 +376,6 @@ export default class WorldmapScene extends HexagonScene {
     const targetHex = selectedPath[selectedPath.length - 1];
 
     // Find the army at the target position
-
     this.state.toggleModal(
       <CombatModal
         attackerEntityId={selectedEntityId}
@@ -383,28 +396,26 @@ export default class WorldmapScene extends HexagonScene {
     );
   }
 
-  private onStructureSelection(selectedEntityId: ID | null) {
-    if (!selectedEntityId) {
-      this.clearSelection();
-      return;
-    }
+  private onStructureSelection(selectedEntityId: ID) {
+    this.state.updateSelectedEntityId(selectedEntityId);
+
+    const structure = new StructureActionManager(this.dojo.components, selectedEntityId);
+
+    const actionPaths = structure.findActionPaths(this.armyHexes, this.exploredTiles);
+
+    this.state.updateActionPaths(actionPaths.getPaths());
+
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
-  private onArmySelection(selectedEntityId: ID | null) {
-    if (!selectedEntityId) {
-      this.clearSelection();
-      return;
-    }
+  private onArmySelection(selectedEntityId: ID) {
+    this.state.updateSelectedEntityId(selectedEntityId);
 
-    const armyMovementManager = new ArmyMovementManager(
-      this.dojo.components,
-      this.dojo.network.provider,
-      selectedEntityId,
-    );
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.network.provider, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    const actionPaths = armyMovementManager.findActionPaths(
+    const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
       this.exploredTiles,
@@ -416,6 +427,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private clearSelection() {
+    console.log("clearSelection");
     this.highlightHexManager.highlightHexes([]);
     this.state.updateActionPaths(new Map());
     this.structurePreview?.clearPreviewStructure();
@@ -458,7 +470,6 @@ export default class WorldmapScene extends HexagonScene {
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
     const oldPos = this.armiesPositions.get(entityId);
-    const isMine = address === ContractAddress(useAccountStore.getState().account?.address || "");
 
     // Update army position
     this.armiesPositions.set(entityId, newPos);
@@ -466,9 +477,7 @@ export default class WorldmapScene extends HexagonScene {
     // Remove from old position if it changed
     if (
       oldPos &&
-      (oldPos.col !== newPos.col ||
-        oldPos.row !== newPos.row ||
-        this.armyHexes.get(oldPos.col)?.get(oldPos.row) !== isMine)
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row || this.armyHexes.get(oldPos.col)?.get(oldPos.row))
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
     }
@@ -477,18 +486,17 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.armyHexes.has(newPos.col)) {
       this.armyHexes.set(newPos.col, new Map());
     }
-    this.armyHexes.get(newPos.col)?.set(newPos.row, isMine);
+    this.armyHexes.get(newPos.col)?.set(newPos.row, { id: entityId, owner: address });
   }
 
   public updateStructureHexes(update: StructureSystemUpdate) {
     const {
       hexCoords: { col, row },
       owner: { address },
+      entityId,
     } = update;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
-
-    const isMine = address === ContractAddress(useAccountStore.getState().account?.address || "");
 
     const newCol = normalized.x;
     const newRow = normalized.y;
@@ -496,7 +504,7 @@ export default class WorldmapScene extends HexagonScene {
     if (!this.structureHexes.has(newCol)) {
       this.structureHexes.set(newCol, new Map());
     }
-    this.structureHexes.get(newCol)?.set(newRow, isMine);
+    this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -993,7 +1001,7 @@ export default class WorldmapScene extends HexagonScene {
   updateVisibleChunks(force: boolean = false) {
     const cameraPosition = new THREE.Vector3();
     cameraPosition.copy(this.controls.target);
-    const { selectedEntityId } = this.state.armyActions;
+    const { selectedEntityId } = this.state.entityActions;
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
     const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;

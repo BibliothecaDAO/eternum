@@ -91,8 +91,8 @@ const TooltipContent = memo(
 TooltipContent.displayName = "TooltipContent";
 
 export const ActionInfo = memo(() => {
-  const hoveredHex = useUIStore(useCallback((state) => state.armyActions.hoveredHex, []));
-  const selectedEntityId = useUIStore(useCallback((state) => state.armyActions.selectedEntityId, []));
+  const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));
+  const selectedEntityId = useUIStore(useCallback((state) => state.entityActions.selectedEntityId, []));
   const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const {
@@ -108,7 +108,7 @@ export const ActionInfo = memo(() => {
     if (!hoveredHex) return undefined;
     return useUIStore
       .getState()
-      .armyActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+      .entityActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
   }, [hoveredHex]);
 
   const showTooltip = useMemo(() => {

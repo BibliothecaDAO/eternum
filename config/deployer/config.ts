@@ -817,9 +817,14 @@ export const setupGlobals = async (config: Config) => {
     mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
 
-  let shardsMinesFailRate = (mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100;
-  let hyperstructureFailRateAtTheCenter = (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
-  let hyperstructureFailRateIncreasePerHex = (mapCalldata.hyps_fail_prob_increase / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let shardsMinesFailRate =
+    (mapCalldata.shards_mines_fail_probability /
+      (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
+    100;
+  let hyperstructureFailRateAtTheCenter =
+    (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHex =
+    (mapCalldata.hyps_fail_prob_increase / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}

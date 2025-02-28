@@ -167,6 +167,11 @@ export enum ClaimStatus {
 
 export type HexPosition = { col: number; row: number };
 
+export type HexEntityInfo = {
+  id: ID;
+  owner: ContractAddress;
+};
+
 export type HexTileInfo = {
   col: number;
   row: number;

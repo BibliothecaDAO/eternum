@@ -3,17 +3,23 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
-import { BiomeTypeToId, FELT_CENTER, getDirectionBetweenAdjacentHexes, getNeighborHexes, ResourcesIds } from "../constants";
+import {
+  BiomeTypeToId,
+  FELT_CENTER,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
+  ResourcesIds,
+} from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
 
-export class ArmyMovementManager {
+export class ArmyActionManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
   private readonly fishManager: ResourceManager;
@@ -34,18 +40,9 @@ export class ArmyMovementManager {
   }
 
   private _getTroopType(): TroopType {
-    // const entityArmy = getComponentValue(this.components.Army, this.entity);
-    // const knightCount = entityArmy?.troops?.knight_count ?? 0;
-    // const crossbowmanCount = entityArmy?.troops?.crossbowman_count ?? 0;
-    // const paladinCount = entityArmy?.troops?.paladin_count ?? 0;
+    const entityArmy = getComponentValue(this.components.ExplorerTroops, this.entity);
 
-    // if (knightCount >= crossbowmanCount && knightCount >= paladinCount) {
-    //   return TroopType.Knight;
-    // }
-    // if (crossbowmanCount >= knightCount && crossbowmanCount >= paladinCount) {
-    //   return TroopType.Crossbowman;
-    // }
-    return TroopType.Paladin;
+    return entityArmy?.troops.category as TroopType;
   }
 
   private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
@@ -159,8 +156,8 @@ export class ArmyMovementManager {
   }
 
   public findActionPaths(
-    structureHexes: Map<number, Map<number, boolean>>,
-    armyHexes: Map<number, Map<number, boolean>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
@@ -195,7 +192,7 @@ export class ArmyMovementManager {
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
       const staminaCost = biome
-        ? ArmyMovementManager.staminaDrain(biome, troopType)
+        ? ArmyActionManager.staminaDrain(biome, troopType)
         : configManager.getExploreStaminaCost();
 
       if (staminaCost > armyStamina) continue;
@@ -258,7 +255,7 @@ export class ArmyMovementManager {
 
           if (!isExplored || hasArmy || hasStructure) continue;
 
-          const staminaCost = ArmyMovementManager.staminaDrain(biome!, troopType);
+          const staminaCost = ArmyActionManager.staminaDrain(biome!, troopType);
           const nextStaminaUsed = staminaUsed + staminaCost;
 
           if (nextStaminaUsed > armyStamina) continue;

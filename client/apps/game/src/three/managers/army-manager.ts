@@ -10,6 +10,7 @@ import {
   configManager,
   ContractAddress,
   FELT_CENTER,
+  HexEntityInfo,
   ID,
   orders,
   TroopType,
@@ -126,8 +127,8 @@ export class ArmyManager {
 
   async onUpdate(
     update: ArmySystemUpdate,
-    armyHexes: Map<number, Map<number, boolean>>,
-    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
@@ -311,8 +312,8 @@ export class ArmyManager {
   public moveArmy(
     entityId: ID,
     hexCoords: Position,
-    armyHexes: Map<number, Map<number, boolean>>,
-    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     const armyData = this.armies.get(entityId);
