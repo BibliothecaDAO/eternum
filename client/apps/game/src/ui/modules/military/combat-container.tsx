@@ -13,6 +13,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   ID,
+  RESOURCE_PRECISION,
   StaminaManager,
   TroopTier,
   TroopType,
@@ -130,7 +131,7 @@ export const CombatContainer = ({
     const attackerArmy = {
       entity_id: attackerEntityId,
       stamina: Number(attackerStamina),
-      troopCount: Number(attackerArmyData.troops.count),
+      troopCount: Number(attackerArmyData.troops.count) / RESOURCE_PRECISION,
       troopType: attackerArmyData.troops.category as TroopType,
       tier: attackerArmyData.troops.tier as TroopTier,
     };
@@ -138,21 +139,25 @@ export const CombatContainer = ({
     const defenderArmy = {
       entity_id: target?.id || 0,
       stamina: Number(defenderStamina),
-      troopCount: Number(targetArmyData.troops.count),
+      troopCount: Number(targetArmyData.troops.count) / RESOURCE_PRECISION,
       troopType: targetArmyData.troops.category as TroopType,
       tier: targetArmyData.troops.tier as TroopTier,
     };
 
     const result = combatSimulator.simulateBattleWithParams(attackerArmy, defenderArmy, biome);
 
-    const attackerTroopsLost = Math.min(attackerArmy.troopCount, Math.ceil(result.defenderDamage));
-    const defenderTroopsLost = Math.min(defenderArmy.troopCount, Math.ceil(result.attackerDamage));
+    const attackerTroopsLost = result.defenderDamage;
+    const defenderTroopsLost = result.attackerDamage;
 
     const attackerTroopsLeft = attackerArmy.troopCount - attackerTroopsLost;
     const defenderTroopsLeft = defenderArmy.troopCount - defenderTroopsLost;
 
-    const winner =
-      attackerTroopsLeft === 0 ? defenderArmy.entity_id : defenderTroopsLeft === 0 ? attackerArmy.entity_id : null;
+    let winner = null;
+    if (attackerTroopsLeft === 0 && defenderTroopsLeft > 0) {
+      winner = defenderArmy.entity_id;
+    } else if (defenderTroopsLeft === 0 && attackerTroopsLeft > 0) {
+      winner = attackerArmy.entity_id;
+    }
 
     let newAttackerStamina = Number(attackerStamina) - combatConfig.stamina_attack_req;
     let newDefenderStamina = Number(defenderStamina) - combatConfig.stamina_attack_req;
@@ -276,9 +281,9 @@ export const CombatContainer = ({
                 </div>
                 {battleSimulation && (
                   <div className="text-gold/80">
-                    <div className="text-sm font-medium mb-1">Damage to Defender</div>
+                    <div className="text-sm font-medium mb-1">Damage Dealt to Defender</div>
                     <div className="text-xl font-bold text-order-giants">
-                      {-Math.ceil(divideByPrecision(battleSimulation.attackerDamage))}
+                      {-Math.ceil(battleSimulation.attackerDamage)}
                     </div>
                   </div>
                 )}
@@ -304,9 +309,9 @@ export const CombatContainer = ({
                 </div>
                 {battleSimulation && (
                   <div className="text-gold/80">
-                    <div className="text-sm font-medium mb-1">Damage to Attacker</div>
+                    <div className="text-sm font-medium mb-1">Damage Dealt to Attacker</div>
                     <div className="text-xl font-bold text-order-giants">
-                      {-Math.ceil(divideByPrecision(battleSimulation.defenderDamage))}
+                      {-Math.ceil(battleSimulation.defenderDamage)}
                     </div>
                   </div>
                 )}
@@ -395,7 +400,7 @@ export const CombatContainer = ({
                     <div className="text-gold/80">
                       <div className="text-sm font-medium mb-1">Remaining Forces</div>
                       <div className="text-xl font-bold flex items-baseline">
-                        {Math.floor(divideByPrecision(troops))}
+                        {Math.floor(troops)}
                         <span className="text-xs ml-2 text-gold/50">
                           / {Math.floor(divideByPrecision(originalTroops.count))}
                         </span>

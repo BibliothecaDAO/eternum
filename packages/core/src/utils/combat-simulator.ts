@@ -1,5 +1,6 @@
 import { BiomeType } from "../constants";
 import { TroopTier, TroopType } from "../types";
+import { divideWithPrecision } from "./utils";
 
 export class Percentage {
   static _100() {
@@ -20,14 +21,14 @@ export interface Army {
 
 export interface CombatParameters {
   damage_biome_bonus_num: number;
-  damage_beta_small: number;
-  damage_beta_large: number;
-  damage_scaling_factor: number;
-  damage_c0: number;
-  damage_delta: number;
-  t1_damage_value: number;
-  t2_damage_multiplier: number;
-  t3_damage_multiplier: number;
+  damage_beta_small: bigint;
+  damage_beta_large: bigint;
+  damage_scaling_factor: bigint;
+  damage_c0: bigint;
+  damage_delta: bigint;
+  t1_damage_value: bigint;
+  t2_damage_multiplier: bigint;
+  t3_damage_multiplier: bigint;
   stamina_attack_req: number;
 }
 
@@ -50,17 +51,19 @@ export class CombatSimulator {
   // private static readonly C0 = 100_000; // Transition point
   // private static readonly DELTA = 50_000; // T
 
+  static MAX_U64: bigint = BigInt(2) ** BigInt(64);
+
   constructor(params: CombatParameters) {
-    this.t1DamageValue = params.t1_damage_value;
-    this.t2DamageMultiplier = params.t2_damage_multiplier;
-    this.t3DamageMultiplier = params.t3_damage_multiplier;
+    this.t1DamageValue = divideWithPrecision(params.t1_damage_value, CombatSimulator.MAX_U64);
+    this.t2DamageMultiplier = divideWithPrecision(params.t2_damage_multiplier, CombatSimulator.MAX_U64);
+    this.t3DamageMultiplier = divideWithPrecision(params.t3_damage_multiplier, CombatSimulator.MAX_U64);
     this.staminaAttackThreshold = params.stamina_attack_req;
-    this.baseDamageFactor = params.damage_scaling_factor;
-    this.betaSmall = params.damage_beta_small;
-    this.betaLarge = params.damage_beta_large;
-    this.c0 = params.damage_c0;
-    this.delta = params.damage_delta;
-    this.biomeBonusNum = params.damage_biome_bonus_num;
+    this.baseDamageFactor = divideWithPrecision(params.damage_scaling_factor, CombatSimulator.MAX_U64);
+    this.betaSmall = divideWithPrecision(params.damage_beta_small, CombatSimulator.MAX_U64);
+    this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
+    this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
+    this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
+    this.biomeBonusNum = params.damage_biome_bonus_num / 10_000;
   }
 
   public getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
@@ -218,15 +221,15 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
-      damage_biome_bonus_num: 0.3,
-      damage_beta_small: 0.25,
-      damage_beta_large: 0.12,
-      damage_scaling_factor: 3.5,
-      damage_c0: 100_000,
-      damage_delta: 50_000,
-      t1_damage_value: 100,
-      t2_damage_multiplier: 2.5,
-      t3_damage_multiplier: 7,
+      damage_biome_bonus_num: 3000,
+      damage_beta_small: 4611686018427387904n, // 0.25
+      damage_beta_large: 2213609288845146193n, // 0.12
+      damage_scaling_factor: 64563604257983430656n, // 3.5
+      damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
+      damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000  
+      t1_damage_value: 1844674407370955161600n, // 100
+      t2_damage_multiplier: 46116860184273879040n, // 2.5
+      t3_damage_multiplier: 129127208515966861312n, // 7
       stamina_attack_req: 30,
     };
   }
