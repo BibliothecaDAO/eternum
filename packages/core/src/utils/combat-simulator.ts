@@ -20,14 +20,14 @@ export interface Army {
 
 export interface CombatParameters {
   damage_biome_bonus_num: number;
-  damage_beta_small: bigint;
-  damage_beta_large: bigint;
-  damage_scaling_factor: bigint;
-  damage_c0: bigint;
-  damage_delta: bigint;
-  t1_damage_value: bigint;
-  t2_damage_multiplier: bigint;
-  t3_damage_multiplier: bigint;
+  damage_beta_small: number;
+  damage_beta_large: number;
+  damage_scaling_factor: number;
+  damage_c0: number;
+  damage_delta: number;
+  t1_damage_value: number;
+  t2_damage_multiplier: number;
+  t3_damage_multiplier: number;
   stamina_attack_req: number;
 }
 
@@ -51,16 +51,16 @@ export class CombatSimulator {
   // private static readonly DELTA = 50_000; // T
 
   constructor(params: CombatParameters) {
-    this.t1DamageValue = Number(params.t1_damage_value) / 2 ** 64; // 100
-    this.t2DamageMultiplier = Number(params.t2_damage_multiplier) / 2 ** 64; // 2.5
-    this.t3DamageMultiplier = Number(params.t3_damage_multiplier) / 2 ** 64; // 7
-    this.staminaAttackThreshold = params.stamina_attack_req; // 30
-    this.baseDamageFactor = Number(params.damage_scaling_factor) / 2 ** 64; // 3.5
-    this.betaSmall = Number(params.damage_beta_small) / 2 ** 64; // 0.25
-    this.betaLarge = Number(params.damage_beta_large) / 2 ** 64; // 0.12
-    this.c0 = Number(params.damage_c0); // 0
-    this.delta = Number(params.damage_delta) / 2 ** 64; // 50000
-    this.biomeBonusNum = params.damage_biome_bonus_num / 10000; // 0.3
+    this.t1DamageValue = params.t1_damage_value;
+    this.t2DamageMultiplier = params.t2_damage_multiplier;
+    this.t3DamageMultiplier = params.t3_damage_multiplier;
+    this.staminaAttackThreshold = params.stamina_attack_req;
+    this.baseDamageFactor = params.damage_scaling_factor;
+    this.betaSmall = params.damage_beta_small;
+    this.betaLarge = params.damage_beta_large;
+    this.c0 = params.damage_c0;
+    this.delta = params.damage_delta;
+    this.biomeBonusNum = params.damage_biome_bonus_num;
   }
 
   public getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
@@ -218,15 +218,15 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
-      damage_biome_bonus_num: 3000,
-      damage_beta_small: 25000000000000000000n,
-      damage_beta_large: 12000000000000000000n,
-      damage_scaling_factor: 35000000000000000000n,
-      damage_c0: 0n,
-      damage_delta: 50000n,
-      t1_damage_value: 100n,
-      t2_damage_multiplier: 250n,
-      t3_damage_multiplier: 700n,
+      damage_biome_bonus_num: 0.3,
+      damage_beta_small: 0.25,
+      damage_beta_large: 0.12,
+      damage_scaling_factor: 3.5,
+      damage_c0: 100_000,
+      damage_delta: 50_000,
+      t1_damage_value: 100,
+      t2_damage_multiplier: 2.5,
+      t3_damage_multiplier: 7,
       stamina_attack_req: 30,
     };
   }
