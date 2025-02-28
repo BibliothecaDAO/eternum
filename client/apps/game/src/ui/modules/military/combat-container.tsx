@@ -1,5 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   Biome,
@@ -13,6 +15,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   ID,
+  resources,
   StaminaManager,
   TroopTier,
   TroopType,
@@ -23,6 +26,11 @@ import { useMemo, useState } from "react";
 import { formatBiomeBonus, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
+  Structure,
+  Army,
+}
+
+enum AttackerType {
   Structure,
   Army,
 }
@@ -44,6 +52,7 @@ export const CombatContainer = ({
   } = useDojo();
 
   const [loading, setLoading] = useState(false);
+  const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
@@ -57,9 +66,52 @@ export const CombatContainer = ({
     return Biome.getBiome(targetHex.x, targetHex.y);
   }, [targetHex]);
 
+  // Determine if the attacker is a structure or an explorer
+  const attackerType = useMemo(() => {
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    return structure ? AttackerType.Structure : AttackerType.Army;
+  }, [attackerEntityId, Structure]);
+
+  // Get all guards for the structure if the attacker is a structure
+  const structureGuards = useMemo(() => {
+    if (attackerType !== AttackerType.Structure) return [];
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    return structure ? getGuardsByStructure(structure) : [];
+  }, [attackerType, attackerEntityId, Structure]);
+
   const attackerStamina = useMemo(() => {
+    if (attackerType === AttackerType.Structure) {
+      if (selectedGuardSlot === null && structureGuards.length > 0) {
+        // Auto-select the first guard if none is selected
+        setSelectedGuardSlot(structureGuards[0].slot);
+
+        // For structure guards, we need to calculate stamina differently
+        const guard = structureGuards[0];
+        if (!guard.troops.stamina) return 0n;
+
+        const maxStamina = StaminaManager.getMaxStamina(guard.troops);
+        return StaminaManager.getStamina(
+          guard.troops.stamina,
+          maxStamina,
+          getBlockTimestamp().currentArmiesTick,
+          components,
+        ).amount;
+      } else if (selectedGuardSlot !== null) {
+        const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
+        if (selectedGuard && selectedGuard.troops.stamina) {
+          const maxStamina = StaminaManager.getMaxStamina(selectedGuard.troops);
+          return StaminaManager.getStamina(
+            selectedGuard.troops.stamina,
+            maxStamina,
+            getBlockTimestamp().currentArmiesTick,
+            components,
+          ).amount;
+        }
+      }
+      return 0n;
+    }
     return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
-  }, [attackerEntityId]);
+  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
 
   const target = useMemo(() => {
     const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]);
@@ -87,17 +139,32 @@ export const CombatContainer = ({
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    if (attackerType === AttackerType.Structure) {
+      if (selectedGuardSlot === null) return null;
 
-    return {
-      troops: {
-        count: Number(army?.troops.count || 0),
-        category: army?.troops.category as TroopType,
-        tier: army?.troops.tier as TroopTier,
-        stamina: army?.troops.stamina,
-      },
-    };
-  }, [attackerEntityId]);
+      const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
+      if (!selectedGuard) return null;
+
+      return {
+        troops: {
+          count: Number(selectedGuard.troops.count || 0),
+          category: selectedGuard.troops.category as TroopType,
+          tier: selectedGuard.troops.tier as TroopTier,
+          stamina: selectedGuard.troops.stamina,
+        },
+      };
+    } else {
+      const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+      return {
+        troops: {
+          count: Number(army?.troops.count || 0),
+          category: army?.troops.category as TroopType,
+          tier: army?.troops.tier as TroopTier,
+          stamina: army?.troops.stamina,
+        },
+      };
+    }
+  }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
 
   const targetArmyData = useMemo(() => {
     return {
@@ -126,6 +193,8 @@ export const CombatContainer = ({
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
+    if (!attackerArmyData) return null;
+
     // Convert game armies to simulator armies
     const attackerArmy = {
       entity_id: attackerEntityId,
@@ -195,7 +264,11 @@ export const CombatContainer = ({
 
   const onAttack = async () => {
     if (!selectedHex) return;
-    if (target?.targetType === TargetType.Army) {
+
+    if (attackerType === AttackerType.Structure) {
+      if (selectedGuardSlot === null) return;
+      await onGuardVsExplorerAttack();
+    } else if (target?.targetType === TargetType.Army) {
       await onExplorerVsExplorerAttack();
     } else {
       await onExplorerVsGuardAttack();
@@ -242,6 +315,69 @@ export const CombatContainer = ({
     }
   };
 
+  const onGuardVsExplorerAttack = async () => {
+    if (!selectedHex || selectedGuardSlot === null) return;
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
+    if (direction === null) return;
+
+    try {
+      setLoading(true);
+      await attack_guard_vs_explorer({
+        signer: account,
+        structure_id: attackerEntityId,
+        structure_guard_slot: selectedGuardSlot,
+        explorer_id: target?.id || 0,
+        explorer_direction: direction,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Troop selector component for structure troops
+  const TroopSelector = () => {
+    if (attackerType !== AttackerType.Structure || structureGuards.length === 0) return null;
+
+    return (
+      <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm mb-4">
+        <h3 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h3>
+        <div className="flex flex-wrap gap-2">
+          {structureGuards.map((guard) => (
+            <button
+              key={guard.slot}
+              onClick={() => setSelectedGuardSlot(guard.slot)}
+              className={`flex items-center bg-brown-900/90 border ${
+                selectedGuardSlot === guard.slot ? "border-gold" : "border-gold/20"
+              } rounded-md px-2 py-1.5 hover:border-gold/60 transition-colors`}
+            >
+              <ResourceIcon
+                withTooltip={false}
+                resource={
+                  resources.find(
+                    (r) =>
+                      r.id === getTroopResourceId(guard.troops.category as TroopType, guard.troops.tier as TroopTier),
+                  )?.trait || ""
+                }
+                size="sm"
+                className="w-4 h-4 mr-2"
+              />
+              <div className="flex flex-col">
+                <span className="text-xs text-gold/90 font-medium">
+                  {TroopType[guard.troops.category as TroopType]} (Slot {guard.slot})
+                </span>
+                <span className="text-sm text-gold font-bold">
+                  {currencyFormat(Number(guard.troops.count || 0), 0)}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
       {/* Add Biome Info Panel */}
@@ -257,6 +393,9 @@ export const CombatContainer = ({
           </div>
         </div>
       </div>
+
+      {/* Troop Selector for Structure */}
+      {TroopSelector()}
 
       <div className="grid grid-cols-2 gap-6">
         {/* Attacker Panel */}
@@ -422,10 +561,10 @@ export const CombatContainer = ({
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req}
+          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData}
           onClick={onAttack}
         >
-          {attackerStamina >= combatConfig.stamina_attack_req
+          {attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
             ? "Attack!"
             : `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`}
         </Button>

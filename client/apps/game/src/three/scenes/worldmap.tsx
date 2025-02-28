@@ -383,6 +383,13 @@ export default class WorldmapScene extends HexagonScene {
     );
   }
 
+  private onStructureSelection(selectedEntityId: ID | null) {
+    if (!selectedEntityId) {
+      this.clearSelection();
+      return;
+    }
+  }
+
   private onArmySelection(selectedEntityId: ID | null) {
     if (!selectedEntityId) {
       this.clearSelection();

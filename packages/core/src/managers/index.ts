@@ -6,5 +6,6 @@ export * from "./market-manager";
 export * from "./resource-inventory-manager";
 export * from "./resource-manager";
 export * from "./stamina-manager";
+export * from "./structure-manager";
 export * from "./tile-manager";
 export * from "./utils";
