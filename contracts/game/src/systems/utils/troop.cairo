@@ -25,7 +25,6 @@ use s1_eternum::systems::utils::map::iMapImpl;
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
-use starknet::ContractAddress;
 
 
 #[generate_trait]
@@ -263,11 +262,8 @@ pub impl iExplorerImpl of iExplorerTrait {
 
     }
 
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig) -> (u8, u128) {
+    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
         let (resource_types, resources_probs) = split_resources_and_probs();
-
-        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
-        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
         let reward_resource_id: u8 = *random::choices(
             resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
         )

@@ -113,7 +113,7 @@ pub mod troop_movement_systems {
 
                     // grant resource reward for exploration
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
-                        ref world, map_config,
+                        ref world, map_config, vrf_seed,
                     );
                     let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_id);

@@ -1492,19 +1492,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     let callData: Call[] = [];
 
     if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestTwoCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      };
-
       const requestRandomCall: Call = {
         contractAddress: this.VRF_PROVIDER_ADDRESS!,
         entrypoint: "request_random",
         calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
       };
 
-      callData = [requestTwoCall, requestRandomCall];
+      callData = [requestRandomCall];
     }
 
     const moveCall: Call = {
