@@ -430,7 +430,11 @@ export interface SetQuestRewardConfigProps extends SystemSigner {
 
 export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
+  shards_mines_win_probability: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
+  hyps_win_prob: num.BigNumberish;
+  hyps_fail_prob: num.BigNumberish;
+  hyps_fail_prob_increase: num.BigNumberish;
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
 }

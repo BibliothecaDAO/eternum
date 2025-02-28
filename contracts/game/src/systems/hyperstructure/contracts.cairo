@@ -3,10 +3,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::get_resource_tier;
 use s1_eternum::{
     constants::{RESOURCE_PRECISION, get_contributable_resources_with_rarity},
-    models::{
-        config::HyperstructureResourceConfig, config::HyperstructureResourceConfigTrait, hyperstructure::Access,
-        position::Coord,
-    },
+    models::{config::HyperstructureResourceConfig, config::HyperstructureResourceConfigTrait, hyperstructure::Access},
 };
 use starknet::ContractAddress;
 
@@ -21,7 +18,6 @@ trait IHyperstructureSystems<T> {
         hyperstructure_shareholder_epochs: Span<(ID, u16)>,
     ) -> (u128, u128, u128, u128);
 
-    fn create(ref self: T, creator_entity_id: ID, coord: Coord) -> ID;
     fn contribute_to_construction(
         ref self: T, hyperstructure_entity_id: ID, contributor_entity_id: ID, contributions: Span<(u8, u128)>,
     );
@@ -56,7 +52,7 @@ pub mod hyperstructure_systems {
     use s1_eternum::{
         alias::ID,
         constants::{
-            RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_contributable_resources_with_rarity,
+            RESOURCE_PRECISION, WORLD_CONFIG_ID, get_contributable_resources_with_rarity,
             get_hyperstructure_construction_resources, get_resource_tier,
         },
         models::{
@@ -66,13 +62,13 @@ pub mod hyperstructure_systems {
             },
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
-            map::{TileOccupier}, name::{AddressName}, owner::{Owner, OwnerAddressTrait},
-            position::{Coord, PositionIntoCoord}, resource::resource::{}, season::{Leaderboard},
+            name::{AddressName}, owner::{Owner, OwnerAddressTrait}, position::{PositionIntoCoord},
+            resource::resource::{}, season::{Leaderboard},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
     };
 
-    use starknet::{ContractAddress, contract_address_const};
+    use starknet::{ContractAddress};
 
     use super::{LEADERBOARD_REGISTRATION_PERIOD, calculate_total_contributable_amount};
 
@@ -134,113 +130,6 @@ pub mod hyperstructure_systems {
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
-        fn create(ref self: ContractState, creator_entity_id: ID, coord: Coord) -> ID {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
-            let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
-            let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
-            let required_shards_amount = shards_resource_config.get_required_amount(0);
-
-            let creator_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, creator_entity_id,
-            );
-            creator_structure_owner.assert_caller_owner();
-
-            let mut creator_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, creator_entity_id);
-            let shards_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
-            let mut creator_shard_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-                ref world,
-                creator_entity_id,
-                ResourceTypes::EARTHEN_SHARD,
-                ref creator_structure_weight,
-                shards_resource_weight_grams,
-                true,
-            );
-
-            // spend resource
-            creator_shard_resource
-                .spend(required_shards_amount, ref creator_structure_weight, shards_resource_weight_grams);
-            // update resource
-            creator_shard_resource.store(ref world);
-            // update structure weight
-            creator_structure_weight.store(ref world, creator_entity_id);
-
-            let new_uuid: ID = world.dispatcher.uuid();
-
-            let current_time = starknet::get_block_timestamp();
-
-            let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
-                world, selector!("vrf_provider_address"),
-            );
-            let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
-
-            // create the hyperstructure structure
-            iStructureImpl::create(
-                ref world,
-                coord,
-                starknet::get_caller_address(),
-                new_uuid,
-                StructureCategory::Hyperstructure,
-                true,
-                array![].span(),
-                Default::default(),
-                TileOccupier::Hyperstructure,
-            );
-
-            world
-                .write_model(
-                    @Hyperstructure {
-                        entity_id: new_uuid,
-                        current_epoch: 0,
-                        completed: false,
-                        last_updated_by: contract_address_const::<0>(),
-                        last_updated_timestamp: current_time,
-                        access: Access::Public,
-                        randomness: vrf_seed.try_into().unwrap(),
-                    },
-                );
-
-            world
-                .write_model(
-                    @Progress {
-                        hyperstructure_entity_id: new_uuid,
-                        resource_type: ResourceTypes::EARTHEN_SHARD,
-                        amount: required_shards_amount,
-                    },
-                );
-            world
-                .write_model(
-                    @Contribution {
-                        hyperstructure_entity_id: new_uuid,
-                        player_address: starknet::get_caller_address(),
-                        resource_type: ResourceTypes::EARTHEN_SHARD,
-                        amount: required_shards_amount,
-                    },
-                );
-
-            let id = world.dispatcher.uuid();
-            let creator_address_name: AddressName = world.read_model(starknet::get_caller_address());
-            world
-                .emit_event(
-                    @HyperstructureStarted {
-                        id,
-                        hyperstructure_entity_id: new_uuid,
-                        creator_address_name: creator_address_name.name,
-                        timestamp: current_time,
-                    },
-                );
-
-            // [Achievement] Hyperstructure Creation
-            let player_id: felt252 = creator_structure_owner.into();
-            let task_id: felt252 = Task::Builder.identifier();
-            let store = StoreTrait::new(world);
-            store.progress(player_id, task_id, count: 1, time: current_time);
-
-            new_uuid
-        }
-
         fn contribute_to_construction(
             ref self: ContractState,
             hyperstructure_entity_id: ID,

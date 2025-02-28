@@ -17,6 +17,9 @@ const LOWEST_COL: u32 = 2147483647;
 const HIGHEST_ROW: u32 = 2147483947;
 const LOWEST_ROW: u32 = 2147483647;
 
+const CENTER_ROW: u32 = 2147483646;
+const CENTER_COL: u32 = CENTER_ROW;
+
 
 // multiplier to convert hex distance to km
 const HEX_DISTANCE_TO_KM: u128 = 1;
@@ -86,13 +89,7 @@ impl CubeImpl of CubeTrait {
             }
         };
 
-        max.try_into().unwrap() * HEX_DISTANCE_TO_KM
-    }
-
-    fn travel_time(self: Cube, other: Cube, sec_per_km: u16) -> u64 {
-        let distance = self.distance(other);
-        let time = distance * sec_per_km.into();
-        time.try_into().unwrap()
+        max.try_into().unwrap()
     }
 }
 
@@ -142,6 +139,9 @@ pub impl CoordDisplay of Display<Coord> {
 
 #[generate_trait]
 pub impl CoordImpl of CoordTrait {
+    fn center() -> Coord {
+        Coord { x: CENTER_COL, y: CENTER_ROW }
+    }
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
 
@@ -203,17 +203,24 @@ pub impl CoordIntoCube of Into<Coord, Cube> {
 }
 
 pub trait TravelTrait<T> {
-    fn calculate_distance(self: T, destination: T) -> u128;
-    fn calculate_travel_time(self: T, destination: T, sec_per_km: u16) -> u64;
+    fn tile_distance(self: T, destination: T) -> u128;
+    fn km_distance(self: T, destination: T) -> u128;
+    fn km_travel_time(self: T, destination: T, sec_per_km: u16) -> u64;
 }
 
 pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
-    fn calculate_distance(self: T, destination: T) -> u128 {
+    fn tile_distance(self: T, destination: T) -> u128 {
         CubeImpl::distance(self.into(), destination.into())
     }
 
-    fn calculate_travel_time(self: T, destination: T, sec_per_km: u16) -> u64 {
-        CubeImpl::travel_time(self.into(), destination.into(), sec_per_km)
+    fn km_distance(self: T, destination: T) -> u128 {
+        CubeImpl::distance(self.into(), destination.into()) * HEX_DISTANCE_TO_KM
+    }
+
+    fn km_travel_time(self: T, destination: T, sec_per_km: u16) -> u64 {
+        let distance = self.km_distance(destination);
+        let time = distance * sec_per_km.into();
+        time.try_into().unwrap()
     }
 }
 

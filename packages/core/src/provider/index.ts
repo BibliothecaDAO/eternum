@@ -1698,13 +1698,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } =
+    const { reward_amount, shards_mines_win_probability, shards_mines_fail_probability, hyps_win_prob, hyps_fail_prob, hyps_fail_prob_increase, mine_wheat_grant_amount, mine_fish_grant_amount, signer } =
       props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount],
+      calldata: [reward_amount, shards_mines_win_probability, shards_mines_fail_probability, hyps_win_prob, hyps_fail_prob, hyps_fail_prob_increase, mine_wheat_grant_amount, mine_fish_grant_amount],
     });
   }
 

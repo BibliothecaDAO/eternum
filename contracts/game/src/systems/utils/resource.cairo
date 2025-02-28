@@ -14,7 +14,7 @@ use s1_eternum::models::season::SeasonImpl;
 use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl};
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight};
-use s1_eternum::systems::utils::distance::{iDistanceImpl};
+use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
 use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
 
 #[generate_trait]
@@ -182,7 +182,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         let mut resources_clone = resources.clone();
         let donkey_speed = SpeedImpl::for_donkey(ref world);
         let travel_time = starknet::get_block_timestamp()
-            + iDistanceImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
+            + iDistanceKmImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
         let (

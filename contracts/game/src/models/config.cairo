@@ -134,11 +134,11 @@ pub impl SpeedImpl of SpeedTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {
     pub reward_resource_amount: u32,
-    // weight of fail
-    // the higher, the less likely to find a mine
-    // weight of sucess = 1000
-    // ex: if set to 5000
+    pub shards_mines_win_probability: u32,
     pub shards_mines_fail_probability: u32,
+    pub hyps_win_prob: u32,
+    pub hyps_fail_prob: u32,
+    pub hyps_fail_prob_increase: u16,
     // Mine discovery rewards
     pub mine_wheat_grant_amount: u32,
     pub mine_fish_grant_amount: u32,
