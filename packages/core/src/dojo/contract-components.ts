@@ -1115,7 +1115,11 @@ export function defineContractComponents(world: World) {
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
+            shards_mines_win_probability: RecsType.Number,
             shards_mines_fail_probability: RecsType.Number,
+            hyps_win_prob: RecsType.Number,
+            hyps_fail_prob: RecsType.Number,
+            hyps_fail_prob_increase: RecsType.Number,
             mine_wheat_grant_amount: RecsType.Number,
             mine_fish_grant_amount: RecsType.Number,
           },
@@ -1229,7 +1233,11 @@ export function defineContractComponents(world: World) {
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // SpeedConfig army_sec_per_km
               "u32", // MapConfig reward_resource_amount
+              "u32", // MapConfig shards_mines_win_probability
               "u32", // MapConfig shards_mines_fail_probability
+              "u32", // MapConfig hyps_win_prob
+              "u32", // MapConfig hyps_fail_prob
+              "u16", // MapConfig hyps_fail_prob_increase
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
