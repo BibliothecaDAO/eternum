@@ -539,7 +539,7 @@ export const CombatContainer = ({
                     <div className="text-gold/80">
                       <div className="text-sm font-medium mb-1">Remaining Forces</div>
                       <div className="text-xl font-bold flex items-baseline">
-                        {Math.floor(troops)}
+                        {troops > 0 ? Math.floor(troops) : 0}
                         <span className="text-xs ml-2 text-gold/50">
                           / {Math.floor(divideByPrecision(originalTroops.count))}
                         </span>
