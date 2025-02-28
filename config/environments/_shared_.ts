@@ -94,10 +94,20 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_FAIL_PROBABILITY = 99000;
-export const SHARDS_MINES_WIN_PROBABILITY = 1000;
+export const SHARDS_MINES_WIN_PROBABILITY = 1000; // 1000 / 100_000 = 1%
+export const SHARDS_MINES_FAIL_PROBABILITY = 99000; // 99000 / 100_000 = 99%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
+
+export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
+export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
+
+// by increasing this value, fail probability increases faster.
+// i.e the farther away from the center, the less likely to find a hyperstructure
+//
+// Using the values above and below, if a troop is more than 25 hexes away from the center, 
+// the probability of finding a hyperstructure is essentially 0% i.e FLOOR(16.66/1.66) = 10
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 2000; // 2000 / 120_000 = 1.66%
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
@@ -191,6 +201,10 @@ export const EternumGlobalConfig: Config = {
   exploration: {
     reward: EXPLORATION_REWARD,
     shardsMinesFailProbability: SHARDS_MINES_FAIL_PROBABILITY,
+    shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
+    hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
+    hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
+    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
   },

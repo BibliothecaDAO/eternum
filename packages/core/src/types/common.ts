@@ -493,6 +493,10 @@ export interface Config {
   exploration: {
     reward: number;
     shardsMinesFailProbability: number;
+    shardsMinesWinProbability: number;
+    hyperstructureWinProbAtCenter: number;
+    hyperstructureFailProbAtCenter: number;
+    hyperstructureFailProbIncreasePerHexDistance: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
   };
