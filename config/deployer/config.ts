@@ -812,7 +812,8 @@ export const setupGlobals = async (config: Config) => {
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
-    hyps_fail_prob_increase: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
+    hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
+    hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
     mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
     mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
@@ -824,7 +825,9 @@ export const setupGlobals = async (config: Config) => {
   let hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   let hyperstructureFailRateIncreasePerHex =
-    (mapCalldata.hyps_fail_prob_increase / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+    (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHyperstructureFound =
+    (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
@@ -832,6 +835,7 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
     │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
     │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
     │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}

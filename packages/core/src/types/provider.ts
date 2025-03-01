@@ -434,7 +434,8 @@ export interface SetMapConfigProps extends SystemSigner {
   shards_mines_fail_probability: num.BigNumberish;
   hyps_win_prob: num.BigNumberish;
   hyps_fail_prob: num.BigNumberish;
-  hyps_fail_prob_increase: num.BigNumberish;
+  hyps_fail_prob_increase_p_hex: num.BigNumberish;
+  hyps_fail_prob_increase_p_fnd: num.BigNumberish;
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
 }

@@ -502,6 +502,7 @@ export interface Config {
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
+    hyperstructureFailProbIncreasePerHyperstructureFound: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
   };
