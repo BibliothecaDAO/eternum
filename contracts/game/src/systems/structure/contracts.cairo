@@ -83,8 +83,6 @@ pub mod structure_systems {
             // update structure weight
             structure_weight.store(ref world, structure_id);
 
-            // todo: confirm add guard for village as well
-
             // update structure level and troop max guard count
             structure_base.level = next_level;
             structure_base.troop_max_guard_count += 1;

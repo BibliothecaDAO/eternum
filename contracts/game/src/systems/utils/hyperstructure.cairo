@@ -2,9 +2,10 @@ use achievement::store::{StoreTrait};
 use core::num::traits::zero::Zero;
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::hyperstructure::{Access, Hyperstructure};
+use s1_eternum::models::hyperstructure::{Access, Hyperstructure, HyperstructureGlobals};
 use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, TravelImpl};
 
@@ -20,14 +21,33 @@ use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
     fn lottery(ref world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
+        // get hyperstructure foundation find probabilities
         let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
-        let hyps_fail_prob_increase: u128 = tile_distance_count * map_config.hyps_fail_prob_increase.into();
+        let hyps_fail_prob_increase_p_hex: u128 = tile_distance_count * map_config.hyps_fail_prob_increase_p_hex.into();
+        let mut hyps_win_prob: u128 = map_config.hyps_win_prob.into();
         let hyps_probs_original_sum: u128 = map_config.hyps_win_prob.into() + map_config.hyps_fail_prob.into();
-        let hyps_win_prob = if hyps_fail_prob_increase < map_config.hyps_win_prob.into() {
-            map_config.hyps_win_prob.into() - hyps_fail_prob_increase
-        } else {
-            1
-        };
+
+        // reduce find probabilities based on distance from center
+        hyps_win_prob =
+            if hyps_fail_prob_increase_p_hex < hyps_win_prob {
+                hyps_win_prob - hyps_fail_prob_increase_p_hex
+            } else {
+                0
+            };
+
+        // reduce find probabilities based on global hyperstructure found count
+        let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        let hyperstructure_count: u64 = hyperstructure_globals.count;
+        let hyps_fail_prob_increase_p_fnd: u128 = hyperstructure_count.into()
+            * map_config.hyps_fail_prob_increase_p_fnd.into();
+        hyps_win_prob =
+            if hyps_fail_prob_increase_p_fnd < hyps_win_prob {
+                hyps_win_prob - hyps_fail_prob_increase_p_fnd
+            } else {
+                0
+            };
+
+        // calculate final probabilities
         let hyps_fail_prob = hyps_probs_original_sum - hyps_win_prob;
         let success: bool = *random::choices(
             array![true, false].span(),
@@ -79,6 +99,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 @Hyperstructure {
                     entity_id: structure_id,
                     current_epoch: 0,
+                    initialized: false,
                     completed: false,
                     last_updated_by: Zero::zero(),
                     last_updated_timestamp: now,
@@ -86,6 +107,11 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                     randomness: vrf_seed.try_into().unwrap(),
                 },
             );
+
+        // increment hyperstructure count
+        let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+        hyperstructure_globals.count += 1;
+        world.write_model(@hyperstructure_globals);
 
         // [Achievement] Hyperstructure Creation
         let player_id: felt252 = caller.into();

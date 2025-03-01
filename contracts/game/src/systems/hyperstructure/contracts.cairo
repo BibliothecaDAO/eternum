@@ -7,16 +7,11 @@ use s1_eternum::{
 };
 use starknet::ContractAddress;
 
-const LEADERBOARD_REGISTRATION_PERIOD: u64 = 60 * 60 * 24 * 4; // one week
+const LEADERBOARD_REGISTRATION_PERIOD: u64 = 60 * 60 * 24 * 4; // 4 days
 
 #[starknet::interface]
 trait IHyperstructureSystems<T> {
-    fn get_points(
-        ref self: T,
-        player_address: ContractAddress,
-        hyperstructures_contributed_to: Span<ID>,
-        hyperstructure_shareholder_epochs: Span<(ID, u16)>,
-    ) -> (u128, u128, u128, u128);
+    fn initialize(ref self: T, hyperstructure_id: ID);
 
     fn contribute_to_construction(
         ref self: T, hyperstructure_entity_id: ID, contributor_entity_id: ID, contributions: Span<(u8, u128)>,
@@ -26,6 +21,13 @@ trait IHyperstructureSystems<T> {
         ref self: T, hyperstructures_contributed_to: Span<ID>, hyperstructure_shareholder_epochs: Span<(ID, u16)>,
     );
     fn set_access(ref self: T, hyperstructure_entity_id: ID, access: Access);
+
+    fn get_points(
+        ref self: T,
+        player_address: ContractAddress,
+        hyperstructures_contributed_to: Span<ID>,
+        hyperstructure_shareholder_epochs: Span<(ID, u16)>,
+    ) -> (u128, u128, u128, u128);
 }
 
 
@@ -52,7 +54,7 @@ pub mod hyperstructure_systems {
     use s1_eternum::{
         alias::ID,
         constants::{
-            RESOURCE_PRECISION, WORLD_CONFIG_ID, get_contributable_resources_with_rarity,
+            RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID, get_contributable_resources_with_rarity,
             get_hyperstructure_construction_resources, get_resource_tier,
         },
         models::{
@@ -130,6 +132,88 @@ pub mod hyperstructure_systems {
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
+        fn initialize(ref self: ContractState, hyperstructure_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure caller owns the structure
+            let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
+            structure_owner.assert_caller_owner();
+
+            // ensure structure is a hyperstructure
+            let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
+            assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
+
+            // ensure hyperstructure is not initialized
+            let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
+            assert!(hyperstructure.initialized == false, "hyperstructure is already initialized");
+
+            // get required shards amount for initialization
+            let hyperstructure_resource_configs = HyperstructureResourceConfigTrait::get_all(world);
+            let shard_resource_tier: u32 = get_resource_tier(ResourceTypes::EARTHEN_SHARD).into();
+            let shards_resource_config = hyperstructure_resource_configs.at(shard_resource_tier - 1);
+            let required_shards_amount = shards_resource_config.get_required_amount(0);
+
+            let mut hyperstructure_weight: Weight = WeightStoreImpl::retrieve(ref world, hyperstructure_id);
+            let shards_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
+            let mut hyperstructure_shard_resource: SingleResource = SingleResourceStoreImpl::retrieve(
+                ref world,
+                hyperstructure_id,
+                ResourceTypes::EARTHEN_SHARD,
+                ref hyperstructure_weight,
+                shards_resource_weight_grams,
+                true,
+            );
+
+            // spend required shards amount for initialization
+            hyperstructure_shard_resource
+                .spend(required_shards_amount, ref hyperstructure_weight, shards_resource_weight_grams);
+            hyperstructure_shard_resource.store(ref world);
+            hyperstructure_weight.store(ref world, hyperstructure_id);
+
+            // update hyperstructure initialized
+            hyperstructure.initialized = true;
+            world.write_model(@hyperstructure);
+
+            // update progress and contribution
+            world
+                .write_model(
+                    @Progress {
+                        hyperstructure_entity_id: hyperstructure_id,
+                        resource_type: ResourceTypes::EARTHEN_SHARD,
+                        amount: required_shards_amount,
+                    },
+                );
+            world
+                .write_model(
+                    @Contribution {
+                        hyperstructure_entity_id: hyperstructure_id,
+                        player_address: structure_owner,
+                        resource_type: ResourceTypes::EARTHEN_SHARD,
+                        amount: required_shards_amount,
+                    },
+                );
+
+            // emit hyperstructure started event
+            let id = world.dispatcher.uuid();
+            let creator_address_name: AddressName = world.read_model(structure_owner);
+            world
+                .emit_event(
+                    @HyperstructureStarted {
+                        id,
+                        hyperstructure_entity_id: hyperstructure_id,
+                        creator_address_name: creator_address_name.name,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
+            // [Achievement] Hyperstructure Creation
+            let player_id: felt252 = structure_owner.into();
+            let task_id: felt252 = Task::Builder.identifier();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
+        }
+
         fn contribute_to_construction(
             ref self: ContractState,
             hyperstructure_entity_id: ID,
@@ -145,12 +229,18 @@ pub mod hyperstructure_systems {
             );
             structure_owner.assert_caller_owner();
 
+            // ensure structure is a hyperstructure
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
             assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
-            let hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
+            // ensure hyperstructure is initialized
+            let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
+            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
+
+            // ensure contributor has access to hyperstructure
             hyperstructure.assert_access(ref world);
 
+            // emit hyperstructure contribution event
             let timestamp = starknet::get_block_timestamp();
             world
                 .emit_event(
@@ -228,6 +318,10 @@ pub mod hyperstructure_systems {
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
             assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
+            // ensure hyperstructure is initialized
+            let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
+            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
+
             let caller = starknet::get_caller_address();
 
             let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
@@ -289,7 +383,11 @@ pub mod hyperstructure_systems {
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
             assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
+            // ensure hyperstructure is initialized
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
+            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
+
+            // update access
             hyperstructure.access = access;
 
             if (access == Access::GuildOnly) {
