@@ -46,10 +46,6 @@ export function createSystemCalls({
     await provider.accept_order(props);
   };
 
-  const accept_partial_order = async (props: SystemProps.AcceptPartialOrderProps) => {
-    await provider.accept_partial_order(props);
-  };
-
   const cancel_order = async (props: SystemProps.CancelOrderProps) => {
     await provider.cancel_order(props);
   };
@@ -312,7 +308,6 @@ export function createSystemCalls({
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
-    accept_partial_order: withAuth(accept_partial_order),
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     transfer_resources: withAuth(transfer_resources),
