@@ -1794,6 +1794,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     );
   }
 
+  public async set_trade_config(props: SystemProps.SetTradeConfigProps) {
+    const { max_count, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_trade_config",
+      calldata: [max_count],
+    });
+  }
+
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
     const { tick_interval_in_seconds, signer } = props;
 

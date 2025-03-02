@@ -49,6 +49,7 @@ export class GameConfigDeployer {
     await setWorldConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
+    await setTradeConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
     await setVRFConfig(config);
@@ -882,6 +883,23 @@ export const setCapacityConfig = async (config: Config) => {
 
   const tx = await config.provider.set_capacity_config(calldata);
   console.log(chalk.green(`\n    ✔ Capacity configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setTradeConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    max_count: config.config.trade.maxCount,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Trade Configuration")}
+    │  ${chalk.gray("Max Count:")} ${chalk.white(calldata.max_count)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_trade_config(calldata);
+  console.log(chalk.green(`\n    ✔ Trade configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSeasonConfig = async (config: Config) => {

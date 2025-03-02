@@ -452,6 +452,10 @@ export interface SetCapacityConfigProps extends SystemSigner {
   storehouse_boost_capacity: num.BigNumberish; // grams
 }
 
+export interface SetTradeConfigProps extends SystemSigner {
+  max_count: num.BigNumberish;
+}
+
 export interface SetWeightConfigProps extends SystemSigner {
   calls: {
     entity_type: num.BigNumberish;

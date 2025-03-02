@@ -114,11 +114,9 @@ pub mod trade_systems {
             }
 
             // ensure trade count does not exceed max
-            let trade_count_config: TradeConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("trade_count_config"),
-            );
+            let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
             let mut trade_count: TradeCount = world.read_model(maker_id);
-            assert!(trade_count.count < trade_count_config.max_count, "trade count exceeds max");
+            assert!(trade_count.count < trade_config.max_count, "trade count exceeds max");
 
             // ensure expires at is in the future
             let now = starknet::get_block_timestamp().try_into().unwrap();

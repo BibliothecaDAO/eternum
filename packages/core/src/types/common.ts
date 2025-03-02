@@ -480,6 +480,9 @@ export interface Config {
     resourceProductionByLaborParams: ProductionByLaborParams;
     resourceRarity: { [key in ResourcesIds]?: number };
   };
+  trade: {
+    maxCount: number;
+  };
   banks: {
     name: string;
     lordsCost: number;

@@ -177,6 +177,8 @@ export const MAX_NUM_BANKS = 6;
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
+export const TRADE_MAX_COUNT = 5;
+
 export const EternumGlobalConfig: Config = {
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
@@ -188,6 +190,9 @@ export const EternumGlobalConfig: Config = {
     resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
     resourceWeightsGrams: RESOURCES_WEIGHTS_GRAM,
     resourceRarity: RESOURCE_RARITY,
+  },
+  trade: {
+    maxCount: TRADE_MAX_COUNT,
   },
   banks: {
     name: BANK_NAME,
