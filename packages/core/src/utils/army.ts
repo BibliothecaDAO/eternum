@@ -20,7 +20,7 @@ export const formatArmies = (
       const totalCapacity = getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
-      const weight = resource ? resource.weight : 0n;
+      const weight = resource ? resource.weight.weight : 0n;
 
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);

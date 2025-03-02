@@ -8,31 +8,37 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import {
   ArmyManager,
   BuildingType,
+  ClientComponents,
   configManager,
-  PlayerStructure,
+  getEntityName,
   StructureType,
   TileManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
+import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { StructureDefence } from "./structure-defence";
 
-export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
+export const EntityArmyList = ({
+  structure,
+}: {
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+}) => {
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-    col: structure.position.x,
-    row: structure.position.y,
+    col: structure.base.coord_x,
+    row: structure.base.coord_y,
   });
   const existingBuildings = tileManager.existingBuildings();
 
   const explorers = useExplorersByStructure({
-    structureEntityId: structure?.structure.entity_id || 0,
+    structureEntityId: structure?.entity_id || 0,
   });
 
   const guards = useGuardsByStructure({
-    structureEntityId: structure?.structure.entity_id || 0,
+    structureEntityId: structure?.entity_id || 0,
   });
 
   const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
@@ -41,7 +47,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
   const maxAmountExplorerArmies = useMemo(() => {
     const maxWithBuildings =
-      structure.structure.base.troop_max_explorer_count +
+      structure.base.troop_max_explorer_count +
       existingBuildings.filter(
         (building) =>
           building.category === BuildingType[BuildingType.ArcheryRange] ||
@@ -65,15 +71,20 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const isRealm = structure.category === StructureType.Realm;
 
   const armyManager = useMemo(() => {
-    if (!structure.structure.entity_id) return null;
-    return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.structure.entity_id);
-  }, [structure.structure.entity_id, dojo.network.provider, dojo.setup.components]);
+    if (!structure.entity_id) return null;
+    return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.entity_id);
+  }, [structure.entity_id, dojo.network.provider, dojo.setup.components]);
+
+  const name = useMemo(
+    () => getEntityName(structure.entity_id, dojo.setup.components),
+    [structure.entity_id, dojo.setup.components],
+  );
 
   return (
     <div className="military-panel-selector p-4 bg-brown/90 rounded-lg">
       <Headline>
         <div className="flex items-center gap-3 mb-4">
-          <div className="text-xl font-bold text-gold">{structure.name}</div>
+          <div className="text-xl font-bold text-gold">{name}</div>
           <HintModalButton section={HintSection.Combat} />
         </div>
       </Headline>
@@ -82,13 +93,13 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         <div className="text-center">
           <div className="text-sm text-gold">Explorers</div>
           <div className="text-lg font-bold text-gold/90">
-            {totalExplorersCount} / {structure.structure.base.troop_max_explorer_count}
+            {totalExplorersCount} / {structure.base.troop_max_explorer_count}
           </div>
         </div>
         <div className="text-center">
           <div className="text-sm text-gold">Guards</div>
           <div className="text-lg font-bold text-gold/90">
-            {totalGuards} / {structure.structure.base.troop_max_guard_count}
+            {totalGuards} / {structure.base.troop_max_guard_count}
           </div>
         </div>
       </div>
@@ -123,7 +134,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
 
         {showTroopSelection && armyManager && (
           <ArmyCreate
-            owner_entity={structure.structure.entity_id || 0}
+            owner_entity={structure.entity_id || 0}
             army={undefined}
             armyManager={armyManager}
             isExplorer={true}
@@ -153,8 +164,8 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         </Headline>
 
         <StructureDefence
-          structureId={structure.structure.entity_id || 0}
-          maxDefenses={structure.structure.base.troop_max_guard_count}
+          structureId={structure.entity_id || 0}
+          maxDefenses={structure.base.troop_max_guard_count}
           troops={guards.map((army) => ({
             slot: army.slot,
             troops: army.troops,
