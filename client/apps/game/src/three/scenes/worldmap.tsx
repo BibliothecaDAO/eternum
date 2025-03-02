@@ -125,6 +125,13 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
+    useUIStore.subscribe(
+      (state) => state.entityActions.selectedEntityId,
+      (selectedEntityId) => {
+        if (!selectedEntityId) this.clearSelection();
+      },
+    );
+
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
 
@@ -465,7 +472,18 @@ export default class WorldmapScene extends HexagonScene {
       hexCoords: { col, row },
       owner: { address },
       entityId,
+      deleted,
     } = update;
+
+    // If the army is marked as deleted, remove it from the map
+    if (deleted) {
+      const oldPos = this.armiesPositions.get(entityId);
+      if (oldPos) {
+        this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+        this.armiesPositions.delete(entityId);
+      }
+      return;
+    }
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };

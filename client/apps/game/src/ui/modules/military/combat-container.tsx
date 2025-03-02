@@ -55,6 +55,8 @@ export const CombatContainer = ({
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
 
+  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
+
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -281,6 +283,7 @@ export const CombatContainer = ({
       await onExplorerVsGuardAttack();
     }
     // close modal after attack because we already know the result
+    updateSelectedEntityId(null);
     toggleModal(null);
   };
 

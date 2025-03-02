@@ -1,6 +1,6 @@
 import { StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Entity, Has, HasValue, getComponentValue, getComponentValueStrict, runQuery } from "@dojoengine/recs";
+import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context";
 
@@ -16,7 +16,8 @@ export const useFragmentMines = () => {
     Has(Structure),
     // HasValue(Structure, { base: { category: StructureType.FragmentMine } }),
   ]).map((fragmentMineEntityId) => {
-    const fragmentMine = getComponentValueStrict(Structure, fragmentMineEntityId);
+    const fragmentMine = getComponentValue(Structure, fragmentMineEntityId);
+    if (!fragmentMine) return;
 
     if (fragmentMine?.base.category !== StructureType.FragmentMine) return;
 

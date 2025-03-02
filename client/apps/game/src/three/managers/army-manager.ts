@@ -132,24 +132,15 @@ export class ArmyManager {
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
+    const { entityId, hexCoords, owner, troopType, troopTier, order, deleted } = update;
 
-    if (currentHealth <= 0) {
+    // If the army is marked as deleted, remove it from the map
+    if (deleted) {
       if (this.armies.has(entityId)) {
         this.removeArmy(entityId);
         return true;
-      } else {
-        return false;
       }
-    }
-
-    if (battleId !== 0) {
-      if (this.armies.has(entityId)) {
-        this.removeArmy(entityId);
-        return true;
-      } else {
-        return false;
-      }
+      return false;
     }
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
