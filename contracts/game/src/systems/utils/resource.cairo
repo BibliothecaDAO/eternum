@@ -30,7 +30,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_structure_owner: starknet::ContractAddress,
         to_structure_coord: Coord,
         ref to_structure_weight: Weight,
-        mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         mint: bool,
         pickup: bool,
@@ -46,7 +45,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             to_structure_owner,
             to_structure_coord,
             ref to_structure_weight,
-            to_structure_resource_indexes,
             resources,
             mint,
             pickup,
@@ -84,7 +82,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_structure_coord: Coord,
         to_structure_owner: starknet::ContractAddress,
         ref to_structure_weight: Weight,
-        mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         pickup: bool,
     ) {
@@ -99,7 +96,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             to_structure_owner,
             to_structure_coord,
             ref to_structure_weight,
-            to_structure_resource_indexes,
             resources,
             false,
             pickup,
@@ -166,7 +162,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_owner: starknet::ContractAddress,
         to_coord: Coord,
         ref to_weight: Weight,
-        mut to_structure_resource_indexes: Span<u8>,
         mut resources: Span<(u8, u128)>,
         mint: bool,
         pickup: bool,
@@ -185,13 +180,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             + iDistanceKmImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
-        let (
-            mut to_structure_resources_array,
-            mut to_structure_resources_tracker,
-            mut to_structure_resource_arrival_total_amount,
-        ) =
-            ResourceArrivalImpl::read_resources(
+        let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(
             ref world, to_id, arrival_day, arrival_slot,
+        );
+        let mut to_structure_resource_arrival_day_total = ResourceArrivalImpl::read_day_total(
+            ref world, to_id, arrival_day,
         );
         let mut total_resources_weight: u128 = 0;
         loop {
@@ -212,32 +205,18 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                         from_entity_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
                         from_entity_resource.store(ref world);
                     }
-
-                    // add resource to to_structure resource arrivals
-                    let to_structure_resource_index = *(to_structure_resource_indexes.pop_front().unwrap());
-                    ResourceArrivalImpl::increase_balance(
-                        ref to_structure_resource_arrival_total_amount,
-                        ref to_structure_resources_array,
-                        to_structure_resource_index,
-                        ref to_structure_resources_tracker,
-                        resource_type,
-                        resource_amount,
-                    );
                 },
                 Option::None => { break; },
             }
         };
 
-        // update to_structure resource arrivals
-        ResourceArrivalImpl::write_resources(
-            ref world,
-            to_id,
-            arrival_day,
-            arrival_slot,
-            to_structure_resources_array,
-            to_structure_resources_tracker,
-            to_structure_resource_arrival_total_amount,
+        // add resource to to_structure resource arrivals
+        ResourceArrivalImpl::slot_increase_balances(
+            ref to_structure_resources_array, resources, ref to_structure_resource_arrival_day_total,
         );
+        // update to_structure resource arrivals
+        ResourceArrivalImpl::write_slot(ref world, to_id, arrival_day, arrival_slot, to_structure_resources_array);
+        ResourceArrivalImpl::write_day_total(ref world, to_id, arrival_day, to_structure_resource_arrival_day_total);
 
         // determine which entity is providing the donkeys
         let mut donkey_provider_id = from_id;
@@ -265,50 +244,35 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_structure_weight: Weight,
         mut day: u64,
         mut slot: u8,
-        mut resource_count: u8,
+        mut index_count: u8,
     ) {
-        assert!(resource_count.is_non_zero(), "resource count is 0");
+        assert!(index_count.is_non_zero(), "index count is 0");
 
-        let (
-            mut to_structure_resources_array,
-            mut to_structure_resources_tracker,
-            mut to_structure_resource_arrival_total_amount,
-        ) =
-            ResourceArrivalImpl::read_resources(
-            ref world, to_structure_id, day, slot,
+        let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(ref world, to_structure_id, day, slot);
+        let mut to_structure_resource_arrival_day_total = ResourceArrivalImpl::read_day_total(
+            ref world, to_structure_id, day,
         );
-        let mut resource_index: u8 = 0;
+        let mut index_counted: u8 = 0;
+        let mut total_amount_deposited: u128 = 0;
         loop {
             match to_structure_resources_array.pop_front() {
                 Option::Some((
                     resource_type, resource_amount,
                 )) => {
-                    // stop if we've reached the end of the resources specified
-                    if resource_index + 1 > resource_count {
-                        break;
-                    }
-
-                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
                     // add resource to to_structure balance
+                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
                     let mut to_structure_resource = SingleResourceStoreImpl::retrieve(
                         ref world, to_structure_id, resource_type, ref to_structure_weight, resource_weight_grams, true,
                     );
-                    to_structure_resource.spend(resource_amount, ref to_structure_weight, resource_weight_grams);
+                    to_structure_resource.add(resource_amount, ref to_structure_weight, resource_weight_grams);
                     to_structure_resource.store(ref world);
-
-                    // update to_structure resource arrivals
-                    ResourceArrivalImpl::increase_balance(
-                        ref to_structure_resource_arrival_total_amount,
-                        ref to_structure_resources_array,
-                        resource_index,
-                        ref to_structure_resources_tracker,
-                        resource_type,
-                        resource_amount,
-                    );
-
-                    resource_index += 1;
+                    total_amount_deposited += resource_amount;
+                    // stop when necessary
+                    index_counted += 1;
+                    if index_counted >= index_count {
+                        break;
+                    }
                 },
                 Option::None => { break; },
             }
@@ -317,19 +281,17 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         // update to_structure weight
         to_structure_weight.store(ref world, to_structure_id);
 
-        if to_structure_resource_arrival_total_amount.is_zero() {
+        // update resource arrival day total
+        to_structure_resource_arrival_day_total -= total_amount_deposited;
+        if to_structure_resource_arrival_day_total.is_zero() {
             // delete to_structure resource arrivals
             ResourceArrivalImpl::delete(ref world, to_structure_id, day);
         } else {
             // update to_structure resource arrivals
-            ResourceArrivalImpl::write_resources(
-                ref world,
-                to_structure_id,
-                day,
-                slot,
-                to_structure_resources_array,
-                to_structure_resources_tracker,
-                to_structure_resource_arrival_total_amount,
+            ResourceArrivalImpl::write_slot(ref world, to_structure_id, day, slot, to_structure_resources_array);
+
+            ResourceArrivalImpl::write_day_total(
+                ref world, to_structure_id, day, to_structure_resource_arrival_day_total,
             );
         }
     }

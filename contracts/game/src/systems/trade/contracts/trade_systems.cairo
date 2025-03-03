@@ -12,14 +12,7 @@ pub trait ITradeSystems<T> {
         taker_pays_min_lords_amount: u128,
         expires_at: u32,
     ) -> ID;
-    fn accept_order(
-        ref self: T,
-        taker_id: ID,
-        trade_id: ID,
-        taker_lords_index: u8,
-        maker_resource_index: u8,
-        taker_buys_count: u128,
-    );
+    fn accept_order(ref self: T, taker_id: ID, trade_id: ID, taker_buys_count: u128);
 
     fn cancel_order(ref self: T, trade_id: ID);
 }
@@ -184,14 +177,7 @@ pub mod trade_systems {
         }
 
 
-        fn accept_order(
-            ref self: ContractState,
-            taker_id: ID,
-            trade_id: ID,
-            taker_lords_index: u8, // index of taker's resource id in the ResourceArrival
-            maker_resource_index: u8, // index of maker's resource id in the ResourceArrival
-            taker_buys_count: u128,
-        ) {
+        fn accept_order(ref self: ContractState, taker_id: ID, trade_id: ID, taker_buys_count: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -233,50 +219,43 @@ pub mod trade_systems {
 
             // send the taker's resource to the maker
             let taker_pays_lords_amount = taker_buys_count * trade.taker_pays_min_lords_amount;
-            let (mut maker_resources_array, mut maker_resources_tracker, mut maker_resource_arrival_total_amount) =
-                ResourceArrivalImpl::read_resources(
+            let mut maker_resources_array = ResourceArrivalImpl::read_slot(
                 ref world, trade.maker_id, arrival_day, arrival_slot,
             );
-            ResourceArrivalImpl::increase_balance(
-                ref maker_resource_arrival_total_amount,
-                ref maker_resources_array,
-                maker_resource_index,
-                ref maker_resources_tracker,
-                ResourceTypes::LORDS,
-                taker_pays_lords_amount,
+            let mut maker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
+                ref world, trade.maker_id, arrival_day,
             );
-            ResourceArrivalImpl::write_resources(
-                ref world,
-                trade.maker_id,
-                arrival_day,
-                arrival_slot,
-                maker_resources_array,
-                maker_resources_tracker,
-                maker_resource_arrival_total_amount,
+            ResourceArrivalImpl::slot_increase_balances(
+                ref maker_resources_array,
+                array![(ResourceTypes::LORDS, taker_pays_lords_amount)].span(),
+                ref maker_resource_arrival_total_amount,
+            );
+
+            ResourceArrivalImpl::write_slot(
+                ref world, trade.maker_id, arrival_day, arrival_slot, maker_resources_array,
+            );
+            ResourceArrivalImpl::write_day_total(
+                ref world, trade.maker_id, arrival_day, maker_resource_arrival_total_amount,
             );
 
             // send the maker's resource to the taker
             let maker_gives_resource_amount = taker_buys_count * trade.maker_gives_min_resource_amount;
-            let (mut taker_resources_array, mut taker_resources_tracker, mut taker_resource_arrival_total_amount) =
-                ResourceArrivalImpl::read_resources(
+            let mut taker_resources_array = ResourceArrivalImpl::read_slot(
                 ref world, trade.taker_id, arrival_day, arrival_slot,
             );
-            ResourceArrivalImpl::increase_balance(
-                ref taker_resource_arrival_total_amount,
-                ref taker_resources_array,
-                taker_lords_index,
-                ref taker_resources_tracker,
-                trade.maker_gives_resource_type,
-                maker_gives_resource_amount,
+            let mut taker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
+                ref world, trade.taker_id, arrival_day,
             );
-            ResourceArrivalImpl::write_resources(
-                ref world,
-                trade.taker_id,
-                arrival_day,
-                arrival_slot,
-                taker_resources_array,
-                taker_resources_tracker,
-                taker_resource_arrival_total_amount,
+            ResourceArrivalImpl::slot_increase_balances(
+                ref taker_resources_array,
+                array![(trade.maker_gives_resource_type, maker_gives_resource_amount)].span(),
+                ref taker_resource_arrival_total_amount,
+            );
+            ResourceArrivalImpl::write_slot(
+                ref world, trade.taker_id, arrival_day, arrival_slot, taker_resources_array,
+            );
+            ResourceArrivalImpl::write_day_total(
+                ref world, trade.taker_id, arrival_day, taker_resource_arrival_total_amount,
             );
 
             // burn enough taker donkeys to carry resources given by maker
