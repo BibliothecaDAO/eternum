@@ -286,14 +286,11 @@ export function Homepage({ address }: { address: `0x${string}` }) {
             </Suspense>
           </Card>
           <div className="mt-2 flex justify-end">
-            <a
-              href={`https://snapshot.box/#/sn:${SnapshotSpaceAddresses[SUPPORTED_L2_CHAIN_ID]}/proposals`}
-              target="__blank"
-            >
+            <Link to={`/proposal/list`}>
               <Button variant="outline" size={"sm"}>
                 View All
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </div>

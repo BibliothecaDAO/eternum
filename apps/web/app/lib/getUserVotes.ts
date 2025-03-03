@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { execute } from "./queries/execute";
 
-graphql(`
+export const VoteFieldsFragment = graphql(`
   fragment voteFields on Vote {
     id
     voter {
@@ -100,6 +100,6 @@ export const getUserVotesQueryOptions = (
       input.limit,
       input.skip,
     ],
-    queryFn: () => (input.voter ? getUserVotes({ data: input }) : null),
+    queryFn: () => getUserVotes({ data: input }),
     enabled: !!input.voter,
   });

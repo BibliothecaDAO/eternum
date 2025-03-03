@@ -71,13 +71,21 @@ function RouteComponent() {
       voter: formatAddress(num.toHex(BigInt(data ?? 0))),
     }),
   );
-  const userVote = userVotesQuery?.votes.find((vote) => vote.proposal == id);
 
-  // Cast the proposal to our expected type
+  // Find the vote that matches this proposal ID
+  const userVoteRef = userVotesQuery?.votes?.find(
+    (vote) => vote && Number(id) === Number(vote.proposal),
+  );
+
   const proposal = proposalQuery.proposal;
-  const title = proposal.metadata?.title ?? "Untitled Proposal";
-  let body = proposal.metadata?.body ?? "";
-  const authorId = proposal.author?.id ?? "";
+
+  if (!proposal) {
+    return <div>Proposal not found</div>;
+  }
+
+  const title = proposal.metadata?.title as string;
+  let body = proposal.metadata?.body as string;
+  const authorId = proposal.author.id;
   const createdTime = proposal.created
     ? new Date(proposal.created * 1000)
     : null;
@@ -94,15 +102,15 @@ function RouteComponent() {
     if (isActive) return null;
 
     if (
-      proposal.scores_total >= 1500 &&
-      Number(proposal.scores_1) > Number(proposal.scores_2)
+      (proposal.scores_total ?? 0) >= 1500 &&
+      Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)
     ) {
       return {
         label: "Passed",
         className: "text-green-500 border-green-500",
         icon: CheckCircle2,
       };
-    } else if (proposal.scores_total < 1500) {
+    } else if ((proposal.scores_total ?? 0) < 1500) {
       return {
         label: "Quorum not met",
         className: "text-sm text-gray-500 border-gray-500",
@@ -116,7 +124,7 @@ function RouteComponent() {
       };
     }
   };
-  const name = useStarkDisplayName(proposal?.author?.id as `0x${string}`);
+  const name = useStarkDisplayName(proposal.author.id as `0x${string}`);
 
   const proposalStatus = getProposalStatus();
 
@@ -191,10 +199,10 @@ function RouteComponent() {
                 <ProposalVoteAction proposal={proposal} />
               </>
             )}
-            {userVote && (
+            {userVoteRef && (
               <>
                 <SidebarGroupLabel>You Voted:</SidebarGroupLabel>
-                <ProposalUserVoteBadge choice={userVote.choice} />
+                <ProposalUserVoteBadge choice={vote.choice} />
               </>
             )}
           </SidebarGroup>

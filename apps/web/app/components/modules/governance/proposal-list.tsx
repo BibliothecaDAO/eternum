@@ -39,7 +39,7 @@ export function ProposalList({
     <div className="flex flex-col">
       {proposals?.map((proposal) => {
         const matchingVote = userVotes?.find((vote) => {
-          return vote?.proposal === Number(proposal?.id?.split("/")?.[1]);
+          return vote?.proposal === Number(proposal?.id.split("/")[1]);
         });
         return (
           <ProposalListItem

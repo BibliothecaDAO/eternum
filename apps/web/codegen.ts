@@ -9,6 +9,9 @@ const config: CodegenConfig = {
       config: {
         documentMode: "string",
       },
+      presetConfig: {
+        fragmentMasking: false,
+      },
       plugins: [],
     },
   },
