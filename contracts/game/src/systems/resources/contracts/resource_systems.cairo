@@ -3,20 +3,8 @@ use s1_eternum::alias::ID;
 #[starknet::interface]
 pub trait IResourceSystems<T> {
     fn approve(ref self: T, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
-    fn send(
-        ref self: T,
-        sender_structure_id: ID,
-        recipient_structure_id: ID,
-        resources: Span<(u8, u128)>,
-        recipient_resource_indexes: Span<u8>,
-    );
-    fn pickup(
-        ref self: T,
-        recipient_structure_id: ID,
-        owner_structure_id: ID,
-        resources: Span<(u8, u128)>,
-        recipient_resource_indexes: Span<u8>,
-    );
+    fn send(ref self: T, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
+    fn pickup(ref self: T, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>);
     fn offload(ref self: T, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
 }
 
@@ -128,11 +116,7 @@ pub mod resource_systems {
         ///     the resource chest id
         ///
         fn send(
-            ref self: ContractState,
-            sender_structure_id: ID,
-            recipient_structure_id: ID,
-            resources: Span<(u8, u128)>,
-            recipient_resource_indexes: Span<u8>,
+            ref self: ContractState, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
@@ -170,7 +154,6 @@ pub mod resource_systems {
                 recipient_structure_owner,
                 recipient_structure_base.coord(),
                 ref recipient_structure_weight,
-                recipient_resource_indexes,
                 resources,
                 false,
                 false,
@@ -191,11 +174,7 @@ pub mod resource_systems {
         ///    the resource chest id
         ///
         fn pickup(
-            ref self: ContractState,
-            recipient_structure_id: ID,
-            owner_structure_id: ID,
-            resources: Span<(u8, u128)>,
-            recipient_resource_indexes: Span<u8>,
+            ref self: ContractState, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
@@ -254,7 +233,6 @@ pub mod resource_systems {
                 recipient_structure_owner,
                 recipient_structure_base.coord(),
                 ref recipient_structure_weight,
-                recipient_resource_indexes,
                 resources,
                 false,
                 true,

@@ -2,12 +2,8 @@ use s1_eternum::alias::ID;
 
 #[starknet::interface]
 pub trait ISwapSystems<T> {
-    fn buy(
-        ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128, player_resource_index: u8,
-    );
-    fn sell(
-        ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128, player_resource_index: u8,
-    );
+    fn buy(ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128);
+    fn sell(ref self: T, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128);
 }
 
 #[dojo::contract]
@@ -58,14 +54,7 @@ pub mod swap_systems {
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
-        fn buy(
-            ref self: ContractState,
-            bank_entity_id: ID,
-            structure_id: ID,
-            resource_type: u8,
-            amount: u128,
-            player_resource_index: u8,
-        ) {
+        fn buy(ref self: ContractState, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -128,7 +117,6 @@ pub mod swap_systems {
                 player_structure_owner,
                 player_structure_base.coord(),
                 ref player_structure_weight,
-                array![player_resource_index].span(),
                 resources,
                 true,
                 true,
@@ -150,14 +138,7 @@ pub mod swap_systems {
         }
 
 
-        fn sell(
-            ref self: ContractState,
-            bank_entity_id: ID,
-            structure_id: ID,
-            resource_type: u8,
-            amount: u128,
-            player_resource_index: u8,
-        ) {
+        fn sell(ref self: ContractState, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
@@ -224,7 +205,6 @@ pub mod swap_systems {
                 player_structure_owner,
                 player_structure_base.coord(),
                 ref player_structure_weight,
-                array![player_resource_index].span(),
                 resources,
                 true,
                 true,

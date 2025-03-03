@@ -1,7 +1,6 @@
-use core::num::traits::Zero;
+use core::dict::Felt252Dict;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::utils::math::{is_u64_bit_set, set_u64_bit};
 
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde)]
@@ -23,51 +22,88 @@ pub struct ResourceArrival {
     slot_10: Span<(u8, u128)>,
     slot_11: Span<(u8, u128)>,
     slot_12: Span<(u8, u128)>,
-}
-
-
-// no need to use this in client
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
-#[dojo::model]
-pub struct ResourceArrivalTracker {
-    #[key]
-    structure_id: ID,
-    #[key]
-    day: u64,
-    slot_1_tracker: u64,
-    slot_2_tracker: u64,
-    slot_3_tracker: u64,
-    slot_4_tracker: u64,
-    slot_5_tracker: u64,
-    slot_6_tracker: u64,
-    slot_7_tracker: u64,
-    slot_8_tracker: u64,
-    slot_9_tracker: u64,
-    slot_10_tracker: u64,
-    slot_11_tracker: u64,
-    slot_12_tracker: u64,
+    slot_13: Span<(u8, u128)>,
+    slot_14: Span<(u8, u128)>,
+    slot_15: Span<(u8, u128)>,
+    slot_16: Span<(u8, u128)>,
+    slot_17: Span<(u8, u128)>,
+    slot_18: Span<(u8, u128)>,
+    slot_19: Span<(u8, u128)>,
+    slot_20: Span<(u8, u128)>,
+    slot_21: Span<(u8, u128)>,
+    slot_22: Span<(u8, u128)>,
+    slot_23: Span<(u8, u128)>,
+    slot_24: Span<(u8, u128)>,
     initialized: bool,
+    // just used to track if any resources are in the arrival
     total_amount: u128,
 }
 
 
 #[generate_trait]
 pub impl ResourceArrivalImpl of ResourceArrivalTrait {
-    fn initialize(ref world: WorldStorage, structure_id: ID, day: u64) {
-        let mut resource_arrival_model: ResourceArrival = Zero::zero();
+    fn initialize(
+        ref world: WorldStorage, structure_id: ID, day: u64, slot_selector: felt252, slot_resources: Span<(u8, u128)>,
+    ) {
+        let mut resource_arrival_model: ResourceArrival = Default::default();
         resource_arrival_model.structure_id = structure_id;
         resource_arrival_model.day = day;
-        world.write_model(@resource_arrival_model);
+        resource_arrival_model.initialized = true;
 
-        let mut resource_arrival_tracker_model: ResourceArrivalTracker = Default::default();
-        resource_arrival_tracker_model.structure_id = structure_id;
-        resource_arrival_tracker_model.day = day;
-        resource_arrival_tracker_model.initialized = true;
-        world.write_model(@resource_arrival_tracker_model);
+        if slot_selector == selector!("slot_1") {
+            resource_arrival_model.slot_1 = slot_resources;
+        } else if slot_selector == selector!("slot_2") {
+            resource_arrival_model.slot_2 = slot_resources;
+        } else if slot_selector == selector!("slot_3") {
+            resource_arrival_model.slot_3 = slot_resources;
+        } else if slot_selector == selector!("slot_4") {
+            resource_arrival_model.slot_4 = slot_resources;
+        } else if slot_selector == selector!("slot_5") {
+            resource_arrival_model.slot_5 = slot_resources;
+        } else if slot_selector == selector!("slot_6") {
+            resource_arrival_model.slot_6 = slot_resources;
+        } else if slot_selector == selector!("slot_7") {
+            resource_arrival_model.slot_7 = slot_resources;
+        } else if slot_selector == selector!("slot_8") {
+            resource_arrival_model.slot_8 = slot_resources;
+        } else if slot_selector == selector!("slot_9") {
+            resource_arrival_model.slot_9 = slot_resources;
+        } else if slot_selector == selector!("slot_10") {
+            resource_arrival_model.slot_10 = slot_resources;
+        } else if slot_selector == selector!("slot_11") {
+            resource_arrival_model.slot_11 = slot_resources;
+        } else if slot_selector == selector!("slot_12") {
+            resource_arrival_model.slot_12 = slot_resources;
+        } else if slot_selector == selector!("slot_13") {
+            resource_arrival_model.slot_13 = slot_resources;
+        } else if slot_selector == selector!("slot_14") {
+            resource_arrival_model.slot_14 = slot_resources;
+        } else if slot_selector == selector!("slot_15") {
+            resource_arrival_model.slot_15 = slot_resources;
+        } else if slot_selector == selector!("slot_16") {
+            resource_arrival_model.slot_16 = slot_resources;
+        } else if slot_selector == selector!("slot_17") {
+            resource_arrival_model.slot_17 = slot_resources;
+        } else if slot_selector == selector!("slot_18") {
+            resource_arrival_model.slot_18 = slot_resources;
+        } else if slot_selector == selector!("slot_19") {
+            resource_arrival_model.slot_19 = slot_resources;
+        } else if slot_selector == selector!("slot_20") {
+            resource_arrival_model.slot_20 = slot_resources;
+        } else if slot_selector == selector!("slot_21") {
+            resource_arrival_model.slot_21 = slot_resources;
+        } else if slot_selector == selector!("slot_22") {
+            resource_arrival_model.slot_22 = slot_resources;
+        } else if slot_selector == selector!("slot_23") {
+            resource_arrival_model.slot_23 = slot_resources;
+        } else if slot_selector == selector!("slot_24") {
+            resource_arrival_model.slot_24 = slot_resources;
+        }
+        world.write_model(@resource_arrival_model);
     }
 
     fn interval_hours() -> u64 {
-        2 // resource arrival gate open every 2 hours
+        1 // resource arrival gate open every 1 hour (24 slots per day)
     }
 
     fn arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
@@ -76,74 +112,49 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         let day = arrival_time / 86400;
         let hour = (arrival_time % 86400) / 3600;
 
-        // it time is between 00:00:00 and 01:59:59, then slot = 1
-        // if time is between 02:00:00 and 03:59:59, then slot = 2
-        // if time is between 04:00:00 and 05:59:59, then slot = 3
-        // if time is between 06:00:00 and 07:59:59, then slot = 4
-        // if time is between 08:00:00 and 09:59:59, then slot = 5
-        // if time is between 10:00:00 and 11:59:59, then slot = 6
-        // if time is between 12:00:00 and 13:59:59, then slot = 7
-        // if time is between 14:00:00 and 15:59:59, then slot = 8
-        // if time is between 16:00:00 and 17:59:59, then slot = 9
-        // if time is between 18:00:00 and 19:59:59, then slot = 10
-        // if time is between 20:00:00 and 21:59:59, then slot = 11
-        // if time is between 22:00:00 and 23:59:59, then slot = 12
+        // Each hour corresponds to a slot (1-24)
+        // if time is between 00:00:00 and 00:59:59, then slot = 1
+        // if time is between 01:00:00 and 01:59:59, then slot = 2
+        // ...
+        // if time is between 23:00:00 and 23:59:59, then slot = 24
 
         let time_slot = (hour + arrival_interval_hours) / arrival_interval_hours;
         return (day, time_slot.try_into().unwrap());
     }
 
 
-    fn increase_balance(
-        ref total_amount: u128,
-        ref resources: Span<(u8, u128)>,
-        resource_index: u8,
-        ref resource_tracker: u64,
-        resource_type: u8,
-        amount: u128,
+    fn slot_increase_balances(
+        ref existing_resources: Span<(u8, u128)>, added_resources: Span<(u8, u128)>, ref total_amount: u128,
     ) {
-        let mut balance = 0;
-        let mut index: u32 = resources.len();
-        if Self::contains_resource(resource_tracker, resource_type) {
-            // update balance and index if resource exists
-            let (iresource_type, iresource_amount): (u8, u128) = *resources.at(resource_index.into());
-            assert!(iresource_type == resource_type, "resource type mismatch");
-            balance = iresource_amount;
-            index = resource_index.into();
-        }
-        let new_balance = balance + amount;
-        let new_resource: (u8, u128) = (resource_type, new_balance);
-        let new_resource_tracker = Self::set_contains_resource(resource_tracker, resource_type, true);
+        // todo check gas cost when both arrays are full
 
-        if index == resources.len() {
-            // add resource to array
-            let mut new_resources: Array<(u8, u128)> = resources.into();
-            new_resources.append(new_resource);
+        // add existing resources to the dict
+        let mut add_resource: Felt252Dict<bool> = Default::default();
+        for (resource_type, _) in added_resources {
+            add_resource.insert((*resource_type).into(), true);
+        };
 
-            total_amount += amount;
-            resources = new_resources.span();
-            resource_tracker = new_resource_tracker;
-        } else {
-            // update resource in array
-            let mut new_resources: Array<(u8, u128)> = resources.slice(0, index).into();
-            new_resources.append(new_resource);
-            new_resources.append_span(resources.slice(index + 1, resources.len() - (index + 1)).into());
+        let mut new_resources: Array<(u8, u128)> = array![];
+        for (resource_type, balance) in existing_resources {
+            let mut balance = *balance;
+            if add_resource.get((*resource_type).into()) {
+                let (_, amount) = added_resources.at((*resource_type).into());
+                balance += *amount;
+                total_amount += *amount;
+            }
+            new_resources.append((*resource_type, balance));
+        };
 
-            total_amount += amount;
-            resources = new_resources.span();
-            resource_tracker = new_resource_tracker;
-        }
+        for (resource_type, amount) in added_resources {
+            if !add_resource.get((*resource_type).into()) {
+                new_resources.append((*resource_type, *amount));
+                total_amount += *amount;
+            }
+        };
+
+        existing_resources = new_resources.span();
     }
 
-    fn contains_resource(tracker: u64, resource_type: u8) -> bool {
-        let pos = resource_type - 1;
-        is_u64_bit_set(tracker, pos.into())
-    }
-
-    fn set_contains_resource(mut tracker: u64, resource_type: u8, value: bool) -> u64 {
-        let pos = resource_type - 1;
-        set_u64_bit(tracker, pos.into(), value)
-    }
 
     fn delete(ref world: WorldStorage, structure_id: ID, day: u64) {
         let empty_resources: Span<(u8, u128)> = array![].span();
@@ -162,87 +173,93 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
             slot_10: empty_resources,
             slot_11: empty_resources,
             slot_12: empty_resources,
+            slot_13: empty_resources,
+            slot_14: empty_resources,
+            slot_15: empty_resources,
+            slot_16: empty_resources,
+            slot_17: empty_resources,
+            slot_18: empty_resources,
+            slot_19: empty_resources,
+            slot_20: empty_resources,
+            slot_21: empty_resources,
+            slot_22: empty_resources,
+            slot_23: empty_resources,
+            slot_24: empty_resources,
+            initialized: false,
+            total_amount: 0,
         };
         world.erase_model(@resource_arrival_model);
-
-        let mut resource_arrival_tracker_model: ResourceArrivalTracker = Default::default();
-        resource_arrival_tracker_model.structure_id = structure_id;
-        resource_arrival_tracker_model.day = day;
-        world.erase_model(@resource_arrival_tracker_model);
     }
 
-    fn read_resources(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> (Span<(u8, u128)>, u64, u128) {
-        let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
-        let resources = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector);
-        let resources_tracker = world
-            .read_member(
-                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), resources_tracker_selector,
-            );
+    fn read_day_total(ref world: WorldStorage, structure_id: ID, day: u64) -> u128 {
         let total_amount = world
-            .read_member(
-                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("total_amount"),
-            );
-        return (resources, resources_tracker, total_amount);
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+        return total_amount;
     }
 
-    fn write_resources(
-        ref world: WorldStorage,
-        structure_id: ID,
-        day: u64,
-        slot: u8,
-        resources: Span<(u8, u128)>,
-        resources_tracker: u64,
-        total_amount: u128,
-    ) {
-        let (resources_selector, resources_tracker_selector) = Self::slot_selectors(slot.into());
+    fn read_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> Span<(u8, u128)> {
+        let slot_selector = Self::slot_selector(slot.into());
+        let resources = world.read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector);
+        return resources;
+    }
+
+    fn write_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8, resources: Span<(u8, u128)>) {
+        let slot_selector = Self::slot_selector(slot.into());
 
         // read the resource arrival tracker initialized flag
         // todo: check if this allows people create empty resource arrival models
-        let initialized: bool = world
-            .read_member(Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)), selector!("initialized"));
-        if !initialized {
-            Self::initialize(ref world, structure_id, day);
-        }
 
-        world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), resources_selector, resources);
+        let initialized: bool = world
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("initialized"));
+        if !initialized {
+            Self::initialize(ref world, structure_id, day, slot_selector, resources);
+        } else {
+            world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector, resources);
+        }
+    }
+
+    fn write_day_total(ref world: WorldStorage, structure_id: ID, day: u64, total_amount: u128) {
         world
             .write_member(
-                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)),
-                resources_tracker_selector,
-                resources_tracker,
-            );
-        world
-            .write_member(
-                Model::<ResourceArrivalTracker>::ptr_from_keys((structure_id, day)),
-                selector!("total_amount"),
-                total_amount,
+                Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount,
             );
     }
 
-    fn slot_selectors(hour: felt252) -> (felt252, felt252) {
+    fn slot_selector(hour: felt252) -> felt252 {
         match hour {
             0 => panic!("zero hour"),
-            1 => (selector!("slot_1"), selector!("slot_1_tracker")),
-            2 => (selector!("slot_2"), selector!("slot_2_tracker")),
-            3 => (selector!("slot_3"), selector!("slot_3_tracker")),
-            4 => (selector!("slot_4"), selector!("slot_4_tracker")),
-            5 => (selector!("slot_5"), selector!("slot_5_tracker")),
-            6 => (selector!("slot_6"), selector!("slot_6_tracker")),
-            7 => (selector!("slot_7"), selector!("slot_7_tracker")),
-            8 => (selector!("slot_8"), selector!("slot_8_tracker")),
-            9 => (selector!("slot_9"), selector!("slot_9_tracker")),
-            10 => (selector!("slot_10"), selector!("slot_10_tracker")),
-            11 => (selector!("slot_11"), selector!("slot_11_tracker")),
-            12 => (selector!("slot_12"), selector!("slot_12_tracker")),
+            1 => selector!("slot_1"),
+            2 => selector!("slot_2"),
+            3 => selector!("slot_3"),
+            4 => selector!("slot_4"),
+            5 => selector!("slot_5"),
+            6 => selector!("slot_6"),
+            7 => selector!("slot_7"),
+            8 => selector!("slot_8"),
+            9 => selector!("slot_9"),
+            10 => selector!("slot_10"),
+            11 => selector!("slot_11"),
+            12 => selector!("slot_12"),
+            13 => selector!("slot_13"),
+            14 => selector!("slot_14"),
+            15 => selector!("slot_15"),
+            16 => selector!("slot_16"),
+            17 => selector!("slot_17"),
+            18 => selector!("slot_18"),
+            19 => selector!("slot_19"),
+            20 => selector!("slot_20"),
+            21 => selector!("slot_21"),
+            22 => selector!("slot_22"),
+            23 => selector!("slot_23"),
+            24 => selector!("slot_24"),
             _ => panic!("exceeds max hours"),
         }
     }
 }
 
 
-impl ResourceArrivalZero of Zero<ResourceArrival> {
-    fn zero() -> ResourceArrival {
+impl ResourceArrivalDefault of Default<ResourceArrival> {
+    fn default() -> ResourceArrival {
         let zero_span: Span<(u8, u128)> = array![].span();
         return ResourceArrival {
             structure_id: 0,
@@ -259,27 +276,20 @@ impl ResourceArrivalZero of Zero<ResourceArrival> {
             slot_10: zero_span,
             slot_11: zero_span,
             slot_12: zero_span,
+            slot_13: zero_span,
+            slot_14: zero_span,
+            slot_15: zero_span,
+            slot_16: zero_span,
+            slot_17: zero_span,
+            slot_18: zero_span,
+            slot_19: zero_span,
+            slot_20: zero_span,
+            slot_21: zero_span,
+            slot_22: zero_span,
+            slot_23: zero_span,
+            slot_24: zero_span,
+            initialized: false,
+            total_amount: 0,
         };
-    }
-
-    fn is_zero(self: @ResourceArrival) -> bool {
-        (*self.structure_id).is_zero()
-            && (*self.day).is_zero()
-            && (*self.slot_1).is_empty()
-            && (*self.slot_2).is_empty()
-            && (*self.slot_3).is_empty()
-            && (*self.slot_4).is_empty()
-            && (*self.slot_5).is_empty()
-            && (*self.slot_6).is_empty()
-            && (*self.slot_7).is_empty()
-            && (*self.slot_8).is_empty()
-            && (*self.slot_9).is_empty()
-            && (*self.slot_10).is_empty()
-            && (*self.slot_11).is_empty()
-            && (*self.slot_12).is_empty()
-    }
-
-    fn is_non_zero(self: @ResourceArrival) -> bool {
-        !self.is_zero()
     }
 }
