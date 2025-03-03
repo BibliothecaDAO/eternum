@@ -1,23 +1,21 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { ResourcesIds, TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS, findResourceById } from "@bibliothecadao/eternum";
+import { findResourceById } from "@/utils/resources";
+import { ResourcesIds } from "@/utils/types";
 import { formatAmount, formatNumberWithSpaces } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
 const eternumConfig = ETERNUM_CONFIG();
 
-type TroopId = keyof typeof TROOPS_STAMINAS;
-
 export default function TroopsTable() {
   const troops = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
-
   return (
     <div className="my-4 p-4">
       <div className="font-bold mb-6 text-xl">Military Units</div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {troops.map((troopId) => {
           const resource = findResourceById(troopId);
-          const stamina = TROOPS_STAMINAS[troopId as TroopId];
-          const foodConsumption = TROOPS_FOOD_CONSUMPTION[troopId as TroopId];
+          const stamina = ETERNUM_CONFIG().troop.troopStaminas[troopId];
+          const foodConsumption = ETERNUM_CONFIG().troop.troopFoodConsumption[troopId];
 
           return (
             <div key={troopId} className="border border-gray-700 p-4 rounded-lg bg-white/5">

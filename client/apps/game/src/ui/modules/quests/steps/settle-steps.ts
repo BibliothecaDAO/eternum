@@ -31,12 +31,12 @@ export const settleSteps: StepOptions[] = [
     title: "Claim your reward",
     text: () => {
       const wheatIcon = document.createElement("img");
-      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.src = "/images/resources/29.png";
       wheatIcon.className = "w-8 h-8 inline-block mx-1";
       wheatIcon.title = "Wheat";
 
       const fishIcon = document.createElement("img");
-      fishIcon.src = "/images/resources/255.png";
+      fishIcon.src = "/images/resources/30.png";
       fishIcon.className = "w-8 h-8 inline-block mx-1";
       fishIcon.title = "Fish";
 
@@ -76,12 +76,12 @@ export const settleSteps: StepOptions[] = [
     title: "Resources",
     text: () => {
       const wheatIcon = document.createElement("img");
-      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.src = "/images/resources/29.png";
       wheatIcon.className = "w-8 h-8 inline-block mx-1";
       wheatIcon.title = "Wheat";
 
       const fishIcon = document.createElement("img");
-      fishIcon.src = "/images/resources/255.png";
+      fishIcon.src = "/images/resources/30.png";
       fishIcon.className = "w-8 h-8 inline-block mx-1";
       fishIcon.title = "Fish";
 

@@ -9,7 +9,7 @@ type Props = {
   label?: boolean;
   withTooltip?: boolean;
   containerClassName?: string;
-  tooltipText?: string; // Added custom tooltip text as optional
+  tooltipText?: string;
 };
 
 type Resource = {
@@ -72,7 +72,7 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Paladin: { component: <img src={`/images/resources/${ResourcesIds.Paladin}.png`} />, name: "Paladin" },
   PaladinT2: { component: <img src={`/images/resources/${ResourcesIds.PaladinT2}.png`} />, name: "Paladin T2" },
   PaladinT3: { component: <img src={`/images/resources/${ResourcesIds.PaladinT3}.png`} />, name: "Paladin T3" },
-  Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
+  Lords: { component: <img src={`/images/resources/${ResourcesIds.Lords}.png`} />, name: "Lords" },
   Wheat: { component: <img src={`/images/resources/${ResourcesIds.Wheat}.png`} />, name: "Wheat" },
   Fish: { component: <img src={`/images/resources/${ResourcesIds.Fish}.png`} />, name: "Fish" },
 

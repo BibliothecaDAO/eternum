@@ -96,10 +96,48 @@ export default class WorldmapScene extends HexagonScene {
 
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
-    useUIStore.subscribe((state) => {
-      this.state = state;
-    });
-
+    useUIStore.subscribe(
+      (state) => state.hoveredArmyEntityId,
+      (hoveredArmyEntityId) => {
+        this.state.hoveredArmyEntityId = hoveredArmyEntityId;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.hoveredStructure,
+      (hoveredStructure) => {
+        this.state.hoveredStructure = hoveredStructure;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.armyActions,
+      (armyActions) => {
+        this.state.armyActions = armyActions;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.hoveredBattle,
+      (hoveredBattle) => {
+        this.state.hoveredBattle = hoveredBattle;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.selectedHex,
+      (selectedHex) => {
+        this.state.selectedHex = selectedHex;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.isSoundOn,
+      (isSoundOn) => {
+        this.state.isSoundOn = isSoundOn;
+      },
+    );
+    useUIStore.subscribe(
+      (state) => state.effectsLevel,
+      (effectsLevel) => {
+        this.state.effectsLevel = effectsLevel;
+      },
+    );
     useUIStore.subscribe(
       (state) => state.previewBuilding,
       (structure) => {

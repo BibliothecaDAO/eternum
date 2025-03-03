@@ -1,5 +1,6 @@
-import { divideByPrecision, formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfigCategory, ResourcesIds } from "@bibliothecadao/eternum";
+import { formatNumberWithCommas } from "@/utils/formatting";
+import { divideByPrecision } from "@/utils/resources";
+import { CapacityConfigCategory, ResourcesIds } from "@/utils/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
 ## Storage System
@@ -20,7 +21,7 @@ Resources in Eternum have different weights that affect storage:
 - **Lords**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
 - **Donkey**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
 
-### Storehouses <img src="/buildings/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
+### Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
 
 Expand your storage capacity to support your growing realm:
 
