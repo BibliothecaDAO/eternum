@@ -73,32 +73,30 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     }
 
     #[inline(always)]
-    fn troop_to_structure_delayed(
+    fn troop_to_structure_instant(
         ref world: WorldStorage,
-        ref from_troop: ExplorerTroops,
-        ref from_troop_owner: starknet::ContractAddress,
+        from_troop_id: ID,
         ref from_troop_weight: Weight,
         to_structure_id: ID,
-        to_structure_coord: Coord,
-        to_structure_owner: starknet::ContractAddress,
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
-        pickup: bool,
     ) {
-        Self::_delayed_transfer(
-            ref world,
-            true,
-            from_troop.explorer_id,
-            from_troop_owner,
-            from_troop.coord,
-            ref from_troop_weight,
-            to_structure_id,
-            to_structure_owner,
-            to_structure_coord,
-            ref to_structure_weight,
-            resources,
-            false,
-            pickup,
+        Self::_instant_transfer(
+            ref world, from_troop_id, ref from_troop_weight, to_structure_id, ref to_structure_weight, resources, false,
+        );
+    }
+
+    #[inline(always)]
+    fn structure_to_troop_instant(
+        ref world: WorldStorage,
+        from_structure_id: ID,
+        ref from_structure_weight: Weight,
+        to_troop_id: ID,
+        ref to_troop_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        Self::_instant_transfer(
+            ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources, false,
         );
     }
 
@@ -113,7 +111,6 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         mint: bool,
     ) {
         let mut resources_clone = resources.clone();
-
         loop {
             match resources_clone.pop_front() {
                 Option::Some((

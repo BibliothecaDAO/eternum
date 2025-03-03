@@ -5,7 +5,13 @@ pub trait IResourceSystems<T> {
     fn approve(ref self: T, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
     fn send(ref self: T, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
     fn pickup(ref self: T, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>);
-    fn offload(ref self: T, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
+    fn arrivals_offload(ref self: T, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
+    fn troop_structure_adjacent_transfer(
+        ref self: T, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
+    );
+    fn structure_troop_adjacent_transfer(
+        ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
+    );
 }
 
 #[dojo::contract]
@@ -19,6 +25,7 @@ pub mod resource_systems {
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SpeedImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{ResourceAllowance};
     use s1_eternum::models::resource::resource::{
@@ -28,6 +35,7 @@ pub mod resource_systems {
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
     };
+    use s1_eternum::models::troop::{ExplorerTroops};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
@@ -240,7 +248,77 @@ pub mod resource_systems {
         }
 
 
-        fn offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
+        fn troop_structure_adjacent_transfer(
+            ref self: ContractState, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
+        ) {
+            let mut world = self.world(DEFAULT_NS());
+            // SeasonImpl::assert_season_is_not_over(world);
+
+            assert!(from_explorer_id.is_non_zero(), "from_explorer_id does not exist");
+            assert!(to_structure_id.is_non_zero(), "to_structure_id does not exist");
+
+            // ensure explorer is owned by caller
+            let explorer: ExplorerTroops = world.read_model(from_explorer_id);
+            let explorer_owner_structure_id: ID = explorer.owner;
+            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_owner_structure_id,
+            );
+            explorer_owner.assert_caller_owner();
+
+            // ensure to_structure is a structure
+            let to_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            to_structure.assert_exists();
+
+            // ensure to_structure is owned by caller
+            let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+            to_structure_owner.assert_caller_owner();
+
+            // ensure troop and stucture are adjacent to each other
+            assert!(explorer.coord.is_adjacent(to_structure.coord()), "troop and structure are not adjacent");
+
+            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
+            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
+            iResourceTransferImpl::troop_to_structure_instant(
+                ref world,
+                from_explorer_id,
+                ref from_explorer_weight,
+                to_structure_id,
+                ref to_structure_weight,
+                resources,
+            );
+        }
+
+        fn structure_troop_adjacent_transfer(
+            ref self: ContractState, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
+        ) {
+            let mut world = self.world(DEFAULT_NS());
+            // SeasonImpl::assert_season_is_not_over(world);
+
+            assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
+            assert!(to_troop_id.is_non_zero(), "to_troop_id does not exist");
+
+            // ensure from_structure is owned by caller
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            from_structure_owner.assert_caller_owner();
+
+            // ensure to_troop is owned by caller
+            let to_troop: ExplorerTroops = world.read_model(to_troop_id);
+            let to_troop_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_troop.owner);
+            to_troop_owner.assert_caller_owner();
+
+            // ensure from_structure and to_troop are adjacent to each other
+            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            assert!(from_structure.coord().is_adjacent(to_troop.coord), "from_structure and to_troop are not adjacent");
+
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+            let mut to_troop_weight: Weight = WeightStoreImpl::retrieve(ref world, to_troop_id);
+            iResourceTransferImpl::structure_to_troop_instant(
+                ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
+            );
+        }
+
+
+        fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
             let mut world = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 

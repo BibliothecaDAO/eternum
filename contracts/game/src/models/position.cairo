@@ -203,12 +203,19 @@ pub impl CoordIntoCube of Into<Coord, Cube> {
 }
 
 pub trait TravelTrait<T> {
+    fn is_adjacent(self: T, destination: T) -> bool;
     fn tile_distance(self: T, destination: T) -> u128;
     fn km_distance(self: T, destination: T) -> u128;
     fn km_travel_time(self: T, destination: T, sec_per_km: u16) -> u64;
 }
 
 pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
+    fn is_adjacent(self: T, destination: T) -> bool {
+        // todo: test
+        let tile_distance = Self::tile_distance(self, destination);
+        tile_distance == 1
+    }
+
     fn tile_distance(self: T, destination: T) -> u128 {
         CubeImpl::distance(self.into(), destination.into())
     }
