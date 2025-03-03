@@ -33,7 +33,7 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
               value={army.stamina}
               onChange={(value) => onChange({ ...army, stamina: value })}
               min={0}
-              max={100}
+              max={200}
               step={1}
             />
           </label>
@@ -44,7 +44,7 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
               onChange={(value) => onChange({ ...army, troopCount: value })}
               min={1}
               max={MAX_TROOPS_PER_ARMY}
-              step={100}
+              step={200}
             />
           </label>
           <label className="flex flex-col">

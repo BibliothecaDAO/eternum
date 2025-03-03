@@ -8,6 +8,8 @@ import {
   RealmLevels,
   SetupResult,
   StructureType,
+  TroopTier,
+  TroopType,
   type HexPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -29,7 +31,7 @@ import {
   BuildingSystemUpdate,
   StructureProgress,
   StructureSystemUpdate,
-  TileSystemUpdate
+  TileSystemUpdate,
 } from "../types";
 
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
@@ -79,10 +81,32 @@ export class SystemManager {
 
         return query.update$.subscribe((update) => {
           if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+            const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+            const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+
+            if (!newState.explorer_id) {
+              if (prevState && prevState.explorer_id) {
+                callback({
+                  entityId: prevState.explorer_id,
+                  hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
+                  order: 0,
+                  owner: { address: 0n, ownerName: "", guildName: "" },
+                  troopType: TroopType.Knight,
+                  troopTier: TroopTier.T1,
+                  deleted: true,
+                });
+                return;
+              }
+              return;
+            }
+
             const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
             if (!explorer) return;
 
-            const structure = getComponentValue(this.setup.components.Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
+            const structure = getComponentValue(
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(explorer.owner)]),
+            );
             if (!structure) return;
 
             const owner = structure.owner;
@@ -108,13 +132,10 @@ export class SystemManager {
             callback({
               entityId: explorer.explorer_id,
               hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
-              // todo: fix this
-              battleId: 0,
-              defender: false,
-              // todo: fix this
-              currentHealth: 1n,
               order: structure.metadata.order,
               owner: { address: owner || 0n, ownerName, guildName },
+              troopType: explorer.troops.category as TroopType,
+              troopTier: explorer.troops.tier as TroopTier,
             });
           }
         });
@@ -184,7 +205,8 @@ export class SystemManager {
           return {
             hexCoords: { col, row },
             removeExplored: !newState,
-            biome: newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
+            biome:
+              newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
           };
         });
       },

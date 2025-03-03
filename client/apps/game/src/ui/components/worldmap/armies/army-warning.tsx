@@ -1,8 +1,8 @@
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ArmyActionManager,
   ArmyInfo,
-  ArmyMovementManager,
   computeExploreFoodCosts,
   configManager,
   StaminaManager,
@@ -18,7 +18,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entityId);
+    return new ArmyActionManager(dojo.setup.components, dojo.network.provider, army.entityId);
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 

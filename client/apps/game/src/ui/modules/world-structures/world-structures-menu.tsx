@@ -90,11 +90,11 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               entityContent={(id: any) => renderExtraContent(id, "hyperstructure")}
               chunkSize={10}
               list={hyperstructures
-                .filter((h) => h.base?.created_at)
-                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .filter((h) => h?.base?.created_at)
+                .sort((a, b) => Number(a?.entity_id) - Number(b?.entity_id))
                 .map((h) => ({
                   ...h,
-                  id: h.entity_id,
+                  id: h?.entity_id,
                   position: { x: h?.position.x, y: h?.position.y },
                 }))}
               filterEntityIds={showOnlyMine ? Array.from(myHyperstructures) : undefined}

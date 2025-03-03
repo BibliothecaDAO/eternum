@@ -10,8 +10,10 @@ import {
   configManager,
   ContractAddress,
   FELT_CENTER,
+  HexEntityInfo,
   ID,
   orders,
+  TroopTier,
   TroopType,
 } from "@bibliothecadao/eternum";
 import * as THREE from "three";
@@ -71,6 +73,8 @@ export class ArmyManager {
                 guildName: "None",
               },
               1,
+              TroopType.Knight,
+              TroopTier.T1,
             );
           },
         },
@@ -126,29 +130,20 @@ export class ArmyManager {
 
   async onUpdate(
     update: ArmySystemUpdate,
-    armyHexes: Map<number, Map<number, boolean>>,
-    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, owner, battleId, currentHealth, order } = update;
+    const { entityId, hexCoords, owner, troopType, troopTier, order, deleted } = update;
 
-    if (currentHealth <= 0) {
+    // If the army is marked as deleted, remove it from the map
+    if (deleted) {
       if (this.armies.has(entityId)) {
         this.removeArmy(entityId);
         return true;
-      } else {
-        return false;
       }
-    }
-
-    if (battleId !== 0) {
-      if (this.armies.has(entityId)) {
-        this.removeArmy(entityId);
-        return true;
-      } else {
-        return false;
-      }
+      return false;
     }
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
@@ -156,7 +151,7 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order);
+      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier);
     }
     return false;
   }
@@ -260,6 +255,8 @@ export class ArmyManager {
         matrixIndex: index,
         owner: army.owner,
         order: army.order,
+        category: army.category,
+        tier: army.tier,
       }));
 
     return visibleArmies;
@@ -283,6 +280,8 @@ export class ArmyManager {
     hexCoords: Position,
     owner: { address: bigint; ownerName: string; guildName: string },
     order: number,
+    category: TroopType,
+    tier: TroopTier,
   ) {
     if (this.armies.has(entityId)) return;
 
@@ -304,6 +303,8 @@ export class ArmyManager {
       owner,
       color: orderData?.color || "#000000",
       order: orderData?.orderName || "",
+      category,
+      tier,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
   }
@@ -311,8 +312,8 @@ export class ArmyManager {
   public moveArmy(
     entityId: ID,
     hexCoords: Position,
-    armyHexes: Map<number, Map<number, boolean>>,
-    structureHexes: Map<number, Map<number, boolean>>,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     const armyData = this.armies.get(entityId);
@@ -526,9 +527,12 @@ export class ArmyManager {
     const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
     const line2 = document.createElement("strong");
     line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
+    const line3 = document.createElement("strong");
+    line3.textContent = `${army.category} ${army.tier}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
+    textContainer.appendChild(line3);
 
     labelDiv.appendChild(textContainer);
 

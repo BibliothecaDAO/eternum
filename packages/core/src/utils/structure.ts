@@ -38,12 +38,6 @@ const getStructureInfo = (
   const structure = getComponentValue(components.Structure, entity);
   if (!structure) return;
 
-  // const protectorArmies = [
-  //   structure.guards.alpha,
-  //   structure.guards.bravo,
-  //   structure.guards.charlie,
-  //   structure.guards.delta,
-  // ];
   const protectors: ArmyInfo[] = [];
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));

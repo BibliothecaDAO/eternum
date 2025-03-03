@@ -4,6 +4,15 @@ use s1_eternum::{alias::ID, models::{guild::{GuildMember}, owner::{Owner}, posit
 
 use starknet::ContractAddress;
 
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct HyperstructureGlobals {
+    #[key]
+    pub world_id: ID,
+    pub count: u64,
+}
+
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Hyperstructure {
@@ -12,6 +21,7 @@ pub struct Hyperstructure {
     pub last_updated_by: ContractAddress,
     pub last_updated_timestamp: u64,
     pub current_epoch: u16,
+    pub initialized: bool,
     pub completed: bool,
     pub access: Access,
     pub randomness: felt252,

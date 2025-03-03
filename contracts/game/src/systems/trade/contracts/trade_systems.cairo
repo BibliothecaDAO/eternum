@@ -47,7 +47,7 @@ pub mod trade_systems {
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::distance::{iDistanceImpl};
+    use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use starknet::ContractAddress;
 
@@ -114,11 +114,9 @@ pub mod trade_systems {
             }
 
             // ensure trade count does not exceed max
-            let trade_count_config: TradeConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("trade_count_config"),
-            );
+            let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
             let mut trade_count: TradeCount = world.read_model(maker_id);
-            assert!(trade_count.count < trade_count_config.max_count, "trade count exceeds max");
+            assert!(trade_count.count < trade_config.max_count, "trade count exceeds max");
 
             // ensure expires at is in the future
             let now = starknet::get_block_timestamp().try_into().unwrap();
@@ -228,7 +226,7 @@ pub mod trade_systems {
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             let donkey_speed = SpeedImpl::for_donkey(ref world);
             let travel_time = starknet::get_block_timestamp()
-                + iDistanceImpl::time_required(
+                + iDistanceKmImpl::time_required(
                     ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,
                 );
             let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);

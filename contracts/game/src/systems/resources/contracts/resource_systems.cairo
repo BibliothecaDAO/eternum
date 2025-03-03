@@ -41,7 +41,7 @@ pub mod resource_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
-    use s1_eternum::systems::utils::distance::{iDistanceImpl};
+    use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use starknet::ContractAddress;

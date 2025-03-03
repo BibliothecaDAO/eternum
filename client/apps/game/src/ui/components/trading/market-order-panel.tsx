@@ -364,13 +364,13 @@ const OrderRow = memo(
         setLoading(true);
         setConfirmOrderModal(false);
 
-        await dojo.setup.systemCalls.accept_partial_order({
+        await dojo.setup.systemCalls.accept_order({
           signer: dojo.account.account,
           taker_id: entityId,
           trade_id: offer.tradeId,
-          maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
-          taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-          taker_gives_actual_amount: isBuy ? calculatedResourceAmount : calculatedLords,
+          taker_lords_index: offer.takerGets[0].resourceId,
+          maker_resource_index: offer.makerGets[0].resourceId,
+          taker_buys_count: isBuy ? calculatedResourceAmount : calculatedLords,
         });
       } catch (error) {
         console.error("Failed to accept order", error);
@@ -387,7 +387,6 @@ const OrderRow = memo(
         await dojo.setup.systemCalls.cancel_order({
           signer: dojo.account.account,
           trade_id: offer.tradeId,
-          return_resources: returnResources,
         });
       } catch (error) {
         console.error("Failed to cancel order", error);
@@ -545,15 +544,21 @@ const OrderCreation = memo(
       if (!currentBlockTimestamp) return;
       setLoading(true);
 
+      const calldata = {
+        signer: account,
+        maker_id: entityId,
+        maker_gives_resource_type: makerGives[0],
+        maker_gives_min_resource_amount: makerGives[1],
+        maker_gives_max_count: makerGives[1],
+        taker_id: 0,
+        taker_pays_min_lords_amount: takerGives[1],
+        expires_at: currentBlockTimestamp + ONE_MONTH,
+      };
+
+      console.log({ calldata });
+
       try {
-        await create_order({
-          signer: account,
-          maker_id: entityId,
-          maker_gives_resources: makerGives,
-          taker_id: 0,
-          taker_gives_resources: takerGives,
-          expires_at: currentBlockTimestamp + ONE_MONTH,
-        });
+        await create_order(calldata);
         playLordsSound();
       } catch (error) {
         console.error("Failed to create order:", error);

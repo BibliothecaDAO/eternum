@@ -167,6 +167,11 @@ export enum ClaimStatus {
 
 export type HexPosition = { col: number; row: number };
 
+export type HexEntityInfo = {
+  id: ID;
+  owner: ContractAddress;
+};
+
 export type HexTileInfo = {
   col: number;
   row: number;
@@ -475,6 +480,9 @@ export interface Config {
     resourceProductionByLaborParams: ProductionByLaborParams;
     resourceRarity: { [key in ResourcesIds]?: number };
   };
+  trade: {
+    maxCount: number;
+  };
   banks: {
     name: string;
     lordsCost: number;
@@ -493,6 +501,11 @@ export interface Config {
   exploration: {
     reward: number;
     shardsMinesFailProbability: number;
+    shardsMinesWinProbability: number;
+    hyperstructureWinProbAtCenter: number;
+    hyperstructureFailProbAtCenter: number;
+    hyperstructureFailProbIncreasePerHexDistance: number;
+    hyperstructureFailProbIncreasePerHyperstructureFound: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
   };

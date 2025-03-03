@@ -1,4 +1,4 @@
-import { Entity, getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, gramToKg } from "..";
@@ -9,7 +9,7 @@ import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
 import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const {  Structure } = components;
+  const { Structure } = components;
   const structure = getComponentValue(Structure, entity);
   if (structure?.base.category !== StructureType.Realm) return undefined;
 
@@ -24,7 +24,8 @@ export const getRealmWithPosition = (entity: Entity, components: ClientComponent
 
 export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
   // use value strict because we know the structure exists
-  const structure = getComponentValueStrict(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  if (!structure) return "";
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
 
   if (addressName) {

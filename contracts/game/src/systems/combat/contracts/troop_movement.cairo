@@ -22,8 +22,12 @@ pub mod troop_movement_systems {
         troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl}};
+    use s1_eternum::systems::utils::{
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl},
+    };
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
+    use s1_eternum::utils::random::{VRFImpl};
+    use starknet::ContractAddress;
 
 
     use super::ITroopMovementSystems;
@@ -49,6 +53,9 @@ pub mod troop_movement_systems {
             let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
             IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
+            let caller = starknet::get_caller_address();
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
+            let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             // move explorer to target coordinate
             let mut biomes: Array<Biome> = array![];
             while true {
@@ -75,25 +82,38 @@ pub mod troop_movement_systems {
 
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
-                    let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-                    let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-                    let lottery_won: bool = iMineDiscoveryImpl::lottery(
-                        ref world,
-                        starknet::get_caller_address(),
-                        next,
-                        map_config,
-                        troop_limit_config,
-                        troop_stamina_config,
+                    let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(
+                        world, selector!("vrf_provider_address"),
                     );
-
-                    // ensure explorer does not occupy fragment mine tile when mines are discovered
-                    if lottery_won {
+                    let vrf_seed: u256 = VRFImpl::seed(caller, vrf_provider);
+                    let hyps_lottery_won: bool = iHyperstructureDiscoveryImpl::lottery(
+                        ref world, next, map_config, vrf_seed,
+                    );
+                    if hyps_lottery_won {
+                        // ensure explorer does not occupy hyperstructure tile
                         occupy_destination = false;
+
+                        // create hyperstructure
+                        iHyperstructureDiscoveryImpl::create(
+                            ref world, next, caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                        );
+                    } else {
+                        // perform lottery to discover mine
+                        let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(ref world, map_config, vrf_seed);
+                        if mine_lottery_won {
+                            // ensure explorer does not occupy fragment mine tile
+                            occupy_destination = false;
+
+                            // create mine
+                            iMineDiscoveryImpl::create(
+                                ref world, next, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                            );
+                        }
                     }
 
                     // grant resource reward for exploration
                     let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
-                        ref world, map_config,
+                        ref world, map_config, vrf_seed,
                     );
                     let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
                     let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_id);

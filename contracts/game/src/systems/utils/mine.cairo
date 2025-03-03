@@ -1,3 +1,4 @@
+use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::TickImpl;
@@ -16,42 +17,38 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::IStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
-use s1_eternum::utils::random::{VRFImpl};
-use starknet::ContractAddress;
 
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
-    fn lottery(
-        ref world: WorldStorage,
-        owner: starknet::ContractAddress,
-        coord: Coord,
-        map_config: MapConfig,
-        troop_limit_config: TroopLimitConfig,
-        troop_stamina_config: TroopStaminaConfig,
-    ) -> bool {
-        let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
-        let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
+    fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
         let success: bool = *random::choices(
             array![true, false].span(),
-            array![1000, map_config.shards_mines_fail_probability.into()].span(),
+            array![map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into()]
+                .span(),
             array![].span(),
             1,
             true,
             vrf_seed,
         )[0];
 
-        // return false if lottery fails
-        if !success {
-            return false;
-        }
+        return success;
+    }
 
+    fn create(
+        ref world: WorldStorage,
+        coord: Coord,
+        map_config: MapConfig,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        vrf_seed: u256,
+    ) -> bool {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
         IStructureImpl::create(
             ref world,
             coord,
-            owner,
+            Zero::zero(),
             structure_id,
             StructureCategory::FragmentMine,
             true,

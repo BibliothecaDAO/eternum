@@ -15,15 +15,17 @@ import { IS_MOBILE } from "../config";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
-  import("../components/worldmap/armies/selected-army").then((module) => ({ default: module.SelectedArmy })),
+  import("../components/worldmap/actions/selected-worldmap-entity").then((module) => ({
+    default: module.SelectedWorldmapEntity,
+  })),
 );
 
 const ActionInfo = lazy(() =>
-  import("../components/worldmap/armies/action-info").then((module) => ({ default: module.ActionInfo })),
+  import("../components/worldmap/actions/action-info").then((module) => ({ default: module.ActionInfo })),
 );
 
 const ActionInstructions = lazy(() =>
-  import("../components/worldmap/armies/action-instructions").then((module) => ({
+  import("../components/worldmap/actions/action-instructions").then((module) => ({
     default: module.ActionInstructions,
   })),
 );
