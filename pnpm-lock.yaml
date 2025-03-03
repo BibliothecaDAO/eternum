@@ -15,26 +15,26 @@ importers:
         specifier: ^0.6.x
         version: 0.6.0(starknet@6.23.1(encoding@0.1.13))
       '@dojoengine/create-burner':
-        specifier: 1.2.3
-        version: 1.2.3(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
+        specifier: 1.2.4
+        version: 1.2.4(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
       '@dojoengine/react':
-        specifier: 1.2.3
-        version: 1.2.3(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
+        specifier: 1.2.4
+        version: 1.2.4(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/state':
-        specifier: 1.2.3
-        version: 1.2.3(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
+        specifier: 1.2.4
+        version: 1.2.4(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/torii-client':
-        specifier: 1.2.3
-        version: 1.2.3
+        specifier: 1.2.4
+        version: 1.2.4
       '@dojoengine/torii-wasm':
-        specifier: 1.2.3
-        version: 1.2.3
+        specifier: 1.2.4
+        version: 1.2.4
       '@dojoengine/utils':
-        specifier: 1.2.3
-        version: 1.2.3(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
+        specifier: 1.2.4
+        version: 1.2.4(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
       colors:
         specifier: ^1.4.0
         version: 1.4.0
@@ -61,8 +61,8 @@ importers:
         specifier: workspace:^
         version: link:packages/react
       '@dojoengine/core':
-        specifier: 1.2.3
-        version: 1.2.3(encoding@0.1.13)(typescript@5.8.2)
+        specifier: 1.2.4
+        version: 1.2.4(encoding@0.1.13)(typescript@5.8.2)
       '@types/node':
         specifier: ^20.11.10
         version: 20.17.22
@@ -83,7 +83,7 @@ importers:
         version: 8.5.3
       prettier:
         specifier: ^3.x.x
-        version: 3.5.2
+        version: 3.5.3
       typescript:
         specifier: ^5.x.x
         version: 5.8.2
@@ -217,7 +217,7 @@ importers:
     dependencies:
       '@dojoengine/predeployed-connector':
         specifier: ^1.0.13
-        version: 1.2.3(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))
+        version: 1.2.4(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))
       '@latticexyz/utils':
         specifier: ^2.0.0-next.12
         version: 2.2.20
@@ -241,7 +241,7 @@ importers:
         version: 4.17.21
       postprocessing:
         specifier: ^6.36.2
-        version: 6.36.7(three@0.166.1)
+        version: 6.37.0(three@0.166.1)
       react-beautiful-dnd:
         specifier: ^13.1.1
         version: 13.1.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -373,7 +373,7 @@ importers:
         version: 2.4.0(react-router@7.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       storybook:
         specifier: ^8.3.2
-        version: 8.6.3(prettier@3.5.2)
+        version: 8.6.3(prettier@3.5.3)
       vite-plugin-vercel:
         specifier: ^9.0.3
         version: 9.0.5(encoding@0.1.13)(rollup@4.34.9)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
@@ -398,37 +398,37 @@ importers:
         version: 6.1.0(encoding@0.1.13)(graphql@16.10.0)
       '@storybook/addon-essentials':
         specifier: ^8.3.2
-        version: 8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.3))
       '@storybook/addon-interactions':
         specifier: ^8.3.2
-        version: 8.6.3(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(storybook@8.6.3(prettier@3.5.3))
       '@storybook/addon-links':
         specifier: ^8.3.2
-        version: 8.6.3(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))
       '@storybook/addon-onboarding':
         specifier: ^8.3.2
-        version: 8.6.3(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(storybook@8.6.3(prettier@3.5.3))
       '@storybook/blocks':
         specifier: ^8.3.2
-        version: 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))
       '@storybook/builder-vite':
         specifier: ^8.3.2
-        version: 8.6.3(storybook@8.6.3(prettier@3.5.2))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
+        version: 8.6.3(storybook@8.6.3(prettier@3.5.3))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
       '@storybook/react':
         specifier: ^8.3.2
-        version: 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))(typescript@5.8.2)
+        version: 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))(typescript@5.8.2)
       '@storybook/react-vite':
         specifier: ^8.3.2
-        version: 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.34.9)(storybook@8.6.3(prettier@3.5.2))(typescript@5.8.2)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
+        version: 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.34.9)(storybook@8.6.3(prettier@3.5.3))(typescript@5.8.2)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
       '@storybook/test':
         specifier: ^8.3.2
-        version: 8.6.3(storybook@8.6.3(prettier@3.5.2))
+        version: 8.6.3(storybook@8.6.3(prettier@3.5.3))
       '@tanstack/router-devtools':
         specifier: ^1.74.0
-        version: 1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.112.6(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/router-plugin':
         specifier: ^1.73.1
-        version: 1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
+        version: 1.112.3(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
 
   config:
     dependencies:
@@ -490,7 +490,7 @@ importers:
         version: link:../core
       '@dojoengine/react':
         specifier: '*'
-        version: 1.2.3(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
+        version: 1.2.4(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
       '@starknet-react/core':
         specifier: '*'
         version: 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
@@ -1240,26 +1240,26 @@ packages:
     bundledDependencies:
       - is-unicode-supported
 
-  '@dojoengine/core@1.2.3':
-    resolution: {integrity: sha512-DC8uakD6zcJIvEMGCpQJjiWsJRsqDxTxrCYWT5iI2aBKPqLFWGpCMk22b95wCnJ29gIP4OOcbM7HBKaVdCqcwg==}
+  '@dojoengine/core@1.2.4':
+    resolution: {integrity: sha512-JgpajrQ81b5z+cWv+cI1TYxHQpDGdmzsqkBj9J/aP1F2iXhVeZGKOLvNcoxIcM++28EjNfFOct/nvyyu12+5eA==}
     hasBin: true
 
-  '@dojoengine/create-burner@1.2.3':
-    resolution: {integrity: sha512-xlsdeLUdgWIV54RAcL15+uIh7XwqxCUjOqjq5e41CIRybiLErSwE+LUH6rh9TOjdxTwOttWaoAdJ2n1jZq+KEQ==}
+  '@dojoengine/create-burner@1.2.4':
+    resolution: {integrity: sha512-YHMEai+vgIg6qfUF/Tw02SqitWDpszFaS3+4+25tOJutV1Ow1yn8PE8zu+J+pNd1YVM1wDOPKsmvsHBuGtJmUw==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
       starknet: 6.23.1
 
-  '@dojoengine/predeployed-connector@1.2.3':
-    resolution: {integrity: sha512-V+1ug+w4sv+Km9Xc3Hv1J/s6XTVGBudqroEpe6rWPCqy+yKzr8RCeKQAzkRT4Su6pcU8jmw3dXVY8CiR5ZCVqA==}
+  '@dojoengine/predeployed-connector@1.2.4':
+    resolution: {integrity: sha512-c9LOneHCA93Dj24rGkTkMS4XAfRtJOOF5VDcpja+wxiDw8nLAjGIyjVsgXOHTuEvtYqoOiDO2+MgoIEzDoIuWg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       '@starknet-react/core': ^3.6.2
       starknet: 6.23.1
 
-  '@dojoengine/react@1.2.3':
-    resolution: {integrity: sha512-wWYckkCk7V4qxUFlLvcLoszrTj0I0vnxaZWnUIRK11D+gc3J5OV4pqL7a0iYlPlwrnO6GZVmK0ImTChzYCTcAQ==}
+  '@dojoengine/react@1.2.4':
+    resolution: {integrity: sha512-3l7cqoSgguZdKm/wzOJaObivrgVG8MdNYxzMlALyZEYhzq5w4IYxzFh2pqVZfJ2XbOt4B6wvKhGhBJyX1o1iKw==}
     peerDependencies:
       react: ^18.2.0
       starknet: 6.23.1
@@ -1268,19 +1268,19 @@ packages:
   '@dojoengine/recs@2.0.13':
     resolution: {integrity: sha512-Cgz4Unlnk2FSDoFTYKrJexX/KiSYPMFMxftxQkC+9LUKS5yNGkgFQM7xu4/L1HvpDAenL7NjUmH6ynRAS7Iifw==}
 
-  '@dojoengine/state@1.2.3':
-    resolution: {integrity: sha512-8BQ48yCNFcAyGlqv2+OWCTXoEH69M6qSD99D35emPMXjVaAbx9e2lRcJ+L3FV0tFauu0eE8YF8FoNr+Xmd3kTQ==}
+  '@dojoengine/state@1.2.4':
+    resolution: {integrity: sha512-Kn8sTBVuZkWiWmp+b9ejjzw59pRR3kZsg8WFWvaa0RburK9d+tsE/7VfmpnX6MwbQGNopHTHk3KEZKJUzBsueA==}
     peerDependencies:
       starknet: 6.23.1
 
-  '@dojoengine/torii-client@1.2.3':
-    resolution: {integrity: sha512-hg7cFN1MND7ZvsN1w5hE5H7QQ7/l+DXa4sPPKcjlXIK3obwC8wv92iEYclt+yTVorHKzPg0AzJxzthPkfhKr9w==}
+  '@dojoengine/torii-client@1.2.4':
+    resolution: {integrity: sha512-QNAFABv4cFabysGnGbKQioeGiPNLkjm+QeeKT3/tLhAYh7MSyt0Vn7xSBFInPWgEswnCJZJyElabWThAb23Jkw==}
 
-  '@dojoengine/torii-wasm@1.2.3':
-    resolution: {integrity: sha512-G8Aey7FaM8JkizwNBgV24f4dBxUSFbrgLKpeX6sjqL8y7sz3SmwzwalaQ2nZJ/MYMrE/jhEiyYgPyTwp3yfOvw==}
+  '@dojoengine/torii-wasm@1.2.4':
+    resolution: {integrity: sha512-3ExiLYZAoU76IVMCM6Nf1FBZyZgFCpciR0ewQ51viDo12a1rK9BW3OkDYf6qCaPIU77PGxfumipOeiJLoYhe1A==}
 
-  '@dojoengine/utils@1.2.3':
-    resolution: {integrity: sha512-Z/QRps660WOzcbW2+ra/sKYhdInNLT7WfGZxQLVzrZH+aY+2olbyTaNjwz1UaXNz+7RPQu3cD0jqou8zgp9qeQ==}
+  '@dojoengine/utils@1.2.4':
+    resolution: {integrity: sha512-mHUGwupDjUcTmeCEPv/Ubd5S4ltZg2dMRpbV4dSP9Tw6WqaCOTykbUuiCKa3taN+3OsRNZ7HmyEDDZKoR5W2Nw==}
     peerDependencies:
       starknet: 6.23.1
 
@@ -3808,8 +3808,8 @@ packages:
     resolution: {integrity: sha512-kmpMiBuz17Hxyl+ZO+B6/F98p07NSEmgr2JlZkKXcdupLIBAWqcXw+bjowFXNcTEwe9RWsS/WjAC/bBTftr0rA==}
     engines: {node: '>=12'}
 
-  '@tanstack/router-devtools@1.112.0':
-    resolution: {integrity: sha512-kbCvkY8y6vDnF09At9Q9q0yitXBFpO/BEuvMtLTkAKWwoZqPoEp7981AiWZeN62sphtdREn/1sTxvMNY8bBW2Q==}
+  '@tanstack/router-devtools@1.112.6':
+    resolution: {integrity: sha512-OhLZsDnrItA+8BiVdmyyWB2VgQyoCZAjSRshQJpbZdeAV69OvT2rqN2TtiLJsbSAJWmqL4/UcY/13DI9Iv+k3Q==}
     engines: {node: '>=12'}
     peerDependencies:
       '@tanstack/react-router': ^1.112.0
@@ -3820,8 +3820,8 @@ packages:
       csstype:
         optional: true
 
-  '@tanstack/router-generator@1.112.0':
-    resolution: {integrity: sha512-c1wA2TMfmL1igw6OFKdOZVrFqAJ/PB3ZJE0+upofmwVydUMH7tipvmztWGiRmcxGd66sl6o1l1X39308ObwAGQ==}
+  '@tanstack/router-generator@1.112.3':
+    resolution: {integrity: sha512-RUT+O/j7YIjbemVJjkP4qM8MYaaOltKYhyp9VGtcWxWGS8U2QDwC9UsskjBVOj7QV7aq3UcnExicABwK/AMCCQ==}
     engines: {node: '>=12'}
     peerDependencies:
       '@tanstack/react-router': ^1.112.0
@@ -3829,8 +3829,8 @@ packages:
       '@tanstack/react-router':
         optional: true
 
-  '@tanstack/router-plugin@1.112.0':
-    resolution: {integrity: sha512-0ZFbHqAHtvbJzdDlIuxuJiOcbR5oue9IVA5OR93gS7sPCueZI1uZQB/hdtC+kcpdnYQKDcxjeNranhqbcaZZnQ==}
+  '@tanstack/router-plugin@1.112.3':
+    resolution: {integrity: sha512-XhKXFoJ7eajqghAPwHXfggyB8khopr5yVXiYQRiL+9Gek2q5M8N4z9+Uh2MM31KjTuiaJ72lZpUgT5FDj1m6Tg==}
     engines: {node: '>=12'}
     peerDependencies:
       '@rsbuild/core': '>=1.0.2'
@@ -4303,9 +4303,9 @@ packages:
     resolution: {integrity: sha512-ec9ZPDImceXD9gShv0VTc6q0waZ7ccpiYXNbAeGMjGQAZ8hkAeAYOXoiJsfaHO5Pt0UR+SbNVTJGP2aeFMYz0Q==}
     engines: {node: '>=18.0.0'}
 
-  '@whatwg-node/promise-helpers@1.2.1':
-    resolution: {integrity: sha512-+faGtJlS4U8NSaSzRVN37xAprPdhoobYzUSUo4DgH8APtfFyizmNxp0ckwKcURoL8cy2B+bKxOWU/VIH2nFeLg==}
-    engines: {node: '>=18.0.0'}
+  '@whatwg-node/promise-helpers@1.2.2':
+    resolution: {integrity: sha512-aPVTGCs/QEYkSTnYcLKE1wyYZykbGjaXsEwXHc0FKbSlojIpdw72BQMJx9aJXzkCs6qy9WfDV0jhV9C2qIYYOA==}
+    engines: {node: '>=16.0.0'}
 
   abbrev@3.0.0:
     resolution: {integrity: sha512-+/kfrslGQ7TNV2ecmQwMJj/B65g5KVq1/L3SGVZ3tCYGqlzFuFCGBZJtMP99wH3NpEUyAjn0zPdPUg0D+DwrOA==}
@@ -7322,10 +7322,10 @@ packages:
     resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postprocessing@6.36.7:
-    resolution: {integrity: sha512-X6B3xt9dy4Osv19kqnVGqV01I2Tm7VwV6rLegRIZkZJPH3ozKLypHSBK1xKx7P/Ols++OkXe6L8dBGTaDUL5aw==}
+  postprocessing@6.37.0:
+    resolution: {integrity: sha512-BEPKNugVMUhi/pDQvVCcDzYfDRvKi7x8JN+tgf1nNVjl0/s1ZdazOwpHiBiWbMcLcNB8l6tDb4nLa1RwSWjCgA==}
     peerDependencies:
-      three: '>= 0.157.0 < 0.174.0'
+      three: '>= 0.157.0 < 0.175.0'
 
   potpack@1.0.2:
     resolution: {integrity: sha512-choctRBIV9EMT9WGAZHn3V7t0Z2pMQyl0EZE6pFc/6ml3ssw7Dlf/oAOvFwjm1HVsqfQN8GfeFyJ+d8tRzqueQ==}
@@ -7334,8 +7334,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier@3.5.2:
-    resolution: {integrity: sha512-lc6npv5PH7hVqozBR7lkBNOGXV9vMwROAPlumdBkX0wTbbzPu/U1hk5yL8p2pt4Xoc+2mkT8t/sow2YrV/M5qg==}
+  prettier@3.5.3:
+    resolution: {integrity: sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -7563,8 +7563,8 @@ packages:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
 
-  recast@0.23.10:
-    resolution: {integrity: sha512-mbCmRMJUKCJ1h41V0cu2C26ULBURwuoZ34C9rChjcDaeJ/4Kv5al3O2HPwTs2m0wQ1vGhMY+tguhzU1aE8md1A==}
+  recast@0.23.11:
+    resolution: {integrity: sha512-YTUo+Flmw4ZXiWfQKGcwwc11KnoRAYgzAE2E7mXKCjSviTKShtxBsN6YUUBB2gtaBzKzeKunxhUwNHQuRryhWA==}
     engines: {node: '>= 4'}
 
   recma-build-jsx@1.0.0:
@@ -9951,7 +9951,7 @@ snapshots:
       picocolors: 1.1.1
       sisteransi: 1.0.5
 
-  '@dojoengine/core@1.2.3(encoding@0.1.13)(typescript@5.8.2)':
+  '@dojoengine/core@1.2.4(encoding@0.1.13)(typescript@5.8.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.8.2)(zod@3.24.2)
       starknet: 6.23.1(encoding@0.1.13)
@@ -9962,9 +9962,9 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/create-burner@1.2.3(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)':
+  '@dojoengine/create-burner@1.2.4(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)':
     dependencies:
-      '@dojoengine/core': 1.2.3(encoding@0.1.13)(typescript@5.8.2)
+      '@dojoengine/core': 1.2.4(encoding@0.1.13)(typescript@5.8.2)
       '@scure/bip32': 1.6.2
       '@starknet-react/core': 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
       encoding: 0.1.13
@@ -9977,18 +9977,18 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@dojoengine/predeployed-connector@1.2.3(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))':
+  '@dojoengine/predeployed-connector@1.2.4(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))':
     dependencies:
       '@starknet-io/types-js': 0.7.10
       '@starknet-react/core': 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
       starknet: 6.23.1(encoding@0.1.13)
 
-  '@dojoengine/react@1.2.3(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)':
+  '@dojoengine/react@1.2.4(@types/node@20.17.22)(@types/react@18.3.18)(lightningcss@1.29.1)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.8.2)(zod@3.24.2)
-      '@dojoengine/state': 1.2.3(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
-      '@dojoengine/torii-client': 1.2.3
-      '@dojoengine/utils': 1.2.3(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
+      '@dojoengine/state': 1.2.4(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
+      '@dojoengine/torii-client': 1.2.4
+      '@dojoengine/utils': 1.2.4(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
       '@latticexyz/utils': 2.2.20
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
@@ -10033,10 +10033,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.2.3(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)':
+  '@dojoengine/state@1.2.4(@types/node@20.17.22)(lightningcss@1.29.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.8.2)(zod@3.24.2)
-      '@dojoengine/torii-client': 1.2.3
+      '@dojoengine/torii-client': 1.2.4
       starknet: 6.23.1(encoding@0.1.13)
       vitest: 1.6.1(@types/node@20.17.22)(lightningcss@1.29.1)(terser@5.39.0)
     transitivePeerDependencies:
@@ -10059,13 +10059,13 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/torii-client@1.2.3':
+  '@dojoengine/torii-client@1.2.4':
     dependencies:
-      '@dojoengine/torii-wasm': 1.2.3
+      '@dojoengine/torii-wasm': 1.2.4
 
-  '@dojoengine/torii-wasm@1.2.3': {}
+  '@dojoengine/torii-wasm@1.2.4': {}
 
-  '@dojoengine/utils@1.2.3(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)':
+  '@dojoengine/utils@1.2.4(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.8.2)(zod@3.24.2)
       '@latticexyz/utils': 2.2.20
@@ -10083,12 +10083,12 @@ snapshots:
   '@envelop/core@5.1.1':
     dependencies:
       '@envelop/types': 5.1.1
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       tslib: 2.8.1
 
   '@envelop/types@5.1.1':
     dependencies:
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       tslib: 2.8.1
 
   '@esbuild/aix-ppc64@0.21.5':
@@ -10740,7 +10740,7 @@ snapshots:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.10.0)
       '@repeaterjs/repeater': 3.0.6
       '@whatwg-node/disposablestack': 0.0.6
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       graphql: 16.10.0
       tslib: 2.8.1
 
@@ -10762,7 +10762,7 @@ snapshots:
       '@graphql-tools/graphql-tag-pluck': 8.3.16(graphql@16.10.0)
       '@graphql-tools/utils': 10.8.3(graphql@16.10.0)
       '@whatwg-node/fetch': 0.10.5
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       graphql: 16.10.0
       sync-fetch: 0.6.0-2
       tslib: 2.8.1
@@ -10894,7 +10894,7 @@ snapshots:
       '@graphql-tools/wrap': 10.0.31(graphql@16.10.0)
       '@types/ws': 8.5.14
       '@whatwg-node/fetch': 0.10.5
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       graphql: 16.10.0
       isomorphic-ws: 5.0.0(ws@8.18.1)
       sync-fetch: 0.6.0-2
@@ -10910,7 +10910,7 @@ snapshots:
   '@graphql-tools/utils@10.8.3(graphql@16.10.0)':
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.10.0)
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       cross-inspect: 1.0.1
       dset: 3.1.4
       graphql: 16.10.0
@@ -12293,150 +12293,150 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  '@storybook/addon-actions@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-actions@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
       '@types/uuid': 9.0.8
       dequal: 2.0.3
       polished: 4.3.1
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       uuid: 9.0.1
 
-  '@storybook/addon-backgrounds@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-backgrounds@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
       memoizerific: 1.11.3
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-controls@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-controls@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
       dequal: 2.0.3
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-docs@8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-docs@8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@mdx-js/react': 3.1.0(@types/react@18.3.18)(react@18.3.1)
-      '@storybook/blocks': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/csf-plugin': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/react-dom-shim': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/blocks': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/csf-plugin': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/react-dom-shim': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-essentials@8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-essentials@8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      '@storybook/addon-actions': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-backgrounds': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-controls': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-docs': 8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-highlight': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-measure': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-outline': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-toolbars': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/addon-viewport': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      storybook: 8.6.3(prettier@3.5.2)
+      '@storybook/addon-actions': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-backgrounds': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-controls': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-docs': 8.6.3(@types/react@18.3.18)(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-highlight': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-measure': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-outline': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-toolbars': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/addon-viewport': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
     transitivePeerDependencies:
       - '@types/react'
 
-  '@storybook/addon-highlight@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-highlight@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/addon-interactions@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-interactions@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/instrumenter': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/instrumenter': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       polished: 4.3.1
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-links@8.6.3(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-links@8.6.3(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
     optionalDependencies:
       react: 18.3.1
 
-  '@storybook/addon-measure@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-measure@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       tiny-invariant: 1.3.3
 
-  '@storybook/addon-onboarding@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-onboarding@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/addon-outline@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-outline@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-toolbars@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-toolbars@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/addon-viewport@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/addon-viewport@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       memoizerific: 1.11.3
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/blocks@8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/blocks@8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/icons': 1.3.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
     optionalDependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@storybook/builder-vite@8.6.3(storybook@8.6.3(prettier@3.5.2))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
+  '@storybook/builder-vite@8.6.3(storybook@8.6.3(prettier@3.5.3))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
     dependencies:
-      '@storybook/csf-plugin': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/csf-plugin': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       browser-assert: 1.2.1
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       ts-dedent: 2.2.0
       vite: 6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0)
 
-  '@storybook/components@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/components@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/core@8.6.3(prettier@3.5.2)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/core@8.6.3(prettier@3.5.3)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      '@storybook/theming': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/theming': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       better-opn: 3.0.2
       browser-assert: 1.2.1
       esbuild: 0.25.0
       esbuild-register: 3.6.0(esbuild@0.25.0)
       jsdoc-type-pratt-parser: 4.1.0
       process: 0.11.10
-      recast: 0.23.10
+      recast: 0.23.11
       semver: 7.7.1
       util: 0.12.5
       ws: 8.18.1
     optionalDependencies:
-      prettier: 3.5.2
+      prettier: 3.5.3
     transitivePeerDependencies:
       - bufferutil
       - storybook
       - supports-color
       - utf-8-validate
 
-  '@storybook/csf-plugin@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/csf-plugin@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       unplugin: 1.16.1
 
   '@storybook/global@5.0.0': {}
@@ -12446,77 +12446,77 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@storybook/instrumenter@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/instrumenter@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
       '@vitest/utils': 2.1.9
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/manager-api@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/manager-api@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/preview-api@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/preview-api@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/react-dom-shim@8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/react-dom-shim@8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/react-vite@8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.34.9)(storybook@8.6.3(prettier@3.5.2))(typescript@5.8.2)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
+  '@storybook/react-vite@8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.34.9)(storybook@8.6.3(prettier@3.5.3))(typescript@5.8.2)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.5.0(typescript@5.8.2)(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
       '@rollup/pluginutils': 5.1.4(rollup@4.34.9)
-      '@storybook/builder-vite': 8.6.3(storybook@8.6.3(prettier@3.5.2))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
-      '@storybook/react': 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))(typescript@5.8.2)
+      '@storybook/builder-vite': 8.6.3(storybook@8.6.3(prettier@3.5.3))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))
+      '@storybook/react': 8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))(typescript@5.8.2)
       find-up: 5.0.0
       magic-string: 0.30.17
       react: 18.3.1
       react-docgen: 7.1.1
       react-dom: 18.3.1(react@18.3.1)
       resolve: 1.22.10
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
       tsconfig-paths: 4.2.0
       vite: 6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0)
     optionalDependencies:
-      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.3))
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  '@storybook/react@8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))(typescript@5.8.2)':
+  '@storybook/react@8.6.3(@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))(typescript@5.8.2)':
     dependencies:
-      '@storybook/components': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/components': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       '@storybook/global': 5.0.0
-      '@storybook/manager-api': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/preview-api': 8.6.3(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/react-dom-shim': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.2))
-      '@storybook/theming': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/manager-api': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/preview-api': 8.6.3(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/react-dom-shim': 8.6.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(storybook@8.6.3(prettier@3.5.3))
+      '@storybook/theming': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
     optionalDependencies:
-      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/test': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       typescript: 5.8.2
 
-  '@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/test@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/instrumenter': 8.6.3(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/instrumenter': 8.6.3(storybook@8.6.3(prettier@3.5.3))
       '@testing-library/dom': 10.4.0
       '@testing-library/jest-dom': 6.5.0
       '@testing-library/user-event': 14.5.2(@testing-library/dom@10.4.0)
       '@vitest/expect': 2.0.5
       '@vitest/spy': 2.0.5
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
-  '@storybook/theming@8.6.3(storybook@8.6.3(prettier@3.5.2))':
+  '@storybook/theming@8.6.3(storybook@8.6.3(prettier@3.5.3))':
     dependencies:
-      storybook: 8.6.3(prettier@3.5.2)
+      storybook: 8.6.3(prettier@3.5.3)
 
   '@surma/rollup-plugin-off-main-thread@2.2.3':
     dependencies:
@@ -12790,7 +12790,7 @@ snapshots:
       '@tanstack/history': 1.99.13
       '@tanstack/store': 0.7.0
 
-  '@tanstack/router-devtools@1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@tanstack/router-devtools@1.112.6(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@tanstack/react-router': 1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       clsx: 2.1.1
@@ -12800,16 +12800,16 @@ snapshots:
     optionalDependencies:
       csstype: 3.1.3
 
-  '@tanstack/router-generator@1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
+  '@tanstack/router-generator@1.112.3(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       '@tanstack/virtual-file-routes': 1.99.0
-      prettier: 3.5.2
+      prettier: 3.5.3
       tsx: 4.19.3
       zod: 3.24.2
     optionalDependencies:
       '@tanstack/react-router': 1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  '@tanstack/router-plugin@1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
+  '@tanstack/router-plugin@1.112.3(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(vite@6.2.0(@types/node@20.17.22)(jiti@2.4.2)(lightningcss@1.29.1)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.0))':
     dependencies:
       '@babel/core': 7.26.9
       '@babel/plugin-syntax-jsx': 7.25.9(@babel/core@7.26.9)
@@ -12818,7 +12818,7 @@ snapshots:
       '@babel/traverse': 7.26.9
       '@babel/types': 7.26.9
       '@tanstack/router-core': 1.112.0
-      '@tanstack/router-generator': 1.112.0(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+      '@tanstack/router-generator': 1.112.3(@tanstack/react-router@1.112.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@tanstack/router-utils': 1.102.2
       '@tanstack/virtual-file-routes': 1.99.0
       '@types/babel__core': 7.20.5
@@ -13449,7 +13449,7 @@ snapshots:
 
   '@whatwg-node/disposablestack@0.0.6':
     dependencies:
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       tslib: 2.8.1
 
   '@whatwg-node/fetch@0.10.5':
@@ -13472,11 +13472,11 @@ snapshots:
   '@whatwg-node/node-fetch@0.7.12':
     dependencies:
       '@whatwg-node/disposablestack': 0.0.6
-      '@whatwg-node/promise-helpers': 1.2.1
+      '@whatwg-node/promise-helpers': 1.2.2
       busboy: 1.6.0
       tslib: 2.8.1
 
-  '@whatwg-node/promise-helpers@1.2.1':
+  '@whatwg-node/promise-helpers@1.2.2':
     dependencies:
       tslib: 2.8.1
 
@@ -16990,7 +16990,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postprocessing@6.36.7(three@0.166.1):
+  postprocessing@6.37.0(three@0.166.1):
     dependencies:
       three: 0.166.1
 
@@ -16998,7 +16998,7 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.5.2: {}
+  prettier@3.5.3: {}
 
   pretty-bytes@5.6.0: {}
 
@@ -17225,7 +17225,7 @@ snapshots:
 
   readdirp@4.1.2: {}
 
-  recast@0.23.10:
+  recast@0.23.11:
     dependencies:
       ast-types: 0.16.1
       esprima: 4.0.1
@@ -17792,11 +17792,11 @@ snapshots:
     dependencies:
       bl: 5.1.0
 
-  storybook@8.6.3(prettier@3.5.2):
+  storybook@8.6.3(prettier@3.5.3):
     dependencies:
-      '@storybook/core': 8.6.3(prettier@3.5.2)(storybook@8.6.3(prettier@3.5.2))
+      '@storybook/core': 8.6.3(prettier@3.5.3)(storybook@8.6.3(prettier@3.5.3))
     optionalDependencies:
-      prettier: 3.5.2
+      prettier: 3.5.3
     transitivePeerDependencies:
       - bufferutil
       - supports-color

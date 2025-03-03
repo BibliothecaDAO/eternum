@@ -29,6 +29,12 @@ export const LocalEternumGlobalConfig: Config = {
       staminaExploreStaminaCost: 0,
     },
   },
+  exploration: {
+    ...CommonEternumGlobalConfig.exploration,
+    hyperstructureWinProbAtCenter: 100_000,
+    hyperstructureFailProbAtCenter: 20_000,
+    hyperstructureFailProbIncreasePerHexDistance: 20,
+  },
   // cheap hyperstructures
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
