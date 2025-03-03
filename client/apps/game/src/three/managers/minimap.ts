@@ -3,7 +3,7 @@ import { type ArmyManager } from "@/three/managers/army-manager";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { BiomeType, StructureType } from "@bibliothecadao/eternum";
+import { BiomeType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
@@ -17,7 +17,7 @@ const LABELS = {
   STRUCTURES: {
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
-    [StructureType.Bank]: "/images/resources/31.png",
+    [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
   },
 };

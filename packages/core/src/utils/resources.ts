@@ -74,9 +74,15 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
     buildingId === BuildingType.Resource ||
     buildingId === BuildingType.Farm ||
     buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks ||
-    buildingId === BuildingType.ArcheryRange ||
-    buildingId === BuildingType.Stable
+    buildingId === BuildingType.Barracks1 ||
+    buildingId === BuildingType.ArcheryRange1 ||
+    buildingId === BuildingType.Stable1 ||
+    buildingId === BuildingType.Barracks2 ||
+    buildingId === BuildingType.ArcheryRange2 ||
+    buildingId === BuildingType.Stable2 ||
+    buildingId === BuildingType.Barracks3 ||
+    buildingId === BuildingType.ArcheryRange3 ||
+    buildingId === BuildingType.Stable3
   );
 };
 

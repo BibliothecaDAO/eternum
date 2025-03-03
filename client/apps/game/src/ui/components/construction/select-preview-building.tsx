@@ -1,5 +1,6 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isMilitaryBuilding } from "@/three/scenes/constants";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
@@ -136,9 +137,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {buildingTypes
               .filter(
                 (a) =>
-                  a !== BuildingType[BuildingType.Barracks] &&
-                  a !== BuildingType[BuildingType.ArcheryRange] &&
-                  a !== BuildingType[BuildingType.Stable],
+                  !isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
               )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
@@ -188,7 +187,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
-                    resourceName={isFishingVillage ? "Fish" : isFarm ? "Wheat" : undefined}
+                    resourceName={isFishingVillage ? ResourcesIds[ResourcesIds.Fish] : isFarm ? ResourcesIds[ResourcesIds.Wheat] : undefined}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -211,9 +210,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {buildingTypes
               .filter(
                 (a) =>
-                  a === BuildingType[BuildingType.Barracks] ||
-                  a === BuildingType[BuildingType.ArcheryRange] ||
-                  a === BuildingType[BuildingType.Stable],
+                  isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
               )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
@@ -224,9 +221,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isBarracks = building === BuildingType.Barracks;
-                const isArcheryRange = building === BuildingType.ArcheryRange;
-                const isStable = building === BuildingType.Stable;
+                const isBarracks = building === BuildingType.Barracks1;
+                const isArcheryRange = building === BuildingType.ArcheryRange1;
+                const isStable = building === BuildingType.Stable1;
 
                 return (
                   <BuildingCard
@@ -250,7 +247,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
                     resourceName={
-                      isBarracks ? "Knight" : isArcheryRange ? "Crossbowman" : isStable ? "Paladin" : undefined
+                      ResourcesIds[configManager.getResourceBuildingProduced(building)] as keyof typeof ResourcesIds
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
@@ -315,6 +312,7 @@ const BuildingCard = ({
   className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  console.log({ resourceName });
   return (
     <div
       onClick={onClick}
@@ -723,13 +721,31 @@ const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType =>
     return BuildingType.Market;
   }
   if (resourceId === ResourcesIds.Knight) {
-    return BuildingType.Barracks;
+    return BuildingType.Barracks1;
+  }
+  if (resourceId === ResourcesIds.KnightT2) {
+    return BuildingType.Barracks2;
+  }
+  if (resourceId === ResourcesIds.KnightT3) {
+    return BuildingType.Barracks3;
   }
   if (resourceId === ResourcesIds.Crossbowman) {
-    return BuildingType.ArcheryRange;
+    return BuildingType.ArcheryRange1;
+  }
+  if (resourceId === ResourcesIds.CrossbowmanT2) {
+    return BuildingType.ArcheryRange2;
+  }
+  if (resourceId === ResourcesIds.CrossbowmanT3) {
+    return BuildingType.ArcheryRange3;
   }
   if (resourceId === ResourcesIds.Paladin) {
-    return BuildingType.Stable;
+    return BuildingType.Stable1;
+  }
+  if (resourceId === ResourcesIds.PaladinT2) {
+    return BuildingType.Stable2;
+  }
+  if (resourceId === ResourcesIds.PaladinT3) {
+    return BuildingType.Stable3;
   }
   return BuildingType.None;
 };

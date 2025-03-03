@@ -227,6 +227,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
             handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount).finally(() => {
               setTroopCount(0);
               setIsLoading(false);
+              onCancel?.();
             })
           }
         >
@@ -241,7 +242,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
               : "Add Defense"}
         </Button>
         {onCancel && (
-          <Button variant="danger" className="w-1/2" onClick={onCancel}>
+          <Button variant="secondary" className="w-1/2" onClick={onCancel}>
             Cancel
           </Button>
         )}

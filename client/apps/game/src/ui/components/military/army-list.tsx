@@ -50,9 +50,15 @@ export const EntityArmyList = ({
       structure.base.troop_max_explorer_count +
       existingBuildings.filter(
         (building) =>
-          building.category === BuildingType[BuildingType.ArcheryRange] ||
-          building.category === BuildingType[BuildingType.Barracks] ||
-          building.category === BuildingType[BuildingType.Stable],
+          building.category === BuildingType[BuildingType.ArcheryRange1] ||
+          building.category === BuildingType[BuildingType.Barracks1] ||
+          building.category === BuildingType[BuildingType.Stable1] ||
+          building.category === BuildingType[BuildingType.ArcheryRange2] ||
+          building.category === BuildingType[BuildingType.Barracks2] ||
+          building.category === BuildingType[BuildingType.Stable2] ||
+          building.category === BuildingType[BuildingType.ArcheryRange3] ||
+          building.category === BuildingType[BuildingType.Barracks3] ||
+          building.category === BuildingType[BuildingType.Stable3],
       ).length *
         troopConfig.troop_limit_config.troops_per_military_building;
     // remove 1 to force to create defensive army first
@@ -138,6 +144,7 @@ export const EntityArmyList = ({
             army={undefined}
             armyManager={armyManager}
             isExplorer={true}
+            onCancel={() => setShowTroopSelection(false)}
           />
         )}
       </div>

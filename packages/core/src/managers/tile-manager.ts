@@ -135,15 +135,34 @@ export class TileManager {
       case BuildingType.FishingVillage:
         producedResourceType = ResourcesIds.Fish;
         break;
-      case BuildingType.Barracks:
+      case BuildingType.Barracks1:
         producedResourceType = ResourcesIds.Knight;
         break;
-      case BuildingType.ArcheryRange:
+      case BuildingType.ArcheryRange1:
         producedResourceType = ResourcesIds.Crossbowman;
         break;
-      case BuildingType.Stable:
+      case BuildingType.Stable1:
         producedResourceType = ResourcesIds.Paladin;
         break;
+      case BuildingType.Barracks2:
+        producedResourceType = ResourcesIds.KnightT2;
+        break;
+      case BuildingType.ArcheryRange2:
+        producedResourceType = ResourcesIds.CrossbowmanT2;
+        break;
+      case BuildingType.Stable2:
+        producedResourceType = ResourcesIds.PaladinT2;
+        break;
+      case BuildingType.Barracks3:
+        producedResourceType = ResourcesIds.KnightT3;
+        break;
+      case BuildingType.ArcheryRange3:
+        producedResourceType = ResourcesIds.CrossbowmanT3;
+        break;
+      case BuildingType.Stable3:
+        producedResourceType = ResourcesIds.PaladinT3;
+        break;
+        
       case BuildingType.Resource:
         producedResourceType = resourceType!;
         break;

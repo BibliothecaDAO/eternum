@@ -17,14 +17,14 @@ export enum BuildingType {
   Resource = 2,
   Farm = 3,
   FishingVillage = 4,
-  Barracks = 5,
+  Barracks1 = 5,
   Barracks2 = 6,
   Barracks3 = 7,
   Market = 8,
-  ArcheryRange = 9,
+  ArcheryRange1 = 9,
   ArcheryRange2 = 10,
   ArcheryRange3 = 11,
-  Stable = 12,
+  Stable1 = 12,
   Stable2 = 13,
   Stable3 = 14,
   // unused
@@ -44,14 +44,14 @@ export const BuildingEnumToString: Record<BuildingType, string> = {
   [BuildingType.Resource]: "Resource",
   [BuildingType.Farm]: "Farm",
   [BuildingType.FishingVillage]: "Fishing Village",
-  [BuildingType.Barracks]: "Barracks 1",
+  [BuildingType.Barracks1]: "Barracks 1",
   [BuildingType.Barracks2]: "Barracks 2",
   [BuildingType.Barracks3]: "Barracks 3",
   [BuildingType.Market]: "Market",
-  [BuildingType.ArcheryRange]: "Archery Range 1",
+  [BuildingType.ArcheryRange1]: "Archery Range 1",
   [BuildingType.ArcheryRange2]: "Archery Range 2",
   [BuildingType.ArcheryRange3]: "Archery Range 3",
-  [BuildingType.Stable]: "Stable 1",
+  [BuildingType.Stable1]: "Stable 1",
   [BuildingType.Stable2]: "Stable 2",
   [BuildingType.Stable3]: "Stable 3",
   [BuildingType.TradingPost]: "Trading Post",
@@ -75,7 +75,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Farm: {} });
     case BuildingType.FishingVillage:
       return new CairoCustomEnum({ FishingVillage: {} });
-    case BuildingType.Barracks:
+    case BuildingType.Barracks1:
+
       return new CairoCustomEnum({ Barracks1: {} });
     case BuildingType.Barracks2:
       return new CairoCustomEnum({ Barracks2: {} });
@@ -83,13 +84,13 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Barracks3: {} });
     case BuildingType.Market:
       return new CairoCustomEnum({ Market: {} });
-    case BuildingType.ArcheryRange:
+    case BuildingType.ArcheryRange1:
       return new CairoCustomEnum({ ArcheryRange1: {} });
     case BuildingType.ArcheryRange2:
       return new CairoCustomEnum({ ArcheryRange2: {} });
     case BuildingType.ArcheryRange3:
       return new CairoCustomEnum({ ArcheryRange3: {} });
-    case BuildingType.Stable:
+    case BuildingType.Stable1:
       return new CairoCustomEnum({ Stable1: {} });
     case BuildingType.Stable2:
       return new CairoCustomEnum({ Stable2: {} });
@@ -124,7 +125,7 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.Wheat;
     case BuildingType.FishingVillage:
       return ResourcesIds.Fish;
-    case BuildingType.Barracks:
+    case BuildingType.Barracks1:
       return ResourcesIds.Knight;
     case BuildingType.Barracks2:
       return ResourcesIds.KnightT2;
@@ -132,13 +133,13 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.KnightT3;
     case BuildingType.Market:
       return 0;
-    case BuildingType.ArcheryRange:
+    case BuildingType.ArcheryRange1:
       return ResourcesIds.Crossbowman;
     case BuildingType.ArcheryRange2:
       return ResourcesIds.CrossbowmanT2;
     case BuildingType.ArcheryRange3:
       return ResourcesIds.CrossbowmanT3;
-    case BuildingType.Stable:
+    case BuildingType.Stable1:
       return ResourcesIds.Paladin;
     case BuildingType.Stable2:
       return ResourcesIds.PaladinT2;

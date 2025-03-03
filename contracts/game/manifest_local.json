@@ -4982,7 +4982,7 @@
     },
     {
       "address": "0x31cd25558fd5f3de4af2a472998636cbff38ff88bed17d49dea7eb9ad9db049",
-      "class_hash": "0x1e418820b20d358c3492ef390ce91c751a176a6b89c2b858d8223422ee7df42",
+      "class_hash": "0x2f892c857f9afeda9f0319ba150706b79b59e5b969e40769456e4d476702a3a",
       "abi": [
         {
           "type": "impl",

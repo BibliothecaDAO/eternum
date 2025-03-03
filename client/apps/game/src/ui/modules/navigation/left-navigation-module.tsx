@@ -25,11 +25,6 @@ const SelectPreviewBuildingMenu = lazy(() =>
     default: module.SelectPreviewBuildingMenu,
   })),
 );
-const StructureConstructionMenu = lazy(() =>
-  import("@/ui/components/structures/construction/structure-construction-menu").then((module) => ({
-    default: module.StructureConstructionMenu,
-  })),
-);
 const WorldStructuresMenu = lazy(() =>
   import("@/ui/modules/world-structures/world-structures-menu").then((module) => ({
     default: module.WorldStructuresMenu,
@@ -248,9 +243,6 @@ export const LeftNavigationModule = memo(() => {
               {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
               {!isMapView && view === LeftView.ConstructionView && (
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
-              )}
-              {isMapView && view === LeftView.ConstructionView && (
-                <StructureConstructionMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
               {/* {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />} */}

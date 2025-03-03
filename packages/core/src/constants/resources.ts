@@ -470,7 +470,11 @@ export const GET_RESOURCE_TIER = (resource: ResourcesIds): ResourceTier => {
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.AncientFragment],
   labor: [ResourcesIds.Labor],
-  military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
+  military: [
+    ResourcesIds.Knight, ResourcesIds.KnightT2, ResourcesIds.KnightT3,
+    ResourcesIds.Crossbowman, ResourcesIds.CrossbowmanT2, ResourcesIds.CrossbowmanT3,
+    ResourcesIds.Paladin, ResourcesIds.PaladinT2, ResourcesIds.PaladinT3
+  ],
   transport: [ResourcesIds.Donkey],
   food: [ResourcesIds.Fish, ResourcesIds.Wheat],
   common: [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Coal, ResourcesIds.Copper, ResourcesIds.Obsidian],

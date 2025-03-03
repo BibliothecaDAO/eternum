@@ -23,11 +23,15 @@ export const BuildingsList = ({
       building.category === BuildingType[BuildingType.Resource] ||
       building.category === BuildingType[BuildingType.Farm] ||
       building.category === BuildingType[BuildingType.FishingVillage] ||
-      building.category === BuildingType[BuildingType.Barracks] ||
-      building.category === BuildingType[BuildingType.ArcheryRange] ||
+      building.category === BuildingType[BuildingType.Barracks1] ||
+      building.category === BuildingType[BuildingType.ArcheryRange1] ||
       building.category === BuildingType[BuildingType.Castle] ||
       building.category === BuildingType[BuildingType.Market] ||
-      building.category === BuildingType[BuildingType.Stable],
+      building.category === BuildingType[BuildingType.Stable1] ||
+      building.category === BuildingType[BuildingType.Stable2] ||
+      building.category === BuildingType[BuildingType.Stable3] ||
+      building.category === BuildingType[BuildingType.ArcheryRange2] ||
+      building.category === BuildingType[BuildingType.ArcheryRange3],
   );
 
   const {
