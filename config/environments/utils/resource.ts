@@ -1,6 +1,7 @@
 import {
   ResourcesIds,
   type ProductionByLaborParams,
+  type ResourceCost,
   type ResourceInputs,
   type ResourceOutputs,
 } from "@bibliothecadao/eternum";
@@ -491,4 +492,43 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.CrossbowmanT3]: [],
   [ResourcesIds.PaladinT2]: [],
   [ResourcesIds.PaladinT3]: [],
+};
+
+export const STARTING_RESOURCES: ResourceCost[] = [
+  { resource: ResourcesIds.Wheat, amount: 1_200_000 },
+  { resource: ResourcesIds.Fish, amount: 1_200_000 },
+  { resource: ResourcesIds.Wood, amount: 5_000 },
+  { resource: ResourcesIds.Stone, amount: 5_000 },
+  { resource: ResourcesIds.Coal, amount: 5_000 },
+  { resource: ResourcesIds.Copper, amount: 5_000 },
+  { resource: ResourcesIds.Obsidian, amount: 5_000 },
+  { resource: ResourcesIds.Silver, amount: 5_000 },
+  { resource: ResourcesIds.Ironwood, amount: 5_000 },
+  { resource: ResourcesIds.ColdIron, amount: 5_000 },
+  { resource: ResourcesIds.Gold, amount: 5_000 },
+  { resource: ResourcesIds.Hartwood, amount: 5_000 },
+  { resource: ResourcesIds.Diamonds, amount: 5_000 },
+  { resource: ResourcesIds.Sapphire, amount: 5_000 },
+  { resource: ResourcesIds.Ruby, amount: 5_000 },
+  { resource: ResourcesIds.DeepCrystal, amount: 5_000 },
+  { resource: ResourcesIds.Ignium, amount: 5_000 },
+  { resource: ResourcesIds.EtherealSilica, amount: 5_000 },
+  { resource: ResourcesIds.TrueIce, amount: 5_000 },
+  { resource: ResourcesIds.TwilightQuartz, amount: 5_000 },
+  { resource: ResourcesIds.AlchemicalSilver, amount: 5_000 },
+  { resource: ResourcesIds.Adamantine, amount: 5_000 },
+  { resource: ResourcesIds.Mithral, amount: 5_000 },
+  { resource: ResourcesIds.Dragonhide, amount: 5_000 },
+  { resource: ResourcesIds.Donkey, amount: 800 },
+  { resource: ResourcesIds.Knight, amount: 1200 },
+  { resource: ResourcesIds.Crossbowman, amount: 1200 },
+  { resource: ResourcesIds.Paladin, amount: 1200 },
+  { resource: ResourcesIds.AncientFragment, amount: 200 },
+];
+
+export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {
+  return STARTING_RESOURCES.map(resource => ({
+    resource: resource.resource,
+    amount: resource.amount * multiplier
+  }));
 };

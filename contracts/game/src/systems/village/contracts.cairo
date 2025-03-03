@@ -25,8 +25,8 @@ pub mod village_systems {
         StructureOwnerStoreImpl,
     };
     use s1_eternum::models::village::{VillageResourceImpl};
-    use s1_eternum::systems::utils::map::iMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
+    use s1_eternum::systems::utils::structure::IStructureImpl;
     use starknet::ContractAddress;
     use super::super::super::super::models::position::CoordTrait;
 
@@ -52,7 +52,7 @@ pub mod village_systems {
             let village_resources: Span<u8> = array![VillageResourceImpl::random(village_owner, world)].span();
 
             // create village
-            iStructureImpl::create(
+            IStructureImpl::create(
                 ref world,
                 village_coord,
                 village_owner,

@@ -21,7 +21,7 @@ pub mod troop_movement_systems {
         season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
         troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
     };
-    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl},
     };
@@ -51,7 +51,7 @@ pub mod troop_movement_systems {
 
             // remove explorer from current occupier
             let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
-            iMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
+            IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
             let caller = starknet::get_caller_address();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -78,7 +78,7 @@ pub mod troop_movement_systems {
                     assert!(!tile.discovered(), "tile is already explored");
 
                     // set tile as explored
-                    iMapImpl::explore(ref world, ref tile, biome);
+                    IMapImpl::explore(ref world, ref tile, biome);
 
                     // perform lottery to discover mine
                     let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
@@ -136,13 +136,13 @@ pub mod troop_movement_systems {
                     if occupy_destination {
                         // ensure explorer does not occupy fragment mine
                         // tile when mines are discovered
-                        iMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+                        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
                     } else {
                         // move explorer back to previous coordinate
                         explorer.coord = from;
                         // set explorer as occupier of previous coordinate
                         let mut from_tile: Tile = world.read_model((from.x, from.y));
-                        iMapImpl::occupy(ref world, ref from_tile, TileOccupier::Explorer, explorer_id);
+                        IMapImpl::occupy(ref world, ref from_tile, TileOccupier::Explorer, explorer_id);
                         world.write_model(@from_tile);
                     }
                     break;

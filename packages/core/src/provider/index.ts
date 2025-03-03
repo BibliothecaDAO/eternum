@@ -522,39 +522,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Claim completed quests
-   *
-   * @param props - Properties for claiming quests
-   * @param props.receiver_id - ID of realm claiming rewards
-   * @param props.quest_ids - IDs of quests to claim
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Claim rewards for quests 1 and 2
-   * {
-   *   receiver_id: 123,
-   *   quest_ids: [1, 2],
-   *   signer: account
-   * }
-   * ```
-   */
-  public async claim_quest(props: SystemProps.ClaimQuestProps) {
-    const { receiver_id, quest_ids, signer } = props;
-
-    const calldata = [
-      ...quest_ids.map((questId) => ({
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
-        entrypoint: "quest_claim",
-        calldata: [questId, receiver_id],
-      })),
-    ];
-
-    return await this.executeAndCheckTransaction(signer, calldata);
-  }
-
-  /**
    * Upgrade a realm's level
    *
    * @param props - Properties for upgrading realm
@@ -1623,22 +1590,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_quest_reward_config(props: SystemProps.SetQuestRewardConfigProps) {
-    const { calls, signer } = props;
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_quest_reward_config",
-          calldata: [
-            call.quest_id,
-            call.resources.length,
-            ...call.resources.flatMap(({ resource, amount }) => [resource, amount]),
-          ],
-        };
-      }),
-    );
+  public async set_starting_resources_config(props: SystemProps.SetStartingResourcesConfigProps) {
+    const { startingResources, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_starting_resources_config",
+      calldata: [startingResources.length, ...startingResources.flatMap(({ resource, amount }) => [resource, amount])],
+    });
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {

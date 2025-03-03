@@ -1,4 +1,3 @@
-use s1_eternum::alias::ID;
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
     ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
@@ -32,8 +31,8 @@ pub trait IVRFConfig<T> {
 
 
 #[starknet::interface]
-pub trait IQuestConfig<T> {
-    fn set_quest_reward_config(ref self: T, quest_id: ID, resources: Span<(u8, u128)>);
+pub trait IStartingResourcesConfig<T> {
+    fn set_starting_resources_config(ref self: T, resources: Span<(u8, u128)>);
 }
 
 #[starknet::interface]
@@ -181,7 +180,6 @@ pub mod config_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
 
-    use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
 
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
@@ -189,10 +187,11 @@ pub mod config_systems {
     use s1_eternum::models::config::{
         BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
-        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, QuestRewardConfig, ResourceBridgeConfig,
+        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonBridgeConfig,
-        SettlementConfig, SpeedConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
-        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig,
+        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -329,18 +328,12 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl QuestConfigImpl of super::IQuestConfig<ContractState> {
-        fn set_quest_reward_config(ref self: ContractState, quest_id: ID, resources: Span<(u8, u128)>) {
+    impl StartingResourcesConfigImpl of super::IStartingResourcesConfig<ContractState> {
+        fn set_starting_resources_config(ref self: ContractState, resources: Span<(u8, u128)>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            // ensure quest id is greater than 0
-            assert!(quest_id.is_non_zero(), "quest id must be greater than 0");
-
-            let resource_list_id = world.dispatcher.uuid();
-            let resource_list_count = resources.len();
             let mut resources = resources;
-            let mut index = 0;
             loop {
                 match resources.pop_front() {
                     Option::Some((
@@ -348,23 +341,14 @@ pub mod config_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         // ensure lords can't be minted
-                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as part of quest");
+                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as starting resource");
                         assert(resource_amount > 0, 'amount must not be 0');
 
-                        world
-                            .write_model(
-                                @ResourceList {
-                                    entity_id: resource_list_id, index, resource_type, amount: resource_amount,
-                                },
-                            );
-
-                        index += 1;
+                        world.write_model(@StartingResourcesConfig { resource_type, resource_amount });
                     },
                     Option::None => { break; },
                 };
             };
-
-            world.write_model(@QuestRewardConfig { quest_id, resource_list_id, resource_list_count });
         }
     }
 

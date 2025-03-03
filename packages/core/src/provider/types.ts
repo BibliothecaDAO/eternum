@@ -46,6 +46,5 @@ export enum TransactionType {
   SET_ENTITY_NAME = "set_entity_name",
   SET_ADDRESS_NAME = "set_address_name",
   UPGRADE_LEVEL = "upgrade_level",
-  QUEST_CLAIM = "quest_claim",
   CANCEL_ORDER = "cancel_order",
 }

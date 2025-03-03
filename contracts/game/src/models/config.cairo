@@ -553,11 +553,10 @@ pub impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct QuestRewardConfig {
+pub struct StartingResourcesConfig {
     #[key]
-    pub quest_id: ID,
-    pub resource_list_id: ID,
-    pub resource_list_count: u32,
+    pub resource_type: u8,
+    pub resource_amount: u128,
 }
 
 

@@ -24,12 +24,10 @@ pub trait IRealmSystems<T> {
         frontend: ContractAddress,
         lords_resource_index: u8,
     ) -> ID;
-    fn quest_claim(ref self: T, quest_id: ID, structure_id: ID);
 }
 
 #[dojo::contract]
 pub mod realm_systems {
-    use achievement::store::{StoreTrait};
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -37,19 +35,19 @@ pub mod realm_systems {
     use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, WONDER_QUEST_REWARD_BOOST, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{
+        DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
+    };
     use s1_eternum::models::config::{
-        QuestRewardConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl,
+        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::quest::{Quest};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
-    use s1_eternum::models::resource::resource::{ResourceList};
+    use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -63,8 +61,8 @@ pub mod realm_systems {
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::map::iMapImpl;
-    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
+    use s1_eternum::systems::utils::structure::IStructureImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
@@ -129,6 +127,8 @@ pub mod realm_systems {
                 );
             }
 
+            InternalRealmLogicImpl::get_starting_resources(ref world, structure_id);
+
             // emit realm settle event
             let address_name: AddressName = world.read_model(owner);
             world
@@ -155,73 +155,6 @@ pub mod realm_systems {
 
             structure_id.into()
         }
-
-        fn quest_claim(ref self: ContractState, quest_id: ID, structure_id: ID) {
-            // ensure season is still active
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            // ensure entity is a realm
-            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
-            assert(structure_base.category == StructureCategory::Realm.into(), 'entity is not a realm');
-
-            // ensure caller owns the realm
-            StructureOwnerStoreImpl::retrieve(ref world, structure_id).assert_caller_owner();
-
-            // ensure quest is not already completed
-            let mut quest: Quest = world.read_model((structure_id, quest_id));
-            assert(!quest.completed, 'quest already completed');
-
-            // ensure quest has rewards
-            let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
-            assert(quest_reward_config.resource_list_count > 0, 'quest has no rewards');
-
-            // structure metadata
-            let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
-            let mut index = 0;
-            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-            loop {
-                if index == quest_reward_config.resource_list_count {
-                    break;
-                }
-
-                // get reward resource
-                let mut resource_list: ResourceList = world.read_model((quest_reward_config.resource_list_id, index));
-                let reward_resource_type = resource_list.resource_type;
-                let mut reward_resource_amount = resource_list.amount;
-
-                //todo: remove?
-                if structure_metadata.has_wonder {
-                    reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();
-                }
-
-                // add resource to realm
-                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
-                let mut structure_resource = SingleResourceStoreImpl::retrieve(
-                    ref world, structure_id, reward_resource_type, ref structure_weight, resource_weight_grams, true,
-                );
-                structure_resource.add(reward_resource_amount, ref structure_weight, resource_weight_grams);
-                structure_resource.store(ref world);
-                index += 1;
-            };
-
-            // update structure weight
-            structure_weight.store(ref world, structure_id);
-
-            quest.completed = true;
-            world.write_model(@quest);
-
-            // [Achievement] Complete all quests
-            let next_quest_id: ID = (quest_id + 1).into();
-            let next_quest_reward_config: QuestRewardConfig = world.read_model(next_quest_id);
-            // if the next quest has no rewards, the player has completed all quests
-            if (next_quest_reward_config.resource_list_count == 0) {
-                let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Squire.identifier();
-                let store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
-            };
-        }
     }
 
 
@@ -245,7 +178,7 @@ pub mod realm_systems {
                 tile_occupier = TileOccupier::RealmWonder;
             }
 
-            iStructureImpl::create(
+            IStructureImpl::create(
                 ref world,
                 coord,
                 owner,
@@ -343,6 +276,33 @@ pub mod realm_systems {
             // find a new one
             WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
             return coord;
+        }
+
+        fn get_starting_resources(ref world: WorldStorage, structure_id: ID) {
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
+
+            let resources_ids = all_resource_ids();
+            for resource_id in resources_ids {
+                let starting_resources_config: StartingResourcesConfig = world.read_model(resource_id);
+                let mut resource_amount: u128 = starting_resources_config.resource_amount;
+
+                if resource_id == ResourceTypes::LORDS || resource_amount == 0 {
+                    continue;
+                }
+
+                if structure_metadata.has_wonder {
+                    resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
+                }
+
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_id);
+                let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                    ref world, structure_id, resource_id, ref structure_weight, resource_weight_grams, true,
+                );
+                realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+                realm_resource.store(ref world);
+            };
+            structure_weight.store(ref world, structure_id);
         }
     }
 }

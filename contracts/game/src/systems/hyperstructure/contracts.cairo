@@ -48,7 +48,7 @@ pub mod hyperstructure_systems {
     };
     use s1_eternum::models::season::{Season, SeasonImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};
-    use s1_eternum::systems::utils::structure::iStructureImpl;
+    use s1_eternum::systems::utils::structure::IStructureImpl;
     use s1_eternum::utils::random::VRFImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use s1_eternum::{

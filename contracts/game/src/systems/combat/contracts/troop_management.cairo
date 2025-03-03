@@ -80,7 +80,7 @@ pub mod troop_management_systems {
         },
         troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTrait, GuardTroops, TroopTier, TroopType, Troops},
     };
-    use s1_eternum::systems::utils::map::iMapImpl;
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
 
     use super::ITroopManagementSystems;
@@ -214,7 +214,7 @@ pub mod troop_management_systems {
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
             // set explorer as occupier of tile
-            iMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+            IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
 
             // ensure explorer amount does not exceed max
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);

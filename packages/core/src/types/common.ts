@@ -605,7 +605,7 @@ export interface Config {
     hyperstructureTimeBetweenSharesChangeSeconds: number;
     hyperstructurePointsForWin: number;
   };
-  questResources: { [key in QuestType]: ResourceCost[] };
+  startingResources: ResourceCost[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;

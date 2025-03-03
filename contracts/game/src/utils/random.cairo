@@ -1,8 +1,8 @@
 use core::dict::Felt252Dict;
 use core::num::traits::zero::Zero;
 use core::poseidon::poseidon_hash_span;
-use s1_eternum::utils::catridge::vrf::Source;
-use s1_eternum::utils::catridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
+use s1_eternum::utils::cartridge::vrf::Source;
+use s1_eternum::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
 use starknet::TxInfo;
 use starknet::{ContractAddress};
 

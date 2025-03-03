@@ -21,7 +21,7 @@ use s1_eternum::models::troop::{
     ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, TroopTier, TroopType, Troops, TroopsImpl,
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
-use s1_eternum::systems::utils::map::iMapImpl;
+use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::Biome;
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
@@ -250,7 +250,7 @@ pub impl iExplorerImpl of iExplorerTrait {
 
         // remove explorer from tile
         let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
-        iMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
+        IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
         // erase explorer resource model
         let resource: Resource = ResourceImpl::key_only(explorer.explorer_id);

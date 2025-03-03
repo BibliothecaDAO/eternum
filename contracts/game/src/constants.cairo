@@ -22,8 +22,8 @@ pub const MAX_REALMS_PER_ADDRESS: u16 = 8_000;
 // resource precision
 pub const RESOURCE_PRECISION: u128 = 1_000_000_000;
 
-// WONDER QUEST REWARD BOOST
-pub const WONDER_QUEST_REWARD_BOOST: u128 = 3;
+// WONDER STARTING RESOURCES BOOST
+pub const WONDER_STARTING_RESOURCES_BOOST: u128 = 3;
 
 // pillage config
 // TODO: Move to Onchain config

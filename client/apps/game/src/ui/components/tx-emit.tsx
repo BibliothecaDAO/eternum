@@ -97,8 +97,6 @@ const getTxMessage = (type: TransactionType) => {
       return "✍️ Set address name";
     case TransactionType.UPGRADE_LEVEL:
       return "⬆️ Upgraded level";
-    case TransactionType.QUEST_CLAIM:
-      return "🏆 Claimed quest rewards";
     case TransactionType.CANCEL_ORDER:
       return "❌ Cancelled order";
     default:
