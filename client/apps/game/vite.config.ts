@@ -20,7 +20,7 @@ export default defineConfig({
         enabled: process.env.VITE_PUBLIC_CHAIN === "local",
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 4000000,
+        maximumFileSizeToCacheInBytes: 5000000,
         clientsClaim: true,
         skipWaiting: false,
       },
@@ -69,6 +69,7 @@ export default defineConfig({
   build: {
     target: "esnext",
     sourcemap: true,
+    chunkSizeWarningLimit: 5000,
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),

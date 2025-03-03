@@ -109,9 +109,9 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
     useUIStore.subscribe(
-      (state) => state.armyActions,
+      (state) => state.entityActions,
       (armyActions) => {
-        this.state.armyActions = armyActions;
+        this.state.entityActions = armyActions;
       },
     );
     useUIStore.subscribe(
