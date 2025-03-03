@@ -446,12 +446,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async accept_order(props: SystemProps.AcceptOrderProps) {
-    const { taker_id, trade_id, taker_lords_index, maker_resource_index, taker_buys_count, signer } = props;
+    const { taker_id, trade_id, taker_buys_count, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "accept_order",
-      calldata: [taker_id, trade_id, taker_lords_index, maker_resource_index, taker_buys_count],
+      calldata: [taker_id, trade_id, taker_buys_count],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1123,12 +1123,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, player_resource_index, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "buy",
-      calldata: [bank_entity_id, entity_id, resource_type, amount, player_resource_index],
+      calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1158,12 +1158,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async sell_resources(props: SystemProps.SellResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, player_resource_index, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "sell",
-      calldata: [bank_entity_id, entity_id, resource_type, amount, player_resource_index],
+      calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
 
     return await this.promiseQueue.enqueue(call);

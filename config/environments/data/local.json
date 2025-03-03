@@ -764,6 +764,9 @@
       "37": 1
     }
   },
+  "trade": {
+    "maxCount": 5
+  },
   "banks": {
     "name": "Central Bank",
     "lordsCost": 1000,
@@ -807,9 +810,10 @@
     "reward": 750,
     "shardsMinesFailProbability": 99000,
     "shardsMinesWinProbability": 1000,
-    "hyperstructureWinProbAtCenter": 20000,
-    "hyperstructureFailProbAtCenter": 100000,
-    "hyperstructureFailProbIncreasePerHexDistance": 2000,
+    "hyperstructureWinProbAtCenter": 100000,
+    "hyperstructureFailProbAtCenter": 20000,
+    "hyperstructureFailProbIncreasePerHexDistance": 20,
+    "hyperstructureFailProbIncreasePerHyperstructureFound": 1500,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000
   },
@@ -1329,7 +1333,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0xcd9b5f0c3da04dbb278abc5f3a1defe1d2a4313097776099331c768c78358d",
+    "season_pool_fee_recipient": "0x22cda27b5947258442224ee6cfeb579b8152980e2270e76db2eb2d4df87c511",
     "max_bank_fee_dpt_percent": 0,
     "max_bank_fee_wtdr_percent": 0
   },
@@ -1578,129 +1582,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x46ff448516497e05f194334a093d9bbba03fc03bd3d4d3b9fcfa4494cf884c4",
-      "realms": "0x72521dc3524a671bba394d760dcb913fbaede6b1ac7413748071b3de1cf95b5",
-      "lords": "0x7a63b408839cd7cd5a92729174f081508e34b99b78d5b66868805dd55c47568",
+      "seasonPass": "0x67503bff21dbf2157f6750ebffa976152bfd5160e75e80e7b528f7a9a40e5fd",
+      "realms": "0x3c419675e3f525e8af51f8568c3b1a8352e079e46665b8164b3d863d0d29d52",
+      "lords": "0x1fda407a0723b5e50c3af62fdb3801c8a6f09f0bf0a0e06b6e375835900186b",
       "resources": {
         "STONE": [
           1,
-          "0x150224305289bd37382cb7da04879fccd6e5ea1981386351dd3bd5259ca21dd"
+          "0x5009480240f0a126f4de1efbb0b8b99b2696c26968f36cf22b1e512b1a99ea6"
         ],
         "COAL": [
           2,
-          "0x6ad00298a7a59c544e8d0928d9da9897d2122baa8ff77f930843d01c0159f8"
+          "0x7a34060c8e94f517443bbfb4f5495e1e82bbf66c854cd90d219c8c6907577ff"
         ],
         "WOOD": [
           3,
-          "0x388f1ded8b72ab45f59aea00759d7cdf6314273e7ca2bd28cdef0c76a1420af"
+          "0x3f251b93319203ad880b610b75496537afdc474391df0dfc0c441af8517a2b3"
         ],
         "COPPER": [
           4,
-          "0x221b68db0273ba6e2a1ad3918f56c247a9a740f372a6d5bcce70e938f2f9da9"
+          "0x2cc18fcf92d480f5739c2e096d5915bbf8357121c3342ba2fa4abcb1a809830"
         ],
         "IRONWOOD": [
           5,
-          "0x1829d818557e4a703783a7bac10e6b28d55acce6d66a05aa7afb5ccd6b5ea26"
+          "0x603e7078f88b9b779dff5f34f6dec19c26caf50d9349562173e91a58583c825"
         ],
         "OBSIDIAN": [
           6,
-          "0xbc4f8a25a6cc6304f6d1f1d7492eab2d2802fb88bf449363260a06af8ce800"
+          "0x657f5a3a0e3a818675489dca2484a5abf1d3aebcadaac95c0ce061c7e4ecb2e"
         ],
         "GOLD": [
           7,
-          "0x7285960300783cdc5ede14a1195c3594fb923d10d834d1d20d032eb5680cece"
+          "0x166d2c220b0a40c9c32f29e580fa017834d9acecdacf36736d77c52819bfe46"
         ],
         "SILVER": [
           8,
-          "0x621f7b736e1f36da73d6018f78d9ce55768a4370ca30c3bc029c20fbf18aa9f"
+          "0x49c343984042c1c35e62134256a19f6d1a0979ab912c6c717404e5a86f5694"
         ],
         "MITHRAL": [
           9,
-          "0x1b14a5a88bb0acac06f37417457ed76cc6ad89ee9b1a57dcae1fbb9f12bf8ec"
+          "0x2bde6cae969c1ae6d34c0f0ab0c7a7dfccf5ed564afa5386b4c2cd8d3a39be2"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x49eb7fb9b947c1385e009fd6baa9c82c42db2a571c397ea5524ad3a85e7e4b6"
+          "0x214218ba003b1523c22fd5162e7f04c1218ecf261ac06d7b7a44aa6e5e47255"
         ],
         "COLDIRON": [
           11,
-          "0x455a09e478f458d2f1b8a8c5dd84b613c155a371199a6bd969ac8c9c4c8aa94"
+          "0x6f06e18bd97811ed5131efd034bbad7fc544351980b4e8326e3d6c6ee7ca5bf"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x3bea517d85fc67953eb862d65107a44893a98aaf2b121f4b2227536ffbcee4e"
+          "0x74bedf1ae5f45cf528ad190db060270e7e22e7be5875ebf21b285523dc72d74"
         ],
         "RUBY": [
           13,
-          "0x4f94847ce28955a0cf459547ccef8dd19e00f455fd345fb451a5ddb264ee5ad"
+          "0x553f53df31d6ee1f112e7c9461bc400b80e0812462072cade26c970a2c6d822"
         ],
         "DIAMONDS": [
           14,
-          "0x2c3dd3fb26c2b39ee1fa90ab3de8c7f64151d61ea03c40ea701ca11fdb2539b"
+          "0x2d80a99950812b0654853a7e0e0e60f4b9acc515c2eaabb7e18c16672c59e59"
         ],
         "HARTWOOD": [
           15,
-          "0x1aca835b00c9a290cd75e22277a271f0a5516340d41d9e241f48d22ee88c6d1"
+          "0x4f09eeeb6bc5a2d19655b2dbd776a04248e9143f87c234419a98bdedc9dd1da"
         ],
         "IGNIUM": [
           16,
-          "0x27b646c697905cca74b12ef22a2f6441bc4744cfbde2ea94c9d1c8a1e3ba313"
+          "0x6c8a5476169aa17d4886bbe309c1b6148274b5fc5eb64c1e16327eb3425e958"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x77336e5383463b2df8fa61b77676aad7541f6cad0c1d04ddccff8fcc303772f"
+          "0x3717e654edf24c7df210da443a2cd5d3a0263c36dc5327504def72d551b6378"
         ],
         "TRUEICE": [
           18,
-          "0x67010410bea4ade48e820b0886ab10271ec16a0b95da052d586a4a29f60f1a7"
+          "0x5e199ea920c317b0750ffc66d93fb915f8f5a04e1e4bc8ec96c15ce59168448"
         ],
         "ADAMANTINE": [
           19,
-          "0xbef1087890b51ae23a02a737e5c7f707afb9e22c154b87faebf4eecfaa5532"
+          "0x1f8afbbd152b83d10dc533a4bf336607ef5fc3aabde19404b9224a98ea8b0e6"
         ],
         "SAPPHIRE": [
           20,
-          "0x7cb6ca6991ef4af0c29dc0985925b1fc5156b65a2700b646f0779afdea53430"
+          "0x74c7e3c0c727005187cd7308162a38140b30e6ee2ded7226bca78905ee7a577"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x6290279b381febb1b696a34da85281906b0b21f8985479825948950e67cd159"
+          "0x723c9fcc026c437cb338e59a0674301382a16fd613394877d961a31b7cf0ca4"
         ],
         "DRAGONHIDE": [
           22,
-          "0x57f8800b72d1ea09a3cfac2b7f199ba2e9bf5502a09c48a45eeb4b62b087156"
+          "0x17bd7c4c302a5b535fe2c2f03e2a4fd434d3b7cbc49c7086b3fe00c53c02b30"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x2c3df6fec06c37bbe5ec5c0f25982b6a041a74827e688f99ba0d059db50e33b"
+          "0x6e2de226de51a68129ed4e7e503d113caa61ff936b4ba296c27fb789302a79b"
         ],
         "DONKEY": [
           25,
-          "0x68fd129baaec72d274bf01bf0023ba549522749736bfdbcbed18514b0606dab"
+          "0xb9eba0f4888e115c3c605d18144722e34beb974d5582bb956652b2d02186ff"
         ],
         "KNIGHT": [
           26,
-          "0x23e4ec80fb3b894ad8c8bffa04ec8c8b62365e2a981caf0f97e0e7a52e10b91"
+          "0x3db28f82b5736f57a11f54f850684e74977f8d19347cb2faa4b1f4e24c3f786"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x63e3d628286b18bc2500b89b8323d6577391c914d8cb6937c68d263e14eb913"
+          "0x3a8cea69cc4512e6366aacbe05dee45c2c13e19823d4402aecdc5f84095c45d"
         ],
         "PALADIN": [
           32,
-          "0x283f37bbc87db01690a990c6a41ec288a8d5ac351eb69893fa51e368ddc2606"
+          "0x3b56a8c31149ce14f678a4bf09de741cdcb3df2b742d38dd48ea600b86b664a"
         ],
         "WHEAT": [
           35,
-          "0x207c72686ad621ab96f2d7b058dc7dd89795ad9fa603f65aaed0b581368d6b9"
+          "0x5c5dc0386fdaf0bd18b1097c7ab1f54a0b6777158c49f2ac570990113bc60a0"
         ],
         "FISH": [
           36,
-          "0x3682eccdcd6ab531c4e1d61016ddd340c3c713a913f5d8b61f1b106b05c56db"
+          "0x610e731b82d62b22edba3cc06191c91d46025e2a2216c4daba1fa56159b84d8"
         ],
         "LORDS": [
           37,
-          "0x7a63b408839cd7cd5a92729174f081508e34b99b78d5b66868805dd55c47568"
+          "0x1fda407a0723b5e50c3af62fdb3801c8a6f09f0bf0a0e06b6e375835900186b"
         ]
       }
     },
@@ -3018,8 +3022,8 @@
       },
       "contracts": [
         {
-          "address": "0x27b8461103e9284628be9f16c3de8b83d952dd5b0106e2e090aa1880a3b1c73",
-          "class_hash": "0x54ee021fd355380cc73128b5beb52a195299c640c099e8c5d8c16dc6d069bc7",
+          "address": "0x20216825b626df2352a85012372b51e083a63ab4b054578f941a1c4475fd7",
+          "class_hash": "0x4621b85f675e6b5e2ce08a595e649427c4d795431499d09be1c01adf92bc9a5",
           "abi": [
             {
               "type": "impl",
@@ -3340,8 +3344,8 @@
           ]
         },
         {
-          "address": "0x1e096991b8c364b0ca48f4f3d7935036e24b5acf3594cd7d0112900dc8bad9f",
-          "class_hash": "0x46b19b33a1c194dfee8078459179284b5a8e1d6d84b964c5d5542bd267e3a2",
+          "address": "0x6f90729ddbaf64d658ba9f90d0605bfc0e0431f9a1643eb3485afa24278a6e6",
+          "class_hash": "0x4465956f4b609b53bbe77d52bdbfbeb8f2fcd25a49ecb3034e45546672d34c1",
           "abi": [
             {
               "type": "impl",
@@ -3541,7 +3545,7 @@
               "members": [
                 {
                   "name": "reward_resource_amount",
-                  "type": "core::integer::u32"
+                  "type": "core::integer::u16"
                 },
                 {
                   "name": "shards_mines_win_probability",
@@ -3560,7 +3564,11 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "hyps_fail_prob_increase",
+                  "name": "hyps_fail_prob_increase_p_hex",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_fnd",
                   "type": "core::integer::u16"
                 },
                 {
@@ -4622,8 +4630,8 @@
           ]
         },
         {
-          "address": "0x6dd0a5bb9e28960e8d7202e9f411ebd143197c752c6377bfdc29586b0ffa295",
-          "class_hash": "0x179f2e39b78d84783073d902ce48f83582ac81f6785caa84952f24c8019a8a1",
+          "address": "0x4998292f0a3daa658c007d73a981451637f9726e5c9250b0e7555e507aca9bb",
+          "class_hash": "0x1ee40053f769ba5a73b620040640b68c4dc45e99c8aa45f8b67f6993fa18768",
           "abi": [
             {
               "type": "impl",
@@ -5135,8 +5143,8 @@
           ]
         },
         {
-          "address": "0x6b879a472bfdd2ab0fa9ec0cbee7b1af7a72f3b907208eff0be46b20a3b86d3",
-          "class_hash": "0x42ae301e60dc9061cb6bf4e5c3172d9661ff1d8549ae3337ea2d52a83b12ae9",
+          "address": "0x2ded713cb15bc53fa4a79cfd4f76ad899f93fe24026e97131a5461a9f784fe6",
+          "class_hash": "0x4a64f9492eaf74dd4103273d5fe7729ce6f0599747fce86268652d290cc50d8",
           "abi": [
             {
               "type": "impl",
@@ -5195,26 +5203,6 @@
             },
             {
               "type": "struct",
-              "name": "core::array::Span::<core::integer::u32>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<core::integer::u32>"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "core::array::Span::<(core::integer::u32, core::integer::u16)>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<(core::integer::u32, core::integer::u16)>"
-                }
-              ]
-            },
-            {
-              "type": "struct",
               "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
               "members": [
                 {
@@ -5230,6 +5218,26 @@
                 {
                   "name": "snapshot",
                   "type": "@core::array::Array::<(core::starknet::contract_address::ContractAddress, core::integer::u16)>"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<core::integer::u32>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<core::integer::u32>"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<(core::integer::u32, core::integer::u16)>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<(core::integer::u32, core::integer::u16)>"
                 }
               ]
             },
@@ -5257,26 +5265,14 @@
               "items": [
                 {
                   "type": "function",
-                  "name": "get_points",
+                  "name": "initialize",
                   "inputs": [
                     {
-                      "name": "player_address",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    },
-                    {
-                      "name": "hyperstructures_contributed_to",
-                      "type": "core::array::Span::<core::integer::u32>"
-                    },
-                    {
-                      "name": "hyperstructure_shareholder_epochs",
-                      "type": "core::array::Span::<(core::integer::u32, core::integer::u16)>"
+                      "name": "hyperstructure_id",
+                      "type": "core::integer::u32"
                     }
                   ],
-                  "outputs": [
-                    {
-                      "type": "(core::integer::u128, core::integer::u128, core::integer::u128, core::integer::u128)"
-                    }
-                  ],
+                  "outputs": [],
                   "state_mutability": "external"
                 },
                 {
@@ -5345,6 +5341,30 @@
                     }
                   ],
                   "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "get_points",
+                  "inputs": [
+                    {
+                      "name": "player_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "hyperstructures_contributed_to",
+                      "type": "core::array::Span::<core::integer::u32>"
+                    },
+                    {
+                      "name": "hyperstructure_shareholder_epochs",
+                      "type": "core::array::Span::<(core::integer::u32, core::integer::u16)>"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "(core::integer::u128, core::integer::u128, core::integer::u128, core::integer::u128)"
+                    }
+                  ],
                   "state_mutability": "external"
                 }
               ]
@@ -5468,17 +5488,18 @@
           "tag": "s1_eternum-hyperstructure_systems",
           "selector": "0x4bdd8bcbb935577aba3b974bd7e906698504fcb75e0c3aa34913c21342b4498",
           "systems": [
-            "get_points",
+            "initialize",
             "contribute_to_construction",
             "set_co_owners",
             "end_game",
             "set_access",
+            "get_points",
             "upgrade"
           ]
         },
         {
-          "address": "0x67251a7eadf14b9f29db4ee167efa7a276b63169b101e2dbe7c9252196e143b",
-          "class_hash": "0x197965f5fb7ffb2b046cf93d82fcbf98db6657331159e2dd2e03f3a7c434537",
+          "address": "0x1a061d4e0096c4848383617d2d87426373dd030518ab28008a83754d31a89e5",
+          "class_hash": "0xf70eb4893cb8f7b46e4ccb2a9644f56a8e973a07213adb93a229d79bc227f9",
           "abi": [
             {
               "type": "impl",
@@ -6154,8 +6175,8 @@
           ]
         },
         {
-          "address": "0x277fc8bedd0f654ae210930231c1f928f3fdcc19644b7d03fea58434ff21e1b",
-          "class_hash": "0x11a11bf5a27022734199e4564a19ae0f6c1e001ee514feea1d31c05c41d3ce2",
+          "address": "0x7f7f0f8108f954b662f75e35b0d3a34174226df75c0fef5245331de10e6dc1f",
+          "class_hash": "0x2399eab42296349e76da32a8216decdb7a0b6ea08988dbe0a2d9924ddd3af44",
           "abi": [
             {
               "type": "impl",
@@ -6630,8 +6651,8 @@
           ]
         },
         {
-          "address": "0x1d3d415064d59bc982e433c0d95cbbf0131486f11c9f4f48527612c8773d432",
-          "class_hash": "0x6e48b7c2ac37d48c211ad8dde7bbcd8dbdc84309778129c3ab7e0aca12d4794",
+          "address": "0x334ba768480c27e8eda16319369a9464a4d44fbee386bf94a414f7c22c624a0",
+          "class_hash": "0x1d4ce93bd0ca807387d1e083494c0d29a431f8fa3058c3f966bca24e5a3b783",
           "abi": [
             {
               "type": "impl",
@@ -6863,8 +6884,8 @@
           ]
         },
         {
-          "address": "0x4e811d43fa662dbd93f112b6133276dd54ecd4f2fd3e80df714dab9b0208084",
-          "class_hash": "0x2762750c7240b2afe1c4e617785bf30ee83411cbee3e9fa1a2fc9c24c19dcf1",
+          "address": "0x134af72d6c77800c2f4b9dc68e4afb4077048d20bf011679de64e82d006ee58",
+          "class_hash": "0x6ad0b506111b4bc01ce2b4a9dca32c1dc96cf0be17e0589f3f4a6f091b82bde",
           "abi": [
             {
               "type": "impl",
@@ -7168,8 +7189,8 @@
           ]
         },
         {
-          "address": "0x7728ba5c317677640c63b28ccfeae4c13a251b2ddd5d9f5db6304d795758c80",
-          "class_hash": "0x6da0209c4123c017c66845a719f2afda83f5dc6cfc65c5a13a9aa747e4705db",
+          "address": "0x3462e8dd2f12d7b2235a767b35ae7198d9b69397dfefd77093354a7bc3701db",
+          "class_hash": "0x2a3bc7de53b0b6bbfc2a690c4fe0c47db304ac91cac301a6c75cc8fd7435f6b",
           "abi": [
             {
               "type": "impl",
@@ -7471,8 +7492,8 @@
           ]
         },
         {
-          "address": "0xcd9b5f0c3da04dbb278abc5f3a1defe1d2a4313097776099331c768c78358d",
-          "class_hash": "0x826abdb227cc688977b67d98947cc2229c2ffaadbe7cf58d9581529e26cedf",
+          "address": "0x22cda27b5947258442224ee6cfeb579b8152980e2270e76db2eb2d4df87c511",
+          "class_hash": "0x322924a8d4754c904286b3e5be4eef7d68dcbc0956b5487a1aeee57a50a791b",
           "abi": [
             {
               "type": "impl",
@@ -7708,8 +7729,8 @@
           ]
         },
         {
-          "address": "0x5e104695c1d5bd8122c01ca7e6928666391d75e1a57c6a6f3bf478e5e909b6",
-          "class_hash": "0x137e1d6ba91968c439999800db543da8773a15b1e9414427ca08b7857889d04",
+          "address": "0x28f828acc7e0f2e2a6edb0207a9eaab8c28637d9dc6e2a72928b6f5db361c96",
+          "class_hash": "0x25fbe4f3f06935290b8aee227a0d7d8f7a9b718fbb62f74422c448da2db9920",
           "abi": [
             {
               "type": "impl",
@@ -7908,8 +7929,8 @@
           ]
         },
         {
-          "address": "0x729b475cd2447406c462d36c901d8e08d1d814ebaf8b909cee47260d25b129c",
-          "class_hash": "0x3f91270f352adf6aa8cbcc1382b8915b92f28d04a0f42005a4574cd3fc25556",
+          "address": "0x6492e240becf7e7f1ed6dfcd4d520745d6b32e0cb29032156eb266eec8088f3",
+          "class_hash": "0x531a52e1bbe241c8081b33047e02d3c46f9f2ff7aff450bc18fccab501b8952",
           "abi": [
             {
               "type": "impl",
@@ -8153,8 +8174,8 @@
           ]
         },
         {
-          "address": "0x7a2c53b190f4e3a23e27bedfc183d9465860e074b72dc114a9655622fd876f8",
-          "class_hash": "0x8f0fa37fc2bf99e806c90f314f11a741dd21ca5b34e22e7cad61fcff829a4f",
+          "address": "0x1697a560d8990711d0bc8dda250f516f17b17b42b2d832e2fae4db200174906",
+          "class_hash": "0x525b9bf089f9e71d98efebe56d65a230c4f264543bd7b25824ca498d8102195",
           "abi": [
             {
               "type": "impl",
@@ -8423,8 +8444,8 @@
           ]
         },
         {
-          "address": "0x7809bebe37d6d6cce920295e05e9d03c989865793597a20e1cd7fd5682af1a7",
-          "class_hash": "0x602bad3282074c374eb6de5f4c9592379ff38aab442f806080576173d7eebd8",
+          "address": "0x37b29c994308ff9311cd4dcbbb4bd1e74495943b4aea25e999244fcc8d992d0",
+          "class_hash": "0x84d0fc40dc3425a242edf720817834043055fe2ad517562036787e47ca5d16",
           "abi": [
             {
               "type": "impl",
@@ -8729,8 +8750,8 @@
           ]
         },
         {
-          "address": "0x3d2fa510ea07c9c62ee6d57854b43f2683fd7e8e96dd0c2cec4906c626aab20",
-          "class_hash": "0x4e3346894cde81b9315802d571316b92e8721faf7301687a8ebc3a9516dd49e",
+          "address": "0x1e276d0c768c843ade904084bf127b12cc936207fdc7010d85409d24488d730",
+          "class_hash": "0x435703df5f6adfdba27137230095fa1a00a355813dcdedb59402ed1fb9a1f54",
           "abi": [
             {
               "type": "impl",
@@ -9200,8 +9221,8 @@
           ]
         },
         {
-          "address": "0x66ac633839e81edd2a6023d4ba2e272721b632040285b4921ee29b4212bd9a9",
-          "class_hash": "0x3f4c68636ea9790bc189838add344b63f15c39a4918a48cba36cef8aa2dfa3e",
+          "address": "0x59c706f25b5656e55adebee69e37d4db9e5d91c42614a9dcb10017715ee5277",
+          "class_hash": "0x1a1a70e9b6c5c01b4f7bd9fff8dbe6829598edd306f6648d7be2581b59274f4",
           "abi": [
             {
               "type": "impl",
@@ -9462,8 +9483,8 @@
           ]
         },
         {
-          "address": "0x452ab485887f8e8503789fea9116a9b8962fbf3043c0bec75cdcfa4a9825672",
-          "class_hash": "0x5011bd1fa0dfdef019239aabec8e5b2dfe3b9f18d8a33aa8bee120cd2044bad",
+          "address": "0x60694b03150057caf28042597e2e797acc69206080ee378c14d64e3fddf7d03",
+          "class_hash": "0xc02afc52efed9115814704e6fc7da8d645aebf080eac82b5c03b0872146155",
           "abi": [
             {
               "type": "impl",
@@ -9770,9 +9791,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x57e47e0a92cd21080d1909e4df491b7717b48f58cb389a3482067ea7b01704c",
+          "class_hash": "0x33d5e7729556b288e3edc15b63e755e40c30342b525eaf3a4a6043cbcb4bf9b",
           "tag": "s1_eternum-Hyperstructure",
           "selector": "0x5894102a0f9c53bf2298d3bdaf4b0f8a0f92777d57ff0d585ca3b5c5b25b7bc"
+        },
+        {
+          "members": [],
+          "class_hash": "0x12a5efe8516e77db976f8b7dbbe501cb12ac91c0864357bef6e1cdf1cf520cd",
+          "tag": "s1_eternum-HyperstructureGlobals",
+          "selector": "0x3c6ed56d0517959ba701c64b92562093e33ac8bfee47099acfe3822a4dd81b2"
         },
         {
           "members": [],
@@ -9968,7 +9995,7 @@
         },
         {
           "members": [],
-          "class_hash": "0xd9a317145ea6954f1f16c3e3ba3a92ab138a8c8b8bcdbc73229ffbc638d068",
+          "class_hash": "0x388698eeb5235958eb5ec362c7c901043c643d365f34af0ffd1013c1124d0b5",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

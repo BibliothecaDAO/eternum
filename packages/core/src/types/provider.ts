@@ -34,21 +34,6 @@ export interface BridgeFinishWithdrawFromRealmProps extends SystemSigner {
   recipient_address: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
 }
-export interface CreateSoldiersProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  quantity: num.BigNumberish;
-}
-
-export interface HealSoldiersProps extends SystemSigner {
-  unit_id: num.BigNumberish;
-  health_amount: num.BigNumberish;
-}
-
-export interface DetachSoldiersProps extends SystemSigner {
-  unit_id: num.BigNumberish;
-  detached_quantity: num.BigNumberish;
-}
-
 export interface SetAddressNameProps extends SystemSigner {
   name: num.BigNumberish;
 }
@@ -56,38 +41,6 @@ export interface SetAddressNameProps extends SystemSigner {
 export interface SetEntityNameProps extends SystemSigner {
   entity_id: num.BigNumberish;
   name: string;
-}
-
-export interface AttackProps extends SystemSigner {
-  attacker_ids: num.BigNumberish[];
-  target_id: num.BigNumberish;
-}
-
-export interface MergeSoldiersProps extends SystemSigner {
-  merge_into_unit_id: num.BigNumberish;
-  units: num.BigNumberish[];
-}
-
-export interface CreateAndMergeSoldiersProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  quantity: num.BigNumberish;
-  merge_into_unit_id: num.BigNumberish;
-}
-
-export interface StealProps extends SystemSigner {
-  attacker_id: num.BigNumberish;
-  target_id: num.BigNumberish;
-}
-
-export interface TravelProps extends SystemSigner {
-  travelling_entity_id: num.BigNumberish;
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
-}
-
-export interface TravelHexProps extends SystemSigner {
-  travelling_entity_id: num.BigNumberish;
-  directions: num.BigNumberish[];
 }
 
 export interface CreateOrderProps extends SystemSigner {
@@ -103,8 +56,6 @@ export interface CreateOrderProps extends SystemSigner {
 export interface AcceptOrderProps extends SystemSigner {
   taker_id: num.BigNumberish;
   trade_id: num.BigNumberish;
-  taker_lords_index: num.BigNumberish;
-  maker_resource_index: num.BigNumberish;
   taker_buys_count: num.BigNumberish;
 }
 
@@ -138,22 +89,6 @@ export interface TransferResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface ExploreProps extends SystemSigner {
-  unit_id: num.BigNumberish;
-  direction: num.BigNumberish;
-}
-
-export interface SwapBankAndTravelBackProps extends SystemSigner {
-  sender_id: num.BigNumberish;
-  inventoryIndex: num.BigNumberish;
-  bank_id: num.BigNumberish;
-  indices: num.BigNumberish[];
-  resource_types: num.BigNumberish[];
-  resource_amounts: num.BigNumberish[];
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
-}
-
 export interface MintResourcesProps extends SystemSigner {
   receiver_id: num.BigNumberish;
   resources: num.BigNumberish[];
@@ -172,35 +107,15 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
   season_pass_address: string;
 }
 
-export interface CreateMultipleRealmsDevProps extends SystemSigner {
-  realm_ids: num.BigNumberish[];
-}
 export interface CreateRealmDevProps extends SystemSigner {
   realm_id: num.BigNumberish;
-}
-export interface CreateRealmProps extends SystemSigner {
-  owner: num.BigNumberish;
-  realm_id: num.BigNumberish;
-  frontend: num.BigNumberish;
 }
 
 export interface UpgradeRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
 
-export interface TransferItemsProps extends SystemSigner {
-  sender_id: num.BigNumberish;
-  indices: num.BigNumberish[];
-  receiver_id: num.BigNumberish;
-}
 
-export interface TransferItemsFromMultipleProps extends SystemSigner {
-  senders: {
-    sender_id: num.BigNumberish;
-    indices: num.BigNumberish[];
-    receiver_id: num.BigNumberish;
-  }[];
-}
 
 export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
@@ -233,17 +148,6 @@ export interface ResumeProductionProps extends SystemSigner {
   };
 }
 
-export interface CreateBankProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  owner_fee_num: num.BigNumberish;
-  owner_fee_denom: num.BigNumberish;
-  owner_bridge_fee_dpt_percent: num.BigNumberish;
-  owner_bridge_fee_wtdr_percent: num.BigNumberish;
-}
 
 export interface CreateAdminBanksProps extends SystemSigner {
   banks: {
@@ -256,11 +160,6 @@ export interface CreateAdminBanksProps extends SystemSigner {
     troop_tier: num.BigNumberish;
     troop_type: num.BigNumberish;
   }[];
-}
-
-export interface OpenAccountProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  bank_entity_id: num.BigNumberish;
 }
 
 export interface ChangeBankOwnerFeeProps extends SystemSigner {
@@ -280,7 +179,6 @@ export interface BuyResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
-  player_resource_index: num.BigNumberish;
 }
 
 export interface SellResourcesProps extends SystemSigner {
@@ -288,7 +186,6 @@ export interface SellResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
-  player_resource_index: num.BigNumberish;
 }
 
 export interface AddLiquidityProps extends SystemSigner {
