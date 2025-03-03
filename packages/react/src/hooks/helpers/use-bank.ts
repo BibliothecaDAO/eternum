@@ -1,5 +1,5 @@
 import { ADMIN_BANK_ENTITY_ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { useDojo } from "../";
@@ -14,14 +14,11 @@ export const useBank = () => {
   const entity = getEntityIdFromKeys([BigInt(ADMIN_BANK_ENTITY_ID)]);
 
   // use strict because we know the entity exists
-  const structure = getComponentValueStrict(Structure, entity);
-  // const bank = getComponentValueStrict(Bank, entity);
+  const structure = getComponentValue(Structure, entity);
+  if (!structure) return;
 
   const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(structure.owner)]));
-  const bankConfig = getComponentValue(
-    WorldConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID]),
-  )?.bank_config;
+  const bankConfig = getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.bank_config;
 
   const bridgeFeeConfig = getComponentValue(
     WorldConfig,

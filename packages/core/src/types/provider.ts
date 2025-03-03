@@ -92,30 +92,24 @@ export interface TravelHexProps extends SystemSigner {
 
 export interface CreateOrderProps extends SystemSigner {
   maker_id: num.BigNumberish;
-  maker_gives_resources: num.BigNumberish[];
   taker_id: num.BigNumberish;
-  taker_gives_resources: num.BigNumberish[];
+  maker_gives_resource_type: num.BigNumberish;
+  maker_gives_min_resource_amount: num.BigNumberish;
+  maker_gives_max_count: num.BigNumberish;
+  taker_pays_min_lords_amount: num.BigNumberish;
   expires_at: num.BigNumberish;
 }
 
 export interface AcceptOrderProps extends SystemSigner {
   taker_id: num.BigNumberish;
   trade_id: num.BigNumberish;
-  maker_gives_resources: num.BigNumberish[];
-  taker_gives_resources: num.BigNumberish[];
-}
-
-export interface AcceptPartialOrderProps extends SystemSigner {
-  taker_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-  maker_gives_resources: num.BigNumberish[];
-  taker_gives_resources: num.BigNumberish[];
-  taker_gives_actual_amount: num.BigNumberish;
+  taker_lords_index: num.BigNumberish;
+  maker_resource_index: num.BigNumberish;
+  taker_buys_count: num.BigNumberish;
 }
 
 export interface CancelOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
-  return_resources: num.BigNumberish[];
 }
 
 export interface SendResourcesProps extends SystemSigner {
@@ -286,6 +280,7 @@ export interface BuyResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
+  player_resource_index: num.BigNumberish;
 }
 
 export interface SellResourcesProps extends SystemSigner {
@@ -293,6 +288,7 @@ export interface SellResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
+  player_resource_index: num.BigNumberish;
 }
 
 export interface AddLiquidityProps extends SystemSigner {
@@ -430,7 +426,12 @@ export interface SetQuestRewardConfigProps extends SystemSigner {
 
 export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
+  shards_mines_win_probability: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
+  hyps_win_prob: num.BigNumberish;
+  hyps_fail_prob: num.BigNumberish;
+  hyps_fail_prob_increase_p_hex: num.BigNumberish;
+  hyps_fail_prob_increase_p_fnd: num.BigNumberish;
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
 }
@@ -449,6 +450,10 @@ export interface SetCapacityConfigProps extends SystemSigner {
   troop_capacity: num.BigNumberish; // grams
   donkey_capacity: num.BigNumberish; // grams
   storehouse_boost_capacity: num.BigNumberish; // grams
+}
+
+export interface SetTradeConfigProps extends SystemSigner {
+  max_count: num.BigNumberish;
 }
 
 export interface SetWeightConfigProps extends SystemSigner {

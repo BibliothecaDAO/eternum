@@ -172,6 +172,7 @@ export function defineContractComponents(world: World) {
           last_updated_by: RecsType.BigInt,
           last_updated_timestamp: RecsType.Number,
           current_epoch: RecsType.Number,
+          initialized: RecsType.Boolean,
           completed: RecsType.Boolean,
           access: RecsType.String,
           randomness: RecsType.BigInt,
@@ -180,7 +181,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Hyperstructure",
-            types: ["u32", "ContractAddress", "u64", "u16", "bool", "enum", "felt252"],
+            types: ["u32", "ContractAddress", "u64", "u16", "bool", "bool", "enum", "felt252"],
             customTypes: ["Access"],
           },
         },
@@ -1115,7 +1116,12 @@ export function defineContractComponents(world: World) {
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
+            shards_mines_win_probability: RecsType.Number,
             shards_mines_fail_probability: RecsType.Number,
+            hyps_win_prob: RecsType.Number,
+            hyps_fail_prob: RecsType.Number,
+            hyps_fail_prob_increase_p_hex: RecsType.Number,
+            hyps_fail_prob_increase_p_fnd: RecsType.Number,
             mine_wheat_grant_amount: RecsType.Number,
             mine_fish_grant_amount: RecsType.Number,
           },
@@ -1228,8 +1234,13 @@ export function defineContractComponents(world: World) {
               "u64", // HyperstructureConfig time_between_shares_change
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // SpeedConfig army_sec_per_km
-              "u32", // MapConfig reward_resource_amount
+              "u16", // MapConfig reward_resource_amount
+              "u32", // MapConfig shards_mines_win_probability
               "u32", // MapConfig shards_mines_fail_probability
+              "u32", // MapConfig hyps_win_prob
+              "u32", // MapConfig hyps_fail_prob
+              "u32", // MapConfig hyps_fail_prob_increase_p_hex
+              "u32", // MapConfig hyps_fail_prob_increase_p_fnd
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center

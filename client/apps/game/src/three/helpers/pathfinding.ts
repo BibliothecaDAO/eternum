@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { BiomeType, getNeighborOffsets, HexPosition } from "@bibliothecadao/eternum";
+import { BiomeType, getNeighborOffsets, HexEntityInfo, HexPosition } from "@bibliothecadao/eternum";
 
 interface Node {
   col: number;
@@ -13,8 +13,8 @@ export function findShortestPath(
   oldPosition: Position,
   newPosition: Position,
   exploredTiles: Map<number, Map<number, BiomeType>>,
-  structureHexes: Map<number, Map<number, boolean>>,
-  armyHexes: Map<number, Map<number, boolean>>,
+  structureHexes: Map<number, Map<number, HexEntityInfo>>,
+  armyHexes: Map<number, Map<number, HexEntityInfo>>,
   maxDistance: number,
 ): Position[] {
   // Check if target is within maximum distance before starting pathfinding

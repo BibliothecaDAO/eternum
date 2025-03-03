@@ -388,18 +388,27 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_order(props: SystemProps.CreateOrderProps) {
-    const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
+    const {
+      maker_id,
+      taker_id,
+      maker_gives_resource_type,
+      maker_gives_min_resource_amount,
+      maker_gives_max_count,
+      taker_pays_min_lords_amount,
+      expires_at,
+      signer,
+    } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "create_order",
       calldata: [
         maker_id,
-        maker_gives_resources.length / 2,
-        ...maker_gives_resources,
         taker_id,
-        taker_gives_resources.length / 2,
-        ...taker_gives_resources,
+        maker_gives_resource_type,
+        maker_gives_min_resource_amount,
+        maker_gives_max_count,
+        taker_pays_min_lords_amount,
         expires_at,
       ],
     });
@@ -437,71 +446,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async accept_order(props: SystemProps.AcceptOrderProps) {
-    const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
+    const { taker_id, trade_id, taker_lords_index, maker_resource_index, taker_buys_count, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "accept_order",
-      calldata: [
-        taker_id,
-        trade_id,
-        maker_gives_resources.length / 2,
-        ...maker_gives_resources,
-        taker_gives_resources.length / 2,
-        ...taker_gives_resources,
-      ],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
-   * Accept part of a trade order
-   *
-   * @param props - Properties for accepting the partial order
-   * @param props.taker_id - ID of the realm accepting the trade
-   * @param props.trade_id - ID of the trade being accepted
-   * @param props.maker_gives_resources - Resources the maker is offering
-   * @param props.taker_gives_resources - Resources requested from the taker
-   * @param props.taker_gives_actual_amount - Actual amount taker will give
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * {
-   *   contractAddress: "<s1_eternum-trade_systems>",
-   *   entrypoint: "accept_partial_order",
-   *   calldata: [
-   *     123, // taker_id
-   *     789, // trade_id
-   *     1,   // maker_gives_resources.length / 2 (1 resource type)
-   *     1,   // resource type (wood)
-   *     100, // amount
-   *     1,   // taker_gives_resources.length / 2 (1 resource type)
-   *     2,   // resource type (stone)
-   *     50,  // amount
-   *     25   // taker_gives_actual_amount
-   *   ]
-   * }
-   * ```
-   */
-  public async accept_partial_order(props: SystemProps.AcceptPartialOrderProps) {
-    const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, taker_gives_actual_amount, signer } =
-      props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
-      entrypoint: "accept_partial_order",
-      calldata: [
-        taker_id,
-        trade_id,
-        maker_gives_resources.length / 2,
-        ...maker_gives_resources,
-        taker_gives_resources.length / 2,
-        ...taker_gives_resources,
-        taker_gives_actual_amount,
-      ],
+      calldata: [taker_id, trade_id, taker_lords_index, maker_resource_index, taker_buys_count],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -531,12 +481,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async cancel_order(props: SystemProps.CancelOrderProps) {
-    const { trade_id, return_resources, signer } = props;
+    const { trade_id, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "cancel_order",
-      calldata: [trade_id, return_resources.length / 2, ...return_resources],
+      calldata: [trade_id],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1173,12 +1123,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, player_resource_index, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "buy",
-      calldata: [bank_entity_id, entity_id, resource_type, amount],
+      calldata: [bank_entity_id, entity_id, resource_type, amount, player_resource_index],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1208,12 +1158,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async sell_resources(props: SystemProps.SellResourcesProps) {
-    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, player_resource_index, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "sell",
-      calldata: [bank_entity_id, entity_id, resource_type, amount],
+      calldata: [bank_entity_id, entity_id, resource_type, amount, player_resource_index],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1492,19 +1442,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     let callData: Call[] = [];
 
     if (explore && this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestTwoCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
-      };
-
       const requestRandomCall: Call = {
         contractAddress: this.VRF_PROVIDER_ADDRESS!,
         entrypoint: "request_random",
         calldata: [getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`), 0, signer.address],
       };
 
-      callData = [requestTwoCall, requestRandomCall];
+      callData = [requestRandomCall];
     }
 
     const moveCall: Call = {
@@ -1698,13 +1642,33 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_map_config(props: SystemProps.SetMapConfigProps) {
-    const { reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount, signer } =
-      props;
+    const {
+      reward_amount,
+      shards_mines_win_probability,
+      shards_mines_fail_probability,
+      hyps_win_prob,
+      hyps_fail_prob,
+      hyps_fail_prob_increase_p_hex,
+      hyps_fail_prob_increase_p_fnd,
+      mine_wheat_grant_amount,
+      mine_fish_grant_amount,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_map_config",
-      calldata: [reward_amount, shards_mines_fail_probability, mine_wheat_grant_amount, mine_fish_grant_amount],
+      calldata: [
+        reward_amount,
+        shards_mines_win_probability,
+        shards_mines_fail_probability,
+        hyps_win_prob,
+        hyps_fail_prob,
+        hyps_fail_prob_increase_p_hex,
+        hyps_fail_prob_increase_p_fnd,
+        mine_wheat_grant_amount,
+        mine_fish_grant_amount,
+      ],
     });
   }
 
@@ -1828,6 +1792,16 @@ export class EternumProvider extends EnhancedDojoProvider {
         };
       }),
     );
+  }
+
+  public async set_trade_config(props: SystemProps.SetTradeConfigProps) {
+    const { max_count, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_trade_config",
+      calldata: [max_count],
+    });
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {

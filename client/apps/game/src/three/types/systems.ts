@@ -1,15 +1,15 @@
 import { Position } from "@/types/position";
-import { BiomeType, HexPosition, ID, StructureType } from "@bibliothecadao/eternum";
+import { BiomeType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import { StructureProgress } from "./common";
 
 export type ArmySystemUpdate = {
   entityId: ID;
   hexCoords: HexPosition;
-  battleId: ID;
-  defender: boolean;
-  currentHealth: bigint;
   order: number;
+  troopType: TroopType;
+  troopTier: TroopTier;
   owner: { address: bigint; ownerName: string; guildName: string };
+  deleted?: boolean;
 };
 
 export type StructureSystemUpdate = {

@@ -5,16 +5,16 @@ import clsx from "clsx";
 import { useMemo } from "react";
 
 export const StaminaResourceCost = ({
-  travelingEntityId,
+  selectedEntityId,
   isExplored,
   path,
 }: {
-  travelingEntityId: ID | undefined;
+  selectedEntityId: ID | undefined;
   isExplored: boolean;
   path: ActionPath[];
 }) => {
   const { currentArmiesTick } = useBlockTimestamp();
-  const staminaManager = useStaminaManager(travelingEntityId || 0);
+  const staminaManager = useStaminaManager(selectedEntityId || 0);
 
   const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 

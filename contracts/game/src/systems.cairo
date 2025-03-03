@@ -86,6 +86,7 @@ pub mod season {
 pub mod utils {
     pub mod distance;
     pub mod donkey;
+    pub mod hyperstructure;
     pub mod map;
     pub mod mine;
     pub mod resource;

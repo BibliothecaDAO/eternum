@@ -22,7 +22,9 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
   console.log({ army });
 
   const totalTroops = BigInt(army.troops.count);
+
   const remainingTroops = totalTroops - deductedTroops;
+
   const capacityRatio = Number(remainingTroops) / Number(totalTroops);
 
   const armyTotalCapacity = isFinite(capacityRatio) ? BigInt(Number(army.totalCapacity) * capacityRatio) : 0n;

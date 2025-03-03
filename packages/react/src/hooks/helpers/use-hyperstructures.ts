@@ -10,15 +10,7 @@ import {
   toInteger,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import {
-  Component,
-  ComponentValue,
-  getComponentValue,
-  getComponentValueStrict,
-  Has,
-  HasValue,
-  runQuery,
-} from "@dojoengine/recs";
+import { Component, ComponentValue, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context";
@@ -40,13 +32,15 @@ export const useHyperstructures = () => {
   const { Structure, Contribution, AddressName, Hyperstructure } = components;
 
   const hyperstructures = useEntityQuery([Has(Hyperstructure)]).map((hyperstructureEntityId) => {
-    const hyperstructure = getComponentValueStrict(Hyperstructure, hyperstructureEntityId);
-    const structure = getComponentValueStrict(Structure, hyperstructureEntityId);
+    const hyperstructure = getComponentValue(Hyperstructure, hyperstructureEntityId);
+    const structure = getComponentValue(Structure, hyperstructureEntityId);
     const contributions = hyperstructure ? getContributions(hyperstructure?.entity_id, Contribution) : [];
     const owner = structure?.owner || 0n;
     const isOwner = ContractAddress(owner) === ContractAddress(account.address);
     const entityName = getComponentValue(AddressName, hyperstructureEntityId);
     const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.entity_id!, components) : "";
+
+    if (!structure) return;
 
     return {
       ...hyperstructure,

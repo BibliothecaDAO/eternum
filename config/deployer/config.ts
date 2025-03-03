@@ -24,7 +24,6 @@ import chalk from "chalk";
 import fs from "fs";
 import { Account } from "starknet";
 import type { Chain } from "utils/utils";
-import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
@@ -42,7 +41,7 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    // await this.setupBank(account, provider);
+    await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
@@ -50,6 +49,7 @@ export class GameConfigDeployer {
     await setWorldConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
+    await setTradeConfig(config);
     await setQuestRewardConfig(config);
     await setSeasonConfig(config);
     await setVRFConfig(config);
@@ -809,15 +809,35 @@ export const setupGlobals = async (config: Config) => {
   const mapCalldata = {
     signer: config.account,
     reward_amount: config.config.exploration.reward,
+    shards_mines_win_probability: config.config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
+    hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
+    hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
+    hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
+    hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
     mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
     mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
+
+  let shardsMinesFailRate =
+    (mapCalldata.shards_mines_fail_probability /
+      (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
+    100;
+  let hyperstructureFailRateAtTheCenter =
+    (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHex =
+    (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHyperstructureFound =
+    (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
     │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
-    │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + SHARDS_MINES_WIN_PROBABILITY)) * 100).toFixed(2) + "%")}
+    │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
+    │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
     │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
     │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
     └────────────────────────────────`),
@@ -863,6 +883,23 @@ export const setCapacityConfig = async (config: Config) => {
 
   const tx = await config.provider.set_capacity_config(calldata);
   console.log(chalk.green(`\n    ✔ Capacity configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setTradeConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    max_count: config.config.trade.maxCount,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Trade Configuration")}
+    │  ${chalk.gray("Max Count:")} ${chalk.white(calldata.max_count)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_trade_config(calldata);
+  console.log(chalk.green(`\n    ✔ Trade configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSeasonConfig = async (config: Config) => {

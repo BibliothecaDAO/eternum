@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { IS_MOBILE } from "@/ui/config";
 
 export const ActionInstructions = () => {
-  const selectedEntityId = useUIStore((state) => state.armyActions.selectedEntityId);
+  const selectedEntityId = useUIStore((state) => state.entityActions.selectedEntityId);
 
   return (
     <>

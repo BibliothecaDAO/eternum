@@ -1,4 +1,4 @@
-import { ComponentValue, getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
@@ -59,7 +59,8 @@ export class ArmyManager {
 
   private _updateGuardTroops(overrideId: string, structureId: number, guardSlot: number, troopCount: number): void {
     const structureEntity = getEntityIdFromKeys([BigInt(structureId)]);
-    const structure = getComponentValueStrict(this.components.Structure, structureEntity);
+    const structure = getComponentValue(this.components.Structure, structureEntity);
+    if (!structure) return;
 
     const guard = this._getGuardSlot(guardSlot, structure);
 
