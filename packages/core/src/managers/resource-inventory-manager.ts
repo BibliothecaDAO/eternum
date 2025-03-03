@@ -20,8 +20,8 @@ export class ResourceInventoryManager {
     inventoryResources: Resource[],
   ) => {
     inventoryResources.forEach((resource) => {
-      const resourceManager = new ResourceManager(this.components, receiverEntityId, resource.resourceId);
-      resourceManager.optimisticResourceUpdate(overrideId, -BigInt(resource.amount));
+      const resourceManager = new ResourceManager(this.components, receiverEntityId);
+      resourceManager.optimisticResourceUpdate(overrideId, resource.resourceId, -BigInt(resource.amount));
     });
   };
 

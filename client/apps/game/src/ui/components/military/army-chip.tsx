@@ -61,8 +61,6 @@ export const ArmyChip = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  console.log({ army });
-
   const [showInventory, setShowInventory] = useState(false);
   const [showTroopSwap, setShowTroopSwap] = useState(false);
 

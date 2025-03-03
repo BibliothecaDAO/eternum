@@ -17,8 +17,8 @@ export class ArmyManager {
   ) {}
 
   private _updateResourceBalances(overrideId: string, resourceId: ResourcesIds, amount: number): void {
-    const resourceManager = new ResourceManager(this.components, this.realmEntityId, resourceId);
-    resourceManager.optimisticResourceUpdate(overrideId, -BigInt(amount));
+    const resourceManager = new ResourceManager(this.components, this.realmEntityId);
+    resourceManager.optimisticResourceUpdate(overrideId, resourceId, -BigInt(amount));
   }
 
   private _updateExplorerTroops(

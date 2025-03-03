@@ -111,7 +111,6 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], stru
   const getArmyInfoForSlot = (slot: number) => {
     const defense = defenseTroops.find((d) => d.slot === slot);
 
-    console.log({ defense, slot });
     return defense
       ? {
           entityId: defense.slot,

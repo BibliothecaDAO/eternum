@@ -8,10 +8,9 @@ import {
   divideByPrecision,
   multiplyByPrecision,
   RealmInfo,
-  ResourceManager,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -109,9 +108,10 @@ export const ResourceProductionControls = ({
 
     const { currentDefaultTick } = getBlockTimestamp();
 
+    const resourceManager = useResourceManager(realm.entityId);
+
     allResources.forEach((resource) => {
-      const resourceManager = new ResourceManager(components, realm.entityId, resource.resource);
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource);
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;

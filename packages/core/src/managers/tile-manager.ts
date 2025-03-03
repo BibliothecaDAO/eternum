@@ -229,9 +229,9 @@ export class TileManager {
   };
 
   private _overrideResource = (entity: ID, resourceType: number, change: bigint) => {
-    const resourceManager = new ResourceManager(this.components, entity, resourceType);
+    const resourceManager = new ResourceManager(this.components, entity);
     const overrideId = uuid();
-    resourceManager.optimisticResourceUpdate(overrideId, change);
+    resourceManager.optimisticResourceUpdate(overrideId, resourceType, change);
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {

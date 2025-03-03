@@ -19,8 +19,6 @@ type ArmyCapacityProps = {
 export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapacityProps) => {
   if (!army) return null;
 
-  console.log({ army });
-
   const totalTroops = BigInt(army.troops.count);
 
   const remainingTroops = totalTroops - deductedTroops;

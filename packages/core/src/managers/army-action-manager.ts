@@ -22,8 +22,7 @@ import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityIn
 export class ArmyActionManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
-  private readonly fishManager: ResourceManager;
-  private readonly wheatManager: ResourceManager;
+  private readonly resourceManager: ResourceManager;
   private readonly staminaManager: StaminaManager;
 
   constructor(
@@ -34,8 +33,7 @@ export class ArmyActionManager {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
     const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
-    this.wheatManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Wheat);
-    this.fishManager = new ResourceManager(this.components, entityOwnerId!, ResourcesIds.Fish);
+    this.resourceManager = new ResourceManager(this.components, entityOwnerId!);
     this.staminaManager = new StaminaManager(this.components, entityId);
   }
 
@@ -103,8 +101,8 @@ export class ArmyActionManager {
 
   // getFood is without precision
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.wheatManager.balanceWithProduction(currentDefaultTick);
-    const fishBalance = this.fishManager.balanceWithProduction(currentDefaultTick);
+    const wheatBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+    const fishBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
 
     return {
       wheat: divideByPrecision(wheatBalance),
@@ -444,8 +442,8 @@ export class ArmyActionManager {
     }
 
     // need to add back precision for optimistic resource update
-    this.wheatManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
-    this.fishManager.optimisticResourceUpdate(overrideId, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
+    this.resourceManager.optimisticResourceUpdate(overrideId, ResourcesIds.Wheat, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
+    this.resourceManager.optimisticResourceUpdate(overrideId, ResourcesIds.Fish, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
   };
 
   private readonly _travelToHex = async (

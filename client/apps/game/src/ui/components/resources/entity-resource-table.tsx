@@ -11,7 +11,7 @@ import {
   RESOURCE_TIERS,
   StructureType,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
@@ -34,12 +34,14 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
     return <div>No Entity Selected</div>;
   }
 
+  const resourceManager = useResourceManager(entityId);
+
   return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
     const resources = resourceIds.map((resourceId: any) => (
       <ResourceChip
         key={resourceId}
         resourceId={resourceId}
-        entityId={entityId}
+        resourceManager={resourceManager}
         maxStorehouseCapacityKg={maxStorehouseCapacityKg}
         tick={tick}
       />

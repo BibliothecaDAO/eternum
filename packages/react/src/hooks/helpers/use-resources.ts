@@ -1,22 +1,17 @@
-import { ID, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, ResourceManager } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context";
 
-export const useResourceManager = (entityId: ID, resourceId: ResourcesIds) => {
+export const useResourceManager = (entityId: ID) => {
   const dojo = useDojo();
 
   const resource = useEntityQuery([HasValue(dojo.setup.components.Resource, { entity_id: entityId })]);
 
   const resourceManager = useMemo(() => {
-    return new ResourceManager(dojo.setup.components, entityId, resourceId);
-  }, [entityId, resourceId, resource]);
+    return new ResourceManager(dojo.setup.components, entityId);
+  }, [entityId, resource]);
 
   return resourceManager;
-};
-
-// todo: refactor this when added to contracts
-export const useIsStructureResourcesLocked = (structureEntityId: ID, currentBlockTimestamp: number) => {
-  return false;
 };

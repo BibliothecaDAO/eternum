@@ -72,8 +72,6 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   };
 
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
-    console.log({ isExplorer, troopType, troopTier, troopCount, guardSlot });
-
     setIsLoading(true);
 
     if (isExplorer) {

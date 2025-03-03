@@ -1,8 +1,8 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo } from "@bibliothecadao/react";
+import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
@@ -32,12 +32,13 @@ export const BuildingsList = ({
 
   const {
     setup: {
-      components,
       components: { Resource },
     },
   } = useDojo();
 
   const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
+
+  const resourceManager = useResourceManager(realm.entityId);
 
   const productions = useMemo(() => {
     return producedResources
@@ -48,9 +49,8 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        const resourceManager = new ResourceManager(components, realm.entityId, resourceId);
-        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick);
-        const production = resourceManager.getProduction();
+        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
+        const production = resourceManager.getProduction(resourceId);
 
         return {
           resource: resourceId,
@@ -62,6 +62,7 @@ export const BuildingsList = ({
       })
       .filter((production) => production !== null);
   }, [producedResources]);
+
 
   return (
     <div className="bg-dark-brown/90 backdrop-blur-sm p-6 rounded-xl border border-gold/20 shadow-lg h-[400px] overflow-y-auto">
@@ -110,7 +111,7 @@ export const BuildingsList = ({
                 <div className="w-[280px] flex-shrink-0">
                   <ResourceChip
                     resourceId={production.resource}
-                    entityId={realm.entityId}
+                    resourceManager={resourceManager}
                     maxStorehouseCapacityKg={realm.capacity || 0}
                     tick={0}
                   />

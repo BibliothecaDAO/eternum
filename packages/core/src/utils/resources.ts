@@ -10,8 +10,8 @@ import { unpackValue } from "./packed-data";
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
   return resources
     .map(({ id }) => {
-      const resourceManager = new ResourceManager(components, entityId, id);
-      const balance = resourceManager.balance();
+      const resourceManager = new ResourceManager(components, entityId);
+      const balance = resourceManager.balance(id);
       if (balance > 0) {
         return { resourceId: id, amount: Number(balance) };
       }
@@ -27,13 +27,13 @@ export const getBalance = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const resourceManager = new ResourceManager(components, entityId, resourceId);
-  return { balance: resourceManager.balanceWithProduction(currentDefaultTick), resourceId };
+  const resourceManager = new ResourceManager(components, entityId);
+  return { balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId), resourceId };
 };
 
 export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
-  const resourceManager = new ResourceManager(components, entityId, resourceId);
-  return resourceManager.getProduction();
+  const resourceManager = new ResourceManager(components, entityId);
+  return resourceManager.getProduction(resourceId);
 };
 
 export const getResourcesFromBalance = (
@@ -54,8 +54,8 @@ export const getResourcesFromBalance = (
   const resourceIds = resources.map((r) => r.id);
   return resourceIds
     .map((id) => {
-      const resourceManager = new ResourceManager(components, entityId, id);
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick);
+      const resourceManager = new ResourceManager(components, entityId);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, id);
       return { resourceId: id, amount: balance };
     })
     .filter((r) => r.amount > 0);

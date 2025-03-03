@@ -9,22 +9,19 @@ import { configManager } from "./config-manager";
 
 export class ResourceManager {
   entityId: ID;
-  resourceId: ResourcesIds;
 
   constructor(
     private readonly components: ClientComponents,
     entityId: ID,
-    resourceId: ResourcesIds,
   ) {
     this.entityId = entityId;
-    this.resourceId = resourceId;
   }
 
-  public getProduction() {
+  public getProduction(resourceId: ResourcesIds) {
     const resource = this._getResource();
     if (!resource) return undefined;
 
-    switch (this.resourceId) {
+    switch (resourceId) {
       case ResourcesIds.Stone:
         return resource.STONE_PRODUCTION;
       case ResourcesIds.Coal:
@@ -108,34 +105,37 @@ export class ResourceManager {
     return this._getResource();
   }
 
-  public isFood(): boolean {
-    return this.resourceId === ResourcesIds.Wheat || this.resourceId === ResourcesIds.Fish;
+  public isFood(resourceId: ResourcesIds): boolean {
+    return resourceId === ResourcesIds.Wheat || resourceId === ResourcesIds.Fish;
   }
 
-  public isActive(): boolean {
-    const production = this.getProduction();
+  public isActive(resourceId: ResourcesIds): boolean {
+    const production = this.getProduction(resourceId);
     if (!production) return false;
-    if (this.isFood()) {
+    if (this.isFood(resourceId)) {
       return production.production_rate !== 0n;
     }
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
-  public balanceWithProduction(currentTick: number): number {
+  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds): number {
     const resource = this._getResource();
-    const balance = this.balance();
-    const amountProduced = this._amountProduced(resource, currentTick);
-    const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced);
+    const balance = this.balance(resourceId);
+    const amountProduced = this._amountProduced(resource, currentTick, resourceId);
+    const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
     return Number(finalBalance);
   }
 
-  public optimisticResourceUpdate = (overrideId: string, change: bigint) => {
-    const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(this.resourceId)]);
-    const currentBalance = this.balance();
-    const weight = configManager.getResourceWeight(this.resourceId);
+  public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, change: bigint) => {
+    const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]);
+    const currentBalance = this.balance(resourceId);
+    const weight = configManager.getResourceWeight(resourceId);
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
+    const amountWithPrecision = BigInt(multiplyByPrecision(Number(change)));
 
-    switch (this.resourceId) {
+    console.log({currentBalance, change, amountWithPrecision, weight, currentWeight});
+
+    switch (resourceId) {
       case ResourcesIds.Stone:
         this.components.Resource.addOverride(overrideId, {
           entity,
@@ -144,7 +144,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            STONE_BALANCE: currentBalance + change,
+            STONE_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -156,7 +156,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            COAL_BALANCE: currentBalance + change,
+            COAL_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -168,7 +168,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            WOOD_BALANCE: currentBalance + change,
+            WOOD_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -180,7 +180,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            COPPER_BALANCE: currentBalance + change,
+            COPPER_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -192,7 +192,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            IRONWOOD_BALANCE: currentBalance + change,
+            IRONWOOD_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -204,7 +204,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            OBSIDIAN_BALANCE: currentBalance + change,
+            OBSIDIAN_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -216,7 +216,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            GOLD_BALANCE: currentBalance + change,
+            GOLD_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -228,7 +228,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            SILVER_BALANCE: currentBalance + change,
+            SILVER_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -240,7 +240,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            MITHRAL_BALANCE: currentBalance + change,
+            MITHRAL_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -252,7 +252,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            ALCHEMICAL_SILVER_BALANCE: currentBalance + change,
+            ALCHEMICAL_SILVER_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -264,7 +264,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            COLD_IRON_BALANCE: currentBalance + change,
+            COLD_IRON_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -276,7 +276,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            DEEP_CRYSTAL_BALANCE: currentBalance + change,
+            DEEP_CRYSTAL_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -288,7 +288,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            RUBY_BALANCE: currentBalance + change,
+            RUBY_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -300,7 +300,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            DIAMONDS_BALANCE: currentBalance + change,
+            DIAMONDS_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -312,7 +312,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            HARTWOOD_BALANCE: currentBalance + change,
+            HARTWOOD_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -324,7 +324,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            IGNIUM_BALANCE: currentBalance + change,
+            IGNIUM_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -336,7 +336,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            TWILIGHT_QUARTZ_BALANCE: currentBalance + change,
+            TWILIGHT_QUARTZ_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -348,7 +348,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            TRUE_ICE_BALANCE: currentBalance + change,
+            TRUE_ICE_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -360,7 +360,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            ADAMANTINE_BALANCE: currentBalance + change,
+            ADAMANTINE_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -372,7 +372,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            SAPPHIRE_BALANCE: currentBalance + change,
+            SAPPHIRE_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -384,7 +384,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            ETHEREAL_SILICA_BALANCE: currentBalance + change,
+            ETHEREAL_SILICA_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -396,7 +396,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            DRAGONHIDE_BALANCE: currentBalance + change,
+            DRAGONHIDE_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -408,7 +408,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            LABOR_BALANCE: currentBalance + change,
+            LABOR_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -420,7 +420,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            EARTHEN_SHARD_BALANCE: currentBalance + change,
+            EARTHEN_SHARD_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -432,7 +432,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            DONKEY_BALANCE: currentBalance + change,
+            DONKEY_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -444,7 +444,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            KNIGHT_T1_BALANCE: currentBalance + change,
+            KNIGHT_T1_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -456,7 +456,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            KNIGHT_T2_BALANCE: currentBalance + change,
+            KNIGHT_T2_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -468,7 +468,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            KNIGHT_T3_BALANCE: currentBalance + change,
+            KNIGHT_T3_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -480,7 +480,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            CROSSBOWMAN_T1_BALANCE: currentBalance + change,
+            CROSSBOWMAN_T1_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -492,7 +492,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            CROSSBOWMAN_T2_BALANCE: currentBalance + change,
+            CROSSBOWMAN_T2_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -504,7 +504,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            CROSSBOWMAN_T3_BALANCE: currentBalance + change,
+            CROSSBOWMAN_T3_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -516,7 +516,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            PALADIN_T1_BALANCE: currentBalance + change,
+            PALADIN_T1_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -528,7 +528,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            PALADIN_T2_BALANCE: currentBalance + change,
+            PALADIN_T2_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -540,7 +540,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            PALADIN_T3_BALANCE: currentBalance + change,
+            PALADIN_T3_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -552,7 +552,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            WHEAT_BALANCE: currentBalance + change,
+            WHEAT_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -564,7 +564,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            FISH_BALANCE: currentBalance + change,
+            FISH_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -576,7 +576,7 @@ export class ResourceManager {
               ...currentWeight,
               weight: currentWeight.weight + BigInt(weight),
             },
-            LORDS_BALANCE: currentBalance + change,
+            LORDS_BALANCE: currentBalance + amountWithPrecision,
           },
         });
         break;
@@ -585,8 +585,8 @@ export class ResourceManager {
     }
   };
 
-  public timeUntilValueReached(currentTick: number): number {
-    const production = this.getProduction();
+  public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
+    const production = this.getProduction(resourceId);
     if (!production || production.building_count === 0) return 0;
 
     // Get production details
@@ -607,15 +607,15 @@ export class ResourceManager {
     return Math.max(0, remainingTicks - ticksSinceLastUpdate);
   }
 
-  public getProductionEndsAt(): number {
-    const production = this.getProduction();
+  public getProductionEndsAt(resourceId: ResourcesIds): number {
+    const production = this.getProduction(resourceId);
     if (!production || production.building_count === 0) return 0;
 
     // If no production rate or no output left, return current tick
     if (production.production_rate === 0n || production.output_amount_left === 0n) return production.last_updated_at;
 
     // For food resources, production never ends
-    if (this.isFood()) {
+    if (this.isFood(resourceId)) {
       return Number.MAX_SAFE_INTEGER;
     }
 
@@ -638,10 +638,10 @@ export class ResourceManager {
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }
 
-  private _limitBalanceByStoreCapacity(balance: bigint): bigint {
+  private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
     const storeCapacity = this.getStoreCapacity();
     const maxAmountStorable = multiplyByPrecision(
-      storeCapacity / (configManager.getResourceWeight(this.resourceId) || 1000),
+      storeCapacity / (configManager.getResourceWeight(resourceId) || 1000),
     );
     if (balance > maxAmountStorable) {
       return BigInt(maxAmountStorable);
@@ -649,7 +649,7 @@ export class ResourceManager {
     return balance;
   }
 
-  private _amountProduced(resource: any, currentTick: number): bigint {
+  private _amountProduced(resource: any, currentTick: number, resourceId: ResourcesIds): bigint {
     if (!resource) return 0n;
     const production = resource.production!;
 
@@ -659,19 +659,19 @@ export class ResourceManager {
     const ticksSinceLastUpdate = currentTick - production.last_updated_tick;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
-    if (!this.isFood() && totalAmountProduced > production.output_amount_left) {
+    if (!this.isFood(resourceId) && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
 
     return totalAmountProduced;
   }
 
-  public balance(): bigint {
+  public balance(resourceId: ResourcesIds): bigint {
     const resource = this._getResource();
 
     if (!resource) return 0n;
 
-    switch (this.resourceId) {
+    switch (resourceId) {
       case ResourcesIds.Stone:
         return resource.STONE_BALANCE;
       case ResourcesIds.Coal:

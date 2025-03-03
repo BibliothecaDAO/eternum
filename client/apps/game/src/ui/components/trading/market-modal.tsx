@@ -83,11 +83,17 @@ export const MarketModal = () => {
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
 
-  const structureResourceManager = useResourceManager(structureEntityId, ResourcesIds.Lords);
-  const bankResourceManager = useResourceManager(bank?.entityId || 0, ResourcesIds.Lords);
+  const structureResourceManager = useResourceManager(structureEntityId);
+  const bankResourceManager = useResourceManager(bank?.entityId || 0);
 
-  const structureLordsBalance = useMemo(() => Number(structureResourceManager.balance()), [structureResourceManager]);
-  const bankLordsBalance = useMemo(() => Number(bankResourceManager.balance()), [bankResourceManager]);
+  const structureLordsBalance = useMemo(
+    () => Number(structureResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)),
+    [structureResourceManager],
+  );
+  const bankLordsBalance = useMemo(
+    () => Number(bankResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)),
+    [bankResourceManager],
+  );
 
   const bankArmy = useMemo(
     () =>

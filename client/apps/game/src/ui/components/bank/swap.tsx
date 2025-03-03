@@ -21,7 +21,7 @@ import {
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, useTravel } from "@bibliothecadao/react";
+import { useDojo, useTravel } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({
@@ -93,13 +93,11 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
   const canSwap = useMemo(
-    () => amountsBiggerThanZero && hasEnough && !isBankResourcesLocked && !isMyResourcesLocked,
-    [lordsAmount, resourceAmount, hasEnough, isBankResourcesLocked, isMyResourcesLocked],
+    () => amountsBiggerThanZero && hasEnough,
+    [lordsAmount, resourceAmount, hasEnough],
   );
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
@@ -352,8 +350,6 @@ export const ResourceSwap = ({
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
                 {!amountsBiggerThanZero && <div>Warning: Amount must be greater than zero</div>}
                 {!hasEnough && <div>Warning: Not enough resources for this swap</div>}
-                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
-                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>
