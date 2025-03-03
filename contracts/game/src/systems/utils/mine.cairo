@@ -14,7 +14,7 @@ use s1_eternum::models::resource::resource::{
 use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::models::weight::Weight;
-use s1_eternum::systems::utils::structure::IStructureImpl;
+use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
 
@@ -45,7 +45,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     ) -> bool {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
-        IStructureImpl::create(
+        iStructureImpl::create(
             ref world,
             coord,
             Zero::zero(),

@@ -54,16 +54,14 @@ pub mod realm_systems {
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
         IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
     };
-    use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::systems::utils::structure::IStructureImpl;
-    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
+    use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
@@ -178,7 +176,7 @@ pub mod realm_systems {
                 tile_occupier = TileOccupier::RealmWonder;
             }
 
-            IStructureImpl::create(
+            iStructureImpl::create(
                 ref world,
                 coord,
                 owner,

@@ -14,7 +14,7 @@ use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 #[generate_trait]
-pub impl IStructureImpl of IStructureTrait {
+pub impl iStructureImpl of IStructureTrait {
     fn create(
         ref world: WorldStorage,
         coord: Coord,
