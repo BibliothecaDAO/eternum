@@ -1,36 +1,3 @@
-// External imports
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use dojo::meta::introspect::{Member, Struct};
-// Dojo imports
-use dojo::meta::{Introspect, Ty};
-
-pub impl IntrospectFixed of Introspect<Fixed> {
-    #[inline(always)]
-    fn size() -> Option<usize> {
-        Option::Some(2)
-    }
-
-    #[inline(always)]
-    fn layout() -> dojo::meta::Layout {
-        dojo::meta::Layout::Fixed(array![128, 1].span())
-    }
-
-    #[inline(always)]
-    fn ty() -> Ty {
-        Ty::Struct(
-            Struct {
-                name: 'Fixed',
-                attrs: array![].span(),
-                children: array![
-                    Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() },
-                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() },
-                ]
-                    .span(),
-            },
-        )
-    }
-}
-
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Market {
@@ -38,7 +5,7 @@ pub struct Market {
     pub resource_type: u8,
     pub lords_amount: u128,
     pub resource_amount: u128,
-    pub total_shares: Fixed,
+    pub total_shares: u128,
 }
 
 #[generate_trait]
@@ -112,7 +79,7 @@ pub impl MarketImpl of MarketTrait {
 
     // Check if the market has liquidity
     fn has_liquidity(self: @Market) -> bool {
-        *self.total_shares > FixedTrait::ZERO()
+        *self.total_shares > 0
     }
 
     // Given some amount of cash, return the equivalent/optimal quantity of items
@@ -183,7 +150,7 @@ pub impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity, shares): The amount of cash and quantity of items added to the market and the shares minted
-    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, Fixed, Fixed) {
+    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, u128, u128) {
         // Compute the amount and quantity to add to the market
         let (amount, quantity) = self.add_liquidity_inner(amount, quantity);
         // Mint shares for the given amount of liquidity provided
@@ -193,19 +160,13 @@ pub impl MarketImpl of MarketTrait {
     }
 
     // Mint shares for the given amount of liquidity provided
-    fn mint_shares(self: @Market, amount: u128, quantity: u128) -> Fixed {
+    fn mint_shares(self: @Market, amount: u128, quantity: u128) -> u128 {
         // If there is no liquidity, then mint total shares
         if !self.has_liquidity() {
-            FixedTrait::new_unscaled(amount, false)
+            amount
         } else {
-            // Convert amount to fixed point
-            let amount = FixedTrait::new_unscaled(amount, false);
-
             // Get normalized reserve cash amount and item quantity
             let (reserve_amount, _) = self.get_reserves();
-
-            // Convert reserve amount to fixed point
-            let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
 
             // Compute the amount of shares to mint
             // S = dx * L/X = dy * L/Y
@@ -222,7 +183,7 @@ pub impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity): The amount of cash and quantity of items removed from the market
-    fn remove_liquidity(self: @Market, shares: Fixed) -> (u128, u128, Fixed) {
+    fn remove_liquidity(self: @Market, shares: u128) -> (u128, u128, u128) {
         // Ensure that the market has liquidity
         let total_shares = *self.total_shares;
         assert(shares <= total_shares, 'insufficient liquidity');
@@ -230,20 +191,14 @@ pub impl MarketImpl of MarketTrait {
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
 
-        // Convert reserve amount and quantity to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
         // Compute the amount and quantity to remove from the market
         // dx = S * X / L
         let amount = (shares * reserve_amount) / total_shares;
         // dy = S * Y / L
         let quantity = (shares * reserve_quantity) / total_shares;
-
         let total_shares = *self.total_shares - shares;
 
-        // Convert amount and quantity both from fixed point to u128 and unscaled u128, respectively
-        (amount.try_into().unwrap(), quantity.try_into().unwrap(), total_shares)
+        (amount, quantity, total_shares)
     }
 }
 
@@ -315,7 +270,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 1,
 //             resource_amount: 1,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 1:1
 //         let _cost = market.buy(LP_FEE_NUM, LP_FEE_DENOM, 10);
 //     }
@@ -327,7 +282,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 170_000,
 //             resource_amount: 150_000,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 17: 15
 
 //         let desired_resource_amount = 14_890;
@@ -351,7 +306,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 170_000,
 //             resource_amount: 150_000,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 17: 15
 
 //         // 10% lp fee
@@ -376,7 +331,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 170_000,
 //             resource_amount: 150_000,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 17: 15
 
 //         let sell_resource_amount = 17_500;
@@ -400,7 +355,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 170_000,
 //             resource_amount: 150_000,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 17: 15
 
 //         let sell_resource_amount = 17_500;
@@ -425,7 +380,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 0,
 //             resource_amount: 0,
-//             total_shares: FixedTrait::new_unscaled(0, false),
+//             total_shares: FixedTrait::new(0, false),
 //         };
 
 //         // Add liquidity
@@ -438,9 +393,9 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //         assert(quantity_add == quantity, 'wrong item quantity');
 
 //         // Convert amount and quantity to fixed point
-//         let amount = FixedTrait::new_unscaled(amount, false);
+//         let amount = FixedTrait::new(amount, false);
 //         let quantity: u128 = quantity.into();
-//         let quantity = FixedTrait::new_unscaled(quantity, false);
+//         let quantity = FixedTrait::new(quantity, false);
 //         assert(liquidity_add == (amount * quantity).sqrt(), 'wrong liquidity');
 //     }
 
@@ -452,7 +407,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 1,
 //             resource_amount: 10,
-//             total_shares: FixedTrait::new_unscaled(1, false),
+//             total_shares: FixedTrait::new(1, false),
 //         }; // pool 1:10
 //         let initial_liquidity = market.total_shares;
 
@@ -465,7 +420,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //         assert(quantity_add == quantity, 'wrong item quantity');
 
 //         // Get expected amount and convert to fixed point
-//         let expected_liquidity = FixedTrait::new_unscaled(1 + amount, false);
+//         let expected_liquidity = FixedTrait::new(1 + amount, false);
 //         let final_liquidity = initial_liquidity + liquidity_add;
 //         assert_approx_equal(expected_liquidity, final_liquidity, TOLERANCE);
 //     }
@@ -509,7 +464,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //         let initial_liquidity = market.total_shares;
 
 //         // Remove half of the liquidity
-//         let two = FixedTrait::new_unscaled(2, false);
+//         let two = FixedTrait::new(2, false);
 //         let liquidity_remove = initial_liquidity / two;
 
 //         let (amount_remove, quantity_remove, total_shares) = market.remove_liquidity(liquidity_remove);
@@ -520,9 +475,9 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //         assert(total_shares.mag == 58333726685869899776, 'wrong total shares');
 
 //         // Get expected amount and convert to fixed point
-//         let expected_amount = FixedTrait::new_unscaled(2 - amount_remove, false);
+//         let expected_amount = FixedTrait::new(2 - amount_remove, false);
 //         let expected_quantity: u128 = (20 - quantity_remove).into();
-//         let expected_quantity = FixedTrait::new_unscaled(expected_quantity, false);
+//         let expected_quantity = FixedTrait::new(expected_quantity, false);
 
 //         // Get expecteed liquidity
 //         let _expected_liquidity = FixedTrait::sqrt(expected_amount * expected_quantity);
@@ -539,11 +494,11 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 0,
 //             resource_amount: 0,
-//             total_shares: FixedTrait::new_unscaled(0, false),
+//             total_shares: FixedTrait::new(0, false),
 //         }; // pool 1:10
 
 //         // Remove liquidity
-//         let one = FixedTrait::new_unscaled(1, false);
+//         let one = FixedTrait::new(1, false);
 
 //         let (_amount_remove, _quantity_remove, _) = market.remove_liquidity(one);
 //     }
@@ -557,12 +512,12 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 //             resource_type: 1,
 //             lords_amount: 2,
 //             resource_amount: 20,
-//             total_shares: FixedTrait::new_unscaled(2, false),
+//             total_shares: FixedTrait::new(2, false),
 //         }; // pool 1:10
 //         let initial_liquidity = market.total_shares;
 
 //         // Remove twice of the liquidity
-//         let two = FixedTrait::new_unscaled(2, false);
+//         let two = FixedTrait::new(2, false);
 //         let liquidity_remove = initial_liquidity * two;
 
 //         let (_amount_remove, _quantity_remove, _) = market.remove_liquidity(liquidity_remove);

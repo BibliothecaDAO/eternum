@@ -47,7 +47,7 @@ export class MarketManager {
   public getPlayerSharesScaled = () => {
     const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0;
-    return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
+    return Math.floor(Number(liquidity.shares));
   };
 
   public getMyLpPercentage = () => {
@@ -60,7 +60,7 @@ export class MarketManager {
   public getSharesUnscaled = () => {
     const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0n;
-    return liquidity.shares.mag;
+    return liquidity.shares;
   };
 
   public getMarketPrice = () => {
@@ -242,19 +242,19 @@ export class MarketManager {
 
   public getTotalLiquidityUnscaled() {
     const liquidity = this.getTotalLiquidity();
-    return BigInt(liquidity * 2 ** 64);
+    return BigInt(liquidity);
   }
 
   public getTotalSharesUnScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return market.total_shares.mag;
+    return market.total_shares;
   }
 
   public getTotalSharesScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return Math.floor(Number(market.total_shares.mag) / 2 ** 64);
+    return Math.floor(Number(market.total_shares));
   }
 
   public playerHasLiquidity() {

@@ -1208,7 +1208,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
       entrypoint: "remove",
-      calldata: [bank_entity_id, entity_id, resource_type, shares, false],
+      calldata: [bank_entity_id, entity_id, resource_type, shares],
     });
   }
 

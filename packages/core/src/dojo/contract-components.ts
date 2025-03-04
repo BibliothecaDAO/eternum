@@ -325,14 +325,14 @@ export function defineContractComponents(world: World) {
         {
           player: RecsType.BigInt,
           resource_type: RecsType.Number,
-          shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
+          shares: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Liquidity",
-            types: ["ContractAddress", "u8", "u128", "bool"],
-            customTypes: ["Fixed"],
+            types: ["ContractAddress", "u8", "u128"],
+            customTypes: [],
           },
         },
       );
@@ -344,14 +344,14 @@ export function defineContractComponents(world: World) {
           resource_type: RecsType.Number,
           lords_amount: RecsType.BigInt,
           resource_amount: RecsType.BigInt,
-          total_shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
+          total_shares: RecsType.BigInt,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Market",
-            types: ["u8", "u128", "u128", "u128", "bool"],
-            customTypes: ["Fixed"],
+            types: ["u8", "u128", "u128", "u128"],
+            customTypes: [],
           },
         },
       );
