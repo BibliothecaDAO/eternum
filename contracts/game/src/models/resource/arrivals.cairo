@@ -1,4 +1,5 @@
 use core::dict::Felt252Dict;
+use core::num::traits::Zero;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
 
@@ -129,29 +130,30 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         // todo check gas cost when both arrays are full
 
         // add existing resources to the dict
-        let mut add_resource: Felt252Dict<bool> = Default::default();
-        for (resource_type, _) in added_resources {
-            add_resource.insert((*resource_type).into(), true);
+        let mut add_resource: Felt252Dict<u128> = Default::default();
+        for (resource_type, amount) in added_resources {
+            add_resource.insert((*resource_type).into(), *amount);
         };
 
         let mut new_resources: Array<(u8, u128)> = array![];
         for (resource_type, balance) in existing_resources {
             let mut balance = *balance;
-            if add_resource.get((*resource_type).into()) {
-                let (_, amount) = added_resources.at((*resource_type).into());
-                balance += *amount;
-                total_amount += *amount;
+            let mut amount = add_resource.get((*resource_type).into());
+            if amount.is_non_zero() {
+                balance += amount;
+                total_amount += amount;
             }
+            add_resource.insert((*resource_type).into(), 0);
             new_resources.append((*resource_type, balance));
         };
 
-        for (resource_type, amount) in added_resources {
-            if !add_resource.get((*resource_type).into()) {
-                new_resources.append((*resource_type, *amount));
-                total_amount += *amount;
+        for (resource_type, _) in added_resources {
+            let mut amount = add_resource.get((*resource_type).into());
+            if amount.is_non_zero() {
+                new_resources.append((*resource_type, amount));
+                total_amount += amount;
             }
         };
-
         existing_resources = new_resources.span();
     }
 
