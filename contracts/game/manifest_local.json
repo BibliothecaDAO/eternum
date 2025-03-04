@@ -1634,8 +1634,8 @@
       ]
     },
     {
-      "address": "0x4fe55f69b62c54762df1fde7bc374f8532aa7ce4c4c19bd456673bedfc66dc",
-      "class_hash": "0xf0f9e0466f249ba43ee9fe2b1fab3e0ee90ceb6da359b928fe39cb1b7dde8b",
+      "address": "0xc1b3abe33ef49d55bf4e49ea526e9e5e8ced0b37b66cf25d856aaa57f334bd",
+      "class_hash": "0x26fa619e19b1a6a531e8501b53fe7c432bed6af8fa21494691cb958cba0a7aa",
       "abi": [
         {
           "type": "impl",
@@ -2255,19 +2255,7 @@
               "type": "()"
             },
             {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
               "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
               "type": "()"
             },
             {
@@ -3809,7 +3797,7 @@
     },
     {
       "address": "0x1b442d641b7aacf02c82cab9ea76cd68621b63ea03bf575a4f88c41a7bd52ac",
-      "class_hash": "0x3e9e98e527ddf63980f2b546db66283443c1a8d017921885e2f71848dfeba2b",
+      "class_hash": "0x67fb2fd37d69214d5fc796c57479b0289335232fd65a79e14b5ac44ce5c8cbf",
       "abi": [
         {
           "type": "impl",
@@ -4481,8 +4469,8 @@
       ]
     },
     {
-      "address": "0x2ff215c2cf2791d5edb046531499b12178205cadb679d15c2128a193d76293a",
-      "class_hash": "0x4d2deffe407c8e7b8b44aff13e0fc1e81fb34a85fd582a1193598009239f53b",
+      "address": "0x7dd81997e36febf23bb0374f51cb3c19c4a0e06359d13620f6211628cd13c8d",
+      "class_hash": "0x2d2f31bfc582c0fdb8431a00974db4fcb0f67ad143d5a1a7dc67969d5ecec2e",
       "abi": [
         {
           "type": "impl",
@@ -4644,19 +4632,7 @@
               "type": "()"
             },
             {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
               "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
               "type": "()"
             },
             {
@@ -4981,8 +4957,8 @@
       ]
     },
     {
-      "address": "0x149450236cbbb96f2f06edf47dfc87f3654dd2f4ddf00c679e4a441e36071ae",
-      "class_hash": "0x2f892c857f9afeda9f0319ba150706b79b59e5b969e40769456e4d476702a3a",
+      "address": "0x4c4bbaad7548264121ba324c00ca45c02f2cb18160a60952f48e3b1038431c4",
+      "class_hash": "0x50086337ad61ba4a9ebcac92d31e8a1bffc4dd07edc80902cf4c659816709f6",
       "abi": [
         {
           "type": "impl",
@@ -6266,8 +6242,8 @@
       ]
     },
     {
-      "address": "0x396b769077bde7f9379583129294b1cf3dce5da034f9d0aa7fefd61cc90878e",
-      "class_hash": "0x59d3b0050137309e6c111f08e95bb891c5668a0b9577e5095cc0f19b3e77c9b",
+      "address": "0x63943db422e65757043b33bdd4b73ecf40e69f76a2c9e186b788974c08da936",
+      "class_hash": "0x28de0ce0ea9ee41576bd8de6cad198af97e12f9526de34faf8b858f3d9a04a5",
       "abi": [
         {
           "type": "impl",
@@ -6503,8 +6479,8 @@
       ]
     },
     {
-      "address": "0x36f36977abab1a09b2d7eb7dc07d97a69c1e4fe7db2a4af5c76366263659537",
-      "class_hash": "0x1551723b93456351057cefcdba87c5d6a5e66ae28ab1f84c40ccb52a9b5b5ca",
+      "address": "0x3f09417a5c6bb03f2475c469a764d854efa325fe4148658f617aa6c2628c0f6",
+      "class_hash": "0x39445dae85b1075ad738f356b24082745659384df1a64806eed0894d6619ccf",
       "abi": [
         {
           "type": "impl",
@@ -6769,8 +6745,8 @@
       ]
     },
     {
-      "address": "0x37b29c994308ff9311cd4dcbbb4bd1e74495943b4aea25e999244fcc8d992d0",
-      "class_hash": "0x84d0fc40dc3425a242edf720817834043055fe2ad517562036787e47ca5d16",
+      "address": "0x6375e997b9c387d8bd611a889da57b3ce9ab18fe13cbe3a268826bf48b8b037",
+      "class_hash": "0x22c713bd34533b4d3342bd3afbc9731c92842b160773beaf8dee9900c6cd0e6",
       "abi": [
         {
           "type": "impl",
@@ -7546,8 +7522,8 @@
       ]
     },
     {
-      "address": "0x7a1514f3d26ffa9e95d089d7998e84bdf706f0f5833968cfdbfb952a79aab29",
-      "class_hash": "0x52e526b4f1ba7e5822e49a6b2e8e9853519bdbf59599477185977686e148f89",
+      "address": "0x34b13a247d0f0d93a8a4cc70611559da02153d571450007ed1f1b6d5559c057",
+      "class_hash": "0x3c518000097fa6bc3bbe6be7dd7456361e5090978ba91097d537193d749b64f",
       "abi": [
         {
           "type": "impl",
@@ -8056,19 +8032,19 @@
     },
     {
       "members": [],
-      "class_hash": "0x737e5629c9ca17b3f26d11bd6b2123069ed33fa5f0ed4a29e11e340e67b32a2",
+      "class_hash": "0x2a1049d1bea45b479c88dc93525c3ff856339961098d2ed07e16df516a24fe0",
       "tag": "s1_eternum-Building",
       "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
     },
     {
       "members": [],
-      "class_hash": "0x1a921c4d6062f73a67e6747bc5bac638beaf77642530a6c4c6dff2c70ecd83d",
+      "class_hash": "0x4410e282596e82ff0c421167bc99e83370c06b08571fed4959d86c780e3b83",
       "tag": "s1_eternum-BuildingCategoryPopConfig",
       "selector": "0x2b847fd482c7e77364e1a29d18c690661dee59631db5538e063065cd28a9157"
     },
     {
       "members": [],
-      "class_hash": "0x45ffba494722d3d5527eb03936b6b2d6b818e5e544c54646ee4ae7bdaf58b57",
+      "class_hash": "0x7b82c69beddbc9776e37027cb78d518c89e7ba61c12d348a7f2ac2ee2270a3b",
       "tag": "s1_eternum-BuildingConfig",
       "selector": "0x10ab036ccd4d1e968f0b3b3333d59911fd7f96cbd0fe73c9d639b80aaf10ef4"
     },

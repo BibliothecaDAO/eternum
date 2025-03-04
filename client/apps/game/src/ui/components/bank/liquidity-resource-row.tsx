@@ -95,14 +95,17 @@ export const LiquidityResourceRow = ({
       
       if (!closestBank) return;
 
+      const calldata = {
+        bank_entity_id: closestBank.bankId,
+        entity_id: entityId,
+        resource_type: BigInt(resourceId),
+        shares: withdrawShares,
+        signer: dojoContext.account.account,
+      }
+      console.log(calldata);
+
       dojoContext.setup.systemCalls
-        .remove_liquidity({
-          bank_entity_id: closestBank.bankId,
-          entity_id: entityId,
-          resource_type: BigInt(resourceId),
-          shares: withdrawShares,
-          signer: dojoContext.account.account,
-        })
+        .remove_liquidity(calldata)
         .finally(() => {
           setIsLoading(false);
           setOpenConfirmation(false);
