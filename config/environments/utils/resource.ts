@@ -8,7 +8,7 @@ import {
 
 // weight in kg
 // grams / 10^9
-const NANOGRAM_PRECISION = 1000000000;
+export const NANOGRAM_PRECISION = 1000000000;
 export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Wood]: 1000 * NANOGRAM_PRECISION,
   [ResourcesIds.Stone]: 1000 * NANOGRAM_PRECISION,

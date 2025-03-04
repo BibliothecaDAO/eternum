@@ -1063,7 +1063,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           resource_type: RecsType.Number,
-          weight_gram: RecsType.BigInt,
+          weight_nanogram: RecsType.BigInt,
         },
         {
           metadata: {

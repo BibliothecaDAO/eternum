@@ -193,12 +193,13 @@ export class ClientConfigManager {
   }
 
   getResourceWeight(resourceId: number): number {
+    const NANOGRAM_PRECISION = 1000000000;
     return this.getValueOrDefault(() => {
-      const weightConfig = getComponentValue(
+      const weightNanogram = getComponentValue(
         this.components.WeightConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(resourceId)]),
-      );
-      return Number(weightConfig?.weight_gram ?? 0);
+      )?.weight_nanogram;
+      return Number(weightNanogram ?? 0) / NANOGRAM_PRECISION;
     }, 0);
   }
 
@@ -761,18 +762,6 @@ export class ClientConfigManager {
         endedAt: 0n,
       },
     );
-  }
-
-  getWeightLessResources() {
-    return this.getValueOrDefault(() => {
-      const weightlessResources: ResourcesIds[] = [];
-      for (const resourceId of Object.values(ResourcesIds).filter(Number.isInteger)) {
-        if (this.getResourceWeight(Number(resourceId)) === 0) {
-          weightlessResources.push(Number(resourceId));
-        }
-      }
-      return weightlessResources;
-    }, []);
   }
 }
 
