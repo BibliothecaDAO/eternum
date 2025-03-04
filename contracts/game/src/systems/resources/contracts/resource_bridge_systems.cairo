@@ -203,7 +203,6 @@ pub mod resource_bridge_systems {
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
-    use s1_eternum::models::owner::{EntityOwner, EntityOwnerTrait, Owner};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -408,11 +407,10 @@ pub mod resource_bridge_systems {
                 world, selector!("season_bridge_config"),
             );
             season_bridge_config.assert_bridge_is_open(world);
-
             // ensure caller is owner of from_realm_id
-            let entity_owner: EntityOwner = world.read_model(from_realm_id);
-            entity_owner.assert_caller_owner(world);
-            // // ensure through bank is a bank
+        // let entity_owner: EntityOwner = world.read_model(from_realm_id);
+        // entity_owner.assert_caller_owner(world);
+        // // ensure through bank is a bank
         // let through_bank_id = ADMIN_BANK_ENTITY_ID;
         // let through_bank: StructureBase = StructureBaseStoreImpl::retrieve(ref world, through_bank_id);
         // through_bank.assert_exists();
@@ -558,11 +556,15 @@ pub mod resource_bridge_systems {
         }
 
         fn send_bank_fees(
-            ref world: WorldStorage, bank_id: ID, resource_type: u8, amount: u128, tx_type: TxType,
+            ref world: WorldStorage,
+            bank_id: ID,
+            resource_type: u8,
+            amount: u128,
+            tx_type: TxType,
+            bank_owner_address: ContractAddress,
         ) -> u128 {
-            let bank_owner: Owner = world.read_model(bank_id);
             // if caller is bank owner, no fees are paid
-            if bank_owner.address != get_caller_address() {
+            if bank_owner_address != get_caller_address() {
                 let fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
                     world, selector!("res_bridge_fee_split_config"),
                 );

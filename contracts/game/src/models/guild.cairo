@@ -8,6 +8,7 @@ pub struct Guild {
     pub entity_id: ID,
     pub is_public: bool,
     pub member_count: u16,
+    pub owner: ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
