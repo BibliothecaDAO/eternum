@@ -245,6 +245,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         let mut to_structure_resource_arrival_day_total = ResourceArrivalImpl::read_day_total(
             ref world, to_structure_id, day,
         );
+
+        // todo: delay delivery by day and slot
         let mut index_counted: u8 = 0;
         let mut total_amount_deposited: u128 = 0;
         loop {
