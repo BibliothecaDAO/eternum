@@ -26,7 +26,7 @@ import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   RESOURCE_PRODUCTION_THROUGH_LABOR,
-  RESOURCES_WEIGHTS_GRAM,
+  RESOURCES_WEIGHTS_NANOGRAM,
   STARTING_RESOURCES,
 } from "./utils/resource";
 import {
@@ -188,7 +188,7 @@ export const EternumGlobalConfig: Config = {
     resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
     resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
     resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
-    resourceWeightsGrams: RESOURCES_WEIGHTS_GRAM,
+    resourceWeightsGrams: RESOURCES_WEIGHTS_NANOGRAM,
     resourceRarity: RESOURCE_RARITY,
   },
   trade: {
