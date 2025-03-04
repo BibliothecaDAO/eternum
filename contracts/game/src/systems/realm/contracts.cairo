@@ -2,7 +2,7 @@ use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait ISeasonPass<TState> {
+pub trait ISeasonPass<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
     fn transfer_from(self: @TState, from: ContractAddress, to: ContractAddress, token_id: u256);
     fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -10,59 +10,60 @@ trait ISeasonPass<TState> {
 }
 
 #[starknet::interface]
-trait IERC20<TState> {
+pub trait IERC20<TState> {
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
 }
 
 
 #[starknet::interface]
-trait IRealmSystems<T> {
-    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
-    fn upgrade_level(ref self: T, realm_id: ID);
-    fn quest_claim(ref self: T, quest_id: ID, entity_id: ID);
+pub trait IRealmSystems<T> {
+    fn create(
+        ref self: T,
+        owner: starknet::ContractAddress,
+        realm_id: ID,
+        frontend: ContractAddress,
+        lords_resource_index: u8,
+    ) -> ID;
 }
 
 #[dojo::contract]
-mod realm_systems {
-    use achievement::store::{Store, StoreTrait};
+pub mod realm_systems {
+    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::REALM_ENTITY_TYPE;
-    use s1_eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, DEFAULT_NS, WONDER_QUEST_REWARD_BOOST};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{CapacityConfigCategory, RealmLevelConfig, SettlementConfig, SettlementConfigImpl};
-    use s1_eternum::models::config::{QuestRewardConfig, SeasonAddressesConfig, ProductionConfig};
-    use s1_eternum::models::event::{SettleRealmData, EventType};
-    use s1_eternum::models::map::Tile;
-    use s1_eternum::models::movable::Movable;
+    use s1_eternum::constants::{
+        DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
+    };
+    use s1_eternum::models::config::{
+        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
+    };
+    use s1_eternum::models::event::{EventType, SettleRealmData};
+    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::name::{AddressName};
-    use s1_eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use s1_eternum::models::position::{Position, Coord};
-    use s1_eternum::models::quantity::QuantityTracker;
-    use s1_eternum::models::quest::{Quest};
-    use s1_eternum::models::realm::{
-        Realm, RealmTrait, RealmImpl, RealmResourcesTrait, RealmResourcesImpl, RealmNameAndAttrsDecodingTrait,
-        RealmNameAndAttrsDecodingImpl, RealmReferenceImpl
-    };
-    use s1_eternum::models::resource::production::labor::{LaborImpl};
+    use s1_eternum::models::position::{Coord};
+    use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
-        DetachedResource, Resource, ResourceImpl, ResourceTrait, ResourceFoodImpl, ResourceFoodTrait
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-
+    use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s1_eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
-        IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait
+    use s1_eternum::models::structure::{
+        StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
-    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
-
+    use s1_eternum::models::weight::{Weight};
+    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
+        IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
+    };
+    use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
-    use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait, IERC20Dispatcher, IERC20DispatcherTrait};
+    use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
@@ -76,39 +77,55 @@ mod realm_systems {
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
+        fn create(
+            ref self: ContractState,
+            owner: ContractAddress,
+            realm_id: ID,
+            frontend: ContractAddress,
+            lords_resource_index: u8,
+        ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_has_started(world);
+            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
+            season.assert_has_started();
             SeasonImpl::assert_season_is_not_over(world);
 
             // collect season pass
-            let season: SeasonAddressesConfig = world.read_model(WORLD_CONFIG_ID);
-            InternalRealmLogicImpl::collect_season_pass(season.season_pass_address, realm_id);
+            let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("season_addresses_config"),
+            );
+            InternalRealmLogicImpl::collect_season_pass(season_addresses_config.season_pass_address, realm_id);
 
             // retrieve realm metadata
             let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
                 InternalRealmLogicImpl::retrieve_metadata_from_season_pass(
-                season.season_pass_address, realm_id
+                season_addresses_config.season_pass_address, realm_id,
             );
 
             // create realm
             let mut coord: Coord = InternalRealmLogicImpl::get_new_location(ref world);
-            let (entity_id, realm_produced_resources_packed) = InternalRealmLogicImpl::create_realm(
-                ref world, owner, realm_id, resources, order, 0, wonder, coord
+            let structure_id = InternalRealmLogicImpl::create_realm(
+                ref world, owner, realm_id, resources, order, 0, wonder, coord,
             );
 
             // collect lords attached to season pass and bridge into the realm
             let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
-                season.season_pass_address, realm_id
+                season_addresses_config.season_pass_address, realm_id,
             );
 
             // bridge attached lords into the realm
             if lords_amount_attached.is_non_zero() {
                 InternalRealmLogicImpl::bridge_lords_into_realm(
-                    ref world, season.lords_address, entity_id, lords_amount_attached, frontend
+                    ref world,
+                    season_addresses_config.lords_address,
+                    structure_id,
+                    lords_amount_attached,
+                    frontend,
+                    lords_resource_index,
                 );
             }
+
+            InternalRealmLogicImpl::get_starting_resources(ref world, structure_id);
 
             // emit realm settle event
             let address_name: AddressName = world.read_model(owner);
@@ -117,11 +134,11 @@ mod realm_systems {
                     @SettleRealmData {
                         id: world.dispatcher.uuid(),
                         event_id: EventType::SettleRealm,
-                        entity_id,
+                        entity_id: structure_id,
                         owner_address: owner,
                         owner_name: address_name.name,
                         realm_name: realm_name,
-                        produced_resources: realm_produced_resources_packed,
+                        produced_resources: 0, // why?
                         cities,
                         harbors,
                         rivers,
@@ -131,122 +148,16 @@ mod realm_systems {
                         x: coord.x,
                         y: coord.y,
                         timestamp: starknet::get_block_timestamp(),
-                    }
+                    },
                 );
 
-            entity_id.into()
-        }
-
-
-        fn upgrade_level(ref self: ContractState, realm_id: ID) {
-            // ensure caller owns the realm
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let entity_owner: EntityOwner = world.read_model(realm_id);
-            entity_owner.assert_caller_owner(world);
-
-            // ensure entity is a realm
-            let mut realm: Realm = world.read_model(realm_id);
-            realm.assert_is_set();
-
-            // ensure realm is not already at max level
-            let max_level = realm.max_level(world);
-            assert(realm.level < max_level, 'realm is already at max level');
-
-            // make payment to upgrade to next level
-            let next_level = realm.level + 1;
-            let realm_level_config: RealmLevelConfig = world.read_model(next_level);
-            let required_resources_id = realm_level_config.required_resources_id;
-            let required_resource_count = realm_level_config.required_resource_count;
-            let mut index = 0;
-            loop {
-                if index == required_resource_count {
-                    break;
-                }
-
-                let mut required_resource: DetachedResource = world.read_model((required_resources_id, index));
-
-                // burn resource from realm
-                let mut realm_resource = ResourceImpl::get(ref world, (realm_id, required_resource.resource_type));
-                realm_resource.burn(required_resource.resource_amount);
-                realm_resource.save(ref world);
-                index += 1;
-            };
-
-            // set new level
-            realm.level = next_level;
-            world.write_model(@realm);
-
-            // [Achievement] Upgrade to max level
-            if realm.level == max_level {
-                let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Maximalist.identifier();
-                let store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
-            }
-        }
-
-        fn quest_claim(ref self: ContractState, quest_id: ID, entity_id: ID) {
-            // ensure season is still active
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            // ensure entity is a realm
-            let realm: Realm = world.read_model(entity_id);
-            realm.assert_is_set();
-
-            let entity_owner: EntityOwner = world.read_model(entity_id);
-            entity_owner.assert_caller_owner(world);
-
-            // ensure quest is not already completed
-            let mut quest: Quest = world.read_model((entity_id, quest_id));
-            assert(!quest.completed, 'quest already completed');
-
-            // ensure quest has rewards
-            let quest_reward_config: QuestRewardConfig = world.read_model(quest_id);
-            assert(quest_reward_config.detached_resource_count > 0, 'quest has no rewards');
-
-            let mut index = 0;
-            loop {
-                if index == quest_reward_config.detached_resource_count {
-                    break;
-                }
-
-                // get reward resource
-                let mut detached_resource: DetachedResource = world
-                    .read_model((quest_reward_config.detached_resource_id, index));
-                let reward_resource_type = detached_resource.resource_type;
-                let mut reward_resource_amount = detached_resource.resource_amount;
-
-                if realm.has_wonder {
-                    reward_resource_amount *= WONDER_QUEST_REWARD_BOOST.into();
-                }
-
-                let mut realm_resource = ResourceImpl::get(ref world, (entity_id.into(), reward_resource_type));
-                realm_resource.add(reward_resource_amount);
-                realm_resource.save(ref world);
-
-                index += 1;
-            };
-
-            quest.completed = true;
-            world.write_model(@quest);
-
-            // [Achievement] Complete all quests
-            let next_quest_id: ID = (quest_id + 1).into();
-            let next_quest_reward_config: QuestRewardConfig = world.read_model(next_quest_id);
-            // if the next quest has no rewards, the player has completed all quests
-            if (next_quest_reward_config.detached_resource_count == 0) {
-                let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Squire.identifier();
-                let store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp(),);
-            };
+            structure_id.into()
         }
     }
 
 
     #[generate_trait]
-    impl InternalRealmLogicImpl of InternalRealmLogicTrait {
+    pub impl InternalRealmLogicImpl of InternalRealmLogicTrait {
         fn create_realm(
             ref world: WorldStorage,
             owner: ContractAddress,
@@ -255,45 +166,34 @@ mod realm_systems {
             order: u8,
             level: u8,
             wonder: u8,
-            coord: Coord
-        ) -> (ID, u128) {
-            // create realm
-
+            coord: Coord,
+        ) -> ID {
+            // create structure
             let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
-            let realm_produced_resources_packed = RealmResourcesImpl::pack_resource_types(resources.span());
-            let entity_id = world.dispatcher.uuid();
-            let now = starknet::get_block_timestamp();
-            world.write_model(@Owner { entity_id: entity_id.into(), address: owner });
-            world.write_model(@EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() });
-            world
-                .write_model(
-                    @Structure { entity_id: entity_id.into(), category: StructureCategory::Realm, created_at: now, }
-                );
-            world.write_model(@StructureCount { coord, count: 1 });
-            world
-                .write_model(
-                    @CapacityCategory { entity_id: entity_id.into(), category: CapacityConfigCategory::Structure }
-                );
-            world
-                .write_model(
-                    @Realm {
-                        entity_id: entity_id.into(),
-                        realm_id,
-                        produced_resources: realm_produced_resources_packed,
-                        order,
-                        level,
-                        has_wonder,
-                    }
-                );
-            world.write_model(@Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, });
-
-            // explore tile where realm sits if not already explored
-            let mut tile: Tile = world.read_model((coord.x, coord.y));
-            if tile.explored_at.is_zero() {
-                InternalMapSystemsImpl::explore(ref world, entity_id.into(), coord, array![(1, 0)].span());
+            let structure_id = world.dispatcher.uuid();
+            let mut tile_occupier = TileOccupier::RealmRegular;
+            if has_wonder {
+                tile_occupier = TileOccupier::RealmWonder;
             }
 
-            (entity_id, realm_produced_resources_packed)
+            iStructureImpl::create(
+                ref world,
+                coord,
+                owner,
+                structure_id,
+                StructureCategory::Realm,
+                false,
+                resources.span(),
+                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder },
+                tile_occupier.into(),
+            );
+
+            // place castle building
+            BuildingImpl::create(
+                ref world, structure_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),
+            );
+
+            structure_id
         }
 
         fn collect_season_pass(season_pass_address: ContractAddress, realm_id: ID) {
@@ -321,17 +221,18 @@ mod realm_systems {
         fn bridge_lords_into_realm(
             ref world: WorldStorage,
             lords_address: ContractAddress,
-            realm_entity_id: ID,
+            realm_structure_id: ID,
             amount: u256,
-            frontend: ContractAddress
+            frontend: ContractAddress,
+            lords_resource_index: u8,
         ) {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
                 match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
                 dojo::world::Resource::Contract((
-                    contract_address, namespace_hash
+                    contract_address, namespace_hash,
                 )) => (contract_address, namespace_hash),
-                _ => (Zeroable::zero(), Zeroable::zero())
+                _ => (Zero::zero(), Zero::zero()),
             };
 
             // approve bridge to spend lords
@@ -339,12 +240,12 @@ mod realm_systems {
 
             // deposit lords
             IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit_initial(lords_address, realm_entity_id, amount, frontend);
+                .deposit_initial(lords_address, realm_structure_id, amount, frontend, lords_resource_index);
         }
 
 
         fn retrieve_metadata_from_season_pass(
-            season_pass_address: ContractAddress, realm_id: ID
+            season_pass_address: ContractAddress, realm_id: ID,
         ) -> (felt252, u8, u8, u8, u8, u8, u8, Array<u8>) {
             let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
             let (name_and_attrs, _urla, _urlb) = season_pass.get_encoded_metadata(realm_id.try_into().unwrap());
@@ -355,20 +256,51 @@ mod realm_systems {
             // ensure that the coord is not occupied by any other structure
             let mut found_coords = false;
             let mut coord: Coord = Coord { x: 0, y: 0 };
-            let mut settlement_config: SettlementConfig = world.read_model(WORLD_CONFIG_ID);
+            let mut settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("settlement_config"),
+            );
             while (!found_coords) {
+                //todo: note: ask if its okay if new realm is not settled at
+                // correct location when a troop is on it
                 coord = settlement_config.get_next_settlement_coord();
-                let mut structure_count: StructureCount = world.read_model(coord);
-                if structure_count.is_none() {
+                let tile: Tile = world.read_model((coord.x, coord.y));
+                if tile.not_occupied() {
+                    // todo: critical: check that structure can settle directly beside another
                     found_coords = true;
-                    structure_count.count = 1;
-                    world.write_model(@structure_count);
                 }
-                // save the new config so that if there's no already a structure at the coord we can find a new one
-                world.write_model(@settlement_config);
             };
 
+            // save the new config so that if there's no already a structure at the coord we can
+            // find a new one
+            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
             return coord;
+        }
+
+        fn get_starting_resources(ref world: WorldStorage, structure_id: ID) {
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
+
+            let resources_ids = all_resource_ids();
+            for resource_id in resources_ids {
+                let starting_resources_config: StartingResourcesConfig = world.read_model(resource_id);
+                let mut resource_amount: u128 = starting_resources_config.resource_amount;
+
+                if resource_id == ResourceTypes::LORDS || resource_amount == 0 {
+                    continue;
+                }
+
+                if structure_metadata.has_wonder {
+                    resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
+                }
+
+                let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_id);
+                let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                    ref world, structure_id, resource_id, ref structure_weight, resource_weight_grams, true,
+                );
+                realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+                realm_resource.store(ref world);
+            };
+            structure_weight.store(ref world, structure_id);
         }
     }
 }

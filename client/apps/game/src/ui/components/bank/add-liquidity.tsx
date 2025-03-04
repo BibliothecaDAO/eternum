@@ -15,7 +15,7 @@ import {
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
@@ -35,7 +35,7 @@ const AddLiquidity = ({
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
@@ -73,10 +73,8 @@ const AddLiquidity = ({
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
-  const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
+  const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
     setIsLoading(true);
@@ -171,8 +169,6 @@ const AddLiquidity = ({
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
                 {!isNotZero && <div>Warning: Amount must be greater than zero</div>}
                 {!hasEnough && <div>Warning: Not enough resources for this operation</div>}
-                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
-                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>

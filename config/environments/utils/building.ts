@@ -8,10 +8,16 @@ export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
   [BuildingType.Resource]: 0,
   [BuildingType.Farm]: 0,
   [BuildingType.FishingVillage]: 0,
-  [BuildingType.Barracks]: 0,
+  [BuildingType.Barracks1]: 0,
+  [BuildingType.Barracks2]: 0,
+  [BuildingType.Barracks3]: 0,
   [BuildingType.Market]: 0,
-  [BuildingType.ArcheryRange]: 0,
-  [BuildingType.Stable]: 0,
+  [BuildingType.ArcheryRange1]: 0,
+  [BuildingType.ArcheryRange2]: 0,
+  [BuildingType.ArcheryRange3]: 0,
+  [BuildingType.Stable1]: 0,
+  [BuildingType.Stable2]: 0,
+  [BuildingType.Stable3]: 0,
   [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 5,
   [BuildingType.WatchTower]: 0,
@@ -27,10 +33,16 @@ export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
   [BuildingType.Resource]: 2,
   [BuildingType.Farm]: 1,
   [BuildingType.FishingVillage]: 1,
-  [BuildingType.Barracks]: 2,
+  [BuildingType.Barracks1]: 2,
+  [BuildingType.Barracks2]: 2,
+  [BuildingType.Barracks3]: 2,
   [BuildingType.Market]: 3,
-  [BuildingType.ArcheryRange]: 2,
-  [BuildingType.Stable]: 3,
+  [BuildingType.ArcheryRange1]: 2,
+  [BuildingType.ArcheryRange2]: 2,
+  [BuildingType.ArcheryRange3]: 2,
+  [BuildingType.Stable1]: 3,
+  [BuildingType.Stable2]: 3,
+  [BuildingType.Stable3]: 3,
   [BuildingType.TradingPost]: 2,
   [BuildingType.WorkersHut]: 0,
   [BuildingType.WatchTower]: 2,
@@ -40,16 +52,22 @@ export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
 
 export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
   [BuildingType.None]: 0,
-  [BuildingType.Castle]: 0,
+  [BuildingType.Castle]: ResourcesIds.Labor,
   [BuildingType.Bank]: 0,
   [BuildingType.FragmentMine]: ResourcesIds.AncientFragment,
   [BuildingType.Resource]: 0,
   [BuildingType.Farm]: ResourcesIds.Wheat,
   [BuildingType.FishingVillage]: ResourcesIds.Fish,
-  [BuildingType.Barracks]: ResourcesIds.Knight,
+  [BuildingType.Barracks1]: ResourcesIds.Knight,
+  [BuildingType.Barracks2]: ResourcesIds.KnightT2,
+  [BuildingType.Barracks3]: ResourcesIds.KnightT3,
   [BuildingType.Market]: ResourcesIds.Donkey,
-  [BuildingType.ArcheryRange]: ResourcesIds.Crossbowman,
-  [BuildingType.Stable]: ResourcesIds.Paladin,
+  [BuildingType.ArcheryRange1]: ResourcesIds.Crossbowman,
+  [BuildingType.ArcheryRange2]: ResourcesIds.CrossbowmanT2,
+  [BuildingType.ArcheryRange3]: ResourcesIds.CrossbowmanT3,
+  [BuildingType.Stable1]: ResourcesIds.Paladin,
+  [BuildingType.Stable2]: ResourcesIds.PaladinT2,
+  [BuildingType.Stable3]: ResourcesIds.PaladinT3,
   [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 0,
   [BuildingType.WatchTower]: 0,
@@ -57,7 +75,7 @@ export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
   [BuildingType.Storehouse]: 0,
 };
 
-export const NON_RESOURCE_BUILDING_COSTS: ResourceInputs = {
+export const OTHER_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.None]: [],
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
@@ -73,21 +91,63 @@ export const NON_RESOURCE_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Ruby, amount: 25_000 },
     { resource: ResourcesIds.DeepCrystal, amount: 5_000 },
   ],
-  [BuildingType.Barracks]: [
+  [BuildingType.Barracks1]: [
     { resource: ResourcesIds.Wheat, amount: 1_000_000 },
     { resource: ResourcesIds.Wood, amount: 75_000 },
     { resource: ResourcesIds.Coal, amount: 75_000 },
     { resource: ResourcesIds.Silver, amount: 50_000 },
     { resource: ResourcesIds.Gold, amount: 45_000 },
   ],
-  [BuildingType.ArcheryRange]: [
+  [BuildingType.ArcheryRange1]: [
     { resource: ResourcesIds.Fish, amount: 1_000_000 },
     { resource: ResourcesIds.Wood, amount: 75_000 },
     { resource: ResourcesIds.Obsidian, amount: 75_000 },
     { resource: ResourcesIds.Gold, amount: 25_000 },
     { resource: ResourcesIds.Hartwood, amount: 25_000 },
   ],
-  [BuildingType.Stable]: [
+  [BuildingType.Stable1]: [
+    { resource: ResourcesIds.Wheat, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Silver, amount: 75_000 },
+    { resource: ResourcesIds.Ironwood, amount: 35_000 },
+    { resource: ResourcesIds.Gold, amount: 25_000 },
+  ],
+  [BuildingType.Barracks2]: [
+    { resource: ResourcesIds.Wheat, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Coal, amount: 75_000 },
+    { resource: ResourcesIds.Silver, amount: 50_000 },
+    { resource: ResourcesIds.Gold, amount: 45_000 },
+  ],
+  [BuildingType.ArcheryRange2]: [
+    { resource: ResourcesIds.Fish, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Obsidian, amount: 75_000 },
+    { resource: ResourcesIds.Gold, amount: 25_000 },
+    { resource: ResourcesIds.Hartwood, amount: 25_000 },
+  ],
+  [BuildingType.Stable2]: [
+    { resource: ResourcesIds.Wheat, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Silver, amount: 75_000 },
+    { resource: ResourcesIds.Ironwood, amount: 35_000 },
+    { resource: ResourcesIds.Gold, amount: 25_000 },
+  ],
+  [BuildingType.Barracks3]: [
+    { resource: ResourcesIds.Wheat, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Coal, amount: 75_000 },
+    { resource: ResourcesIds.Silver, amount: 50_000 },
+    { resource: ResourcesIds.Gold, amount: 45_000 },
+  ],
+  [BuildingType.ArcheryRange3]: [
+    { resource: ResourcesIds.Fish, amount: 1_000_000 },
+    { resource: ResourcesIds.Wood, amount: 75_000 },
+    { resource: ResourcesIds.Obsidian, amount: 75_000 },
+    { resource: ResourcesIds.Gold, amount: 25_000 },
+    { resource: ResourcesIds.Hartwood, amount: 25_000 },
+  ],
+  [BuildingType.Stable3]: [
     { resource: ResourcesIds.Wheat, amount: 1_000_000 },
     { resource: ResourcesIds.Wood, amount: 75_000 },
     { resource: ResourcesIds.Silver, amount: 75_000 },
@@ -111,6 +171,10 @@ export const NON_RESOURCE_BUILDING_COSTS: ResourceInputs = {
   ],
 };
 
+//  Note: ensure that no resource associated with some other building
+//      is also associated with a resource building cost
+//      (e.g. dont add Labor resource here again because it is
+//      already associated with the Labor building)
 export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
@@ -134,31 +198,4 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Adamantine]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   [ResourcesIds.Mithral]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
-  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
-  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-  [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
-  [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-  [ResourcesIds.Lords]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
-  [ResourcesIds.AncientFragment]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-};
-// Approx creation of a building per Realm
-
-export const BUILDING_DELTA_USAGE: { [key: number]: number } = {
-  [BuildingType.Castle]: 1,
-  [BuildingType.Bank]: 0,
-  [BuildingType.FragmentMine]: 0,
-  [BuildingType.Resource]: 0,
-  [BuildingType.Farm]: 6,
-  [BuildingType.FishingVillage]: 6,
-  [BuildingType.Barracks]: 3,
-  [BuildingType.Market]: 3,
-  [BuildingType.ArcheryRange]: 3,
-  [BuildingType.Stable]: 3,
-  [BuildingType.TradingPost]: 0,
-  [BuildingType.WorkersHut]: 0,
-  [BuildingType.WatchTower]: 0,
-  [BuildingType.Walls]: 0,
-  [BuildingType.Storehouse]: 3,
 };

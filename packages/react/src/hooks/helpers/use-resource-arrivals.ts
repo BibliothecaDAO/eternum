@@ -1,170 +1,145 @@
-import {
-  ArrivalInfo,
-  ContractAddress,
-  DONKEY_RESOURCE_TRACKER,
-  LORDS_AND_DONKEY_RESOURCE_TRACKER,
-  LORDS_RESOURCE_TRACKER,
-} from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
-import { Entity, Has, HasValue, NotValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDojo } from "../";
+// import { ArrivalInfo, ContractAddress } from "@bibliothecadao/eternum";
+// import { useEntityQuery } from "@dojoengine/react";
+// import { Entity, Has, HasValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
+// import { getEntityIdFromKeys } from "@dojoengine/utils";
+// import { useCallback, useEffect, useMemo, useState } from "react";
+// import { useDojo } from "../";
 
-const getCurrentDonkeyWeightMinimum = () => {
-  return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0) * 1000;
-};
+// const getCurrentDonkeyWeightMinimum = () => {
+//   return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0) * 1000;
+// };
 
-const usePlayerArrivals = () => {
-  const {
-    account: { account },
-    setup: {
-      components: { Position, Owner, EntityOwner, OwnedResourcesTracker, ArrivalTime, Weight, Structure },
-    },
-  } = useDojo();
+// const usePlayerArrivals = () => {
+//   const {
+//     account: { account },
+//     setup: {
+//       components: { Position, Owner, EntityOwner, Structure, Resource },
+//     },
+//   } = useDojo();
 
-  const minWeight = getCurrentDonkeyWeightMinimum();
+//   const minWeight = getCurrentDonkeyWeightMinimum();
 
-  const playerStructures = useEntityQuery([
-    Has(Structure),
-    HasValue(Owner, { address: ContractAddress(account.address) }),
-  ]);
+//   const playerStructures = useEntityQuery([
+//     Has(Structure),
+//     HasValue(Owner, { address: ContractAddress(account.address) }),
+//   ]);
 
-  const playerStructurePositions = useMemo(() => {
-    return playerStructures.map((entityId) => {
-      const position = getComponentValue(Position, entityId);
-      return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
-    });
-  }, [playerStructures, Position]);
+//   const playerStructurePositions = useMemo(() => {
+//     return playerStructures.map((entityId) => {
+//       const position = getComponentValue(Position, entityId);
+//       return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
+//     });
+//   }, [playerStructures, Position]);
 
-  const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
+//   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
 
-  const hasMinWeight = useCallback(
-    (entity: Entity) => {
-      const weight = getComponentValue(Weight, entity);
-      return !!(weight?.value && Number(weight.value) >= minWeight);
-    },
-    [minWeight],
-  );
+//   const hasMinWeight = useCallback(
+//     (entity: Entity) => {
+//       const weight = getComponentValue(Resource, entity);
+//       return !!(weight && Number(weight) >= minWeight);
+//     },
+//     [minWeight],
+//   );
 
-  const createArrivalInfo = useCallback(
-    (id: Entity): ArrivalInfo | undefined => {
-      // Get required component values
-      const position = getComponentValue(Position, id);
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      const ownedResourceTracker = getComponentValue(OwnedResourcesTracker, id);
-      const entityOwner = getComponentValue(EntityOwner, id);
+//   const createArrivalInfo = useCallback(
+//     (id: Entity): ArrivalInfo | undefined => {
+//       // Get required component values
+//       const position = getComponentValue(Position, id);
+//       const entityOwner = getComponentValue(EntityOwner, id);
+//       const resource = getComponentValue(Resource, id);
 
-      // Return early if missing required components
-      if (!position || !arrivalTime) return undefined;
+//       // Return early if missing required components
+//       if (!position) return undefined;
 
-      // Check if entity has special resource types that don't need weight check
-      const hasSpecialResources =
-        ownedResourceTracker?.resource_types === DONKEY_RESOURCE_TRACKER ||
-        ownedResourceTracker?.resource_types === LORDS_RESOURCE_TRACKER ||
-        ownedResourceTracker?.resource_types === LORDS_AND_DONKEY_RESOURCE_TRACKER;
+//       // Get owner information
+//       const ownerEntityId = getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]);
+//       const owner = getComponentValue(Owner, ownerEntityId);
+//       const isOwner = owner?.address === ContractAddress(account.address);
 
-      // Determine if entity meets weight requirements
-      const meetsWeightRequirement = hasSpecialResources || hasMinWeight(id);
+//       // Check if entity has resources
+//       const hasResources = !!(resource && resource.weight > 0);
+//       // Find matching player structure at position
+//       const playerStructurePosition = playerStructurePositions.find(
+//         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
+//       );
 
-      // Get owner information
-      const ownerEntityId = getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]);
-      const owner = getComponentValue(Owner, ownerEntityId);
-      const isOwner = owner?.address === ContractAddress(account.address);
+//       return {
+//         entityId: position.entity_id,
+//         recipientEntityId: playerStructurePosition?.entityId || 0,
+//         // fix
+//         arrivesAt: 17048448000n, // January 10, 2024
+//         isOwner,
+//         position: { x: position.x, y: position.y },
+//         hasResources,
+//         isHome: !!playerStructurePosition,
+//       };
+//     },
+//     [account, playerStructurePositions],
+//   );
 
-      // Check if entity has resources
-      const hasResources =
-        meetsWeightRequirement && !!ownedResourceTracker && ownedResourceTracker.resource_types !== 0n;
-      // Find matching player structure at position
-      const playerStructurePosition = playerStructurePositions.find(
-        (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
-      );
+//   const isMine = useCallback(
+//     (entity: Entity) => {
+//       const entityOwner = getComponentValue(EntityOwner, entity);
+//       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+//       return owner?.address === ContractAddress(account.address);
+//     },
+//     [account.address],
+//   );
 
-      return {
-        entityId: position.entity_id,
-        recipientEntityId: playerStructurePosition?.entityId || 0,
-        arrivesAt: arrivalTime.arrives_at,
-        isOwner,
-        position: { x: position.x, y: position.y },
-        hasResources,
-        isHome: !!playerStructurePosition,
-      };
-    },
-    [account, playerStructurePositions],
-  );
+//   useEffect(() => {
+//     const query = defineQuery([Has(Position), Has(EntityOwner)], { runOnInit: false });
 
-  const isMine = useCallback(
-    (entity: Entity) => {
-      const entityOwner = getComponentValue(EntityOwner, entity);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-      return owner?.address === ContractAddress(account.address);
-    },
-    [account.address],
-  );
+//     const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
+//       if (!newArrival) return arrivals;
 
-  useEffect(() => {
-    const query = defineQuery(
-      [
-        Has(Position),
-        Has(Weight),
-        Has(ArrivalTime),
-        Has(EntityOwner),
-        NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-      ],
-      { runOnInit: false },
-    );
+//       if (!newArrival.hasResources || !newArrival.isHome || !newArrival.isOwner) {
+//         return arrivals.filter((arrival) => arrival.entityId !== newArrival.entityId);
+//       }
 
-    const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
-      if (!newArrival) return arrivals;
+//       const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
+//       if (index !== -1) {
+//         return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
+//       }
+//       return [...arrivals, newArrival];
+//     };
 
-      if (!newArrival.hasResources || !newArrival.isHome || !newArrival.isOwner) {
-        return arrivals.filter((arrival) => arrival.entityId !== newArrival.entityId);
-      }
+//     const sub = query.update$.subscribe((update) => {
+//       if (
+//         isComponentUpdate(update, Position) ||
+//         isComponentUpdate(update, Weight) ||
+//         isComponentUpdate(update, EntityOwner) ||
+//         isComponentUpdate(update, ArrivalTime) ||
+//         isComponentUpdate(update, OwnedResourcesTracker)
+//       ) {
+//         setEntitiesWithInventory((arrivals) => handleArrivalUpdate(arrivals, createArrivalInfo(update.entity)));
+//       }
+//     });
 
-      const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
-      if (index !== -1) {
-        return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
-      }
-      return [...arrivals, newArrival];
-    };
+//     return () => sub.unsubscribe();
+//   }, [account, playerStructurePositions, createArrivalInfo, isMine]);
 
-    const sub = query.update$.subscribe((update) => {
-      if (
-        isComponentUpdate(update, Position) ||
-        isComponentUpdate(update, Weight) ||
-        isComponentUpdate(update, EntityOwner) ||
-        isComponentUpdate(update, ArrivalTime) ||
-        isComponentUpdate(update, OwnedResourcesTracker)
-      ) {
-        setEntitiesWithInventory((arrivals) => handleArrivalUpdate(arrivals, createArrivalInfo(update.entity)));
-      }
-    });
+//   return useMemo(
+//     () => entitiesWithInventory.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
+//     [entitiesWithInventory],
+//   );
+// };
 
-    return () => sub.unsubscribe();
-  }, [account, playerStructurePositions, createArrivalInfo, isMine]);
+// export const usePlayerArrivalsNotifications = (currentBlockTimestamp: number) => {
+//   const [arrivedNotificationLength, setArrivedNotificationLength] = useState(0);
+//   const [nonArrivedNotificationLength, setNonArrivedNotificationLength] = useState(0);
 
-  return useMemo(
-    () => entitiesWithInventory.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
-    [entitiesWithInventory],
-  );
-};
+//   const arrivals = usePlayerArrivals();
 
-export const usePlayerArrivalsNotifications = (currentBlockTimestamp: number) => {
-  const [arrivedNotificationLength, setArrivedNotificationLength] = useState(0);
-  const [nonArrivedNotificationLength, setNonArrivedNotificationLength] = useState(0);
+//   useEffect(() => {
+//     const arrivedCount = arrivals.filter(
+//       (arrival) => Number(arrival.arrivesAt) <= (currentBlockTimestamp || 0) && arrival.hasResources,
+//     ).length;
+//     const nonArrivedCount = arrivals.filter(
+//       (arrival) => Number(arrival.arrivesAt) > (currentBlockTimestamp || 0) && arrival.hasResources,
+//     ).length;
+//     setArrivedNotificationLength(arrivedCount);
+//     setNonArrivedNotificationLength(nonArrivedCount);
+//   }, [arrivals, currentBlockTimestamp]);
 
-  const arrivals = usePlayerArrivals();
-
-  useEffect(() => {
-    const arrivedCount = arrivals.filter(
-      (arrival) => Number(arrival.arrivesAt) <= (currentBlockTimestamp || 0) && arrival.hasResources,
-    ).length;
-    const nonArrivedCount = arrivals.filter(
-      (arrival) => Number(arrival.arrivesAt) > (currentBlockTimestamp || 0) && arrival.hasResources,
-    ).length;
-    setArrivedNotificationLength(arrivedCount);
-    setNonArrivedNotificationLength(nonArrivedCount);
-  }, [arrivals, currentBlockTimestamp]);
-
-  return { arrivedNotificationLength, nonArrivedNotificationLength, arrivals };
-};
+//   return { arrivedNotificationLength, nonArrivedNotificationLength, arrivals };
+// };

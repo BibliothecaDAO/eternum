@@ -5,9 +5,9 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
+  computeTravelTime,
   configManager,
   divideByPrecision,
   DONKEY_ENTITY_TYPE,
@@ -15,14 +15,11 @@ import {
   getRealmAddressName,
   getTotalResourceWeight,
   multiplyByPrecision,
-  RESOURCE_PRECISION,
-  ResourceManager,
   ResourcesIds,
   type ID,
-  type MarketInterface,
+  type MarketInterface
 } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, useResourceManager, useTravel } from "@bibliothecadao/react";
-import clsx from "clsx";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ONE_MONTH = 2628000;
@@ -45,14 +42,14 @@ export const MarketResource = memo(
     ammPrice: number;
   }) => {
     const { currentDefaultTick } = useBlockTimestamp();
-    const resourceManager = useResourceManager(entityId, resourceId);
+    const resourceManager = useResourceManager(entityId);
 
     const production = useMemo(() => {
-      return resourceManager.getProduction();
+      return resourceManager.getProduction(resourceId);
     }, []);
 
     const balance = useMemo(() => {
-      return resourceManager.balance(currentDefaultTick);
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
     }, [resourceManager, production, currentDefaultTick]);
 
     const resource = useMemo(() => {
@@ -110,7 +107,6 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-    const isResourcesLocked = useIsStructureResourcesLocked(entityId, getBlockTimestamp().currentBlockTimestamp);
 
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
@@ -118,13 +114,11 @@ export const MarketOrderPanel = memo(
           offers={selectedResourceAskOffers}
           resourceId={resourceId}
           entityId={entityId}
-          isResourcesLocked={isResourcesLocked}
         />
         <MarketOrders
           offers={selectedResourceBidOffers}
           resourceId={resourceId}
           entityId={entityId}
-          isResourcesLocked={isResourcesLocked}
           isBuy
         />
       </div>
@@ -138,13 +132,11 @@ const MarketOrders = memo(
     entityId,
     isBuy = false,
     offers,
-    isResourcesLocked,
   }: {
     resourceId: ResourcesIds;
     entityId: ID;
     isBuy?: boolean;
     offers: MarketInterface[];
-    isResourcesLocked: boolean;
   }) => {
     const [updateBalance, setUpdateBalance] = useState(false);
 
@@ -183,9 +175,7 @@ const MarketOrders = memo(
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
           <div
-            className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative ${
-              isResourcesLocked ? "opacity-50" : ""
-            }`}
+            className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative`}
           >
             {offers.map((offer, index) => (
               <OrderRow
@@ -197,11 +187,6 @@ const MarketOrders = memo(
                 setUpdateBalance={setUpdateBalance}
               />
             ))}
-            {isResourcesLocked && (
-              <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-xl text-bold">
-                Resources locked in battle
-              </div>
-            )}
           </div>
         </div>
 
@@ -246,30 +231,24 @@ const OrderRow = memo(
     updateBalance: boolean;
     setUpdateBalance: (value: boolean) => void;
   }) => {
-    const { computeTravelTime } = useTravel();
     const dojo = useDojo();
 
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
-    const lordsManager = new ResourceManager(dojo.setup.components, entityId, ResourcesIds.Lords);
-    const lordsBalance = useMemo(() => Number(lordsManager.getResource()?.balance || 0n), [entityId, updateBalance]);
 
-    const resourceManager = useResourceManager(entityId, offer.makerGets[0].resourceId);
+    const resourceManager = useResourceManager(entityId);
+
+    const lordsBalance = useMemo(() => Number(resourceManager.balance(ResourcesIds.Lords)), [entityId, updateBalance]);
 
     const resourceBalance = useMemo(
-      () => Number(resourceManager.getResource()?.balance || 0n),
+      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
       [entityId, updateBalance],
-    );
-
-    const isMakerResourcesLocked = useIsStructureResourcesLocked(
-      offer.makerId,
-      getBlockTimestamp().currentBlockTimestamp,
     );
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
     const travelTime = useMemo(
-      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), true),
+      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), dojo.setup.components, true),
       [entityId, offer],
     );
 
@@ -345,15 +324,13 @@ const OrderRow = memo(
       return calculateDonkeysNeeded(orderWeight);
     }, [orderWeight]);
 
-    const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
-
     const donkeyProduction = useMemo(() => {
-      return donkeyProductionManager.getProduction();
+      return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
 
     const donkeyBalance = useMemo(() => {
-      return divideByPrecision(donkeyProductionManager.balance(currentDefaultTick));
-    }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
+    }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
       return getRealmAddressName(offer.makerId, dojo.setup.components);
@@ -364,13 +341,11 @@ const OrderRow = memo(
         setLoading(true);
         setConfirmOrderModal(false);
 
-        await dojo.setup.systemCalls.accept_partial_order({
+        await dojo.setup.systemCalls.accept_order({
           signer: dojo.account.account,
           taker_id: entityId,
           trade_id: offer.tradeId,
-          maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
-          taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-          taker_gives_actual_amount: isBuy ? calculatedResourceAmount : calculatedLords,
+          taker_buys_count: isBuy ? calculatedResourceAmount : calculatedLords,
         });
       } catch (error) {
         console.error("Failed to accept order", error);
@@ -387,7 +362,6 @@ const OrderRow = memo(
         await dojo.setup.systemCalls.cancel_order({
           signer: dojo.account.account,
           trade_id: offer.tradeId,
-          return_resources: returnResources,
         });
       } catch (error) {
         console.error("Failed to cancel order", error);
@@ -401,13 +375,8 @@ const OrderRow = memo(
         key={offer.tradeId}
         className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
           isSelf ? "bg-blueish/10" : "bg-white/10"
-        } ${isMakerResourcesLocked ? "opacity-50" : ""}`}
+        }`}
       >
-        {isMakerResourcesLocked && (
-          <div className="absolute inset-0 bg-brown/50 flex items-center justify-center text-lg">
-            Resources locked in battle
-          </div>
-        )}
         <div className="grid grid-cols-5 gap-1">
           <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
             <ResourceIcon withTooltip={false} size="sm" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
@@ -428,7 +397,7 @@ const OrderRow = memo(
               isLoading={loading}
               onClick={() => setConfirmOrderModal(true)}
               size="xs"
-              className={`self-center flex flex-grow ${isMakerResourcesLocked ? "pointer-events-none" : ""}`}
+              className={`self-center flex flex-grow`}
             >
               {!isBuy ? "Buy" : "Sell"}
             </Button>
@@ -437,7 +406,7 @@ const OrderRow = memo(
               onClick={() => setConfirmOrderModal(true)}
               variant="danger"
               size="xs"
-              className={clsx("self-center", { disable: isMakerResourcesLocked })}
+              className={`self-center flex flex-grow`}
             >
               {loading ? "cancelling" : "cancel"}
             </Button>
@@ -503,7 +472,7 @@ const OrderRow = memo(
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
     const [loading, setLoading] = useState(false);
-    const [resource, setResource] = useState(RESOURCE_PRECISION);
+    const [resource, setResource] = useState(100);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -545,15 +514,19 @@ const OrderCreation = memo(
       if (!currentBlockTimestamp) return;
       setLoading(true);
 
+      const calldata = {
+        signer: account,
+        maker_id: entityId,
+        maker_gives_resource_type: makerGives[0],
+        maker_gives_min_resource_amount: 1,
+        maker_gives_max_count: makerGives[1],
+        taker_id: 0,
+        taker_pays_min_lords_amount: takerGives[1]/makerGives[1],
+        expires_at: currentBlockTimestamp + ONE_MONTH,
+      };
+
       try {
-        await create_order({
-          signer: account,
-          maker_id: entityId,
-          maker_gives_resources: makerGives,
-          taker_id: 0,
-          taker_gives_resources: takerGives,
-          expires_at: currentBlockTimestamp + ONE_MONTH,
-        });
+        await create_order(calldata);
         playLordsSound();
       } catch (error) {
         console.error("Failed to create order:", error);
@@ -576,35 +549,31 @@ const OrderCreation = memo(
 
     const { currentDefaultTick } = useBlockTimestamp();
 
-    const donkeyProductionManager = useResourceManager(entityId, ResourcesIds.Donkey);
+    const resourceManager = useResourceManager(entityId);
 
     const donkeyProduction = useMemo(() => {
-      return donkeyProductionManager.getProduction();
+      return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
 
     const donkeyBalance = useMemo(() => {
-      return donkeyProductionManager.balance(currentDefaultTick);
-    }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
-
-    const resourceProductionManager = useResourceManager(entityId, resourceId);
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
+    }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const resourceProduction = useMemo(() => {
-      return resourceProductionManager.getProduction();
+      return resourceManager.getProduction(resourceId);
     }, [resourceId]);
 
     const resourceBalance = useMemo(() => {
-      return resourceProductionManager.balance(currentDefaultTick);
-    }, [resourceProduction, currentDefaultTick, resourceId]);
-
-    const lordsProductionManager = useResourceManager(entityId, ResourcesIds.Lords);
+      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+    }, [resourceManager, resourceProduction, currentDefaultTick]);
 
     const lordsProduction = useMemo(() => {
-      return lordsProductionManager.getProduction();
+      return resourceManager.getProduction(ResourcesIds.Lords);
     }, []);
 
     const lordsBalance = useMemo(() => {
-      return lordsProductionManager.balance(currentDefaultTick);
-    }, [lordsProductionManager, lordsProduction, currentDefaultTick]);
+      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords);
+    }, [resourceManager, lordsProduction, currentDefaultTick]);
 
     const canBuy = useMemo(() => {
       return isBuy ? lordsBalance > lords : resourceBalance > resource;

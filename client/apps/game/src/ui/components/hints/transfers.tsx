@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { Headline } from "@/ui/elements/headline";
-import { BuildingType, CapacityConfigCategory, configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfig, configManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Transfers = () => {
@@ -21,7 +21,7 @@ export const Transfers = () => {
           </p>
           <p>
             Donkey carry capacity:{" "}
-            <strong>{configManager.getCapacityConfig(CapacityConfigCategory.Donkey) / GRAMS_PER_KG} kg</strong>
+            <strong>{configManager.getCapacityConfig(CapacityConfig.Donkey) / GRAMS_PER_KG} kg</strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
             <div className="ml-2">

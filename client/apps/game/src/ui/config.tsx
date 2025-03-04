@@ -55,16 +55,22 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Ope
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.Castle]: "",
+  [BuildingType.Castle]: `${BUILD_IMAGES_PREFIX}castleZero.png`,
   [BuildingType.Bank]: "",
   [BuildingType.FragmentMine]: "",
   [BuildingType.Resource]: `${BUILD_IMAGES_PREFIX}mine.png`,
   [BuildingType.Farm]: `${BUILD_IMAGES_PREFIX}farm.png`,
   [BuildingType.FishingVillage]: `${BUILD_IMAGES_PREFIX}fishing_village.png`,
-  [BuildingType.Barracks]: `${BUILD_IMAGES_PREFIX}barracks.png`,
-  [BuildingType.Stable]: `${BUILD_IMAGES_PREFIX}stable.png`,
+  [BuildingType.Barracks1]: `${BUILD_IMAGES_PREFIX}barracks.png`,
+  [BuildingType.Barracks2]: `${BUILD_IMAGES_PREFIX}barracks.png`,
+  [BuildingType.Barracks3]: `${BUILD_IMAGES_PREFIX}barracks.png`,
+  [BuildingType.Stable1]: `${BUILD_IMAGES_PREFIX}stable.png`,
+  [BuildingType.Stable2]: `${BUILD_IMAGES_PREFIX}stable.png`,
+  [BuildingType.Stable3]: `${BUILD_IMAGES_PREFIX}stable.png`,
   [BuildingType.Market]: `${BUILD_IMAGES_PREFIX}market.png`,
-  [BuildingType.ArcheryRange]: `${BUILD_IMAGES_PREFIX}archery.png`,
+  [BuildingType.ArcheryRange1]: `${BUILD_IMAGES_PREFIX}archery.png`,
+  [BuildingType.ArcheryRange2]: `${BUILD_IMAGES_PREFIX}archery.png`,
+  [BuildingType.ArcheryRange3]: `${BUILD_IMAGES_PREFIX}archery.png`,
   [BuildingType.TradingPost]: `${BUILD_IMAGES_PREFIX}trading_post.png`,
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.WatchTower]: `${BUILD_IMAGES_PREFIX}watch_tower.png`,
@@ -94,6 +100,7 @@ export const BuildingThumbs = {
   trophy: "/images/buildings/thumb/trophy.png",
   discord: "/images/buildings/thumb/discord.png",
   rewards: "/images/buildings/thumb/rewards.png",
+  production: "/images/buildings/thumb/anvil.png",
 };
 
 export enum MenuEnum {
@@ -104,4 +111,5 @@ export enum MenuEnum {
   resourceArrivals = "resourceArrivals",
   trade = "trade",
   resourceTable = "resourceTable",
+  production = "production",
 }

@@ -4,9 +4,7 @@ import { ImmunityTimer } from "@/ui/components/worldmap/structures/immunity-time
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { currencyFormat } from "@/ui/utils/utils";
 import {
   ArmyInfo,
   ContractAddress,
@@ -18,8 +16,9 @@ import {
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";
+import { TroopChip } from "../../military/troop-chip";
 
-export const ArmyInfoLabel = () => {
+export const ArmyInfoLabelContainer = () => {
   const {
     account: { account },
     setup: { components },
@@ -33,14 +32,14 @@ export const ArmyInfoLabel = () => {
     return undefined;
   }, [hoveredArmyEntityId]);
 
-  return <>{army && isMapView && <RaiderInfo key={army.entity_id} army={army} />}</>;
+  return <>{army && isMapView && <ArmyInfoLabelCard key={army.entityId} army={army} />}</>;
 };
 
 interface ArmyInfoLabelProps {
   army: ArmyInfo;
 }
 
-const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
+const ArmyInfoLabelCard = ({ army }: ArmyInfoLabelProps) => {
   const {
     account: {
       account: { address },
@@ -48,19 +47,19 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     setup: { components },
   } = useDojo();
 
-  const { realm, entity_id, entityOwner, troops } = army;
+  const { structure, entityId, entity_owner_id, troops } = army;
 
-  const realmId = realm?.realm_id || 0;
+  const realmId = structure?.metadata.realm_id || 0;
 
-  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id, components) : "";
+  const structureInfo = useMemo(() => {
+    if (structure) {
+      return getStructure(structure.entity_id, ContractAddress(address), components);
+    }
+  }, [structure]);
+
+  const attackerAddressName = entity_owner_id ? getRealmAddressName(entity_owner_id, components) : "";
 
   const originRealmName = getRealmNameById(realmId);
-
-  const structure = useMemo(() => {
-    if (entityOwner.entity_owner_id) {
-      return getStructure(entityOwner.entity_owner_id, ContractAddress(address), components);
-    }
-  }, [entityOwner.entity_owner_id]);
 
   return (
     <BaseThreeTooltip
@@ -78,29 +77,14 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="mt-1">{originRealmName}</div>
           </div>
           <div className="flex flex-col items-end">
-            <StaminaResource entityId={entity_id} />
+            <StaminaResource entityId={entityId} />
             <ArmyCapacity army={army} className="mt-1" />
           </div>
         </div>
-        <div className="w-full flex flex-col mt-2 space-y-2">
-          <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
-            <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
-              <ResourceIcon withTooltip={false} resource={"Crossbowman"} size="lg" />
-              <div className="text-green text-xs self-center">
-                {currencyFormat(Number(troops.crossbowman_count), 0)}
-              </div>
-            </div>
-            <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
-              <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
-              <div className="text-green text-xs self-center">{currencyFormat(Number(troops.knight_count), 0)}</div>
-            </div>
-            <div className="px-2 py-1 bg-white/10  flex flex-col justify-between gap-2">
-              <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
-              <div className="text-green text-xs self-center">{currencyFormat(Number(troops.paladin_count), 0)}</div>
-            </div>
-          </div>
+        <div className="w-full h-full flex flex-col mt-2 space-y-2">
+          <TroopChip troops={troops} />
         </div>
-        {structure && <ImmunityTimer structure={structure} />}
+        {structureInfo && <ImmunityTimer structure={structureInfo} />}
       </div>
     </BaseThreeTooltip>
   );

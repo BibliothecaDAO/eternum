@@ -1,5 +1,6 @@
 import { usePlayResourceSound } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isMilitaryBuilding } from "@/three/scenes/constants";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
@@ -12,12 +13,12 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
   BuildingType,
-  CapacityConfigCategory,
-  ClientComponents,
+  CapacityConfig,
   configManager,
   divideByPrecision,
   findResourceById,
   getBalance,
+  getBuildingQuantity,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
   ID,
@@ -26,11 +27,9 @@ import {
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
-  unpackResources,
-  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
-import { Component, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -62,14 +61,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "Hyperstructure",
   );
 
-  const realmResourceIds = useMemo(() => {
-    if (realm) {
-      return unpackResources(BigInt(realm.resourceTypesPacked));
-    } else {
-      return [];
-    }
-  }, [realm]);
-
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
@@ -90,7 +81,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: (
           <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
-            {realmResourceIds.map((resourceId) => {
+            {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
               const buildingCosts = getResourceBuildingCosts(entityId, dojo, resourceId);
@@ -146,9 +137,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {buildingTypes
               .filter(
                 (a) =>
-                  a !== BuildingType[BuildingType.Barracks] &&
-                  a !== BuildingType[BuildingType.ArcheryRange] &&
-                  a !== BuildingType[BuildingType.Stable],
+                  !isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
               )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
@@ -198,7 +187,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
-                    resourceName={isFishingVillage ? "Fish" : isFarm ? "Wheat" : undefined}
+                    resourceName={isFishingVillage ? ResourcesIds[ResourcesIds.Fish] : isFarm ? ResourcesIds[ResourcesIds.Wheat] : undefined}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -221,9 +210,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {buildingTypes
               .filter(
                 (a) =>
-                  a === BuildingType[BuildingType.Barracks] ||
-                  a === BuildingType[BuildingType.ArcheryRange] ||
-                  a === BuildingType[BuildingType.Stable],
+                  isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
               )
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
@@ -234,9 +221,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isBarracks = building === BuildingType.Barracks;
-                const isArcheryRange = building === BuildingType.ArcheryRange;
-                const isStable = building === BuildingType.Stable;
+                const isBarracks = building === BuildingType.Barracks1;
+                const isArcheryRange = building === BuildingType.ArcheryRange1;
+                const isStable = building === BuildingType.Stable1;
 
                 return (
                   <BuildingCard
@@ -260,7 +247,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
                     resourceName={
-                      isBarracks ? "Knight" : isArcheryRange ? "Crossbowman" : isStable ? "Paladin" : undefined
+                      ResourcesIds[configManager.getResourceBuildingProduced(building)] as keyof typeof ResourcesIds
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
@@ -272,7 +259,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
@@ -325,6 +312,7 @@ const BuildingCard = ({
   className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
+  console.log({ resourceName });
   return (
     <div
       onClick={onClick}
@@ -394,8 +382,8 @@ export const ResourceInfo = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   let cost = configManager.resourceInputs[resourceId];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
-  if (resourceId == ResourcesIds.Donkey && realm?.has_wonder) {
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
     cost = adjustWonderLordsCost(cost);
   }
 
@@ -535,14 +523,14 @@ export const BuildingInfo = ({
   const capacity = buildingPopCapacityConfig.capacity;
 
   const carryCapacity =
-    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfigCategory.Storehouse) : 0;
+    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfig.Storehouse) : 0;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
-  const realm = getComponentValue(dojo.setup.components.Realm, getEntityIdFromKeys([BigInt(entityId || 0)]));
+  const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
-  if (buildingId == BuildingType.Market && realm?.has_wonder && ongoingCost.length > 0) {
+  if (buildingId == BuildingType.Market && structure?.metadata.has_wonder && ongoingCost.length > 0) {
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
@@ -682,21 +670,13 @@ const getConsumedBy = (resourceProduced: ResourcesIds) => {
 };
 
 const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
-  const buildingGeneralConfig = getComponentValue(
-    dojo.setup.components.BuildingGeneralConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID]),
-  );
-
+  const buildingGeneralConfig = configManager.getBuildingGeneralConfig();
   if (!buildingGeneralConfig) {
     return;
   }
   const buildingType = resourceIdToBuildingCategory(resourceId);
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingType ?? 0,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingType, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -713,11 +693,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
 const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
   const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease();
 
-  const buildingQuantity = getBuildingQuantity(
-    realmEntityId,
-    buildingCategory,
-    dojo.setup.components.BuildingQuantityv2,
-  );
+  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, dojo.setup.components);
 
   let updatedCosts: ResourceCostType[] = [];
 
@@ -729,18 +705,6 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
     updatedCosts.push({ resource: cost.resource, amount: totalCost });
   });
   return updatedCosts;
-};
-
-const getBuildingQuantity = (
-  outerEntityId: ID,
-  buildingCategory: BuildingType,
-  buildingQuantityComponent: Component<ClientComponents["BuildingQuantityv2"]["schema"]>,
-) => {
-  const buildingQuantity = getComponentValue(
-    buildingQuantityComponent,
-    getEntityIdFromKeys([BigInt(outerEntityId), BigInt(buildingCategory)]),
-  );
-  return buildingQuantity?.value;
 };
 
 const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
@@ -757,13 +721,31 @@ const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType =>
     return BuildingType.Market;
   }
   if (resourceId === ResourcesIds.Knight) {
-    return BuildingType.Barracks;
+    return BuildingType.Barracks1;
+  }
+  if (resourceId === ResourcesIds.KnightT2) {
+    return BuildingType.Barracks2;
+  }
+  if (resourceId === ResourcesIds.KnightT3) {
+    return BuildingType.Barracks3;
   }
   if (resourceId === ResourcesIds.Crossbowman) {
-    return BuildingType.ArcheryRange;
+    return BuildingType.ArcheryRange1;
+  }
+  if (resourceId === ResourcesIds.CrossbowmanT2) {
+    return BuildingType.ArcheryRange2;
+  }
+  if (resourceId === ResourcesIds.CrossbowmanT3) {
+    return BuildingType.ArcheryRange3;
   }
   if (resourceId === ResourcesIds.Paladin) {
-    return BuildingType.Stable;
+    return BuildingType.Stable1;
+  }
+  if (resourceId === ResourcesIds.PaladinT2) {
+    return BuildingType.Stable2;
+  }
+  if (resourceId === ResourcesIds.PaladinT3) {
+    return BuildingType.Stable3;
   }
   return BuildingType.None;
 };

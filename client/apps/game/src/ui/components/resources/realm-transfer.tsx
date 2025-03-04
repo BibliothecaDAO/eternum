@@ -1,5 +1,5 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -27,146 +27,147 @@ type transferCall = {
   realmName: string;
 };
 
-export const RealmTransfer = memo(
-  ({ resource, balance, tick }: { resource: ResourcesIds; balance: number; tick: number }) => {
-    const {
-      setup: {
-        systemCalls: { send_resources_multiple },
-      },
-      account: { account },
-    } = useDojo();
-    const togglePopup = useUIStore((state) => state.togglePopup);
+export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => {
+  const {
+    setup: {
+      systemCalls: { send_resources_multiple },
+    },
+    account: { account },
+  } = useDojo();
 
-    const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
-    const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
+  const { currentDefaultTick: tick } = useBlockTimestamp();
 
-    const playerStructures = usePlayerStructures();
+  const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [calls, setCalls] = useState<transferCall[]>([]);
+  const resourceManager = useResourceManager(selectedStructureEntityId);
 
-    const [type, setType] = useState<"send" | "receive">("send");
+  const balance = useMemo(() => {
+    return resourceManager.balanceWithProduction(tick, resource);
+  }, [resourceManager, tick]);
 
-    const [resourceWeight, setResourceWeight] = useState(0);
+  const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
 
-    const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+  const playerStructures = usePlayerStructures();
 
-    useEffect(() => {
-      const resources = calls.map((call) => {
-        return {
-          resourceId: Number(call.resources[0]),
-          amount: Number(call.resources[1]),
-        };
+  const [isLoading, setIsLoading] = useState(false);
+  const [calls, setCalls] = useState<transferCall[]>([]);
+
+  const [type, setType] = useState<"send" | "receive">("send");
+
+  const [resourceWeight, setResourceWeight] = useState(0);
+
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+
+  useEffect(() => {
+    const resources = calls.map((call) => {
+      return {
+        resourceId: Number(call.resources[0]),
+        amount: Number(call.resources[1]),
+      };
+    });
+    const totalWeight = getTotalResourceWeight(resources);
+    const multipliedWeight = multiplyByPrecision(totalWeight);
+
+    setResourceWeight(multipliedWeight);
+  }, [calls]);
+
+  const handleTransfer = useCallback(async () => {
+    setIsLoading(true);
+    const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
+      sender_entity_id,
+      recipient_entity_id,
+      resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
+    }));
+
+    try {
+      await send_resources_multiple({
+        signer: account,
+        calls: cleanedCalls,
       });
-      const totalWeight = getTotalResourceWeight(resources);
-      const multipliedWeight = multiplyByPrecision(totalWeight);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
 
-      setResourceWeight(multipliedWeight);
-    }, [calls]);
+    setCalls([]);
+  }, [calls]);
 
-    const handleTransfer = useCallback(async () => {
-      setIsLoading(true);
-      const cleanedCalls = calls.map(({ sender_entity_id, recipient_entity_id, resources }) => ({
-        sender_entity_id,
-        recipient_entity_id,
-        resources: [resources[0], BigInt(Number(resources[1]) * RESOURCE_PRECISION)],
-      }));
+  return (
+    <>
+      <div className="p-1">
+        <Button
+          variant={type === "send" ? "outline" : "secondary"}
+          onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
+        >
+          {type === "receive" && <ArrowLeftIcon className="w-4 h-4" />}
+          {type === "send" ? "Send Resources" : "Receive Resources"}
+          {type === "send" && <ArrowRightIcon className="w-4 h-4" />}
+        </Button>
+      </div>
+      <div className="p-4">
+        <div>
+          <ResourceIcon
+            withTooltip={false}
+            resource={findResourceById(resource)?.trait as string}
+            size="xxl"
+            className="mr-3 self-center"
+          />
+          <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        </div>
 
-      try {
-        await send_resources_multiple({
-          signer: account,
-          calls: cleanedCalls,
-        });
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
+        {playerStructures.map((structure) => (
+          <RealmTransferBalance
+            key={structure.structure.entity_id}
+            structure={structure}
+            selectedStructureEntityId={selectedStructureEntityId}
+            resource={resource}
+            tick={tick}
+            add={setCalls}
+            type={type}
+          />
+        ))}
 
-      setCalls([]);
-    }, [calls]);
+        <div className="pt-2 border-t border-gold/20">
+          <div className="uppercase font-bold text-sm flex gap-3">
+            Transfers {calls.length} |
+            <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
+            {neededDonkeys.toString()}
+          </div>
 
-    return (
-      <OSWindow
-        title={findResourceById(resource)?.trait ?? ""}
-        onClick={() => togglePopup(resource.toString())}
-        show={isOpen}
-      >
-        <div className="p-1">
+          <div className="flex flex-col gap-2">
+            {calls.map((call, index) => (
+              <div
+                className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
+                key={index}
+              >
+                <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
+                <div className="self-center" self-center>
+                  {call.resources[1].toLocaleString()}
+                </div>
+                <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
           <Button
-            variant={type === "send" ? "outline" : "secondary"}
-            onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
+            disabled={calls.length === 0}
+            isLoading={isLoading}
+            variant="primary"
+            size="md"
+            onClick={handleTransfer}
           >
-            {type === "receive" && <ArrowLeftIcon className="w-4 h-4" />}
-            {type === "send" ? "Send Resources" : "Receive Resources"}
-            {type === "send" && <ArrowRightIcon className="w-4 h-4" />}
+            {type === "send" ? "Send All" : "Receive All"}
           </Button>
         </div>
-        <div className="p-4">
-          <div>
-            <ResourceIcon
-              isLabor={false}
-              withTooltip={false}
-              resource={findResourceById(resource)?.trait as string}
-              size="xxl"
-              className="mr-3 self-center"
-            />
-            <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
-          </div>
-
-          {playerStructures.map((structure) => (
-            <RealmTransferBalance
-              key={structure.entity_id}
-              structure={structure}
-              selectedStructureEntityId={selectedStructureEntityId}
-              resource={resource}
-              tick={tick}
-              add={setCalls}
-              type={type}
-            />
-          ))}
-
-          <div className="pt-2 border-t border-gold/20">
-            <div className="uppercase font-bold text-sm flex gap-3">
-              Transfers {calls.length} |
-              <ResourceIcon resource={findResourceById(ResourcesIds.Donkey)?.trait as string} size="sm" />{" "}
-              {neededDonkeys.toString()}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {calls.map((call, index) => (
-                <div
-                  className="flex flex-row w-full justify-between p-2 gap-2 border-gold/20 bg-gold/10 border-2 rounded-md"
-                  key={index}
-                >
-                  <div className="uppercase font-bold text-sm self-center">{call.realmName}</div>
-                  <div className="self-center" self-center>
-                    {call.resources[1].toLocaleString()}
-                  </div>
-                  <Button size="xs" onClick={() => setCalls((prev) => prev.filter((c) => c !== call))}>
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-gold/20 flex flex-row justify-end">
-            <Button
-              disabled={calls.length === 0}
-              isLoading={isLoading}
-              variant="primary"
-              size="md"
-              onClick={handleTransfer}
-            >
-              {type === "send" ? "Send All" : "Receive All"}
-            </Button>
-          </div>
-        </div>
-      </OSWindow>
-    );
-  },
-);
+      </div>
+    </>
+  );
+});
 
 const RealmTransferBalance = memo(
   ({
@@ -186,16 +187,15 @@ const RealmTransferBalance = memo(
   }) => {
     const [input, setInput] = useState(0);
 
-    const resourceManager = useResourceManager(structure.entity_id, resource);
-    const donkeyManager = useResourceManager(structure.entity_id, ResourcesIds.Donkey);
+    const resourceManager = useResourceManager(structure.structure.entity_id);
 
     const getBalance = useCallback(() => {
-      return resourceManager.balance(tick);
+      return resourceManager.balanceWithProduction(tick, resource);
     }, [resourceManager, tick]);
 
     const getDonkeyBalance = useCallback(() => {
-      return donkeyManager.balance(tick);
-    }, [donkeyManager, tick]);
+      return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey);
+    }, [resourceManager, tick]);
 
     const [resourceWeight, setResourceWeight] = useState(0);
 
@@ -217,7 +217,7 @@ const RealmTransferBalance = memo(
       return getDonkeyBalance() >= neededDonkeys;
     }, [getDonkeyBalance, neededDonkeys]);
 
-    if (structure.entity_id === selectedStructureEntityId) {
+    if (structure.structure.entity_id === selectedStructureEntityId) {
       return;
     }
 
@@ -239,16 +239,16 @@ const RealmTransferBalance = memo(
             onChange={(amount) => {
               setInput(amount);
               add((prev) => {
-                const existingIndex = prev.findIndex((call) => call.structureId === structure.entity_id);
+                const existingIndex = prev.findIndex((call) => call.structureId === structure.structure.entity_id);
 
                 if (amount === 0) {
                   return prev.filter((_, i) => i !== existingIndex);
                 }
 
                 const newCall = {
-                  structureId: structure.entity_id,
-                  sender_entity_id: type === "send" ? selectedStructureEntityId : structure.entity_id,
-                  recipient_entity_id: type === "send" ? structure.entity_id : selectedStructureEntityId,
+                  structureId: structure.structure.entity_id,
+                  sender_entity_id: type === "send" ? selectedStructureEntityId : structure.structure.entity_id,
+                  recipient_entity_id: type === "send" ? structure.structure.entity_id : selectedStructureEntityId,
                   resources: [resource, amount],
                   realmName: structure.name,
                 };

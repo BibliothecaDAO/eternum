@@ -1,4 +1,4 @@
-import { RESOURCE_PRECISION } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION } from "@/utils/constants";
 
 export function addSpacesBeforeCapitals(str: string): string {
   return str.replace(/([A-Z])/g, " $1").trim();

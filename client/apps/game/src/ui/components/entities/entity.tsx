@@ -35,6 +35,7 @@ type EntityProps = {
   arrival: ArrivalInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
+// todo: fix this
 export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
   const dojo = useDojo();
 
@@ -42,7 +43,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
 
   const { currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
 
-  const weight = useComponentValue(dojo.setup.components.Weight, getEntityIdFromKeys([BigInt(arrival.entityId)]));
+  const weight = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(arrival.entityId)]))?.weight;
 
   const entity = useMemo(
     () =>
@@ -72,12 +73,12 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
         </div>
       ) : (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
-          Arriving in {formatTime(Number(entity.arrivalTime) - currentBlockTimestamp)} to{" "}
+          Arriving in {formatTime(Number(0) - currentBlockTimestamp)} to{" "}
           {getEntityName(arrival.recipientEntityId, components)}
         </div>
       )
     ) : null;
-  }, [currentBlockTimestamp, arrival.recipientEntityId, arrival.hasResources, entity.arrivalTime]);
+  }, [currentBlockTimestamp, arrival.recipientEntityId, arrival.hasResources, entity]);
 
   const renderedResources = useMemo(() => {
     return entityResources
@@ -112,7 +113,7 @@ export const EntityArrival = ({ arrival, ...props }: EntityProps) => {
           {renderEntityStatus}
         </div>
         <div className="flex justify-between items-center self-center">
-          <DepositResources resources={entityResources} arrival={arrival} armyInBattle={Boolean(army?.battle_id)} />
+          <DepositResources resources={entityResources} arrival={arrival} />
         </div>
       </div>
 

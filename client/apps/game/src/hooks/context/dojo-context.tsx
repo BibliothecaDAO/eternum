@@ -141,8 +141,8 @@ const DojoContextProvider = ({
 
   const onSpectatorModeClick = () => {
     const randomRealmEntity = getRandomRealmEntity(value.components);
-    const position = randomRealmEntity && getComponentValue(value.components.Position, randomRealmEntity);
-    position && navigateToHexView(new Position(position));
+    const structureBase = randomRealmEntity && getComponentValue(value.components.Structure, randomRealmEntity)?.base;
+    structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
   };
 
   useEffect(() => {
@@ -155,7 +155,7 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const setUserName = async () => {
-      const username = await (connector as ControllerConnector)?.username();
+      const username = await (connector as unknown as ControllerConnector)?.username();
       if (!username) return;
 
       const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));

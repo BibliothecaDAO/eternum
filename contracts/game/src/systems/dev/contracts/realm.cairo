@@ -1,5 +1,3 @@
-use dojo::world::IWorldDispatcher;
-use s1_eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[starknet::interface]

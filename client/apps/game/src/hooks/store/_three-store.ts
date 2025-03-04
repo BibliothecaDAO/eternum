@@ -1,13 +1,13 @@
 import { StructureInfo } from "@/three/types";
-import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
+import { ActionPath, BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
-  armyActions: ArmyActions;
-  setArmyActions: (armyActions: ArmyActions) => void;
+  entityActions: EntityActions;
+  setEntityActions: (entityActions: EntityActions) => void;
   updateHoveredHex: (hoveredHex: HexPosition | null) => void;
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
+  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   updateSelectedEntityId: (selectedEntityId: ID | null) => void;
   selectedHex: HexPosition | null;
   setSelectedHex: (hex: HexPosition | null) => void;
@@ -33,27 +33,27 @@ export interface ThreeStore {
   }) => void;
 }
 
-interface ArmyActions {
+interface EntityActions {
   hoveredHex: HexPosition | null;
-  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  actionPaths: Map<string, ActionPath[]>;
   selectedEntityId: ID | null;
 }
 
 export const createThreeStoreSlice = (set: any, _get: any) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
-  armyActions: {
+  entityActions: {
     hoveredHex: null,
-    travelPaths: new Map(),
+    actionPaths: new Map(),
     selectedEntityId: null,
   },
-  setArmyActions: (armyActions: ArmyActions) => set({ armyActions }),
+  setEntityActions: (entityActions: EntityActions) => set({ entityActions }),
   updateHoveredHex: (hoveredHex: HexPosition | null) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, hoveredHex } })),
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, travelPaths } })),
+    set((state: any) => ({ entityActions: { ...state.entityActions, hoveredHex } })),
+  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
+    set((state: any) => ({ entityActions: { ...state.entityActions, actionPaths } })),
   updateSelectedEntityId: (selectedEntityId: ID | null) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
+    set((state: any) => ({ entityActions: { ...state.entityActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
   hoveredArmyEntityId: null,

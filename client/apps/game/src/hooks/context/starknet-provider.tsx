@@ -1,9 +1,10 @@
 import { getResourceAddresses } from "@/utils/addresses";
 import ControllerConnector from "@cartridge/connector/controller";
 import { ColorMode } from "@cartridge/controller";
+import { predeployedAccounts, PredeployedAccountsConnector } from "@dojoengine/predeployed-connector";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
-import React, { useCallback } from "react";
+import { Connector, jsonRpcProvider, StarknetConfig, voyager } from "@starknet-react/core";
+import React, { useCallback, useMemo } from "react";
 import { env } from "../../../env";
 import { policies } from "./policies";
 import { signingPolicy } from "./signing-policy";
@@ -27,9 +28,21 @@ const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 const colorMode: ColorMode = "dark";
 
-const controller =
-  env.VITE_PUBLIC_CHAIN === "mainnet"
-    ? new ControllerConnector({
+let predeployedAccountsConnector: PredeployedAccountsConnector[] = [];
+if (env.VITE_PUBLIC_CHAIN === "local") {
+  predeployedAccounts({
+    rpc: env.VITE_PUBLIC_NODE_URL as string,
+    id: "katana",
+    name: "Katana",
+  }).then((p) => (predeployedAccountsConnector = p));
+}
+
+export function StarknetProvider({ children }: { children: React.ReactNode }) {
+  const connector = useMemo(() => {
+    if (env.VITE_PUBLIC_CHAIN === "local") {
+      return predeployedAccountsConnector[0];
+    } else if (env.VITE_PUBLIC_CHAIN === "mainnet") {
+      return new ControllerConnector({
         chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
         defaultChainId: StarknetChainId.SN_MAIN,
         namespace,
@@ -39,8 +52,9 @@ const controller =
           erc20: [LORDS, ...otherResources],
         },
         colorMode,
-      })
-    : new ControllerConnector({
+      });
+    } else {
+      return new ControllerConnector({
         chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
         defaultChainId: StarknetChainId.SN_SEPOLIA,
         namespace,
@@ -53,8 +67,9 @@ const controller =
         },
         colorMode,
       });
+    }
+  }, [env.VITE_PUBLIC_CHAIN]);
 
-export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
@@ -63,7 +78,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[controller as never as Connector]}
+      connectors={[connector as never as Connector]}
       explorer={voyager}
       autoConnect
     >

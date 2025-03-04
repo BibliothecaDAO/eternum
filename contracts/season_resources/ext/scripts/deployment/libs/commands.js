@@ -57,7 +57,7 @@ export const getContractByName = (name) => {
 const NAMESPACE = "s1_eternum";
 const RESOURCE_BRIDGE_SYSTEMS_CONTRACT = getContractByName(`${NAMESPACE}-resource_bridge_systems`);
 const RESOURCE_NAMES = resourceNames;
-const LORDS_RESOURCE_ID = 31;
+const LORDS_RESOURCE_ID = 37;
 
 const displayResourceTable = (addresses) => {
   const TABLE_WIDTH = {

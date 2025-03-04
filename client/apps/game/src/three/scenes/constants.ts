@@ -1,6 +1,6 @@
-import { BiomeType } from "@/three/managers/biome";
 import { IS_FLAT_MODE } from "@/ui/config";
 import {
+  BiomeType,
   BuildingType,
   RealmLevelNames,
   RealmLevels,
@@ -77,8 +77,8 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Bank]: BuildingType.Bank,
   [StructureType.Realm]: BuildingType.Castle,
   [StructureType.FragmentMine]: BuildingType.FragmentMine,
-  [StructureType.Settlement]: BuildingType.Castle,
   [StructureType.Hyperstructure]: BuildingType.Castle,
+  [StructureType.Village]: BuildingType.Castle,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -115,15 +115,21 @@ export const buildingModelPaths = {
   [BUILDINGS_GROUPS.BUILDINGS]: {
     [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
     [BuildingType.Bank]: BUILDINGS_MODELS_PATH + BuildingFilenames.Bank,
-    [BuildingType.ArcheryRange]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.Barracks]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.ArcheryRange1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.ArcheryRange2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.ArcheryRange3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.Barracks1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.Barracks2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.Barracks3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.Stable1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.Stable2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.Stable3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
     [BuildingType.Castle]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
     [BuildingType.Farm]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
     [BuildingType.FishingVillage]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
     [BuildingType.FragmentMine]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
     [BuildingType.Market]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
     [BuildingType.Resource]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
-    [BuildingType.Stable]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
     [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
     [BuildingType.TradingPost]: BUILDINGS_MODELS_PATH + BuildingFilenames.TradingPost,
     [BuildingType.Walls]: BUILDINGS_MODELS_PATH + BuildingFilenames.Walls,
@@ -153,6 +159,7 @@ export const buildingModelPaths = {
 };
 
 export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
+  None: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
   TemperateDeciduousForest: BIOMES_MODELS_PATH + BiomeFilenames.TemperateDeciduousForest,
@@ -190,7 +197,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
   [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Settlement]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2],
+  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
@@ -198,7 +205,7 @@ export const StructureLabelPaths: Record<StructureType, string> = {
   [StructureType.Hyperstructure]: "textures/hyper_label.png",
   [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
   [StructureType.Bank]: "",
-  [StructureType.Settlement]: "textures/fragment_mine_label.png",
+  [StructureType.Village]: "",
 };
 
 export const MinesMaterialsParams: Record<
@@ -295,4 +302,18 @@ export const MinesMaterialsParams: Record<
     emissive: new THREE.Color(0.0, 3.25, 0.03),
     emissiveIntensity: 5.7,
   },
+};
+
+export const isMilitaryBuilding = (buildingType: BuildingType) => {
+  return (
+    buildingType === BuildingType.Barracks1 ||
+    buildingType === BuildingType.Barracks2 ||
+    buildingType === BuildingType.Barracks3 ||
+    buildingType === BuildingType.ArcheryRange1 ||
+    buildingType === BuildingType.ArcheryRange2 ||
+    buildingType === BuildingType.ArcheryRange3 ||
+    buildingType === BuildingType.Stable1 ||
+    buildingType === BuildingType.Stable2 ||
+    buildingType === BuildingType.Stable3
+  );
 };

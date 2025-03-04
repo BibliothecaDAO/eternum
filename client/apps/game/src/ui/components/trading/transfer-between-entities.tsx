@@ -9,13 +9,14 @@ import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
 import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
+  computeTravelTime,
   configManager,
   DONKEY_ENTITY_TYPE,
   getRealmAddressName,
   ID,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo, useTravel } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
@@ -198,7 +199,6 @@ export const TransferBetweenEntities = ({
     },
   } = useDojo();
 
-  const { computeTravelTime } = useTravel();
 
   useEffect(() => {
     selectedEntityIdFrom &&
@@ -208,6 +208,7 @@ export const TransferBetweenEntities = ({
           selectedEntityIdFrom?.entityId,
           selectedEntityIdTo?.entityId,
           configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+          components,
         ),
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);

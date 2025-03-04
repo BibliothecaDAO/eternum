@@ -10,28 +10,24 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
-import { gramToKg, kgToGram } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  BuildingType,
-  CapacityConfigCategory,
   configManager,
   ContractAddress,
   formatTime,
   getEntityInfo,
   ID,
   PlayerStructure,
-  ResourcesIds,
+  StructureType,
   TickIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { Crown, EyeIcon, Landmark, Pickaxe, ShieldQuestion, Sparkles, Star } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QuestsMenu } from "../quests/quest-menu";
+import { CapacityInfo } from "./capacity-info";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -46,60 +42,6 @@ const structureIcons: Record<string, JSX.Element> = {
   Hyperstructure: <Sparkles />,
   FragmentMine: <Pickaxe />,
   ReadOnly: <EyeIcon />,
-};
-
-const StorehouseTooltipContent = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
-  const capacity = kgToGram(storehouseCapacity);
-  return (
-    <div className="text-xs text-gray-200 p-1 max-w-xs">
-      <p className="font-semibold">Max Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
-      <div className="grid grid-cols-2 gap-x-4 my-1">
-        <ul className="list-none">
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
-          </li>
-        </ul>
-        <ul className="list-none">
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Knight)).toLocaleString()} Knights
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
-          </li>
-          <li className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Paladin)).toLocaleString()} Paladins
-          </li>
-        </ul>
-      </div>
-      <p className="italic text-xs">Build Storehouses to increase capacity.</p>
-    </div>
-  );
-};
-
-const WorkersHutTooltipContent = () => {
-  const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
-  return (
-    <div className="text-xs text-gray-200 p-1 max-w-xs">
-      <p className="font-semibold">Population Capacity</p>
-      <ul className="list-disc list-inside my-1">
-        <li>{configManager.getBasePopulationCapacity()} Base Capacity</li>
-        <li>+{capacity} per Workers Hut</li>
-      </ul>
-      <p className="italic text-xs">Build Workers Huts to increase population capacity.</p>
-    </div>
-  );
 };
 
 export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStructure[] }) => {
@@ -138,7 +80,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return structures
       .map((structure) => ({
         ...structure,
-        isFavorite: favorites.includes(structure.entity_id),
+        isFavorite: favorites.includes(structure.structure.entity_id),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures.length]);
@@ -156,9 +98,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
   const goToHexView = useCallback(
     (entityId: ID) => {
-      const structurePosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+      const structurePosition = getComponentValue(
+        setup.components.Structure,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      )?.base;
       if (!structurePosition) return;
-      navigateToHexView(new Position(structurePosition));
+      navigateToHexView(new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }));
     },
     [navigateToHexView],
   );
@@ -166,29 +111,14 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const goToMapView = useCallback(
     (entityId?: ID) => {
       const position = entityId
-        ? getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]))
-        : { x: hexPosition.col, y: hexPosition.row };
+        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base
+        : { coord_x: hexPosition.col, coord_y: hexPosition.row };
 
       if (!position) return;
-      navigateToMapView(new Position(position));
+      navigateToMapView(new Position({ x: position.coord_x, y: position.coord_y }));
     },
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
-
-  const population = useComponentValue(
-    setup.components.Population,
-    getEntityIdFromKeys([BigInt(structureEntityId || 0)]),
-  );
-
-  const storehouses = useMemo(() => {
-    const quantity =
-      getComponentValue(
-        setup.components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(structureEntityId || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
-    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
-  }, [structureEntityId, currentBlockTimestamp]);
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
     const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
@@ -219,17 +149,21 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectContent className="bg-brown">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
-                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entity_id)}>
+                      <button
+                        className="p-1"
+                        type="button"
+                        onClick={() => toggleFavorite(structure.structure.entity_id)}
+                      >
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
                       <SelectItem
                         className="flex justify-between"
                         key={index}
-                        value={structure.entity_id?.toString() || ""}
+                        value={structure.structure.entity_id?.toString() || ""}
                       >
                         <div className="self-center flex gap-4 text-xl">
                           {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.category] : ""}
+                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
                         </div>
                       </SelectItem>
                     </div>
@@ -252,47 +186,11 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
             )}
           </div>
         </div>
-        <div className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30">
-          {storehouses && (
-            <div
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "bottom",
-                  content: <StorehouseTooltipContent storehouseCapacity={storehouses.capacityKg} />,
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-              className="storehouse-selector px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
-            >
-              <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-              {entityInfo.structureCategory !== "Realm" ? (
-                <div className="self-center">∞</div>
-              ) : (
-                <div className="self-center">{storehouses.capacityKg.toLocaleString()} kg</div>
-              )}
-            </div>
-          )}
-
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: <WorkersHutTooltipContent />,
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className="population-selector px-3 flex gap-2 justify-start items-center text-xs md:text-sm"
-          >
-            <ResourceIcon withTooltip={false} resource="House" size="sm" />
-            <div className="self-center">
-              {population?.population || 0} / {(population?.capacity || 0) + configManager.getBasePopulationCapacity()}
-            </div>
-          </div>
-        </div>
+        <CapacityInfo
+          structureEntityId={structureEntityId}
+          structureCategory={structure.structureCategory as StructureType}
+          className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
+        />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">
           <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
@@ -330,7 +228,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        <QuestsMenu />
+        {/* <QuestsMenu /> */}
       </div>
     </div>
   );

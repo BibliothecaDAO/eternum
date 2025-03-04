@@ -1,6 +1,8 @@
-import { REALM_UPGRADE_COSTS, RealmLevels, findResourceById } from "@bibliothecadao/eternum";
-import ResourceIcon from "./ResourceIcon";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { findResourceById } from "@/utils/resources";
+import { RealmLevels } from "@/utils/types";
 import { formatAmount } from "../utils/formatting";
+import ResourceIcon from "./ResourceIcon";
 
 type Props = {
   level: RealmLevels;
@@ -8,7 +10,7 @@ type Props = {
 };
 
 export default function RealmUpgradeCosts({ level, description }: Props) {
-  const costs = REALM_UPGRADE_COSTS[level] || [];
+  const costs = ETERNUM_CONFIG().realmUpgradeCosts[level];
 
   return (
     <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">

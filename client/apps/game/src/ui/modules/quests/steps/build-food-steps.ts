@@ -55,7 +55,7 @@ export const buildFoodSteps: StepOptions[] = [
     title: "Farm",
     text: () => {
       const wheatIcon = document.createElement("img");
-      wheatIcon.src = "/images/resources/254.png";
+      wheatIcon.src = "/images/resources/29.png";
       wheatIcon.className = "w-8 h-8 inline-block mx-1";
       wheatIcon.title = "Wheat";
 
@@ -76,7 +76,7 @@ export const buildFoodSteps: StepOptions[] = [
     title: "Fishing Village",
     text: () => {
       const fishIcon = document.createElement("img");
-      fishIcon.src = "/images/resources/255.png";
+      fishIcon.src = "/images/resources/30.png";
       fishIcon.className = "w-8 h-8 inline-block mx-1";
       fishIcon.title = "Fish";
 

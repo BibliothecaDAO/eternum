@@ -10,11 +10,12 @@ import {
   ID,
   MarketManager,
   ResourcesIds,
+  computeTravelTime,
   configManager,
   divideByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
-import { useDojo, useTravel } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import React, { useCallback, useMemo, useState } from "react";
 
@@ -84,8 +85,6 @@ export const LiquidityResourceRow = ({
     () => (myLiquidity?.shares.mag || 0) > 0 && (totalLords > 0 || totalResource > 0),
     [myLiquidity, totalLords, totalResource],
   );
-
-  const { computeTravelTime } = useTravel();
 
   const onWithdraw = useCallback(
     (percentage: number) => {
@@ -177,6 +176,7 @@ export const LiquidityResourceRow = ({
                     bankEntityId,
                     entityId,
                     configManager.getSpeedConfig(EntityType.DONKEY),
+                    dojoContext.setup.components,
                     true,
                   )}
                   setCanCarry={setCanCarry}

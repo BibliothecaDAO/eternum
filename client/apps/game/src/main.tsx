@@ -68,6 +68,7 @@ async function init() {
 
   const state = useUIStore.getState();
 
+  console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },
     {
@@ -85,6 +86,8 @@ async function init() {
       },
     },
   );
+
+  console.log({ setupResult });
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);

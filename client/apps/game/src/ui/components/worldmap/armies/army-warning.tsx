@@ -1,11 +1,10 @@
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  ArmyActionManager,
   ArmyInfo,
-  ArmyMovementManager,
   computeExploreFoodCosts,
   configManager,
-  multiplyByPrecision,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -19,21 +18,21 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyMovementManager(dojo.setup.components, dojo.network.provider, army.entity_id);
+    return new ArmyActionManager(dojo.setup.components, dojo.network.provider, army.entityId);
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
   const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
 
   const { missingWheat, missingFish, notEnoughFood } = useMemo(() => {
-    const missingWheat = Math.max(0, multiplyByPrecision(exploreFoodCosts.wheatPayAmount) - food.wheat);
-    const missingFish = Math.max(0, multiplyByPrecision(exploreFoodCosts.fishPayAmount) - food.fish);
+    const missingWheat = Math.max(0, exploreFoodCosts.wheatPayAmount - food.wheat);
+    const missingFish = Math.max(0, exploreFoodCosts.fishPayAmount - food.fish);
     const notEnoughFood = missingWheat > 0 || missingFish > 0;
     return { missingWheat, missingFish, notEnoughFood };
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
   const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(dojo.setup.components, army.entity_id);
+    const staminaManager = new StaminaManager(dojo.setup.components, army.entityId);
     return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
   }, [army]);
 

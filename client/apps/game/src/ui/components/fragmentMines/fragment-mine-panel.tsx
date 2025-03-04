@@ -36,7 +36,7 @@ export const FragmentMinePanel = ({ entity }: any) => {
                   setIsLoading(true);
 
                   try {
-                    await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
+                    await provider.set_address_name({ signer: account, name: naming });
                   } catch (e) {
                     console.error(e);
                   }

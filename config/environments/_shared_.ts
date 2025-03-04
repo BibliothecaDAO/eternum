@@ -1,5 +1,5 @@
 import {
-  CapacityConfigCategory,
+  CapacityConfig,
   getContractByName,
   NAMESPACE,
   RESOURCE_PRECISION,
@@ -13,7 +13,7 @@ import {
   BUILDING_CAPACITY,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
-  NON_RESOURCE_BUILDING_COSTS,
+  OTHER_BUILDING_COSTS,
   RESOURCE_BUILDING_COSTS,
 } from "./utils/building";
 import {
@@ -21,14 +21,42 @@ import {
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TOTAL_COSTS,
 } from "./utils/hyperstructure";
-import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS } from "./utils/levels";
-import { QUEST_RESOURCES } from "./utils/quest";
+import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+  RESOURCE_PRODUCTION_THROUGH_LABOR,
   RESOURCES_WEIGHTS_GRAM,
+  STARTING_RESOURCES,
 } from "./utils/resource";
-import { TROOPS_FOOD_CONSUMPTION, TROOPS_STAMINAS } from "./utils/troop";
+import {
+  TROOP_BASE_DAMAGE,
+  TROOP_DAMAGE_BETA_LARGE,
+  TROOP_DAMAGE_BETA_SMALL,
+  TROOP_DAMAGE_BIOME_BONUS_NUM,
+  TROOP_DAMAGE_C0,
+  TROOP_DAMAGE_DELTA,
+  TROOP_DAMAGE_SCALING_FACTOR,
+  TROOP_EXPLORE_FISH_COST,
+  TROOP_EXPLORE_STAMINA_COST,
+  TROOP_EXPLORE_WHEAT_COST,
+  TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT,
+  TROOP_EXPLORER_MAX_PARTY_COUNT,
+  TROOP_GUARD_RESURRECTION_DELAY,
+  TROOP_MERCENARIES_TROOP_LOWER_BOUND,
+  TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+  TROOP_STAMINA_ATTACK_MAX,
+  TROOP_STAMINA_ATTACK_REQ,
+  TROOP_STAMINA_BIOME_BONUS_VALUE,
+  TROOP_STAMINA_GAIN_PER_TICK,
+  TROOP_STAMINA_INITIAL,
+  TROOP_STAMINA_MAX,
+  TROOP_T2_DAMAGE_MULTIPLIER,
+  TROOP_T3_DAMAGE_MULTIPLIER,
+  TROOP_TRAVEL_FISH_COST,
+  TROOP_TRAVEL_STAMINA_COST,
+  TROOP_TRAVEL_WHEAT_COST,
+} from "./utils/troop";
 
 const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 
@@ -59,8 +87,6 @@ export const BANK_LP_FEES_NUMERATOR = 15;
 export const BANK_LP_FEES_DENOMINATOR = 100;
 export const BANK_OWNER_FEES_NUMERATOR = 15;
 export const BANK_OWNER_FEES_DENOMINATOR = 100;
-export const BANK_OWNER_BRIDGE_FEE_ON_DEPOSIT_PERCENT = 1000;
-export const BANK_OWNER_BRIDGE_FEE_ON_WITHDRAWAL_PERCENT = 1000;
 
 // ----- Population Capacity ----- //
 export const WORKER_HUTS_CAPACITY = 5;
@@ -68,8 +94,26 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_FAIL_PROBABILITY = 99000;
-export const SHARDS_MINES_WIN_PROBABILITY = 1000;
+export const SHARDS_MINES_WIN_PROBABILITY = 1000; // 1000 / 100_000 = 1%
+export const SHARDS_MINES_FAIL_PROBABILITY = 99000; // 99000 / 100_000 = 99%
+export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
+export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
+
+export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
+export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
+
+// by increasing this value, fail probability increases faster.
+// i.e the farther away from the center, the less likely to find a hyperstructure
+//
+// Using the values above and below, if a troop is more than 25 hexes away from the center, 
+// the probability of finding a hyperstructure is essentially 0% i.e FLOOR(16.66/1.66) = 10
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 2000; // 2000 / 120_000 = 1.66%
+
+// using the above and below values (without considering the hex distance), 
+// if there have been 2 hyperstructures found, the probability 
+// of finding a hyperstructure is 16.66 - (1.25 * 2) = 14.16%
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 1500; // 1500 / 120_000 = 1.25%
+
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
@@ -104,16 +148,6 @@ export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
 export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
 export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
-// ----- Mercenaries ----- //
-export const MERCENARIES_KNIGHTS_LOWER_BOUND = 1_000;
-export const MERCENARIES_KNIGHTS_UPPER_BOUND = 4_000;
-export const MERCENARIES_PALADINS_LOWER_BOUND = 1_000;
-export const MERCENARIES_PALADINS_UPPER_BOUND = 4_000;
-export const MERCENARIES_CROSSBOWMEN_LOWER_BOUND = 1_000;
-export const MERCENARIES_CROSSBOWMEN_UPPER_BOUND = 4_000;
-export const MERCENARIES_WHEAT_REWARD = 0;
-export const MERCENARIES_FISH_REWARD = 0;
-
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 10;
@@ -138,17 +172,14 @@ export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21
 export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
 export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
 export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
+export const MAX_NUM_BANKS = 6;
 
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
 export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
 
+export const TRADE_MAX_COUNT = 5;
+
 export const EternumGlobalConfig: Config = {
-  stamina: {
-    travelCost: STAMINA_TRAVEL_COST,
-    exploreCost: STAMINA_EXPLORE_COST,
-    refillPerTick: STAMINA_REFILL_PER_TICK,
-    startBoostTickCount: STAMINA_START_BOOST_TICK_COUNT,
-  },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     resourceMultiplier: RESOURCE_PRECISION,
@@ -156,9 +187,12 @@ export const EternumGlobalConfig: Config = {
     startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
     resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
     resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
     resourceWeightsGrams: RESOURCES_WEIGHTS_GRAM,
     resourceRarity: RESOURCE_RARITY,
-    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
+  },
+  trade: {
+    maxCount: TRADE_MAX_COUNT,
   },
   banks: {
     name: BANK_NAME,
@@ -167,8 +201,7 @@ export const EternumGlobalConfig: Config = {
     lpFeesDenominator: BANK_LP_FEES_DENOMINATOR,
     ownerFeesNumerator: BANK_OWNER_FEES_NUMERATOR,
     ownerFeesDenominator: BANK_OWNER_FEES_DENOMINATOR,
-    ownerBridgeFeeOnDepositPercent: BANK_OWNER_BRIDGE_FEE_ON_DEPOSIT_PERCENT,
-    ownerBridgeFeeOnWithdrawalPercent: BANK_OWNER_BRIDGE_FEE_ON_WITHDRAWAL_PERCENT,
+    maxNumBanks: MAX_NUM_BANKS,
     ammStartingLiquidity: AMM_STARTING_LIQUIDITY,
     lordsLiquidityPerResource: LORDS_LIQUIDITY_PER_RESOURCE,
   },
@@ -179,18 +212,25 @@ export const EternumGlobalConfig: Config = {
   exploration: {
     reward: EXPLORATION_REWARD,
     shardsMinesFailProbability: SHARDS_MINES_FAIL_PROBABILITY,
+    shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
+    hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
+    hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
+    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
+    hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
+    shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
+    shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
     armiesTickIntervalInSeconds: ARMIES_TICK_INTERVAL_SECONDS,
   },
   carryCapacityGram: {
-    [CapacityConfigCategory.None]: 0,
-    [CapacityConfigCategory.Structure]: BigInt(2) ** BigInt(128) - BigInt(1),
-    [CapacityConfigCategory.Donkey]: 500_000,
+    [CapacityConfig.None]: 0,
+    [CapacityConfig.Structure]: 400_000_000_000, // 400m kg
+    [CapacityConfig.Donkey]: 500_000,
     // 10_000 gr per army
-    [CapacityConfigCategory.Army]: 10_000,
-    [CapacityConfigCategory.Storehouse]: 300_000_000,
+    [CapacityConfig.Army]: 10_000,
+    [CapacityConfig.Storehouse]: 300_000_000,
   },
   speed: {
     donkey: DONKEY_SPEED,
@@ -202,35 +242,40 @@ export const EternumGlobalConfig: Config = {
     delaySeconds: BATTLE_DELAY_SECONDS,
   },
   troop: {
-    health: TROOP_HEALTH,
-    knightStrength: TROOP_KNIGHT_STRENGTH,
-    paladinStrength: TROOP_PALADIN_STRENGTH,
-    crossbowmanStrength: TROOP_CROSSBOWMAN_STRENGTH,
-    advantagePercent: TROOP_ADVANTAGE_PERCENT,
-    disadvantagePercent: TROOP_DISADVANTAGE_PERCENT,
-    maxTroopCount: TROOP_MAX_COUNT,
-    baseArmyNumberForStructure: TROOP_BASE_ARMY_NUMBER_FOR_STRUCTURE,
-    armyExtraPerMilitaryBuilding: TROOP_ARMY_EXTRA_PER_MILITARY_BUILDING,
-    maxArmiesPerStructure: TROOP_MAX_ARMIES_PER_STRUCTURE,
-    pillageHealthDivisor: TROOP_PILLAGE_HEALTH_DIVISOR,
-    battleLeaveSlashNum: TROOP_BATTLE_LEAVE_SLASH_NUM,
-    battleLeaveSlashDenom: TROOP_BATTLE_LEAVE_SLASH_DENOM,
-    battleTimeReductionScale: TROOP_BATTLE_TIME_REDUCTION_SCALE,
-    battleMaxTimeSeconds: TROOP_BATTLE_MAX_TIME_SECONDS,
-    troopStaminas: TROOPS_STAMINAS,
-    troopFoodConsumption: TROOPS_FOOD_CONSUMPTION,
-  },
-  mercenaries: {
-    knights_lower_bound: MERCENARIES_KNIGHTS_LOWER_BOUND,
-    knights_upper_bound: MERCENARIES_KNIGHTS_UPPER_BOUND,
-    paladins_lower_bound: MERCENARIES_PALADINS_LOWER_BOUND,
-    paladins_upper_bound: MERCENARIES_PALADINS_UPPER_BOUND,
-    crossbowmen_lower_bound: MERCENARIES_CROSSBOWMEN_LOWER_BOUND,
-    crossbowmen_upper_bound: MERCENARIES_CROSSBOWMEN_UPPER_BOUND,
-    rewards: [
-      { resource: ResourcesIds.Wheat, amount: MERCENARIES_WHEAT_REWARD },
-      { resource: ResourcesIds.Fish, amount: MERCENARIES_FISH_REWARD },
-    ],
+    damage: {
+      t1DamageValue: TROOP_BASE_DAMAGE,
+      t2DamageMultiplier: TROOP_T2_DAMAGE_MULTIPLIER,
+      t3DamageMultiplier: TROOP_T3_DAMAGE_MULTIPLIER,
+      damageBiomeBonusNum: TROOP_DAMAGE_BIOME_BONUS_NUM,
+      damageScalingFactor: TROOP_DAMAGE_SCALING_FACTOR,
+      damageBetaSmall: TROOP_DAMAGE_BETA_SMALL,
+      damageBetaLarge: TROOP_DAMAGE_BETA_LARGE,
+      damageC0: TROOP_DAMAGE_C0,
+      damageDelta: TROOP_DAMAGE_DELTA,
+    },
+    stamina: {
+      staminaGainPerTick: TROOP_STAMINA_GAIN_PER_TICK,
+      staminaInitial: TROOP_STAMINA_INITIAL,
+      staminaBonusValue: TROOP_STAMINA_BIOME_BONUS_VALUE,
+      staminaKnightMax: TROOP_STAMINA_MAX[ResourcesIds.Knight],
+      staminaPaladinMax: TROOP_STAMINA_MAX[ResourcesIds.Paladin],
+      staminaCrossbowmanMax: TROOP_STAMINA_MAX[ResourcesIds.Crossbowman],
+      staminaAttackReq: TROOP_STAMINA_ATTACK_REQ,
+      staminaAttackMax: TROOP_STAMINA_ATTACK_MAX,
+      staminaExploreWheatCost: TROOP_EXPLORE_WHEAT_COST,
+      staminaExploreFishCost: TROOP_EXPLORE_FISH_COST,
+      staminaExploreStaminaCost: TROOP_EXPLORE_STAMINA_COST,
+      staminaTravelWheatCost: TROOP_TRAVEL_WHEAT_COST,
+      staminaTravelFishCost: TROOP_TRAVEL_FISH_COST,
+      staminaTravelStaminaCost: TROOP_TRAVEL_STAMINA_COST,
+    },
+    limit: {
+      explorerMaxPartyCount: TROOP_EXPLORER_MAX_PARTY_COUNT,
+      explorerAndGuardMaxTroopCount: TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT,
+      guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
+      mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
+      mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+    },
   },
   settlement: {
     center: SETTLEMENT_CENTER,
@@ -245,7 +290,8 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    buildingCosts: NON_RESOURCE_BUILDING_COSTS,
+    otherBuildingCosts: OTHER_BUILDING_COSTS,
+    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
@@ -276,9 +322,10 @@ export const EternumGlobalConfig: Config = {
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
   },
-  questResources: QUEST_RESOURCES,
+  startingResources: STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
+  villageMaxLevel: VILLAGE_MAX_LEVEL,
   setup: {
     chain: process.env.VITE_PUBLIC_CHAIN!,
     addresses: await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain),

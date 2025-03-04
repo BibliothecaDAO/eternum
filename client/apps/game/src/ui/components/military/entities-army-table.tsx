@@ -1,16 +1,15 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
-import { battleSimulation, pillageSimulation } from "@/ui/components/navigation/config";
+import { battleSimulation } from "@/ui/components/navigation/config";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BattleSimulation } from "@/ui/modules/simulation/battle-simulation";
-import { PillageSimulation } from "@/ui/modules/simulation/pillage-simulation";
+import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { ArmyInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
-import { useArmiesByStructure, usePlayerStructures } from "@bibliothecadao/react";
+import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { useExplorersByStructure, usePlayerStructures } from "@bibliothecadao/react";
 
 export const EntitiesArmyTable = () => {
   const playerStructures = usePlayerStructures();
@@ -22,12 +21,8 @@ export const EntitiesArmyTable = () => {
         <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(battleSimulation)}>
           Simulate a battle
         </Button>
-        <Button variant="primary" className="mx-auto" size="md" onClick={() => togglePopup(pillageSimulation)}>
-          Simulate a pillage
-        </Button>
       </div>
-      <BattleSimulation />
-      <PillageSimulation />
+      <CombatSimulation />
       {playerStructures.map((entity: any, index: number) => {
         return (
           <div key={entity.entity_id} className="p-2">
@@ -51,26 +46,26 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   if (!structureEntityId) {
     return <div>Entity not found</div>;
   }
-  const { entityArmies } = useArmiesByStructure({ structureEntityId });
+  const explorers = useExplorersByStructure({ structureEntityId });
 
-  const totalTroops = entityArmies.reduce(
+  const totalTroops = explorers.reduce(
     (acc, army: ArmyInfo) => {
       return {
-        crossbowmen: Number(acc.crossbowmen) + Number(army.troops.crossbowman_count),
-        paladins: Number(acc.paladins) + Number(army.troops.paladin_count),
-        knights: Number(acc.knights) + Number(army.troops.knight_count),
+        crossbowmen: acc.crossbowmen + (army.troops.category === TroopType.Crossbowman ? Number(army.troops.count) : 0),
+        paladins: acc.paladins + (army.troops.category === TroopType.Paladin ? Number(army.troops.count) : 0),
+        knights: acc.knights + (army.troops.category === TroopType.Knight ? Number(army.troops.count) : 0),
       };
     },
     { crossbowmen: 0, paladins: 0, knights: 0 },
   );
 
-  if (entityArmies.length === 0) {
+  if (explorers.length === 0) {
     return <div className="m-auto">No armies</div>;
   }
 
   const armyElements = () => {
-    return entityArmies.map((army: ArmyInfo) => {
-      return <ArmyChip key={army.entity_id} army={army} showButtons />;
+    return explorers.map((army: ArmyInfo) => {
+      return <ArmyChip key={army.entityId} army={army} showButtons />;
     });
   };
 
