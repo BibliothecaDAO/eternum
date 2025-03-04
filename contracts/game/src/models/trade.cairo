@@ -11,9 +11,10 @@ pub struct Trade {
     pub taker_id: ID,
     pub expires_at: u32,
     pub maker_gives_resource_type: u8,
-    pub maker_gives_min_resource_amount: u128,
-    pub maker_gives_max_count: u128,
-    pub taker_pays_min_lords_amount: u128,
+    pub taker_pays_resource_type: u8,
+    pub maker_gives_min_resource_amount: u32,
+    pub taker_pays_min_resource_amount: u32,
+    pub maker_gives_max_count: u64,
 }
 
 
