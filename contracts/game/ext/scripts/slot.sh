@@ -317,7 +317,6 @@ if [ "$COMMAND" = "katana" ]; then
     slot deployments create -t epic $PROJECT_NAME katana \
         --version v1.0.5 \
         --invoke-max-steps "$KATANA_MAX_INVOKE_STEPS" \
-        --block-time "$KATANA_BLOCK_TIME" \
         --dev --dev.no-fee
 
     echo -e "\n${YELLOW}► Deployment accounts:${NC}"
