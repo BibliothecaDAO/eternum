@@ -38,7 +38,7 @@ pub struct Building {
     pub paused: bool,
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, Default)]
 #[dojo::model]
 pub struct StructureBuildings {
     #[key]
@@ -50,7 +50,7 @@ pub struct StructureBuildings {
     pub population: Population,
 }
 
-#[derive(Copy, Drop, Serde, IntrospectPacked)]
+#[derive(Copy, Drop, Serde, IntrospectPacked, Default)]
 pub struct Population {
     pub current: u32,
     pub max: u32,
@@ -553,10 +553,18 @@ pub impl BuildingImpl of BuildingTrait {
         let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
         let mut all_categories_quantity_packed: u128 = world
             .read_member(structure_building_ptr, selector!("packed_counts"));
+        let structure_building_initialized = all_categories_quantity_packed > 0;
         let new_building_category_count: u8 = category.building_count(all_categories_quantity_packed) + 1;
         all_categories_quantity_packed = category
             .set_building_count(all_categories_quantity_packed, new_building_category_count);
-        world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
+        if structure_building_initialized {
+            world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
+        } else {
+            let mut structure_building: StructureBuildings = Default::default();
+            structure_building.entity_id = outer_entity_id;
+            structure_building.packed_counts = all_categories_quantity_packed;
+            world.write_model(@structure_building);
+        }
 
         // increase population
         let mut population: Population = world
