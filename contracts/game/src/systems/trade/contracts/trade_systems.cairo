@@ -191,7 +191,7 @@ pub mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns taker structure
-            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.taker_id);
+            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, taker_id);
             taker_structure_owner.assert_caller_owner();
 
             // ensure trade is not expired
@@ -223,13 +223,14 @@ pub mod trade_systems {
             let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
             // send the taker's resource to the maker
+            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.maker_id);
             let taker_pays_resource_amount: u128 = taker_buys_count.into()
                 * trade.taker_pays_min_resource_amount.into();
             let mut maker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, trade.maker_id, arrival_day, arrival_slot,
+                ref world, trade.maker_id, arrival_day, maker_structure_owner, arrival_slot,
             );
             let mut maker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, trade.maker_id, arrival_day,
+                ref world, trade.maker_id, arrival_day, maker_structure_owner,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref maker_resources_array,
@@ -238,20 +239,20 @@ pub mod trade_systems {
             );
 
             ResourceArrivalImpl::write_slot(
-                ref world, trade.maker_id, arrival_day, arrival_slot, maker_resources_array,
+                ref world, trade.maker_id, arrival_day, maker_structure_owner, arrival_slot, maker_resources_array,
             );
             ResourceArrivalImpl::write_day_total(
-                ref world, trade.maker_id, arrival_day, maker_resource_arrival_total_amount,
+                ref world, trade.maker_id, arrival_day, maker_structure_owner, maker_resource_arrival_total_amount,
             );
 
             // send the maker's resource to the taker
             let maker_gives_resource_amount: u128 = taker_buys_count.into()
                 * trade.maker_gives_min_resource_amount.into();
             let mut taker_resources_array = ResourceArrivalImpl::read_slot(
-                ref world, trade.taker_id, arrival_day, arrival_slot,
+                ref world, trade.taker_id, arrival_day, taker_structure_owner, arrival_slot,
             );
             let mut taker_resource_arrival_total_amount = ResourceArrivalImpl::read_day_total(
-                ref world, trade.taker_id, arrival_day,
+                ref world, trade.taker_id, arrival_day, taker_structure_owner,
             );
             ResourceArrivalImpl::slot_increase_balances(
                 ref taker_resources_array,
@@ -259,10 +260,10 @@ pub mod trade_systems {
                 ref taker_resource_arrival_total_amount,
             );
             ResourceArrivalImpl::write_slot(
-                ref world, trade.taker_id, arrival_day, arrival_slot, taker_resources_array,
+                ref world, trade.taker_id, arrival_day, taker_structure_owner, arrival_slot, taker_resources_array,
             );
             ResourceArrivalImpl::write_day_total(
-                ref world, trade.taker_id, arrival_day, taker_resource_arrival_total_amount,
+                ref world, trade.taker_id, arrival_day, taker_structure_owner, taker_resource_arrival_total_amount,
             );
 
             // burn enough taker donkeys to carry resources given by maker

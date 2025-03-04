@@ -178,10 +178,10 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
         let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(
-            ref world, to_id, arrival_day, arrival_slot,
+            ref world, to_id, arrival_day, to_owner, arrival_slot,
         );
         let mut to_structure_resource_arrival_day_total = ResourceArrivalImpl::read_day_total(
-            ref world, to_id, arrival_day,
+            ref world, to_id, arrival_day, to_owner,
         );
         let mut total_resources_weight: u128 = 0;
         loop {
@@ -212,8 +212,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ref to_structure_resources_array, resources, ref to_structure_resource_arrival_day_total,
         );
         // update to_structure resource arrivals
-        ResourceArrivalImpl::write_slot(ref world, to_id, arrival_day, arrival_slot, to_structure_resources_array);
-        ResourceArrivalImpl::write_day_total(ref world, to_id, arrival_day, to_structure_resource_arrival_day_total);
+        ResourceArrivalImpl::write_slot(
+            ref world, to_id, arrival_day, to_owner, arrival_slot, to_structure_resources_array,
+        );
+        ResourceArrivalImpl::write_day_total(
+            ref world, to_id, arrival_day, to_owner, to_structure_resource_arrival_day_total,
+        );
 
         // determine which entity is providing the donkeys
         let mut donkey_provider_id = from_id;
@@ -238,6 +242,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     fn deliver_arrivals(
         ref world: WorldStorage,
         to_structure_id: ID,
+        to_structure_owner: starknet::ContractAddress,
         ref to_structure_weight: Weight,
         mut day: u64,
         mut slot: u8,
@@ -245,9 +250,11 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
     ) {
         assert!(index_count.is_non_zero(), "index count is 0");
 
-        let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(ref world, to_structure_id, day, slot);
+        let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(
+            ref world, to_structure_id, day, to_structure_owner, slot,
+        );
         let mut to_structure_resource_arrival_day_total = ResourceArrivalImpl::read_day_total(
-            ref world, to_structure_id, day,
+            ref world, to_structure_id, day, to_structure_owner,
         );
         let mut index_counted: u8 = 0;
         let mut total_amount_deposited: u128 = 0;
@@ -282,13 +289,15 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         to_structure_resource_arrival_day_total -= total_amount_deposited;
         if to_structure_resource_arrival_day_total.is_zero() {
             // delete to_structure resource arrivals
-            ResourceArrivalImpl::delete(ref world, to_structure_id, day);
+            ResourceArrivalImpl::delete(ref world, to_structure_id, day, to_structure_owner);
         } else {
             // update to_structure resource arrivals
-            ResourceArrivalImpl::write_slot(ref world, to_structure_id, day, slot, to_structure_resources_array);
+            ResourceArrivalImpl::write_slot(
+                ref world, to_structure_id, day, to_structure_owner, slot, to_structure_resources_array,
+            );
 
             ResourceArrivalImpl::write_day_total(
-                ref world, to_structure_id, day, to_structure_resource_arrival_day_total,
+                ref world, to_structure_id, day, to_structure_owner, to_structure_resource_arrival_day_total,
             );
         }
     }

@@ -1,7 +1,8 @@
 use core::dict::Felt252Dict;
+use core::num::traits::Zero;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
-
+use starknet::ContractAddress;
 
 #[derive(Introspect, PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
@@ -10,6 +11,8 @@ pub struct ResourceArrival {
     structure_id: ID,
     #[key]
     day: u64,
+    #[key]
+    owner: ContractAddress,
     slot_1: Span<(u8, u128)>,
     slot_2: Span<(u8, u128)>,
     slot_3: Span<(u8, u128)>,
@@ -43,11 +46,17 @@ pub struct ResourceArrival {
 #[generate_trait]
 pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     fn initialize(
-        ref world: WorldStorage, structure_id: ID, day: u64, slot_selector: felt252, slot_resources: Span<(u8, u128)>,
+        ref world: WorldStorage,
+        structure_id: ID,
+        day: u64,
+        owner: ContractAddress,
+        slot_selector: felt252,
+        slot_resources: Span<(u8, u128)>,
     ) {
         let mut resource_arrival_model: ResourceArrival = Default::default();
         resource_arrival_model.structure_id = structure_id;
         resource_arrival_model.day = day;
+        resource_arrival_model.owner = owner;
         resource_arrival_model.initialized = true;
 
         if slot_selector == selector!("slot_1") {
@@ -156,11 +165,12 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     }
 
 
-    fn delete(ref world: WorldStorage, structure_id: ID, day: u64) {
+    fn delete(ref world: WorldStorage, structure_id: ID, day: u64, owner: ContractAddress) {
         let empty_resources: Span<(u8, u128)> = array![].span();
         let mut resource_arrival_model = ResourceArrival {
             structure_id,
             day,
+            owner,
             slot_1: empty_resources,
             slot_2: empty_resources,
             slot_3: empty_resources,
@@ -191,37 +201,56 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         world.erase_model(@resource_arrival_model);
     }
 
-    fn read_day_total(ref world: WorldStorage, structure_id: ID, day: u64) -> u128 {
+    fn read_day_total(ref world: WorldStorage, structure_id: ID, day: u64, owner: ContractAddress) -> u128 {
         let total_amount = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"));
+            .read_member(
+                Model::<ResourceArrival>::ptr_from_keys((structure_id, day, owner)), selector!("total_amount"),
+            );
         return total_amount;
     }
 
-    fn read_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8) -> Span<(u8, u128)> {
+    fn read_slot(
+        ref world: WorldStorage, structure_id: ID, day: u64, owner: ContractAddress, slot: u8,
+    ) -> Span<(u8, u128)> {
         let slot_selector = Self::slot_selector(slot.into());
-        let resources = world.read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector);
+        let resources = world
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day, owner)), slot_selector);
         return resources;
     }
 
-    fn write_slot(ref world: WorldStorage, structure_id: ID, day: u64, slot: u8, resources: Span<(u8, u128)>) {
+    fn write_slot(
+        ref world: WorldStorage,
+        structure_id: ID,
+        day: u64,
+        owner: ContractAddress,
+        slot: u8,
+        resources: Span<(u8, u128)>,
+    ) {
         let slot_selector = Self::slot_selector(slot.into());
 
         // read the resource arrival tracker initialized flag
         // todo: check if this allows people create empty resource arrival models
 
         let initialized: bool = world
-            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("initialized"));
+            .read_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day, owner)), selector!("initialized"));
         if !initialized {
-            Self::initialize(ref world, structure_id, day, slot_selector, resources);
+            Self::initialize(ref world, structure_id, day, owner, slot_selector, resources);
         } else {
-            world.write_member(Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), slot_selector, resources);
+            world
+                .write_member(
+                    Model::<ResourceArrival>::ptr_from_keys((structure_id, day, owner)), slot_selector, resources,
+                );
         }
     }
 
-    fn write_day_total(ref world: WorldStorage, structure_id: ID, day: u64, total_amount: u128) {
+    fn write_day_total(
+        ref world: WorldStorage, structure_id: ID, day: u64, owner: ContractAddress, total_amount: u128,
+    ) {
         world
             .write_member(
-                Model::<ResourceArrival>::ptr_from_keys((structure_id, day)), selector!("total_amount"), total_amount,
+                Model::<ResourceArrival>::ptr_from_keys((structure_id, day, owner)),
+                selector!("total_amount"),
+                total_amount,
             );
     }
 
@@ -264,6 +293,7 @@ impl ResourceArrivalDefault of Default<ResourceArrival> {
         return ResourceArrival {
             structure_id: 0,
             day: 0,
+            owner: Zero::zero(),
             slot_1: zero_span,
             slot_2: zero_span,
             slot_3: zero_span,

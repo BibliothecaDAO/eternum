@@ -331,7 +331,13 @@ pub mod resource_systems {
             // move balance from resource arrivals to structure balance
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
             iResourceTransferImpl::deliver_arrivals(
-                ref world, from_structure_id, ref from_structure_weight, day, slot, resource_count,
+                ref world,
+                from_structure_id,
+                from_structure_owner,
+                ref from_structure_weight,
+                day,
+                slot,
+                resource_count,
             );
         }
     }
