@@ -4,6 +4,7 @@ import { ContributionSummary } from "@/ui/components/hyperstructures/contributio
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
 import Button from "@/ui/elements/button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
@@ -12,11 +13,14 @@ import {
   calculateCompletionPoints,
   configManager,
   ContractAddress,
+  divideByPrecision,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
   LeaderboardManager,
   MAX_NAME_LENGTH,
   multiplyByPrecision,
+  ResourceManager,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import {
   ProgressWithPercentage,
@@ -27,6 +31,13 @@ import {
 } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
+
+// Add the initialize type to the system calls
+declare module "@bibliothecadao/react" {
+  interface SystemCalls {
+    initialize: (props: { signer: any; hyperstructure_id: number }) => Promise<void>;
+  }
+}
 
 export enum DisplayedAccess {
   Public = "Public",
@@ -39,6 +50,7 @@ enum Loading {
   Contribute,
   ChangeName,
   SetPrivate,
+  Initialize,
 }
 
 export const HyperstructurePanel = ({ entity }: any) => {
@@ -48,10 +60,20 @@ export const HyperstructurePanel = ({ entity }: any) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { contribute_to_construction, set_access },
+      systemCalls,
       components,
     },
   } = dojo;
+
+  // Add initialize function manually since it's not in the type definition
+  const { contribute_to_construction, set_access } = systemCalls;
+  const initialize = async (props: { signer: any; hyperstructure_id: number }) => {
+    return await provider.executeAndCheckTransaction(props.signer, {
+      contractAddress: "0x" + provider.manifest.world.address, // Use the world address as fallback
+      entrypoint: "initialize",
+      calldata: [props.hyperstructure_id],
+    });
+  };
 
   const updateLeaderboard = useHyperstructureData();
 
@@ -80,6 +102,48 @@ export const HyperstructurePanel = ({ entity }: any) => {
     [],
   );
 
+  // Get the AncientFragment balance of the hyperstructure entity
+  const resourceManager = useMemo(() => {
+    return new ResourceManager(components, entity.entity_id);
+  }, [components, entity.entity_id]);
+
+  const ancientFragmentBalance = useMemo(() => {
+    // Convert bigint to number safely
+    const balance = resourceManager.balance(ResourcesIds.AncientFragment);
+    // Use toString and parseInt to safely convert bigint to number
+    return Number(divideByPrecision(Number(balance.toString())));
+  }, [resourceManager, updates]);
+
+  // Calculate the progress percentage for AncientFragment
+  const ancientFragmentProgress = useMemo(() => {
+    const ancientFragmentProgress = progresses.progresses.find((progress) => progress.resource_type === ResourcesIds.AncientFragment);
+    return ancientFragmentProgress?.percentage || 0;
+  }, [progresses]);
+
+  const canInitialize = useMemo(() => {
+    return entity.isOwner && 
+           ancientFragmentProgress === 100 && 
+           hyperstructure && 
+           !hyperstructure.initialized;
+  }, [entity.isOwner, ancientFragmentProgress, hyperstructure]);
+
+  const initializeHyperstructure = async () => {
+    if (!canInitialize) return;
+    
+    setIsLoading(Loading.Initialize);
+    
+    try {
+      await initialize({
+        signer: account,
+        hyperstructure_id: entity.entity_id,
+      });
+    } catch (error) {
+      console.error("Failed to initialize hyperstructure:", error);
+    } finally {
+      setIsLoading(Loading.None);
+    }
+  };
+
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
@@ -106,7 +170,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
 
-    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id)).map(({ resource }) => {
+    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id)).filter(({ resource }) => resource !== ResourcesIds.AncientFragment).map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -267,6 +331,43 @@ export const HyperstructurePanel = ({ entity }: any) => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Ancient Fragment Progress Bar */}
+      <div className="mt-2 mb-2 p-2 bg-gold/10 rounded">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center">
+            <ResourceIcon resource="Ancient Fragment" size="sm" className="mr-1" />
+            <span className="text-sm font-medium">Ancient Fragment</span>
+          </div>
+          <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
+        </div>
+        <div 
+          className="relative w-full h-8 flex items-center px-2 text-xs"
+          style={{
+            backgroundImage:
+              ancientFragmentProgress > 0
+                ? `linear-gradient(to right, #06D6A03c ${String(ancientFragmentProgress)}%, rgba(0,0,0,0) ${String(
+                    ancientFragmentProgress,
+                  )}%)`
+                : "",
+          }}
+        >
+          <span>{currencyIntlFormat(ancientFragmentProgress)}%</span>
+        </div>
+        <div className="flex justify-end items-center mt-1">
+          {canInitialize && (
+            <Button
+              size="xs"
+              variant="primary"
+              isLoading={isLoading === Loading.Initialize}
+              disabled={isLoading !== Loading.None}
+              onClick={initializeHyperstructure}
+            >
+              Initialize
+            </Button>
+          )}
         </div>
       </div>
 

@@ -1019,8 +1019,8 @@
       "explorerMaxPartyCount": 10,
       "explorerAndGuardMaxTroopCount": 500000,
       "guardResurrectionDelay": 86400,
-      "mercenariesTroopLowerBound": 3000,
-      "mercenariesTroopUpperBound": 6000
+      "mercenariesTroopLowerBound": 100,
+      "mercenariesTroopUpperBound": 200
     }
   },
   "settlement": {
@@ -5755,7 +5755,7 @@
         },
         {
           "address": "0x1b442d641b7aacf02c82cab9ea76cd68621b63ea03bf575a4f88c41a7bd52ac",
-          "class_hash": "0x3e9e98e527ddf63980f2b546db66283443c1a8d017921885e2f71848dfeba2b",
+          "class_hash": "0x67fb2fd37d69214d5fc796c57479b0289335232fd65a79e14b5ac44ce5c8cbf",
           "abi": [
             {
               "type": "impl",

@@ -24,6 +24,11 @@ export const LocalEternumGlobalConfig: Config = {
   // no stamina cost
   troop: {
     ...CommonEternumGlobalConfig.troop,
+    limit: {
+      ...CommonEternumGlobalConfig.troop.limit,
+      mercenariesTroopLowerBound: 100,
+      mercenariesTroopUpperBound: 200,
+    },
     stamina: {
       ...CommonEternumGlobalConfig.troop.stamina,
       staminaTravelStaminaCost: 0,
@@ -32,8 +37,10 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    hyperstructureWinProbAtCenter: 100_000,
-    hyperstructureFailProbAtCenter: 20_000,
+    shardsMinesWinProbability: 20_000,
+    shardsMinesFailProbability: 100_000,
+    hyperstructureWinProbAtCenter: 20_000,
+    hyperstructureFailProbAtCenter: 100_000,
     hyperstructureFailProbIncreasePerHexDistance: 20,
   },
   // cheap hyperstructures

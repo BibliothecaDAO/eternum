@@ -15,7 +15,6 @@ export const playBuildingSound = (buildingType: BuildingType | undefined, hasSou
   const buildingSounds: Partial<Record<BuildingType, string>> = {
     [BuildingType.Castle]: soundSelector.buildCastle,
     [BuildingType.WorkersHut]: soundSelector.buildWorkHut,
-    [BuildingType.WatchTower]: soundSelector.buildMageTower,
     [BuildingType.Storehouse]: soundSelector.buildStorehouse,
     [BuildingType.Bank]: soundSelector.buildLabor,
     [BuildingType.FragmentMine]: soundSelector.buildMine,

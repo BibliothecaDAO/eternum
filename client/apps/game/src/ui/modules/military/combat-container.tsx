@@ -292,6 +292,7 @@ export const CombatContainer = ({
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
     if (direction === null) return;
 
+
     try {
       setLoading(true);
       await attack_explorer_vs_guard({

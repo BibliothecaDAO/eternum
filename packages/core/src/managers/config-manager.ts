@@ -591,7 +591,7 @@ export class ClientConfigManager {
   getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: bigint): number {
     const hyperstructureResourceConfig = getComponentValue(
       this.components.HyperstructureResourceConfig,
-      getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
+      getEntityIdFromKeys([BigInt(resourceTier)]),
     );
 
     if (!hyperstructureResourceConfig) {
