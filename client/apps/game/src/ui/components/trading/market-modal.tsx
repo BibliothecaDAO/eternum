@@ -66,6 +66,9 @@ export const MarketModal = () => {
 
   const { bidOffers, askOffers } = useMarket(currentBlockTimestamp);
 
+  console.log({ bidOffers, askOffers });
+
+
   const bankStructure = useMemo(
     () =>
       getStructureAtPosition(

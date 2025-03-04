@@ -16,6 +16,8 @@ export function useMarket(currentBlockTimestamp: number) {
     return computeTrades(allMarket, currentBlockTimestamp, components);
   }, [allMarket]);
 
+  console.log({ allTrades });
+
   const userTrades = useMemo(() => {
     return allTrades.filter((trade) => playerRealms.map((realm) => realm.entityId).includes(trade.makerId));
   }, [allTrades]);

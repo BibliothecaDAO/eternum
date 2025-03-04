@@ -39,6 +39,7 @@ export const getDetachedResources = (entityId: ID, components: ContractComponent
 
 export const getTradeResources = (tradeId: ID, components: ContractComponents): TradeResources => {
   let trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+  console.log({ trade })
 
   if (!trade) return { takerGets: [], makerGets: [] };
 

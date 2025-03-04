@@ -8,6 +8,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  computeTravelTime,
   configManager,
   ContractAddress,
   divideByPrecision,
@@ -21,7 +22,7 @@ import {
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useTravel } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({
@@ -40,7 +41,6 @@ export const ResourceSwap = ({
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const [isBuyResource, setIsBuyResource] = useState(true);
@@ -253,6 +253,7 @@ export const ResourceSwap = ({
                   bankEntityId,
                   entityId,
                   configManager.getSpeedConfig(EntityType.DONKEY),
+                  setup.components,
                   true,
                 )}
                 setCanCarry={setCanCarry}

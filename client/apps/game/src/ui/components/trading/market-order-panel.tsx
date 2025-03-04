@@ -7,6 +7,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
+  computeTravelTime,
   configManager,
   divideByPrecision,
   DONKEY_ENTITY_TYPE,
@@ -14,12 +15,11 @@ import {
   getRealmAddressName,
   getTotalResourceWeight,
   multiplyByPrecision,
-  RESOURCE_PRECISION,
   ResourcesIds,
   type ID,
   type MarketInterface
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager, useTravel } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ONE_MONTH = 2628000;
@@ -231,7 +231,6 @@ const OrderRow = memo(
     updateBalance: boolean;
     setUpdateBalance: (value: boolean) => void;
   }) => {
-    const { computeTravelTime } = useTravel();
     const dojo = useDojo();
 
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
@@ -249,7 +248,7 @@ const OrderRow = memo(
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
     const travelTime = useMemo(
-      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), true),
+      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), dojo.setup.components, true),
       [entityId, offer],
     );
 
@@ -473,7 +472,7 @@ const OrderRow = memo(
 const OrderCreation = memo(
   ({ entityId, resourceId, isBuy = false }: { entityId: ID; resourceId: ResourcesIds; isBuy?: boolean }) => {
     const [loading, setLoading] = useState(false);
-    const [resource, setResource] = useState(RESOURCE_PRECISION);
+    const [resource, setResource] = useState(100);
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -519,10 +518,10 @@ const OrderCreation = memo(
         signer: account,
         maker_id: entityId,
         maker_gives_resource_type: makerGives[0],
-        maker_gives_min_resource_amount: makerGives[1],
+        maker_gives_min_resource_amount: 1,
         maker_gives_max_count: makerGives[1],
         taker_id: 0,
-        taker_pays_min_lords_amount: takerGives[1],
+        taker_pays_min_lords_amount: takerGives[1]/makerGives[1],
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
 

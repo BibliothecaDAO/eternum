@@ -1,14 +1,10 @@
-import { calculateDistance, ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useDojo } from "../context";
+import { ClientComponents } from "../dojo";
+import { ID } from "../types";
+import { calculateDistance } from "./utils";
 
-export function useTravel() {
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
+export const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, components: ClientComponents, pickup?: boolean) => {
     const fromPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromId)]));
     const toPosition = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toId)]));
     if (!fromPosition || !toPosition) return;
@@ -21,6 +17,3 @@ export function useTravel() {
     const onewayTime = Math.floor((distanceFromPosition * secPerKm) / 60);
     return pickup ? onewayTime * 2 : onewayTime;
   };
-
-  return { computeTravelTime };
-}
