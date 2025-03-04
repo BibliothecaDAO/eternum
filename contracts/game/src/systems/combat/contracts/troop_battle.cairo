@@ -153,18 +153,19 @@ pub mod troop_battle_systems {
             let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
 
+            // ensure structure is not cloaked
+            let tick = TickImpl::get_tick_config(ref world);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
+            assert!(StructureBaseImpl::is_not_cloaked(guarded_structure, battle_config, tick), "structure is cloaked");
+
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
             let guard_slot: Option<GuardSlot> = guard_defender
                 .next_attack_slot(guarded_structure.troop_max_guard_count.into());
 
             // claim structure if there are no guard troops. it is tried again after the attack
-            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            let tick = TickImpl::get_tick_config(ref world);
             if guard_slot.is_none() {
-                if StructureBaseImpl::is_not_cloaked(guarded_structure, battle_config, tick) {
-                    StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
-                }
+                StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
                 return;
             }
 
@@ -232,9 +233,7 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        if StructureBaseImpl::is_not_cloaked(guarded_structure, battle_config, tick) {
-                            StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
-                        }
+                        StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
                     }
                 }
             } else {
@@ -285,6 +284,14 @@ pub mod troop_battle_systems {
                 .from_slot(structure_guard_slot);
             assert!(structure_guard_aggressor_troops.count.is_non_zero(), "guard slot is dead");
 
+            // ensure structure is not cloaked
+            let tick = TickImpl::get_tick_config(ref world);
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
+            assert!(
+                StructureBaseImpl::is_not_cloaked(structure_aggressor_base, battle_config, tick),
+                "your structure is cloaked from attacks, so you cannot attack as well",
+            );
+
             // ensure structure is adjacent to explorer
             assert!(
                 explorer_defender.coord == structure_aggressor_base.coord().neighbor(explorer_direction),
@@ -295,7 +302,6 @@ pub mod troop_battle_systems {
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
             structure_guard_aggressor_troops
                 .attack(
                     ref explorer_defender.troops,
@@ -346,12 +352,7 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(
-                            world, selector!("battle_config"),
-                        );
-                        if StructureBaseImpl::is_not_cloaked(structure_aggressor_base, battle_config, tick) {
-                            StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
-                        }
+                        StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
                     }
                 }
             } else {
