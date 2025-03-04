@@ -54,8 +54,8 @@ pub mod realm_systems {
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
-        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
+        StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
