@@ -567,7 +567,7 @@ export const STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Adamantine, amount: 5_000 },
   { resource: ResourcesIds.Mithral, amount: 5_000 },
   { resource: ResourcesIds.Dragonhide, amount: 5_000 },
-  { resource: ResourcesIds.Donkey, amount: 200_000_000 },
+  { resource: ResourcesIds.Donkey, amount: 800 },
   { resource: ResourcesIds.Knight, amount: 1200 },
   { resource: ResourcesIds.Crossbowman, amount: 1200 },
   { resource: ResourcesIds.Paladin, amount: 1200 },
