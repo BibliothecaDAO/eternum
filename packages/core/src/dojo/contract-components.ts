@@ -125,12 +125,12 @@ export function defineContractComponents(world: World) {
     Guild: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, is_public: RecsType.Boolean, member_count: RecsType.Number },
+        { entity_id: RecsType.Number, is_public: RecsType.Boolean, member_count: RecsType.Number, owner: RecsType.BigInt },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Guild",
-            types: ["u32", "bool", "u16"],
+            types: ["u32", "bool", "u16", "ContractAddress"],
             customTypes: [],
           },
         },
