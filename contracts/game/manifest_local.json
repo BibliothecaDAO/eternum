@@ -4981,7 +4981,7 @@
       ]
     },
     {
-      "address": "0x31cd25558fd5f3de4af2a472998636cbff38ff88bed17d49dea7eb9ad9db049",
+      "address": "0x149450236cbbb96f2f06edf47dfc87f3654dd2f4ddf00c679e4a441e36071ae",
       "class_hash": "0x2f892c857f9afeda9f0319ba150706b79b59e5b969e40769456e4d476702a3a",
       "abi": [
         {
@@ -6503,8 +6503,8 @@
       ]
     },
     {
-      "address": "0x438797b6594f40420a159e7f34f2d867e246e84eae498cf7274cad56fe25168",
-      "class_hash": "0x287e898f0ce7446606e48721fefdf38d7dbc764e8538bd8344dd75e041ff2a0",
+      "address": "0x36f36977abab1a09b2d7eb7dc07d97a69c1e4fe7db2a4af5c76366263659537",
+      "class_hash": "0x1551723b93456351057cefcdba87c5d6a5e66ae28ab1f84c40ccb52a9b5b5ca",
       "abi": [
         {
           "type": "impl",
@@ -6582,16 +6582,20 @@
                   "type": "core::integer::u8"
                 },
                 {
+                  "name": "taker_pays_resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
                   "name": "maker_gives_min_resource_amount",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u32"
                 },
                 {
                   "name": "maker_gives_max_count",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u64"
                 },
                 {
-                  "name": "taker_pays_min_lords_amount",
-                  "type": "core::integer::u128"
+                  "name": "taker_pays_min_resource_amount",
+                  "type": "core::integer::u32"
                 },
                 {
                   "name": "expires_at",
@@ -6619,7 +6623,7 @@
                 },
                 {
                   "name": "taker_buys_count",
-                  "type": "core::integer::u128"
+                  "type": "core::integer::u64"
                 }
               ],
               "outputs": [],
@@ -8286,7 +8290,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x86400da5b2f8fbc35ad7b85295d953370910ff723a6f19112e7867a28e9c92",
+      "class_hash": "0x4451f0a3566938bdc38fb2e3b71f3170b9bee0bc95fa9a132499a7821fe2d7a",
       "tag": "s1_eternum-Trade",
       "selector": "0x6ddb8e334e9c33541fce1e72774d6c43c1057a1057a570f2eb12426f51291"
     },

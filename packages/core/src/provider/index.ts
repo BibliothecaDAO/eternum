@@ -392,9 +392,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       maker_id,
       taker_id,
       maker_gives_resource_type,
+      taker_pays_resource_type,
       maker_gives_min_resource_amount,
       maker_gives_max_count,
-      taker_pays_min_lords_amount,
+      taker_pays_min_resource_amount,
       expires_at,
       signer,
     } = props;
@@ -406,9 +407,10 @@ export class EternumProvider extends EnhancedDojoProvider {
         maker_id,
         taker_id,
         maker_gives_resource_type,
+        taker_pays_resource_type,
         maker_gives_min_resource_amount,
         maker_gives_max_count,
-        taker_pays_min_lords_amount,
+        taker_pays_min_resource_amount,
         expires_at,
       ],
     });

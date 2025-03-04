@@ -346,8 +346,58 @@
           "amount": 5
         }
       ],
-      "27": [],
-      "28": [],
+      "27": [
+        {
+          "resource": 26,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 75
+        },
+        {
+          "resource": 36,
+          "amount": 75
+        },
+        {
+          "resource": 15,
+          "amount": 3
+        },
+        {
+          "resource": 13,
+          "amount": 2
+        },
+        {
+          "resource": 12,
+          "amount": 1
+        }
+      ],
+      "28": [
+        {
+          "resource": 27,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 100
+        },
+        {
+          "resource": 36,
+          "amount": 100
+        },
+        {
+          "resource": 18,
+          "amount": 3
+        },
+        {
+          "resource": 10,
+          "amount": 2
+        },
+        {
+          "resource": 19,
+          "amount": 1
+        }
+      ],
       "29": [
         {
           "resource": 35,
@@ -366,8 +416,58 @@
           "amount": 5
         }
       ],
-      "30": [],
-      "31": [],
+      "30": [
+        {
+          "resource": 29,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 75
+        },
+        {
+          "resource": 36,
+          "amount": 75
+        },
+        {
+          "resource": 14,
+          "amount": 3
+        },
+        {
+          "resource": 20,
+          "amount": 2
+        },
+        {
+          "resource": 16,
+          "amount": 1
+        }
+      ],
+      "31": [
+        {
+          "resource": 30,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 100
+        },
+        {
+          "resource": 36,
+          "amount": 100
+        },
+        {
+          "resource": 17,
+          "amount": 3
+        },
+        {
+          "resource": 18,
+          "amount": 2
+        },
+        {
+          "resource": 9,
+          "amount": 1
+        }
+      ],
       "32": [
         {
           "resource": 35,
@@ -386,8 +486,58 @@
           "amount": 5
         }
       ],
-      "33": [],
-      "34": [],
+      "33": [
+        {
+          "resource": 32,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 75
+        },
+        {
+          "resource": 36,
+          "amount": 75
+        },
+        {
+          "resource": 13,
+          "amount": 3
+        },
+        {
+          "resource": 15,
+          "amount": 2
+        },
+        {
+          "resource": 21,
+          "amount": 1
+        }
+      ],
+      "34": [
+        {
+          "resource": 33,
+          "amount": 0.08
+        },
+        {
+          "resource": 35,
+          "amount": 100
+        },
+        {
+          "resource": 36,
+          "amount": 100
+        },
+        {
+          "resource": 10,
+          "amount": 3
+        },
+        {
+          "resource": 17,
+          "amount": 2
+        },
+        {
+          "resource": 22,
+          "amount": 1
+        }
+      ],
       "35": [],
       "36": [],
       "37": []
@@ -961,273 +1111,328 @@
       "2": [],
       "3": [
         {
-          "resource": 36,
-          "amount": 450000
+          "resource": 3,
+          "amount": 500000
+        },
+        {
+          "resource": 1,
+          "amount": 300000
+        },
+        {
+          "resource": 2,
+          "amount": 200000
         }
       ],
       "4": [
         {
-          "resource": 35,
-          "amount": 450000
+          "resource": 3,
+          "amount": 500000
+        },
+        {
+          "resource": 1,
+          "amount": 300000
+        },
+        {
+          "resource": 2,
+          "amount": 200000
         }
       ],
       "5": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
-        },
-        {
-          "resource": 2,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 50000
+          "amount": 100000
         },
         {
-          "resource": 7,
-          "amount": 45000
+          "resource": 11,
+          "amount": 75000
+        },
+        {
+          "resource": 3,
+          "amount": 50000
         }
       ],
       "6": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
-        },
-        {
-          "resource": 2,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 50000
+          "amount": 100000
+        },
+        {
+          "resource": 11,
+          "amount": 75000
         },
         {
           "resource": 7,
-          "amount": 45000
+          "amount": 50000
+        },
+        {
+          "resource": 14,
+          "amount": 25000
         }
       ],
       "7": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
-        },
-        {
-          "resource": 2,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 50000
+          "amount": 100000
+        },
+        {
+          "resource": 11,
+          "amount": 75000
         },
         {
           "resource": 7,
-          "amount": 45000
+          "amount": 50000
+        },
+        {
+          "resource": 19,
+          "amount": 25000
+        },
+        {
+          "resource": 18,
+          "amount": 15000
         }
       ],
       "8": [
         {
-          "resource": 36,
-          "amount": 750000
+          "resource": 3,
+          "amount": 500000
         },
         {
           "resource": 1,
-          "amount": 125000
+          "amount": 300000
+        },
+        {
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 14,
+          "amount": 50000
+        },
+        {
+          "resource": 12,
+          "amount": 25000
+        }
+      ],
+      "9": [
+        {
+          "resource": 4,
+          "amount": 800000
+        },
+        {
+          "resource": 15,
+          "amount": 100000
         },
         {
           "resource": 6,
+          "amount": 75000
+        },
+        {
+          "resource": 3,
+          "amount": 50000
+        }
+      ],
+      "10": [
+        {
+          "resource": 4,
+          "amount": 800000
+        },
+        {
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 6,
+          "amount": 75000
+        },
+        {
+          "resource": 14,
           "amount": 50000
         },
         {
           "resource": 13,
           "amount": 25000
-        },
-        {
-          "resource": 12,
-          "amount": 5000
-        }
-      ],
-      "9": [
-        {
-          "resource": 36,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
-        },
-        {
-          "resource": 6,
-          "amount": 75000
-        },
-        {
-          "resource": 7,
-          "amount": 25000
-        },
-        {
-          "resource": 15,
-          "amount": 25000
-        }
-      ],
-      "10": [
-        {
-          "resource": 36,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
-        },
-        {
-          "resource": 6,
-          "amount": 75000
-        },
-        {
-          "resource": 7,
-          "amount": 25000
-        },
-        {
-          "resource": 15,
-          "amount": 25000
         }
       ],
       "11": [
         {
-          "resource": 36,
-          "amount": 1000000
+          "resource": 4,
+          "amount": 800000
         },
         {
-          "resource": 3,
-          "amount": 75000
+          "resource": 15,
+          "amount": 100000
         },
         {
           "resource": 6,
           "amount": 75000
         },
         {
-          "resource": 7,
+          "resource": 14,
+          "amount": 50000
+        },
+        {
+          "resource": 12,
           "amount": 25000
         },
         {
-          "resource": 15,
-          "amount": 25000
+          "resource": 17,
+          "amount": 15000
         }
       ],
       "12": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 75000
+          "amount": 100000
         },
         {
           "resource": 5,
-          "amount": 35000
+          "amount": 75000
         },
         {
-          "resource": 7,
-          "amount": 25000
+          "resource": 3,
+          "amount": 50000
         }
       ],
       "13": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 75000
+          "amount": 100000
         },
         {
           "resource": 5,
-          "amount": 35000
+          "amount": 75000
         },
         {
           "resource": 7,
+          "amount": 50000
+        },
+        {
+          "resource": 14,
           "amount": 25000
         }
       ],
       "14": [
         {
-          "resource": 35,
-          "amount": 1000000
-        },
-        {
-          "resource": 3,
-          "amount": 75000
+          "resource": 4,
+          "amount": 800000
         },
         {
           "resource": 8,
-          "amount": 75000
+          "amount": 100000
         },
         {
           "resource": 5,
-          "amount": 35000
+          "amount": 75000
         },
         {
           "resource": 7,
+          "amount": 50000
+        },
+        {
+          "resource": 9,
           "amount": 25000
+        },
+        {
+          "resource": 22,
+          "amount": 15000
         }
       ],
-      "15": [],
+      "15": [
+        {
+          "resource": 3,
+          "amount": 400000
+        },
+        {
+          "resource": 1,
+          "amount": 250000
+        },
+        {
+          "resource": 15,
+          "amount": 75000
+        },
+        {
+          "resource": 14,
+          "amount": 35000
+        }
+      ],
       "16": [
         {
-          "resource": 35,
+          "resource": 3,
+          "amount": 400000
+        },
+        {
+          "resource": 1,
+          "amount": 250000
+        },
+        {
+          "resource": 2,
+          "amount": 150000
+        }
+      ],
+      "17": [
+        {
+          "resource": 3,
           "amount": 300000
         },
         {
           "resource": 1,
-          "amount": 75000
+          "amount": 200000
+        },
+        {
+          "resource": 2,
+          "amount": 100000
+        }
+      ],
+      "18": [
+        {
+          "resource": 1,
+          "amount": 600000
         },
         {
           "resource": 3,
-          "amount": 75000
+          "amount": 400000
         },
         {
           "resource": 2,
-          "amount": 75000
+          "amount": 200000
         }
       ],
-      "17": [],
-      "18": [],
       "19": [
         {
-          "resource": 36,
-          "amount": 1000000
-        },
-        {
-          "resource": 2,
-          "amount": 75000
+          "resource": 3,
+          "amount": 500000
         },
         {
           "resource": 1,
-          "amount": 75000
+          "amount": 300000
+        },
+        {
+          "resource": 15,
+          "amount": 100000
         },
         {
           "resource": 20,
-          "amount": 10000
+          "amount": 25000
         }
       ],
       "20": [],
@@ -1680,129 +1885,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x5944a0c135c5cfdb19d5f4d3e967c5859f431c25307ac70a920ac94c43ca1e8",
-      "realms": "0x1e468fa3a78516d0e6c99c69282ffbcc94bda4747d00469942e113397debd84",
-      "lords": "0x12bf082f4a72cc6c83550b354418d3fc0f87f22cc9e879ba5881ca469e438fc",
+      "seasonPass": "0x3c06199407ad3b14d8d66d915d0651516a94e6a6cb1033e1d406dc36b125e51",
+      "realms": "0x481bd99c03ce24ceb00071da686fefcc21f0f5bf3fc586690ef3a2785c31b0b",
+      "lords": "0x14f77360c40796d74acf878a34caa15b5bbbc28d7e26e93711775efaeb6d868",
       "resources": {
         "STONE": [
           1,
-          "0x6aa4acb82d3a8a73abd6f05df3b1219bbd05300ec4a4458dcad0976933ee816"
+          "0x4e18be541ccf7e9e111d6e70de1491e7a56871eb355f486ac47b08460a4aa19"
         ],
         "COAL": [
           2,
-          "0x42d53ee5228849466d4f297d5da9d4a0424ecc34f24393ee0ad21c188b0608"
+          "0x5492ceb2f649ce63308bd0163d24db7324c3f3ff58541d0ee464b2c70ab888"
         ],
         "WOOD": [
           3,
-          "0x246bb9cd0640386bd15318cc9a1c73643cfa761b5cf2a93f1408536d90cb565"
+          "0x10cb816e85fb3f92e18764617d19883bacb28695f1178273ec4dae3aea4b385"
         ],
         "COPPER": [
           4,
-          "0x15056d19f41f35364ef49e5dca03f94b9c52edfcc4028f0739c1a2dc2f369e3"
+          "0x698d7d7cee7d37c04c268c102733dda123780008a14645ae76cc75af67f270c"
         ],
         "IRONWOOD": [
           5,
-          "0x7fe3b75ebf3bee478c574ddba1559880675c4c367b828db9bb22b4a2a482b82"
+          "0x5ce1458f1817cafea6ede9ad5d46d9c3034c265573f695870f6c9427682d8a2"
         ],
         "OBSIDIAN": [
           6,
-          "0xe180f1f8c67facd63fc9986e6bf0821d7d04726859c3faf7ab71e8b544e069"
+          "0x4ead78594fca77d8fb690fd667bdc6906b02d7489273025fa5cd15efcd8ed2c"
         ],
         "GOLD": [
           7,
-          "0x4f5c41f6f9fe2f9bd57fc930e3f329c2cdf443ef0e22c7712c23078dcb81fb7"
+          "0x3437ba6dfafc7d507ee76fa7a960a74ae2b83c2d507d8cf7a32d09b35554d1c"
         ],
         "SILVER": [
           8,
-          "0x503cde90b2593750716df4d00dd294b8ebac2ef8745e11743ae1ba5a13c879a"
+          "0x72604ebb677cbe43f1ef664f8f6f60c7c5b64cb3246618a6926ab38b5b5082f"
         ],
         "MITHRAL": [
           9,
-          "0x55b351f46dfc34816f82423d0e1713477e32b933fa137d41250ca4856fc1b3b"
+          "0x49c9016309d25addb23d906a07637022d008512d274ea4471d3b18a3460a34c"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x137f49ae035593347007339ea423aa56144a13695c2f8813e95abb354942ed"
+          "0x1a54c8c5796307fc32f9bc3bac5d9670ad16ef57927fd4d3a04d36af9a6ab2b"
         ],
         "COLDIRON": [
           11,
-          "0x2c75932b79cdbf8277da184c7e435d51b765a60f219de6e004413a8f7af0882"
+          "0x159b7b955022d4237f7fe05241ddb3ccf007c4ed4c1060baf602c34427e49f5"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x236782c3c5b67414f7e9e52a3f5e92e754d658a0d1e15015b7c7d58839b7d74"
+          "0x175883747f10272f3ad105c5ea456af1deea973babd8a08ffa74092526f2075"
         ],
         "RUBY": [
           13,
-          "0x16afedc52f88b54f53cadb7887ab65258103efda5a4d386f2a78b3220241f0e"
+          "0x617eecb3bd4fbba72c53903c64c88bf398fb0bf565774864add0affda052a27"
         ],
         "DIAMONDS": [
           14,
-          "0x5ea507e2b27ea5ad710e0b8ec07e24faa0954592560404bf33bd995e1683ef2"
+          "0x6d68e549104ec7cb6b6a1a599446929cf15c237cb17047d0329e9fa23d9ef70"
         ],
         "HARTWOOD": [
           15,
-          "0x26865bca41cdaf6c02d351fced8eb72cb6c9c0c3c1c282ee74d80e54e0eafbd"
+          "0x560478586ee971a8bf0930138cd5d7e664e2013825ce8d242525b45b1e21ec8"
         ],
         "IGNIUM": [
           16,
-          "0x1bc43520392d7c781e55269f94bd45f45847dd5f7a5e6fcd13488114d318e17"
+          "0x25fc814948bddb014a9b2759296ce8c32ee69792325451035cbafd65ca239e5"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x190daabb95fadc5dd90aa3b0fad9f7397fcfaa1fc74459f81503d45b2ad86f3"
+          "0x1199f2913182f99ecdf4b1f8e23ee12857b3a53fe3f9ce7f1bc96bd2f06ff03"
         ],
         "TRUEICE": [
           18,
-          "0x2f8c0ef1b78be96aac8354f837ae2b0aaf0b46ce9e57eea62719f73172b9cc4"
+          "0x59c7c44d50631f6feb895e656f9e717adefa9f9bad49840d23c7eed50d82665"
         ],
         "ADAMANTINE": [
           19,
-          "0x543c27d0583452589f42d177b4dccbbae4ee88010715cf19d088772a2605235"
+          "0x4a418545819bbcd58324655459d7f665b0f2bd53903dd46535aa520c2b04e40"
         ],
         "SAPPHIRE": [
           20,
-          "0x572ec45c79f4ca33b1523b13aa1b7bdc2b563d435fb152ab8a6632caf0a738"
+          "0x2df64c02d2b2ca629934f4512f0832bbde1fa8193899732febbc47ebb9b64ee"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x449c53ff28d4de86ecb666279f6e940345f97805dfdc9a8b8ca971561799b6a"
+          "0x178778c33b771a457aa5866dbb5dd27b892ed492ea50e67f1cb31b656daaa44"
         ],
         "DRAGONHIDE": [
           22,
-          "0x6b85ff025bb4cfe9a447ec034a8bc848b7377021d98024c93e8f63a07a0f9c4"
+          "0x3b20c1cf8908dfd36ea4cba5a2c3279d41edb3b4cdddd21a4a355b3379ba0d9"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x5e3b34a9d586f2d10ce517073b130006c0bf9f78cb20c3825a84f7b3b4c3d9a"
+          "0x5b0186a456d51ef2d27869257ad00e7e4c3f2cb79d34e9f81d77136d0e340a1"
         ],
         "DONKEY": [
           25,
-          "0x31e90551113a6dcb8dfd0bec1f2af8403bf9f529c35019a47e08bf4428f1880"
+          "0x6fa44a98680a531e3ca75fa950deb97ad93b2ac3053b881901511a274f2f932"
         ],
         "KNIGHT": [
           26,
-          "0x544582783296183d7146ee647cb50c55ec4c7675c1ad8f3c1cd8c1fea9752e"
+          "0x457a04eb53011d0b969a34c70a528ca41ad927555ba86f64d6aad984cfc9459"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x3ebc5cbbe824bb382790046cdfb810bd9f25dde19b109808db27d1e7622b55"
+          "0x52abfbc68775b40ae2c8d442b9b40575018dd03480a911915f6c895295419b"
         ],
         "PALADIN": [
           32,
-          "0x5e16dbd7baf31c4608f51311dafd0f5d2df38515fc980758b3664bd22bac25f"
+          "0x548c09e3da536bd2203d75f8bf0b72fc54b85626805ff4372e159845f576ad0"
         ],
         "WHEAT": [
           35,
-          "0x6aea845b1f3f8dde7b4ec920a02a87aa2eadb78f93ccf5a0a16077038b0fc48"
+          "0x1bee5a04551115c60951904c7fde1e233297f081d09e5fa6864ecfbacf587ca"
         ],
         "FISH": [
           36,
-          "0x1bed62025d8468e0140f41f8dd231e9d9497a31d3cf1c092f378df6076bf656"
+          "0x57de2e219dd20d4b1e6b931b40e1aefd1d82913a2f99e244dcd396c2294b425"
         ],
         "LORDS": [
           37,
-          "0xc8ce4a33058ac28c95dfd25b72722119aa944fdc5ec1864530586da728378b"
+          "0x14f77360c40796d74acf878a34caa15b5bbbc28d7e26e93711775efaeb6d868"
         ]
       }
     },
@@ -6789,8 +6994,8 @@
           ]
         },
         {
-          "address": "0x31cd25558fd5f3de4af2a472998636cbff38ff88bed17d49dea7eb9ad9db049",
-          "class_hash": "0x1e418820b20d358c3492ef390ce91c751a176a6b89c2b858d8223422ee7df42",
+          "address": "0x149450236cbbb96f2f06edf47dfc87f3654dd2f4ddf00c679e4a441e36071ae",
+          "class_hash": "0x2f892c857f9afeda9f0319ba150706b79b59e5b969e40769456e4d476702a3a",
           "abi": [
             {
               "type": "impl",
@@ -8311,8 +8516,8 @@
           ]
         },
         {
-          "address": "0x438797b6594f40420a159e7f34f2d867e246e84eae498cf7274cad56fe25168",
-          "class_hash": "0x287e898f0ce7446606e48721fefdf38d7dbc764e8538bd8344dd75e041ff2a0",
+          "address": "0x36f36977abab1a09b2d7eb7dc07d97a69c1e4fe7db2a4af5c76366263659537",
+          "class_hash": "0x1551723b93456351057cefcdba87c5d6a5e66ae28ab1f84c40ccb52a9b5b5ca",
           "abi": [
             {
               "type": "impl",
@@ -8390,16 +8595,20 @@
                       "type": "core::integer::u8"
                     },
                     {
+                      "name": "taker_pays_resource_type",
+                      "type": "core::integer::u8"
+                    },
+                    {
                       "name": "maker_gives_min_resource_amount",
-                      "type": "core::integer::u128"
+                      "type": "core::integer::u32"
                     },
                     {
                       "name": "maker_gives_max_count",
-                      "type": "core::integer::u128"
+                      "type": "core::integer::u64"
                     },
                     {
-                      "name": "taker_pays_min_lords_amount",
-                      "type": "core::integer::u128"
+                      "name": "taker_pays_min_resource_amount",
+                      "type": "core::integer::u32"
                     },
                     {
                       "name": "expires_at",
@@ -8427,7 +8636,7 @@
                     },
                     {
                       "name": "taker_buys_count",
-                      "type": "core::integer::u128"
+                      "type": "core::integer::u64"
                     }
                   ],
                   "outputs": [],
@@ -10094,7 +10303,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x86400da5b2f8fbc35ad7b85295d953370910ff723a6f19112e7867a28e9c92",
+          "class_hash": "0x4451f0a3566938bdc38fb2e3b71f3170b9bee0bc95fa9a132499a7821fe2d7a",
           "tag": "s1_eternum-Trade",
           "selector": "0x6ddb8e334e9c33541fce1e72774d6c43c1057a1057a570f2eb12426f51291"
         },

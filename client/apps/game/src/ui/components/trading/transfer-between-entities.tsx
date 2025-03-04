@@ -11,10 +11,10 @@ import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
   computeTravelTime,
   configManager,
-  DONKEY_ENTITY_TYPE,
+  EntityType,
   getRealmAddressName,
   ID,
-  multiplyByPrecision,
+  multiplyByPrecision
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
@@ -172,7 +172,7 @@ export const TransferBetweenEntities = ({
   filtered,
   filterBy,
 }: {
-  entitiesList: { entities: any[]; name: string }[];
+  entitiesList: { entities: { entityId: ID }[]; name: string }[];
   filtered: boolean;
   filterBy: (filtered: boolean) => void;
 }) => {
@@ -207,7 +207,7 @@ export const TransferBetweenEntities = ({
         computeTravelTime(
           selectedEntityIdFrom?.entityId,
           selectedEntityIdTo?.entityId,
-          configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+          configManager.getSpeedConfig(EntityType.DONKEY),
           components,
         ),
       );
@@ -254,7 +254,7 @@ export const TransferBetweenEntities = ({
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,
-        accountName: getRealmAddressName(entity.entity_id, components),
+        accountName: getRealmAddressName(entity.entityId, components),
       })),
       name,
     }));

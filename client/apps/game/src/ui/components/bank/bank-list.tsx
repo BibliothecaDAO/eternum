@@ -6,12 +6,11 @@ import { ID } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 type BankListProps = {
-  bankEntityId: ID;
   structureEntityId: ID;
   selectedResource: number;
 };
 
-export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }: BankListProps) => {
+export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -24,7 +23,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
           </div>
         ),
         component: (
-          <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} listResourceId={selectedResource} />
+          <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />
         ),
       },
       {
@@ -36,7 +35,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
         ),
         component: (
           <div>
-            <AddLiquidity bankEntityId={bankEntityId} entityId={structureEntityId!} listResourceId={selectedResource} />
+            <AddLiquidity entityId={structureEntityId!} listResourceId={selectedResource} />
           </div>
         ),
       },
@@ -47,10 +46,10 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
   const liquidityTable = useMemo(() => {
     return (
       <div className="mt-4 text-xs">
-        <LiquidityTable bankEntityId={bankEntityId} entity_id={structureEntityId} />
+        <LiquidityTable entity_id={structureEntityId} />
       </div>
     );
-  }, [bankEntityId, structureEntityId]);
+  }, [structureEntityId]);
 
   return (
     <div className="amm-selector m-4">

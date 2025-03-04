@@ -5,7 +5,7 @@ import clsx from "clsx";
 import { memo } from "react";
 
 interface Entity {
-  entity_id: ID;
+  entityId: ID;
   name: string;
 }
 
@@ -25,18 +25,18 @@ export const SelectEntityFromList = memo(
     return (
       <div className="overflow-y-scroll max-h-72 border border-gold/10 gap-2 flex-col">
         {entities.map((entity) => {
-          const isSelected = selectedEntityId === entity.entity_id;
-          const isDisabled = isSelected || selectedCounterpartyId === entity.entity_id;
-          const realmName = getRealmAddressName(entity.entity_id, components);
+          const isSelected = selectedEntityId === entity.entityId;
+          const isDisabled = isSelected || selectedCounterpartyId === entity.entityId;
+          const realmName = getRealmAddressName(entity.entityId, components);
 
           return (
             <div
-              key={entity.entity_id}
+              key={entity.entityId}
               className={clsx(
                 "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
                 isSelected && "border-gold/10 border",
               )}
-              onClick={() => onSelect(entity.name, entity.entity_id)}
+              onClick={() => onSelect(entity.name, entity.entityId)}
             >
               <div className="font-serif text-lg">
                 {realmName} ({entity.name})

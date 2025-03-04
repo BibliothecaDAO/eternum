@@ -8,14 +8,9 @@ import { configManager } from "./config-manager";
 export class MarketManager {
   constructor(
     private readonly components: ClientComponents,
-    private readonly _bankEntityId: ID,
     private readonly _player: ContractAddress,
     private readonly _resourceId: ResourcesIds,
   ) {}
-
-  get bankEntityId() {
-    return this._bankEntityId;
-  }
 
   get player() {
     return this._player;
@@ -38,14 +33,14 @@ export class MarketManager {
   public getPlayerLiquidity() {
     return getComponentValue(
       this.components.Liquidity,
-      getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
+      getEntityIdFromKeys([this.player, BigInt(this.resourceId)]),
     );
   }
 
   public getMarket() {
     return getComponentValue(
       this.components.Market,
-      getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
+      getEntityIdFromKeys([BigInt(this.resourceId)]),
     );
   }
 
@@ -277,7 +272,6 @@ export class MarketManager {
     playerStructureIds.forEach((structureId) => {
       const liquidityEvents = runQuery([
         HasValue(this.components.events.LiquidityEvent, {
-          bank_entity_id: this.bankEntityId,
           entity_id: structureId,
           resource_type: this.resourceId,
         }),

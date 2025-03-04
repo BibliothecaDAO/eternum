@@ -82,6 +82,7 @@ export type Structure = {
 };
 
 export type PlayerStructure = {
+  entityId: ID;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
   position: Position;
   name: string;
@@ -90,6 +91,7 @@ export type PlayerStructure = {
 };
 
 export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  entityId: ID;
   position: Position;
   name: string;
   owner: ContractAddress;

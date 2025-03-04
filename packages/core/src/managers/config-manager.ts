@@ -478,7 +478,7 @@ export class ClientConfigManager {
     }, 0);
   }
 
-  getSpeedConfig(entityType: number): number {
+  getSpeedConfig(entityType: EntityType): number {
     return this.getValueOrDefault(() => {
       const speedConfig = getComponentValue(
         this.components.WorldConfig,

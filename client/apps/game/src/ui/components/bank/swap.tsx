@@ -12,25 +12,23 @@ import {
   configManager,
   ContractAddress,
   divideByPrecision,
-  EntityType,
   getBalance,
+  getClosestBank,
   ID,
   MarketManager,
   multiplyByPrecision,
   RESOURCE_TIERS,
   Resources,
   resources,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({
-  bankEntityId,
   entityId,
   listResourceId,
 }: {
-  bankEntityId: ID;
   entityId: ID;
   listResourceId: number;
 }) => {
@@ -51,18 +49,13 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  // todo: fix this
-  // const bankProtector = useMemo(() => {
-  //   const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
-  //   return structure?.protector;
-  // }, [bankEntityId]);
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
-    [setup, bankEntityId, resourceId, account.address],
+    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
+    [setup, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -106,10 +99,16 @@ export const ResourceSwap = ({
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
 
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
+    console.log({ closestBank });
+
     const performSwap = () => {
       return operation({
         signer: account,
-        bank_entity_id: bankEntityId,
+        bank_entity_id: closestBank.bankId,
         entity_id: entityId,
         resource_type: resourceId,
         amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
@@ -122,7 +121,7 @@ export const ResourceSwap = ({
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount]);
+  }, [isBuyResource, setup, account, entityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
@@ -223,6 +222,10 @@ export const ResourceSwap = ({
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
 
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
     return (
       <ConfirmationPopup
         title="Confirm Swap"
@@ -249,13 +252,7 @@ export const ResourceSwap = ({
               <TravelInfo
                 entityId={entityId}
                 resources={resourcesToTransport}
-                travelTime={computeTravelTime(
-                  bankEntityId,
-                  entityId,
-                  configManager.getSpeedConfig(EntityType.DONKEY),
-                  setup.components,
-                  true,
-                )}
+                travelTime={closestBank.travelTime}
                 setCanCarry={setCanCarry}
                 isAmm={true}
               />
@@ -276,7 +273,6 @@ export const ResourceSwap = ({
     onSwap,
     entityId,
     computeTravelTime,
-    bankEntityId,
     setCanCarry,
   ]);
 

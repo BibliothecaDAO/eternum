@@ -9,6 +9,7 @@ import {
   ContractAddress,
   divideByPrecision,
   getBalance,
+  getClosestBank,
   ID,
   MarketManager,
   multiplyByPrecision,
@@ -19,11 +20,9 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({
-  bankEntityId,
   entityId,
   listResourceId,
 }: {
-  bankEntityId: ID;
   entityId: ID;
   listResourceId: number;
 }) => {
@@ -44,8 +43,8 @@ const AddLiquidity = ({
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
-    [setup, bankEntityId, resourceId, account.address],
+    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
+    [setup, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -77,11 +76,15 @@ const AddLiquidity = ({
   const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
     setIsLoading(true);
     setup.systemCalls
       .add_liquidity({
         signer: account,
-        bank_entity_id: bankEntityId,
+        bank_entity_id: closestBank.bankId,
         entity_id: entityId,
         calls: [
           {
@@ -151,7 +154,6 @@ const AddLiquidity = ({
           <LiquidityTableHeader />
           <LiquidityResourceRow
             playerStructureIds={playerStructureIds}
-            bankEntityId={bankEntityId}
             entityId={entityId}
             resourceId={resourceId}
           />

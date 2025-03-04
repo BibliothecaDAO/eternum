@@ -80,20 +80,18 @@ export const currentTickCount = (time: number) => {
   return Number(time / tickIntervalInSeconds);
 };
 
-export function calculateDistance(start: Position, destination: Position): number | undefined {
+export function calculateDistance(start: Position, destination: Position): number {
   // d = √((x2-x1)² + (y2-y1)²)
 
-  if (start && destination) {
-    // Calculate the difference in x and y coordinates
-    const deltaX = Math.abs(start.x - destination.x);
-    const deltaY = Math.abs(start.y - destination.y);
+  // Calculate the difference in x and y coordinates
+  const deltaX = Math.abs(start.x - destination.x);
+  const deltaY = Math.abs(start.y - destination.y);
 
-    // Calculate the distance using the Pythagorean theorem
-    // Each tile is 1 km, so we don't need to divide by 10000 here
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  // Calculate the distance using the Pythagorean theorem
+  // Each tile is 1 km, so we don't need to divide by 10000 here
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    return distance;
-  }
+  return distance;
 }
 
 export const gramToKg = (value: number) => {

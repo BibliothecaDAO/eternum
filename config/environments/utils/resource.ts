@@ -470,7 +470,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Ironwood, amount: 5 },
   ],
   [ResourcesIds.KnightT2]: [
-    { resource: ResourcesIds.Knight, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.Knight, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 75 },
     { resource: ResourcesIds.Fish, amount: 75 },
     { resource: ResourcesIds.Hartwood, amount: 3 },
@@ -478,7 +479,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.DeepCrystal, amount: 1 },
   ],
   [ResourcesIds.KnightT3]: [
-    { resource: ResourcesIds.KnightT2, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.KnightT2, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 100 },
     { resource: ResourcesIds.Fish, amount: 100 },
     { resource: ResourcesIds.TrueIce, amount: 3 },
@@ -492,7 +494,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.ColdIron, amount: 5 },
   ],
   [ResourcesIds.CrossbowmanT2]: [
-    { resource: ResourcesIds.Crossbowman, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.Crossbowman, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 75 },
     { resource: ResourcesIds.Fish, amount: 75 },
     { resource: ResourcesIds.Diamonds, amount: 3 },
@@ -500,7 +503,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Ignium, amount: 1 },
   ],
   [ResourcesIds.CrossbowmanT3]: [
-    { resource: ResourcesIds.CrossbowmanT2, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.CrossbowmanT2, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 100 },
     { resource: ResourcesIds.Fish, amount: 100 },
     { resource: ResourcesIds.TwilightQuartz, amount: 3 },
@@ -514,7 +518,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Gold, amount: 5 },
   ],
   [ResourcesIds.PaladinT2]: [
-    { resource: ResourcesIds.Paladin, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.Paladin, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 75 },
     { resource: ResourcesIds.Fish, amount: 75 },
     { resource: ResourcesIds.Ruby, amount: 3 },
@@ -522,7 +527,8 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.EtherealSilica, amount: 1 },
   ],
   [ResourcesIds.PaladinT3]: [
-    { resource: ResourcesIds.PaladinT2, amount: 1 },
+    // 2 times the output
+    { resource: ResourcesIds.PaladinT2, amount: 0.08 },
     { resource: ResourcesIds.Wheat, amount: 100 },
     { resource: ResourcesIds.Fish, amount: 100 },
     { resource: ResourcesIds.AlchemicalSilver, amount: 3 },

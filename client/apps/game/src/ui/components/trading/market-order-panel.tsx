@@ -10,7 +10,7 @@ import {
   computeTravelTime,
   configManager,
   divideByPrecision,
-  DONKEY_ENTITY_TYPE,
+  EntityType,
   findResourceById,
   getRealmAddressName,
   getTotalResourceWeight,
@@ -233,8 +233,10 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
+
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
+    const { currentDefaultTick } = useBlockTimestamp();
 
     const resourceManager = useResourceManager(entityId);
 
@@ -248,7 +250,7 @@ const OrderRow = memo(
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
     const travelTime = useMemo(
-      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(DONKEY_ENTITY_TYPE), dojo.setup.components, true),
+      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(EntityType.DONKEY), dojo.setup.components, true),
       [entityId, offer],
     );
 
@@ -278,7 +280,6 @@ const OrderRow = memo(
       return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
     }, [entityId, offer.makerId, offer.tradeId, offer]);
 
-    const { currentDefaultTick } = useBlockTimestamp();
 
     const resourceBalanceRatio = useMemo(
       () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
@@ -327,10 +328,16 @@ const OrderRow = memo(
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
+    
 
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
+
+    //console.log the disable conditions
+    console.log(
+      {isBuy, donkeysNeeded, donkeyBalance, inputValue}
+    );
 
     const accountName = useMemo(() => {
       return getRealmAddressName(offer.makerId, dojo.setup.components);
@@ -424,7 +431,7 @@ const OrderRow = memo(
             onConfirm={isSelf ? onCancel : onAccept}
             onCancel={() => setConfirmOrderModal(false)}
             isLoading={loading}
-            disabled={(!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
+            disabled={isSelf ? false : ((!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0)}
           >
             {isSelf ? (
               <div className="p-4 text-center">
@@ -518,10 +525,11 @@ const OrderCreation = memo(
         signer: account,
         maker_id: entityId,
         maker_gives_resource_type: makerGives[0],
+        taker_pays_resource_type: takerGives[0],
         maker_gives_min_resource_amount: 1,
         maker_gives_max_count: makerGives[1],
         taker_id: 0,
-        taker_pays_min_lords_amount: takerGives[1]/makerGives[1],
+        taker_pays_min_resource_amount: takerGives[1]/makerGives[1],
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
 

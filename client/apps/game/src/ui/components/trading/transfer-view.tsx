@@ -10,7 +10,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerOwnedRealms, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, NotValue, getComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
 export const TransferView = () => {
@@ -48,6 +48,7 @@ export const TransferView = () => {
         const name = structureName ? `${structure.base.category} ${structureName}` : structure.base.category || "";
         return {
           structure,
+          entityId: structure.entity_id,
           position: { x: structure.base.coord_x, y: structure.base.coord_y },
           name,
           owner: structure.owner,
@@ -59,7 +60,8 @@ export const TransferView = () => {
 
   const otherRealmsQuery = useEntityQuery([
     Has(Structure),
-    NotValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm }),
+    HasValue(Structure, { category: StructureType.Realm }),
+    NotValue(Structure, { owner: ContractAddress(account.address) }),
   ]);
 
   const otherRealms = useMemo(() => {
@@ -67,6 +69,7 @@ export const TransferView = () => {
       const structure = getComponentValue(Structure, id);
       return {
         ...structure?.metadata,
+        entityId: structure?.entity_id,
         position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
         name: structure ? getRealmNameById(structure.metadata.realm_id) : "",
         owner: structure?.owner,

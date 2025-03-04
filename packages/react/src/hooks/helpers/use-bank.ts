@@ -1,17 +1,17 @@
-import { ADMIN_BANK_ENTITY_ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { useDojo } from "../";
 
-export const useBank = () => {
+export const useBank = (bankEntityId: ID) => {
   const {
     setup: {
       components: { AddressName, Structure, WorldConfig },
     },
   } = useDojo();
 
-  const entity = getEntityIdFromKeys([BigInt(ADMIN_BANK_ENTITY_ID)]);
+  const entity = getEntityIdFromKeys([BigInt(bankEntityId)]);
 
   // use strict because we know the entity exists
   const structure = getComponentValue(Structure, entity);

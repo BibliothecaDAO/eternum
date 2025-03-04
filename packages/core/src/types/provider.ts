@@ -49,7 +49,8 @@ export interface CreateOrderProps extends SystemSigner {
   maker_gives_resource_type: num.BigNumberish;
   maker_gives_min_resource_amount: num.BigNumberish;
   maker_gives_max_count: num.BigNumberish;
-  taker_pays_min_lords_amount: num.BigNumberish;
+  taker_pays_resource_type: num.BigNumberish;
+  taker_pays_min_resource_amount: num.BigNumberish;
   expires_at: num.BigNumberish;
 }
 

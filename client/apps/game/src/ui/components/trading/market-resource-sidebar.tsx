@@ -5,7 +5,6 @@ import { useMemo } from "react";
 
 export const MarketResourceSidebar = ({
   entityId,
-  bankEntityId,
   search,
   onClick,
   selectedResource,
@@ -13,7 +12,6 @@ export const MarketResourceSidebar = ({
   resourceBidOffers,
 }: {
   entityId: ID;
-  bankEntityId: ID | undefined;
   search: string;
   onClick: (value: number) => void;
   selectedResource: number;
@@ -32,9 +30,8 @@ export const MarketResourceSidebar = ({
     return filteredResources
       .filter((resourceId) => resourceId !== ResourcesIds.Lords)
       .map((resourceId) => {
-        const marketManager = bankEntityId
-          ? new MarketManager(dojo.setup.components, bankEntityId, 0n, resourceId)
-          : undefined;
+        const marketManager = 
+           new MarketManager(dojo.setup.components, 0n, resourceId)
 
         const askPrice = resourceBidOffers
           .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -61,7 +58,6 @@ export const MarketResourceSidebar = ({
       });
   }, [
     filteredResources,
-    bankEntityId,
     dojo.setup,
     resourceBidOffers,
     resourceAskOffers,
