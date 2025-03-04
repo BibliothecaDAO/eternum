@@ -469,11 +469,43 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Silver, amount: 2 },
     { resource: ResourcesIds.Ironwood, amount: 5 },
   ],
+  [ResourcesIds.KnightT2]: [
+    { resource: ResourcesIds.Knight, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Hartwood, amount: 3 },
+    { resource: ResourcesIds.Ruby, amount: 2 },
+    { resource: ResourcesIds.DeepCrystal, amount: 1 },
+  ],
+  [ResourcesIds.KnightT3]: [
+    { resource: ResourcesIds.KnightT2, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.TrueIce, amount: 3 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 2 },
+    { resource: ResourcesIds.Adamantine, amount: 1 },
+  ],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
     { resource: ResourcesIds.Fish, amount: 50 },
     { resource: ResourcesIds.Obsidian, amount: 2 },
     { resource: ResourcesIds.ColdIron, amount: 5 },
+  ],
+  [ResourcesIds.CrossbowmanT2]: [
+    { resource: ResourcesIds.Crossbowman, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Diamonds, amount: 3 },
+    { resource: ResourcesIds.Sapphire, amount: 2 },
+    { resource: ResourcesIds.Ignium, amount: 1 },
+  ],
+  [ResourcesIds.CrossbowmanT3]: [
+    { resource: ResourcesIds.CrossbowmanT2, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 3 },
+    { resource: ResourcesIds.TrueIce, amount: 2 },
+    { resource: ResourcesIds.Mithral, amount: 1 },
   ],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
@@ -481,17 +513,27 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 2 },
     { resource: ResourcesIds.Gold, amount: 5 },
   ],
+  [ResourcesIds.PaladinT2]: [
+    { resource: ResourcesIds.Paladin, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Ruby, amount: 3 },
+    { resource: ResourcesIds.Hartwood, amount: 2 },
+    { resource: ResourcesIds.EtherealSilica, amount: 1 },
+  ],
+  [ResourcesIds.PaladinT3]: [
+    { resource: ResourcesIds.PaladinT2, amount: 1 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 3 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 2 },
+    { resource: ResourcesIds.Dragonhide, amount: 1 },
+  ],
   [ResourcesIds.Wheat]: [],
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
   [ResourcesIds.AncientFragment]: [],
   [ResourcesIds.Labor]: [],
-  [ResourcesIds.KnightT2]: [],
-  [ResourcesIds.KnightT3]: [],
-  [ResourcesIds.CrossbowmanT2]: [],
-  [ResourcesIds.CrossbowmanT3]: [],
-  [ResourcesIds.PaladinT2]: [],
-  [ResourcesIds.PaladinT3]: [],
 };
 
 export const STARTING_RESOURCES: ResourceCost[] = [
@@ -532,3 +574,43 @@ export const multiplyStartingResources = (multiplier: number): ResourceCost[] =>
     amount: resource.amount * multiplier
   }));
 };
+
+export const RESOURCE_BANDS = {
+  T1_TROOPS_PRIMARY: [
+    ResourcesIds.Copper,
+    ResourcesIds.Obsidian, 
+    ResourcesIds.Silver, 
+    ResourcesIds.Ironwood, 
+    ResourcesIds.ColdIron, 
+    ResourcesIds.Gold
+  ],
+  T2_TROOPS_SECONDARY: [
+    ResourcesIds.Hartwood, 
+    ResourcesIds.Diamonds, 
+    ResourcesIds.Sapphire, 
+    ResourcesIds.Ruby
+  ],
+  T2_TROOPS_TERTIARY: [
+    ResourcesIds.DeepCrystal, 
+    ResourcesIds.Ignium, 
+    ResourcesIds.EtherealSilica
+  ],
+  T3_TROOPS_SECONDARY: [
+    ResourcesIds.TrueIce, 
+    ResourcesIds.TwilightQuartz, 
+    ResourcesIds.AlchemicalSilver
+  ],
+  T3_TROOPS_TERTIARY: [
+    ResourcesIds.Adamantine, 
+    ResourcesIds.Mithral, 
+    ResourcesIds.Dragonhide
+  ]
+};
+
+export const RESOURCE_TO_BAND: { [key in ResourcesIds]?: string } = {};
+
+Object.entries(RESOURCE_BANDS).forEach(([bandName, resources]) => {
+  (resources as ResourcesIds[]).forEach(resourceId => {
+    RESOURCE_TO_BAND[resourceId] = bandName;
+  });
+});
