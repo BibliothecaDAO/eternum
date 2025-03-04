@@ -223,7 +223,8 @@ pub mod trade_systems {
             let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
             // send the taker's resource to the maker
-            let taker_pays_resource_amount: u128 = taker_buys_count.into() * trade.taker_pays_min_resource_amount.into();
+            let taker_pays_resource_amount: u128 = taker_buys_count.into()
+                * trade.taker_pays_min_resource_amount.into();
             let mut maker_resources_array = ResourceArrivalImpl::read_slot(
                 ref world, trade.maker_id, arrival_day, arrival_slot,
             );
@@ -244,7 +245,8 @@ pub mod trade_systems {
             );
 
             // send the maker's resource to the taker
-            let maker_gives_resource_amount: u128 = taker_buys_count.into() * trade.maker_gives_min_resource_amount.into();
+            let maker_gives_resource_amount: u128 = taker_buys_count.into()
+                * trade.maker_gives_min_resource_amount.into();
             let mut taker_resources_array = ResourceArrivalImpl::read_slot(
                 ref world, trade.taker_id, arrival_day, arrival_slot,
             );
