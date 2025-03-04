@@ -172,8 +172,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         assert!(from_coord != to_coord, "from_entity and to_entity are in the same location");
 
         let donkey_speed = SpeedImpl::for_donkey(ref world);
-        let travel_time = starknet::get_block_timestamp()
-            + iDistanceKmImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
+        let travel_time = iDistanceKmImpl::time_required(ref world, from_coord, to_coord, donkey_speed, pickup);
         let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
         let mut to_structure_resources_array = ResourceArrivalImpl::read_slot(
