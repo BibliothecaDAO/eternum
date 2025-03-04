@@ -18,10 +18,7 @@ export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
   [BuildingType.Stable1]: 0,
   [BuildingType.Stable2]: 0,
   [BuildingType.Stable3]: 0,
-  [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 5,
-  [BuildingType.WatchTower]: 0,
-  [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
 };
 
@@ -43,10 +40,7 @@ export const BUILDING_POPULATION: { [key in BuildingType]: number } = {
   [BuildingType.Stable1]: 3,
   [BuildingType.Stable2]: 3,
   [BuildingType.Stable3]: 3,
-  [BuildingType.TradingPost]: 2,
   [BuildingType.WorkersHut]: 0,
-  [BuildingType.WatchTower]: 2,
-  [BuildingType.Walls]: 2,
   [BuildingType.Storehouse]: 2,
 };
 
@@ -68,10 +62,7 @@ export const BUILDING_RESOURCE_PRODUCED: { [key in BuildingType]: number } = {
   [BuildingType.Stable1]: ResourcesIds.Paladin,
   [BuildingType.Stable2]: ResourcesIds.PaladinT2,
   [BuildingType.Stable3]: ResourcesIds.PaladinT3,
-  [BuildingType.TradingPost]: 0,
   [BuildingType.WorkersHut]: 0,
-  [BuildingType.WatchTower]: 0,
-  [BuildingType.Walls]: 0,
   [BuildingType.Storehouse]: 0,
 };
 
@@ -175,22 +166,6 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
     { resource: ResourcesIds.Diamonds, amount: 50_000 },
     { resource: ResourcesIds.DeepCrystal, amount: 25_000 }
-  ],
-  [BuildingType.TradingPost]: [
-    { resource: ResourcesIds.Wood, amount: 400_000 },
-    { resource: ResourcesIds.Stone, amount: 250_000 },
-    { resource: ResourcesIds.Hartwood, amount: 75_000 },
-    { resource: ResourcesIds.Diamonds, amount: 35_000 }
-  ],
-  [BuildingType.WatchTower]: [
-    { resource: ResourcesIds.Wood, amount: 300_000 },
-    { resource: ResourcesIds.Stone, amount: 200_000 },
-    { resource: ResourcesIds.Coal, amount: 100_000 }
-  ],
-  [BuildingType.Walls]: [
-    { resource: ResourcesIds.Stone, amount: 600_000 },
-    { resource: ResourcesIds.Wood, amount: 400_000 },
-    { resource: ResourcesIds.Coal, amount: 200_000 }
   ],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Wood, amount: 500_000 },

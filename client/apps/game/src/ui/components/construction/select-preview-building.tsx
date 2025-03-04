@@ -54,9 +54,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "Bank" &&
       key !== "FragmentMine" &&
       key !== "None" &&
-      key !== "TradingPost" &&
-      key !== "WatchTower" &&
-      key !== "Walls" &&
       key !== "Settlement" &&
       key !== "Hyperstructure",
   );

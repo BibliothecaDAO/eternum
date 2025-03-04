@@ -138,10 +138,7 @@ pub enum BuildingCategory {
     Stable1,
     Stable2,
     Stable3,
-    TradingPost,
     WorkersHut,
-    WatchTower,
-    Walls,
     Storehouse,
 }
 
@@ -163,11 +160,8 @@ pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::Stable1 => 12,
             BuildingCategory::Stable2 => 13,
             BuildingCategory::Stable3 => 14,
-            BuildingCategory::TradingPost => 15,
-            BuildingCategory::WorkersHut => 16,
-            BuildingCategory::WatchTower => 17,
-            BuildingCategory::Walls => 18,
-            BuildingCategory::Storehouse => 19,
+            BuildingCategory::WorkersHut => 15,
+            BuildingCategory::Storehouse => 16,
         }
     }
 }
@@ -263,10 +257,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Stable1 => ResourceTypes::PALADIN_T1,
             BuildingCategory::Stable2 => ResourceTypes::PALADIN_T2,
             BuildingCategory::Stable3 => ResourceTypes::PALADIN_T3,
-            BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
-            BuildingCategory::WatchTower => 0,
-            BuildingCategory::Walls => 0,
             BuildingCategory::Storehouse => 0,
         }
     }
@@ -288,10 +279,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Stable1 => 0,
             BuildingCategory::Stable2 => 0,
             BuildingCategory::Stable3 => 0,
-            BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
-            BuildingCategory::WatchTower => 0,
-            BuildingCategory::Walls => 0,
             BuildingCategory::Storehouse => 0,
         }
     }
