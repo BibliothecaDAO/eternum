@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::{alias::ID, models::{guild::{GuildMember}, owner::{Owner}, position::{PositionIntoCoord}}};
+use s1_eternum::{alias::ID, models::{guild::{GuildMember}, position::{PositionIntoCoord}}};
 
 use starknet::ContractAddress;
 
@@ -77,18 +77,14 @@ pub impl EpochImpl of EpochTrait {
 
 #[generate_trait]
 pub impl HyperstructureImpl of HyperstructureTrait {
-    fn assert_access(self: Hyperstructure, ref world: WorldStorage) {
+    fn assert_access(self: Hyperstructure, ref world: WorldStorage, owner_address: ContractAddress) {
         let contributor_address = starknet::get_caller_address();
-        let hyperstructure_owner: Owner = world.read_model(self.entity_id);
-
         match self.access {
             Access::Public => {},
-            Access::Private => {
-                assert!(contributor_address == hyperstructure_owner.address, "Hyperstructure is private");
-            },
+            Access::Private => { assert!(contributor_address == owner_address, "Hyperstructure is private"); },
             Access::GuildOnly => {
                 let guild_member: GuildMember = world.read_model(contributor_address);
-                let owner_guild_member: GuildMember = world.read_model(hyperstructure_owner.address);
+                let owner_guild_member: GuildMember = world.read_model(owner_address);
                 assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
             },
         }

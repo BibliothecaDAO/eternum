@@ -79,7 +79,7 @@ export const LiquidityResourceRow = ({
 
   const myLiquidity = marketManager.getPlayerLiquidity();
   const canWithdraw = useMemo(
-    () => (myLiquidity?.shares.mag || 0) > 0 && (totalLords > 0 || totalResource > 0),
+    () => (myLiquidity?.shares || 0) > 0 && (totalLords > 0 || totalResource > 0),
     [myLiquidity, totalLords, totalResource],
   );
 

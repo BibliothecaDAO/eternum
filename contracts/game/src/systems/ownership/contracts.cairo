@@ -9,7 +9,7 @@ trait IOwnershipSystems<T> {
 #[dojo::contract]
 mod ownership_systems {
     use s1_eternum::alias::ID;
-    use s1_eternum::models::owner::{OwnerImpl};
+    // use s1_eternum::models::owner::{OwnerImpl};
     use s1_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
 

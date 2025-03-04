@@ -64,8 +64,8 @@ pub mod hyperstructure_systems {
             },
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
-            name::{AddressName}, owner::{Owner, OwnerAddressTrait}, position::{PositionIntoCoord},
-            resource::resource::{}, season::{Leaderboard},
+            name::{AddressName}, owner::{OwnerAddressTrait}, position::{PositionIntoCoord}, resource::resource::{},
+            season::{Leaderboard},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
     };
@@ -223,12 +223,6 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonImpl::assert_season_is_not_over(world);
 
-            // ensure caller owns hyperstructure
-            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, hyperstructure_entity_id,
-            );
-            structure_owner.assert_caller_owner();
-
             // ensure structure is a hyperstructure
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
             assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
@@ -238,7 +232,10 @@ pub mod hyperstructure_systems {
             assert!(hyperstructure.initialized, "hyperstructure is not initialized");
 
             // ensure contributor has access to hyperstructure
-            hyperstructure.assert_access(ref world);
+            let hyperstructure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, hyperstructure_entity_id,
+            );
+            hyperstructure.assert_access(ref world, hyperstructure_owner);
 
             // emit hyperstructure contribution event
             let timestamp = starknet::get_block_timestamp();
@@ -279,14 +276,14 @@ pub mod hyperstructure_systems {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
 
-                let hyperstructure_owner: Owner = world.read_model(hyperstructure_entity_id);
-                let hyperstructure_owner_name: AddressName = world.read_model(hyperstructure_owner.address);
+                let hyperstructure_owner_name: AddressName = world.read_model(hyperstructure_owner);
 
                 world
                     .emit_event(
                         @HyperstructureFinished {
                             hyperstructure_entity_id,
                             contributor_entity_id,
+                            // todo: ?
                             hyperstructure_owner_name: hyperstructure_owner_name.name,
                             timestamp,
                             id: world.dispatcher.uuid(),
@@ -295,7 +292,7 @@ pub mod hyperstructure_systems {
             }
 
             // [Achievement] Hyperstructure Contribution
-            let player_id: felt252 = structure_owner.into();
+            let player_id: felt252 = starknet::get_caller_address().into();
             let task_id: felt252 = Task::Opportunist.identifier();
             let store = StoreTrait::new(world);
             store.progress(player_id, task_id, count: 1, time: timestamp);

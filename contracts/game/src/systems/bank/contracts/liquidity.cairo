@@ -1,18 +1,15 @@
-use cubit::f128::types::fixed::{Fixed};
 use s1_eternum::alias::ID;
-
 #[starknet::interface]
 trait ILiquiditySystems<T> {
     fn add(
         ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, resource_amount: u128, lords_amount: u128,
     );
-    fn remove(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed);
+    fn remove(ref self: T, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: u128);
 }
 // todo: discuss: liquidity can be used to shield funds from realm raid and cpature
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
-    use cubit::f128::types::fixed::{Fixed};
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
 
@@ -119,7 +116,7 @@ mod liquidity_systems {
         }
 
 
-        fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) {
+        fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // SeasonImpl::assert_season_is_not_over(world);
 
@@ -179,7 +176,7 @@ mod liquidity_systems {
             player_liquidity.shares -= shares;
 
             // if player has no liquidity, erase model
-            if player_liquidity.shares.mag == 0 {
+            if player_liquidity.shares == 0 {
                 world.erase_model(@player_liquidity);
             } else {
                 world.write_model(@player_liquidity);
