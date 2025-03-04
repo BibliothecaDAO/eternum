@@ -191,7 +191,7 @@ pub mod trade_systems {
             assert!(trade.maker_id.is_non_zero(), "trade does not exist");
 
             // ensure caller owns taker structure
-            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, trade.taker_id);
+            let taker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, taker_id);
             taker_structure_owner.assert_caller_owner();
 
             // ensure trade is not expired
