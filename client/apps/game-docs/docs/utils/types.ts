@@ -12,19 +12,20 @@ export enum BuildingType {
   Resource = 2,
   Farm = 3,
   FishingVillage = 4,
-  Barracks = 5,
-  Market = 6,
-  ArcheryRange = 7,
-  Stable = 8,
-  // unused
-  TradingPost = 9,
-  WorkersHut = 10,
-  // unused
-  WatchTower = 11,
-  Walls = 12,
-  Storehouse = 13,
-  Bank = 14,
-  FragmentMine = 15,
+  Barracks1 = 5,
+  Barracks2 = 6,
+  Barracks3 = 7,
+  Market = 8,
+  ArcheryRange1 = 9,
+  ArcheryRange2 = 10,
+  ArcheryRange3 = 11,
+  Stable1 = 12,
+  Stable2 = 13,
+  Stable3 = 14,
+  WorkersHut = 15,
+  Storehouse = 16,
+  Bank = 17,
+  FragmentMine = 18,
 }
 
 export enum ResourcesIds {

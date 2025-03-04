@@ -27,15 +27,10 @@ export enum BuildingType {
   Stable1 = 12,
   Stable2 = 13,
   Stable3 = 14,
-  // unused
-  TradingPost = 15,
-  WorkersHut = 16,
-  // unused
-  WatchTower = 17,
-  Walls = 18,
-  Storehouse = 19,
-  Bank = 20,
-  FragmentMine = 21,
+  WorkersHut = 15,
+  Storehouse = 16,
+  Bank = 17,
+  FragmentMine = 18,
 }
 
 export const BuildingEnumToString: Record<BuildingType, string> = {
@@ -54,10 +49,7 @@ export const BuildingEnumToString: Record<BuildingType, string> = {
   [BuildingType.Stable1]: "Stable 1",
   [BuildingType.Stable2]: "Stable 2",
   [BuildingType.Stable3]: "Stable 3",
-  [BuildingType.TradingPost]: "Trading Post",
   [BuildingType.WorkersHut]: "Workers Hut",
-  [BuildingType.WatchTower]: "Watch Tower",
-  [BuildingType.Walls]: "Walls",
   [BuildingType.Storehouse]: "Storehouse",
   [BuildingType.Bank]: "Bank",
   [BuildingType.FragmentMine]: "Fragment Mine",
@@ -96,14 +88,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Stable2: {} });
     case BuildingType.Stable3:
       return new CairoCustomEnum({ Stable3: {} });
-    case BuildingType.TradingPost:
-      return new CairoCustomEnum({ TradingPost: {} });
     case BuildingType.WorkersHut:
       return new CairoCustomEnum({ WorkersHut: {} });
-    case BuildingType.WatchTower:
-      return new CairoCustomEnum({ WatchTower: {} });
-    case BuildingType.Walls:
-      return new CairoCustomEnum({ Walls: {} });
     case BuildingType.Storehouse:
       return new CairoCustomEnum({ Storehouse: {} });
     case BuildingType.Bank:
@@ -145,13 +131,7 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.PaladinT2;
     case BuildingType.Stable3:
       return ResourcesIds.PaladinT3;
-    case BuildingType.TradingPost:
-      return 0;
     case BuildingType.WorkersHut:
-      return 0;
-    case BuildingType.WatchTower:
-      return 0;
-    case BuildingType.Walls:
       return 0;
     case BuildingType.Storehouse:
       return 0;

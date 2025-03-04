@@ -24,10 +24,7 @@ export const BUILDING_INFORMATION: {
   [BuildingType.Stable1]: "Stables, infused with ancient spirits, summon valiant Paladins.",
   [BuildingType.Stable2]: "Stables, infused with ancient spirits, summon valiant Paladins.",
   [BuildingType.Stable3]: "Stables, infused with ancient spirits, summon valiant Paladins.",
-  [BuildingType.TradingPost]: "Trading Posts, at the crossroads of destiny, expand the horizons of trade.",
   [BuildingType.WorkersHut]:
     "Workers Huts, blessed by the ancestors, expand the heart of your realm allowing for greater capacity.",
-  [BuildingType.WatchTower]: "Watch Towers, piercing the veils of fog, extend the gaze of your kingdom.",
-  [BuildingType.Walls]: "Walls, imbued with the strength of titans, fortify your domain against the shadows.",
   [BuildingType.Storehouse]: "Storehouses, where abundance flows, swell with the wealth of the land.",
 };
