@@ -155,8 +155,17 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const setUserName = async () => {
-      const username = await (connector as unknown as ControllerConnector)?.username();
-      if (!username) return;
+      
+      let username;
+      try {
+        username = await (connector as unknown as ControllerConnector)?.username();
+        if (!username) {
+          username = "adventurer"; // Default to adventurer in local mode
+        }
+      } catch (error) {
+        username = "adventurer"; // If username() fails, we're in local mode
+        console.log("Using default username 'adventurer' for local mode");
+      }
 
       const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
       value.systemCalls.set_address_name({

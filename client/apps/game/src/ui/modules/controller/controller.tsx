@@ -43,7 +43,12 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   useEffect(() => {
     if (!connector || !connector!.controller) return;
 
-    connector.controller.username()?.then((name) => setUserName(name));
+    try {
+      connector.controller.username()?.then((name) => setUserName(name));
+    } catch (error) {
+      // controller in local
+      setUserName("adventurer");
+    }
   }, [connector]);
 
   return account ? (

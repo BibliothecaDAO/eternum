@@ -958,10 +958,10 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 99000,
-    "shardsMinesWinProbability": 1000,
-    "hyperstructureWinProbAtCenter": 100000,
-    "hyperstructureFailProbAtCenter": 20000,
+    "shardsMinesFailProbability": 100000,
+    "shardsMinesWinProbability": 20000,
+    "hyperstructureWinProbAtCenter": 20000,
+    "hyperstructureFailProbAtCenter": 100000,
     "hyperstructureFailProbIncreasePerHexDistance": 20,
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1500,
     "shardsMineInitialWheatBalance": 1000,
@@ -1641,119 +1641,119 @@
   "startingResources": {
     "0": {
       "resource": 35,
-      "amount": 1200000000
+      "amount": 12000000000
     },
     "1": {
       "resource": 36,
-      "amount": 1200000000
+      "amount": 12000000000
     },
     "2": {
       "resource": 3,
-      "amount": 5000000
+      "amount": 50000000
     },
     "3": {
       "resource": 1,
-      "amount": 5000000
+      "amount": 50000000
     },
     "4": {
       "resource": 2,
-      "amount": 5000000
+      "amount": 50000000
     },
     "5": {
       "resource": 4,
-      "amount": 5000000
+      "amount": 50000000
     },
     "6": {
       "resource": 6,
-      "amount": 5000000
+      "amount": 50000000
     },
     "7": {
       "resource": 8,
-      "amount": 5000000
+      "amount": 50000000
     },
     "8": {
       "resource": 5,
-      "amount": 5000000
+      "amount": 50000000
     },
     "9": {
       "resource": 11,
-      "amount": 5000000
+      "amount": 50000000
     },
     "10": {
       "resource": 7,
-      "amount": 5000000
+      "amount": 50000000
     },
     "11": {
       "resource": 15,
-      "amount": 5000000
+      "amount": 50000000
     },
     "12": {
       "resource": 14,
-      "amount": 5000000
+      "amount": 50000000
     },
     "13": {
       "resource": 20,
-      "amount": 5000000
+      "amount": 50000000
     },
     "14": {
       "resource": 13,
-      "amount": 5000000
+      "amount": 50000000
     },
     "15": {
       "resource": 12,
-      "amount": 5000000
+      "amount": 50000000
     },
     "16": {
       "resource": 16,
-      "amount": 5000000
+      "amount": 50000000
     },
     "17": {
       "resource": 21,
-      "amount": 5000000
+      "amount": 50000000
     },
     "18": {
       "resource": 18,
-      "amount": 5000000
+      "amount": 50000000
     },
     "19": {
       "resource": 17,
-      "amount": 5000000
+      "amount": 50000000
     },
     "20": {
       "resource": 10,
-      "amount": 5000000
+      "amount": 50000000
     },
     "21": {
       "resource": 19,
-      "amount": 5000000
+      "amount": 50000000
     },
     "22": {
       "resource": 9,
-      "amount": 5000000
+      "amount": 50000000
     },
     "23": {
       "resource": 22,
-      "amount": 5000000
+      "amount": 50000000
     },
     "24": {
       "resource": 25,
-      "amount": 800000
+      "amount": 8000000
     },
     "25": {
       "resource": 26,
-      "amount": 1200000
+      "amount": 12000000
     },
     "26": {
       "resource": 29,
-      "amount": 1200000
+      "amount": 12000000
     },
     "27": {
       "resource": 32,
-      "amount": 1200000
+      "amount": 12000000
     },
     "28": {
       "resource": 24,
-      "amount": 200000
+      "amount": 2000000
     }
   },
   "realmUpgradeCosts": {
