@@ -62,14 +62,15 @@ pub mod swap_systems {
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             player_structure_base.assert_exists();
 
-            // ensure structure is a bank
-            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
-
             // ensure caller owns structure
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, structure_id,
             );
             player_structure_owner.assert_caller_owner();
+
+            // ensure bank_entity_id is a bank
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            assert!(bank_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // get lords price of resource expressed to be bought from amm
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
@@ -105,7 +106,6 @@ pub mod swap_systems {
 
             // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
-            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, bank_entity_id);
             iResourceTransferImpl::structure_to_structure_delayed(
                 ref world,
@@ -146,14 +146,15 @@ pub mod swap_systems {
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             player_structure_base.assert_exists();
 
-            // ensure structure is a bank
-            assert!(player_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
-
             // ensure caller owns structure
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, structure_id,
             );
             player_structure_owner.assert_caller_owner();
+
+            // ensure bank_entity_id is a bank
+            let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
+            assert!(bank_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
 
             // get lords received from amm after resource amount is sold
             let bank_config: BankConfig = WorldConfigUtilImpl::get_member(world, selector!("bank_config"));
@@ -191,7 +192,6 @@ pub mod swap_systems {
 
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
-            let mut bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, bank_entity_id,
             );
