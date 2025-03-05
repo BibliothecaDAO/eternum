@@ -58,7 +58,7 @@ export const LocalEternumGlobalConfig: Config = {
   // starting resources x1000
   startingResources: {
     ...CommonEternumGlobalConfig.startingResources,
-    ...multiplyStartingResources(10000),
+    ...multiplyStartingResources(1000),
   },
   speed: {
     ...CommonEternumGlobalConfig.speed,

@@ -73,11 +73,32 @@ export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: nu
 export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
   switch (troopType) {
     case TroopType.Knight:
-      return ResourcesIds.Knight;
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Knight;
+        case TroopTier.T2:
+          return ResourcesIds.KnightT2;
+        case TroopTier.T3:
+          return ResourcesIds.KnightT3;
+      }
     case TroopType.Crossbowman:
-      return ResourcesIds.Crossbowman;
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Crossbowman;
+        case TroopTier.T2:
+          return ResourcesIds.CrossbowmanT2;
+        case TroopTier.T3:
+          return ResourcesIds.CrossbowmanT3;
+      }
     case TroopType.Paladin:
-      return ResourcesIds.Paladin;
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Paladin;
+        case TroopTier.T2:
+          return ResourcesIds.PaladinT2;
+        case TroopTier.T3:
+          return ResourcesIds.PaladinT3;
+      }
   }
 };
 
