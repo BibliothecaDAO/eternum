@@ -172,12 +172,14 @@ export const CombatContainer = ({
   }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
 
   const targetArmyData = useMemo(() => {
+    if (!target?.info) return null;
+
     return {
       troops: {
-        count: Number(target?.info?.count || 0),
-        category: target?.info?.category as TroopType,
-        tier: target?.info?.tier as TroopTier,
-        stamina: target?.info?.stamina,
+        count: Number(target.info.count || 0),
+        category: target.info.category as TroopType,
+        tier: target.info.tier as TroopTier,
+        stamina: target.info.stamina,
       },
     };
   }, [target]);
@@ -199,6 +201,9 @@ export const CombatContainer = ({
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
+
+    // If there are no target troops, we can claim the realm without a battle
+    if (!targetArmyData) return null;
 
     // Convert game armies to simulator armies
     const attackerArmy = {
@@ -442,7 +447,7 @@ export const CombatContainer = ({
         <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
           <div className="relative z-10">
             <h3 className="text-lg font-semibold text-gold">Defender Forces</h3>
-            {targetArmyData && (
+            {targetArmyData ? (
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">
@@ -462,13 +467,20 @@ export const CombatContainer = ({
                   </div>
                 )}
               </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <div className="text-gold/80">
+                  <div className="text-sm font-medium mb-1">No Troops Present</div>
+                  <div className="text-xl font-bold text-green-400">Ready to Claim!</div>
+                </div>
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Battle Results */}
-      {remainingTroops && attackerArmyData && targetArmyData && (
+      {targetArmyData && remainingTroops && attackerArmyData && (
         <div className="mt-2 p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg">
           <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Battle Prediction</h3>
           <div className="grid grid-cols-2 gap-8">
@@ -567,6 +579,17 @@ export const CombatContainer = ({
         </div>
       )}
 
+      {/* No Troops Message */}
+      {!targetArmyData && attackerArmyData && (
+        <div className="mt-2 p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg">
+          <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Claim Opportunity</h3>
+          <div className="text-center py-4">
+            <div className="text-xl font-bold text-green-400 mb-2">No Defending Troops Present!</div>
+            <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
+          </div>
+        </div>
+      )}
+
       {/* Attack Button */}
       <div className="mt-2 flex justify-center">
         <Button
@@ -576,9 +599,11 @@ export const CombatContainer = ({
           disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData}
           onClick={onAttack}
         >
-          {attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
-            ? "Attack!"
-            : `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`}
+          {!targetArmyData && attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
+            ? "Claim Realm!"
+            : attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
+              ? "Attack!"
+              : `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`}
         </Button>
       </div>
     </div>

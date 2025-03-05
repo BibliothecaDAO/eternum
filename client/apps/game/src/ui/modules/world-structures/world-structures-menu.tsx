@@ -14,6 +14,7 @@ import {
   getGuildFromPlayerAddress,
   ID,
   LeaderboardManager,
+  MERCENARIES,
 } from "@bibliothecadao/eternum";
 import { useDojo, useHyperstructureProgress, useHyperstructures } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
@@ -158,7 +159,7 @@ const BaseStructureExtraContent = ({
     <div className="grid grid-cols-2 gap-4 text-xs">
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Owner:</span>
-        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || "Mercenaries"}</span>
+        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || MERCENARIES}</span>
       </div>
       {children}
     </div>

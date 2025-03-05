@@ -81,6 +81,13 @@ export type Structure = {
   position: Position;
 };
 
+export type TroopFoodConsumption = {
+  explore_wheat_burn_amount: number;
+  explore_fish_burn_amount: number;
+  travel_wheat_burn_amount: number;
+  travel_fish_burn_amount: number;
+};
+
 export type PlayerStructure = {
   entityId: ID;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;

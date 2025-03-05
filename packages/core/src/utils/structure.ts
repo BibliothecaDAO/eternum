@@ -2,7 +2,7 @@ import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, Structure } from "..";
-import { StructureType } from "../constants";
+import { MERCENARIES, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ArmyInfo, ContractAddress, ID, Position, TickIds } from "../types";
 import { getEntityName } from "./entities";
@@ -41,7 +41,7 @@ const getStructureInfo = (
   const protectors: ArmyInfo[] = [];
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
-  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
+  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
 
   const name = getEntityName(structure.entity_id, components);
 

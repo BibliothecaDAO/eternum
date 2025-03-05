@@ -8,7 +8,7 @@ import {
   divideByPrecision,
   multiplyByPrecision,
   RealmInfo,
-  ResourcesIds
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
@@ -38,7 +38,6 @@ export const ResourceProductionControls = ({
     setup: {
       account: { account },
       systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
-      components,
       components: { Resource },
     },
   } = useDojo();
@@ -94,6 +93,8 @@ export const ResourceProductionControls = ({
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
 
+  const resourceManager = useResourceManager(realm.entityId);
+
   const resourceBalances = useMemo(() => {
     if (!selectedResource) return {};
 
@@ -108,14 +109,12 @@ export const ResourceProductionControls = ({
 
     const { currentDefaultTick } = getBlockTimestamp();
 
-    const resourceManager = useResourceManager(realm.entityId);
-
     allResources.forEach((resource) => {
       const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource);
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;
-  }, [selectedResource, Resource, realm.entityId]);
+  }, [selectedResource, resourceManager]);
 
   useEffect(() => {
     setTicks(Math.floor(productionAmount / outputResource.amount));
