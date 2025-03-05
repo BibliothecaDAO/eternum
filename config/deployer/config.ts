@@ -39,7 +39,7 @@ export class GameConfigDeployer {
   }
 
   async setupAll(account: Account, provider: EternumProvider) {
-    // await this.setupNonBank(account, provider);
+    await this.setupNonBank(account, provider);
     await this.setupBank(account, provider);
   }
 
@@ -71,7 +71,7 @@ export class GameConfigDeployer {
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    // await createBanks(config);
+    await createBanks(config);
     await mintResources(config);
     await addLiquidity(config);
   }
