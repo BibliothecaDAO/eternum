@@ -49,8 +49,8 @@ pub impl iDonkeyImpl of iDonkeyTrait {
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
 
         let donkey_capacity_grams = capacity_config.donkey_capacity.into();
-        let mut donkeys = resources_weight / donkey_capacity_grams;
-        if resources_weight % donkey_capacity_grams != 0 {
+        let mut donkeys = resources_weight / (donkey_capacity_grams * RESOURCE_PRECISION);
+        if resources_weight % (donkey_capacity_grams * RESOURCE_PRECISION) != 0 {
             donkeys += 1;
         };
         donkeys * RESOURCE_PRECISION
