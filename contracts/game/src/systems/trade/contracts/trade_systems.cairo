@@ -216,10 +216,9 @@ pub mod trade_systems {
             // compute resource arrival time
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             let donkey_speed = SpeedImpl::for_donkey(ref world);
-            let travel_time = starknet::get_block_timestamp()
-                + iDistanceKmImpl::time_required(
-                    ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,
-                );
+            let travel_time = iDistanceKmImpl::time_required(
+                ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,
+            );
             let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, travel_time);
 
             // send the taker's resource to the maker
