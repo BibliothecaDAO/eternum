@@ -3,50 +3,49 @@ import {
   type ProductionByLaborParams,
   type ResourceCost,
   type ResourceInputs,
-  type ResourceOutputs
+  type ResourceOutputs,
 } from "@bibliothecadao/eternum";
 
 // weight in kg
 // grams / 10^9
-export const NANOGRAM_PRECISION = 1000000000;
 export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
-  [ResourcesIds.Wood]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Stone]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Coal]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Copper]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Obsidian]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Silver]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Ironwood]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.ColdIron]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Gold]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Hartwood]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Diamonds]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Sapphire]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Ruby]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.DeepCrystal]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Ignium]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.EtherealSilica]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.TrueIce]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.TwilightQuartz]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.AlchemicalSilver]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Adamantine]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Mithral]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Dragonhide]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Labor]: 1000 * NANOGRAM_PRECISION,
-  [ResourcesIds.AncientFragment]: 1000 * NANOGRAM_PRECISION,
+  [ResourcesIds.Wood]: 1000,
+  [ResourcesIds.Stone]: 1000,
+  [ResourcesIds.Coal]: 1000,
+  [ResourcesIds.Copper]: 1000,
+  [ResourcesIds.Obsidian]: 1000,
+  [ResourcesIds.Silver]: 1000,
+  [ResourcesIds.Ironwood]: 1000,
+  [ResourcesIds.ColdIron]: 1000,
+  [ResourcesIds.Gold]: 1000,
+  [ResourcesIds.Hartwood]: 1000,
+  [ResourcesIds.Diamonds]: 1000,
+  [ResourcesIds.Sapphire]: 1000,
+  [ResourcesIds.Ruby]: 1000,
+  [ResourcesIds.DeepCrystal]: 1000,
+  [ResourcesIds.Ignium]: 1000,
+  [ResourcesIds.EtherealSilica]: 1000,
+  [ResourcesIds.TrueIce]: 1000,
+  [ResourcesIds.TwilightQuartz]: 1000,
+  [ResourcesIds.AlchemicalSilver]: 1000,
+  [ResourcesIds.Adamantine]: 1000,
+  [ResourcesIds.Mithral]: 1000,
+  [ResourcesIds.Dragonhide]: 1000,
+  [ResourcesIds.Labor]: 1000,
+  [ResourcesIds.AncientFragment]: 1000,
   [ResourcesIds.Donkey]: 0,
-  [ResourcesIds.Knight]: 5000 * NANOGRAM_PRECISION,
-  [ResourcesIds.KnightT2]: 5000 * NANOGRAM_PRECISION,
-  [ResourcesIds.KnightT3]: 5000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Crossbowman]: 3000 * NANOGRAM_PRECISION,
-  [ResourcesIds.CrossbowmanT2]: 3000 * NANOGRAM_PRECISION,
-  [ResourcesIds.CrossbowmanT3]: 3000 * NANOGRAM_PRECISION,
-  [ResourcesIds.Paladin]: 5000 * NANOGRAM_PRECISION,
-  [ResourcesIds.PaladinT2]: 5000 * NANOGRAM_PRECISION,
-  [ResourcesIds.PaladinT3]: 5000 * NANOGRAM_PRECISION,
+  [ResourcesIds.Knight]: 5000,
+  [ResourcesIds.KnightT2]: 5000,
+  [ResourcesIds.KnightT3]: 5000,
+  [ResourcesIds.Crossbowman]: 3000,
+  [ResourcesIds.CrossbowmanT2]: 3000,
+  [ResourcesIds.CrossbowmanT3]: 3000,
+  [ResourcesIds.Paladin]: 5000,
+  [ResourcesIds.PaladinT2]: 5000,
+  [ResourcesIds.PaladinT3]: 5000,
   [ResourcesIds.Lords]: 0,
-  [ResourcesIds.Wheat]: 100 * NANOGRAM_PRECISION,
-  [ResourcesIds.Fish]: 100 * NANOGRAM_PRECISION,
+  [ResourcesIds.Wheat]: 100,
+  [ResourcesIds.Fish]: 100,
 };
 
 export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
@@ -577,48 +576,31 @@ export const STARTING_RESOURCES: ResourceCost[] = [
 ];
 
 export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {
-  return STARTING_RESOURCES.map(resource => ({
+  return STARTING_RESOURCES.map((resource) => ({
     resource: resource.resource,
-    amount: resource.amount * multiplier
+    amount: resource.amount * multiplier,
   }));
 };
 
 export const RESOURCE_BANDS = {
   T1_TROOPS_PRIMARY: [
     ResourcesIds.Copper,
-    ResourcesIds.Obsidian, 
-    ResourcesIds.Silver, 
-    ResourcesIds.Ironwood, 
-    ResourcesIds.ColdIron, 
-    ResourcesIds.Gold
+    ResourcesIds.Obsidian,
+    ResourcesIds.Silver,
+    ResourcesIds.Ironwood,
+    ResourcesIds.ColdIron,
+    ResourcesIds.Gold,
   ],
-  T2_TROOPS_SECONDARY: [
-    ResourcesIds.Hartwood, 
-    ResourcesIds.Diamonds, 
-    ResourcesIds.Sapphire, 
-    ResourcesIds.Ruby
-  ],
-  T2_TROOPS_TERTIARY: [
-    ResourcesIds.DeepCrystal, 
-    ResourcesIds.Ignium, 
-    ResourcesIds.EtherealSilica
-  ],
-  T3_TROOPS_SECONDARY: [
-    ResourcesIds.TrueIce, 
-    ResourcesIds.TwilightQuartz, 
-    ResourcesIds.AlchemicalSilver
-  ],
-  T3_TROOPS_TERTIARY: [
-    ResourcesIds.Adamantine, 
-    ResourcesIds.Mithral, 
-    ResourcesIds.Dragonhide
-  ]
+  T2_TROOPS_SECONDARY: [ResourcesIds.Hartwood, ResourcesIds.Diamonds, ResourcesIds.Sapphire, ResourcesIds.Ruby],
+  T2_TROOPS_TERTIARY: [ResourcesIds.DeepCrystal, ResourcesIds.Ignium, ResourcesIds.EtherealSilica],
+  T3_TROOPS_SECONDARY: [ResourcesIds.TrueIce, ResourcesIds.TwilightQuartz, ResourcesIds.AlchemicalSilver],
+  T3_TROOPS_TERTIARY: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
 };
 
 export const RESOURCE_TO_BAND: { [key in ResourcesIds]?: string } = {};
 
 Object.entries(RESOURCE_BANDS).forEach(([bandName, resources]) => {
-  (resources as ResourcesIds[]).forEach(resourceId => {
+  (resources as ResourcesIds[]).forEach((resourceId) => {
     RESOURCE_TO_BAND[resourceId] = bandName;
   });
 });

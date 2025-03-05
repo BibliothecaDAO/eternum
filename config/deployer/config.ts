@@ -20,7 +20,6 @@ import {
 
 import chalk from "chalk";
 
-import { NANOGRAM_PRECISION } from "environments/utils/resource";
 import fs from "fs";
 import { Account } from "starknet";
 import type { Chain } from "utils/utils";
@@ -40,7 +39,7 @@ export class GameConfigDeployer {
   }
 
   async setupAll(account: Account, provider: EternumProvider) {
-    await this.setupNonBank(account, provider);
+    // await this.setupNonBank(account, provider);
     await this.setupBank(account, provider);
   }
 
@@ -72,7 +71,7 @@ export class GameConfigDeployer {
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await createBanks(config);
+    // await createBanks(config);
     await mintResources(config);
     await addLiquidity(config);
   }
@@ -581,7 +580,7 @@ export const setWeightConfig = async (config: Config) => {
     };
     console.log(
       chalk.cyan(
-        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_nanogram / NANOGRAM_PRECISION / 1000))} kg`,
+        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_nanogram / 1000))} kg`,
       ),
     );
     return calldata;

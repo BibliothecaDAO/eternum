@@ -3142,8 +3142,8 @@
       ]
     },
     {
-      "address": "0x5f0d9b3c9c29f27045cbde8be491cd9b5d7eab2ecce0eada14fa41554e9b198",
-      "class_hash": "0x7c6dc9d38f341ead1a0a08c103c4e4d22fc6d2b8cc501e079281ffc4ddcdce1",
+      "address": "0x4f8f44af9414a214c60dad494ff0a8be6d867666feb9d75d1b8b0fb000c7d1f",
+      "class_hash": "0x719ff67ce67b728b387af3b7162c2a68a56a80cfea326a16ea0d21d29a93247",
       "abi": [
         {
           "type": "impl",
@@ -3441,8 +3441,8 @@
       ]
     },
     {
-      "address": "0x2ded713cb15bc53fa4a79cfd4f76ad899f93fe24026e97131a5461a9f784fe6",
-      "class_hash": "0x4a64f9492eaf74dd4103273d5fe7729ce6f0599747fce86268652d290cc50d8",
+      "address": "0xd7e3c075213b26c9d61d8670338c0e55d5f9a63e70482f428a473ddace3485",
+      "class_hash": "0x68c049f3f2fe8026b7f150884fb2f9b2eec99519bdade3728f39edf6a54b929",
       "abi": [
         {
           "type": "impl",
@@ -3796,8 +3796,8 @@
       ]
     },
     {
-      "address": "0x1b442d641b7aacf02c82cab9ea76cd68621b63ea03bf575a4f88c41a7bd52ac",
-      "class_hash": "0x67fb2fd37d69214d5fc796c57479b0289335232fd65a79e14b5ac44ce5c8cbf",
+      "address": "0x31b5cf996716825e97bb5e422d4a8d7c50be55381652cf238e6481b8eed717a",
+      "class_hash": "0x23884f1080a7685198e79109ff07e13ada1f0de9f40fe8fac389b9b4d0da3d3",
       "abi": [
         {
           "type": "impl",
@@ -3855,34 +3855,6 @@
           "interface_name": "s1_eternum::systems::bank::contracts::liquidity::ILiquiditySystems"
         },
         {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "cubit::f128::types::fixed::Fixed",
-          "members": [
-            {
-              "name": "mag",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "sign",
-              "type": "core::bool"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "s1_eternum::systems::bank::contracts::liquidity::ILiquiditySystems",
           "items": [
@@ -3932,7 +3904,7 @@
                 },
                 {
                   "name": "shares",
-                  "type": "cubit::f128::types::fixed::Fixed"
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -5173,8 +5145,8 @@
       ]
     },
     {
-      "address": "0x134af72d6c77800c2f4b9dc68e4afb4077048d20bf011679de64e82d006ee58",
-      "class_hash": "0x6ad0b506111b4bc01ce2b4a9dca32c1dc96cf0be17e0589f3f4a6f091b82bde",
+      "address": "0x44b38f245db92ae8ff4e8138b53a09de1d3603a1f1c60353366fb2fef128dc4",
+      "class_hash": "0x189a417d36dd90b53752dcfa870bcd86b3918ffae575514dcf4fc777984b18e",
       "abi": [
         {
           "type": "impl",
@@ -5478,8 +5450,8 @@
       ]
     },
     {
-      "address": "0x569298226a7ef2897f3123276c0c407ddcf4dbd5525bad38c633a5bf40cf560",
-      "class_hash": "0x4063de90ff87f0b71bc0161243f8550086524a5920542348ce27c7959b21a04",
+      "address": "0x57b255966535778712fa186ee56734fad897e339f5acd8559adbddf4e870db2",
+      "class_hash": "0x62895b865ec0c77d386a20be09b3f747a1f86bba7291456a89e40860a851175",
       "abi": [
         {
           "type": "impl",
@@ -6242,8 +6214,8 @@
       ]
     },
     {
-      "address": "0x63943db422e65757043b33bdd4b73ecf40e69f76a2c9e186b788974c08da936",
-      "class_hash": "0x28de0ce0ea9ee41576bd8de6cad198af97e12f9526de34faf8b858f3d9a04a5",
+      "address": "0x6d387ed9627c4e638443e9b65534fffc9a9b3fa20edea1b97092fc7d952c305",
+      "class_hash": "0x5850b7bb31b50aa643e052c89d6371b3308f2d765205ced3f1543b9c023f547",
       "abi": [
         {
           "type": "impl",
@@ -6479,8 +6451,8 @@
       ]
     },
     {
-      "address": "0x3f09417a5c6bb03f2475c469a764d854efa325fe4148658f617aa6c2628c0f6",
-      "class_hash": "0x39445dae85b1075ad738f356b24082745659384df1a64806eed0894d6619ccf",
+      "address": "0x55ba440faeb10d5e0fd23b46c84be7c365cc6e609e947b89946309e64f29eb3",
+      "class_hash": "0x16aac295258639e15be9744321a1b554fe9dca72af638a83aaa753f71855417",
       "abi": [
         {
           "type": "impl",
@@ -8056,12 +8028,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x1e713d08375f5a8c6ec6d19611c9d16c27367e12f7c21d28b8a613c7a921bd0",
-      "tag": "s1_eternum-EntityOwner",
-      "selector": "0x45cac7458f40ce855a5d63cf402a25425ad1a761fa4a2657c722d124e6aa540"
-    },
-    {
-      "members": [],
       "class_hash": "0x4930d4164035886b82ffe1dc0ea0d6c4d7f688772078912e4c49b1837bdf58d",
       "tag": "s1_eternum-Epoch",
       "selector": "0x7538402a46c4b333f00ed41744e67a26bb14f26753fdbe032f0ff218f83ff6a"
@@ -8074,7 +8040,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x2e371ba96bab8568658492516e4ced1bd14e62e04e235a1ecc2e3161ef16fe8",
+      "class_hash": "0x8db01c6a21e785cbd4f31beee27162f4d9b74d0d0214565b53676dae536049",
       "tag": "s1_eternum-Guild",
       "selector": "0x1005f12b60fb0b9955acaa3d2ef4e839a9d9ca0de11ba53c74c3a4b5d324142"
     },
@@ -8146,13 +8112,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x371fe0e24d91ad0e997ea148519290e8002169e98907921da5df664ca49f1ed",
+      "class_hash": "0xca33c3f968a348acc42a0673367b6146514788f4f109ccc8dbe7def355bafb",
       "tag": "s1_eternum-Liquidity",
       "selector": "0x4ba2cf13ce80401e973629d0ba586aad1cae4ac3cf68ed3140f3373d361659"
     },
     {
       "members": [],
-      "class_hash": "0x550d258c4532530eae32e17cd296a25aaa2db628421b260717e7e7727f1a4dc",
+      "class_hash": "0x1d4dde9761eebfce95a1b7a488bec325fdadeb5b7c94426d5eb70b70b46f094",
       "tag": "s1_eternum-Market",
       "selector": "0x1fcfb4aa02fa062c2f9fe4a658759a4cbe73fc5db42c595184e770c9076750a"
     },
@@ -8161,12 +8127,6 @@
       "class_hash": "0x212d9d179eae99158be127c71a7ab8524677da5056513fedc3ec7ec0355923d",
       "tag": "s1_eternum-Message",
       "selector": "0x3ce31878ad62fd485eb46bdbd403bbe7daf2e544c15d386dcc7ac519a10678a"
-    },
-    {
-      "members": [],
-      "class_hash": "0x57e88f42c409d05e7d30b68f1aa7380c34f867feb4472eeecafbc99d7b1711c",
-      "tag": "s1_eternum-Owner",
-      "selector": "0x35bfd77bc5bbf7f39cbe2c9ced8de632af641500a672e876dffbc89cc10441d"
     },
     {
       "members": [],
