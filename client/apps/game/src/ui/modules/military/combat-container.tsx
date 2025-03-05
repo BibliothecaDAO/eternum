@@ -292,7 +292,6 @@ export const CombatContainer = ({
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
     if (direction === null) return;
 
-
     try {
       setLoading(true);
       await attack_explorer_vs_guard({
@@ -392,7 +391,7 @@ export const CombatContainer = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-6 p-6 mx-auto">
       {/* Add Biome Info Panel */}
       <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
         <div className="flex items-center justify-between">

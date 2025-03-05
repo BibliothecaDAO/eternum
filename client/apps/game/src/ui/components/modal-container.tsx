@@ -1,21 +1,34 @@
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import Button from "@/ui/elements/button";
 import { X } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 interface ModalContainerProps {
   children: React.ReactNode;
-  size?: "full" | "half";
+  size?: "full" | "half" | "small" | "medium" | "large";
   title?: string;
 }
 
 export const ModalContainer = ({ children, size = "full", title }: ModalContainerProps) => {
   const { toggleModal } = useModalStore();
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const containerClasses =
-    size === "full"
-      ? "w-full h-full pb-20"
-      : "w-1/2 h-1/2 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
+  const containerClasses = (() => {
+    switch (size) {
+      case "full":
+        return "w-full h-full pb-20";
+      case "half":
+        return "w-1/2 h-1/2 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
+      case "small":
+        return "w-1/3 h-1/3 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
+      case "medium":
+        return "w-2/3 h-2/3 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
+      case "large":
+        return "w-4/5 h-4/5 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
+      default:
+        return "w-full h-full pb-20";
+    }
+  })();
 
   const handleEscapePress = useCallback(
     (e: KeyboardEvent) => {
@@ -27,15 +40,27 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   );
 
   useEffect(() => {
-    const worldElement = document.getElementById("world");
-    if (worldElement) {
-      worldElement.addEventListener("keydown", handleEscapePress);
+    // Focus the modal when it mounts
+    if (modalRef.current) {
+      modalRef.current.focus();
     }
-    return () => worldElement?.removeEventListener("keydown", handleEscapePress);
+  }, []);
+
+  useEffect(() => {
+    // Add event listener to the modal itself
+    const modalElement = modalRef.current;
+    if (modalElement) {
+      modalElement.addEventListener("keydown", handleEscapePress);
+    }
+    return () => modalElement?.removeEventListener("keydown", handleEscapePress);
   }, [handleEscapePress]);
 
   return (
-    <div className={`z-50 bg-brown/90 text-gold ${containerClasses} fixed overflow-hidden`} tabIndex={0}>
+    <div
+      ref={modalRef}
+      className={`z-50 bg-brown/90 text-gold ${containerClasses} fixed overflow-hidden focus:outline-none focus:ring-2 focus:ring-gold/50`}
+      tabIndex={0}
+    >
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-center p-2">
           <div className="text-lg font-semibold text-gold px-4">{title}</div>

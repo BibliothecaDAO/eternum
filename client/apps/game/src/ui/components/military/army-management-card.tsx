@@ -94,7 +94,6 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
     let canCreate = true;
 
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    console.log("resourceId", resourceId);
     const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
 
     if (troopCount > balance) {

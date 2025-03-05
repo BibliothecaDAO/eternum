@@ -1,7 +1,7 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { } from "@/ui/utils/utils";
+import {} from "@/ui/utils/utils";
 import {
   configManager,
   findResourceById,

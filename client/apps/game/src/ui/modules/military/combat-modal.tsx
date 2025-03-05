@@ -12,9 +12,9 @@ export const CombatModal = ({
   targetHex: { x: number; y: number };
 }) => {
   return (
-    <ModalContainer size="half">
+    <ModalContainer size="large">
       <div className="production-modal-selector container border mx-auto bg-dark border-gold/30 h-full rounded-2xl relative">
-        <div className="h-full col-span-12 w-full overflow-y-auto max-h-[calc(50vh-80px)]">
+        <div className="h-full col-span-12 w-full">
           <Suspense fallback={<LoadingAnimation />}>
             <CombatContainer attackerEntityId={attackerEntityId} targetHex={targetHex} />
           </Suspense>
