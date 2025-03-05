@@ -3,6 +3,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { kgToGram } from "@/ui/utils/utils";
 import { BuildingType, configManager, getRealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
@@ -76,9 +77,15 @@ export const CapacityInfo = ({
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
+  // get update when structureBuildings changes
+  const structureBuildings = useComponentValue(
+    setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
+  );
+
   const realmInfo = useMemo(() => {
     return getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components);
-  }, [structureEntityId, setup.components]);
+  }, [structureEntityId, setup.components, structureBuildings]);
 
   return (
     <div className={className}>

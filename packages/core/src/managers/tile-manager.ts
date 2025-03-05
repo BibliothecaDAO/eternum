@@ -95,10 +95,7 @@ export class TileManager {
   };
 
   structureType = () => {
-    const tile = getComponentValue(
-      this.components.Tile,
-      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]),
-    );
+    const tile = getComponentValue(this.components.Tile, getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]));
 
     if (tile?.occupier_is_structure) {
       const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));
@@ -162,7 +159,7 @@ export class TileManager {
       case BuildingType.Stable3:
         producedResourceType = ResourcesIds.PaladinT3;
         break;
-        
+
       case BuildingType.Resource:
         producedResourceType = resourceType!;
         break;
@@ -202,18 +199,6 @@ export class TileManager {
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
     const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
 
-    this.components.StructureBuildings.addOverride(populationOverrideId, {
-      entity: realmEntity,
-      value: {
-        ...structureBuildings,
-        population: {
-          current:
-            (structureBuildings?.population.current || 0) + configManager.getBuildingPopConfig(buildingType).population,
-          max: (structureBuildings?.population.max || 0) + configManager.getBuildingPopConfig(buildingType).capacity,
-        },
-      },
-    });
-
     const quantityOverrideId = uuid();
 
     const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
@@ -236,6 +221,11 @@ export class TileManager {
       value: {
         ...structureBuildings,
         packed_counts: BigInt(packedBuildingCount),
+        population: {
+          current:
+            (structureBuildings?.population.current || 0) + configManager.getBuildingPopConfig(buildingType).population,
+          max: (structureBuildings?.population.max || 0) + configManager.getBuildingPopConfig(buildingType).capacity,
+        },
       },
     });
 

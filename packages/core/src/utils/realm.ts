@@ -63,6 +63,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
   const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
+
   const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
 
   const storehouses = (() => {
