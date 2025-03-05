@@ -107,7 +107,7 @@ export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120
 //
 // Using the values above and below, if a troop is more than 25 hexes away from the center,
 // the probability of finding a hyperstructure is essentially 0% i.e FLOOR(16.66/1.66) = 10
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 2000; // 2000 / 120_000 = 1.66%
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 200; // 200 / 120_000 = 0.166%
 
 // using the above and below values (without considering the hex distance),
 // if there have been 2 hyperstructures found, the probability

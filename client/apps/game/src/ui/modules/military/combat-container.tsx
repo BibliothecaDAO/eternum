@@ -125,7 +125,7 @@ export const CombatContainer = ({
 
     if (structure) {
       return {
-        info: getGuardsByStructure(structure)[0]?.troops,
+        info: getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
         id: targetEntity?.occupier_id,
         targetType: TargetType.Structure,
       };

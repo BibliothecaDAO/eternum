@@ -33,7 +33,7 @@ export const EntitiesArmyTable = () => {
               </div>
             </Headline>
             <div className="grid grid-cols-1 gap-4">
-              <EntityArmyTable structureEntityId={entity.entity_id} />
+              <EntityArmyTable structureEntityId={entity.entityId} />
             </div>
           </div>
         );
@@ -48,6 +48,10 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
   }
   const explorers = useExplorersByStructure({ structureEntityId });
 
+  if (explorers.length === 0) {
+    return <div className="m-auto">No armies</div>;
+  }
+
   const totalTroops = explorers.reduce(
     (acc, army: ArmyInfo) => {
       return {
@@ -59,10 +63,6 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
     { crossbowmen: 0, paladins: 0, knights: 0 },
   );
 
-  if (explorers.length === 0) {
-    return <div className="m-auto">No armies</div>;
-  }
-
   const armyElements = () => {
     return explorers.map((army: ArmyInfo) => {
       return <ArmyChip key={army.entityId} army={army} showButtons />;
@@ -71,22 +71,30 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="text-sm text-gold/80">
-        <div className="flex items-center justify-center gap-4 w-full">
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" className="self-center" />
-            {divideByPrecisionFormatted(totalTroops.crossbowmen)}
-          </div>
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" className="self-center" />
-            {divideByPrecisionFormatted(totalTroops.knights)}
-          </div>
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" className="self-center" />
-            {divideByPrecisionFormatted(totalTroops.paladins)}
+      {(totalTroops.crossbowmen > 0 || totalTroops.knights > 0 || totalTroops.paladins > 0) && (
+        <div className="text-sm text-gold/80">
+          <div className="flex items-center justify-center gap-4 w-full">
+            {totalTroops.crossbowmen > 0 && (
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" className="self-center" />
+                {divideByPrecisionFormatted(totalTroops.crossbowmen)}
+              </div>
+            )}
+            {totalTroops.knights > 0 && (
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" className="self-center" />
+                {divideByPrecisionFormatted(totalTroops.knights)}
+              </div>
+            )}
+            {totalTroops.paladins > 0 && (
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" className="self-center" />
+                {divideByPrecisionFormatted(totalTroops.paladins)}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
       {armyElements()}
     </div>
   );

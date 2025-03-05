@@ -6,9 +6,8 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { multiplyStartingResources } from "./utils/resource";
 
 /**
  * Configuration specific to the Sepolia testnet environment.
@@ -18,18 +17,31 @@ import { multiplyStartingResources } from "./utils/resource";
 // sepolia god mode
 export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
-  // no stamina cost
-  troop: {
-    ...CommonEternumGlobalConfig.troop,
-    stamina: {
-      ...CommonEternumGlobalConfig.troop.stamina,
-      staminaTravelStaminaCost: 0,
-      staminaExploreStaminaCost: 0,
-    },
+  tick: {
+    ...CommonEternumGlobalConfig.tick,
+    // 10 minutes
+    armiesTickIntervalInSeconds: 600,
   },
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureCreationCosts: [{ resource_tier: ResourceTier.Lords, min_amount: 3_000, max_amount: 3_000 }],
+    hyperstructureCreationCosts: CommonEternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
+      ...cost,
+      min_amount: cost.min_amount / 100,
+      max_amount: cost.max_amount / 100,
+    })),
+    hyperstructureConstructionCosts: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCosts.map(
+      (cost) => ({
+        ...cost,
+        min_amount: cost.min_amount / 100,
+        max_amount: cost.max_amount / 100,
+      }),
+    ),
+  },
+  resources: {
+    ...CommonEternumGlobalConfig.resources,
+    resourceOutputs: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.resources.resourceOutputs).map(([key, value]) => [key, value * 10]),
+    ),
   },
   // no grace period
   battle: {
@@ -38,19 +50,14 @@ export const SepoliaEternumGlobalConfig: Config = {
     graceTickCountHyp: 0,
     delaySeconds: 0,
   },
-  // starting resources x1000
-  startingResources: {
-    ...CommonEternumGlobalConfig.startingResources,
-    ...multiplyStartingResources(1000),
-  },
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
-    donkey: 1,
+    donkey: 3,
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startAfterSeconds: 60, // 1 minute
+    startAfterSeconds: 0, // 1 minute
   },
 };
 

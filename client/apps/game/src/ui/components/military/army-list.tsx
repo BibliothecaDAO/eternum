@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
@@ -41,6 +42,19 @@ export const EntityArmyList = ({
     structureEntityId: structure?.entity_id || 0,
   });
 
+  const { currentBlockTimestamp } = useBlockTimestamp();
+  console.log({ guards, currentBlockTimestamp });
+
+  const cooldownSlots = useMemo(() => {
+    const slotsTimeLeft: { slot: number; timeLeft: number }[] = [];
+    guards.forEach((guard) => {
+      if (guard.cooldownEnd > currentBlockTimestamp) {
+        slotsTimeLeft.push({ slot: guard.slot, timeLeft: guard.cooldownEnd - currentBlockTimestamp });
+      }
+    });
+    return slotsTimeLeft;
+  }, [guards]);
+
   const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
 
   const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
@@ -71,7 +85,7 @@ export const EntityArmyList = ({
   }, [explorers]);
 
   const totalGuards = useMemo(() => {
-    return guards.length;
+    return guards.filter((guard) => guard.troops.count > 0n).length;
   }, [guards]);
 
   const isRealm = structure.category === StructureType.Realm;
@@ -177,7 +191,7 @@ export const EntityArmyList = ({
             slot: army.slot,
             troops: army.troops,
           }))}
-          cooldownSlots={[3]}
+          cooldownSlots={cooldownSlots}
         />
       </div>
     </div>
