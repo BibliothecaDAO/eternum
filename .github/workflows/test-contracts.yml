@@ -28,13 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test:
-          [
-            models,
-            test_troop_management,
-            test_troop_movement,
-            test_troop_battle,
-          ]
+        test: [models, test_troop_management, test_troop_movement, test_troop_battle]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3

@@ -395,7 +395,7 @@ export default class HexceptionScene extends HexagonScene {
       ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
       : undefined;
 
-    const isActive = building? productionManager?.isActive(building?.produced_resource_type): false;
+    const isActive = building ? productionManager?.isActive(building?.produced_resource_type) : false;
 
     if (building && building.produced_resource_type) {
       this.state.setTooltip({

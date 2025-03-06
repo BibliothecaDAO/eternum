@@ -16,4 +16,3 @@ export * from "./use-stamina";
 export * from "./use-structures";
 export * from "./use-trade";
 export * from "./use-resource-arrivals";
-

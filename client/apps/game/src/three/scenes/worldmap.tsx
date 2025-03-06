@@ -30,7 +30,7 @@ import {
   HexPosition,
   ID,
   SetupResult,
-  StructureActionManager
+  StructureActionManager,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
 import throttle from "lodash/throttle";
@@ -133,7 +133,6 @@ export default class WorldmapScene extends HexagonScene {
     useAccountStore.subscribe((state) => {
       const account = state.account;
     });
-
 
     useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
@@ -920,7 +919,6 @@ export default class WorldmapScene extends HexagonScene {
       console.error("Error fetching tile entities:", error);
     }
   }
-
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {
     const chunkKey = `${startRow},${startCol}`;

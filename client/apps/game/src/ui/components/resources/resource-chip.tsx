@@ -10,7 +10,7 @@ import {
   ID,
   ResourceManager,
   TickIds,
-  TimeFormat
+  TimeFormat,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -25,7 +25,6 @@ export const ResourceChip = ({
   maxStorehouseCapacityKg: number;
   tick: number;
 }) => {
-
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);

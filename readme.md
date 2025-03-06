@@ -142,21 +142,19 @@ Development of Eternum is open-source. If you would like to contribute comment o
 
 ### Contract Deployment
 
-
 Eternum supports multiple deployment environments:
 
-| Environment | Description |
-|-------------|-------------|
-| Local | For development and testing |
-| Slot | Staging environment |
-| Sepolia | Public testnet |
-| Mainnet | Production environment |
+| Environment | Description                 |
+| ----------- | --------------------------- |
+| Local       | For development and testing |
+| Slot        | Staging environment         |
+| Sepolia     | Public testnet              |
+| Mainnet     | Production environment      |
 
 #### Deploying to Local
 
-Before deploying to any environment, confirm that you have a 
-`.env.{environment}` file in the `contracts/common` directory,
-as well as in the `client/apps/game` directory. <br>
+Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
+directory, as well as in the `client/apps/game` directory. <br>
 
 To deploy and run the game locally:
 
