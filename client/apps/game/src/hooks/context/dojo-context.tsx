@@ -155,7 +155,6 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const setUserName = async () => {
-      
       let username;
       try {
         username = await (connector as unknown as ControllerConnector)?.username();

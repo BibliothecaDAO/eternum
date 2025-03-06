@@ -17,7 +17,7 @@ import {
   multiplyByPrecision,
   ResourcesIds,
   type ID,
-  type MarketInterface
+  type MarketInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -107,20 +107,10 @@ export const MarketOrderPanel = memo(
         .sort((a, b) => b.ratio - a.ratio);
     }, [resourceAskOffers, resourceId]);
 
-
     return (
       <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
-        <MarketOrders
-          offers={selectedResourceAskOffers}
-          resourceId={resourceId}
-          entityId={entityId}
-        />
-        <MarketOrders
-          offers={selectedResourceBidOffers}
-          resourceId={resourceId}
-          entityId={entityId}
-          isBuy
-        />
+        <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
+        <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
     );
   },
@@ -174,9 +164,7 @@ const MarketOrders = memo(
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
-          <div
-            className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative`}
-          >
+          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative`}>
             {offers.map((offer, index) => (
               <OrderRow
                 key={offer.tradeId}
@@ -233,7 +221,6 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
     const { currentDefaultTick } = useBlockTimestamp();
@@ -250,7 +237,14 @@ const OrderRow = memo(
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
 
     const travelTime = useMemo(
-      () => computeTravelTime(entityId, offer.makerId, configManager.getSpeedConfig(EntityType.DONKEY), dojo.setup.components, true),
+      () =>
+        computeTravelTime(
+          entityId,
+          offer.makerId,
+          configManager.getSpeedConfig(EntityType.DONKEY),
+          dojo.setup.components,
+          true,
+        ),
       [entityId, offer],
     );
 
@@ -279,7 +273,6 @@ const OrderRow = memo(
     const getTotalLords = useMemo(() => {
       return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
     }, [entityId, offer.makerId, offer.tradeId, offer]);
-
 
     const resourceBalanceRatio = useMemo(
       () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
@@ -328,16 +321,13 @@ const OrderRow = memo(
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
-    
 
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     //console.log the disable conditions
-    console.log(
-      {isBuy, donkeysNeeded, donkeyBalance, inputValue}
-    );
+    console.log({ isBuy, donkeysNeeded, donkeyBalance, inputValue });
 
     const accountName = useMemo(() => {
       return getRealmAddressName(offer.makerId, dojo.setup.components);
@@ -431,7 +421,7 @@ const OrderRow = memo(
             onConfirm={isSelf ? onCancel : onAccept}
             onCancel={() => setConfirmOrderModal(false)}
             isLoading={loading}
-            disabled={isSelf ? false : ((!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0)}
+            disabled={isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
           >
             {isSelf ? (
               <div className="p-4 text-center">
@@ -529,7 +519,7 @@ const OrderCreation = memo(
         maker_gives_min_resource_amount: 1,
         maker_gives_max_count: makerGives[1],
         taker_id: 0,
-        taker_pays_min_resource_amount: takerGives[1]/makerGives[1],
+        taker_pays_min_resource_amount: takerGives[1] / makerGives[1],
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
 

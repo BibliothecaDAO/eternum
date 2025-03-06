@@ -30,8 +30,7 @@ export const MarketResourceSidebar = ({
     return filteredResources
       .filter((resourceId) => resourceId !== ResourcesIds.Lords)
       .map((resourceId) => {
-        const marketManager = 
-           new MarketManager(dojo.setup.components, 0n, resourceId)
+        const marketManager = new MarketManager(dojo.setup.components, 0n, resourceId);
 
         const askPrice = resourceBidOffers
           .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -56,15 +55,7 @@ export const MarketResourceSidebar = ({
           />
         );
       });
-  }, [
-    filteredResources,
-    dojo.setup,
-    resourceBidOffers,
-    resourceAskOffers,
-    selectedResource,
-    entityId,
-    onClick,
-  ]);
+  }, [filteredResources, dojo.setup, resourceBidOffers, resourceAskOffers, selectedResource, entityId, onClick]);
 
   return (
     <div className="market-resource-bar-selector px-1 bg-brown rounded-2xl p-1">

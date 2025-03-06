@@ -19,13 +19,7 @@ import {
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
-const AddLiquidity = ({
-  entityId,
-  listResourceId,
-}: {
-  entityId: ID;
-  listResourceId: number;
-}) => {
+const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
     setup,
@@ -152,11 +146,7 @@ const AddLiquidity = ({
         </div>
         <div className="p-2">
           <LiquidityTableHeader />
-          <LiquidityResourceRow
-            playerStructureIds={playerStructureIds}
-            entityId={entityId}
-            resourceId={resourceId}
-          />
+          <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
               variant="primary"

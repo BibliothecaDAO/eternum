@@ -22,9 +22,7 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
             <div>Swap</div>
           </div>
         ),
-        component: (
-          <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />
-        ),
+        component: <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />,
       },
       {
         key: "all",

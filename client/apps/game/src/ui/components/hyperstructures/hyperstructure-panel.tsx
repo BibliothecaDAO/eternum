@@ -59,10 +59,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const {
     account: { account },
     network: { provider },
-    setup: {
-      systemCalls,
-      components,
-    },
+    setup: { systemCalls, components },
   } = dojo;
 
   // Add initialize function manually since it's not in the type definition
@@ -116,22 +113,21 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   // Calculate the progress percentage for AncientFragment
   const ancientFragmentProgress = useMemo(() => {
-    const ancientFragmentProgress = progresses.progresses.find((progress) => progress.resource_type === ResourcesIds.AncientFragment);
+    const ancientFragmentProgress = progresses.progresses.find(
+      (progress) => progress.resource_type === ResourcesIds.AncientFragment,
+    );
     return ancientFragmentProgress?.percentage || 0;
   }, [progresses]);
 
   const canInitialize = useMemo(() => {
-    return entity.isOwner && 
-           ancientFragmentProgress === 100 && 
-           hyperstructure && 
-           !hyperstructure.initialized;
+    return entity.isOwner && ancientFragmentProgress === 100 && hyperstructure && !hyperstructure.initialized;
   }, [entity.isOwner, ancientFragmentProgress, hyperstructure]);
 
   const initializeHyperstructure = async () => {
     if (!canInitialize) return;
-    
+
     setIsLoading(Loading.Initialize);
-    
+
     try {
       await initialize({
         signer: account,
@@ -170,22 +166,24 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
 
-    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id)).filter(({ resource }) => resource !== ResourcesIds.AncientFragment).map(({ resource }) => {
-      const progress = progresses.progresses.find(
-        (progress: ProgressWithPercentage) => progress.resource_type === resource,
-      );
-      return (
-        <HyperstructureResourceChip
-          structureEntityId={structureEntityId}
-          setContributions={setNewContributions}
-          contributions={newContributions}
-          progress={progress!}
-          key={resource}
-          resourceId={resource}
-          resetContributions={resetContributions}
-        />
-      );
-    });
+    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id))
+      .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
+      .map(({ resource }) => {
+        const progress = progresses.progresses.find(
+          (progress: ProgressWithPercentage) => progress.resource_type === resource,
+        );
+        return (
+          <HyperstructureResourceChip
+            structureEntityId={structureEntityId}
+            setContributions={setNewContributions}
+            contributions={newContributions}
+            progress={progress!}
+            key={resource}
+            resourceId={resource}
+            resetContributions={resetContributions}
+          />
+        );
+      });
   }, [progresses, myContributions]);
 
   const canContribute = useMemo(() => {
@@ -343,7 +341,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           </div>
           <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
         </div>
-        <div 
+        <div
           className="relative w-full h-8 flex items-center px-2 text-xs"
           style={{
             backgroundImage:

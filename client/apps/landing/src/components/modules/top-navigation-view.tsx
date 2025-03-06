@@ -68,7 +68,10 @@ export const TopNavigationView = ({
           <>
             {connectors.map((connector, index) => (
               <Button size={"default"} key={index} onClick={() => onConnect(connector)} variant="outline">
-                <img className="w-5" src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark} />{" "}
+                <img
+                  className="w-5"
+                  src={typeof connector.icon === "string" ? connector.icon : connector.icon.dark}
+                />{" "}
               </Button>
             ))}
           </>

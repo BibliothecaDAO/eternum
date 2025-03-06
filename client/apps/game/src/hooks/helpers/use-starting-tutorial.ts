@@ -57,7 +57,6 @@ export const useStartingTutorial = () => {
   const { handleStart } = useTutorial(questSteps.get(QuestType.Settle));
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
-
   const tutorialCompleted = localStorage.getItem("tutorial") === "completed";
 
   useEffect(() => {
