@@ -63,8 +63,10 @@ export type ArmyInfo = {
   position: Position;
   owner: ContractAddress;
   entity_owner_id: ID;
-  totalCapacity: bigint;
-  weight: bigint;
+  // without precision and in kg
+  totalCapacity: number;
+  // without precision and in kg
+  weight: number;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
 };
 

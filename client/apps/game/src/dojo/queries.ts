@@ -114,7 +114,7 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
     },
     components,
     [],
-    ["s1_eternum-ExplorerTroops"],
+    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
     1000,
     false,
   );

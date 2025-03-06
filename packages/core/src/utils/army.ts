@@ -1,7 +1,7 @@
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ArmyInfo, configManager, divideByPrecision, getArmyTotalCapacityInKg, ResourcesIds } from "..";
+import { ArmyInfo, configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg, ResourcesIds } from "..";
 import { ClientComponents } from "../dojo";
 import { ContractAddress, ID, TickIds, TroopTier, TroopType } from "../types";
 
@@ -17,10 +17,10 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const totalCapacity = getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)));
+      const totalCapacityKg = Number(getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count))));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
-      const weight = resource ? resource.weight.weight : 0n;
+      const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);
@@ -35,8 +35,8 @@ export const formatArmies = (
       return {
         entityId: explorerTroops.explorer_id,
         troops: explorerTroops.troops,
-        totalCapacity,
-        weight,
+        totalCapacity: totalCapacityKg,
+        weight: weightKg,
         position,
         entity_owner_id: explorerTroops.owner,
         stamina,

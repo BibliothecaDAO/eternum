@@ -1325,6 +1325,60 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Transfer resources from a troop to an adjacent structure
+   *
+   * @param props - Properties for transferring resources from troop to structure
+   * @param props.from_explorer_id - ID of the explorer sending resources
+   * @param props.to_structure_id - ID of the structure receiving resources
+   * @param props.resources - Array of resource type and amount tuples to transfer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async troop_structure_adjacent_transfer(props: SystemProps.TroopStructureAdjacentTransferProps) {
+    const { from_explorer_id, to_structure_id, resources, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "troop_structure_adjacent_transfer",
+      calldata: [
+        from_explorer_id,
+        to_structure_id,
+        resources.length,
+        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Transfer resources from a structure to an adjacent troop
+   *
+   * @param props - Properties for transferring resources from structure to troop
+   * @param props.from_structure_id - ID of the structure sending resources
+   * @param props.to_troop_id - ID of the troop receiving resources
+   * @param props.resources - Array of resource type and amount tuples to transfer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async structure_troop_adjacent_transfer(props: SystemProps.StructureTroopAdjacentTransferProps) {
+    const { from_structure_id, to_troop_id, resources, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "structure_troop_adjacent_transfer",
+      calldata: [
+        from_structure_id,
+        to_troop_id,
+        resources.length,
+        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
    * Swap troops between two explorers
    *
    * @param props - Properties for swapping troops between explorers

@@ -289,6 +289,14 @@ export function createSystemCalls({
     await provider.attack_guard_vs_explorer(props);
   };
 
+  const troop_structure_adjacent_transfer = async (props: SystemProps.TroopStructureAdjacentTransferProps) => {
+    await provider.troop_structure_adjacent_transfer(props);
+  };
+
+  const structure_troop_adjacent_transfer = async (props: SystemProps.StructureTroopAdjacentTransferProps) => {
+    await provider.structure_troop_adjacent_transfer(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -357,6 +365,9 @@ export function createSystemCalls({
     attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
+
+    troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
+    structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
   };
 
   return systemCalls;
