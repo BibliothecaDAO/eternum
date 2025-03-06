@@ -7,7 +7,7 @@ import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
 import { TroopChip } from "./troop-chip";
 
-const DEFENSE_NAMES = {
+export const DEFENSE_NAMES = {
   0: "Inner Keep",
   1: "Castle Wall",
   2: "Outer Bailey",
@@ -31,7 +31,7 @@ interface CooldownTimerProps {
   time: number; // seconds
 }
 
-const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
+export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(time);
 
   useEffect(() => {

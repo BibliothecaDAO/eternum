@@ -31,10 +31,9 @@ const WorldStructuresMenu = lazy(() =>
   })),
 );
 
-// todo: implement this with new arrivals logic
-// const AllResourceArrivals = lazy(() =>
-//   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
-// );
+const AllResourceArrivals = lazy(() =>
+  import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
+);
 
 export const LeftNavigationModule = memo(() => {
   const {
@@ -245,7 +244,7 @@ export const LeftNavigationModule = memo(() => {
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {/* {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />} */}
+              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>

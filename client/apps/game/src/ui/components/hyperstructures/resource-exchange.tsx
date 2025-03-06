@@ -71,7 +71,12 @@ export const ResourceExchange = ({
   const selectedResourceAmounts = useMemo(() => resourcesGiven, [resourcesGiven]);
 
   const resourcesList = useMemo(() => {
-    return selectedResourceIds.flatMap((id: number) => [Number(id), multiplyByPrecision(selectedResourceAmounts[id])]);
+    return selectedResourceIds.flatMap((id: number) => [
+      {
+        resource: Number(id),
+        amount: multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+      },
+    ]);
   }, [selectedResourceIds, selectedResourceAmounts]);
 
   const transferResources = async () => {

@@ -29,14 +29,12 @@ export interface SeasonAddresses {
   };
 }
 
-export type ArrivalInfo = {
-  entityId: ID;
-  recipientEntityId: ID;
-  position: Position;
+export type ResourceArrivalInfo = {
+  structureEntityId: ID;
+  resources: Resource[];
   arrivesAt: bigint;
-  isOwner: boolean;
-  hasResources: boolean;
-  isHome: boolean;
+  day: bigint;
+  slot: bigint;
 };
 
 export type DojoAccount = Account | AccountInterface;

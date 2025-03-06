@@ -14,7 +14,7 @@ import {
   EntityType,
   getRealmAddressName,
   ID,
-  multiplyByPrecision
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
@@ -76,14 +76,14 @@ const SelectEntitiesStep = memo(
     setSelectedStepId: (stepId: STEP_ID) => void;
   }) => {
     const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
-      return entities.some((entity) => entity.entity_id === selectedEntityId);
+      return entities.some((entity) => entity.entityId === selectedEntityId);
     };
 
     const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
       const normalizedSearchTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
       return entities.filter(
         (entity) =>
-          entity.entity_id === selectedEntityId ||
+          entity.entityId === selectedEntityId ||
           normalizeDiacriticalMarks(entity.name.toLowerCase()).includes(normalizedSearchTerm) ||
           (entity.accountName &&
             normalizeDiacriticalMarks(entity.accountName.toLowerCase()).includes(normalizedSearchTerm)),
@@ -199,7 +199,6 @@ export const TransferBetweenEntities = ({
     },
   } = useDojo();
 
-
   useEffect(() => {
     selectedEntityIdFrom &&
       selectedEntityIdTo &&
@@ -215,10 +214,10 @@ export const TransferBetweenEntities = ({
 
   const onSendResources = () => {
     setIsLoading(true);
-    const resourcesList = selectedResourceIds.flatMap((id: number) => [
-      Number(id),
-      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
-    ]);
+    const resourcesList = selectedResourceIds.map((id: number) => ({
+      resource: Number(id),
+      amount: multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    }));
     const systemCall = !isOriginDonkeys
       ? pickup_resources({
           signer: account,
@@ -251,6 +250,7 @@ export const TransferBetweenEntities = ({
   };
 
   const entitiesListWithAccountNames = useMemo(() => {
+    console.log(entitiesList);
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,

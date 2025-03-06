@@ -102,6 +102,10 @@ export function createSystemCalls({
     await provider.pickup_resources(props);
   };
 
+  const arrivals_offload = async (props: SystemProps.ArrivalsOffloadProps) => {
+    await provider.arrivals_offload(props);
+  };
+
   const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
     await provider.transfer_resources(props);
   };
@@ -293,6 +297,7 @@ export function createSystemCalls({
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
     pickup_resources: withAuth(pickup_resources),
+    arrivals_offload: withAuth(arrivals_offload),
     remove_liquidity: withAuth(remove_liquidity),
     add_liquidity: withAuth(add_liquidity),
     sell_resources: withAuth(sell_resources),

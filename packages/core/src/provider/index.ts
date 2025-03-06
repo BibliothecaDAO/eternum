@@ -655,7 +655,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "send",
-      calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
+      calldata: [
+        sender_entity_id,
+        recipient_entity_id,
+        resources.length,
+        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
+      ],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -734,18 +739,38 @@ export class EternumProvider extends EnhancedDojoProvider {
     const approvalCall = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "approve",
-      calldata: [owner_entity_id, recipient_entity_id, resources.length / 2, ...resources],
+      calldata: [
+        owner_entity_id,
+        recipient_entity_id,
+        resources.length,
+        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
+      ],
     };
 
     const pickupCall = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "pickup",
-      calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
+      calldata: [
+        recipient_entity_id,
+        owner_entity_id,
+        resources.length,
+        ...resources.flatMap(({ resource, amount }) => [resource, amount]),
+      ],
     };
 
     const call = this.createProviderCall(signer, [approvalCall, pickupCall]);
 
     return await this.promiseQueue.enqueue(call);
+  }
+
+  public async arrivals_offload(props: SystemProps.ArrivalsOffloadProps) {
+    const { structureId, day, slot, resource_count, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "arrivals_offload",
+      calldata: [structureId, day, slot, resource_count],
+    });
   }
 
   /**
