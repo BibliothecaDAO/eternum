@@ -87,12 +87,10 @@ async function init() {
     },
   );
 
-  console.log({ setupResult });
+  await initialSync(setupResult, state);
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);
-
-  await initialSync(setupResult, state);
 
   const graphic = new GameRenderer(setupResult);
 

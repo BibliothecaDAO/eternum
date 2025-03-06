@@ -2,7 +2,7 @@ import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg"
 import Button from "@/ui/elements/button";
 import { ArmyManager, ID, Troops } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
 import { TroopChip } from "./troop-chip";
@@ -22,7 +22,7 @@ export interface DefenseTroop {
 interface StructureDefenceProps {
   maxDefenses: number; // 1-4
   troops: DefenseTroop[];
-  cooldownSlots?: number[]; // Slots with active cooldown [1, 4]
+  cooldownSlots?: { slot: number; timeLeft: number }[]; // Slots with active cooldown [1, 4]
   structureId: ID;
 }
 
@@ -59,13 +59,13 @@ export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
         <div className="flex items-center gap-2">
           <div className="text-xs self-center">{timeString}</div>
         </div>
-        <div className="text-xs text-gold/60 self-center uppercase tracking-wider">Cooldown (WIP)</div>
+        <div className="text-xs text-gold/60 self-center uppercase tracking-wider">Cooldown</div>
       </div>
     </div>
   );
 };
 
-export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], structureId }: StructureDefenceProps) => {
+export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structureId }: StructureDefenceProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [originalOrder, setOriginalOrder] = useState<DefenseTroop[]>([]);
   const [isReordering, setIsReordering] = useState(false);
@@ -108,18 +108,23 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], stru
   };
 
   // Convert DefenseTroop to ArmyInfo-like structure for ArmyCreate
-  const getArmyInfoForSlot = (slot: number) => {
-    const defense = defenseTroops.find((d) => d.slot === slot);
+  const getArmyInfoForSlot = useCallback(
+    (slot: number) => {
+      const defense = defenseTroops.find((d) => d.slot === slot);
 
-    return defense
-      ? {
-          entityId: defense.slot,
-          troops: defense.troops,
-          isHome: true,
-          name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
-        }
-      : undefined;
-  };
+      return defense
+        ? {
+            entityId: defense.slot,
+            troops: defense.troops,
+            isHome: true,
+            name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
+          }
+        : undefined;
+    },
+    [defenseTroops],
+  );
+
+  console.log({ cooldownSlots });
 
   return (
     <div className="p-3 bg-brown-900/80 rounded-lg border border-gold/10">
@@ -141,7 +146,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], stru
           {(provided) => (
             <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-1.5">
               {Array.from({ length: maxDefenses }).map((_, index) => {
-                const defense = defenseTroops[index];
+                const defense = defenseTroops[index] as DefenseTroop | undefined;
                 const slot = defense?.slot;
                 const isExpanded = expandedSlot === index;
 
@@ -151,7 +156,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], stru
                       key={slot || `empty-${index}`}
                       draggableId={`slot-${slot || `empty-${index}`}`}
                       index={index}
-                      isDragDisabled={!defense || cooldownSlots.includes(index) || isExpanded}
+                      isDragDisabled={!defense || cooldownSlots?.some((c) => c.slot === index) || isExpanded}
                     >
                       {(provided, snapshot) => (
                         <div
@@ -174,9 +179,12 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots = [], stru
                           </div>
 
                           <div className="flex-1 relative">
-                            {cooldownSlots.includes(index) ? (
-                              <CooldownTimer slot={index} time={24 * 60 * 60} />
-                            ) : defense ? (
+                            {cooldownSlots?.some((c) => c.slot === index) ? (
+                              <CooldownTimer
+                                slot={index}
+                                time={cooldownSlots?.find((c) => c.slot === index)?.timeLeft || 0}
+                              />
+                            ) : defense && defense.troops.count > 0n ? (
                               <div className="relative">
                                 <TroopChip
                                   troops={defense.troops}

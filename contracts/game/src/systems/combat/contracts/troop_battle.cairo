@@ -48,8 +48,8 @@ pub mod troop_battle_systems {
             StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
 
             // ensure caller does not own defender
-            // let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
-            // StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
+            let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
+            StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -141,10 +141,10 @@ pub mod troop_battle_systems {
             explorer_owner.assert_caller_owner();
 
             // ensure caller does not own defender
-            // let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-            //     ref world, structure_id,
-            // );
-            // guarded_structure_owner.assert_caller_not_owner();
+            let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, structure_id,
+            );
+            guarded_structure_owner.assert_caller_not_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");

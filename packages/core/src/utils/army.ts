@@ -1,9 +1,9 @@
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ArmyInfo, divideByPrecision, getArmyTotalCapacityInKg, ResourcesIds } from "..";
+import { ArmyInfo, configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg, ResourcesIds } from "..";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, TroopTier, TroopType } from "../types";
+import { ContractAddress, ID, TickIds, TroopTier, TroopType } from "../types";
 
 export const formatArmies = (
   armies: Entity[],
@@ -17,10 +17,10 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const totalCapacity = getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)));
+      const totalCapacityKg = Number(getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count))));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
-      const weight = resource ? resource.weight.weight : 0n;
+      const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
       const name = getComponentValue(components.AddressName, armyEntityId);
@@ -35,8 +35,8 @@ export const formatArmies = (
       return {
         entityId: explorerTroops.explorer_id,
         troops: explorerTroops.troops,
-        totalCapacity,
-        weight,
+        totalCapacity: totalCapacityKg,
+        weight: weightKg,
         position,
         entity_owner_id: explorerTroops.owner,
         stamina,
@@ -105,30 +105,39 @@ export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): 
 export const getGuardsByStructure = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
   if (!structure?.troop_guards) return [];
 
+  const guardResurrectionDelay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
+
+  const armiesTickInSeconds = configManager.getTick(TickIds.Armies);
+
   // Extract guard troops from the structure
   const guards = [
     {
       slot: 0,
       troops: structure.troop_guards.delta,
       destroyedTick: structure.troop_guards.delta_destroyed_tick,
+      // timestamp
+      cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
       slot: 1,
       troops: structure.troop_guards.charlie,
       destroyedTick: structure.troop_guards.charlie_destroyed_tick,
+      cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
       slot: 2,
       troops: structure.troop_guards.bravo,
       destroyedTick: structure.troop_guards.bravo_destroyed_tick,
+      cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
     {
       slot: 3,
       troops: structure.troop_guards.alpha,
       destroyedTick: structure.troop_guards.alpha_destroyed_tick,
+      cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
     },
   ];
 
   // Filter out guards with no troops
-  return guards.filter((guard) => guard.troops.count > 0n);
+  return guards;
 };

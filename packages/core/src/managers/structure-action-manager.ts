@@ -21,11 +21,11 @@ export class StructureActionManager {
   };
 
   /**
-   * Find action paths for a structure, focusing only on attacking surrounding armies
+   * Find action paths for a structure, focusing on attacking or helping surrounding armies
    * @param structureHexes Map of structure positions
    * @param armyHexes Map of army positions
    * @param exploredHexes Map of explored hexes with their biome types
-   * @returns ActionPaths object containing possible attack actions
+   * @returns ActionPaths object containing possible attack or help actions
    */
   public findActionPaths(
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -48,21 +48,23 @@ export class StructureActionManager {
       if (!isExplored) continue;
 
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      // todo: add this back when finish debug
-      // const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
 
-      // Check if there's an army that can be attacked (not owned by the structure owner)
+      // Check if there's an army
       if (hasArmy) {
         const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
-        // Create an attack action path
+        // Determine action type based on ownership
+        const actionType = isArmyMine ? ActionType.Help : ActionType.Attack;
+
+        // Create an action path
         const path: ActionPath[] = [
           { hex: { col: startPos.col, row: startPos.row }, actionType: ActionType.Move },
           {
             hex: { col, row },
-            actionType: ActionType.Attack,
+            actionType: actionType,
             biomeType: biome,
-            staminaCost: 0, // Structures don't use stamina for attacks
+            staminaCost: 0, // Structures don't use stamina for actions
           },
         ];
 

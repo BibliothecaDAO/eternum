@@ -17,15 +17,6 @@ export const TroopChip = ({
 }) => {
   if (!troops) return null;
 
-  console.log({
-    icon: TroopType[troops.category as TroopType],
-    category: troops.category,
-    tier: TroopTier.T1,
-    resourceId: getTroopResourceId(troops.category as TroopType, TroopTier.T1),
-    resource:
-      resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait || "",
-  });
-
   return (
     <div className={`relative w-full text-gold font-bold ${className}`}>
       <div

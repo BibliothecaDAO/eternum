@@ -198,7 +198,7 @@ export class ArmyActionManager {
       let actionType;
       if (isMine) {
         // TODO: put back attack action when finish dev
-        actionType = ActionType.Attack;
+        actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
       } else if (biome) {
@@ -442,8 +442,16 @@ export class ArmyActionManager {
     }
 
     // need to add back precision for optimistic resource update
-    this.resourceManager.optimisticResourceUpdate(overrideId, ResourcesIds.Wheat, -BigInt(multiplyByPrecision(costs.wheatPayAmount)));
-    this.resourceManager.optimisticResourceUpdate(overrideId, ResourcesIds.Fish, -BigInt(multiplyByPrecision(costs.fishPayAmount)));
+    this.resourceManager.optimisticResourceUpdate(
+      overrideId,
+      ResourcesIds.Wheat,
+      -BigInt(multiplyByPrecision(costs.wheatPayAmount)),
+    );
+    this.resourceManager.optimisticResourceUpdate(
+      overrideId,
+      ResourcesIds.Fish,
+      -BigInt(multiplyByPrecision(costs.fishPayAmount)),
+    );
   };
 
   private readonly _travelToHex = async (

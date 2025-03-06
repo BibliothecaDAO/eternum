@@ -3,7 +3,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, CapacityConfig, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { ID } from "../types";
+import { ID, Resource } from "../types";
 import { gramToKg, multiplyByPrecision, unpackValue } from "../utils";
 import { configManager } from "./config-manager";
 
@@ -132,8 +132,6 @@ export class ResourceManager {
     const weight = configManager.getResourceWeight(resourceId);
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
     const amountWithPrecision = BigInt(multiplyByPrecision(Number(change)));
-
-    console.log({currentBalance, change, amountWithPrecision, weight, currentWeight});
 
     switch (resourceId) {
       case ResourcesIds.Stone:
@@ -753,5 +751,64 @@ export class ResourceManager {
 
   private _getResource() {
     return getComponentValue(this.components.Resource, getEntityIdFromKeys([BigInt(this.entityId)]));
+  }
+
+  /**
+   * Returns a list of all resources with their current balances
+   * @param nonZeroOnly If true, only returns resources with balances > 0
+   * @returns Array of Resource objects containing resourceId and amount
+   */
+  public getResourceBalances(): Resource[] {
+    const resource = this._getResource();
+    if (!resource) return [];
+
+    // Define mapping of resource properties to ResourcesIds
+    const resourceMapping: [keyof typeof resource, ResourcesIds][] = [
+      ["STONE_BALANCE", ResourcesIds.Stone],
+      ["COAL_BALANCE", ResourcesIds.Coal],
+      ["WOOD_BALANCE", ResourcesIds.Wood],
+      ["COPPER_BALANCE", ResourcesIds.Copper],
+      ["IRONWOOD_BALANCE", ResourcesIds.Ironwood],
+      ["OBSIDIAN_BALANCE", ResourcesIds.Obsidian],
+      ["GOLD_BALANCE", ResourcesIds.Gold],
+      ["SILVER_BALANCE", ResourcesIds.Silver],
+      ["MITHRAL_BALANCE", ResourcesIds.Mithral],
+      ["ALCHEMICAL_SILVER_BALANCE", ResourcesIds.AlchemicalSilver],
+      ["COLD_IRON_BALANCE", ResourcesIds.ColdIron],
+      ["DEEP_CRYSTAL_BALANCE", ResourcesIds.DeepCrystal],
+      ["RUBY_BALANCE", ResourcesIds.Ruby],
+      ["DIAMONDS_BALANCE", ResourcesIds.Diamonds],
+      ["HARTWOOD_BALANCE", ResourcesIds.Hartwood],
+      ["IGNIUM_BALANCE", ResourcesIds.Ignium],
+      ["TWILIGHT_QUARTZ_BALANCE", ResourcesIds.TwilightQuartz],
+      ["TRUE_ICE_BALANCE", ResourcesIds.TrueIce],
+      ["ADAMANTINE_BALANCE", ResourcesIds.Adamantine],
+      ["SAPPHIRE_BALANCE", ResourcesIds.Sapphire],
+      ["ETHEREAL_SILICA_BALANCE", ResourcesIds.EtherealSilica],
+      ["DRAGONHIDE_BALANCE", ResourcesIds.Dragonhide],
+      ["LABOR_BALANCE", ResourcesIds.Labor],
+      ["EARTHEN_SHARD_BALANCE", ResourcesIds.AncientFragment],
+      ["DONKEY_BALANCE", ResourcesIds.Donkey],
+      ["KNIGHT_T1_BALANCE", ResourcesIds.Knight],
+      ["KNIGHT_T2_BALANCE", ResourcesIds.KnightT2],
+      ["KNIGHT_T3_BALANCE", ResourcesIds.KnightT3],
+      ["CROSSBOWMAN_T1_BALANCE", ResourcesIds.Crossbowman],
+      ["CROSSBOWMAN_T2_BALANCE", ResourcesIds.CrossbowmanT2],
+      ["CROSSBOWMAN_T3_BALANCE", ResourcesIds.CrossbowmanT3],
+      ["PALADIN_T1_BALANCE", ResourcesIds.Paladin],
+      ["PALADIN_T2_BALANCE", ResourcesIds.PaladinT2],
+      ["PALADIN_T3_BALANCE", ResourcesIds.PaladinT3],
+      ["WHEAT_BALANCE", ResourcesIds.Wheat],
+      ["FISH_BALANCE", ResourcesIds.Fish],
+      ["LORDS_BALANCE", ResourcesIds.Lords],
+    ];
+
+    // Use filter and map for a more functional approach
+    return resourceMapping
+      .filter(([key]) => (resource[key] as bigint) > 0n)
+      .map(([key, resourceId]) => ({
+        resourceId,
+        amount: Number(resource[key]),
+      }));
   }
 }

@@ -29,7 +29,9 @@ export const StructureListItem = ({
 }: StructureListItemProps) => {
   const getHyperstructureProgress = useGetHyperstructureProgress();
 
-  const guards = useGuardsByStructure({ structureEntityId: structure.entityId });
+  const guards = useGuardsByStructure({ structureEntityId: structure.entityId }).filter(
+    (guard) => guard.troops.count > 0n,
+  );
 
   const progress =
     structure.structure.base.category === StructureType.Hyperstructure

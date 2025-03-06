@@ -1,4 +1,4 @@
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BuildingType,
@@ -18,6 +18,7 @@ export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
   private config!: Config;
+  buildingOutputs: Record<number, number> = {};
   resourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   resourceLaborOutput: Record<
@@ -40,13 +41,11 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
-    this.initializeResourceInputs();
-    this.initializeResourceOutput();
-    this.initializeResourceLaborOutput();
+    this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
     this.initializeResourceBuildingCosts();
-    this.initializeBuildingCosts();
+    // this.initializeBuildingCosts();
     this.initializeStructureCosts();
   }
 
@@ -58,76 +57,55 @@ export class ClientConfigManager {
     return ClientConfigManager._instance;
   }
 
-  public getConfig() {
-    return this.config;
-  }
-
   private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
-    if (!this.components) {
-      return defaultValue;
-    }
     return callback();
   }
 
-  private initializeResourceInputs() {
-    // if (!this.components) return;
-
-    // for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-    //   const productionConfig = getComponentValue(
-    //     this.components.ProductionConfig,
-    //     getEntityIdFromKeys([BigInt(resourceType)]),
-    //   );
-
-    //   const inputCount = productionConfig?.input_count ?? 0;
-    //   const inputs: { resource: ResourcesIds; amount: number }[] = [];
-
-    //   for (let index = 0; index < inputCount; index++) {
-    //     const productionInput = getComponentValue(
-    //       this.components.ProductionInput,
-    //       getEntityIdFromKeys([BigInt(resourceType), BigInt(index)]),
-    //     );
-
-    //     if (productionInput) {
-    //       const resource = productionInput.input_resource_type;
-    //       const amount = this.divideByPrecision(Number(productionInput.input_resource_amount));
-    //       inputs.push({ resource, amount });
-    //     }
-    //   }
-
-    //   this.resourceInputs[Number(resourceType)] = inputs;
-    // }
-    this.resourceInputs = Object.entries(this.config.resources.resourceInputs).reduce(
-      (acc, [key, inputs]) => {
-        acc[Number(key)] = inputs.map((input: { resource: number; amount: number }) => ({
-          resource: input.resource,
-          amount: input.amount,
-        }));
-        return acc;
-      },
-      {} as typeof this.config.resources.resourceInputs,
-    );
-  }
-
-  // todo: need to get directly from chain
-  private initializeResourceOutput() {
+  private initializeResourceProduction() {
     if (!this.components) return;
 
     for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
-      const resourceOutput = this.config.resources.resourceOutputs[Number(resourceType)];
+      const productionConfig = getComponentValue(
+        this.components.ProductionConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
+      );
 
+      const inputCount = productionConfig?.multiple_resource_burn_strategy.required_resources_count ?? 0;
+      const entityId = productionConfig?.multiple_resource_burn_strategy.required_resources_id ?? 0;
+      const inputs: { resource: ResourcesIds; amount: number }[] = [];
+
+      for (let index = 0; index < inputCount; index++) {
+        const productionInput = getComponentValue(
+          this.components.ResourceList,
+          getEntityIdFromKeys([BigInt(entityId), BigInt(index)]),
+        );
+
+        if (productionInput) {
+          const resource = productionInput.resource_type;
+          const amount = this.divideByPrecision(Number(productionInput.amount));
+          inputs.push({ resource, amount });
+        }
+      }
+
+      const laborBurnStrategy = productionConfig?.labor_burn_strategy;
+      if (laborBurnStrategy && laborBurnStrategy.resource_rarity > 0n) {
+        this.resourceLaborOutput[Number(resourceType)] = {
+          resource_rarity: Number(laborBurnStrategy.resource_rarity),
+          depreciation_percent_num: Number(laborBurnStrategy.depreciation_percent_num),
+          depreciation_percent_denom: Number(laborBurnStrategy.depreciation_percent_denom),
+          wheat_burn_per_labor: this.divideByPrecision(Number(laborBurnStrategy.wheat_burn_per_labor)),
+          fish_burn_per_labor: this.divideByPrecision(Number(laborBurnStrategy.fish_burn_per_labor)),
+        };
+      }
+
+      this.resourceInputs[Number(resourceType)] = inputs;
+
+      const resourceOutput = Number(productionConfig?.amount_per_building_per_tick ?? 0n);
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
-        amount: resourceOutput,
+        amount: this.divideByPrecision(resourceOutput),
       };
     }
-  }
-
-  private initializeResourceLaborOutput() {
-    this.resourceLaborOutput = Object.fromEntries(
-      Object.entries(this.config.resources.resourceProductionByLaborParams)
-        .filter(([key, value]) => value.resource_rarity > 0)
-        .map(([key, value]) => [Number(key), value]),
-    );
   }
 
   private initializeHyperstructureTotalCosts() {
@@ -150,30 +128,64 @@ export class ClientConfigManager {
   }
 
   private initializeRealmUpgradeCosts() {
-    this.realmUpgradeCosts = Object.fromEntries(
-      Object.entries(this.config.realmUpgradeCosts).map(([key, costs]) => [
-        key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
-      ]),
-    );
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const maxLevel = Number(worldConfig?.structure_max_level_config?.realm_max) || 0;
+
+    for (let level = 1; level <= maxLevel; level++) {
+      const levelConfig = getComponentValue(this.components.StructureLevelConfig, getEntityIdFromKeys([BigInt(level)]));
+      if (levelConfig) {
+        const inputs: { resource: ResourcesIds; amount: number }[] = [];
+        for (let index = 0; index < levelConfig.required_resource_count; index++) {
+          const resource = getComponentValue(
+            this.components.ResourceList,
+            getEntityIdFromKeys([BigInt(levelConfig.required_resources_id), BigInt(index)]),
+          );
+          if (resource) {
+            inputs.push({
+              resource: resource.resource_type as ResourcesIds,
+              amount: this.divideByPrecision(Number(resource.amount)),
+            });
+          }
+        }
+        this.realmUpgradeCosts[level] = inputs;
+      }
+    }
   }
 
   private initializeResourceBuildingCosts() {
-    this.resourceBuildingCosts = Object.fromEntries(
-      Object.entries(this.config.buildings.resourceBuildingCosts).map(([key, costs]) => [
-        key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
-      ]),
-    );
-  }
+    const buildingConfigsEntities = runQuery([Has(this.components.BuildingConfig)]);
 
-  private initializeBuildingCosts() {
-    this.buildingCosts = Object.fromEntries(
-      Object.entries(this.config.buildings.otherBuildingCosts).map(([key, costs]) => [
-        key,
-        costs.map((cost: any) => ({ ...cost, amount: cost.amount })),
-      ]),
-    );
+    for (const buildingConfigEntity of buildingConfigsEntities) {
+      const buildingConfig = getComponentValue(this.components.BuildingConfig, buildingConfigEntity);
+      if (buildingConfig) {
+        const entityId = buildingConfig.resource_cost_id;
+        const resourceCount = buildingConfig.resource_cost_count || 0;
+        const inputs: { resource: ResourcesIds; amount: number }[] = [];
+
+        for (let index = 0; index < resourceCount; index++) {
+          const resource = getComponentValue(
+            this.components.ResourceList,
+            getEntityIdFromKeys([BigInt(entityId), BigInt(index)]),
+          );
+
+          if (resource) {
+            inputs.push({
+              resource: resource.resource_type as ResourcesIds,
+              amount: this.divideByPrecision(Number(resource.amount)),
+            });
+          }
+        }
+        const resourceType = buildingConfig.resource_type;
+
+        if (resourceType !== 0) {
+          this.resourceBuildingCosts[Number(resourceType)] = inputs;
+          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
+            Number(resourceType);
+        } else {
+          this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
+        }
+      }
+    }
   }
 
   private initializeStructureCosts() {
@@ -699,6 +711,8 @@ export class ClientConfigManager {
     );
   }
 
+  // TODO: don't use config but get from chain directly
+  // but only way is through get_contributable_resources_with_rarity
   getResourceRarity(resourceId: ResourcesIds) {
     return this.config.resources.resourceRarity[resourceId] ?? 0;
   }
@@ -711,12 +725,8 @@ export class ClientConfigManager {
     return value / RESOURCE_PRECISION;
   }
 
-  getResourceMultiplier() {
-    return this.config.resources.resourceMultiplier;
-  }
-
   getResourceBuildingProduced(buildingType: BuildingType) {
-    return this.config.buildings.buildingResourceProduced[buildingType] ?? 0;
+    return this.buildingOutputs[Number(buildingType)];
   }
 
   getBuildingBaseCostPercentIncrease() {

@@ -10,9 +10,14 @@ export function usePlayerOwnedRealms(): RealmInfo[] {
     setup: { components },
   } = useDojo();
 
-  const { Structure } = components;
+  const { Structure, StructureBuildings } = components;
 
-  const realmEntities = useEntityQuery([Has(Structure), HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm })]);
+  const realmEntities = useEntityQuery([
+    Has(StructureBuildings),
+    Has(Structure),
+    HasValue(Structure, { owner: ContractAddress(account.address), category: StructureType.Realm }),
+  ]);
+
   const realms = useMemo(() => {
     return realmEntities
       .map((entity) => {

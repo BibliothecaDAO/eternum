@@ -1,6 +1,7 @@
 import { Account, AccountInterface, BigNumberish, CairoOption, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
+import { Resource } from "./common";
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
@@ -118,8 +119,6 @@ export interface UpgradeRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
 
-
-
 export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
   directions: num.BigNumberish[];
@@ -150,7 +149,6 @@ export interface ResumeProductionProps extends SystemSigner {
     y: num.BigNumberish;
   };
 }
-
 
 export interface CreateAdminBanksProps extends SystemSigner {
   banks: {
@@ -318,7 +316,7 @@ interface ResourceCosts {
 }
 
 export interface SetStartingResourcesConfigProps extends SystemSigner {
-    startingResources: ResourceCosts[];
+  startingResources: ResourceCosts[];
 }
 
 export interface SetMapConfigProps extends SystemSigner {
@@ -811,4 +809,28 @@ export interface ExplorerAddProps extends SystemSigner {
 export interface ExplorerDeleteProps extends SystemSigner {
   /** ID of the explorer to delete */
   explorer_id: number;
+}
+
+/**
+ * Properties for transferring resources from a troop to an adjacent structure
+ */
+export interface TroopStructureAdjacentTransferProps extends SystemSigner {
+  /** ID of the explorer sending resources */
+  from_explorer_id: number;
+  /** ID of the structure receiving resources */
+  to_structure_id: number;
+  /** Resources to transfer */
+  resources: Resource[];
+}
+
+/**
+ * Properties for transferring resources from a structure to an adjacent troop
+ */
+export interface StructureTroopAdjacentTransferProps extends SystemSigner {
+  /** ID of the structure sending resources */
+  from_structure_id: number;
+  /** ID of the troop receiving resources */
+  to_troop_id: number;
+  /** Resources to transfer */
+  resources: Resource[];
 }
