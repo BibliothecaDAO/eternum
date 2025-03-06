@@ -7,7 +7,6 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ADMIN_BANK_ENTITY_ID,
-  configManager,
   getGuardsByStructure,
   ID,
   REGIONAL_BANK_FIVE_ID,
@@ -82,10 +81,9 @@ export const MarketHeader = () => {
 
 const BankInformationHeader = () => {
   return (
-    <div className="grid grid-cols-10 gap-2 text-gold/80 text-xs font-medium border-b border-gold/20 mb-1">
+    <div className="grid grid-cols-8 gap-2 text-gold/80 text-xs font-medium border-b border-gold/20 mb-1">
       <span>Owner</span>
-      <span>Owner Fees</span>
-      <span>LP Fees</span>
+
       <span>Treasury</span>
       <div className="col-span-5 grid grid-cols-4 gap-2">
         {Object.values(DEFENSE_NAMES).map((name, index) => (
@@ -113,10 +111,8 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
   const guards = getGuardsByStructure(bankInfo?.structure);
 
   return (
-    <div className="grid grid-cols-10 gap-2 items-center mb-1">
+    <div className="grid grid-cols-8 gap-2 items-center mb-1">
       <span>{bankInfo?.owner}</span>
-      <span className="font-bold px-4">{(bankInfo?.ownerFee || 0) * 100}%</span>
-      <span className="font-bold px-4">{configManager.getBankConfig().lpFeesNumerator}%</span>
 
       <div className="flex flex-row items-center">
         <span>{currencyFormat(Number(bankLordsBalance), 0)}</span>

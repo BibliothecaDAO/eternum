@@ -20,18 +20,12 @@ import {
   RESOURCE_TIERS,
   Resources,
   resources,
-  ResourcesIds
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export const ResourceSwap = ({
-  entityId,
-  listResourceId,
-}: {
-  entityId: ID;
-  listResourceId: number;
-}) => {
+export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
     setup,
@@ -48,7 +42,6 @@ export const ResourceSwap = ({
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
-
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -88,10 +81,7 @@ export const ResourceSwap = ({
 
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
-  const canSwap = useMemo(
-    () => amountsBiggerThanZero && hasEnough,
-    [lordsAmount, resourceAmount, hasEnough],
-  );
+  const canSwap = useMemo(() => amountsBiggerThanZero && hasEnough, [lordsAmount, resourceAmount, hasEnough]);
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
@@ -318,13 +308,18 @@ export const ResourceSwap = ({
                     </td>
                   </tr>
                   <tr>
-                    <td>Bank Owner Fees</td>
+                    <td>
+                      Bank Owner Fees{" "}
+                      <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
+                    </td>
                     <td className="text-left text-danger px-8">
                       {formatNumber(-ownerFee, 4)} {"Lords"}
                     </td>
                   </tr>
                   <tr>
-                    <td>LP Fees</td>
+                    <td>
+                      LP Fees <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
+                    </td>
                     <td className="text-left text-danger px-8">
                       {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
