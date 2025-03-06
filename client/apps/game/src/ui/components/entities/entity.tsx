@@ -1,14 +1,9 @@
 import { DepositResourceArrival } from "@/ui/components/resources/deposit-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  divideByPrecision,
-  EntityType,
-  formatTime,
-  ResourceArrivalInfo
-} from "@bibliothecadao/eternum";
+import { divideByPrecision, EntityType, formatTime, ResourceArrivalInfo } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -18,20 +13,32 @@ const entityIcon: Record<EntityType, string> = {
 
 export const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   const { currentBlockTimestamp } = getBlockTimestamp();
+  const [now, setNow] = useState(currentBlockTimestamp);
+
+  useEffect(() => {
+    if (!currentBlockTimestamp) return;
+    setNow(currentBlockTimestamp);
+
+    const interval = setInterval(() => {
+      setNow((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentBlockTimestamp]);
 
   const renderEntityStatus = useMemo(() => {
-    return currentBlockTimestamp ? (
-      arrival.arrivesAt <= currentBlockTimestamp ? (
+    return now ? (
+      arrival.arrivesAt <= now ? (
         <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
           Waiting to offload
         </div>
       ) : (
         <div className="flex ml-auto italic self-center bg-brown/20 rounded-md px-2 py-1">
-          Arriving in {formatTime(Number(arrival.arrivesAt) - currentBlockTimestamp)}
+          Arriving in {formatTime(Number(arrival.arrivesAt) - now)}
         </div>
       )
     ) : null;
-  }, [currentBlockTimestamp]);
+  }, [arrival.arrivesAt, now]);
 
   const renderedResources = useMemo(() => {
     return arrival.resources
