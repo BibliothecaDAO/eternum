@@ -132,14 +132,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         component: (
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
-              .filter(
-                (a) =>
-                  !isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
-              )
+              .filter((a) => !isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType]))
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
-                const buildingCosts = getBuildingCosts(entityId, dojo, building);
+                const isWorkersHut = building === BuildingType.WorkersHut;
+                const isStorehouse = building === BuildingType.Storehouse;
+
+                const buildingCosts =
+                  isWorkersHut || isStorehouse
+                    ? getBuildingCosts(entityId, dojo, building)
+                    : getResourceBuildingCosts(entityId, dojo, configManager.getResourceBuildingProduced(building));
+
                 if (!buildingCosts) return;
 
                 const hasBalance = checkBalance(buildingCosts);
@@ -151,9 +155,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
                 const isFarm = building === BuildingType.Farm;
                 const isFishingVillage = building === BuildingType.FishingVillage;
-                const isWorkersHut = building === BuildingType.WorkersHut;
                 const isMarket = building === BuildingType.Market;
-                const isStorehouse = building === BuildingType.Storehouse;
 
                 return (
                   <BuildingCard
@@ -184,7 +186,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingEnumToString[building]}
-                    resourceName={isFishingVillage ? ResourcesIds[ResourcesIds.Fish] : isFarm ? ResourcesIds[ResourcesIds.Wheat] : undefined}
+                    resourceName={
+                      isFishingVillage
+                        ? ResourcesIds[ResourcesIds.Fish]
+                        : isFarm
+                          ? ResourcesIds[ResourcesIds.Wheat]
+                          : undefined
+                    }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
@@ -205,13 +213,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           <div className="grid grid-cols-2 gap-2 p-2">
             {" "}
             {buildingTypes
-              .filter(
-                (a) =>
-                  isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType])
-              )
+              .filter((a) => isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType]))
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const buildingCost = getBuildingCosts(entityId, dojo, building);
+                const resourceId = configManager.getResourceBuildingProduced(building);
+                const buildingCost = getResourceBuildingCosts(entityId, dojo, resourceId);
 
                 const hasBalance = checkBalance(buildingCost);
 
@@ -309,7 +315,6 @@ const BuildingCard = ({
   className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  console.log({ resourceName });
   return (
     <div
       onClick={onClick}
@@ -513,7 +518,15 @@ export const BuildingInfo = ({
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, dojo, buildingId) || [];
+  const isWorkersHut = buildingId === BuildingType.WorkersHut;
+  const isStorehouse = buildingId === BuildingType.Storehouse;
+
+  const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
+
+  const buildingCost =
+    isWorkersHut || isStorehouse
+      ? getBuildingCosts(entityId ?? 0, dojo, buildingId) || []
+      : getResourceBuildingCosts(entityId ?? 0, dojo, resourceProduced) || [];
 
   const buildingPopCapacityConfig = configManager.getBuildingPopConfig(buildingId);
   const population = buildingPopCapacityConfig.population;
@@ -522,7 +535,6 @@ export const BuildingInfo = ({
   const carryCapacity =
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfig.Storehouse) : 0;
 
-  const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));

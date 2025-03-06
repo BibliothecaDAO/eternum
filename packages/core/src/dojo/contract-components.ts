@@ -125,7 +125,12 @@ export function defineContractComponents(world: World) {
     Guild: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.Number, is_public: RecsType.Boolean, member_count: RecsType.Number, owner: RecsType.BigInt },
+        {
+          entity_id: RecsType.Number,
+          is_public: RecsType.Boolean,
+          member_count: RecsType.Number,
+          owner: RecsType.BigInt,
+        },
         {
           metadata: {
             namespace: "s1_eternum",
@@ -1150,7 +1155,8 @@ export function defineContractComponents(world: World) {
             season_pool_fee_recipient: RecsType.BigInt,
           },
           structure_max_level_config: {
-            max_level: RecsType.Number,
+            realm_max: RecsType.Number,
+            village_max: RecsType.Number,
           },
           building_general_config: {
             base_cost_percent_increase: RecsType.Number,
