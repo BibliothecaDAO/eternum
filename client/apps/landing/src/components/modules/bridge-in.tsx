@@ -45,7 +45,7 @@ export const BridgeIn = () => {
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_nanogram ?? 0),
+      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
       speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
     }),
     [data],

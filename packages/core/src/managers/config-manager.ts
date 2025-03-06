@@ -207,11 +207,11 @@ export class ClientConfigManager {
   // weight in grams, per actual resource (without precision)
   getResourceWeight(resourceId: number): number {
     return this.getValueOrDefault(() => {
-      const weightNanogram = getComponentValue(
+      const weightGram = getComponentValue(
         this.components.WeightConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(resourceId)]),
-      )?.weight_nanogram;
-      return Number(weightNanogram ?? 0);
+        getEntityIdFromKeys([BigInt(resourceId)]),
+      )?.weight_gram;
+      return Number(weightGram ?? 0);
     }, 0);
   }
 

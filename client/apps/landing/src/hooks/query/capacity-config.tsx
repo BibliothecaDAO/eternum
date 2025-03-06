@@ -5,7 +5,7 @@ export const GET_CAPACITY_SPEED_CONFIG = graphql(`
     s1EternumCapacityConfigModels(where: { category: $category }) {
       edges {
         node {
-          weight_nanogram
+          weight_gram
         }
       }
     }

@@ -1828,7 +1828,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_resource_weight_config",
-          calldata: [call.entity_type, call.weight_nanogram],
+          calldata: [call.entity_type, call.weight_gram],
         };
       }),
     );

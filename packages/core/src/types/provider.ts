@@ -354,7 +354,7 @@ export interface SetTradeConfigProps extends SystemSigner {
 export interface SetWeightConfigProps extends SystemSigner {
   calls: {
     entity_type: num.BigNumberish;
-    weight_nanogram: num.BigNumberish;
+    weight_gram: num.BigNumberish;
   }[];
 }
 
