@@ -351,7 +351,7 @@ export class ArmyActionManager {
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
-      configManager.getExploreReward() * configManager.getResourceWeight(ResourcesIds.Wood),
+      configManager.getExploreReward() * configManager.getResourceWeightKg(ResourcesIds.Wood),
     );
     this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
 

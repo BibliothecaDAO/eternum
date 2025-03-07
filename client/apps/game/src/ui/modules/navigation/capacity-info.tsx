@@ -16,33 +16,33 @@ const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) 
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Lords)).toLocaleString()} Lords
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wheat)).toLocaleString()} Food
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wood)).toLocaleString()} Other
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Labor)).toLocaleString()} Labor
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Labor)).toLocaleString()} Labor
           </li>
         </ul>
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Knight)).toLocaleString()} Knights
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Knight)).toLocaleString()} Knights
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Paladin)).toLocaleString()} Paladins
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Paladin)).toLocaleString()} Paladins
           </li>
         </ul>
       </div>

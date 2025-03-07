@@ -129,7 +129,7 @@ export class ResourceManager {
   public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, change: bigint) => {
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]);
     const currentBalance = this.balance(resourceId);
-    const weight = configManager.getResourceWeight(resourceId);
+    const weight = configManager.getResourceWeightKg(resourceId);
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
     const amountWithPrecision = BigInt(multiplyByPrecision(Number(change)));
 
@@ -639,7 +639,7 @@ export class ResourceManager {
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
     const storeCapacity = this.getStoreCapacity();
     const maxAmountStorable = multiplyByPrecision(
-      storeCapacity / (configManager.getResourceWeight(resourceId) || 1000),
+      storeCapacity / (configManager.getResourceWeightKg(resourceId) || 1000),
     );
     if (balance > maxAmountStorable) {
       return BigInt(maxAmountStorable);

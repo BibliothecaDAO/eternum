@@ -10,12 +10,13 @@ export const calculateDonkeysNeeded = (orderWeight: number): number => {
   return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
 };
 
+// grams
 export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
   const configManager = ClientConfigManager.instance();
 
   return resources.reduce(
     (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
+      total + (resource ? resource.amount * configManager.getResourceWeightKg(resource.resourceId) || 0 : 0),
     0,
   );
 };

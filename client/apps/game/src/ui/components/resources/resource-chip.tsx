@@ -40,7 +40,7 @@ export const ResourceChip = ({
   }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
+    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeightKg(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();

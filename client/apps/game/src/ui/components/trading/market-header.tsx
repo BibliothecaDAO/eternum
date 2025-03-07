@@ -7,6 +7,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ADMIN_BANK_ENTITY_ID,
+  DEFENSE_NAMES,
   getGuardsByStructure,
   ID,
   REGIONAL_BANK_FIVE_ID,
@@ -21,7 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { HintModal } from "../hints/hint-modal";
 import { NavigateToPositionIcon } from "../military/army-chip";
 import { ViewOnMapIcon } from "../military/army-management-card";
-import { CooldownTimer, DEFENSE_NAMES, DefenseTroop } from "../military/structure-defence";
+import { CooldownTimer, DefenseTroop } from "../military/structure-defence";
 import { TroopChip } from "../military/troop-chip";
 
 type Bank = {

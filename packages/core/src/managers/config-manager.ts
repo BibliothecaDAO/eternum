@@ -13,6 +13,7 @@ import {
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
+import { gramToKg } from "../utils";
 
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
@@ -36,6 +37,7 @@ export class ClientConfigManager {
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  resourceWeightsKg: Record<number, number> = {};
 
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
@@ -47,6 +49,7 @@ export class ClientConfigManager {
     this.initializeResourceBuildingCosts();
     // this.initializeBuildingCosts();
     this.initializeStructureCosts();
+    this.initializeResourceWeights();
   }
 
   public static instance(): ClientConfigManager {
@@ -59,6 +62,15 @@ export class ClientConfigManager {
 
   private getValueOrDefault<T>(callback: () => T, defaultValue: T): T {
     return callback();
+  }
+
+  private initializeResourceWeights() {
+    if (!this.components) return;
+
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
+      const weightConfig = getComponentValue(this.components.WeightConfig, getEntityIdFromKeys([BigInt(resourceType)]));
+      this.resourceWeightsKg[Number(resourceType)] = gramToKg(Number(weightConfig?.weight_gram ?? 0));
+    }
   }
 
   private initializeResourceProduction() {
@@ -205,14 +217,8 @@ export class ClientConfigManager {
   }
 
   // weight in grams, per actual resource (without precision)
-  getResourceWeight(resourceId: number): number {
-    return this.getValueOrDefault(() => {
-      const weightGram = getComponentValue(
-        this.components.WeightConfig,
-        getEntityIdFromKeys([BigInt(resourceId)]),
-      )?.weight_gram;
-      return Number(weightGram ?? 0);
-    }, 0);
+  getResourceWeightKg(resourceId: number): number {
+    return this.resourceWeightsKg[resourceId] || 0;
   }
 
   getTravelStaminaCost() {

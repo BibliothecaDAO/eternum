@@ -1,18 +1,11 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
 import Button from "@/ui/elements/button";
-import { ArmyManager, ID, Troops } from "@bibliothecadao/eternum";
+import { ArmyManager, DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useState } from "react";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { ArmyCreate } from "./army-management-card";
 import { TroopChip } from "./troop-chip";
-
-export const DEFENSE_NAMES = {
-  0: "Inner Keep",
-  1: "Castle Wall",
-  2: "Outer Bailey",
-  3: "Watchtower",
-};
 
 export interface DefenseTroop {
   slot: ID;

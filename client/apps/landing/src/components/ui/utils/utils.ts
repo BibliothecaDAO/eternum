@@ -1,6 +1,6 @@
 import { ClientConfigManager, divideByPrecision } from "@bibliothecadao/eternum";
 
-import { ContractAddress, TickIds, type ID, type Position, type Resource } from "@bibliothecadao/eternum";
+import { ContractAddress, TickIds, type Position, type Resource } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
@@ -181,7 +181,7 @@ export const getTotalResourceWeight = (resources: Array<Resource | undefined>) =
   const configManager = ClientConfigManager.instance();
   return resources.reduce(
     (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
+      total + (resource ? resource.amount * configManager.getResourceWeightKg(resource.resourceId) || 0 : 0),
     0,
   );
 };
