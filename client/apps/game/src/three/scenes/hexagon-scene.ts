@@ -112,7 +112,7 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.shadow.camera.bottom = -12;
     this.mainDirectionalLight.shadow.camera.far = 38;
     this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.033;
+    this.mainDirectionalLight.shadow.bias = -0.0285;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
   }

@@ -13,7 +13,10 @@ import {
   EffectComposer,
   EffectPass,
   FXAAEffect,
+  HueSaturationEffect,
   RenderPass,
+  ToneMappingEffect,
+  ToneMappingMode
 } from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
@@ -151,6 +154,7 @@ export default class GameRenderer {
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
+    //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.HalfFloatType,
     });
@@ -265,7 +269,7 @@ export default class GameRenderer {
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
-    const obj = { brightness: -0.1, contrast: 0 };
+    const obj = { brightness: -0.05, contrast: 0, hue: 0, saturation: 0.3 };
     const folder = GUIManager.addFolder("BrightnesContrastt");
     if (GRAPHICS_SETTING !== GraphicsSettings.LOW) {
       const BCEffect = new BrightnessContrastEffect({
@@ -292,16 +296,74 @@ export default class GameRenderer {
           BCEffect.contrast = value;
         });
 
+      // Create Hue/Saturation effect
+      const HSEffect = new HueSaturationEffect({
+        hue: obj.hue,
+        saturation: obj.saturation
+      });
+
+      // Add Hue/Saturation controls
+      const hsFolder = GUIManager.addFolder("Hue & Saturation");
+      hsFolder
+        .add(obj, "hue")
+        .name("Hue")
+        .min(-Math.PI)
+        .max(Math.PI)
+        .step(0.01)
+        .onChange((value: number) => {
+          HSEffect.hue = value;
+        });
+      hsFolder
+        .add(obj, "saturation")
+        .name("Saturation")
+        .min(-1)
+        .max(1)
+        .step(0.01)
+        .onChange((value: number) => {
+          HSEffect.saturation = value;
+        });
+
+      const toneMappingEffect = new ToneMappingEffect({
+        mode: ToneMappingMode.LINEAR
+      });
+      
+      // Add ToneMapping controls
+      const toneMappingFolder = GUIManager.addFolder("Tone Mapping");
+      const toneMappingParams = { 
+        mode: ToneMappingMode.LINEAR,
+        exposure: 1.0,
+        whitePoint: 1.0
+      };
+      
+      toneMappingFolder.add(toneMappingParams, "mode", {
+        ...ToneMappingMode
+      }).onChange((value: ToneMappingMode) => {
+        toneMappingEffect.mode = value;
+      });
+      
+      toneMappingFolder.add(toneMappingParams, "exposure", 0.0, 2.0, 0.01)
+        .onChange((value: number) => {
+          toneMappingEffect.exposure = value;
+        });
+        
+      toneMappingFolder.add(toneMappingParams, "whitePoint", 0.0, 2.0, 0.01)
+        .onChange((value: number) => {
+          toneMappingEffect.whitePoint = value;
+        });
+      
+      toneMappingFolder.close();
+      
       this.composer.addPass(
         new EffectPass(
           this.camera,
-
+          toneMappingEffect,
           new FXAAEffect(),
           new BloomEffect({
             luminanceThreshold: 1.1,
             mipmapBlur: true,
             intensity: 0.25,
           }),
+          HSEffect,
           BCEffect,
         ),
       );
@@ -318,8 +380,8 @@ export default class GameRenderer {
     const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
-      this.hexceptionScene.setEnvironment(envMap, 0.7);
-      this.worldmapScene.setEnvironment(envMap, 0.7);
+      this.hexceptionScene.setEnvironment(envMap, 0.3);
+      this.worldmapScene.setEnvironment(envMap, 0.3);
     });
   }
 
@@ -372,7 +434,7 @@ export default class GameRenderer {
 
     // Skip frame if not enough time has passed (for 30 FPS)
     if (this.graphicsSetting !== GraphicsSettings.HIGH) {
-      const frameTime = 1000 / 30; // 33.33ms for 30 FPS
+      const frameTime = 1000 / 120; // 33.33ms for 30 FPS
       if (currentTime - this.lastTime < frameTime) {
         requestAnimationFrame(() => this.animate());
         return;
