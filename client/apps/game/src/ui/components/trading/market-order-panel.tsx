@@ -4,7 +4,7 @@ import { ConfirmationPopup } from "@/ui/components/bank/confirmation-popup";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, formatNumber } from "@/ui/utils/utils";
+import { calculateArrivalTime, currencyFormat, formatArrivalTime, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   computeTravelTime,
@@ -23,6 +23,7 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ONE_MONTH = 2628000;
+
 export const MarketResource = memo(
   ({
     entityId,
@@ -380,8 +381,10 @@ const OrderRow = memo(
             {getsDisplay}
           </div>
           {travelTime && (
-            <div>
-              {Math.floor(travelTime / 60)} hrs {travelTime % 60} mins
+            <div className="flex flex-col">
+              <div className="text-gold font-semibold">
+                Estimated Arrival: {formatArrivalTime(calculateArrivalTime(travelTime))}
+              </div>
             </div>
           )}
           <div className="flex gap-1 text-green">{formatNumber(offer.perLords, 4)}</div>

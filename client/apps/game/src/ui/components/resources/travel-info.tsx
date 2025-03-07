@@ -1,6 +1,6 @@
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { calculateArrivalTime, currencyFormat, formatArrivalTime } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
@@ -35,6 +35,9 @@ export const TravelInfo = ({
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
+  const arrivalTime = calculateArrivalTime(travelTime);
+  const formattedArrivalTime = formatArrivalTime(arrivalTime);
+
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);
 
@@ -63,12 +66,10 @@ export const TravelInfo = ({
     <>
       <table className="w-full border-collapse text-sm">
         <tbody className="divide-y divide-gold/20">
-          {travelTime ? (
+          {formattedArrivalTime ? (
             <tr className="hover:bg-gold/5 transition-colors">
-              <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Travel Time</td>
-              <td className="px-4 py-1 text-gold text-left whitespace-nowrap">
-                {`${Math.floor(travelTime / 60)} hrs ${travelTime % 60} mins`}
-              </td>
+              <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Estimated Arrival</td>
+              <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{formattedArrivalTime}</td>
             </tr>
           ) : (
             ""

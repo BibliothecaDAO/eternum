@@ -1,15 +1,11 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ResourceArrivalInfo } from "@bibliothecadao/eternum";
+import { ResourceArrivalInfo, ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 
-type DepositResourcesProps = {
-  arrival: ResourceArrivalInfo;
-};
-
-export const DepositResourceArrival = ({ arrival }: DepositResourcesProps) => {
+export const DepositResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   const dojo = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -18,20 +14,26 @@ export const DepositResourceArrival = ({ arrival }: DepositResourcesProps) => {
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
+  const resourceArrivalManager = new ResourceArrivalManager(dojo.setup.components, arrival);
+
   const onOffload = async () => {
     if (arrival.resources.length > 0) {
       playDeposit();
       setIsLoading(true);
-      const systemCall = dojo.setup.systemCalls.arrivals_offload({
-        signer: dojo.account.account,
-        structureId: arrival.structureEntityId,
-        day: arrival.day,
-        slot: arrival.slot,
-        resource_count: arrival.resources.length,
-      });
-      systemCall.finally(() => {
+
+      try {
+        resourceArrivalManager.optimisticOffload();
+
+        await dojo.setup.systemCalls.arrivals_offload({
+          signer: dojo.account.account,
+          structureId: arrival.structureEntityId,
+          day: arrival.day,
+          slot: arrival.slot,
+          resource_count: arrival.resources.length,
+        });
+      } finally {
         setIsLoading(false);
-      });
+      }
     }
   };
 

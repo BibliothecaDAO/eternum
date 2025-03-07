@@ -7,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
-import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
+import { calculateArrivalTime, formatArrivalTime, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
   computeTravelTime,
   configManager,
@@ -90,10 +90,16 @@ const SelectEntitiesStep = memo(
       );
     };
 
+    // Calculate the arrival time based on the travel time
+    const arrivalTime = calculateArrivalTime(travelTime);
+    const formattedArrivalTime = formatArrivalTime(arrivalTime);
+
     return (
       <>
-        <div className="w-full flex justify-center items-center">
-          Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
+        <div className="w-full flex flex-col justify-center items-center">
+          {formattedArrivalTime && (
+            <div className="text-gold font-semibold">Estimated Arrival: {formattedArrivalTime}</div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-6 mt-3">
           {/* From column */}
@@ -212,6 +218,7 @@ export const TransferBetweenEntities = ({
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
+  console.log("speed", configManager.getSpeedConfig(EntityType.DONKEY));
   const onSendResources = () => {
     setIsLoading(true);
     const resourcesList = selectedResourceIds.map((id: number) => ({

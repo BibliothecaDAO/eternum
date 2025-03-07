@@ -1,4 +1,5 @@
 import { SortInterface } from "@/ui/elements/sort-button";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ContractAddress,
   divideByPrecision,
@@ -229,4 +230,32 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
 
 export const normalizeDiacriticalMarks = (str: string) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
+
+export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
+  if (travelTimeMinutes === undefined) return null;
+  
+  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
+  const travelTimeMs = travelTimeMinutes * 60 * 1000;
+  const arrivalTimeMs = currentBlockTimestamp + travelTimeMs;
+  
+  // Calculate the next hour boundary after arrival
+  const arrivalDate = new Date(arrivalTimeMs);
+  const nextHourDate = new Date(arrivalDate);
+  nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
+  
+  return nextHourDate;
+};
+
+
+export const formatArrivalTime = (date: Date | null) => {
+  if (!date) return "";
+  
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  return `${month}/${day} at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };

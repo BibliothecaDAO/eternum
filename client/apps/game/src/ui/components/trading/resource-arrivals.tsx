@@ -1,10 +1,9 @@
-import { ResourceArrival } from "@/ui/components/entities/entity";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { useArrivalsByStructure, usePlayerStructures } from "@bibliothecadao/react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { usePlayerStructures } from "@bibliothecadao/react";
 import { memo, useState } from "react";
+import { StructureArrivals } from "../resources/resource-arrival";
 
 export const AllResourceArrivals = memo(({ className = "" }: { className?: string }) => {
   const playerStructures = usePlayerStructures();
@@ -27,34 +26,14 @@ export const AllResourceArrivals = memo(({ className = "" }: { className?: strin
         </div>
       </Headline>
 
-      {playerStructures.map((structure) => {
-        const isExpanded = expandedStructures[structure.entityId] === false;
-        const arrivals = useArrivalsByStructure({ structureEntityId: structure.entityId });
-        if (arrivals.length === 0) return null;
-
-        return (
-          <div key={structure.entityId} className="border border-gold/20 rounded-md">
-            <div
-              className="flex justify-between items-center p-2 bg-gold/10 cursor-pointer"
-              onClick={() => toggleStructure(structure.entityId.toString())}
-            >
-              <h3 className="text-gold font-medium">{structure.name}</h3>
-              <div className="text-gold">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
-            </div>
-
-            {isExpanded && (
-              <div className="flex flex-col gap-2 p-2">
-                {arrivals.map((arrival) => (
-                  <ResourceArrival
-                    arrival={arrival}
-                    key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {playerStructures.map((structure) => (
+        <StructureArrivals
+          key={structure.entityId}
+          structure={structure}
+          isExpanded={expandedStructures[structure.entityId] === false}
+          toggleStructure={toggleStructure}
+        />
+      ))}
     </div>
   );
 });

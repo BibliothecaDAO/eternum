@@ -2,8 +2,10 @@ import { DepositResourceArrival } from "@/ui/components/resources/deposit-resour
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, EntityType, formatTime, ResourceArrivalInfo } from "@bibliothecadao/eternum";
+import { useArrivalsByStructure } from "@bibliothecadao/react";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { memo, useEffect, useMemo, useState } from "react";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -11,7 +13,43 @@ const entityIcon: Record<EntityType, string> = {
   [EntityType.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
 
-export const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
+export const StructureArrivals = memo(
+  ({
+    structure,
+    isExpanded,
+    toggleStructure,
+  }: {
+    structure: any;
+    isExpanded: boolean;
+    toggleStructure: (id: string) => void;
+  }) => {
+    const arrivals = useArrivalsByStructure({ structureEntityId: structure.entityId });
+
+    if (arrivals.length === 0) return null;
+
+    return (
+      <div className="border border-gold/20 rounded-md">
+        <div
+          className="flex justify-between items-center p-2 bg-gold/10 cursor-pointer"
+          onClick={() => toggleStructure(structure.entityId.toString())}
+        >
+          <h3 className="text-gold font-medium">{structure.name}</h3>
+          <div className="text-gold">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
+        </div>
+
+        {isExpanded && (
+          <div className="flex flex-col gap-2 p-2">
+            {arrivals.map((arrival) => (
+              <ResourceArrival arrival={arrival} key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   const { currentBlockTimestamp } = getBlockTimestamp();
   const [now, setNow] = useState(currentBlockTimestamp);
 
