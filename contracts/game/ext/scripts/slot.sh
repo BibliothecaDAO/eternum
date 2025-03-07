@@ -43,7 +43,7 @@
 #   slot:    https://api.cartridge.gg/x/<project-name>/katana
 #            (Requires prior Katana deployment with same project name)
 #   mainnet: https://api.cartridge.gg/x/eternum/mainnet
-#   sepolia: https://starknet-sepolia.public.blastapi.io/rpc/v0_7
+#   sepolia: https://api.cartridge.gg/x/starknet/sepolia
 #
 # PROJECT NAMING:
 #   - If --project is not specified for Katana:
@@ -155,7 +155,7 @@ if [ "$COMMAND" = "torii" ]; then
         RPC_URL="https://api.cartridge.gg/x/eternum/mainnet"
     fi
     if [ "$SN_NETWORK" = "sepolia" ]; then
-        RPC_URL="https://starknet-sepolia.public.blastapi.io/rpc/v0_7"
+        RPC_URL="https://api.cartridge.gg/x/starknet/sepolia"
     fi
     echo -e "\n\n${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║                                                                ║${NC}"
@@ -249,7 +249,7 @@ EXAMPLES:
 SEQUENCER CONFIGURATIONS:
     slot:    https://api.cartridge.gg/x/<project-name>/katana
     mainnet: https://api.cartridge.gg/x/eternum/mainnet
-    sepolia: https://starknet-sepolia.public.blastapi.io/rpc/v0_7
+    sepolia: https://api.cartridge.gg/x/starknet/sepolia
 EOF
     exit 0
 }
