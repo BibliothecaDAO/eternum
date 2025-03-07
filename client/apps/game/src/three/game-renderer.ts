@@ -60,33 +60,57 @@ export default class GameRenderer {
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
-    this.initializeRenderer();
     this.dojo = dojoContext;
 
-    // Ensure we keep the raycaster and mouse
+    this.initializeRenderer();
+    this.initializeCamera();
+    this.initializeRaycaster();
+    this.setupGUIControls();
+
+    this.waitForLabelRendererElement().then((labelRendererElement) => {
+      this.labelRendererElement = labelRendererElement;
+      this.initializeLabelRenderer();
+    });
+  }
+
+  private initializeRaycaster() {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+  }
 
+  private initializeCamera() {
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, cameraDepth);
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
+  }
 
+  private setupGUIControls() {
+    this.setupSceneSwitchingGUI();
+    this.setupCameraMovementGUI();
+    this.setupRendererGUI();
+  }
+
+  private setupSceneSwitchingGUI() {
     const changeSceneFolder = GUIManager.addFolder("Switch scene");
     const changeSceneParams = { scene: SceneName.WorldMap };
     changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
-    // Add new button for moving camera to specific col and row
+  }
+
+  private setupCameraMovementGUI() {
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
+
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
     moveCameraFolder.add(moveCameraParams, "row").name("Row");
     moveCameraFolder.add(moveCameraParams, "x").name("X");
     moveCameraFolder.add(moveCameraParams, "y").name("Y");
     moveCameraFolder.add(moveCameraParams, "z").name("Z");
+
     moveCameraFolder
       .add(
         {
@@ -95,14 +119,18 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+
     moveCameraFolder.add(
       {
         move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
       },
       "move",
     );
-    moveCameraFolder.close();
 
+    moveCameraFolder.close();
+  }
+
+  private setupRendererGUI() {
     const rendererFolder = GUIManager.addFolder("Renderer");
     rendererFolder
       .add(this.renderer, "toneMapping", {
@@ -115,11 +143,6 @@ export default class GameRenderer {
       .name("Tone Mapping");
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
     rendererFolder.close();
-
-    this.waitForLabelRendererElement().then((labelRendererElement) => {
-      this.labelRendererElement = labelRendererElement;
-      this.initializeLabelRenderer();
-    });
   }
 
   private initializeLabelRenderer() {
@@ -306,7 +329,7 @@ export default class GameRenderer {
   private createEffectsConfiguration() {
     return {
       brightness: -0.05,
-      contrast: 0,
+      contrast: 0.1,
       hue: 0,
       saturation: 0.2,
       toneMapping: {
