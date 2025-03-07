@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@cartridge/connector':
-        specifier: ^0.6.x
-        version: 0.6.0(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))
+        specifier: ^0.7.x
+        version: 0.7.4(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))
       '@cartridge/controller':
-        specifier: ^0.6.x
-        version: 0.6.0(starknet@6.23.1(encoding@0.1.13))
+        specifier: ^0.7.x
+        version: 0.7.4(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))
       '@dojoengine/create-burner':
         specifier: 1.2.4
         version: 1.2.4(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
@@ -1182,17 +1182,18 @@ packages:
   '@brillout/libassert@0.5.8':
     resolution: {integrity: sha512-u/fu+jTRUdNdbLONGq1plCfh+k2/XjSbGVTfnF3rHnSPZd+ABWp0XinR5ifrFkyGOzMbzv8IiQ44lZ4U6ZGrGA==}
 
-  '@cartridge/account-wasm@0.6.0':
-    resolution: {integrity: sha512-ruI1L+GVDRsS8jJ6GNpcODFd1JaQV2j6BAHYJqx1iO0LGaC9/gCIHM+mDk/IKgHTjX/57+epkfcCBOhL8Eit1Q==}
+  '@cartridge/account-wasm@0.7.4':
+    resolution: {integrity: sha512-2zuxamHerYI6UnzmfshMhfYlLvjdAxWxZSPBcMfch/M+p8FP1DGJs+Ybkhk52tp8RD3vevVJxMjGD2DtVwGIlg==}
 
-  '@cartridge/connector@0.6.0':
-    resolution: {integrity: sha512-WwaJCSNevXRwzc/BWg5MB3Y5qhVbv3l5n8+Ph7yPAGsOIVM6cN/Wm7nJyhGuDH0J0V2h/2qVkRetV82p0L3LEw==}
+  '@cartridge/connector@0.7.4':
+    resolution: {integrity: sha512-v3TnI+nMt20/gXruAKn8uKgdylR2in7mvPmZB594ygy7q9WmeJOoxZAEqfjW5y/bvUAMZHG+qjVvOCehRrK5tQ==}
     peerDependencies:
       '@starknet-react/core': ^3.7
 
-  '@cartridge/controller@0.6.0':
-    resolution: {integrity: sha512-s8yUzVCgLmkdjFFzq0xRe5PO5AGtp+znUoZQ9KtGDA98EdzVf9mmzKBngzQAbEljBXV6+w+qdZ5eE6sM2ulngw==}
+  '@cartridge/controller@0.7.4':
+    resolution: {integrity: sha512-GxfiwcFyqAyj/dxcmPCMXbi/FFK8pIR9zcGqiFHRy5AtFu50qOTZqwyyIZea8QbSjGwDmHg9X5kyw4dmqS01kg==}
     peerDependencies:
+      open: ^10.1.0
       starknet: ^6.21.0
 
   '@cartridge/penpal@6.2.4':
@@ -5009,10 +5010,6 @@ packages:
   decode-named-character-reference@1.0.2:
     resolution: {integrity: sha512-O8x12RzrUF8xyVcY0KJowWsmaJxQbmy0/EtnNtHRpsOcT7dFk5W598coHqBVpmWo1oQQfsCqfCmkZN5DJrZVdg==}
 
-  decode-uri-component@0.2.2:
-    resolution: {integrity: sha512-FqUYQ+8o158GyGTrMFJms9qh3CqTKvAqgqsTnkLI8sKu0028orqBhxNMFkFen0zGyg6epACD32pjVk58ngIErQ==}
-    engines: {node: '>=0.10'}
-
   dedent@1.5.3:
     resolution: {integrity: sha512-NHQtfOOW68WD8lgypbLA5oT+Bt0xXJhiYvoR6SmmNXZfpzOGXwdKWmcwG8N7PwVVWV3eF/68nmD9BaJSsTBhyQ==}
     peerDependencies:
@@ -5578,10 +5575,6 @@ packages:
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
-
-  filter-obj@1.1.0:
-    resolution: {integrity: sha512-8rXg1ZnX7xzy2NGDVkBVaAy+lSlPNwad13BtgSlLuxfIslyt5Vg64U7tFcCt4WS1R0hvtnQybT/IyCkGZ3DpXQ==}
-    engines: {node: '>=0.10.0'}
 
   find-up@4.1.0:
     resolution: {integrity: sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==}
@@ -7388,10 +7381,6 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  query-string@7.1.3:
-    resolution: {integrity: sha512-hh2WYhq4fi8+b+/2Kg9CEge4fDPvHS534aOOvOZeQ3+Vf2mCFsaFBYj0i+iXcAq6I9Vzp5fjMFBlONvayDC1qg==}
-    engines: {node: '>=6'}
-
   querystringify@2.2.0:
     resolution: {integrity: sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==}
 
@@ -7940,10 +7929,6 @@ packages:
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
-  split-on-first@1.1.0:
-    resolution: {integrity: sha512-43ZssAJaMusuKWL8sKUBQXHWOpq8d6CfN/u1p4gUzfJkM05C8rxTmYrkIPTXapZpORA6LkkzcUulJ8FqA7Uudw==}
-    engines: {node: '>=6'}
-
   split-string@3.1.0:
     resolution: {integrity: sha512-NzNVhJDYpwceVVii8/Hu6DKfD2G+NrQHlS/V/qgv763EYudVwEcMQNxd2lh+0VrUByXN/oJkl5grOhYWvQUYiw==}
     engines: {node: '>=0.10.0'}
@@ -7980,10 +7965,6 @@ packages:
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
     engines: {node: '>=10.0.0'}
-
-  strict-uri-encode@2.0.0:
-    resolution: {integrity: sha512-QwiXZgpRcKkhTj2Scnn++4PKtWsH0kpzZ62L2R6c/LUVYv7hVnZqcg2+sMuT6R7Jusu1vviK/MFsu6kNJfWlEQ==}
-    engines: {node: '>=4'}
 
   string-env-interpolation@1.0.1:
     resolution: {integrity: sha512-78lwMoCcn0nNu8LszbP1UA7g55OeE4v7rCeWnM5B453rnNr4aq+5it3FEYtZrSEiMvHZOZ9Jlqb0OD0M2VInqg==}
@@ -9887,25 +9868,26 @@ snapshots:
 
   '@brillout/libassert@0.5.8': {}
 
-  '@cartridge/account-wasm@0.6.0': {}
+  '@cartridge/account-wasm@0.7.4': {}
 
-  '@cartridge/connector@0.6.0(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(starknet@6.23.1(encoding@0.1.13))':
+  '@cartridge/connector@0.7.4(@starknet-react/core@3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2))(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))':
     dependencies:
-      '@cartridge/controller': 0.6.0(starknet@6.23.1(encoding@0.1.13))
+      '@cartridge/controller': 0.7.4(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))
       '@starknet-react/core': 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
     transitivePeerDependencies:
+      - open
       - starknet
 
-  '@cartridge/controller@0.6.0(starknet@6.23.1(encoding@0.1.13))':
+  '@cartridge/controller@0.7.4(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))':
     dependencies:
-      '@cartridge/account-wasm': 0.6.0
+      '@cartridge/account-wasm': 0.7.4
       '@cartridge/penpal': 6.2.4
       '@starknet-io/types-js': 0.7.10
       '@telegram-apps/sdk': 2.11.3
       base64url: 3.0.1
       cbor-x: 1.6.0
       fast-deep-equal: 3.1.3
-      query-string: 7.1.3
+      open: 8.4.2
       starknet: 6.23.1(encoding@0.1.13)
 
   '@cartridge/penpal@6.2.4': {}
@@ -14236,8 +14218,6 @@ snapshots:
     dependencies:
       character-entities: 2.0.2
 
-  decode-uri-component@0.2.2: {}
-
   dedent@1.5.3: {}
 
   deep-eql@4.1.4:
@@ -14957,8 +14937,6 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
-
-  filter-obj@1.1.0: {}
 
   find-up@4.1.0:
     dependencies:
@@ -17044,13 +17022,6 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  query-string@7.1.3:
-    dependencies:
-      decode-uri-component: 0.2.2
-      filter-obj: 1.1.0
-      split-on-first: 1.1.0
-      strict-uri-encode: 2.0.0
-
   querystringify@2.2.0: {}
 
   queue-microtask@1.2.3: {}
@@ -17756,8 +17727,6 @@ snapshots:
 
   space-separated-tokens@2.0.2: {}
 
-  split-on-first@1.1.0: {}
-
   split-string@3.1.0:
     dependencies:
       extend-shallow: 3.0.2
@@ -17803,8 +17772,6 @@ snapshots:
       - utf-8-validate
 
   streamsearch@1.1.0: {}
-
-  strict-uri-encode@2.0.0: {}
 
   string-env-interpolation@1.0.1: {}
 
