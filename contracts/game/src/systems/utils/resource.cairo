@@ -131,7 +131,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                     let mut to_resource = SingleResourceStoreImpl::retrieve(
                         ref world, to_id, resource_type, ref to_weight, resource_weight_grams, true,
                     );
-                    to_resource.spend(resource_amount, ref to_weight, resource_weight_grams);
+                    to_resource.add(resource_amount, ref to_weight, resource_weight_grams);
                     to_resource.store(ref world);
                 },
                 Option::None => { break; },
