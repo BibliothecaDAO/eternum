@@ -7,10 +7,8 @@ import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
-  DONKEY_ENTITY_TYPE,
   RESOURCE_PRECISION,
   ResourcesIds,
-  configManager,
   divideByPrecision,
   multiplyByPrecision,
   resources,
@@ -34,25 +32,26 @@ export const BridgeOutStep1 = () => {
   const { address } = useAccount();
   const [realmEntityId, setRealmEntityId] = useState<string>("");
 
-  const { computeTravelTime } = useTravel(
-    Number(ADMIN_BANK_ENTITY_ID),
-    Number(realmEntityId!),
-    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
-    true,
-  );
   const [isFeesOpen, setIsFeesOpen] = useState(false);
   const { data } = useQuery({
     queryKey: ["capacitySpeedConfig"],
-    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG),
     refetchInterval: 10_000,
   });
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
-      speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+      capacity: Number(data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.capacity_config?.donkey_capacity ?? 0),
+      speed: Number(data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.speed_config?.donkey_sec_per_km ?? 0),
     }),
     [data],
+  );
+
+  const { computeTravelTime } = useTravel(
+    Number(ADMIN_BANK_ENTITY_ID),
+    Number(realmEntityId!),
+    donkeyConfig.speed,
+    true,
   );
 
   const [isLoading, setIsLoading] = useState(false);
@@ -272,7 +271,8 @@ export const BridgeOutStep1 = () => {
               </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              {donkeysNeeded} / {divideByPrecision(donkeyBalance)} <ResourceIcon resource={"Donkey"} size="md" />
+              {donkeysNeeded} / {divideByPrecision(Number(donkeyBalance))}{" "}
+              <ResourceIcon resource={"Donkey"} size="md" />
             </div>
           </div>
           <BridgeFees

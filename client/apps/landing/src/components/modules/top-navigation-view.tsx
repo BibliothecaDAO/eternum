@@ -9,7 +9,6 @@ import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
-import { SeasonRegistrationTimer } from "./season-registration-timer";
 import { SeasonStartTimer } from "./season-start-timer";
 
 interface TopNavigationViewProps {
@@ -62,7 +61,7 @@ export const TopNavigationView = ({
         </Button>
       </div>
       <SeasonStartTimer />
-      <SeasonRegistrationTimer />
+      {/* <SeasonRegistrationTimer /> */}
       <div className="flex gap-2 justify-between">
         {!isConnected ? (
           <>

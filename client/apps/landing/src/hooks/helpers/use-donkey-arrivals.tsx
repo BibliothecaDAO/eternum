@@ -1,4 +1,4 @@
-import { ADMIN_BANK_ENTITY_ID, ID } from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, ID, Resource } from "@bibliothecadao/eternum";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -20,17 +20,6 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
     queryFn: () => execute(GET_ENTITY_DISTANCE, { entityIds: [Number(ADMIN_BANK_ENTITY_ID)] }),
   });
 
-  // const {
-  //   data: donkeyEntities,
-  //   isLoading: isLoadingDonkeyEntityIds,
-  //   error: errorDonkeyEntityIds,
-  // } = useQuery({
-  //   queryKey: ["donkeyEntityIds", realmEntityIds],
-  //   queryFn: () => execute(GET_ETERNUM_ENTITY_OWNERS, { entityOwnerIds: realmEntityIds }),
-  //   enabled: realmEntityIds.length > 0,
-  //   refetchInterval: 10_000,
-  // });
-
   const batchedRealmIds = useMemo(() => {
     const batches = [];
     for (let i = 0; i < realmEntityIds.length; i += BATCH_SIZE) {
@@ -50,10 +39,10 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const donkeyEntities = useMemo(
     () => ({
-      s1EternumEntityOwnerModels: {
+      s1EternumResourceArrivalModels: {
         edges: donkeyQueriesResults
           .filter((result) => result.data)
-          .flatMap((result) => result.data?.s1EternumEntityOwnerModels?.edges || []),
+          .flatMap((result) => result.data?.s1EternumResourceArrivalModels?.edges || []),
       },
     }),
     [donkeyQueriesResults],
@@ -64,30 +53,38 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const bankPosition = useMemo(
     () =>
-      entityPositions?.s1EternumPositionModels?.edges?.find((entity) => entity?.node?.entity_id == ADMIN_BANK_ENTITY_ID)
-        ?.node,
+      entityPositions?.s1EternumStructureModels?.edges?.find(
+        (entity) => entity?.node?.entity_id == ADMIN_BANK_ENTITY_ID,
+      )?.node,
     [entityPositions],
   );
 
-  const donkeysAtBank = useMemo(() => {
-    if (!donkeyEntities?.s1EternumEntityOwnerModels?.edges || !bankPosition) return [];
+  // const donkeysAtBank = useMemo(() => {
+  //   if (!donkeyEntities?.s1EternumResourceArrivalModels?.edges || !bankPosition) return [];
 
-    return donkeyEntities.s1EternumEntityOwnerModels.edges.filter((edge) => {
-      const position = edge?.node?.entity?.models?.find((model) => model?.__typename === "s1_eternum_Position");
-      const resource = edge?.node?.entity?.models?.find(
-        (model) => model?.__typename === "s1_eternum_OwnedResourcesTracker",
-      );
+  //   return donkeyEntities.s1EternumResourceArrivalModels.edges.filter((edge) => {
+  //     const position = edge?.node?.structure_id?.models?.find((model) => model?.__typename === "s1_eternum_Position");
+  //     const resource = edge?.node?.entity?.models?.find(
+  //       (model) => model?.__typename === "s1_eternum_OwnedResourcesTracker",
+  //     );
 
-      return Boolean(
-        position?.x === bankPosition?.x && position?.y === bankPosition?.y && resource?.resource_types !== "0x0",
-      );
-    });
-  }, [donkeyEntities, bankPosition]);
+  //     return Boolean(
+  //       position?.x === bankPosition?.x && position?.y === bankPosition?.y && resource?.resource_types !== "0x0",
+  //     );
+  //   });
+  // }, [donkeyEntities, bankPosition]);
 
-  const donkeyEntityIds = useMemo(
-    () => donkeysAtBank?.map((edge) => edge?.node?.entity_id).filter((id): id is number => id != null) ?? [],
-    [donkeysAtBank],
-  );
+  // const donkeyEntityIds = useMemo(
+  //   () => donkeysAtBank?.map((edge) => edge?.node?.entity_id).filter((id): id is number => id != null) ?? [],
+  //   [donkeysAtBank],
+  // );
+
+  const donkeysAtBank: NonNullable<
+    NonNullable<NonNullable<GetEternumEntityOwnerQuery["s1EternumResourceArrivalModels"]>["edges"]>[number]
+  >[] = [];
+
+  // todo: fix
+  const donkeyEntityIds: ID[] = [1, 2, 3];
 
   const { data: donkeyResources } = useQuery({
     queryKey: ["donkeyResources" + donkeyEntityIds],
@@ -97,32 +94,31 @@ export function useDonkeyArrivals(realmEntityIds: ID[]) {
 
   const getDonkeyInfo = (
     donkeyEntity: NonNullable<
-      NonNullable<NonNullable<GetEternumEntityOwnerQuery["s1EternumEntityOwnerModels"]>["edges"]>[number]
+      NonNullable<NonNullable<GetEternumEntityOwnerQuery["s1EternumResourceArrivalModels"]>["edges"]>[number]
     >,
-  ) => {
-    const donkeyEntityId = donkeyEntity?.node?.entity_id;
-    const donkeyArrivalTime = donkeyEntity?.node?.entity?.models?.find(
-      (model) => model?.__typename === "s1_eternum_ArrivalTime",
-    )?.arrives_at;
+  ): { donkeyEntityId: ID; donkeyArrivalTime: bigint; donkeyResourceBalances: Resource[] } => {
+    // const donkeyArrivalTime = donkeyEntity?.node?.entity?.models?.find(
+    //   (model) => model?.__typename === "s1_eternum_ArrivalTime",
+    // )?.arrives_at;
 
-    const donkeyResourceBalances =
-      donkeyResources?.s1EternumResourceModels?.edges
-        ?.filter((edge) => edge?.node?.entity_id === donkeyEntityId)
-        ?.map((edge) => edge?.node)
-        ?.map((node) => ({
-          resourceId: node?.resource_type,
-          amount: node?.balance,
-        }))
-        .filter((r) => Number(r.amount) > 0) ?? [];
+    // const donkeyResourceBalances =
+    //   donkeyResources?.s1EternumResourceModels?.edges
+    //     ?.filter((edge) => edge?.node?.entity_id === donkeyEntityId)
+    //     ?.map((edge) => edge?.node)
+    //     ?.map((node) => ({
+    //       resourceId: node?.resource_type,
+    //       amount: node?.balance,
+    //     }))
+    //     .filter((r) => Number(r.amount) > 0) ?? [];
 
-    return { donkeyEntityId, donkeyArrivalTime, donkeyResourceBalances };
+    return { donkeyEntityId: 0, donkeyArrivalTime: 0n, donkeyResourceBalances: [] };
   };
 
   const donkeyInfos = useMemo(() => {
     return donkeysAtBank
       ?.map((donkey) => donkey && getDonkeyInfo(donkey))
       .filter((info) => info?.donkeyResourceBalances.some((balance) => Number(balance.amount) > 0));
-  }, [donkeysAtBank, donkeyResources]);
+  }, [donkeyEntityIds, donkeyResources]);
 
   return {
     donkeyArrivals: donkeysAtBank,
