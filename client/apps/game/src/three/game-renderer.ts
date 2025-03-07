@@ -230,7 +230,7 @@ export default class GameRenderer {
     // Create HUD scene
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
-    this.renderModels();
+    this.prepareScenes();
     // Init animation
     this.animate();
   }
@@ -253,151 +253,187 @@ export default class GameRenderer {
     }
   };
 
-  async renderModels() {
+  async prepareScenes() {
+    this.initializeSceneManagement();
+    this.initializeScenes();
+    this.applyEnvironment();
+    this.setupPostProcessingEffects();
+    this.sceneManager.moveCameraForScene();
+  }
+
+  private initializeSceneManagement() {
     this.transitionManager = new TransitionManager(this.renderer);
-
     this.sceneManager = new SceneManager(this.transitionManager);
+  }
 
+  private initializeScenes() {
+    // Initialize Hexception scene
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
     this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
 
-    // Add grid
+    // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
-    this.applyEnvironment();
 
+    // Set up render pass
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
+  }
 
-    const obj = { brightness: -0.05, contrast: 0, hue: 0, saturation: 0.2 };
-    const folder = GUIManager.addFolder("BrightnesContrastt");
+  private setupPostProcessingEffects() {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+      return; // Skip post-processing for low graphics settings
+    }
 
-    if (GRAPHICS_SETTING !== GraphicsSettings.LOW) {
-      const BCEffect = new BrightnessContrastEffect({
-        brightness: obj.brightness,
-        contrast: obj.contrast,
-      });
+    // Create effects configuration object
+    const effectsConfig = this.createEffectsConfiguration();
 
-      folder
-        .add(obj, "brightness")
-        .name("Brightness")
-        .min(-1)
-        .max(1)
-        .step(0.01)
-        .onChange((value: number) => {
-          BCEffect.brightness = value;
-        });
-      folder
-        .add(obj, "contrast")
-        .name("Contrast")
-        .min(-1)
-        .max(1)
-        .step(0.01)
-        .onChange((value: number) => {
-          BCEffect.contrast = value;
-        });
+    // Create and configure all effects
+    const effects = [
+      this.createToneMappingEffect(effectsConfig),
+      new FXAAEffect(),
+      this.createBloomEffect(),
+      this.createHueSaturationEffect(effectsConfig),
+      this.createBrightnessContrastEffect(effectsConfig),
+      this.createVignetteEffect(effectsConfig),
+    ];
 
-      // Create Hue/Saturation effect
-      const HSEffect = new HueSaturationEffect({
-        hue: obj.hue,
-        saturation: obj.saturation,
-      });
+    // Add all effects in a single pass
+    this.composer.addPass(new EffectPass(this.camera, ...effects));
+  }
 
-      // Add Hue/Saturation controls
-      const hsFolder = GUIManager.addFolder("Hue & Saturation");
-      hsFolder
-        .add(obj, "hue")
-        .name("Hue")
-        .min(-Math.PI)
-        .max(Math.PI)
-        .step(0.01)
-        .onChange((value: number) => {
-          HSEffect.hue = value;
-        });
-      hsFolder
-        .add(obj, "saturation")
-        .name("Saturation")
-        .min(-1)
-        .max(1)
-        .step(0.01)
-        .onChange((value: number) => {
-          HSEffect.saturation = value;
-        });
-
-      const toneMappingEffect = new ToneMappingEffect({
-        mode: ToneMappingMode.LINEAR,
-      });
-
-      // Add ToneMapping controls
-      const toneMappingFolder = GUIManager.addFolder("Tone Mapping");
-      const toneMappingParams = {
+  private createEffectsConfiguration() {
+    return {
+      brightness: -0.05,
+      contrast: 0,
+      hue: 0,
+      saturation: 0.2,
+      toneMapping: {
         mode: ToneMappingMode.LINEAR,
         exposure: 1.0,
         whitePoint: 1.0,
-      };
-
-      toneMappingFolder
-        .add(toneMappingParams, "mode", {
-          ...ToneMappingMode,
-        })
-        .onChange((value: ToneMappingMode) => {
-          toneMappingEffect.mode = value;
-        });
-
-      toneMappingFolder.add(toneMappingParams, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
-        // @ts-ignore
-        toneMappingEffect.exposure = value;
-      });
-
-      toneMappingFolder.add(toneMappingParams, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
-        // @ts-ignore
-        toneMappingEffect.whitePoint = value;
-      });
-
-      toneMappingFolder.close();
-
-      // Create Vignette effect
-      const vignetteEffect = new VignetteEffect({
-        darkness: 0.5,
-        offset: 0.5,
-      });
-
-      // Add Vignette controls
-      const vignetteFolder = GUIManager.addFolder("Vignette");
-      const vignetteParams = {
+      },
+      vignette: {
         darkness: 0.7,
         offset: 0.25,
-      };
+      },
+    };
+  }
 
-      vignetteFolder.add(vignetteParams, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
-        vignetteEffect.darkness = value;
+  private createBrightnessContrastEffect(config: any) {
+    const effect = new BrightnessContrastEffect({
+      brightness: config.brightness,
+      contrast: config.contrast,
+    });
+
+    const folder = GUIManager.addFolder("BrightnesContrastt");
+    folder
+      .add(config, "brightness")
+      .name("Brightness")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.brightness = value;
+      });
+    folder
+      .add(config, "contrast")
+      .name("Contrast")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.contrast = value;
       });
 
-      vignetteFolder.add(vignetteParams, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
-        vignetteEffect.offset = value;
+    return effect;
+  }
+
+  private createHueSaturationEffect(config: any) {
+    const effect = new HueSaturationEffect({
+      hue: config.hue,
+      saturation: config.saturation,
+    });
+
+    const folder = GUIManager.addFolder("Hue & Saturation");
+    folder
+      .add(config, "hue")
+      .name("Hue")
+      .min(-Math.PI)
+      .max(Math.PI)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.hue = value;
+      });
+    folder
+      .add(config, "saturation")
+      .name("Saturation")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.saturation = value;
       });
 
-      vignetteFolder.close();
+    return effect;
+  }
 
-      this.composer.addPass(
-        new EffectPass(
-          this.camera,
-          toneMappingEffect,
-          new FXAAEffect(),
-          new BloomEffect({
-            luminanceThreshold: 1.1,
-            mipmapBlur: true,
-            intensity: 0.25,
-          }),
-          HSEffect,
-          BCEffect,
-          vignetteEffect,
-        ),
-      );
-    }
+  private createToneMappingEffect(config: any) {
+    const effect = new ToneMappingEffect({
+      mode: config.toneMapping.mode,
+    });
 
-    this.sceneManager.moveCameraForScene();
+    const folder = GUIManager.addFolder("Tone Mapping");
+    folder
+      .add(config.toneMapping, "mode", {
+        ...ToneMappingMode,
+      })
+      .onChange((value: ToneMappingMode) => {
+        effect.mode = value;
+      });
+
+    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
+      // @ts-ignore
+      effect.exposure = value;
+    });
+
+    folder.add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
+      // @ts-ignore
+      effect.whitePoint = value;
+    });
+
+    folder.close();
+
+    return effect;
+  }
+
+  private createVignetteEffect(config: any) {
+    const effect = new VignetteEffect({
+      darkness: config.vignette.darkness,
+      offset: config.vignette.offset,
+    });
+
+    const folder = GUIManager.addFolder("Vignette");
+    folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
+      effect.darkness = value;
+    });
+
+    folder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
+      effect.offset = value;
+    });
+
+    folder.close();
+
+    return effect;
+  }
+
+  private createBloomEffect() {
+    return new BloomEffect({
+      luminanceThreshold: 1.1,
+      mipmapBlur: true,
+      intensity: 0.25,
+    });
   }
 
   applyEnvironment() {
