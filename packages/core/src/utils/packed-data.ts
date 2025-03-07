@@ -43,3 +43,64 @@ export function packValues(numbers: number[]) {
 
   return packedValue.toString();
 }
+
+export function unpackBuildingCounts(packedValues: bigint[]): number[] {
+  const unpackedValues: number[] = [];
+  
+  // Each packed value stores up to 16 categories (128 bits / 8 bits per category)
+  // We have 3 packed values that can store up to 48 categories
+  for (let packedIndex = 0; packedIndex < packedValues.length; packedIndex++) {
+    const packedValue = packedValues[packedIndex];
+    
+    // Process each category in the current packed value
+    // Each category takes 8 bits
+    for (let categoryOffset = 0; categoryOffset < 16; categoryOffset++) {
+      const shiftAmount = BigInt(categoryOffset * 8);
+      const mask = BigInt(0xFF); // 8 bits set to 1
+      
+      // Extract the count for this category
+      const count =(BigInt(packedValue) >> shiftAmount) & BigInt(mask);
+      
+      // Add to our results array
+      unpackedValues.push(Number(count));
+    }
+  }
+  
+  return unpackedValues;
+}
+
+
+
+export function packBuildingCounts(buildingCounts: number[]) {
+  const packedValues = [];
+  const CATEGORIES_PER_PACKED = 16; // Each packed value can store 16 categories (128 bits / 8 bits per category)
+  
+  // Calculate how many packed values we need
+  const packedCount = Math.ceil(buildingCounts.length / CATEGORIES_PER_PACKED);
+  
+  // Process each packed value
+  for (let packedIndex = 0; packedIndex < packedCount; packedIndex++) {
+    let packedValue = BigInt(0);
+    
+    // Process each category for this packed value
+    for (let categoryOffset = 0; categoryOffset < CATEGORIES_PER_PACKED; categoryOffset++) {
+      const buildingIndex = packedIndex * CATEGORIES_PER_PACKED + categoryOffset;
+      
+      // If we've run out of building counts, use 0
+      const count = buildingIndex < buildingCounts.length ? buildingCounts[buildingIndex] : 0;
+      
+      // Validate the count is within range
+      if (count < 0 || count > 255) {
+        throw new Error(`Building count at index ${buildingIndex} is out of range (0-255): ${count}`);
+      }
+      
+      // Shift the count to its position and OR it into the packed value
+      const shiftAmount = BigInt(categoryOffset * 8);
+      packedValue = packedValue | (BigInt(count) << shiftAmount);
+    }
+    
+    packedValues.push(packedValue);
+  }
+  
+  return packedValues;
+}

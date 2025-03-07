@@ -18,6 +18,8 @@ import {
   TileManager,
   configManager,
   getEntityInfo,
+  getProducedResource,
+  isResourceProductionBuilding,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -74,8 +76,8 @@ export const BuildingEntityDetails = () => {
   useEffect(() => {
     if (building) {
       setBuildingState({
-        buildingType: BuildingType[building.category as keyof typeof BuildingType],
-        resource: building.produced_resource_type as ResourcesIds,
+        buildingType: building.category,
+        resource: getProducedResource(building.category),
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
@@ -121,7 +123,7 @@ export const BuildingEntityDetails = () => {
       selectedBuildingHex.innerRow,
     );
     if (
-      buildingState.buildingType === BuildingType.Resource &&
+      isResourceProductionBuilding(buildingState.buildingType!) &&
       (ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Forge ||
         ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Mine)
     ) {
@@ -159,7 +161,7 @@ export const BuildingEntityDetails = () => {
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
-            {buildingState.buildingType === BuildingType.Resource && buildingState.resource && (
+            {isResourceProductionBuilding(buildingState.buildingType!) && buildingState.resource && (
               <ResourceInfo
                 isPaused={isPaused}
                 resourceId={buildingState.resource}
@@ -167,7 +169,7 @@ export const BuildingEntityDetails = () => {
                 hintModal
               />
             )}
-            {buildingState.buildingType && buildingState.buildingType !== BuildingType.Resource && (
+            {buildingState.buildingType && !isResourceProductionBuilding(buildingState.buildingType!) && (
               <BuildingInfo
                 isPaused={isPaused}
                 buildingId={buildingState.buildingType}

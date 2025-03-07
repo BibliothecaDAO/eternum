@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, CapacityConfig, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID, Resource } from "../types";
-import { gramToKg, multiplyByPrecision, unpackValue } from "../utils";
+import { gramToKg, multiplyByPrecision, unpackBuildingCounts } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -127,11 +127,15 @@ export class ResourceManager {
   }
 
   public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, change: bigint) => {
+    console.log("i am here 0")
+
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]);
     const currentBalance = this.balance(resourceId);
     const weight = configManager.getResourceWeightKg(resourceId);
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
     const amountWithPrecision = BigInt(multiplyByPrecision(Number(change)));
+
+    console.log("i am here 1")
 
     switch (resourceId) {
       case ResourcesIds.Stone:
@@ -625,13 +629,17 @@ export class ResourceManager {
   public getStoreCapacity(): number {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
     if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
-
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
-    const packedBuildingCount =
-      getComponentValue(this.components.StructureBuildings, getEntityIdFromKeys([BigInt(this.entityId || 0)]))
-        ?.packed_counts || 0n;
+    const structureBuildings = getComponentValue(
+      this.components.StructureBuildings, 
+      getEntityIdFromKeys([BigInt(this.entityId || 0)])
+    );
+    
+    if (!structureBuildings) return multiplyByPrecision(storehouseCapacityKg); // Base capacity
+    
+    const buildingCounts = unpackBuildingCounts([structureBuildings?.packed_counts_1 ?? 0n, structureBuildings?.packed_counts_2 ?? 0n, structureBuildings?.packed_counts_3 ?? 0n]);
 
-    const quantity = unpackValue(packedBuildingCount)[BuildingType.Storehouse] || 0;
+    const quantity = buildingCounts[BuildingType.Storehouse] || 0;
 
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }

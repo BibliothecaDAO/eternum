@@ -11,10 +11,9 @@ import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
   BUILDING_CAPACITY,
+  BUILDING_COSTS,
   BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  OTHER_BUILDING_COSTS,
-  RESOURCE_BUILDING_COSTS,
+  BUILDING_RESOURCE_PRODUCED
 } from "./utils/building";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
@@ -289,8 +288,7 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    otherBuildingCosts: OTHER_BUILDING_COSTS,
-    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
+    buildingCosts: BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {

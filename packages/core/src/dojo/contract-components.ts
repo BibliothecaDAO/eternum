@@ -28,8 +28,7 @@ export function defineContractComponents(world: World) {
           outer_row: RecsType.Number,
           inner_col: RecsType.Number,
           inner_row: RecsType.Number,
-          category: RecsType.String,
-          produced_resource_type: RecsType.Number,
+          category: RecsType.Number,
           bonus_percent: RecsType.Number,
           entity_id: RecsType.Number,
           outer_entity_id: RecsType.Number,
@@ -39,46 +38,28 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Building",
-            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
-            customTypes: ["BuildingCategory"],
+            types: ["u32", "u32", "u32", "u32", "u8", "u32", "u32", "u32", "bool"],
+            customTypes: [],
           },
         },
       );
     })(),
-    BuildingCategoryPopConfig: (() => {
+    BuildingCategoryConfig: (() => {
       return defineComponent(
         world,
         {
-          building_category: RecsType.String,
-          population: RecsType.Number,
-          capacity: RecsType.Number,
+          category: RecsType.Number,
+          erection_cost_id: RecsType.Number,
+          erection_cost_count: RecsType.Number,
+          population_cost: RecsType.Number, 
+          capacity_grant: RecsType.Number
         },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "BuildingCategoryPopConfig",
-            types: ["enum", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
-    BuildingConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          category: RecsType.String,
-          resource_type: RecsType.Number,
-          resource_cost_id: RecsType.Number,
-          resource_cost_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingConfig",
-            types: ["u32", "enum", "u8", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
+            name: "BuildingCategoryConfig",
+            types: ["u8", "u32", "u32", "u32", "u32"],
+            customTypes: [],
           },
         },
       );
@@ -387,7 +368,9 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          packed_counts: RecsType.BigInt,
+          packed_counts_1: RecsType.BigInt,
+          packed_counts_2: RecsType.BigInt,
+          packed_counts_3: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -397,7 +380,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u32", "u32"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
             customTypes: ["Population"],
           },
         },
@@ -1135,9 +1118,6 @@ export function defineContractComponents(world: World) {
             owner_fee_num: RecsType.Number,
             owner_fee_denom: RecsType.Number,
           },
-          population_config: {
-            base_population: RecsType.Number,
-          },
           resource_bridge_config: {
             deposit_paused: RecsType.Boolean,
             withdraw_paused: RecsType.Boolean,
@@ -1158,7 +1138,8 @@ export function defineContractComponents(world: World) {
             realm_max: RecsType.Number,
             village_max: RecsType.Number,
           },
-          building_general_config: {
+          building_config: {
+            base_population: RecsType.Number,
             base_cost_percent_increase: RecsType.Number,
           },
           troop_damage_config: {
@@ -1248,7 +1229,6 @@ export function defineContractComponents(world: World) {
               "u32", // BankConfig lp_fee_denom
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
-              "u32", // PopulationConfig base_population
               "bool", // ResourceBridgeConfig deposit_paused
               "bool", // ResourceBridgeConfig withdraw_paused
               "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent
@@ -1263,7 +1243,8 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // StructureMaxLevelConfig realm_max
               "u8", // StructureMaxLevelConfig village_max
-              "u16", // BuildingGeneralConfig base_cost_percent_increase
+              "u32", // BuildingConfig base_population
+              "u16", // BuildingConfig base_cost_percent_increase
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small
               "u64", // TroopDamageConfig damage_beta_large

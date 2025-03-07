@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isMilitaryBuilding } from "@/three/scenes/constants";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { ArmyChip } from "@/ui/components/military/army-chip";
 import { ArmyCreate } from "@/ui/components/military/army-management-card";
@@ -8,12 +9,11 @@ import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import {
   ArmyManager,
-  BuildingType,
   ClientComponents,
   configManager,
   getEntityName,
   StructureType,
-  TileManager,
+  TileManager
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
@@ -64,15 +64,7 @@ export const EntityArmyList = ({
       structure.base.troop_max_explorer_count +
       existingBuildings.filter(
         (building) =>
-          building.category === BuildingType[BuildingType.ArcheryRange1] ||
-          building.category === BuildingType[BuildingType.Barracks1] ||
-          building.category === BuildingType[BuildingType.Stable1] ||
-          building.category === BuildingType[BuildingType.ArcheryRange2] ||
-          building.category === BuildingType[BuildingType.Barracks2] ||
-          building.category === BuildingType[BuildingType.Stable2] ||
-          building.category === BuildingType[BuildingType.ArcheryRange3] ||
-          building.category === BuildingType[BuildingType.Barracks3] ||
-          building.category === BuildingType[BuildingType.Stable3],
+          isMilitaryBuilding(building.category),
       ).length *
         troopConfig.troop_limit_config.troops_per_military_building;
     // remove 1 to force to create defensive army first

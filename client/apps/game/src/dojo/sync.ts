@@ -287,8 +287,7 @@ const configModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ProductionConfig",
-  "s1_eternum-BuildingConfig",
-  "s1_eternum-BuildingCategoryPopConfig",
+  "s1_eternum-BuildingCategoryConfig",
   "s1_eternum-StartingResourcesConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
@@ -309,6 +308,7 @@ const singleKeyModels = [
   "s1_eternum-LeaderboardRegistered",
   "s1_eternum-LeaderboardRewardClaimed",
   "s1_eternum-LeaderboardEntry",
+  "s1_eternum-BuildingCategoryConfig",
 ];
 
 const eventModels = [
@@ -324,8 +324,6 @@ const hyperstructureModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ProductionConfig",
-  "s1_eternum-BuildingConfig",
-  "s1_eternum-BuildingCategoryPopConfig",
 ];
 
 export const syncStructureData = async (

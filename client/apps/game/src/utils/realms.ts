@@ -4,7 +4,7 @@ import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
 export const getRandomRealmEntity = (components: ClientComponents) => {
   
-  const realms = runQuery([Has(components.Structure), HasValue(components.Structure, { category: StructureType.Realm })]);
+  const realms = runQuery([Has(components.Structure), HasValue(components.Structure, { category: StructureType.Bank })]);
 
   if (realms.size === 0) {
     return;

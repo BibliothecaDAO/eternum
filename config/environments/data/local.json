@@ -1049,58 +1049,133 @@
       "12": 0,
       "13": 0,
       "14": 0,
-      "15": 5,
+      "15": 0,
       "16": 0,
       "17": 0,
-      "18": 0
+      "18": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "22": 0,
+      "23": 0,
+      "24": 0,
+      "25": 5,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0,
+      "38": 0,
+      "39": 0
     },
     "buildingPopulation": {
       "0": 0,
       "1": 0,
       "2": 2,
-      "3": 1,
-      "4": 1,
+      "3": 2,
+      "4": 2,
       "5": 2,
       "6": 2,
       "7": 2,
-      "8": 3,
+      "8": 2,
       "9": 2,
       "10": 2,
       "11": 2,
-      "12": 3,
-      "13": 3,
-      "14": 3,
-      "15": 0,
+      "12": 2,
+      "13": 2,
+      "14": 2,
+      "15": 2,
       "16": 2,
-      "17": 0,
-      "18": 0
+      "17": 2,
+      "18": 2,
+      "19": 2,
+      "20": 2,
+      "21": 2,
+      "22": 2,
+      "23": 2,
+      "24": 2,
+      "25": 0,
+      "26": 0,
+      "27": 3,
+      "28": 2,
+      "29": 2,
+      "30": 2,
+      "31": 2,
+      "32": 2,
+      "33": 2,
+      "34": 3,
+      "35": 3,
+      "36": 3,
+      "37": 1,
+      "38": 1,
+      "39": 0
     },
     "buildingResourceProduced": {
       "0": 0,
-      "1": 23,
+      "1": 0,
       "2": 0,
-      "3": 35,
-      "4": 36,
-      "5": 26,
-      "6": 27,
-      "7": 28,
-      "8": 25,
-      "9": 29,
-      "10": 30,
-      "11": 31,
-      "12": 32,
-      "13": 33,
-      "14": 34,
-      "15": 0,
-      "16": 0,
-      "17": 0,
-      "18": 24
+      "3": 1,
+      "4": 2,
+      "5": 3,
+      "6": 4,
+      "7": 5,
+      "8": 6,
+      "9": 7,
+      "10": 8,
+      "11": 9,
+      "12": 10,
+      "13": 11,
+      "14": 12,
+      "15": 13,
+      "16": 14,
+      "17": 15,
+      "18": 16,
+      "19": 17,
+      "20": 18,
+      "21": 19,
+      "22": 20,
+      "23": 21,
+      "24": 22,
+      "25": 23,
+      "26": 24,
+      "27": 25,
+      "28": 26,
+      "29": 27,
+      "30": 28,
+      "31": 29,
+      "32": 30,
+      "33": 31,
+      "34": 32,
+      "35": 33,
+      "36": 34,
+      "37": 35,
+      "38": 36,
+      "39": 0
     },
-    "otherBuildingCosts": {
+    "buildingCosts": {
       "0": [],
-      "1": [],
-      "2": [],
-      "3": [
+      "1": [
+        {
+          "resource": 3,
+          "amount": 400000
+        },
+        {
+          "resource": 1,
+          "amount": 250000
+        },
+        {
+          "resource": 2,
+          "amount": 150000
+        }
+      ],
+      "2": [
         {
           "resource": 3,
           "amount": 500000
@@ -1110,12 +1185,160 @@
           "amount": 300000
         },
         {
-          "resource": 2,
-          "amount": 200000
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 20,
+          "amount": 25000
+        }
+      ],
+      "3": [
+        {
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "4": [
         {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "5": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "6": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "7": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "8": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "9": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "10": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "11": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "12": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "13": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "14": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "15": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "16": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "17": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "18": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "19": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "20": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "21": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "22": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "23": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "24": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "25": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "26": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "27": [
+        {
           "resource": 3,
           "amount": 500000
         },
@@ -1124,11 +1347,19 @@
           "amount": 300000
         },
         {
-          "resource": 2,
-          "amount": 200000
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 14,
+          "amount": 50000
+        },
+        {
+          "resource": 12,
+          "amount": 25000
         }
       ],
-      "5": [
+      "28": [
         {
           "resource": 4,
           "amount": 800000
@@ -1146,7 +1377,7 @@
           "amount": 50000
         }
       ],
-      "6": [
+      "29": [
         {
           "resource": 4,
           "amount": 800000
@@ -1168,7 +1399,7 @@
           "amount": 25000
         }
       ],
-      "7": [
+      "30": [
         {
           "resource": 4,
           "amount": 800000
@@ -1194,29 +1425,7 @@
           "amount": 15000
         }
       ],
-      "8": [
-        {
-          "resource": 3,
-          "amount": 500000
-        },
-        {
-          "resource": 1,
-          "amount": 300000
-        },
-        {
-          "resource": 15,
-          "amount": 100000
-        },
-        {
-          "resource": 14,
-          "amount": 50000
-        },
-        {
-          "resource": 12,
-          "amount": 25000
-        }
-      ],
-      "9": [
+      "31": [
         {
           "resource": 4,
           "amount": 800000
@@ -1234,7 +1443,7 @@
           "amount": 50000
         }
       ],
-      "10": [
+      "32": [
         {
           "resource": 4,
           "amount": 800000
@@ -1256,7 +1465,7 @@
           "amount": 25000
         }
       ],
-      "11": [
+      "33": [
         {
           "resource": 4,
           "amount": 800000
@@ -1282,7 +1491,7 @@
           "amount": 15000
         }
       ],
-      "12": [
+      "34": [
         {
           "resource": 4,
           "amount": 800000
@@ -1300,7 +1509,7 @@
           "amount": 50000
         }
       ],
-      "13": [
+      "35": [
         {
           "resource": 4,
           "amount": 800000
@@ -1322,7 +1531,7 @@
           "amount": 25000
         }
       ],
-      "14": [
+      "36": [
         {
           "resource": 4,
           "amount": 800000
@@ -1348,21 +1557,7 @@
           "amount": 15000
         }
       ],
-      "15": [
-        {
-          "resource": 3,
-          "amount": 400000
-        },
-        {
-          "resource": 1,
-          "amount": 250000
-        },
-        {
-          "resource": 2,
-          "amount": 150000
-        }
-      ],
-      "16": [
+      "37": [
         {
           "resource": 3,
           "amount": 500000
@@ -1372,150 +1567,25 @@
           "amount": 300000
         },
         {
-          "resource": 15,
-          "amount": 100000
+          "resource": 2,
+          "amount": 200000
+        }
+      ],
+      "38": [
+        {
+          "resource": 3,
+          "amount": 500000
         },
         {
-          "resource": 20,
-          "amount": 25000
+          "resource": 1,
+          "amount": 300000
+        },
+        {
+          "resource": 2,
+          "amount": 200000
         }
       ],
-      "17": [],
-      "18": []
-    },
-    "resourceBuildingCosts": {
-      "1": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "2": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "3": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "4": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "5": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "6": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "7": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "8": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "9": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "10": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "11": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "12": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "13": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "14": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "15": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "16": [
-        {
-          "resource": 35,
-          "amount": 750
-        }
-      ],
-      "17": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "18": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "19": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "20": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "21": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "22": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ]
+      "39": []
     },
     "buildingFixedCostScalePercent": 5000
   },
@@ -1633,11 +1703,13 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x22cda27b5947258442224ee6cfeb579b8152980e2270e76db2eb2d4df87c511",
+    "season_pool_fee_recipient": "0x44b60c910f7adf73e8fa75720df02abd8b97a7fe9bc1869260dc52e188d2be8",
     "max_bank_fee_dpt_percent": 0,
     "max_bank_fee_wtdr_percent": 0
   },
-  "vrf": {},
+  "vrf": {
+    "vrfProviderAddress": "0x0"
+  },
   "startingResources": {
     "0": {
       "resource": 35,
@@ -1830,129 +1902,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x5ac274d2b491bb857136c2c6580c9b2a02acddcb4d6ea8352f74778a5af5c1d",
-      "realms": "0x50052a1aa9220968814792399868cfc04cfcdbacb259596602f8c798a053f8b",
-      "lords": "0x7a363c79c07e35fc7c59c5e1ccbb27e7b3631f5af793425328e98999ee49e5a",
+      "seasonPass": "0x4b18d16f7536cadf1b288fcd2e9cf7d4b7cf3e45f12837c478aeb22fff84e58",
+      "realms": "0x75ac625944a4a6e1ab854c22bbe8b2712f22212e32e5691496f1fa869fdce6",
+      "lords": "0x6e98f5ef9348ef43ae0d23cf63049da128942d4e32a7a2303c46bac6e8a971a",
       "resources": {
         "STONE": [
           1,
-          "0x4178e1ee9913ab0f9f4cd7f9a267dc30dd71e132502707e2f8b612dd7c45f2b"
+          "0x3de242e27b02c5291b59a2669cdc7d0f079c2d6c955df137b384ca6b03b45de"
         ],
         "COAL": [
           2,
-          "0x471d5fe825e9df050f7f7b4d5f77872a330d7c1fb8603d15327b38078ead54e"
+          "0x73ee83f7a6d4c9ebeca8035e1a48ebce61578e337183ff517f6b8456c511c4b"
         ],
         "WOOD": [
           3,
-          "0x77356805df2f21201d3f5a43fa8594cf310afc1003630fc4ef4eb3ed8c5cbca"
+          "0x111c0195e8296efff740f0df73e876b16d0dd2dc2a546c84c23a880808aa5da"
         ],
         "COPPER": [
           4,
-          "0x3e73b545249e813ed6f91eac57960f9e05d1579d864177ecd15671aeff28e37"
+          "0x2c4883a840b0e9395118ff21fe80fdba243f0163779a53329000897e6fd7c8a"
         ],
         "IRONWOOD": [
           5,
-          "0x182c54533dc2f0d6d14323313b6637e6fdd0f0068421f81de4e000b94de6bc8"
+          "0x43dde226995ba1b7dd8a6ff3c738b446248d452d8f964ec15444e246fb85e76"
         ],
         "OBSIDIAN": [
           6,
-          "0x75966dc26a7699bfa8e7a1610bf4da8daa6e48531ab7b385e3a3ccf21345fd6"
+          "0x946b0040d1a6349c360d3b778bc6e1aaeda67829897c20bd963ce4fdf7da40"
         ],
         "GOLD": [
           7,
-          "0x285229a571f3277b4eff3638c0f5a7b8cdc9335221c18ade7ac31128fbe634"
+          "0x11e3223d1c5f2fc811c0e156edf3befb4c7b83e7536ab0941ab6fb4e0d6ddc9"
         ],
         "SILVER": [
           8,
-          "0x1093364b9b30d2297a3350b32adb1f19ba3acabcf201831270d361297b6020c"
+          "0x63ae1e5eea01cfcb2a66703b2ea9adf53050fb22c60e0469c53dce65e4a34d6"
         ],
         "MITHRAL": [
           9,
-          "0x502d0ee14eccc7b08c8d0ab981cd5c240ac3a4ab2a236a832edd1adfed927b6"
+          "0x345e2e1703bb8841fc9a4135c26578b7cc4fb8153208ffdac697cd47751110"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x7a7bb4565fed938395f6f816d325282b1b6affcde2fdeaa436270238454790"
+          "0x2f4e702d2dd67f4a5566184402baa9dbf8e1c5ffbdf1f24058e663015ca96a6"
         ],
         "COLDIRON": [
           11,
-          "0x536a1a8b080fd971a7d894aeb1bfc76b13fe51db3a595a381d9b6d026d0756f"
+          "0x337d19535e13be22b96a475d8831da2977b93450598faca47dae22633552c28"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x609ca7c63eb99cbdd5b9bbf1f174b14e76707f14c66c42c6c3aa852b77445d0"
+          "0x72bb2ddc346e38b53260d128c630bc02a663cbf794c27658fb9460cb9a3fb1c"
         ],
         "RUBY": [
           13,
-          "0x77b452bdd995f15b6626f0e5a5ac33d330c4cd35af54733feec1b6ebfeeaff0"
+          "0x8b59813c415ad975ba89fdb5e1030b18c6937b82e284ae0547ea8cfc41b1ed"
         ],
         "DIAMONDS": [
           14,
-          "0x7212b22942266ea87c41e54e3d03a9faa7bb9597e9bd5a696081ba4d47b0e5b"
+          "0x396bc840f3777582639c77e064cf7054eaae1eee5f9a19b1dd7a2b650a4de46"
         ],
         "HARTWOOD": [
           15,
-          "0x61f046cb6fa0b777053ed6db7ab83741384a8fdd0b20d534c8092657e9f373c"
+          "0x5385d173594fe0aa85f9f5e58ce2ec5f2366ea41486fcae63a9d3e8293c38de"
         ],
         "IGNIUM": [
           16,
-          "0x3bff8c8c1031cf016e484deeda803ec79b542bc0c6b0676a1e7d4b222d99c7a"
+          "0x4bc4ba53b141355589ddad14ee87e43ff980f8d1d57bad363d2398aa05ae4d5"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x4d2169601f313856bc0f81c5da8ca7ad9a7a2bc4b2bf780d90a5ea5c6d7dafd"
+          "0xcf826024e66ec959feb31d7cf17a2dbe720a0d61d933bc9b0ccec1eb0659ef"
         ],
         "TRUEICE": [
           18,
-          "0x3077c9a0227dfe75246f058f3728006f05883e7b75c0a35c1e75831d6fb1d3d"
+          "0x3c4d1af87644cbc67f8047f2634dcbf31497661d7e8ad8f055befd34297be6c"
         ],
         "ADAMANTINE": [
           19,
-          "0x129fd3461054dd34d3c3b4fadeaa3430e2917e7bf0e585bcacb3def1065270d"
+          "0x749db06d73be5df2fba9f744e9a66b67bd4ca14d995992c4ac185480c56f162"
         ],
         "SAPPHIRE": [
           20,
-          "0x661f81eae66a5083da59c6bf6bb1a7da52df61c82e212df4bf0d3b0dc7c9670"
+          "0x3d1569c214794e9cbac29a064f97d8654006365eb3cff6ef6eb1e16ee167739"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x10a90a61a04526f62301cd12c6acf08318dae79b780d2a2a02022ff1abbd580"
+          "0x1af138c87ae9f38f38ca6b3e66830fa11f9db5cd9883c7080c1f7475297f4b6"
         ],
         "DRAGONHIDE": [
           22,
-          "0x18c4bee28af362416f967ad8dcf615310efca9a9afe41f9bd67d830129695ff"
+          "0x4b2d1e524c8a7ef8c2516bb66b74f5af0eed25b3bcd9c28ef1a0d6423957fe5"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x7d6da536cc7aa9a2a0ca27e608d7646fbfabe1d1314237546405b146b780b37"
+          "0x5b33889d4a7af3496cafa5164b887c5207c465a3518f0190cbc32065a9ba42d"
         ],
         "DONKEY": [
           25,
-          "0x50dbdefd0107d6a59769d2eb269ad3b7895f79acb722cad30a5ad8c4bd077cb"
+          "0x6ad8320c71fc77e91497f6d59bd3f1fef37e909ded667378e0c5819c63f15a7"
         ],
         "KNIGHT": [
           26,
-          "0x24de8c8edad49f752d126f710770c54044edf19d8d240b077b890aed7ca76f2"
+          "0x4fe096b1a7081de9734e98fc66bc42b7f0c751ec3464030e5cd3d2f7d2cf2b"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x582ec37088ffd59227219fedf555063596defd0a06aa6900c1fcf5bcd126096"
+          "0x2922041198d825c6b0775e9051b5c3d39d1da864044a8e277bc06f5cf8ed68f"
         ],
         "PALADIN": [
           32,
-          "0x1fa29077129b43500980a7f4d4f5591aff87e8e1b0fc3c458fb19d9dc2d5152"
+          "0x63b4fdbed12cb6d137b8aa97fbf8f72a805bcd6990c8d45c0840ad33152dbf6"
         ],
         "WHEAT": [
           35,
-          "0x7e50e8c523e28493ac0293b305a63386f1f5088ba3c1ed9e26bca9211105091"
+          "0x5148336ac747fa1cb3ad624b1a2e22d6daaa71ca1c2d8b5325f8fffc1eaa19e"
         ],
         "FISH": [
           36,
-          "0x1e1e65ba1d00bf0514965d4d6cb8e1020b1209d50041d6a2e9b94f3b67595bf"
+          "0x3fabaad87b6c1a7a65bef797ad5a507c985315b9333ee0435ddf420f99875f4"
         ],
         "LORDS": [
           37,
-          "0x7a363c79c07e35fc7c59c5e1ccbb27e7b3631f5af793425328e98999ee49e5a"
+          "0x6e98f5ef9348ef43ae0d23cf63049da128942d4e32a7a2303c46bac6e8a971a"
         ]
       }
     },
@@ -3270,8 +3342,8 @@
       },
       "contracts": [
         {
-          "address": "0x20216825b626df2352a85012372b51e083a63ab4b054578f941a1c4475fd7",
-          "class_hash": "0x4621b85f675e6b5e2ce08a595e649427c4d795431499d09be1c01adf92bc9a5",
+          "address": "0x7e5610e1a24157a56aa1add8eceac7ddac23058679c75a9fa1b86eda419aab8",
+          "class_hash": "0x1f140c970be992fdbb8d2e3a40a53ba0d7c98d7a1588416011f29fb0b5e3183",
           "abi": [
             {
               "type": "impl",
@@ -3592,8 +3664,8 @@
           ]
         },
         {
-          "address": "0xc1b3abe33ef49d55bf4e49ea526e9e5e8ced0b37b66cf25d856aaa57f334bd",
-          "class_hash": "0x26fa619e19b1a6a531e8501b53fe7c432bed6af8fa21494691cb958cba0a7aa",
+          "address": "0x2a9eaed7699e6873a5e305ec865c8aa051ae7da4048a08fa10411a9045167f",
+          "class_hash": "0x71c18a0282bfd3b14ae41b99eba9681c1004bfb249c54fdb7b5b2d3ae6d626b",
           "abi": [
             {
               "type": "impl",
@@ -4145,111 +4217,6 @@
             },
             {
               "type": "impl",
-              "name": "BuildingCategoryPopulationConfigImpl",
-              "interface_name": "s1_eternum::systems::config::contracts::IBuildingCategoryPopConfig"
-            },
-            {
-              "type": "enum",
-              "name": "s1_eternum::models::resource::production::building::BuildingCategory",
-              "variants": [
-                {
-                  "name": "None",
-                  "type": "()"
-                },
-                {
-                  "name": "Castle",
-                  "type": "()"
-                },
-                {
-                  "name": "Resource",
-                  "type": "()"
-                },
-                {
-                  "name": "Farm",
-                  "type": "()"
-                },
-                {
-                  "name": "FishingVillage",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks1",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks2",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks3",
-                  "type": "()"
-                },
-                {
-                  "name": "Market",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange1",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange2",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange3",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable1",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable2",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable3",
-                  "type": "()"
-                },
-                {
-                  "name": "WorkersHut",
-                  "type": "()"
-                },
-                {
-                  "name": "Storehouse",
-                  "type": "()"
-                }
-              ]
-            },
-            {
-              "type": "interface",
-              "name": "s1_eternum::systems::config::contracts::IBuildingCategoryPopConfig",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "set_building_category_pop_config",
-                  "inputs": [
-                    {
-                      "name": "building_category",
-                      "type": "s1_eternum::models::resource::production::building::BuildingCategory"
-                    },
-                    {
-                      "name": "population",
-                      "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "capacity",
-                      "type": "core::integer::u32"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                }
-              ]
-            },
-            {
-              "type": "impl",
               "name": "TroopConfigImpl",
               "interface_name": "s1_eternum::systems::config::contracts::ITroopConfig"
             },
@@ -4411,31 +4378,170 @@
             },
             {
               "type": "impl",
-              "name": "PopulationConfigImpl",
-              "interface_name": "s1_eternum::systems::config::contracts::IPopulationConfig"
-            },
-            {
-              "type": "interface",
-              "name": "s1_eternum::systems::config::contracts::IPopulationConfig",
-              "items": [
-                {
-                  "type": "function",
-                  "name": "set_population_config",
-                  "inputs": [
-                    {
-                      "name": "base_population",
-                      "type": "core::integer::u32"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                }
-              ]
-            },
-            {
-              "type": "impl",
               "name": "BuildingConfigImpl",
               "interface_name": "s1_eternum::systems::config::contracts::IBuildingConfig"
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::models::resource::production::building::BuildingCategory",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "WorkersHut",
+                  "type": "()"
+                },
+                {
+                  "name": "Storehouse",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceStone",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCoal",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceWood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCopper",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceIronwood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceObsidian",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceGold",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceSilver",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceMithral",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceAlchemicalSilver",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceColdIron",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDeepCrystal",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceRuby",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDiamonds",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceHartwood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceIgnium",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceTwilightQuartz",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceTrueIce",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceAdamantine",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceSapphire",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceEtherealSilica",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDragonhide",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceLabor",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceEarthenShard",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDonkey",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceWheat",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceFish",
+                  "type": "()"
+                }
+              ]
             },
             {
               "type": "interface",
@@ -4443,8 +4549,12 @@
               "items": [
                 {
                   "type": "function",
-                  "name": "set_building_general_config",
+                  "name": "set_building_config",
                   "inputs": [
+                    {
+                      "name": "base_population",
+                      "type": "core::integer::u32"
+                    },
                     {
                       "name": "base_cost_percent_increase",
                       "type": "core::integer::u16"
@@ -4455,19 +4565,23 @@
                 },
                 {
                   "type": "function",
-                  "name": "set_building_config",
+                  "name": "set_building_category_config",
                   "inputs": [
                     {
                       "name": "building_category",
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                     },
                     {
-                      "name": "building_resource_type",
-                      "type": "core::integer::u8"
-                    },
-                    {
                       "name": "cost_of_building",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "population_cost",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "capacity_grant",
+                      "type": "core::integer::u32"
                     }
                   ],
                   "outputs": [],
@@ -4870,11 +4984,9 @@
             "set_battle_config",
             "set_hyperstructure_config",
             "set_bank_config",
-            "set_building_category_pop_config",
             "set_troop_config",
-            "set_population_config",
-            "set_building_general_config",
             "set_building_config",
+            "set_building_category_config",
             "set_resource_bridge_config",
             "set_resource_bridge_fee_split_config",
             "set_resource_bridge_whitelist_config",
@@ -4886,8 +4998,8 @@
           ]
         },
         {
-          "address": "0x4998292f0a3daa658c007d73a981451637f9726e5c9250b0e7555e507aca9bb",
-          "class_hash": "0x1ee40053f769ba5a73b620040640b68c4dc45e99c8aa45f8b67f6993fa18768",
+          "address": "0x27e5b9efb8fb085b3c5b4c32ff106be568ceadfb453290570ba51abe9318f18",
+          "class_hash": "0x3a0d920d3fed9c9137b1a776f21b27a32343f059aee352a37a425d2ec4f9ae9",
           "abi": [
             {
               "type": "impl",
@@ -5399,8 +5511,8 @@
           ]
         },
         {
-          "address": "0xd7e3c075213b26c9d61d8670338c0e55d5f9a63e70482f428a473ddace3485",
-          "class_hash": "0x68c049f3f2fe8026b7f150884fb2f9b2eec99519bdade3728f39edf6a54b929",
+          "address": "0x7da5799e90e52763421c96f1755bcc6815e69eb9c488009cebe2d6e286d7dbb",
+          "class_hash": "0x73813433266cde6d657e89a6989336430ccd4e80c90fc3b71c56734c4597090",
           "abi": [
             {
               "type": "impl",
@@ -5754,8 +5866,8 @@
           ]
         },
         {
-          "address": "0x286ce02884205bc6991fce59f5e620d9d358349c01a4b35792e563a3057cea5",
-          "class_hash": "0x38b4152bba243cab86f79f7fc5d1eb6b0c0c3234a529cffc0a0a50b6aecc55",
+          "address": "0x4069e62adc8f309c7194861ef691ef58c337e2bf5cde43bad4197878eb10e0f",
+          "class_hash": "0x2ab88a4facacbb4430867e53634415393c09e4993e2b571a454992491392e40",
           "abi": [
             {
               "type": "impl",
@@ -6399,8 +6511,8 @@
           ]
         },
         {
-          "address": "0x7dd81997e36febf23bb0374f51cb3c19c4a0e06359d13620f6211628cd13c8d",
-          "class_hash": "0x2d2f31bfc582c0fdb8431a00974db4fcb0f67ad143d5a1a7dc67969d5ecec2e",
+          "address": "0x284d0f502baa8f0109b9423f84f29af2770f9e83cd5774714f6c5526e38786",
+          "class_hash": "0x24e4a854029c8c257557222bf69d7248b7b2e7a3e7e0f167baf27b3b0e0fcb8",
           "abi": [
             {
               "type": "impl",
@@ -6506,81 +6618,155 @@
                   "type": "()"
                 },
                 {
-                  "name": "Castle",
-                  "type": "()"
-                },
-                {
-                  "name": "Resource",
-                  "type": "()"
-                },
-                {
-                  "name": "Farm",
-                  "type": "()"
-                },
-                {
-                  "name": "FishingVillage",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks1",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks2",
-                  "type": "()"
-                },
-                {
-                  "name": "Barracks3",
-                  "type": "()"
-                },
-                {
-                  "name": "Market",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange1",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange2",
-                  "type": "()"
-                },
-                {
-                  "name": "ArcheryRange3",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable1",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable2",
-                  "type": "()"
-                },
-                {
-                  "name": "Stable3",
-                  "type": "()"
-                },
-                {
                   "name": "WorkersHut",
                   "type": "()"
                 },
                 {
                   "name": "Storehouse",
                   "type": "()"
-                }
-              ]
-            },
-            {
-              "type": "enum",
-              "name": "core::option::Option::<core::integer::u8>",
-              "variants": [
-                {
-                  "name": "Some",
-                  "type": "core::integer::u8"
                 },
                 {
-                  "name": "None",
+                  "name": "ResourceStone",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCoal",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceWood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCopper",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceIronwood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceObsidian",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceGold",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceSilver",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceMithral",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceAlchemicalSilver",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceColdIron",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDeepCrystal",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceRuby",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDiamonds",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceHartwood",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceIgnium",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceTwilightQuartz",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceTrueIce",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceAdamantine",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceSapphire",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceEtherealSilica",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDragonhide",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceLabor",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceEarthenShard",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceDonkey",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceKnightT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceCrossbowmanT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT1",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT2",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourcePaladinT3",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceWheat",
+                  "type": "()"
+                },
+                {
+                  "name": "ResourceFish",
                   "type": "()"
                 }
               ]
@@ -6638,10 +6824,6 @@
                     {
                       "name": "building_category",
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
-                    },
-                    {
-                      "name": "requested_resource_type",
-                      "type": "core::option::Option::<core::integer::u8>"
                     }
                   ],
                   "outputs": [],
@@ -6887,8 +7069,8 @@
           ]
         },
         {
-          "address": "0x4c4bbaad7548264121ba324c00ca45c02f2cb18160a60952f48e3b1038431c4",
-          "class_hash": "0x50086337ad61ba4a9ebcac92d31e8a1bffc4dd07edc80902cf4c659816709f6",
+          "address": "0x1d39bc017188047e866763f9be2e5fc209386edc6ee6c7cda38956b547ddd6b",
+          "class_hash": "0x5ce5230e7d02bec4b416f0f983fb6018f082e30febb6ecfab1a3b3904b497fb",
           "abi": [
             {
               "type": "impl",
@@ -7103,8 +7285,8 @@
           ]
         },
         {
-          "address": "0x44b38f245db92ae8ff4e8138b53a09de1d3603a1f1c60353366fb2fef128dc4",
-          "class_hash": "0x189a417d36dd90b53752dcfa870bcd86b3918ffae575514dcf4fc777984b18e",
+          "address": "0x5b2af4b046a0d772f88a8f86b2bac8d6addd45fd0d342a2872d457ba7dc2ac",
+          "class_hash": "0x48707c83615f91c633f6b13596354a473d0a72ba408d902e5cfef8dfce0899b",
           "abi": [
             {
               "type": "impl",
@@ -7408,8 +7590,8 @@
           ]
         },
         {
-          "address": "0x5dfded2418ab9838985f8c172b41cb5e2f5b27c34949eda3aab6b17e669134a",
-          "class_hash": "0x751d6fb295d6ca9622b74a4aece1d2636c48fcd2d31373351bd1637a71436d9",
+          "address": "0x61e769ac81b0dd06bc93e93a60c9945e3aa52c70d4a94b86b33accc561e2389",
+          "class_hash": "0x5056b2da80c8a940b94ec817d0776a3979d21bee3d3d0e21a7a4415f720e307",
           "abi": [
             {
               "type": "impl",
@@ -7735,8 +7917,8 @@
           ]
         },
         {
-          "address": "0x22cda27b5947258442224ee6cfeb579b8152980e2270e76db2eb2d4df87c511",
-          "class_hash": "0x322924a8d4754c904286b3e5be4eef7d68dcbc0956b5487a1aeee57a50a791b",
+          "address": "0x44b60c910f7adf73e8fa75720df02abd8b97a7fe9bc1869260dc52e188d2be8",
+          "class_hash": "0x6b28cc19be57479319aefc7e1e6fafd798d41f0613b200cac7f45df297b2dfa",
           "abi": [
             {
               "type": "impl",
@@ -7972,8 +8154,8 @@
           ]
         },
         {
-          "address": "0x28f828acc7e0f2e2a6edb0207a9eaab8c28637d9dc6e2a72928b6f5db361c96",
-          "class_hash": "0x25fbe4f3f06935290b8aee227a0d7d8f7a9b718fbb62f74422c448da2db9920",
+          "address": "0xf07fea1362224752ef42e3932f5bf52f19b0509e76f20dcf83d893130c6fa2",
+          "class_hash": "0x24aeb73202c94ee3d2b3fff4374a9f64c7e99ed409931821e556fab6b2ccba8",
           "abi": [
             {
               "type": "impl",
@@ -8172,8 +8354,8 @@
           ]
         },
         {
-          "address": "0x19c125f5d0a1a5ad8e5d4c29f4b87458edf964ac36f2a174f59e31a51a6aa6c",
-          "class_hash": "0xbe1347778b9a2ffb90dd42d2cdbd7f5512eb8ea7bedec7f947e887ce6cfc01",
+          "address": "0xb705dcc0ed9f92ac06dbfb8f0787cea0cd920462ab2bba47ff5e26e9f8f422",
+          "class_hash": "0x61c4ad89e01f26e469092637cb67b0fa6c7e522e1fcd90e54a2354974ad7ed2",
           "abi": [
             {
               "type": "impl",
@@ -8409,8 +8591,8 @@
           ]
         },
         {
-          "address": "0x65aa481120e87720d6858729b0b07efc8dd716bcfaa46c8090234cca4e25b8e",
-          "class_hash": "0x2cbf91257d148ae26744aeebc86e0b7a15be89b6b4384117a1cf144d933b744",
+          "address": "0x4b89948cfe454b9992526662cad2566c63d726b74799a42c15da058b7543c33",
+          "class_hash": "0x367fd5b2324a5717192a80e05b769ec0f691c25c68ec640ff621775a71e9b2d",
           "abi": [
             {
               "type": "impl",
@@ -8675,8 +8857,8 @@
           ]
         },
         {
-          "address": "0x6375e997b9c387d8bd611a889da57b3ce9ab18fe13cbe3a268826bf48b8b037",
-          "class_hash": "0x22c713bd34533b4d3342bd3afbc9731c92842b160773beaf8dee9900c6cd0e6",
+          "address": "0x35ef4341d1bf15d295ccdab03ee0218d6c0435c53d6ce5e9b5425340e9eccaf",
+          "class_hash": "0x2cbdc022e6f4d4a81d1ce2429f5b86776125e6488e113cdd8ae84cf7c700b43",
           "abi": [
             {
               "type": "impl",
@@ -8981,8 +9163,8 @@
           ]
         },
         {
-          "address": "0x1e276d0c768c843ade904084bf127b12cc936207fdc7010d85409d24488d730",
-          "class_hash": "0x435703df5f6adfdba27137230095fa1a00a355813dcdedb59402ed1fb9a1f54",
+          "address": "0x3131f22eb02570363b9571cecb6090b506c628479df128b17d31431634f237f",
+          "class_hash": "0x4b534b3900c495e50c0800e73fcbf3ff217c14c053f3c43cd1ad44d993b9c78",
           "abi": [
             {
               "type": "impl",
@@ -9452,8 +9634,8 @@
           ]
         },
         {
-          "address": "0x34b13a247d0f0d93a8a4cc70611559da02153d571450007ed1f1b6d5559c057",
-          "class_hash": "0x3c518000097fa6bc3bbe6be7dd7456361e5090978ba91097d537193d749b64f",
+          "address": "0x422addabcfa28d39fe5a8fd565b66087028c3b785b4620372c049343802b660",
+          "class_hash": "0x38752ef8399d5f3d3023eae4863f928f7dbbed2ffee1a03e968f56a1543b6e4",
           "abi": [
             {
               "type": "impl",
@@ -9714,8 +9896,8 @@
           ]
         },
         {
-          "address": "0x145e33acd0315fa5c84f3aacc0eccc5712511d5019da98fbb7b34838b4af107",
-          "class_hash": "0x1c8148b240b9bb8abacec0bda8765e7b8ca0a39f119415c060cc2eed3b971b4",
+          "address": "0xb86d7597144ca78c0fb7bb42852a91d1a6837b49df7f85e291ab834c8d04ad",
+          "class_hash": "0x3ba6c93d43b9148cb5123db81f762917d0974136630ff728f381c2285f1d348",
           "abi": [
             {
               "type": "impl",
@@ -9962,21 +10144,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x2a1049d1bea45b479c88dc93525c3ff856339961098d2ed07e16df516a24fe0",
+          "class_hash": "0x1d42c07d4f132b7104b5f85c47d6135f9fe6797d3379fe53869764b0ed7006",
           "tag": "s1_eternum-Building",
           "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
         },
         {
           "members": [],
-          "class_hash": "0x4410e282596e82ff0c421167bc99e83370c06b08571fed4959d86c780e3b83",
-          "tag": "s1_eternum-BuildingCategoryPopConfig",
-          "selector": "0x2b847fd482c7e77364e1a29d18c690661dee59631db5538e063065cd28a9157"
-        },
-        {
-          "members": [],
-          "class_hash": "0x7b82c69beddbc9776e37027cb78d518c89e7ba61c12d348a7f2ac2ee2270a3b",
-          "tag": "s1_eternum-BuildingConfig",
-          "selector": "0x10ab036ccd4d1e968f0b3b3333d59911fd7f96cbd0fe73c9d639b80aaf10ef4"
+          "class_hash": "0x7ab6a16673c8e6903354fc4399e7e6e881590bc26f5743a3a90e2c79e44d843",
+          "tag": "s1_eternum-BuildingCategoryConfig",
+          "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
         },
         {
           "members": [],
@@ -10166,7 +10342,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x3bebd9bf8c9c8a0d8dd10ecdc9edec6401ad58828c7c81309a2b579e1c34b52",
+          "class_hash": "0x70b0e47d024ecfc9eb7f0a9e2e7a95faccc90f78a0eec0f242cc8bf24c5472a",
           "tag": "s1_eternum-StructureBuildings",
           "selector": "0x5e917975e7957932cf7c52fd5c0ee447ed413e0e39f9ab7fc92cd0a57a6fb9"
         },
@@ -10202,7 +10378,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x388698eeb5235958eb5ec362c7c901043c643d365f34af0ffd1013c1124d0b5",
+          "class_hash": "0x6b93eb35bda1972d9e38f5dff5c50c642193dbe24e73f67f70bc4d1c24ec715",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

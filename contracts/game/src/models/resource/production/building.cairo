@@ -1,13 +1,12 @@
 use alexandria_math::U128BitShift;
 use core::num::traits::zero::Zero;
-use dojo::model::{Model, ModelStorage};
+use dojo::model::{ModelStorage};
 use dojo::world::WorldStorage;
 use dojo::world::{IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    BuildingCategoryPopConfigTrait, BuildingConfig, BuildingConfigImpl, BuildingGeneralConfig, CapacityConfig,
-    PopulationConfig, ProductionConfig, TickImpl, WorldConfigUtilImpl,
+    BuildingCategoryConfig, BuildingConfig, CapacityConfig, ProductionConfig, TickImpl, WorldConfigUtilImpl,
 };
 use s1_eternum::models::position::{Coord, CoordTrait, Direction};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
@@ -30,8 +29,7 @@ pub struct Building {
     pub inner_col: u32,
     #[key]
     pub inner_row: u32,
-    pub category: BuildingCategory,
-    pub produced_resource_type: u8,
+    pub category: u8,
     pub bonus_percent: u32,
     pub entity_id: ID,
     pub outer_entity_id: ID,
@@ -44,8 +42,12 @@ pub struct StructureBuildings {
     #[key]
     pub entity_id: ID,
     // number of buildings per category in structure
-    // each category takes up to 8 bits
-    pub packed_counts: u128,
+    // each category takes up to 8 bits.
+    // so each u128 stores 16 categories
+    // and since we have 39 building categories, we need 3 u128
+    pub packed_counts_1: u128,
+    pub packed_counts_2: u128,
+    pub packed_counts_3: u128,
     // population
     pub population: Population,
 }
@@ -58,18 +60,12 @@ pub struct Population {
 
 #[generate_trait]
 pub impl PopulationImpl of PopulationTrait {
-    fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
+    fn increase_population(ref self: Population, amount: u32) -> u32 {
         self.current += amount;
-        self.assert_within_capacity(base_population);
         self.current
     }
     fn decrease_population(ref self: Population, amount: u32) -> u32 {
-        if amount > self.current {
-            self.current = 0;
-        } else {
-            self.current -= amount;
-        }
-
+        self.current -= amount;
         self.current
     }
     fn assert_within_capacity(ref self: Population, base_population: u32) {
@@ -81,91 +77,226 @@ pub impl PopulationImpl of PopulationTrait {
     }
     fn decrease_capacity(ref self: Population, amount: u32) -> u32 {
         self.max -= amount;
-
-        // sanity
-        if (self.max < 0) {
-            self.max = 0;
-        }
         self.max
     }
 }
 
 
 #[generate_trait]
-pub impl BuildingCategoryCountImpl of BuildingCategoryCountTrait {
-    fn building_count(self: BuildingCategory, packed: u128) -> u8 {
-        let category_felt: felt252 = self.into();
-        let category: u128 = category_felt.try_into().unwrap();
+pub impl StructureBuildingCategoryCountImpl of StructureBuildingCategoryCountTrait {
+    fn _category_index(category: BuildingCategory) -> u8 {
+        let category: u8 = category.into();
+        assert!(category.is_non_zero(), "category must be non zero");
+        (category - 1) / 16
+    }
 
-        // the packed value contains the counts of all categories
-        // and can take up to 8 bits for each category. so we can store
-        // up to 128 / 8 = 16 categories
-        let mask: u128 = 0xFF; // al 8 bits set to 1
-        let shift_amount = (category - 1) * 8;
-        let count: u128 = U128BitShift::shr(packed, shift_amount) & mask;
+    fn building_count(self: StructureBuildings, category: BuildingCategory) -> u8 {
+        let category: u8 = category.into();
+        assert!(category.is_non_zero(), "category must be non zero");
+
+        let mut count: u128 = 0;
+        let packed: Array<u128> = array![self.packed_counts_1, self.packed_counts_2, self.packed_counts_3];
+        let mut storage_array_index: u8 = Self::_category_index(category.into());
+        for index in 0..packed.len() {
+            if index != storage_array_index.into() {
+                continue;
+            }
+            // the packed value contains the counts of all categories
+            // and can take up to 8 bits for each category. so we can store
+            // up to 128 / 8 = 16 categories
+            let packed_value: u128 = *packed.at(index);
+            let mask: u128 = 0xFF; // al 8 bits set to 1
+
+            // Calculate the relative position within the current packed value
+            // Each packed value stores 16 categories (0-15, 16-31, 32-47)
+            let relative_category = (category - 1) % 16;
+            let shift_amount = relative_category * 8;
+            count = U128BitShift::shr(packed_value, shift_amount.into()) & mask;
+            break;
+        };
+
         count.try_into().unwrap()
     }
 
-    fn set_building_count(self: BuildingCategory, packed: u128, count: u8) -> u128 {
-        assert!(count <= 255, "count must be able to fit in a u8");
+    fn update_building_count(ref self: StructureBuildings, category: BuildingCategory, count: u8) {
+        let category: u8 = category.into();
+        assert!(category.is_non_zero(), "category must be non zero");
 
-        let category_felt: felt252 = self.into();
-        let category: u128 = category_felt.try_into().unwrap();
-
-        // Each category takes 8 bits
-        let shift_amount = (category - 1) * 8;
-        let mask: u128 = U128BitShift::shl(0xFF, shift_amount); // 8 bits set to 1, shifted to position
-        let shifted_count: u128 = U128BitShift::shl(count.into(), shift_amount);
-        let new_packed: u128 = (packed & ~mask) | shifted_count;
-        new_packed
+        let packed: Array<u128> = array![self.packed_counts_1, self.packed_counts_2, self.packed_counts_3];
+        let mut new_packed: Array<u128> = array![];
+        let mut storage_array_index: u8 = Self::_category_index(category.into());
+        for index in 0..packed.len() {
+            if index != storage_array_index.into() {
+                new_packed.append(*packed.at(index));
+                continue;
+            }
+            let packed_value: u128 = *packed.at(index);
+            let category_u8: u8 = category;
+            // Calculate the relative position within the current packed value
+            let relative_category = (category_u8 - 1) % 16;
+            // Each category takes 8 bits
+            let shift_amount = relative_category * 8;
+            let mask: u128 = U128BitShift::shl(0xFF, shift_amount.into()); // 8 bits set to 1, shifted to position
+            let shifted_count: u128 = U128BitShift::shl(count.into(), shift_amount.into());
+            let new_packed_value: u128 = (packed_value & ~mask) | shifted_count;
+            new_packed.append(new_packed_value);
+        };
+        self.packed_counts_1 = *new_packed.at(0);
+        self.packed_counts_2 = *new_packed.at(1);
+        self.packed_counts_3 = *new_packed.at(2);
     }
 }
 
 #[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 pub enum BuildingCategory {
     None,
-    Castle,
-    Resource,
-    Farm,
-    FishingVillage,
-    Barracks1,
-    Barracks2,
-    Barracks3,
-    Market,
-    ArcheryRange1,
-    ArcheryRange2,
-    ArcheryRange3,
-    Stable1,
-    Stable2,
-    Stable3,
+    // Non Resource Buildings
     WorkersHut,
     Storehouse,
+    // Resource Buildings
+    ResourceStone,
+    ResourceCoal,
+    ResourceWood,
+    ResourceCopper,
+    ResourceIronwood,
+    ResourceObsidian,
+    ResourceGold,
+    ResourceSilver,
+    ResourceMithral,
+    ResourceAlchemicalSilver,
+    ResourceColdIron,
+    ResourceDeepCrystal,
+    ResourceRuby,
+    ResourceDiamonds,
+    ResourceHartwood,
+    ResourceIgnium,
+    ResourceTwilightQuartz,
+    ResourceTrueIce,
+    ResourceAdamantine,
+    ResourceSapphire,
+    ResourceEtherealSilica,
+    ResourceDragonhide,
+    ResourceLabor,
+    ResourceEarthenShard,
+    ResourceDonkey,
+    ResourceKnightT1,
+    ResourceKnightT2,
+    ResourceKnightT3,
+    ResourceCrossbowmanT1,
+    ResourceCrossbowmanT2,
+    ResourceCrossbowmanT3,
+    ResourcePaladinT1,
+    ResourcePaladinT2,
+    ResourcePaladinT3,
+    ResourceWheat,
+    ResourceFish,
 }
 
+const LAST_RESOURCE_BUILDING: u8 = 38;
 pub impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
+            // Non Resource Buildings
             BuildingCategory::None => 0,
-            BuildingCategory::Castle => 1,
-            BuildingCategory::Resource => 2,
-            BuildingCategory::Farm => 3,
-            BuildingCategory::FishingVillage => 4,
-            BuildingCategory::Barracks1 => 5,
-            BuildingCategory::Barracks2 => 6,
-            BuildingCategory::Barracks3 => 7,
-            BuildingCategory::Market => 8,
-            BuildingCategory::ArcheryRange1 => 9,
-            BuildingCategory::ArcheryRange2 => 10,
-            BuildingCategory::ArcheryRange3 => 11,
-            BuildingCategory::Stable1 => 12,
-            BuildingCategory::Stable2 => 13,
-            BuildingCategory::Stable3 => 14,
-            BuildingCategory::WorkersHut => 15,
-            BuildingCategory::Storehouse => 16,
+            BuildingCategory::WorkersHut => 1,
+            BuildingCategory::Storehouse => 2,
+            // Resource Buildings
+            BuildingCategory::ResourceStone => 3,
+            BuildingCategory::ResourceCoal => 4,
+            BuildingCategory::ResourceWood => 5,
+            BuildingCategory::ResourceCopper => 6,
+            BuildingCategory::ResourceIronwood => 7,
+            BuildingCategory::ResourceObsidian => 8,
+            BuildingCategory::ResourceGold => 9,
+            BuildingCategory::ResourceSilver => 10,
+            BuildingCategory::ResourceMithral => 11,
+            BuildingCategory::ResourceAlchemicalSilver => 12,
+            BuildingCategory::ResourceColdIron => 13,
+            BuildingCategory::ResourceDeepCrystal => 14,
+            BuildingCategory::ResourceRuby => 15,
+            BuildingCategory::ResourceDiamonds => 16,
+            BuildingCategory::ResourceHartwood => 17,
+            BuildingCategory::ResourceIgnium => 18,
+            BuildingCategory::ResourceTwilightQuartz => 19,
+            BuildingCategory::ResourceTrueIce => 20,
+            BuildingCategory::ResourceAdamantine => 21,
+            BuildingCategory::ResourceSapphire => 22,
+            BuildingCategory::ResourceEtherealSilica => 23,
+            BuildingCategory::ResourceDragonhide => 24,
+            BuildingCategory::ResourceLabor => 25,
+            BuildingCategory::ResourceEarthenShard => 26,
+            BuildingCategory::ResourceDonkey => 27,
+            BuildingCategory::ResourceKnightT1 => 28,
+            BuildingCategory::ResourceKnightT2 => 29,
+            BuildingCategory::ResourceKnightT3 => 30,
+            BuildingCategory::ResourceCrossbowmanT1 => 31,
+            BuildingCategory::ResourceCrossbowmanT2 => 32,
+            BuildingCategory::ResourceCrossbowmanT3 => 33,
+            BuildingCategory::ResourcePaladinT1 => 34,
+            BuildingCategory::ResourcePaladinT2 => 35,
+            BuildingCategory::ResourcePaladinT3 => 36,
+            BuildingCategory::ResourceWheat => 37,
+            BuildingCategory::ResourceFish => LAST_RESOURCE_BUILDING.into(),
         }
     }
 }
 
+pub impl BuildingCategoryIntoU8 of Into<BuildingCategory, u8> {
+    fn into(self: BuildingCategory) -> u8 {
+        let category_felt: felt252 = self.into();
+        let category: u8 = category_felt.try_into().unwrap();
+        category
+    }
+}
+
+
+// todo: verify enum is correct values are
+pub impl BuildingCategoryFromU8 of Into<u8, BuildingCategory> {
+    fn into(self: u8) -> BuildingCategory {
+        match self {
+            0 => BuildingCategory::None,
+            1 => BuildingCategory::WorkersHut,
+            2 => BuildingCategory::Storehouse,
+            3 => BuildingCategory::ResourceStone,
+            4 => BuildingCategory::ResourceCoal,
+            5 => BuildingCategory::ResourceWood,
+            6 => BuildingCategory::ResourceCopper,
+            7 => BuildingCategory::ResourceIronwood,
+            8 => BuildingCategory::ResourceObsidian,
+            9 => BuildingCategory::ResourceGold,
+            10 => BuildingCategory::ResourceSilver,
+            11 => BuildingCategory::ResourceMithral,
+            12 => BuildingCategory::ResourceAlchemicalSilver,
+            13 => BuildingCategory::ResourceColdIron,
+            14 => BuildingCategory::ResourceDeepCrystal,
+            15 => BuildingCategory::ResourceRuby,
+            16 => BuildingCategory::ResourceDiamonds,
+            17 => BuildingCategory::ResourceHartwood,
+            18 => BuildingCategory::ResourceIgnium,
+            19 => BuildingCategory::ResourceTwilightQuartz,
+            20 => BuildingCategory::ResourceTrueIce,
+            21 => BuildingCategory::ResourceAdamantine,
+            22 => BuildingCategory::ResourceSapphire,
+            23 => BuildingCategory::ResourceEtherealSilica,
+            24 => BuildingCategory::ResourceDragonhide,
+            25 => BuildingCategory::ResourceLabor,
+            26 => BuildingCategory::ResourceEarthenShard,
+            27 => BuildingCategory::ResourceDonkey,
+            28 => BuildingCategory::ResourceKnightT1,
+            29 => BuildingCategory::ResourceKnightT2,
+            30 => BuildingCategory::ResourceKnightT3,
+            31 => BuildingCategory::ResourceCrossbowmanT1,
+            32 => BuildingCategory::ResourceCrossbowmanT2,
+            33 => BuildingCategory::ResourceCrossbowmanT3,
+            34 => BuildingCategory::ResourcePaladinT1,
+            35 => BuildingCategory::ResourcePaladinT2,
+            36 => BuildingCategory::ResourcePaladinT3,
+            37 => BuildingCategory::ResourceWheat,
+            38 => BuildingCategory::ResourceFish,
+            _ => BuildingCategory::None,
+        }
+    }
+}
 
 #[generate_trait]
 pub impl BuildingPerksImpl of BuildingPerksTrait {
@@ -180,23 +311,25 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
     }
 
     fn _is_storage_capacity_booster(self: Building) -> bool {
-        match self.category {
+        let category: BuildingCategory = self.category.into();
+        match category {
             BuildingCategory::Storehouse => true,
             _ => false,
         }
     }
 
     fn _is_explorer_capacity_booster(self: Building) -> bool {
-        match self.category {
-            BuildingCategory::Barracks1 => true,
-            BuildingCategory::Barracks2 => true,
-            BuildingCategory::Barracks3 => true,
-            BuildingCategory::Stable1 => true,
-            BuildingCategory::Stable2 => true,
-            BuildingCategory::Stable3 => true,
-            BuildingCategory::ArcheryRange1 => true,
-            BuildingCategory::ArcheryRange2 => true,
-            BuildingCategory::ArcheryRange3 => true,
+        let category: BuildingCategory = self.category.into();
+        match category {
+            BuildingCategory::ResourceKnightT1 => true,
+            BuildingCategory::ResourceKnightT2 => true,
+            BuildingCategory::ResourceKnightT3 => true,
+            BuildingCategory::ResourceCrossbowmanT1 => true,
+            BuildingCategory::ResourceCrossbowmanT2 => true,
+            BuildingCategory::ResourceCrossbowmanT3 => true,
+            BuildingCategory::ResourcePaladinT1 => true,
+            BuildingCategory::ResourcePaladinT2 => true,
+            BuildingCategory::ResourcePaladinT3 => true,
             _ => false,
         }
     }
@@ -231,7 +364,7 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
 }
 
 #[generate_trait]
-impl BuildingProductionImpl of BuildingProductionTrait {
+pub impl BuildingProductionImpl of BuildingProductionTrait {
     fn is_resource_producer(self: Building) -> bool {
         self.produced_resource().is_non_zero()
     }
@@ -241,46 +374,93 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
     fn produced_resource(self: Building) -> u8 {
-        match self.category {
+        let category: BuildingCategory = self.category.into();
+        match category {
             BuildingCategory::None => 0,
-            BuildingCategory::Castle => ResourceTypes::LABOR,
-            BuildingCategory::Resource => self.produced_resource_type,
-            BuildingCategory::Farm => ResourceTypes::WHEAT,
-            BuildingCategory::FishingVillage => ResourceTypes::FISH,
-            BuildingCategory::Barracks1 => ResourceTypes::KNIGHT_T1,
-            BuildingCategory::Barracks2 => ResourceTypes::KNIGHT_T2,
-            BuildingCategory::Barracks3 => ResourceTypes::KNIGHT_T3,
-            BuildingCategory::Market => ResourceTypes::DONKEY,
-            BuildingCategory::ArcheryRange1 => ResourceTypes::CROSSBOWMAN_T1,
-            BuildingCategory::ArcheryRange2 => ResourceTypes::CROSSBOWMAN_T2,
-            BuildingCategory::ArcheryRange3 => ResourceTypes::CROSSBOWMAN_T3,
-            BuildingCategory::Stable1 => ResourceTypes::PALADIN_T1,
-            BuildingCategory::Stable2 => ResourceTypes::PALADIN_T2,
-            BuildingCategory::Stable3 => ResourceTypes::PALADIN_T3,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::Storehouse => 0,
+            BuildingCategory::ResourceStone => ResourceTypes::STONE,
+            BuildingCategory::ResourceCoal => ResourceTypes::COAL,
+            BuildingCategory::ResourceWood => ResourceTypes::WOOD,
+            BuildingCategory::ResourceCopper => ResourceTypes::COPPER,
+            BuildingCategory::ResourceIronwood => ResourceTypes::IRONWOOD,
+            BuildingCategory::ResourceObsidian => ResourceTypes::OBSIDIAN,
+            BuildingCategory::ResourceGold => ResourceTypes::GOLD,
+            BuildingCategory::ResourceSilver => ResourceTypes::SILVER,
+            BuildingCategory::ResourceMithral => ResourceTypes::MITHRAL,
+            BuildingCategory::ResourceAlchemicalSilver => ResourceTypes::ALCHEMICAL_SILVER,
+            BuildingCategory::ResourceColdIron => ResourceTypes::COLD_IRON,
+            BuildingCategory::ResourceDeepCrystal => ResourceTypes::DEEP_CRYSTAL,
+            BuildingCategory::ResourceRuby => ResourceTypes::RUBY,
+            BuildingCategory::ResourceDiamonds => ResourceTypes::DIAMONDS,
+            BuildingCategory::ResourceHartwood => ResourceTypes::HARTWOOD,
+            BuildingCategory::ResourceIgnium => ResourceTypes::IGNIUM,
+            BuildingCategory::ResourceTwilightQuartz => ResourceTypes::TWILIGHT_QUARTZ,
+            BuildingCategory::ResourceTrueIce => ResourceTypes::TRUE_ICE,
+            BuildingCategory::ResourceAdamantine => ResourceTypes::ADAMANTINE,
+            BuildingCategory::ResourceSapphire => ResourceTypes::SAPPHIRE,
+            BuildingCategory::ResourceEtherealSilica => ResourceTypes::ETHEREAL_SILICA,
+            BuildingCategory::ResourceDragonhide => ResourceTypes::DRAGONHIDE,
+            BuildingCategory::ResourceLabor => ResourceTypes::LABOR,
+            BuildingCategory::ResourceEarthenShard => ResourceTypes::EARTHEN_SHARD,
+            BuildingCategory::ResourceDonkey => ResourceTypes::DONKEY,
+            BuildingCategory::ResourceKnightT1 => ResourceTypes::KNIGHT_T1,
+            BuildingCategory::ResourceKnightT2 => ResourceTypes::KNIGHT_T2,
+            BuildingCategory::ResourceKnightT3 => ResourceTypes::KNIGHT_T3,
+            BuildingCategory::ResourceCrossbowmanT1 => ResourceTypes::CROSSBOWMAN_T1,
+            BuildingCategory::ResourceCrossbowmanT2 => ResourceTypes::CROSSBOWMAN_T2,
+            BuildingCategory::ResourceCrossbowmanT3 => ResourceTypes::CROSSBOWMAN_T3,
+            BuildingCategory::ResourcePaladinT1 => ResourceTypes::PALADIN_T1,
+            BuildingCategory::ResourcePaladinT2 => ResourceTypes::PALADIN_T2,
+            BuildingCategory::ResourcePaladinT3 => ResourceTypes::PALADIN_T3,
+            BuildingCategory::ResourceWheat => ResourceTypes::WHEAT,
+            BuildingCategory::ResourceFish => ResourceTypes::FISH,
+            //  NEVER ALLOW LORDS TO BE BUILT
         }
     }
 
     fn boost_adjacent_building_production_by(self: Building) -> u32 {
-        match self.category {
+        let category: BuildingCategory = self.category.into();
+        match category {
             BuildingCategory::None => 0,
-            BuildingCategory::Castle => 0,
-            BuildingCategory::Resource => 0,
-            BuildingCategory::Farm => PercentageValueImpl::_10().try_into().unwrap(), // 10%
-            BuildingCategory::FishingVillage => 0,
-            BuildingCategory::Barracks1 => 0,
-            BuildingCategory::Barracks2 => 0,
-            BuildingCategory::Barracks3 => 0,
-            BuildingCategory::Market => 0,
-            BuildingCategory::ArcheryRange1 => 0,
-            BuildingCategory::ArcheryRange2 => 0,
-            BuildingCategory::ArcheryRange3 => 0,
-            BuildingCategory::Stable1 => 0,
-            BuildingCategory::Stable2 => 0,
-            BuildingCategory::Stable3 => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::Storehouse => 0,
+            BuildingCategory::ResourceStone => 0,
+            BuildingCategory::ResourceCoal => 0,
+            BuildingCategory::ResourceWood => 0,
+            BuildingCategory::ResourceCopper => 0,
+            BuildingCategory::ResourceIronwood => 0,
+            BuildingCategory::ResourceObsidian => 0,
+            BuildingCategory::ResourceGold => 0,
+            BuildingCategory::ResourceSilver => 0,
+            BuildingCategory::ResourceMithral => 0,
+            BuildingCategory::ResourceAlchemicalSilver => 0,
+            BuildingCategory::ResourceColdIron => 0,
+            BuildingCategory::ResourceDeepCrystal => 0,
+            BuildingCategory::ResourceRuby => 0,
+            BuildingCategory::ResourceDiamonds => 0,
+            BuildingCategory::ResourceHartwood => 0,
+            BuildingCategory::ResourceIgnium => 0,
+            BuildingCategory::ResourceTwilightQuartz => 0,
+            BuildingCategory::ResourceTrueIce => 0,
+            BuildingCategory::ResourceAdamantine => 0,
+            BuildingCategory::ResourceSapphire => 0,
+            BuildingCategory::ResourceEtherealSilica => 0,
+            BuildingCategory::ResourceDragonhide => 0,
+            BuildingCategory::ResourceLabor => 0,
+            BuildingCategory::ResourceEarthenShard => 0,
+            BuildingCategory::ResourceDonkey => 0,
+            BuildingCategory::ResourceKnightT1 => 0,
+            BuildingCategory::ResourceKnightT2 => 0,
+            BuildingCategory::ResourceKnightT3 => 0,
+            BuildingCategory::ResourceCrossbowmanT1 => 0,
+            BuildingCategory::ResourceCrossbowmanT2 => 0,
+            BuildingCategory::ResourceCrossbowmanT3 => 0,
+            BuildingCategory::ResourcePaladinT1 => 0,
+            BuildingCategory::ResourcePaladinT2 => 0,
+            BuildingCategory::ResourcePaladinT3 => 0,
+            BuildingCategory::ResourceWheat => PercentageValueImpl::_10().try_into().unwrap(), // 10%,
+            BuildingCategory::ResourceFish => 0,
         }
     }
     fn update_production(ref self: Building, ref world: WorldStorage, ref structure_weight: Weight, stop: bool) {
@@ -515,10 +695,11 @@ pub impl BuildingImpl of BuildingTrait {
         outer_entity_id: ID,
         outer_entity_coord: Coord,
         category: BuildingCategory,
-        produce_resource_type: Option<u8>,
         inner_coord: Coord,
     ) -> (Building, u8) {
-        // todo@credence: ensure that the bounds are within the inner realm bounds
+        // ensure category is not None
+        assert!(category != BuildingCategory::None, "category cannot be None");
+        assert!(category.into() <= LAST_RESOURCE_BUILDING, "category is out of bounds");
 
         // ensure that building is not occupied
         let mut building: Building = world
@@ -528,19 +709,8 @@ pub impl BuildingImpl of BuildingTrait {
 
         // set building
         building.entity_id = world.dispatcher.uuid();
-        building.category = category;
+        building.category = category.into();
         building.outer_entity_id = outer_entity_id;
-        match produce_resource_type {
-            Option::Some(resource_type) => {
-                assert!(building.category == BuildingCategory::Resource, "resource type should not be specified");
-                building.produced_resource_type = resource_type;
-            },
-            Option::None => {
-                assert!(building.category != BuildingCategory::Resource, "resource type must be specified");
-                building.produced_resource_type = building.produced_resource();
-            },
-        }
-
         world.write_model(@building);
 
         // start production related to building
@@ -550,50 +720,25 @@ pub impl BuildingImpl of BuildingTrait {
         building.grant_capacity_bonus(ref world, true);
 
         // increase building type count for structure
-        let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
-        let mut all_categories_quantity_packed: u128 = world
-            .read_member(structure_building_ptr, selector!("packed_counts"));
-        let structure_building_initialized = all_categories_quantity_packed > 0;
-        let new_building_category_count: u8 = category.building_count(all_categories_quantity_packed) + 1;
-        all_categories_quantity_packed = category
-            .set_building_count(all_categories_quantity_packed, new_building_category_count);
-        if structure_building_initialized {
-            world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
-        } else {
-            let mut structure_building: StructureBuildings = Default::default();
-            structure_building.entity_id = outer_entity_id;
-            structure_building.packed_counts = all_categories_quantity_packed;
-            world.write_model(@structure_building);
-        }
+        let mut structure_buildings: StructureBuildings = world.read_model(outer_entity_id);
+        let building_category_count: u8 = structure_buildings.building_count(category) + 1;
+        structure_buildings.update_building_count(category, building_category_count);
 
         // increase population
-        let mut population: Population = world
-            .read_member(Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"));
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
-        let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("population_config"),
-        );
+        let mut population: Population = structure_buildings.population;
+        let building_category_config: BuildingCategoryConfig = world.read_model(category);
 
         // increase population
-        population
-            .increase_population(building_category_population_config.population, population_config.base_population);
-
-        // increase capacity
-        // Only worker huts do this right now.
-        population.increase_capacity(building_category_population_config.capacity);
-
-        // [check] Population
-        population.assert_within_capacity(population_config.base_population);
+        let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
+        population.increase_population(building_category_config.population_cost);
+        population.increase_capacity(building_category_config.capacity_grant);
+        population.assert_within_capacity(building_config.base_population);
 
         // set population
-        world
-            .write_member(
-                Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"), population,
-            );
+        structure_buildings.population = population;
+        world.write_model(@structure_buildings);
 
-        // todo:  increase structure weight when certain buildings are built
-
-        (building, new_building_category_count)
+        (building, building_category_count)
     }
 
     /// Pause building production without removing the building
@@ -654,62 +799,36 @@ pub impl BuildingImpl of BuildingTrait {
         building.grant_capacity_bonus(ref world, false);
 
         // decrease building type count for realm
-        let structure_building_ptr = Model::<StructureBuildings>::ptr_from_keys(outer_entity_id);
-        let mut all_categories_quantity_packed: u128 = world
-            .read_member(structure_building_ptr, selector!("packed_counts"));
-        let new_building_category_count: u8 = building.category.building_count(all_categories_quantity_packed) - 1;
-        all_categories_quantity_packed = building
-            .category
-            .set_building_count(all_categories_quantity_packed, new_building_category_count);
-        world.write_member(structure_building_ptr, selector!("packed_counts"), all_categories_quantity_packed);
+        let mut structure_buildings: StructureBuildings = world.read_model(outer_entity_id);
+        let building_category_count: u8 = structure_buildings.building_count(building.category.into()) - 1;
+        structure_buildings.update_building_count(building.category.into(), building_category_count);
 
         // decrease population
-        let mut population: Population = world
-            .read_member(Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"));
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(ref world, building.category);
-
-        // [check] If Workers hut
-        // You cannot delete a workers hut unless you have capacity
-        // Otherwise there is an exploit where you can delete a workers hut and increase capacity
-        if (building.category == BuildingCategory::WorkersHut) {
-            let population_config: PopulationConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("population_config"),
-            );
-            population.decrease_capacity(building_category_population_config.capacity);
-            population.assert_within_capacity(population_config.base_population);
-        }
-
-        // decrease population
-        population.decrease_population(building_category_population_config.population);
+        let mut population: Population = structure_buildings.population;
+        let building_category_config: BuildingCategoryConfig = world.read_model(building.category);
+        let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
+        population.decrease_capacity(building_category_config.capacity_grant);
+        population.decrease_population(building_category_config.population_cost);
+        population.assert_within_capacity(building_config.base_population);
 
         // set population
-        world
-            .write_member(
-                Model::<StructureBuildings>::ptr_from_keys(outer_entity_id), selector!("population"), population,
-            );
+        structure_buildings.population = population;
+        world.write_model(@structure_buildings);
 
         let destroyed_building_category = building.category;
 
         // remove building
         world.erase_model(@building);
 
-        // todo: decrease structure weight when certain buildings are destroyed
-
-        destroyed_building_category
+        destroyed_building_category.into()
     }
 
     fn make_payment(self: Building, building_count: u8, ref world: WorldStorage) {
-        let building_general_config: BuildingGeneralConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("building_general_config"),
-        );
-        let building_config: BuildingConfig = BuildingConfigImpl::get(
-            ref world, self.category, self.produced_resource_type,
-        );
+        let building_category_config: BuildingCategoryConfig = world.read_model(self.category);
         let mut index = 0;
-
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
         loop {
-            if index == building_config.resource_cost_count {
+            if index == building_category_config.erection_cost_count {
                 break;
             }
 
@@ -720,23 +839,24 @@ pub impl BuildingImpl of BuildingTrait {
             //  Rate = How quickly the cost goes up (a small number like 0.1 or 0.2)
             //  N = Which number building this is (1st, 2nd, 3rd, etc.)
             //
-            let resource_cost: ResourceList = world.read_model((building_config.resource_cost_id, index));
+            let erection_cost: ResourceList = world.read_model((building_category_config.erection_cost_id, index));
 
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_cost.resource_type);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, erection_cost.resource_type);
             let mut resource = SingleResourceStoreImpl::retrieve(
                 ref world,
                 self.outer_entity_id,
-                resource_cost.resource_type,
+                erection_cost.resource_type,
                 ref structure_weight,
                 resource_weight_grams,
                 true,
             );
 
+            let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
             let percentage_additional_cost = PercentageImpl::get(
-                resource_cost.amount, building_general_config.base_cost_percent_increase.into(),
+                erection_cost.amount, building_config.base_cost_percent_increase.into(),
             );
             let scale_factor = building_count - 1;
-            let total_cost = resource_cost.amount
+            let total_cost = erection_cost.amount
                 + (scale_factor.into() * scale_factor.into() * percentage_additional_cost);
 
             // spend resource

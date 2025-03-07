@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x20216825b626df2352a85012372b51e083a63ab4b054578f941a1c4475fd7",
-      "class_hash": "0x4621b85f675e6b5e2ce08a595e649427c4d795431499d09be1c01adf92bc9a5",
+      "address": "0x7e5610e1a24157a56aa1add8eceac7ddac23058679c75a9fa1b86eda419aab8",
+      "class_hash": "0x1f140c970be992fdbb8d2e3a40a53ba0d7c98d7a1588416011f29fb0b5e3183",
       "abi": [
         {
           "type": "impl",
@@ -1634,8 +1634,8 @@
       ]
     },
     {
-      "address": "0xc1b3abe33ef49d55bf4e49ea526e9e5e8ced0b37b66cf25d856aaa57f334bd",
-      "class_hash": "0x26fa619e19b1a6a531e8501b53fe7c432bed6af8fa21494691cb958cba0a7aa",
+      "address": "0x2a9eaed7699e6873a5e305ec865c8aa051ae7da4048a08fa10411a9045167f",
+      "class_hash": "0x71c18a0282bfd3b14ae41b99eba9681c1004bfb249c54fdb7b5b2d3ae6d626b",
       "abi": [
         {
           "type": "impl",
@@ -2187,111 +2187,6 @@
         },
         {
           "type": "impl",
-          "name": "BuildingCategoryPopulationConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IBuildingCategoryPopConfig"
-        },
-        {
-          "type": "enum",
-          "name": "s1_eternum::models::resource::production::building::BuildingCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks1",
-              "type": "()"
-            },
-            {
-              "name": "Barracks2",
-              "type": "()"
-            },
-            {
-              "name": "Barracks3",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange1",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange2",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange3",
-              "type": "()"
-            },
-            {
-              "name": "Stable1",
-              "type": "()"
-            },
-            {
-              "name": "Stable2",
-              "type": "()"
-            },
-            {
-              "name": "Stable3",
-              "type": "()"
-            },
-            {
-              "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IBuildingCategoryPopConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_building_category_pop_config",
-              "inputs": [
-                {
-                  "name": "building_category",
-                  "type": "s1_eternum::models::resource::production::building::BuildingCategory"
-                },
-                {
-                  "name": "population",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "capacity",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
           "name": "TroopConfigImpl",
           "interface_name": "s1_eternum::systems::config::contracts::ITroopConfig"
         },
@@ -2453,31 +2348,170 @@
         },
         {
           "type": "impl",
-          "name": "PopulationConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IPopulationConfig"
-        },
-        {
-          "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IPopulationConfig",
-          "items": [
-            {
-              "type": "function",
-              "name": "set_population_config",
-              "inputs": [
-                {
-                  "name": "base_population",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
           "name": "BuildingConfigImpl",
           "interface_name": "s1_eternum::systems::config::contracts::IBuildingConfig"
+        },
+        {
+          "type": "enum",
+          "name": "s1_eternum::models::resource::production::building::BuildingCategory",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "WorkersHut",
+              "type": "()"
+            },
+            {
+              "name": "Storehouse",
+              "type": "()"
+            },
+            {
+              "name": "ResourceStone",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCoal",
+              "type": "()"
+            },
+            {
+              "name": "ResourceWood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCopper",
+              "type": "()"
+            },
+            {
+              "name": "ResourceIronwood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceObsidian",
+              "type": "()"
+            },
+            {
+              "name": "ResourceGold",
+              "type": "()"
+            },
+            {
+              "name": "ResourceSilver",
+              "type": "()"
+            },
+            {
+              "name": "ResourceMithral",
+              "type": "()"
+            },
+            {
+              "name": "ResourceAlchemicalSilver",
+              "type": "()"
+            },
+            {
+              "name": "ResourceColdIron",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDeepCrystal",
+              "type": "()"
+            },
+            {
+              "name": "ResourceRuby",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDiamonds",
+              "type": "()"
+            },
+            {
+              "name": "ResourceHartwood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceIgnium",
+              "type": "()"
+            },
+            {
+              "name": "ResourceTwilightQuartz",
+              "type": "()"
+            },
+            {
+              "name": "ResourceTrueIce",
+              "type": "()"
+            },
+            {
+              "name": "ResourceAdamantine",
+              "type": "()"
+            },
+            {
+              "name": "ResourceSapphire",
+              "type": "()"
+            },
+            {
+              "name": "ResourceEtherealSilica",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDragonhide",
+              "type": "()"
+            },
+            {
+              "name": "ResourceLabor",
+              "type": "()"
+            },
+            {
+              "name": "ResourceEarthenShard",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDonkey",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourceWheat",
+              "type": "()"
+            },
+            {
+              "name": "ResourceFish",
+              "type": "()"
+            }
+          ]
         },
         {
           "type": "interface",
@@ -2485,8 +2519,12 @@
           "items": [
             {
               "type": "function",
-              "name": "set_building_general_config",
+              "name": "set_building_config",
               "inputs": [
+                {
+                  "name": "base_population",
+                  "type": "core::integer::u32"
+                },
                 {
                   "name": "base_cost_percent_increase",
                   "type": "core::integer::u16"
@@ -2497,19 +2535,23 @@
             },
             {
               "type": "function",
-              "name": "set_building_config",
+              "name": "set_building_category_config",
               "inputs": [
                 {
                   "name": "building_category",
                   "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
-                  "name": "building_resource_type",
-                  "type": "core::integer::u8"
-                },
-                {
                   "name": "cost_of_building",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "population_cost",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "capacity_grant",
+                  "type": "core::integer::u32"
                 }
               ],
               "outputs": [],
@@ -2912,11 +2954,9 @@
         "set_battle_config",
         "set_hyperstructure_config",
         "set_bank_config",
-        "set_building_category_pop_config",
         "set_troop_config",
-        "set_population_config",
-        "set_building_general_config",
         "set_building_config",
+        "set_building_category_config",
         "set_resource_bridge_config",
         "set_resource_bridge_fee_split_config",
         "set_resource_bridge_whitelist_config",
@@ -2928,8 +2968,8 @@
       ]
     },
     {
-      "address": "0x4998292f0a3daa658c007d73a981451637f9726e5c9250b0e7555e507aca9bb",
-      "class_hash": "0x1ee40053f769ba5a73b620040640b68c4dc45e99c8aa45f8b67f6993fa18768",
+      "address": "0x27e5b9efb8fb085b3c5b4c32ff106be568ceadfb453290570ba51abe9318f18",
+      "class_hash": "0x3a0d920d3fed9c9137b1a776f21b27a32343f059aee352a37a425d2ec4f9ae9",
       "abi": [
         {
           "type": "impl",
@@ -3441,8 +3481,8 @@
       ]
     },
     {
-      "address": "0xd7e3c075213b26c9d61d8670338c0e55d5f9a63e70482f428a473ddace3485",
-      "class_hash": "0x68c049f3f2fe8026b7f150884fb2f9b2eec99519bdade3728f39edf6a54b929",
+      "address": "0x7da5799e90e52763421c96f1755bcc6815e69eb9c488009cebe2d6e286d7dbb",
+      "class_hash": "0x73813433266cde6d657e89a6989336430ccd4e80c90fc3b71c56734c4597090",
       "abi": [
         {
           "type": "impl",
@@ -3796,8 +3836,8 @@
       ]
     },
     {
-      "address": "0x286ce02884205bc6991fce59f5e620d9d358349c01a4b35792e563a3057cea5",
-      "class_hash": "0x38b4152bba243cab86f79f7fc5d1eb6b0c0c3234a529cffc0a0a50b6aecc55",
+      "address": "0x4069e62adc8f309c7194861ef691ef58c337e2bf5cde43bad4197878eb10e0f",
+      "class_hash": "0x2ab88a4facacbb4430867e53634415393c09e4993e2b571a454992491392e40",
       "abi": [
         {
           "type": "impl",
@@ -4441,8 +4481,8 @@
       ]
     },
     {
-      "address": "0x7dd81997e36febf23bb0374f51cb3c19c4a0e06359d13620f6211628cd13c8d",
-      "class_hash": "0x2d2f31bfc582c0fdb8431a00974db4fcb0f67ad143d5a1a7dc67969d5ecec2e",
+      "address": "0x284d0f502baa8f0109b9423f84f29af2770f9e83cd5774714f6c5526e38786",
+      "class_hash": "0x24e4a854029c8c257557222bf69d7248b7b2e7a3e7e0f167baf27b3b0e0fcb8",
       "abi": [
         {
           "type": "impl",
@@ -4548,81 +4588,155 @@
               "type": "()"
             },
             {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks1",
-              "type": "()"
-            },
-            {
-              "name": "Barracks2",
-              "type": "()"
-            },
-            {
-              "name": "Barracks3",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange1",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange2",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange3",
-              "type": "()"
-            },
-            {
-              "name": "Stable1",
-              "type": "()"
-            },
-            {
-              "name": "Stable2",
-              "type": "()"
-            },
-            {
-              "name": "Stable3",
-              "type": "()"
-            },
-            {
               "name": "WorkersHut",
               "type": "()"
             },
             {
               "name": "Storehouse",
               "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u8>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u8"
             },
             {
-              "name": "None",
+              "name": "ResourceStone",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCoal",
+              "type": "()"
+            },
+            {
+              "name": "ResourceWood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCopper",
+              "type": "()"
+            },
+            {
+              "name": "ResourceIronwood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceObsidian",
+              "type": "()"
+            },
+            {
+              "name": "ResourceGold",
+              "type": "()"
+            },
+            {
+              "name": "ResourceSilver",
+              "type": "()"
+            },
+            {
+              "name": "ResourceMithral",
+              "type": "()"
+            },
+            {
+              "name": "ResourceAlchemicalSilver",
+              "type": "()"
+            },
+            {
+              "name": "ResourceColdIron",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDeepCrystal",
+              "type": "()"
+            },
+            {
+              "name": "ResourceRuby",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDiamonds",
+              "type": "()"
+            },
+            {
+              "name": "ResourceHartwood",
+              "type": "()"
+            },
+            {
+              "name": "ResourceIgnium",
+              "type": "()"
+            },
+            {
+              "name": "ResourceTwilightQuartz",
+              "type": "()"
+            },
+            {
+              "name": "ResourceTrueIce",
+              "type": "()"
+            },
+            {
+              "name": "ResourceAdamantine",
+              "type": "()"
+            },
+            {
+              "name": "ResourceSapphire",
+              "type": "()"
+            },
+            {
+              "name": "ResourceEtherealSilica",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDragonhide",
+              "type": "()"
+            },
+            {
+              "name": "ResourceLabor",
+              "type": "()"
+            },
+            {
+              "name": "ResourceEarthenShard",
+              "type": "()"
+            },
+            {
+              "name": "ResourceDonkey",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourceKnightT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourceCrossbowmanT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT1",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT2",
+              "type": "()"
+            },
+            {
+              "name": "ResourcePaladinT3",
+              "type": "()"
+            },
+            {
+              "name": "ResourceWheat",
+              "type": "()"
+            },
+            {
+              "name": "ResourceFish",
               "type": "()"
             }
           ]
@@ -4680,10 +4794,6 @@
                 {
                   "name": "building_category",
                   "type": "s1_eternum::models::resource::production::building::BuildingCategory"
-                },
-                {
-                  "name": "requested_resource_type",
-                  "type": "core::option::Option::<core::integer::u8>"
                 }
               ],
               "outputs": [],
@@ -4929,8 +5039,8 @@
       ]
     },
     {
-      "address": "0x4c4bbaad7548264121ba324c00ca45c02f2cb18160a60952f48e3b1038431c4",
-      "class_hash": "0x50086337ad61ba4a9ebcac92d31e8a1bffc4dd07edc80902cf4c659816709f6",
+      "address": "0x1d39bc017188047e866763f9be2e5fc209386edc6ee6c7cda38956b547ddd6b",
+      "class_hash": "0x5ce5230e7d02bec4b416f0f983fb6018f082e30febb6ecfab1a3b3904b497fb",
       "abi": [
         {
           "type": "impl",
@@ -5145,8 +5255,8 @@
       ]
     },
     {
-      "address": "0x44b38f245db92ae8ff4e8138b53a09de1d3603a1f1c60353366fb2fef128dc4",
-      "class_hash": "0x189a417d36dd90b53752dcfa870bcd86b3918ffae575514dcf4fc777984b18e",
+      "address": "0x5b2af4b046a0d772f88a8f86b2bac8d6addd45fd0d342a2872d457ba7dc2ac",
+      "class_hash": "0x48707c83615f91c633f6b13596354a473d0a72ba408d902e5cfef8dfce0899b",
       "abi": [
         {
           "type": "impl",
@@ -5450,8 +5560,8 @@
       ]
     },
     {
-      "address": "0x5dfded2418ab9838985f8c172b41cb5e2f5b27c34949eda3aab6b17e669134a",
-      "class_hash": "0x751d6fb295d6ca9622b74a4aece1d2636c48fcd2d31373351bd1637a71436d9",
+      "address": "0x61e769ac81b0dd06bc93e93a60c9945e3aa52c70d4a94b86b33accc561e2389",
+      "class_hash": "0x5056b2da80c8a940b94ec817d0776a3979d21bee3d3d0e21a7a4415f720e307",
       "abi": [
         {
           "type": "impl",
@@ -5777,8 +5887,8 @@
       ]
     },
     {
-      "address": "0x22cda27b5947258442224ee6cfeb579b8152980e2270e76db2eb2d4df87c511",
-      "class_hash": "0x322924a8d4754c904286b3e5be4eef7d68dcbc0956b5487a1aeee57a50a791b",
+      "address": "0x44b60c910f7adf73e8fa75720df02abd8b97a7fe9bc1869260dc52e188d2be8",
+      "class_hash": "0x6b28cc19be57479319aefc7e1e6fafd798d41f0613b200cac7f45df297b2dfa",
       "abi": [
         {
           "type": "impl",
@@ -6014,8 +6124,8 @@
       ]
     },
     {
-      "address": "0x28f828acc7e0f2e2a6edb0207a9eaab8c28637d9dc6e2a72928b6f5db361c96",
-      "class_hash": "0x25fbe4f3f06935290b8aee227a0d7d8f7a9b718fbb62f74422c448da2db9920",
+      "address": "0xf07fea1362224752ef42e3932f5bf52f19b0509e76f20dcf83d893130c6fa2",
+      "class_hash": "0x24aeb73202c94ee3d2b3fff4374a9f64c7e99ed409931821e556fab6b2ccba8",
       "abi": [
         {
           "type": "impl",
@@ -6214,8 +6324,8 @@
       ]
     },
     {
-      "address": "0x19c125f5d0a1a5ad8e5d4c29f4b87458edf964ac36f2a174f59e31a51a6aa6c",
-      "class_hash": "0xbe1347778b9a2ffb90dd42d2cdbd7f5512eb8ea7bedec7f947e887ce6cfc01",
+      "address": "0xb705dcc0ed9f92ac06dbfb8f0787cea0cd920462ab2bba47ff5e26e9f8f422",
+      "class_hash": "0x61c4ad89e01f26e469092637cb67b0fa6c7e522e1fcd90e54a2354974ad7ed2",
       "abi": [
         {
           "type": "impl",
@@ -6451,8 +6561,8 @@
       ]
     },
     {
-      "address": "0x65aa481120e87720d6858729b0b07efc8dd716bcfaa46c8090234cca4e25b8e",
-      "class_hash": "0x2cbf91257d148ae26744aeebc86e0b7a15be89b6b4384117a1cf144d933b744",
+      "address": "0x4b89948cfe454b9992526662cad2566c63d726b74799a42c15da058b7543c33",
+      "class_hash": "0x367fd5b2324a5717192a80e05b769ec0f691c25c68ec640ff621775a71e9b2d",
       "abi": [
         {
           "type": "impl",
@@ -6717,8 +6827,8 @@
       ]
     },
     {
-      "address": "0x6375e997b9c387d8bd611a889da57b3ce9ab18fe13cbe3a268826bf48b8b037",
-      "class_hash": "0x22c713bd34533b4d3342bd3afbc9731c92842b160773beaf8dee9900c6cd0e6",
+      "address": "0x35ef4341d1bf15d295ccdab03ee0218d6c0435c53d6ce5e9b5425340e9eccaf",
+      "class_hash": "0x2cbdc022e6f4d4a81d1ce2429f5b86776125e6488e113cdd8ae84cf7c700b43",
       "abi": [
         {
           "type": "impl",
@@ -7023,8 +7133,8 @@
       ]
     },
     {
-      "address": "0x1e276d0c768c843ade904084bf127b12cc936207fdc7010d85409d24488d730",
-      "class_hash": "0x435703df5f6adfdba27137230095fa1a00a355813dcdedb59402ed1fb9a1f54",
+      "address": "0x3131f22eb02570363b9571cecb6090b506c628479df128b17d31431634f237f",
+      "class_hash": "0x4b534b3900c495e50c0800e73fcbf3ff217c14c053f3c43cd1ad44d993b9c78",
       "abi": [
         {
           "type": "impl",
@@ -7494,8 +7604,8 @@
       ]
     },
     {
-      "address": "0x34b13a247d0f0d93a8a4cc70611559da02153d571450007ed1f1b6d5559c057",
-      "class_hash": "0x3c518000097fa6bc3bbe6be7dd7456361e5090978ba91097d537193d749b64f",
+      "address": "0x422addabcfa28d39fe5a8fd565b66087028c3b785b4620372c049343802b660",
+      "class_hash": "0x38752ef8399d5f3d3023eae4863f928f7dbbed2ffee1a03e968f56a1543b6e4",
       "abi": [
         {
           "type": "impl",
@@ -7756,8 +7866,8 @@
       ]
     },
     {
-      "address": "0x145e33acd0315fa5c84f3aacc0eccc5712511d5019da98fbb7b34838b4af107",
-      "class_hash": "0x1c8148b240b9bb8abacec0bda8765e7b8ca0a39f119415c060cc2eed3b971b4",
+      "address": "0xb86d7597144ca78c0fb7bb42852a91d1a6837b49df7f85e291ab834c8d04ad",
+      "class_hash": "0x3ba6c93d43b9148cb5123db81f762917d0974136630ff728f381c2285f1d348",
       "abi": [
         {
           "type": "impl",
@@ -8004,21 +8114,15 @@
     },
     {
       "members": [],
-      "class_hash": "0x2a1049d1bea45b479c88dc93525c3ff856339961098d2ed07e16df516a24fe0",
+      "class_hash": "0x1d42c07d4f132b7104b5f85c47d6135f9fe6797d3379fe53869764b0ed7006",
       "tag": "s1_eternum-Building",
       "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
     },
     {
       "members": [],
-      "class_hash": "0x4410e282596e82ff0c421167bc99e83370c06b08571fed4959d86c780e3b83",
-      "tag": "s1_eternum-BuildingCategoryPopConfig",
-      "selector": "0x2b847fd482c7e77364e1a29d18c690661dee59631db5538e063065cd28a9157"
-    },
-    {
-      "members": [],
-      "class_hash": "0x7b82c69beddbc9776e37027cb78d518c89e7ba61c12d348a7f2ac2ee2270a3b",
-      "tag": "s1_eternum-BuildingConfig",
-      "selector": "0x10ab036ccd4d1e968f0b3b3333d59911fd7f96cbd0fe73c9d639b80aaf10ef4"
+      "class_hash": "0x7ab6a16673c8e6903354fc4399e7e6e881590bc26f5743a3a90e2c79e44d843",
+      "tag": "s1_eternum-BuildingCategoryConfig",
+      "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
     },
     {
       "members": [],
@@ -8208,7 +8312,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x3bebd9bf8c9c8a0d8dd10ecdc9edec6401ad58828c7c81309a2b579e1c34b52",
+      "class_hash": "0x70b0e47d024ecfc9eb7f0a9e2e7a95faccc90f78a0eec0f242cc8bf24c5472a",
       "tag": "s1_eternum-StructureBuildings",
       "selector": "0x5e917975e7957932cf7c52fd5c0ee447ed413e0e39f9ab7fc92cd0a57a6fb9"
     },
@@ -8244,7 +8348,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x388698eeb5235958eb5ec362c7c901043c643d365f34af0ffd1013c1124d0b5",
+      "class_hash": "0x6b93eb35bda1972d9e38f5dff5c50c642193dbe24e73f67f70bc4d1c24ec715",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     }

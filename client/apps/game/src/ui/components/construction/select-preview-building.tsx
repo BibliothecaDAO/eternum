@@ -24,9 +24,10 @@ import {
   ID,
   isResourceProductionBuilding,
   ResourceCost as ResourceCostType,
+  ResourceIdToBuildingType,
   ResourceIdToMiningType,
   ResourceMiningTypes,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
 import { DojoResult, useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -57,6 +58,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       key !== "Settlement" &&
       key !== "Hyperstructure",
   );
+
+  console.log({ buildingTypesAfterFilter: buildingTypes });
 
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
@@ -89,7 +92,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
                 realm,
-                configManager.getBuildingPopConfig(BuildingType.Resource).population,
+                configManager.getBuildingPopConfig(ResourceIdToBuildingType[resourceId]).population,
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
@@ -97,16 +100,19 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               return (
                 <BuildingCard
                   key={resourceId}
-                  buildingId={BuildingType.Resource}
+                  buildingId={ResourceIdToBuildingType[resourceId]}
                   resourceId={resourceId}
                   onClick={() => {
                     if (!canBuild) {
+                      console.log("got here 3");
                       return;
                     }
-                    if (previewBuilding?.type === BuildingType.Resource && previewBuilding?.resource === resourceId) {
+                    if (isResourceProductionBuilding(ResourceIdToBuildingType[resourceId]) && previewBuilding?.resource === resourceId) {
+                      console.log("got here");
                       setPreviewBuilding(null);
                     } else {
-                      setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
+                      console.log("got here 2");
+                      setPreviewBuilding({ type: ResourceIdToBuildingType[resourceId], resource: resourceId });
                       playResourceSound(resourceId);
                     }
                   }}
@@ -153,9 +159,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isFarm = building === BuildingType.Farm;
-                const isFishingVillage = building === BuildingType.FishingVillage;
-                const isMarket = building === BuildingType.Market;
+                const isFarm = building === BuildingType.ResourceWheat;
+                const isFishingVillage = building === BuildingType.ResourceFish;
+                const isMarket = building === BuildingType.ResourceDonkey;
 
                 return (
                   <BuildingCard
@@ -176,10 +182,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         setPreviewBuilding(null);
                       } else {
                         setPreviewBuilding({ type: building });
-                        if (building === BuildingType.Farm) {
+                        if (building === BuildingType.ResourceWheat) {
                           playResourceSound(ResourcesIds.Wheat);
                         }
-                        if (building === BuildingType.FishingVillage) {
+                        if (building === BuildingType.ResourceFish) {
                           playResourceSound(ResourcesIds.Fish);
                         }
                       }
@@ -224,9 +230,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
-                const isBarracks = building === BuildingType.Barracks1;
-                const isArcheryRange = building === BuildingType.ArcheryRange1;
-                const isStable = building === BuildingType.Stable1;
+                const isBarracks = building === BuildingType.ResourceKnightT1 || building === BuildingType.ResourceKnightT2 || building === BuildingType.ResourceKnightT3;
+                const isArcheryRange = building === BuildingType.ResourceCrossbowmanT1 || building === BuildingType.ResourceCrossbowmanT2 || building === BuildingType.ResourceCrossbowmanT3;
+                const isStable = building === BuildingType.ResourcePaladinT1 || building === BuildingType.ResourcePaladinT2 || building === BuildingType.ResourcePaladinT3;
 
                 return (
                   <BuildingCard
@@ -391,7 +397,7 @@ export const ResourceInfo = ({
 
   const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
 
-  const buildingPopCapacityConfig = configManager.getBuildingPopConfig(BuildingType.Resource);
+  const buildingPopCapacityConfig = configManager.getBuildingPopConfig(ResourceIdToBuildingType[resourceId]);
   const population = buildingPopCapacityConfig.population;
   const capacity = buildingPopCapacityConfig.capacity;
 
@@ -539,7 +545,7 @@ export const BuildingInfo = ({
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
-  if (buildingId == BuildingType.Market && structure?.metadata.has_wonder && ongoingCost.length > 0) {
+  if (buildingId == BuildingType.ResourceDonkey && structure?.metadata.has_wonder && ongoingCost.length > 0) {
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
@@ -689,7 +695,7 @@ const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceI
 
   let updatedCosts: ResourceCostType[] = [];
 
-  configManager.resourceBuildingCosts[Number(resourceId)].forEach((cost) => {
+  configManager.buildingCosts[ResourceIdToBuildingType[resourceId]].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
@@ -717,44 +723,9 @@ const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory:
 };
 
 const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
-  if (resourceId === ResourcesIds.Wheat) {
-    return BuildingType.Farm;
+  let buildingType = ResourceIdToBuildingType[resourceId];
+  if (!buildingType) {
+    return BuildingType.None;
   }
-  if (resourceId === ResourcesIds.Fish) {
-    return BuildingType.FishingVillage;
-  }
-  if (resourceId > 0 && resourceId < 22) {
-    return BuildingType.Resource;
-  }
-  if (resourceId === ResourcesIds.Donkey) {
-    return BuildingType.Market;
-  }
-  if (resourceId === ResourcesIds.Knight) {
-    return BuildingType.Barracks1;
-  }
-  if (resourceId === ResourcesIds.KnightT2) {
-    return BuildingType.Barracks2;
-  }
-  if (resourceId === ResourcesIds.KnightT3) {
-    return BuildingType.Barracks3;
-  }
-  if (resourceId === ResourcesIds.Crossbowman) {
-    return BuildingType.ArcheryRange1;
-  }
-  if (resourceId === ResourcesIds.CrossbowmanT2) {
-    return BuildingType.ArcheryRange2;
-  }
-  if (resourceId === ResourcesIds.CrossbowmanT3) {
-    return BuildingType.ArcheryRange3;
-  }
-  if (resourceId === ResourcesIds.Paladin) {
-    return BuildingType.Stable1;
-  }
-  if (resourceId === ResourcesIds.PaladinT2) {
-    return BuildingType.Stable2;
-  }
-  if (resourceId === ResourcesIds.PaladinT3) {
-    return BuildingType.Stable3;
-  }
-  return BuildingType.None;
+  return buildingType;
 };

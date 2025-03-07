@@ -38,7 +38,7 @@ export type BattleSystemUpdate = {
 };
 
 export type BuildingSystemUpdate = {
-  buildingType: string;
+  buildingType: number;
   innerCol: number;
   innerRow: number;
   paused: boolean;

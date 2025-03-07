@@ -845,12 +845,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
-    const { entity_id, directions, building_category, produce_resource_type, signer } = props;
+    const { entity_id, directions, building_category, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
+      calldata: CallData.compile([entity_id, directions, building_category]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1929,7 +1929,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_building_category_pop_config(props: SystemProps.SetBuildingCategoryPopConfigProps) {
+
+  public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
+    const { base_cost_percent_increase, base_population,  signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_building_config",
+      calldata: [base_population, base_cost_percent_increase],
+    });
+  }
+  
+  public async set_building_category_config(props: SystemProps.SetBuildingCategoryConfigProps) {
     const { calls, signer } = props;
 
     return await this.executeAndCheckTransaction(
@@ -1937,32 +1948,20 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_building_category_pop_config",
-          calldata: [call.building_category, call.population, call.capacity],
+          entrypoint: "set_building_category_config",
+          calldata: [
+            call.building_category,
+            call.erection_cost.length,
+            ...call.erection_cost.flatMap(({ resource, amount }) => [resource, amount]),
+            call.population_cost, 
+            call.capacity_grant
+          ],
         };
       }),
     );
   }
 
-  public async set_building_general_config(props: SystemProps.SetBuildingGeneralConfigProps) {
-    const { base_cost_percent_increase, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_building_general_config",
-      calldata: [base_cost_percent_increase],
-    });
-  }
-
-  public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
-    const { base_population, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_population_config",
-      calldata: [base_population],
-    });
-  }
 
   public async set_structure_level_config(props: SystemProps.setRealmUpgradeConfigProps) {
     const { calls, signer } = props;
@@ -2003,25 +2002,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
-    const { calls, signer } = props;
-
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_building_config",
-          calldata: [
-            call.building_category,
-            call.building_resource_type,
-            call.cost_of_building.length,
-            ...call.cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
-          ],
-        };
-      }),
-    );
-  }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
     const {

@@ -14,7 +14,7 @@ export const createBuildModeStoreSlice = (set: any) => ({
   setPreviewBuilding: (previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null) => {
     set({ previewBuilding });
   },
-  existingBuildings: [{ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], type: BuildingType.Castle }],
+  existingBuildings: [{ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], type: BuildingType.ResourceLabor }],
   setExistingBuildings: (
     existingBuildings: { col: number; row: number; type: BuildingType; entity?: Entity; resource?: ResourcesIds }[],
   ) => set({ existingBuildings }),

@@ -1,5 +1,6 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { isMilitaryBuilding } from "@/three/scenes/constants";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -8,6 +9,7 @@ import {
   BuildingType,
   getEntityIdFromKeys,
   getRealmInfo,
+  isResourceProductionBuilding,
   ResourcesIds,
   TileManager,
   toHexString,
@@ -35,23 +37,17 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const economyBuildings = buildings.filter(
     (building) =>
-      building.category === BuildingType[BuildingType.Farm] ||
-      building.category === BuildingType[BuildingType.FishingVillage],
+      building.category === BuildingType.ResourceWheat ||
+      building.category === BuildingType.ResourceFish,
   );
 
-  const resourceBuildings = buildings.filter((building) => building.category === BuildingType[BuildingType.Resource]);
+  const resourceBuildings = buildings.filter((building) =>
+    isResourceProductionBuilding(building.category),
+  );
 
   const militaryBuildings = buildings.filter(
     (building) =>
-      building.category === BuildingType[BuildingType.Barracks1] ||
-      building.category === BuildingType[BuildingType.ArcheryRange1] ||
-      building.category === BuildingType[BuildingType.Stable1] ||
-      building.category === BuildingType[BuildingType.Barracks2] ||
-      building.category === BuildingType[BuildingType.ArcheryRange2] ||
-      building.category === BuildingType[BuildingType.Stable2] ||
-      building.category === BuildingType[BuildingType.Barracks3] ||
-      building.category === BuildingType[BuildingType.ArcheryRange3] ||
-      building.category === BuildingType[BuildingType.Stable3],
+      isMilitaryBuilding(building.category)
   );
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {

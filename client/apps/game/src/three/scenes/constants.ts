@@ -72,10 +72,10 @@ enum BuildingFilenames {
 
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.Bank,
-  [StructureType.Realm]: BuildingType.Castle,
-  [StructureType.FragmentMine]: BuildingType.FragmentMine,
-  [StructureType.Hyperstructure]: BuildingType.Castle,
-  [StructureType.Village]: BuildingType.Castle,
+  [StructureType.Realm]: BuildingType.ResourceLabor,
+  [StructureType.FragmentMine]: BuildingType.ResourceEarthenShard,
+  [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
+  [StructureType.Village]: BuildingType.ResourceLabor,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -112,21 +112,42 @@ export const buildingModelPaths = {
   [BUILDINGS_GROUPS.BUILDINGS]: {
     [BuildingType.None]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
     [BuildingType.Bank]: BUILDINGS_MODELS_PATH + BuildingFilenames.Bank,
-    [BuildingType.ArcheryRange1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ArcheryRange2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.ArcheryRange3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
-    [BuildingType.Barracks1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.Barracks2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.Barracks3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
-    [BuildingType.Stable1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.Stable2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.Stable3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
-    [BuildingType.Castle]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
-    [BuildingType.Farm]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
-    [BuildingType.FishingVillage]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
-    [BuildingType.FragmentMine]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
-    [BuildingType.Market]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
-    [BuildingType.Resource]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceCrossbowmanT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.ResourceCrossbowmanT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.ResourceCrossbowmanT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+    [BuildingType.ResourcePaladinT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.ResourcePaladinT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.ResourcePaladinT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+    [BuildingType.ResourceKnightT1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.ResourceKnightT2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.ResourceKnightT3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Barracks,
+    [BuildingType.ResourceLabor]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+    [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
+    [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
+    [BuildingType.ResourceEarthenShard]: BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
+    [BuildingType.ResourceStone]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceCoal]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceWood]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceCopper]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceIronwood]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceObsidian]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceGold]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceSilver]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceMithral]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceAlchemicalSilver]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceColdIron]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceDeepCrystal]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceRuby]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceDiamonds]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceHartwood]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceIgnium]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceTwilightQuartz]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceTrueIce]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceAdamantine]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceSapphire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceEtherealSilica]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Resource,
+    [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
     [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
     [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
   },
@@ -300,14 +321,14 @@ export const MinesMaterialsParams: Record<
 
 export const isMilitaryBuilding = (buildingType: BuildingType) => {
   return (
-    buildingType === BuildingType.Barracks1 ||
-    buildingType === BuildingType.Barracks2 ||
-    buildingType === BuildingType.Barracks3 ||
-    buildingType === BuildingType.ArcheryRange1 ||
-    buildingType === BuildingType.ArcheryRange2 ||
-    buildingType === BuildingType.ArcheryRange3 ||
-    buildingType === BuildingType.Stable1 ||
-    buildingType === BuildingType.Stable2 ||
-    buildingType === BuildingType.Stable3
+    buildingType === BuildingType.ResourceKnightT1 ||
+    buildingType === BuildingType.ResourceKnightT2 ||
+    buildingType === BuildingType.ResourceKnightT3 ||
+    buildingType === BuildingType.ResourceCrossbowmanT1 ||
+    buildingType === BuildingType.ResourceCrossbowmanT2 ||
+    buildingType === BuildingType.ResourceCrossbowmanT3 ||
+    buildingType === BuildingType.ResourcePaladinT1 ||
+    buildingType === BuildingType.ResourcePaladinT2 ||
+    buildingType === BuildingType.ResourcePaladinT3
   );
 };

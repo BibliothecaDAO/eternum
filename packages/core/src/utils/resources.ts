@@ -70,19 +70,11 @@ export const getQuestResources = (realmEntityId: ID, components: ClientComponent
 };
 
 export const isResourceProductionBuilding = (buildingId: BuildingType) => {
-  return (
-    buildingId === BuildingType.Resource ||
-    buildingId === BuildingType.Farm ||
-    buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks1 ||
-    buildingId === BuildingType.ArcheryRange1 ||
-    buildingId === BuildingType.Stable1 ||
-    buildingId === BuildingType.Barracks2 ||
-    buildingId === BuildingType.ArcheryRange2 ||
-    buildingId === BuildingType.Stable2 ||
-    buildingId === BuildingType.Barracks3 ||
-    buildingId === BuildingType.ArcheryRange3 ||
-    buildingId === BuildingType.Stable3
+  return ( 
+    buildingId !== BuildingType.None &&
+    buildingId !== BuildingType.WorkersHut &&
+    buildingId !== BuildingType.Storehouse &&
+    buildingId !== BuildingType.Bank
   );
 };
 

@@ -1,4 +1,4 @@
-import { Account, AccountInterface, BigNumberish, CairoOption, num } from "starknet";
+import { Account, AccountInterface, BigNumberish, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { Resource } from "./common";
@@ -116,7 +116,6 @@ export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
   directions: num.BigNumberish[];
   building_category: BuildingType;
-  produce_resource_type: CairoOption<Number>;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
@@ -427,24 +426,18 @@ export interface TroopDamageConfigProps {
   t3_damage_multiplier: num.BigNumberish;
 }
 
-export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
-  calls: { building_category: BuildingType; population: num.BigNumberish; capacity: num.BigNumberish }[];
-}
-
-export interface SetBuildingGeneralConfigProps extends SystemSigner {
-  base_cost_percent_increase: num.BigNumberish;
-}
-
-export interface SetPopulationConfigProps extends SystemSigner {
-  base_population: num.BigNumberish;
+export interface SetBuildingCategoryConfigProps extends SystemSigner {
+  calls: { 
+    building_category: BuildingType; 
+    population_cost: num.BigNumberish; 
+    capacity_grant: num.BigNumberish;
+    erection_cost: ResourceCosts[];
+  }[];
 }
 
 export interface SetBuildingConfigProps extends SystemSigner {
-  calls: {
-    building_category: BuildingType;
-    building_resource_type: ResourcesIds;
-    cost_of_building: ResourceCosts[];
-  }[];
+  base_population: num.BigNumberish;
+  base_cost_percent_increase: num.BigNumberish;
 }
 
 export interface setRealmUpgradeConfigProps extends SystemSigner {

@@ -30,6 +30,8 @@ import {
   findResourceById,
   getEntityIdFromKeys,
   getNeighborHexes,
+  getProducedResource,
+  isResourceProductionBuilding,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -262,7 +264,7 @@ export default class HexceptionScene extends HexagonScene {
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
-        if (buildingType === BuildingType[BuildingType.None] && innerCol && innerRow) {
+        if (buildingType == 0 && innerCol && innerRow) {
           this.removeBuilding(innerCol, innerRow);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
@@ -315,6 +317,7 @@ export default class HexceptionScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
     if (buildingType) {
+
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
@@ -324,7 +327,6 @@ export default class HexceptionScene extends HexagonScene {
             useUIStore.getState().structureEntityId,
             buildingType.type,
             normalizedCoords,
-            buildingType.resource,
           );
         } catch (error) {
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
@@ -343,7 +345,7 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
+        playBuildingSound(building?.category, isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -358,7 +360,7 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
+        playBuildingSound(building?.category, isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -395,17 +397,18 @@ export default class HexceptionScene extends HexagonScene {
       ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
       : undefined;
 
-    const isActive = building? productionManager?.isActive(building?.produced_resource_type): false;
+    const producedResource = getProducedResource(building?.category as BuildingType);
+    const isActive = building? productionManager?.isActive(producedResource): false;
 
-    if (building && building.produced_resource_type) {
+    if (building && producedResource) {
       this.state.setTooltip({
         content: (
           <div className="flex items-center space-x-1">
             <ResourceIcon
               size="sm"
-              resource={findResourceById(building.produced_resource_type as ResourcesIds)?.trait ?? ""}
+              resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""}
             />
-            <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
+            <div>Producing {findResourceById(producedResource as ResourcesIds)?.trait}</div>
             <div>—</div>
             <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
               {!isActive ? "Paused" : "Active"}
@@ -501,7 +504,7 @@ export default class HexceptionScene extends HexagonScene {
             buildingType = BuildingType[building.category].toString() as BUILDINGS_CATEGORIES_TYPES;
           }
 
-          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.Castle.toString()) {
+          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor.toString()) {
             buildingType = castleLevelToRealmCastle[this.structureStage];
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
@@ -668,23 +671,24 @@ export default class HexceptionScene extends HexagonScene {
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
           buildingObj.rotation.y = rotation * 4;
-          if (building.category === BuildingType[BuildingType.Castle]) {
+          if (building.category === BuildingType.ResourceLabor) {
             buildingObj.rotation.y = rotation * 2;
           }
           if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            
+            isResourceProductionBuilding(building.category) &&
             ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill
           ) {
             buildingObj.rotation.y = rotation * 2;
           }
           if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            isResourceProductionBuilding(building.category) &&
             ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide
           ) {
             buildingObj.rotation.y = rotation * 2;
           }
           if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
+            isResourceProductionBuilding(building.category) &&
             ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
           ) {
             buildingObj.rotation.y = rotation * 6;

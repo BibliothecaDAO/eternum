@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, getEntityIdFromKeys, isResourceProductionBuilding, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -16,22 +16,11 @@ export const BuildingsList = ({
   onSelectProduction: (resource: number) => void;
   selectedResource: number | null;
 }) => {
-  const buildings = useBuildings(realm.position.x, realm.position.y);
 
+  const buildings = useBuildings(realm.position.x, realm.position.y);
   const productionBuildings = buildings.filter(
     (building) =>
-      building.category === BuildingType[BuildingType.Resource] ||
-      building.category === BuildingType[BuildingType.Farm] ||
-      building.category === BuildingType[BuildingType.FishingVillage] ||
-      building.category === BuildingType[BuildingType.Barracks1] ||
-      building.category === BuildingType[BuildingType.ArcheryRange1] ||
-      building.category === BuildingType[BuildingType.Castle] ||
-      building.category === BuildingType[BuildingType.Market] ||
-      building.category === BuildingType[BuildingType.Stable1] ||
-      building.category === BuildingType[BuildingType.Stable2] ||
-      building.category === BuildingType[BuildingType.Stable3] ||
-      building.category === BuildingType[BuildingType.ArcheryRange2] ||
-      building.category === BuildingType[BuildingType.ArcheryRange3],
+      isResourceProductionBuilding(building.category)
   );
 
   const {
@@ -75,12 +64,12 @@ export const BuildingsList = ({
         {productions.map((production) => {
           let bgImage = "";
           if (production.isLabor) {
-            bgImage = BUILDING_IMAGES_PATH[BuildingType.Castle as keyof typeof BUILDING_IMAGES_PATH];
+            bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
           } else {
             bgImage = production.buildings[0]?.category
               ? BUILDING_IMAGES_PATH[
                   BuildingType[
-                    production.buildings[0].category as keyof typeof BuildingType
+                    production.buildings[0].category
                   ] as keyof typeof BUILDING_IMAGES_PATH
                 ]
               : "";
