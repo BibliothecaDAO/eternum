@@ -64,7 +64,7 @@ export abstract class HexagonScene {
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.state = useUIStore.getState();
-    this.fog = new THREE.Fog(0xffffff, 21, 30);
+    this.fog = new THREE.Fog(0xffffff, 21, 42);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
       this.scene.fog = this.fog;
     }
@@ -202,13 +202,16 @@ export abstract class HexagonScene {
     fogFolder.addColor(this.fog, "color").name("Color");
     fogFolder.add(this.fog, "near", 0, 100, 0.1).name("Near");
     fogFolder.add(this.fog, "far", 0, 100, 0.1).name("Far");
-    
+
     // Add toggle for fog
     const fogParams = { enabled: !IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH };
-    fogFolder.add(fogParams, "enabled").name("Enable Fog").onChange((value: boolean) => {
-      this.scene.fog = value ? this.fog : null;
-    });
-    
+    fogFolder
+      .add(fogParams, "enabled")
+      .name("Enable Fog")
+      .onChange((value: boolean) => {
+        this.scene.fog = value ? this.fog : null;
+      });
+
     fogFolder.close();
   }
 
