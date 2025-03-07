@@ -30,14 +30,13 @@ export const useEntities = () => {
   const playerRealms = useMemo(() => {
     if (!data) return [];
 
-    return data.s1EternumOwnerModels?.edges
-      ?.map((realm) => {
-        const realmModel = realm?.node?.entity?.models?.find(iss1EternumRealm);
-        if (!realmModel) return null;
+    return data.s1EternumStructureModels?.edges
+      ?.map((structure) => {
+        const realmId = structure?.node?.metadata?.realm_id;
         return {
-          realmId: realmModel?.realm_id,
-          entityId: realm?.node?.entity_id,
-          name: getRealmNameById(realmModel?.realm_id ?? 0),
+          realmId,
+          entityId: structure?.node?.entity_id,
+          name: getRealmNameById(realmId ?? 0),
         };
       })
       .filter(Boolean) as { realmId: number; entityId: number; name: string }[];
@@ -46,16 +45,14 @@ export const useEntities = () => {
   const playerStructures = useMemo(() => {
     if (!data) return [];
 
-    return data.s1EternumOwnerModels?.edges
+    return data.s1EternumStructureModels?.edges
       ?.map((structure) => {
-        const structureModel = structure?.node?.entity?.models?.find(iss1EternumStructure);
-        if (!structureModel) return null;
-        const realmModel = structure?.node?.entity?.models?.find(iss1EternumRealm);
         const entityId = structure?.node?.entity_id;
+        const realmId = structure?.node?.metadata?.realm_id;
         return {
-          realmId: realmModel?.realm_id || entityId,
+          realmId,
           entityId,
-          name: realmModel ? getRealmNameById(realmModel?.realm_id ?? 0) : "Structure",
+          name: getRealmNameById(realmId ?? 0),
         };
       })
       .filter(Boolean) as { realmId: number | undefined; entityId: number; name: string }[];

@@ -1,4 +1,4 @@
-import { ClientConfigManager, divideByPrecision } from "@bibliothecadao/eternum";
+import { ClientConfigManager, divideByPrecision, ID } from "@bibliothecadao/eternum";
 
 import { ContractAddress, TickIds, type Position, type Resource } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

@@ -12,17 +12,17 @@ export function useTravel(fromId: ID, toId: ID, secPerKm: number, pickup?: boole
   });
 
   const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, pickup?: boolean) => {
-    const fromPosition = entityPositions?.s1EternumPositionModels?.edges?.find(
+    const fromPosition = entityPositions?.s1EternumStructureModels?.edges?.find(
       (entity) => entity?.node?.entity_id == fromId,
-    );
-    const toPosition = entityPositions?.s1EternumPositionModels?.edges?.find(
+    )?.node?.base;
+    const toPosition = entityPositions?.s1EternumStructureModels?.edges?.find(
       (entity) => entity?.node?.entity_id == toId,
-    );
+    )?.node?.base;
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(
-        { x: Number(fromPosition?.node?.x), y: Number(fromPosition?.node?.y) },
-        { x: Number(toPosition?.node?.x), y: Number(toPosition?.node?.y) },
+        { x: Number(fromPosition?.coord_x), y: Number(fromPosition?.coord_y) },
+        { x: Number(toPosition?.coord_x), y: Number(toPosition?.coord_y) },
       ) ?? 0;
 
     const onewayTime = Math.floor((distanceFromPosition * secPerKm) / 60);

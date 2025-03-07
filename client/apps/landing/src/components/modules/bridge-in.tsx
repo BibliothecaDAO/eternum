@@ -8,10 +8,8 @@ import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
-  DONKEY_ENTITY_TYPE,
   Resources,
   ResourcesIds,
-  configManager,
   divideByPrecision,
   multiplyByPrecision,
   resources,
@@ -39,14 +37,14 @@ export const BridgeIn = () => {
   const { getBalance, isLoading: isResourcesLoading } = useResourceBalance({ entityId: realmEntityId });
   const { data } = useQuery({
     queryKey: ["capacitySpeedConfig"],
-    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG),
     refetchInterval: 10_000,
   });
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_nanogram ?? 0),
-      speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+      capacity: Number(data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.capacity_config?.donkey_capacity ?? 0),
+      speed: data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.speed_config?.donkey_sec_per_km ?? 0,
     }),
     [data],
   );
@@ -64,7 +62,7 @@ export const BridgeIn = () => {
   const { computeTravelTime } = useTravel(
     Number(ADMIN_BANK_ENTITY_ID),
     Number(realmEntityId!),
-    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+    donkeyConfig.speed,
     true,
   );
   const [isLoading, setIsLoading] = useState(false);
