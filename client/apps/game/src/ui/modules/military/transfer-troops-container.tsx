@@ -245,7 +245,7 @@ export const TransferTroopsContainer = ({
             max={maxTroops}
             value={troopAmount}
             onChange={handleTroopAmountChange}
-            className="w-full"
+            className="w-full accent-gold"
           />
           <input
             type="number"

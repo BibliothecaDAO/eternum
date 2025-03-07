@@ -290,7 +290,7 @@ export const TransferResourcesContainer = ({
                       max={displayAmount}
                       value={resourceAmounts[resource.resourceId] || 0}
                       onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                      className="w-full"
+                      className="w-full accent-gold"
                     />
                     <input
                       type="number"
