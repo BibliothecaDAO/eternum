@@ -16,7 +16,8 @@ import {
   HueSaturationEffect,
   RenderPass,
   ToneMappingEffect,
-  ToneMappingMode
+  ToneMappingMode,
+  VignetteEffect,
 } from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
@@ -269,8 +270,9 @@ export default class GameRenderer {
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
 
-    const obj = { brightness: -0.05, contrast: 0, hue: 0, saturation: 0.3 };
+    const obj = { brightness: -0.05, contrast: 0, hue: 0, saturation: 0.2 };
     const folder = GUIManager.addFolder("BrightnesContrastt");
+
     if (GRAPHICS_SETTING !== GraphicsSettings.LOW) {
       const BCEffect = new BrightnessContrastEffect({
         brightness: obj.brightness,
@@ -299,7 +301,7 @@ export default class GameRenderer {
       // Create Hue/Saturation effect
       const HSEffect = new HueSaturationEffect({
         hue: obj.hue,
-        saturation: obj.saturation
+        saturation: obj.saturation,
       });
 
       // Add Hue/Saturation controls
@@ -324,35 +326,60 @@ export default class GameRenderer {
         });
 
       const toneMappingEffect = new ToneMappingEffect({
-        mode: ToneMappingMode.LINEAR
+        mode: ToneMappingMode.LINEAR,
       });
-      
+
       // Add ToneMapping controls
       const toneMappingFolder = GUIManager.addFolder("Tone Mapping");
-      const toneMappingParams = { 
+      const toneMappingParams = {
         mode: ToneMappingMode.LINEAR,
         exposure: 1.0,
-        whitePoint: 1.0
+        whitePoint: 1.0,
       };
-      
-      toneMappingFolder.add(toneMappingParams, "mode", {
-        ...ToneMappingMode
-      }).onChange((value: ToneMappingMode) => {
-        toneMappingEffect.mode = value;
+
+      toneMappingFolder
+        .add(toneMappingParams, "mode", {
+          ...ToneMappingMode,
+        })
+        .onChange((value: ToneMappingMode) => {
+          toneMappingEffect.mode = value;
+        });
+
+      toneMappingFolder.add(toneMappingParams, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
+        // @ts-ignore
+        toneMappingEffect.exposure = value;
       });
-      
-      toneMappingFolder.add(toneMappingParams, "exposure", 0.0, 2.0, 0.01)
-        .onChange((value: number) => {
-          toneMappingEffect.exposure = value;
-        });
-        
-      toneMappingFolder.add(toneMappingParams, "whitePoint", 0.0, 2.0, 0.01)
-        .onChange((value: number) => {
-          toneMappingEffect.whitePoint = value;
-        });
-      
+
+      toneMappingFolder.add(toneMappingParams, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
+        // @ts-ignore
+        toneMappingEffect.whitePoint = value;
+      });
+
       toneMappingFolder.close();
-      
+
+      // Create Vignette effect
+      const vignetteEffect = new VignetteEffect({
+        darkness: 0.5,
+        offset: 0.5,
+      });
+
+      // Add Vignette controls
+      const vignetteFolder = GUIManager.addFolder("Vignette");
+      const vignetteParams = {
+        darkness: 0.7,
+        offset: 0.25,
+      };
+
+      vignetteFolder.add(vignetteParams, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
+        vignetteEffect.darkness = value;
+      });
+
+      vignetteFolder.add(vignetteParams, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
+        vignetteEffect.offset = value;
+      });
+
+      vignetteFolder.close();
+
       this.composer.addPass(
         new EffectPass(
           this.camera,
@@ -365,6 +392,7 @@ export default class GameRenderer {
           }),
           HSEffect,
           BCEffect,
+          vignetteEffect,
         ),
       );
     }
