@@ -35,7 +35,7 @@ export class InteractiveHexManager {
 
           this.position.setFromMatrixPosition(this.matrix);
 
-          this.hoverAura.setPosition(this.position.x, 0.2, this.position.z);
+          this.hoverAura.setPosition(this.position.x, 0.21, this.position.z);
           if (!this.hoverAura.isInScene(this.scene)) {
             this.hoverAura.addToScene(this.scene);
           }

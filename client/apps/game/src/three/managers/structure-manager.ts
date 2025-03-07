@@ -62,6 +62,7 @@ export class StructureManager {
             },
             undefined,
             (error) => {
+              console.error(modelPath);
               console.error(`An error occurred while loading the ${structureType} model:`, error);
               reject(error);
             },
