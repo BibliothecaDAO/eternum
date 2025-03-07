@@ -1,4 +1,4 @@
-import { divideByPrecision } from ".";
+import { divideByPrecision, kgToGram } from ".";
 import { ClientConfigManager } from "..";
 import { CapacityConfig } from "../constants";
 import { Resource } from "../types";
@@ -11,12 +11,12 @@ export const calculateDonkeysNeeded = (orderWeight: number): number => {
 };
 
 // grams
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
+export const getTotalResourceWeightGrams = (resources: Array<Resource | undefined>) => {
   const configManager = ClientConfigManager.instance();
 
   return resources.reduce(
     (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeightKg(resource.resourceId) || 0 : 0),
+      total + (resource ? resource.amount * kgToGram(configManager.getResourceWeightKg(resource.resourceId) || 0) : 0),
     0,
   );
 };

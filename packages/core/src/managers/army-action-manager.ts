@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToGram, multiplyByPrecision } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -12,7 +12,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { ContractAddress, HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -159,6 +159,7 @@ export class ArmyActionManager {
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
+    playerAddress: ContractAddress,
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
     if (armyStamina === 0n) return new ActionPaths();
@@ -179,14 +180,17 @@ export class ArmyActionManager {
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isStructureMine =
+        structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
+      console.log({ isMine, isArmyMine, isStructureMine });
+
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
       const staminaCost = biome
@@ -197,7 +201,6 @@ export class ArmyActionManager {
 
       let actionType;
       if (isMine) {
-        // TODO: put back attack action when finish dev
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
@@ -308,7 +311,8 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeight: number) => {
+  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
+    console.log({ overrideId, additionalWeightKg });
     const resource = getComponentValue(this.components.Resource, this.entity);
     const weight = resource?.weight || { capacity: 0n, weight: 0n };
 
@@ -319,7 +323,7 @@ export class ArmyActionManager {
         ...resource,
         weight: {
           ...weight,
-          weight: BigInt((weight?.weight || 0).toString()) + BigInt(additionalWeight),
+          weight: BigInt((weight?.weight || 0).toString()) + BigInt(kgToGram(additionalWeightKg)),
         },
       },
     });

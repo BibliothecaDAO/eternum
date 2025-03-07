@@ -98,6 +98,10 @@ export const gramToKg = (value: number) => {
   return value / 1000;
 };
 
+export const kgToGram = (value: number) => {
+  return value * 1000;
+};
+
 export function multiplyByPrecision(value: number): number {
   return Math.floor(value * RESOURCE_PRECISION);
 }

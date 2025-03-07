@@ -27,7 +27,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
-import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
+import { calculateDonkeysNeeded, getTotalResourceWeightGrams } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
@@ -102,7 +102,7 @@ export const BridgeIn = () => {
   const orderWeight = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeight(
+      const totalWeight = getTotalResourceWeightGrams(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
           amount: multiplyByPrecision(amount),

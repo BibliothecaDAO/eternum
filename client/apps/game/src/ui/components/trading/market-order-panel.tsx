@@ -13,7 +13,7 @@ import {
   EntityType,
   findResourceById,
   getRealmAddressName,
-  getTotalResourceWeight,
+  getTotalResourceWeightGrams,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
@@ -306,7 +306,7 @@ const OrderRow = memo(
     }, [inputValue, getsDisplay, getTotalLords]);
 
     const orderWeight = useMemo(() => {
-      const totalWeight = getTotalResourceWeight([
+      const totalWeight = getTotalResourceWeightGrams([
         {
           resourceId: offer.takerGets[0].resourceId,
           amount: isBuy ? calculatedLords : calculatedResourceAmount,
@@ -538,7 +538,7 @@ const OrderCreation = memo(
     };
 
     const orderWeight = useMemo(() => {
-      const totalWeight = getTotalResourceWeight([
+      const totalWeight = getTotalResourceWeightGrams([
         { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
       ]);
       return totalWeight;
