@@ -25,11 +25,11 @@ export const Transfers = () => {
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
             <div className="ml-2">
-              Lords: {`${configManager.getResourceWeight(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
+              Lords: {`${configManager.getResourceWeightKg(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
             </div>
-            <div>Food: {`${configManager.getResourceWeight(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}</div>
+            <div>Food: {`${configManager.getResourceWeightKg(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}</div>
             <div className="ml-2">
-              Resource: {`${configManager.getResourceWeight(ResourcesIds.Wood) / GRAMS_PER_KG} kg/unit`}
+              Resource: {`${configManager.getResourceWeightKg(ResourcesIds.Wood) / GRAMS_PER_KG} kg/unit`}
             </div>
           </div>
         </>

@@ -10,7 +10,7 @@ import {
   ID,
   ResourceManager,
   TickIds,
-  TimeFormat
+  TimeFormat,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -25,7 +25,6 @@ export const ResourceChip = ({
   maxStorehouseCapacityKg: number;
   tick: number;
 }) => {
-
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
@@ -41,7 +40,7 @@ export const ResourceChip = ({
   }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
+    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeightKg(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();

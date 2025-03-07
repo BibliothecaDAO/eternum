@@ -1,13 +1,19 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { formatNumber } from "@/ui/utils/utils";
 import {
+  ContractAddress,
+  DEFENSE_NAMES,
   ID,
   ResourceManager,
   ResourcesIds,
+  configManager,
+  divideByPrecision,
+  getArmy,
   getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
+  getGuardsByStructure,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -29,31 +35,6 @@ interface ResourceTransfer {
   resourceId: number;
   amount: number;
 }
-
-// Resource weight mapping (mockup values)
-const RESOURCE_WEIGHTS: Record<number, number> = {
-  1: 1, // Wood
-  2: 1, // Stone
-  3: 2, // Coal
-  4: 2, // Copper
-  5: 3, // Obsidian
-  6: 3, // Silver
-  7: 4, // Ironwood
-  8: 4, // Cold Iron
-  9: 5, // Gold
-  10: 5, // Hartwood
-  11: 6, // Diamonds
-  12: 6, // Sapphire
-  13: 7, // Ruby
-  14: 7, // Deep Crystal
-  15: 8, // Archlight
-  16: 8, // Ethereal Silica
-  17: 9, // True Ice
-  18: 9, // Twilight Quartz
-  19: 10, // Alchemical Silver
-  20: 10, // Adamantine
-  // Add more resources as needed
-};
 
 export const HelpContainer = ({
   selectedEntityId,
@@ -117,41 +98,15 @@ export const HelpContainer = ({
     return resourceManager.getResourceBalances();
   }, [selectedEntityId, components]);
 
-  // Get available troops for the selected entity
-  const availableTroops = useMemo(() => {
-    if (!selectedEntityId) return { count: 0 };
-
-    if (selectedEntityType === "explorer") {
-      const explorerTroops = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-      return explorerTroops?.troops ? { count: Number(explorerTroops.troops.count) } : { count: 0 };
-    } else {
-      // For structures, we would need to get the guards
-      // This is simplified for now
-      const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-      return structure?.base?.troop_guard_count ? { count: Number(structure.base.troop_guard_count) } : { count: 0 };
-    }
-  }, [selectedEntityId, selectedEntityType, ExplorerTroops, Structure]);
-
-  // Explorer capacity information (mockup values)
+  // Explorer capacity information
   const explorerCapacity = useMemo(() => {
-    // In a real implementation, this would come from the explorer's stats
-    const MAX_CAPACITY = 1000;
-    let currentLoad = 0;
-
-    if (targetEntityType === "explorer" && transferDirection === TransferDirection.StructureToExplorer) {
-      // Calculate current load of target explorer
-      const targetResourceManager = new ResourceManager(components, targetEntityId);
-      const targetResources = targetResourceManager.getResourceBalances();
-
-      currentLoad = targetResources.reduce((total, resource) => {
-        const weight = RESOURCE_WEIGHTS[resource.resourceId] || 1;
-        return total + resource.amount * weight;
-      }, 0);
-    }
+    const armyInfo = getArmy(targetEntityId, ContractAddress(account.address), components);
+    const MAX_CAPACITY = armyInfo?.totalCapacity || 0;
+    const currentLoad = armyInfo?.weight || 0;
 
     // Calculate weight of selected resources
     const selectedResourcesWeight = Object.entries(resourceAmounts).reduce((total, [resourceId, amount]) => {
-      const weight = RESOURCE_WEIGHTS[parseInt(resourceId)] || 1;
+      const weight = configManager.resourceWeightsKg[parseInt(resourceId)] || 0;
       return total + amount * weight;
     }, 0);
 
@@ -184,13 +139,13 @@ export const HelpContainer = ({
       setResourceAmounts(newAmounts);
     } else {
       // Add resource to selection with default amount
-      let defaultAmount = resource.amount;
+      let defaultAmount = divideByPrecision(resource.amount);
 
       // If transferring to explorer, limit by remaining capacity
       if (transferDirection === TransferDirection.StructureToExplorer) {
-        const resourceWeight = RESOURCE_WEIGHTS[resource.resourceId] || 1;
+        const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
         const maxPossibleAmount = Math.floor(explorerCapacity.remainingCapacity / resourceWeight);
-        defaultAmount = Math.min(resource.amount, maxPossibleAmount);
+        defaultAmount = Math.min(defaultAmount, maxPossibleAmount);
       }
 
       setSelectedResources([...selectedResources, { ...resource, amount: defaultAmount }]);
@@ -204,24 +159,24 @@ export const HelpContainer = ({
     const resource = availableResources.find((r) => r.resourceId === resourceId);
     if (!resource) return;
 
-    let maxAmount = resource.amount;
+    let maxAmount = divideByPrecision(resource.amount);
 
     // If transferring to explorer, limit by remaining capacity
     if (transferDirection === TransferDirection.StructureToExplorer) {
-      const resourceWeight = RESOURCE_WEIGHTS[resourceId] || 1;
+      const resourceWeight = configManager.resourceWeightsKg[resourceId] || 0;
 
       // Calculate how much capacity is used by other selected resources
       const otherResourcesWeight = Object.entries(resourceAmounts)
         .filter(([id]) => parseInt(id) !== resourceId)
         .reduce((total, [id, amt]) => {
-          const weight = RESOURCE_WEIGHTS[parseInt(id)] || 1;
+          const weight = configManager.resourceWeightsKg[parseInt(id)] || 0;
           return total + amt * weight;
         }, 0);
 
       const availableForThisResource =
         explorerCapacity.maxCapacity - explorerCapacity.currentLoad - otherResourcesWeight;
       const maxPossibleAmount = Math.floor(availableForThisResource / resourceWeight);
-      maxAmount = Math.min(resource.amount, maxPossibleAmount);
+      maxAmount = Math.min(divideByPrecision(resource.amount), maxPossibleAmount);
     }
 
     // Clamp amount between 0 and maxAmount
@@ -236,12 +191,78 @@ export const HelpContainer = ({
     );
   };
 
+  // need all 4 because you can transfer troops from one of the guard structure slot to explorer
+  // and you can transfer troops from explorer to one of the guard structure slot
+  // and you can transfer troops from explorer to explorer
+
+  // list of guards
+  const targetGuards = useMemo(() => {
+    if (!targetEntityId) return [];
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(targetEntityId)]));
+    if (!structure) return [];
+    const guards = getGuardsByStructure(structure);
+    return guards.map((guard) => ({
+      ...guard,
+      troops: {
+        ...guard.troops,
+        count: divideByPrecision(Number(guard.troops.count)),
+      },
+    }));
+  }, [targetEntityId, Structure]);
+
+  // one explorer troop
+  const targetExplorerTroops = useMemo(() => {
+    if (!targetEntityId) return undefined;
+    const explorers = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(targetEntityId)]));
+    if (!explorers?.troops) return undefined;
+    return {
+      ...explorers.troops,
+      count: divideByPrecision(Number(explorers.troops.count)),
+    };
+  }, [targetEntityId, ExplorerTroops]);
+
+  // list of guards
+  const selectedGuards = useMemo(() => {
+    if (!selectedEntityId) return [];
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+    if (!structure) return [];
+    const guards = getGuardsByStructure(structure);
+    return guards.map((guard) => ({
+      ...guard,
+      troops: {
+        ...guard.troops,
+        count: divideByPrecision(Number(guard.troops.count)),
+      },
+    }));
+  }, [selectedEntityId, Structure]);
+
+  // one explorer troop
+  const selectedExplorerTroops = useMemo(() => {
+    if (!selectedEntityId) return undefined;
+    const explorers = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+    if (!explorers?.troops) return undefined;
+    return {
+      ...explorers.troops,
+      count: divideByPrecision(Number(explorers.troops.count)),
+    };
+  }, [selectedEntityId, ExplorerTroops]);
+
+  const maxTroops = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return Number(selectedExplorerTroops?.count || 0);
+    } else if (transferDirection === TransferDirection.StructureToExplorer) {
+      return Number(selectedGuards[guardSlot].troops.count);
+    } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      return Number(selectedExplorerTroops?.count || 0);
+    }
+    return 0;
+  }, [selectedEntityId, selectedExplorerTroops, selectedGuards, guardSlot, transferDirection]);
+
   // Handle troop amount change
   const handleTroopAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (!isNaN(value) && value >= 0) {
       // Ensure we don't exceed available troops
-      const maxTroops = availableTroops?.count || 0;
       setTroopAmount(Math.min(value, maxTroops));
     }
   };
@@ -262,10 +283,11 @@ export const HelpContainer = ({
       setLoading(true);
 
       if (transferType === TransferType.Resources) {
-        // Prepare resources with updated amounts
+        // Prepare resources with updated amounts and apply precision
         const resourcesWithAmounts = selectedResources.map((resource) => ({
           resourceId: resource.resourceId,
-          amount: resourceAmounts[resource.resourceId] || resource.amount,
+          // Multiply by 10^9 to add precision for the transaction
+          amount: (resourceAmounts[resource.resourceId] || resource.amount) * 10 ** 9,
         }));
 
         if (transferDirection === TransferDirection.ExplorerToStructure) {
@@ -284,23 +306,27 @@ export const HelpContainer = ({
           });
         }
       } else if (transferType === TransferType.Troops) {
+        // Apply precision to troop amount for the transaction
+        const troopAmountWithPrecision = troopAmount * 10 ** 9;
+
         if (transferDirection === TransferDirection.ExplorerToExplorer) {
           await explorer_explorer_swap({
             signer: account,
             from_explorer_id: selectedEntityId,
             to_explorer_id: targetEntityId,
             to_explorer_direction: direction,
-            count: troopAmount,
+            count: troopAmountWithPrecision,
           });
         } else if (transferDirection === TransferDirection.ExplorerToStructure) {
-          await explorer_guard_swap({
+          const calldata = {
             signer: account,
             from_explorer_id: selectedEntityId,
             to_structure_id: targetEntityId,
             to_structure_direction: direction,
             to_guard_slot: guardSlot,
-            count: troopAmount,
-          });
+            count: troopAmountWithPrecision,
+          };
+          await explorer_guard_swap(calldata);
         } else if (transferDirection === TransferDirection.StructureToExplorer) {
           await guard_explorer_swap({
             signer: account,
@@ -308,7 +334,7 @@ export const HelpContainer = ({
             from_guard_slot: guardSlot,
             to_explorer_id: targetEntityId,
             to_explorer_direction: direction,
-            count: troopAmount,
+            count: troopAmountWithPrecision,
           });
         }
       }
@@ -397,8 +423,8 @@ export const HelpContainer = ({
         <h4 className="text-gold font-semibold mb-2">Explorer Capacity</h4>
 
         <div className="flex justify-between text-sm text-gold/80 mb-1">
-          <span>Current Load: {currencyFormat(explorerCapacity.currentLoad, 0)}</span>
-          <span>Max Capacity: {currencyFormat(explorerCapacity.maxCapacity, 0)}</span>
+          <span>Current Load: {explorerCapacity.currentLoad} kg</span>
+          <span>Max Capacity: {explorerCapacity.maxCapacity} kg</span>
         </div>
 
         <div className="w-full h-4 bg-dark-brown border border-gold/30 rounded-full overflow-hidden">
@@ -410,8 +436,8 @@ export const HelpContainer = ({
         </div>
 
         <div className="flex justify-between text-sm text-gold/80 mt-1">
-          <span>Selected: {currencyFormat(explorerCapacity.selectedResourcesWeight, 0)}</span>
-          <span>Remaining: {currencyFormat(explorerCapacity.availableCapacity, 0)}</span>
+          <span>Selected: {explorerCapacity.selectedResourcesWeight} kg</span>
+          <span>Remaining: {explorerCapacity.availableCapacity} kg</span>
         </div>
       </div>
     );
@@ -431,7 +457,8 @@ export const HelpContainer = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {availableResources.map((resource) => {
             const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);
-            const resourceWeight = RESOURCE_WEIGHTS[resource.resourceId] || 1;
+            const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+            const displayAmount = divideByPrecision(resource.amount);
 
             return (
               <div
@@ -445,11 +472,11 @@ export const HelpContainer = ({
                     <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
                     <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
                   </div>
-                  <div className="text-sm text-gold/70">Weight: {resourceWeight} per unit</div>
+                  <div className="text-sm text-gold/70">Weight: {resourceWeight} kg per unit</div>
                 </div>
 
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gold/80">Available: {currencyFormat(resource.amount, 0)}</span>
+                  <span className="text-gold/80">Available: {formatNumber(displayAmount, 0)}</span>
                   <button
                     className={`px-3 py-1 rounded-md text-sm ${
                       isSelected
@@ -467,15 +494,14 @@ export const HelpContainer = ({
                     <div className="flex justify-between text-sm text-gold/80 mb-1">
                       <label>Amount to Transfer:</label>
                       <span>
-                        {currencyFormat(resourceAmounts[resource.resourceId] || 0, 0)} /
-                        {currencyFormat(resource.amount, 0)}
+                        {formatNumber(resourceAmounts[resource.resourceId] || 0, 0)} /{formatNumber(displayAmount, 0)}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
                         type="range"
                         min="0"
-                        max={resource.amount}
+                        max={displayAmount}
                         value={resourceAmounts[resource.resourceId] || 0}
                         onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
                         className="w-full"
@@ -483,7 +509,7 @@ export const HelpContainer = ({
                       <input
                         type="number"
                         min="0"
-                        max={resource.amount}
+                        max={displayAmount}
                         value={resourceAmounts[resource.resourceId] || 0}
                         onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
                         className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
@@ -499,7 +525,7 @@ export const HelpContainer = ({
                       </button>
                       <button
                         className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
-                        onClick={() => handleResourceAmountChange(resource.resourceId, Math.floor(resource.amount / 2))}
+                        onClick={() => handleResourceAmountChange(resource.resourceId, Math.floor(displayAmount / 2))}
                       >
                         Half
                       </button>
@@ -509,12 +535,9 @@ export const HelpContainer = ({
                           if (transferDirection === TransferDirection.StructureToExplorer) {
                             // Calculate max possible amount based on remaining capacity
                             const maxPossibleAmount = Math.floor(explorerCapacity.availableCapacity / resourceWeight);
-                            handleResourceAmountChange(
-                              resource.resourceId,
-                              Math.min(resource.amount, maxPossibleAmount),
-                            );
+                            handleResourceAmountChange(resource.resourceId, Math.min(displayAmount, maxPossibleAmount));
                           } else {
-                            handleResourceAmountChange(resource.resourceId, resource.amount);
+                            handleResourceAmountChange(resource.resourceId, displayAmount);
                           }
                         }}
                       >
@@ -533,10 +556,6 @@ export const HelpContainer = ({
 
   // Render troop transfer
   const renderTroopTransfer = () => {
-    if (!availableTroops || availableTroops.count === 0) {
-      return <p className="text-gold/60">No troops available to transfer.</p>;
-    }
-
     return (
       <div className="flex flex-col space-y-4">
         <div className="flex flex-col space-y-2">
@@ -545,7 +564,7 @@ export const HelpContainer = ({
             <input
               type="range"
               min="0"
-              max={availableTroops.count}
+              max={maxTroops}
               value={troopAmount}
               onChange={handleTroopAmountChange}
               className="w-full"
@@ -553,13 +572,30 @@ export const HelpContainer = ({
             <input
               type="number"
               min="0"
-              max={availableTroops.count}
+              max={maxTroops}
               value={troopAmount}
               onChange={handleTroopAmountChange}
               className="w-20 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
             />
           </div>
-          <p className="text-gold/60 text-sm">Available: {currencyFormat(availableTroops.count, 0)} troops</p>
+          <p className="text-gold/60 text-sm">Available: {formatNumber(maxTroops, 0)} troops</p>
+
+          {/* Display selected troop type and category */}
+          {transferDirection === TransferDirection.ExplorerToStructure && selectedExplorerTroops && (
+            <p className="text-gold/80 text-sm">
+              Selected Troop: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
+            </p>
+          )}
+          {transferDirection === TransferDirection.StructureToExplorer && selectedGuards.length > 0 && (
+            <p className="text-gold/80 text-sm">
+              Selected Troop: Tier {selectedGuards[guardSlot].troops.tier} {selectedGuards[guardSlot].troops.category}
+            </p>
+          )}
+          {transferDirection === TransferDirection.ExplorerToExplorer && selectedExplorerTroops && (
+            <p className="text-gold/80 text-sm">
+              Selected Troop: Tier {selectedExplorerTroops.tier} {selectedExplorerTroops.category}
+            </p>
+          )}
         </div>
 
         {(transferDirection === TransferDirection.ExplorerToStructure ||
@@ -571,15 +607,114 @@ export const HelpContainer = ({
               onChange={handleGuardSlotChange}
               className="px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
             >
-              <option value={0}>Alpha</option>
-              <option value={1}>Beta</option>
-              <option value={2}>Gamma</option>
-              <option value={3}>Delta</option>
+              {transferDirection === TransferDirection.ExplorerToStructure ? (
+                <>
+                  <option
+                    value={0}
+                  >{`${DEFENSE_NAMES[0]} - Tier ${targetGuards[0].troops.tier} ${targetGuards[0].troops.category} (available: ${targetGuards[0].troops.count})`}</option>
+                  <option
+                    value={1}
+                  >{`${DEFENSE_NAMES[1]} - Tier ${targetGuards[1].troops.tier} ${targetGuards[1].troops.category} (available: ${targetGuards[1].troops.count})`}</option>
+                  <option
+                    value={2}
+                  >{`${DEFENSE_NAMES[2]} - Tier ${targetGuards[2].troops.tier} ${targetGuards[2].troops.category} (available: ${targetGuards[2].troops.count})`}</option>
+                  <option
+                    value={3}
+                  >{`${DEFENSE_NAMES[3]} - Tier ${targetGuards[3].troops.tier} ${targetGuards[3].troops.category} (available: ${targetGuards[3].troops.count})`}</option>
+                </>
+              ) : (
+                <>
+                  <option
+                    value={0}
+                  >{`${DEFENSE_NAMES[0]} - Tier ${selectedGuards[0].troops.tier} ${selectedGuards[0].troops.category} (available: ${selectedGuards[0].troops.count})`}</option>
+                  <option
+                    value={1}
+                  >{`${DEFENSE_NAMES[1]} - Tier ${selectedGuards[1].troops.tier} ${selectedGuards[1].troops.category} (available: ${selectedGuards[1].troops.count})`}</option>
+                  <option
+                    value={2}
+                  >{`${DEFENSE_NAMES[2]} - Tier ${selectedGuards[2].troops.tier} ${selectedGuards[2].troops.category} (available: ${selectedGuards[2].troops.count})`}</option>
+                  <option
+                    value={3}
+                  >{`${DEFENSE_NAMES[3]} - Tier ${selectedGuards[3].troops.tier} ${selectedGuards[3].troops.category} (available: ${selectedGuards[3].troops.count})`}</option>
+                </>
+              )}
             </select>
           </div>
         )}
       </div>
     );
+  };
+
+  const isTroopsTransferDisabled = useMemo(() => {
+    if (transferType === TransferType.Troops) {
+      if (
+        transferDirection === TransferDirection.ExplorerToStructure ||
+        transferDirection === TransferDirection.StructureToExplorer
+      ) {
+        if (guardSlot === undefined) return true;
+
+        // Check if troop tier and category match between selected and target
+        if (transferDirection === TransferDirection.ExplorerToStructure) {
+          const selectedTroop = selectedExplorerTroops;
+          const targetTroop = targetGuards[guardSlot].troops;
+          // If target troop count is 0, tier and category don't matter
+          if (targetTroop?.count === 0) {
+            return false;
+          }
+          return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
+        } else {
+          const selectedTroop = selectedGuards[guardSlot].troops;
+          const targetTroop = targetExplorerTroops;
+          // If target troop count is 0, tier and category don't matter
+          if (targetTroop?.count === 0) {
+            return false;
+          }
+          return selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category;
+        }
+      }
+      return troopAmount === 0;
+    }
+    return false;
+  }, [
+    transferType,
+    transferDirection,
+    guardSlot,
+    troopAmount,
+    selectedExplorerTroops,
+    targetGuards,
+    selectedGuards,
+    targetExplorerTroops,
+  ]);
+
+  const getTroopMismatchMessage = () => {
+    if (transferType !== TransferType.Troops) return null;
+
+    if (
+      (transferDirection === TransferDirection.ExplorerToStructure ||
+        transferDirection === TransferDirection.StructureToExplorer) &&
+      guardSlot !== undefined
+    ) {
+      let selectedTroop, targetTroop;
+
+      if (transferDirection === TransferDirection.ExplorerToStructure) {
+        selectedTroop = selectedExplorerTroops;
+        targetTroop = targetGuards[guardSlot].troops;
+      } else {
+        selectedTroop = selectedGuards[guardSlot].troops;
+        targetTroop = targetExplorerTroops;
+      }
+
+      // If target troop count is 0, no mismatch message needed
+      if (targetTroop?.count === 0) {
+        return null;
+      }
+
+      if (selectedTroop?.tier !== targetTroop?.tier || selectedTroop?.category !== targetTroop?.category) {
+        return `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${selectedTroop?.tier} ${selectedTroop?.category} ≠ Tier ${targetTroop?.tier} ${targetTroop?.category})`;
+      }
+    }
+
+    return null;
   };
 
   return (
@@ -619,6 +754,7 @@ export const HelpContainer = ({
         {/* Transfer Content */}
         <div className="mt-4 mb-6 overflow-y-auto max-h-[50vh]">
           {transferType === TransferType.Resources ? renderResourceSelection() : renderTroopTransfer()}
+          {getTroopMismatchMessage() && <div className="mt-2 text-red-500 text-sm">{getTroopMismatchMessage()}</div>}
         </div>
 
         {/* Action Buttons */}
@@ -631,7 +767,7 @@ export const HelpContainer = ({
               (transferType === TransferType.Resources &&
                 (selectedResources.length === 0 ||
                   selectedResources.every((r) => (resourceAmounts[r.resourceId] || 0) === 0))) ||
-              (transferType === TransferType.Troops && troopAmount === 0)
+              (transferType === TransferType.Troops && isTroopsTransferDisabled)
             }
             isLoading={loading}
             className="w-full sm:w-auto"
