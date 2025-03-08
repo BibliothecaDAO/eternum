@@ -25,7 +25,7 @@ export const EntitiesArmyTable = () => {
       <CombatSimulation />
       {playerStructures.map((entity: any, index: number) => {
         return (
-          <div key={entity.entity_id} className="p-2">
+          <div key={entity.entityId} className="p-2">
             <Headline>
               <div className="flex gap-2">
                 <div className="self-center">{entity.name} </div>

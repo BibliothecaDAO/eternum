@@ -14,7 +14,6 @@ export const useQuery = () => {
     },
     [setLocation],
   );
-  console.log("location", location);
 
   const isMapView = useMemo(() => location.includes("/map"), [location]);
 
