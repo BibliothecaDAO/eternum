@@ -92,4 +92,5 @@ pub mod utils {
     pub mod resource;
     pub mod structure;
     pub mod troop;
+    pub mod village;
 }
