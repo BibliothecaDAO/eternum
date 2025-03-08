@@ -358,7 +358,8 @@ export interface SetTickConfigProps extends SystemSigner {
 export interface SetProductionConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    amount_per_building_per_tick: num.BigNumberish;
+    realm_output_per_tick: num.BigNumberish;
+    village_output_per_tick: num.BigNumberish;
     labor_burn_strategy: LaborBurnProductionStrategy;
     predefined_resource_burn_cost: ResourceCosts[];
   }[];

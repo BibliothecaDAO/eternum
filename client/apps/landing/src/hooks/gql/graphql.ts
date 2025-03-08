@@ -1972,24 +1972,36 @@ export type S1_Eternum_ProductionConfigOrder = {
 };
 
 export enum S1_Eternum_ProductionConfigOrderField {
-  AmountPerBuildingPerTick = 'AMOUNT_PER_BUILDING_PER_TICK',
+  RealmOutputPerTick = 'REALM_OUTPUT_PER_TICK',
+  VillageOutputPerTick = 'VILLAGE_OUTPUT_PER_TICK',
   LaborBurnStrategy = 'LABOR_BURN_STRATEGY',
   MultipleResourceBurnStrategy = 'MULTIPLE_RESOURCE_BURN_STRATEGY',
   ResourceType = 'RESOURCE_TYPE'
 }
 
 export type S1_Eternum_ProductionConfigWhereInput = {
-  amount_per_building_per_tick?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickEQ?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickGT?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickGTE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
-  amount_per_building_per_tickLIKE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickLT?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickLTE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickNEQ?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
-  amount_per_building_per_tickNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
+  realm_output_per_tick?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  realm_output_per_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  realm_output_per_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tick?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  village_output_per_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  village_output_per_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
   labor_burn_strategy?: InputMaybe<S1_Eternum_ProductionConfig_Labor_Burn_StrategyWhereInput>;
   multiple_resource_burn_strategy?: InputMaybe<S1_Eternum_ProductionConfig_Multiple_Resource_Burn_StrategyWhereInput>;
   resource_type?: InputMaybe<Scalars['u8']['input']>;

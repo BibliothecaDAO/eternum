@@ -409,7 +409,8 @@ export function defineContractComponents(world: World) {
         world,
         {
           resource_type: RecsType.Number,
-          amount_per_building_per_tick: RecsType.BigInt,
+          realm_output_per_tick: RecsType.BigInt,
+          village_output_per_tick: RecsType.BigInt,
           labor_burn_strategy: {
             resource_rarity: RecsType.BigInt,
             wheat_burn_per_labor: RecsType.BigInt,
@@ -426,7 +427,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "ProductionConfig",
-            types: ["u8", "u128", "u128", "u128", "u128", "u16", "u16", "u32", "u8"],
+            types: ["u8", "u64", "u64", "u128", "u128", "u128", "u16", "u16", "u32", "u8"],
             customTypes: ["LaborBurnPrStrategy", "MultipleResourceBurnPrStrategy"],
           },
         },

@@ -103,6 +103,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         BuildingImpl::create(
             ref world,
             structure_id,
+            StructureCategory::FragmentMine.into(),
             coord,
             BuildingCategory::Resource,
             Option::Some(ResourceTypes::EARTHEN_SHARD),

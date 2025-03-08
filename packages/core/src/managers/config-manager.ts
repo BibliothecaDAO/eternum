@@ -1,15 +1,15 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-  BuildingType,
-  CapacityConfig,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
-  HYPERSTRUCTURE_CONFIG_ID,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  ResourceTier,
-  StructureType,
-  WORLD_CONFIG_ID,
+    BuildingType,
+    CapacityConfig,
+    GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+    HYPERSTRUCTURE_CONFIG_ID,
+    RESOURCE_PRECISION,
+    ResourcesIds,
+    ResourceTier,
+    StructureType,
+    WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -112,7 +112,7 @@ export class ClientConfigManager {
 
       this.resourceInputs[Number(resourceType)] = inputs;
 
-      const resourceOutput = Number(productionConfig?.amount_per_building_per_tick ?? 0n);
+      const resourceOutput = Number(productionConfig?.realm_output_per_tick ?? 0n);
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
         amount: this.divideByPrecision(resourceOutput),
@@ -644,7 +644,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
 
-      return Number(productionConfig?.amount_per_building_per_tick ?? 0);
+      return Number(productionConfig?.realm_output_per_tick ?? 0);
     }, 0);
   }
 

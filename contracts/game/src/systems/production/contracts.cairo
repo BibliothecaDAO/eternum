@@ -111,6 +111,7 @@ mod production_systems {
             let (building, building_count) = BuildingImpl::create(
                 ref world,
                 structure_id,
+                structure_base.category,
                 structure_base.coord(),
                 building_category,
                 requested_resource_type,
@@ -138,7 +139,9 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::destroy(ref world, structure_id, structure_base.coord(), building_coord);
+            BuildingImpl::destroy(
+                ref world, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         fn pause_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
@@ -157,7 +160,7 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::pause_production(ref world, structure_base.coord(), building_coord);
+            BuildingImpl::pause_production(ref world, structure_base.category, structure_base.coord(), building_coord);
         }
 
         fn resume_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
@@ -176,7 +179,7 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::resume_production(ref world, structure_base.coord(), building_coord);
+            BuildingImpl::resume_production(ref world, structure_base.category, structure_base.coord(), building_coord);
         }
 
         /// Burn other resource for production of labor
