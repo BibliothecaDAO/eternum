@@ -14,6 +14,7 @@ export const useQuery = () => {
     },
     [setLocation],
   );
+  console.log("location", location);
 
   const isMapView = useMemo(() => location.includes("/map"), [location]);
 
@@ -27,7 +28,7 @@ export const useQuery = () => {
 
   const isLocation = useCallback(
     (col: number, row: number) => hexPosition.col === col && hexPosition.row === row,
-    [hexPosition.col, hexPosition.row],
+    [hexPosition],
   );
 
   return {
