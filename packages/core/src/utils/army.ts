@@ -17,7 +17,8 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const totalCapacityKg = Number(getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count))));
+      const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
+      const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;

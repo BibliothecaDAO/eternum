@@ -327,6 +327,7 @@ export default class HexceptionScene extends HexagonScene {
             buildingType.resource,
           );
         } catch (error) {
+          console.log("catched error so removing building", error);
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
@@ -489,7 +490,6 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          console.log({ building });
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 

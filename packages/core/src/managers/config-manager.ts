@@ -189,12 +189,15 @@ export class ClientConfigManager {
         }
         const resourceType = buildingConfig.resource_type;
 
-        if (resourceType !== 0) {
+        if (BuildingType[buildingConfig.category as keyof typeof BuildingType] === BuildingType.Resource) {
           this.resourceBuildingCosts[Number(resourceType)] = inputs;
-          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
-            Number(resourceType);
         } else {
           this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
+        }
+
+        if (resourceType !== 0) {
+          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
+            Number(resourceType);
         }
       }
     }

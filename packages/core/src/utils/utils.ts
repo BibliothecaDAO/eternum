@@ -94,6 +94,14 @@ export function calculateDistance(start: Position, destination: Position): numbe
   return distance;
 }
 
+export const nanogramToKg = (value: number) => {
+  return value / 10 ** 12;
+};
+
+export const kgToNanogram = (value: number) => {
+  return value * 10 ** 12;
+};
+
 export const gramToKg = (value: number) => {
   return value / 1000;
 };

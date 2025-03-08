@@ -1,3 +1,5 @@
+import { BuildingType } from "../constants";
+
 export function unpackValue(packedValue: bigint): number[] {
   const MAX_BITS_PER_VALUE = 8;
 
@@ -42,4 +44,40 @@ export function packValues(numbers: number[]) {
   }
 
   return packedValue.toString();
+}
+
+/**
+ * Gets the count of buildings for a specific category from a packed value
+ * @param category The building category (1-based index)
+ * @param packed The packed value containing counts for all categories
+ * @returns The count of buildings for the specified category
+ */
+export function getBuildingCount(category: BuildingType, packed: bigint): number {
+  const MAX_BITS_PER_VALUE = 8;
+  const mask = BigInt((1 << MAX_BITS_PER_VALUE) - 1); // 0xFF (all 8 bits set to 1)
+  const shiftAmount = BigInt((category - 1) * MAX_BITS_PER_VALUE);
+
+  const count = (packed >> shiftAmount) & mask;
+  return Number(count);
+}
+
+/**
+ * Sets the count of buildings for a specific category in a packed value
+ * @param category The building category (1-based index)
+ * @param packed The original packed value
+ * @param count The new count to set (must fit in 8 bits, 0-255)
+ * @returns A new packed value with the updated count
+ */
+export function setBuildingCount(category: BuildingType, packed: bigint, count: number): bigint {
+  if (count < 0 || count > 255) {
+    throw new Error("Count must be able to fit in 8 bits (0-255)");
+  }
+
+  const MAX_BITS_PER_VALUE = 8;
+  const shiftAmount = BigInt((category - 1) * MAX_BITS_PER_VALUE);
+  const mask = BigInt((1 << MAX_BITS_PER_VALUE) - 1) << shiftAmount; // 0xFF shifted to position
+  const shiftedCount = BigInt(count) << shiftAmount;
+
+  // Clear the bits at the category position and set the new count
+  return (packed & ~mask) | shiftedCount;
 }

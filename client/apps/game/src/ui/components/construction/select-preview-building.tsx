@@ -18,17 +18,19 @@ import {
   divideByPrecision,
   findResourceById,
   getBalance,
-  getBuildingQuantity,
+  getBuildingCosts,
+  getConsumedBy,
   getRealmInfo,
+  getResourceBuildingCosts,
   hasEnoughPopulationForBuilding,
   ID,
   isResourceProductionBuilding,
-  ResourceCost as ResourceCostType,
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { DojoResult, useDojo } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { InfoIcon } from "lucide-react";
@@ -81,7 +83,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const buildingCosts = getResourceBuildingCosts(entityId, dojo, resourceId);
+              const buildingCosts = getResourceBuildingCosts(entityId, dojo.setup.components, resourceId);
               if (!buildingCosts) return;
               const cost = [...buildingCosts, ...configManager.resourceInputs[resourceId]];
 
@@ -136,13 +138,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
+                const isResourceBuilding = building === BuildingType.Resource;
+
                 const isWorkersHut = building === BuildingType.WorkersHut;
                 const isStorehouse = building === BuildingType.Storehouse;
 
-                const buildingCosts =
-                  isWorkersHut || isStorehouse
-                    ? getBuildingCosts(entityId, dojo, building)
-                    : getResourceBuildingCosts(entityId, dojo, configManager.getResourceBuildingProduced(building));
+                const buildingCosts = isResourceBuilding
+                  ? getResourceBuildingCosts(
+                      entityId,
+                      dojo.setup.components,
+                      configManager.getResourceBuildingProduced(building),
+                    )
+                  : getBuildingCosts(entityId, dojo.setup.components, building);
 
                 if (!buildingCosts) return;
 
@@ -215,9 +222,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {buildingTypes
               .filter((a) => isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType]))
               .map((buildingType, index) => {
+                const isResourceBuilding =
+                  BuildingType[buildingType as keyof typeof BuildingType] === BuildingType.Resource;
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const resourceId = configManager.getResourceBuildingProduced(building);
-                const buildingCost = getResourceBuildingCosts(entityId, dojo, resourceId);
+                const resourceId = isResourceBuilding ? configManager.getResourceBuildingProduced(building) : undefined;
+                const buildingCost = resourceId
+                  ? getResourceBuildingCosts(entityId, dojo.setup.components, resourceId)
+                  : getBuildingCosts(entityId, dojo.setup.components, building);
 
                 const hasBalance = checkBalance(buildingCost);
 
@@ -389,7 +400,14 @@ export const ResourceInfo = ({
     cost = adjustWonderLordsCost(cost);
   }
 
-  const buildingCost = getResourceBuildingCosts(entityId ?? 0, dojo, resourceId) ?? [];
+  const structureBuildings = useComponentValue(
+    dojo.setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(entityId || 0)]),
+  );
+
+  const buildingCost = useMemo(() => {
+    return getResourceBuildingCosts(entityId ?? 0, dojo.setup.components, resourceId) ?? [];
+  }, [entityId, dojo.setup.components, resourceId, structureBuildings]);
 
   const buildingPopCapacityConfig = configManager.getBuildingPopConfig(BuildingType.Resource);
   const population = buildingPopCapacityConfig.population;
@@ -518,15 +536,12 @@ export const BuildingInfo = ({
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const isWorkersHut = buildingId === BuildingType.WorkersHut;
-  const isStorehouse = buildingId === BuildingType.Storehouse;
-
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
 
   const buildingCost =
-    isWorkersHut || isStorehouse
-      ? getBuildingCosts(entityId ?? 0, dojo, buildingId) || []
-      : getResourceBuildingCosts(entityId ?? 0, dojo, resourceProduced) || [];
+    buildingId === BuildingType.Resource
+      ? getResourceBuildingCosts(entityId ?? 0, dojo.setup.components, resourceProduced) || []
+      : getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId) || [];
 
   const buildingPopCapacityConfig = configManager.getBuildingPopConfig(buildingId);
   const population = buildingPopCapacityConfig.population;
@@ -663,98 +678,4 @@ export const BuildingInfo = ({
       )}
     </div>
   );
-};
-
-const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(configManager.resourceInputs)
-    .map(([resourceId, inputs]) => {
-      const resource = inputs.find(
-        (input: { resource: number; amount: number }) => input.resource === resourceProduced,
-      );
-      if (resource) {
-        return Number(resourceId);
-      }
-    })
-    .filter(Boolean);
-};
-
-const getResourceBuildingCosts = (realmEntityId: ID, dojo: DojoResult, resourceId: ResourcesIds) => {
-  const buildingGeneralConfig = configManager.getBuildingGeneralConfig();
-  if (!buildingGeneralConfig) {
-    return;
-  }
-  const buildingType = resourceIdToBuildingCategory(resourceId);
-
-  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingType, dojo.setup.components);
-
-  let updatedCosts: ResourceCostType[] = [];
-
-  configManager.resourceBuildingCosts[Number(resourceId)].forEach((cost) => {
-    const baseCost = cost.amount;
-    const percentageAdditionalCost = (baseCost * (buildingGeneralConfig.base_cost_percent_increase / 100)) / 100;
-    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
-    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
-    updatedCosts.push({ resource: cost.resource, amount: totalCost });
-  });
-  return updatedCosts;
-};
-
-const getBuildingCosts = (realmEntityId: ID, dojo: DojoResult, buildingCategory: BuildingType) => {
-  const buildingBaseCostPercentIncrease = configManager.getBuildingBaseCostPercentIncrease();
-
-  const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, dojo.setup.components);
-
-  let updatedCosts: ResourceCostType[] = [];
-
-  configManager.buildingCosts[Number(buildingCategory)].forEach((cost) => {
-    const baseCost = cost.amount;
-    const percentageAdditionalCost = (baseCost * (buildingBaseCostPercentIncrease / 100)) / 100;
-    const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);
-    const totalCost = baseCost + scaleFactor * scaleFactor * percentageAdditionalCost;
-    updatedCosts.push({ resource: cost.resource, amount: totalCost });
-  });
-  return updatedCosts;
-};
-
-const resourceIdToBuildingCategory = (resourceId: ResourcesIds): BuildingType => {
-  if (resourceId === ResourcesIds.Wheat) {
-    return BuildingType.Farm;
-  }
-  if (resourceId === ResourcesIds.Fish) {
-    return BuildingType.FishingVillage;
-  }
-  if (resourceId > 0 && resourceId < 22) {
-    return BuildingType.Resource;
-  }
-  if (resourceId === ResourcesIds.Donkey) {
-    return BuildingType.Market;
-  }
-  if (resourceId === ResourcesIds.Knight) {
-    return BuildingType.Barracks1;
-  }
-  if (resourceId === ResourcesIds.KnightT2) {
-    return BuildingType.Barracks2;
-  }
-  if (resourceId === ResourcesIds.KnightT3) {
-    return BuildingType.Barracks3;
-  }
-  if (resourceId === ResourcesIds.Crossbowman) {
-    return BuildingType.ArcheryRange1;
-  }
-  if (resourceId === ResourcesIds.CrossbowmanT2) {
-    return BuildingType.ArcheryRange2;
-  }
-  if (resourceId === ResourcesIds.CrossbowmanT3) {
-    return BuildingType.ArcheryRange3;
-  }
-  if (resourceId === ResourcesIds.Paladin) {
-    return BuildingType.Stable1;
-  }
-  if (resourceId === ResourcesIds.PaladinT2) {
-    return BuildingType.Stable2;
-  }
-  if (resourceId === ResourcesIds.PaladinT3) {
-    return BuildingType.Stable3;
-  }
-  return BuildingType.None;
 };

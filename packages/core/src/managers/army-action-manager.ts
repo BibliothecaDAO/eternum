@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToGram, multiplyByPrecision } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToGram, multiplyByPrecision, nanogramToKg } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -189,7 +189,6 @@ export class ArmyActionManager {
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
-      console.log({ isMine, isArmyMine, isStructureMine });
 
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
@@ -312,7 +311,6 @@ export class ArmyActionManager {
   };
 
   private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
-    console.log({ overrideId, additionalWeightKg });
     const resource = getComponentValue(this.components.Resource, this.entity);
     const weight = resource?.weight || { capacity: 0n, weight: 0n };
 
@@ -342,12 +340,7 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticExplore = (
-    blockTimestamp: number,
-    col: number,
-    row: number,
-    currentArmiesTick: number,
-  ) => {
+  private readonly _optimisticExplore = (col: number, row: number) => {
     const overrideId = uuid();
 
     this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
@@ -379,7 +372,7 @@ export class ArmyActionManager {
     const direction = this._findDirection(path);
     if (direction === undefined || direction === null) return;
 
-    const overrideId = this._optimisticExplore(blockTimestamp, path[1].col, path[1].row, currentArmiesTick);
+    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
 
     this.provider
       .explorer_move({
@@ -408,14 +401,6 @@ export class ArmyActionManager {
     currentArmiesTick: number,
   ) => {
     const overrideId = uuid();
-
-    console.log({
-      overrideId,
-      staminaCost: configManager.getTravelStaminaCost() * pathLength,
-      currentArmiesTick,
-      col,
-      row,
-    });
 
     this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
@@ -514,11 +499,16 @@ export class ArmyActionManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
+    // this weight is in nanograms
     const armyWeight = getComponentValue(this.components.Resource, this.entity)?.weight.weight || 0;
+
+    const armyWeightKg = nanogramToKg(Number(armyWeight));
 
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     if (!explorerTroops) return 0;
 
-    return getRemainingCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)), Number(armyWeight));
+    const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
+
+    return getRemainingCapacityInKg(actualExplorerTroopsCount, armyWeightKg);
   };
 }

@@ -126,14 +126,14 @@ export class ResourceManager {
     return Number(finalBalance);
   }
 
-  public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, change: bigint) => {
+  public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, actualResourceChange: bigint) => {
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]);
     const currentBalance = this.balance(resourceId);
     const weight = configManager.getResourceWeightKg(resourceId);
+    // current weight in nanograms per unit with precision
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
-    const amountWithPrecision = BigInt(multiplyByPrecision(Number(change)));
+    const amountWithPrecision = BigInt(multiplyByPrecision(Number(actualResourceChange)));
     const weightChange = BigInt(kgToGram(weight)) * amountWithPrecision;
-    console.log({ weightChange, weight, change });
 
     try {
       switch (resourceId) {

@@ -6,15 +6,7 @@ import { ArmyCreate } from "@/ui/components/military/army-management-card";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import {
-  ArmyManager,
-  BuildingType,
-  ClientComponents,
-  configManager,
-  getEntityName,
-  StructureType,
-  TileManager,
-} from "@bibliothecadao/eternum";
+import { ArmyManager, ClientComponents, configManager, getEntityName, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -28,12 +20,6 @@ export const EntityArmyList = ({
   const dojo = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-    col: structure.base.coord_x,
-    row: structure.base.coord_y,
-  });
-  const existingBuildings = tileManager.existingBuildings();
-
   const explorers = useExplorersByStructure({
     structureEntityId: structure?.entity_id || 0,
   });
@@ -43,7 +29,6 @@ export const EntityArmyList = ({
   });
 
   const { currentBlockTimestamp } = useBlockTimestamp();
-  console.log({ guards, currentBlockTimestamp });
 
   const cooldownSlots = useMemo(() => {
     const slotsTimeLeft: { slot: number; timeLeft: number }[] = [];
@@ -58,27 +43,6 @@ export const EntityArmyList = ({
   const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
 
   const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
-
-  const maxAmountExplorerArmies = useMemo(() => {
-    const maxWithBuildings =
-      structure.base.troop_max_explorer_count +
-      existingBuildings.filter(
-        (building) =>
-          building.category === BuildingType[BuildingType.ArcheryRange1] ||
-          building.category === BuildingType[BuildingType.Barracks1] ||
-          building.category === BuildingType[BuildingType.Stable1] ||
-          building.category === BuildingType[BuildingType.ArcheryRange2] ||
-          building.category === BuildingType[BuildingType.Barracks2] ||
-          building.category === BuildingType[BuildingType.Stable2] ||
-          building.category === BuildingType[BuildingType.ArcheryRange3] ||
-          building.category === BuildingType[BuildingType.Barracks3] ||
-          building.category === BuildingType[BuildingType.Stable3],
-      ).length *
-        troopConfig.troop_limit_config.troops_per_military_building;
-    // remove 1 to force to create defensive army first
-    const hardMax = troopConfig.troop_limit_config.explorer_max_party_count - 1;
-    return Math.min(maxWithBuildings, hardMax);
-  }, [existingBuildings]);
 
   const totalExplorersCount = useMemo(() => {
     return explorers.length;
@@ -133,7 +97,7 @@ export const EntityArmyList = ({
                 content: "Can only create attacking armies on realms",
                 position: "top",
               });
-            } else if (totalExplorersCount >= maxAmountExplorerArmies) {
+            } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
               setTooltip({
                 content: "Maximum number of armies reached",
                 position: "top",
@@ -144,7 +108,7 @@ export const EntityArmyList = ({
         >
           <Button
             variant="primary"
-            disabled={!isRealm || totalExplorersCount >= maxAmountExplorerArmies}
+            disabled={!isRealm || totalExplorersCount >= structure.base.troop_max_explorer_count}
             className="attack-army-selector px-6 py-2 text-lg"
             onClick={() => setShowTroopSelection(!showTroopSelection)}
           >
