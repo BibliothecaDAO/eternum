@@ -1,17 +1,11 @@
 import { DepositResourceArrival } from "@/ui/components/resources/deposit-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { divideByPrecision, EntityType, formatTime, ResourceArrivalInfo } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatTime, ResourceArrivalInfo } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
-
-const entityIcon: Record<EntityType, string> = {
-  [EntityType.DONKEY]: "🫏",
-  [EntityType.TROOP]: "🥷",
-  [EntityType.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
-};
 
 export const StructureArrivals = memo(
   ({
@@ -23,19 +17,44 @@ export const StructureArrivals = memo(
     isExpanded: boolean;
     toggleStructure: (id: string) => void;
   }) => {
-    const arrivals = useArrivalsByStructure({ structureEntityId: structure.entityId });
+    const arrivals = useArrivalsByStructure(structure.entityId);
+    const { currentBlockTimestamp } = getBlockTimestamp();
 
     if (arrivals.length === 0) return null;
 
+    // Calculate summary information
+    const readyArrivals = arrivals.filter((arrival) => arrival.arrivesAt <= currentBlockTimestamp).length;
+    const pendingArrivals = arrivals.length - readyArrivals;
+
+    // Count total resources
+    const totalResources = arrivals.reduce((total, arrival) => total + arrival.resources.filter(Boolean).length, 0);
+
     return (
       <div className="border border-gold/20 rounded-md">
-        <div
-          className="flex justify-between items-center p-2 bg-gold/10 cursor-pointer"
+        <button
+          className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
           onClick={() => toggleStructure(structure.entityId.toString())}
         >
-          <h3 className="text-gold font-medium">{structure.name}</h3>
+          <div className="flex items-center gap-3">
+            <h4 className="text-gold font-medium">{structure.name}</h4>
+            <div className="flex items-center gap-2">
+              {readyArrivals > 0 && (
+                <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <span>{readyArrivals} ready</span>
+                </div>
+              )}
+              {pendingArrivals > 0 && (
+                <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                  <span>{pendingArrivals} pending</span>
+                </div>
+              )}
+              <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
+            </div>
+          </div>
           <div className="text-gold">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
-        </div>
+        </button>
 
         {isExpanded && (
           <div className="flex flex-col gap-2 p-2">
@@ -64,19 +83,25 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
     return () => clearInterval(interval);
   }, [currentBlockTimestamp]);
 
-  const renderEntityStatus = useMemo(() => {
-    return now ? (
-      arrival.arrivesAt <= now ? (
-        <div className="flex ml-auto italic animate-pulse self-center bg-brown/20 rounded-md px-2 py-1">
-          Waiting to offload
-        </div>
-      ) : (
-        <div className="flex ml-auto italic self-center bg-brown/20 rounded-md px-2 py-1">
-          Arriving in {formatTime(Number(arrival.arrivesAt) - now)}
-        </div>
-      )
-    ) : null;
+  const isArrived = useMemo(() => {
+    return now ? arrival.arrivesAt <= now : false;
   }, [arrival.arrivesAt, now]);
+
+  const renderEntityStatus = useMemo(() => {
+    if (!now) return null;
+
+    return isArrived ? (
+      <div className="flex items-center gap-2 bg-emerald-900/40 text-emerald-400 rounded-md px-3 py-1.5 font-medium border border-emerald-700/50">
+        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span>Ready to offload</span>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2 bg-amber-900/40 text-amber-400 rounded-md px-3 py-1.5 font-medium border border-amber-700/50">
+        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+        <span>Arriving in {formatTime(Number(arrival.arrivesAt) - now)}</span>
+      </div>
+    );
+  }, [arrival.arrivesAt, now, isArrived]);
 
   const renderedResources = useMemo(() => {
     return arrival.resources
@@ -84,7 +109,7 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
       .map((resource) => (
         <ResourceCost
           key={resource.resourceId}
-          className="!text-gold"
+          className={clsx("!text-gold", isArrived && "ring-1 ring-emerald-500/30 bg-emerald-900/20 rounded-md p-1")}
           type="vertical"
           size="xs"
           withTooltip={true}
@@ -92,20 +117,33 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
           amount={divideByPrecision(resource.amount)}
         />
       ));
-  }, [arrival.resources]);
+  }, [arrival.resources, isArrived]);
 
   return (
-    <div className={clsx("flex flex-col p-2 text-gold border border-gold/10", "bg-gold/10")}>
-      <div className="flex justify-between">
-        <div className="flex gap-2">
-          <div className="flex gap-8 items-center">{entityIcon[EntityType.DONKEY]}</div>
+    <div
+      className={clsx(
+        "flex flex-col p-3 rounded-md text-gold border",
+        isArrived
+          ? "border-emerald-700/30 bg-gradient-to-br from-gold/10 to-emerald-900/20"
+          : "border-amber-700/30 bg-gradient-to-br from-gold/10 to-amber-900/20",
+      )}
+    >
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold/20 border border-gold/30">
+            {isArrived ? "🏰" : "🫏"}
+          </div>
           {renderEntityStatus}
         </div>
-        <div className="flex justify-between items-center self-center">
+        <div className="flex justify-between items-center">
           <DepositResourceArrival arrival={arrival} />
         </div>
       </div>
-      {renderedResources && <div className="flex items-center gap-2 flex-wrap mt-4">{renderedResources}</div>}
+      {renderedResources && renderedResources.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mt-4 p-2 bg-black/20 rounded-md border border-gold/10">
+          {renderedResources}
+        </div>
+      )}
     </div>
   );
 };

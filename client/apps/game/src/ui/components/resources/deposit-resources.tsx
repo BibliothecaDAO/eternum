@@ -40,7 +40,7 @@ export const DepositResourceArrival = ({ arrival }: { arrival: ResourceArrivalIn
   return (
     <div className="w-full">
       <Button
-        size="xs"
+        size="md"
         className="w-full"
         isLoading={isLoading}
         disabled={arrival.arrivesAt > currentBlockTimestamp}

@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToGram, multiplyByPrecision, nanogramToKg } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToNanogram, multiplyByPrecision, nanogramToKg } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -313,6 +313,7 @@ export class ArmyActionManager {
   private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
     const resource = getComponentValue(this.components.Resource, this.entity);
     const weight = resource?.weight || { capacity: 0n, weight: 0n };
+    const additionalWeight = kgToNanogram(additionalWeightKg);
 
     this.components.Resource.addOverride(overrideId, {
       entity: this.entity,
@@ -321,7 +322,7 @@ export class ArmyActionManager {
         ...resource,
         weight: {
           ...weight,
-          weight: BigInt((weight?.weight || 0).toString()) + BigInt(kgToGram(additionalWeightKg)),
+          weight: BigInt((weight?.weight || 0).toString()) + BigInt(additionalWeight),
         },
       },
     });

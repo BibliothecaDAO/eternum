@@ -232,30 +232,38 @@ export const normalizeDiacriticalMarks = (str: string) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
-
 export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
   if (travelTimeMinutes === undefined) return null;
-  
-  const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
+
+  const currentBlockTimestampMs = getBlockTimestamp().currentBlockTimestamp * 1000;
   const travelTimeMs = travelTimeMinutes * 60 * 1000;
-  const arrivalTimeMs = currentBlockTimestamp + travelTimeMs;
-  
+  const arrivalTimeMs = currentBlockTimestampMs + travelTimeMs;
+
   // Calculate the next hour boundary after arrival
   const arrivalDate = new Date(arrivalTimeMs);
   const nextHourDate = new Date(arrivalDate);
   nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
-  
+
   return nextHourDate;
 };
 
-
 export const formatArrivalTime = (date: Date | null) => {
   if (!date) return "";
-  
+
   const day = date.getDate();
   const month = date.getMonth() + 1;
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  
-  return `${month}/${day} at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+  // Calculate time difference in minutes
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+  const hoursUntil = Math.floor(diffMinutes / 60);
+  const minutesUntil = diffMinutes % 60;
+
+  // Format the time difference
+  const timeUntil = `(${hoursUntil}h ${minutesUntil}m)`;
+
+  return `${month}/${day} at ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${timeUntil}`;
 };

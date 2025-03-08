@@ -30,7 +30,7 @@ export const AllResourceArrivals = memo(({ className = "" }: { className?: strin
         <StructureArrivals
           key={structure.entityId}
           structure={structure}
-          isExpanded={expandedStructures[structure.entityId] === false}
+          isExpanded={expandedStructures[structure.entityId] === true}
           toggleStructure={toggleStructure}
         />
       ))}

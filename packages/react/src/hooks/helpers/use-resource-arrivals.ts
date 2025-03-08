@@ -3,7 +3,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../";
 
-export const useArrivalsByStructure = ({ structureEntityId }: { structureEntityId: ID }) => {
+export const useArrivalsByStructure = (structureEntityId: ID) => {
   const {
     setup: {
       components: { ResourceArrival },
