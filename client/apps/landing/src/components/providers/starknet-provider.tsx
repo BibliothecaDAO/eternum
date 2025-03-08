@@ -13,7 +13,6 @@ const otherResources = Object.entries(resourceAddresses)
   .filter(([key]) => key !== "LORDS")
   .map(([_, [__, address]]) => address.toString());
 
-const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "eternum";
 
@@ -22,7 +21,6 @@ const cartridgeController = new ControllerConnector({
   defaultChainId: constants.StarknetChainId.SN_SEPOLIA,
   namespace,
   slot,
-  theme,
   tokens: {
     erc20: [LORDS, ...otherResources],
   },
