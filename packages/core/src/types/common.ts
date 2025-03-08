@@ -39,17 +39,6 @@ export type ResourceArrivalInfo = {
 
 export type DojoAccount = Account | AccountInterface;
 
-export enum OccupiedBy {
-  None = 0,
-  RealmRegular = 1,
-  RealmWonder = 2,
-  Hyperstructure = 3,
-  FragmentMine = 4,
-  Village = 5,
-  Bank = 6,
-  Explorer = 7,
-}
-
 export type ArmyInfo = {
   entityId: ID;
   troops: Troops;
@@ -109,12 +98,6 @@ export interface Prize {
   title: string;
 }
 
-export enum QuestStatus {
-  InProgress,
-  Completed,
-  Claimed,
-}
-
 export interface Building {
   name: string;
   category: string;
@@ -124,54 +107,6 @@ export interface Building {
   bonusPercent: number;
   innerCol: number;
   innerRow: number;
-}
-
-export enum BattleType {
-  Hex,
-  Structure,
-}
-
-export enum BattleStatus {
-  BattleStart = "Start battle",
-  BattleOngoing = "",
-  UserWon = "Victory",
-  UserLost = "Defeat",
-  BattleEnded = "Battle has ended",
-}
-
-export enum RaidStatus {
-  isRaidable = "Raid!",
-  NoStamina = "Not enough stamina",
-  NoStructureToClaim = "No structure to raid",
-  OwnStructure = "Can't raid your own structure",
-  NoArmy = "No army selected",
-  ArmyNotInBattle = "Selected army not in this battle",
-  MinTroops = "Minimum 100 troops required",
-}
-
-export enum LeaveStatus {
-  Leave = "Leave",
-  NoBattleToLeave = "No battle to leave",
-  DefenderCantLeaveOngoing = "A defender can't leave an ongoing battle",
-  NoArmyInBattle = "Your armies aren't in this battle",
-}
-
-export enum BattleStartStatus {
-  MinTroops = "Minimum 100 troops required",
-  BattleStart = "Start battle",
-  ForceStart = "Force start",
-  NothingToAttack = "Nothing to attack",
-  CantStart = "Can't start a battle now.",
-}
-
-export enum ClaimStatus {
-  Claimable = "Claim",
-  NoSelectedArmy = "No selected army",
-  BattleOngoing = "Battle ongoing",
-  DefenderPresent = "An army's defending the structure",
-  NoStructureToClaim = "No structure to claim",
-  StructureIsMine = "Can't claim your own structure",
-  SelectedArmyIsDead = "Selected army is dead",
 }
 
 export type HexPosition = { col: number; row: number };
@@ -188,33 +123,15 @@ export type HexTileInfo = {
   biomeType: BiomeType | undefined;
 };
 
-export enum Winner {
-  Attacker = "Attacker",
-  Target = "Target",
-}
-
 export enum TickIds {
   Default,
   Armies,
-}
-
-export enum DestinationType {
-  Home,
-  Hyperstructure,
-  Realm,
-  Bank,
 }
 
 export enum EntityType {
   DONKEY,
   TROOP,
   UNKNOWN,
-}
-
-export enum BattleSide {
-  None,
-  Attack,
-  Defence,
 }
 
 export enum Access {
@@ -226,11 +143,6 @@ export enum Access {
 export enum TravelTypes {
   Explore,
   Travel,
-}
-
-export interface Health {
-  current: bigint;
-  lifetime: bigint;
 }
 
 export interface Troops {
@@ -253,50 +165,6 @@ export enum TroopType {
   Knight = "Knight",
   Paladin = "Paladin",
   Crossbowman = "Crossbowman",
-}
-
-export type TroopInfo = {
-  type: TroopType;
-  count: number;
-  label: string;
-};
-
-export interface CombatResultInterface {
-  attackerRealmEntityId: ID;
-  targetRealmEntityId: ID;
-  attackingEntityIds: ID[];
-  winner: Winner;
-  stolenResources: Resource[];
-  damage: number;
-  attackTimestamp: number;
-  stolenChestsIds: ID[];
-}
-
-export interface CombatInfo {
-  entityId: ID;
-  health: number;
-  quantity: number;
-  attack: number;
-  defence: number;
-  sec_per_km: number;
-  blocked?: boolean | undefined;
-  capacity?: number | undefined;
-  arrivalTime?: number | undefined;
-  position?: Position | undefined;
-  homePosition?: Position | undefined;
-  entityOwnerId?: ID | undefined;
-  owner?: ID | undefined;
-  locationEntityId?: ID | undefined;
-  locationType?: DestinationType;
-  originRealmId?: ID | undefined;
-  order: number;
-  troops: {
-    knightCount: number;
-    paladinCount: number;
-    crossbowmanCount: number;
-  };
-  battleEntityId: ID;
-  battleSide: number;
 }
 
 /// TRADING
@@ -345,44 +213,8 @@ export interface Resource {
 
 /// TRAVEL
 
-export interface EntityInterface {
-  entityId: ID;
-  blocked: boolean | undefined;
-  arrivalTime: number | undefined;
-  capacity: number | undefined;
-  intermediateDestination: Position | undefined;
-  owner: ID | undefined;
-  isMine: boolean;
-  isRoundTrip: boolean;
-  position: Position | undefined;
-  homePosition: Position | undefined;
-  resources: Resource[];
-  entityType: EntityType;
-}
-
 /// REALMS
-export interface SelectableRealmInterface {
-  entityId: ID;
-  realmId: ID;
-  name: string;
-  order: string;
-  distance: number;
-  defence?: CombatInfo;
-  level?: number;
-  addressName: string;
-}
 
-export interface SelectableLocationInterface {
-  entityId: ID;
-  home: boolean;
-  realmId: ID;
-  name: string;
-  order: string;
-  distance: number;
-  defence?: CombatInfo;
-  level?: number;
-  addressName: string;
-}
 export interface RealmInterface {
   realmId: ID;
   name: string;
@@ -398,34 +230,6 @@ export interface RealmInterface {
   imageUrl: string;
 }
 
-/// LABOR
-
-/// BANK
-export interface AuctionInterface {
-  start_time: number;
-  per_time_unit: bigint;
-  sold: bigint;
-  price_update_interval: bigint;
-}
-
-export interface BankStaticInterface {
-  name: string;
-  position: Position;
-  distance: number | undefined;
-}
-
-export interface BankInterface {
-  name: string;
-  wheatPrice: number;
-  fishPrice: number;
-  bankId: ID;
-  position: Position;
-  wheatAuction: AuctionInterface | undefined;
-  fishAuction: AuctionInterface | undefined;
-  distance: number | undefined;
-}
-
-/// POSITION
 export interface Position {
   x: number;
   y: number;

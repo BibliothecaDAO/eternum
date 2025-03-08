@@ -144,7 +144,7 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
   );
 };
 
-export const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefenseProps) => {
+const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefenseProps) => {
   const [defenseTroops, setDefenseTroops] = useState(troops);
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 

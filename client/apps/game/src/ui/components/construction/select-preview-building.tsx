@@ -8,7 +8,7 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Tabs } from "@/ui/elements/tab";
-import { adjustWonderLordsCost, getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
+import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BuildingEnumToString,
@@ -22,6 +22,7 @@ import {
   getConsumedBy,
   getRealmInfo,
   getResourceBuildingCosts,
+  gramToKg,
   hasEnoughPopulationForBuilding,
   ID,
   isResourceProductionBuilding,

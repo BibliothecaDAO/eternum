@@ -1,13 +1,6 @@
 import { SortInterface } from "@/ui/elements/sort-button";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  ContractAddress,
-  divideByPrecision,
-  ResourceCost,
-  ResourcesIds,
-  toHexString,
-  type Resource,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, divideByPrecision, ResourceCost, ResourcesIds, toHexString } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
@@ -85,23 +78,6 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
-};
-
-export function gramToKg(grams: number): number {
-  return Number(grams) / 1000;
-}
-
-export function kgToGram(kg: number): number {
-  return Number(kg) * 1000;
-}
-
-export const formatResources = (resources: any[]): Resource[] => {
-  return resources
-    .map((resource) => ({
-      resourceId: Number(resource[0].value),
-      amount: Number(resource[1].value),
-    }))
-    .filter((resource) => resource.amount > 0);
 };
 
 const accentsToAscii = (str: string) => {
