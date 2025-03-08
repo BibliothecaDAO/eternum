@@ -125,10 +125,10 @@ const DojoContextProvider = ({
 
   const [retries, setRetries] = useState(0);
 
-  const connectWallet = async () => {
+  const connectWallet = () => {
     try {
       console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
+      connect({ connector: connectors[0] });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
