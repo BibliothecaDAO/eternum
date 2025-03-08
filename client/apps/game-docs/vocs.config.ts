@@ -2,10 +2,19 @@ import path from "path";
 import { defineConfig } from "vocs";
 
 export default defineConfig({
+  vite: {
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./docs"),
+        "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+      },
+    },
+  },
+
   description: "Your Complete Guide to Mastering Eternum",
-  iconUrl: "/eternum-new-logo.svg",
-  logoUrl: "/eternum-new-logo.svg",
-  ogImageUrl: "/eternum_documentation.png",
+  iconUrl: "/images/logos/eternum-new.svg",
+  logoUrl: "/images/logos/eternum-new.svg",
+  ogImageUrl: "/images/covers/eternum_documentation.png",
   theme: {
     colorScheme: "dark",
     variables: {
@@ -17,18 +26,10 @@ export default defineConfig({
       },
     },
   },
-  vite: {
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./docs"),
-        "@config": path.resolve(__dirname, "../../../config/utils/utils"),
-      },
-    },
-    publicDir: "../../common/public",
-  },
   font: {
     google: "Open Sans",
   },
+
   title: "Eternum",
   sidebar: [
     {

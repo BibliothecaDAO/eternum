@@ -1,7 +1,8 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getEntityIdFromKeys, ID, RealmInfo, resources } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { ID, RealmInfo, resources } from "@bibliothecadao/eternum";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { memo, useMemo } from "react";
 
 interface ProductionSidebarProps {
@@ -21,6 +22,7 @@ const SidebarRealm = ({
 }) => {
   const {
     setup: {
+      components,
       components: { Resource, Building },
     },
   } = useDojo();
@@ -35,6 +37,8 @@ const SidebarRealm = ({
     return buildings;
   }, [realm]);
 
+  const resourceManager = useResourceManager(realm.entityId);
+
   return (
     <div
       onClick={onSelect}
@@ -44,8 +48,8 @@ const SidebarRealm = ({
 
       <div className="flex flex-wrap gap-2 mb-2">
         {Object.values(realm.resources).map((resource) => {
-          const value = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId), BigInt(resource)]));
-          if (value && value.balance > 0) {
+          const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resource);
+          if (balance > 0) {
             return (
               <ResourceIcon
                 key={resource}

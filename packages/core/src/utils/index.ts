@@ -1,4 +1,8 @@
+export * from "./action-paths";
 export * from "./army";
+export * from "./banks";
+export * from "./biome";
+export * from "./buildings";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./guild";
@@ -10,4 +14,6 @@ export * from "./resources";
 export * from "./structure";
 export * from "./trades";
 export * from "./transport";
+export * from "./travel";
+export * from "./travel-path";
 export * from "./utils";

@@ -1,6 +1,5 @@
-import { DONKEY_SPEED } from "@bibliothecadao/eternum";
-import { CapacityConfigCategory } from "@bibliothecadao/eternum";
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { CapacityConfigCategory } from "@/utils/types";
 
 # 🫏 Trading System
 
@@ -42,7 +41,7 @@ your share and helps maintain a stable trading environment, increasing overall m
 > ⚠️ **Important**: Even though liquidity is tracked at the account level, you must maintain ownership of at least one
 > realm to manage your liquidity positions
 
-## Transport <img src="/resources/249.png" alt="Donkey" width="200" className="float-right" />
+## Transport <img src="/images/resources/25.png" alt="Donkey" width="200" className="float-right" />
 
 Donkeys are essential for all resource transfers. Each donkey can carry up to
 **{(ETERNUM_CONFIG().carryCapacityGram[CapacityConfigCategory.Donkey] / 1000).toLocaleString()} kg**, and transport time
@@ -55,12 +54,12 @@ To bridge resources, visit the [Empires Bridge](https://empire.realms.world/trad
 
 - **Sending Resource**s: When you want to send resources (like **$LORDS**) to another realm, the bridge calculates the
   distance and travel time based on the coordinates of your realm and the central bank. The transport time depends on
-  the distance and is calculated as {DONKEY_SPEED} seconds per kilometer.
+  the distance and is calculated as {ETERNUM_CONFIG().speed.donkey} seconds per kilometer.
 - **Withdrawing Resources**: To bridge resources out of the game, you must first travel from your realm to the central
   bank. This process is not instant, resources must physically "move" to the bank. You can bridge out here
   <a href="https://empire.realms.world/">here</a>.
 
-## 🏦 Central Bank <img src="/buildings/bank.png" alt="Bank" width="300" className="float-right" />
+## 🏦 Central Bank <img src="/images/buildings/construction/bank.png" alt="Bank" width="300" className="float-right" />
 
 The Central Bank is a neutral structure, located at the center of the map, that controls the AMM and receives a part of
 its fees. The central bank acts as the hub for all bridging activities. Whether you’re sending resources to another

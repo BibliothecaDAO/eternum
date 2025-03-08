@@ -1,6 +1,6 @@
-import { ClientConfigManager, divideByPrecision } from "@bibliothecadao/eternum";
+import { ClientConfigManager, divideByPrecision, ID } from "@bibliothecadao/eternum";
 
-import { ContractAddress, TickIds, type ID, type Position, type Resource } from "@bibliothecadao/eternum";
+import { ContractAddress, TickIds, type Position, type Resource } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
@@ -177,15 +177,6 @@ export const isRealmSelected = (structureEntityId: ID, structures: any) => {
   return selectedStructure?.category === "Realm";
 };
 
-export const getTotalResourceWeight = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-  return resources.reduce(
-    (total, resource) =>
-      total + (resource ? resource.amount * configManager.getResourceWeight(resource.resourceId) || 0 : 0),
-    0,
-  );
-};
-
 export const formatSecondsInHoursMinutes = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -274,8 +265,4 @@ export const separateCamelCase = (str: string): string => {
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-};
-
-export const calculateDonkeysNeeded = (orderWeight: number, donkeyCapacity: number): number => {
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacity);
 };

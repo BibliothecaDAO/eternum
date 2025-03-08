@@ -2,8 +2,16 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { SelectBiome } from "@/ui/elements/select-biome";
 import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
-import { Biome, CombatParameters, CombatSimulator, ResourcesIds, TroopType, type Army } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import {
+  BiomeType,
+  CombatParameters,
+  CombatSimulator,
+  getTroopResourceId,
+  TroopTier,
+  TroopType,
+  type Army,
+} from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useState } from "react";
 
 interface ArmyInputProps {
   label: string;
@@ -12,16 +20,6 @@ interface ArmyInputProps {
 }
 
 const MAX_TROOPS_PER_ARMY = 500_000;
-
-const TROOP_RESOURCES = [
-  { type: TroopType.KNIGHT, resourceId: ResourcesIds.Knight },
-  { type: TroopType.CROSSBOWMAN, resourceId: ResourcesIds.Crossbowman },
-  { type: TroopType.PALADIN, resourceId: ResourcesIds.Paladin },
-];
-
-const getTroopResourceId = (troopType: TroopType): number => {
-  return TROOP_RESOURCES.find((t) => t.type === troopType)?.resourceId || ResourcesIds.Knight;
-};
 
 const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
   return (
@@ -35,7 +33,7 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
               value={army.stamina}
               onChange={(value) => onChange({ ...army, stamina: value })}
               min={0}
-              max={100}
+              max={200}
               step={1}
             />
           </label>
@@ -46,7 +44,7 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
               onChange={(value) => onChange({ ...army, troopCount: value })}
               min={1}
               max={MAX_TROOPS_PER_ARMY}
-              step={100}
+              step={200}
             />
           </label>
           <label className="flex flex-col">
@@ -65,7 +63,7 @@ const ArmyInput = ({ label, army, onChange }: ArmyInputProps) => {
             <SelectTier
               onSelect={(tier) => {
                 if (tier) {
-                  onChange({ ...army, tier: tier as 1 | 2 | 3 });
+                  onChange({ ...army, tier: tier });
                 }
               }}
               defaultValue={army.tier}
@@ -123,18 +121,18 @@ const ParametersPanel = ({ parameters, onParametersChange, show }: ParametersPan
 };
 
 export const CombatSimulationPanel = () => {
-  const [biome, setBiome] = useState<Biome>(Biome.GRASSLAND);
+  const [biome, setBiome] = useState<BiomeType>(BiomeType.Grassland);
   const [attacker, setAttacker] = useState<Army>({
     stamina: 100,
     troopCount: 100,
-    troopType: TroopType.KNIGHT,
-    tier: 1,
+    troopType: TroopType.Knight,
+    tier: TroopTier.T1,
   });
   const [defender, setDefender] = useState<Army>({
     stamina: 100,
     troopCount: 100,
-    troopType: TroopType.CROSSBOWMAN,
-    tier: 1,
+    troopType: TroopType.Crossbowman,
+    tier: TroopTier.T1,
   });
   const [showParameters, setShowParameters] = useState(false);
   const [parameters, setParameters] = useState<CombatParameters>(CombatSimulator.getDefaultParameters());
@@ -150,7 +148,9 @@ export const CombatSimulationPanel = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const simulationResult = CombatSimulator.simulateBattleWithParams(attacker, defender, biome, parameters);
+  const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
+
+  const simulationResult = combatSimulator.simulateBattleWithParams(attacker, defender, biome);
 
   // Calculate remaining troops based on damage
   const attackerTroopsLost = Math.min(attacker.troopCount, Math.ceil(simulationResult.defenderDamage));
@@ -178,9 +178,10 @@ export const CombatSimulationPanel = () => {
         <label className="flex flex-col">
           <span className="text-sm font-medium text-gold/80 mb-1">Select Biome</span>
           <SelectBiome
+            combatSimulator={combatSimulator}
             onSelect={(newBiome) => {
               if (newBiome) {
-                setBiome(newBiome);
+                setBiome(newBiome as BiomeType);
               }
             }}
             defaultValue={biome}
@@ -222,7 +223,7 @@ export const CombatSimulationPanel = () => {
               key={label}
               className="relative p-4 rounded-lg border border-gold/10"
               style={{
-                backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(data.army.troopType)}.png)`,
+                backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(data.army.troopType, TroopTier.T1)}.png)`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -265,14 +266,14 @@ export const CombatSimulationPanel = () => {
                       <div className="text-sm font-medium mb-1">Biome Bonus</div>
                       <div
                         className={`text-xl font-bold ${
-                          CombatSimulator.getBiomeBonus(data.army.troopType, biome) > 1
+                          combatSimulator.getBiomeBonus(data.army.troopType, biome) > 1
                             ? "text-green-400"
-                            : CombatSimulator.getBiomeBonus(data.army.troopType, biome) < 1
+                            : combatSimulator.getBiomeBonus(data.army.troopType, biome) < 1
                               ? "text-red-400"
                               : "text-gold/50"
                         }`}
                       >
-                        {((CombatSimulator.getBiomeBonus(data.army.troopType, biome) - 1) * 100).toFixed(0)}%
+                        {((combatSimulator.getBiomeBonus(data.army.troopType, biome) - 1) * 100).toFixed(0)}%
                       </div>
                     </div>
                   </div>

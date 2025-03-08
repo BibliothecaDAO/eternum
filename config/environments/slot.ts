@@ -1,5 +1,5 @@
 /**
- * Catridge Slot network environment configuration for Eternum.
+ * Cartridge Slot network environment configuration for Eternum.
  * Extends the common configuration with slot network-specific settings.
  *
  * @module SlotEnvironment
@@ -10,7 +10,7 @@ import type { Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
- * Configuration specific to the Catridge Slot network environment.
+ * Configuration specific to the Cartridge Slot network environment.
  * Overrides specific values from the common configuration while inheriting defaults.
  */
 export const SlotEternumGlobalConfig: Config = {

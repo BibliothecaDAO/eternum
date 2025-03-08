@@ -141,8 +141,8 @@ const DojoContextProvider = ({
 
   const onSpectatorModeClick = () => {
     const randomRealmEntity = getRandomRealmEntity(value.components);
-    const position = randomRealmEntity && getComponentValue(value.components.Position, randomRealmEntity);
-    position && navigateToHexView(new Position(position));
+    const structureBase = randomRealmEntity && getComponentValue(value.components.Structure, randomRealmEntity)?.base;
+    structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
   };
 
   useEffect(() => {
@@ -155,8 +155,16 @@ const DojoContextProvider = ({
 
   useEffect(() => {
     const setUserName = async () => {
-      const username = await (connector as ControllerConnector)?.username();
-      if (!username) return;
+      let username;
+      try {
+        username = await (connector as unknown as ControllerConnector)?.username();
+        if (!username) {
+          username = "adventurer"; // Default to adventurer in local mode
+        }
+      } catch (error) {
+        username = "adventurer"; // If username() fails, we're in local mode
+        console.log("Using default username 'adventurer' for local mode");
+      }
 
       const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
       value.systemCalls.set_address_name({

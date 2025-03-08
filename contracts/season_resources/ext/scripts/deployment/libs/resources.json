@@ -125,22 +125,22 @@
     "symbol": "KNIGHT"
   },
   "CROSSBOWMAN": {
-    "id": 27,
+    "id": 29,
     "name": "Crossbowman",
     "symbol": "CROSSBOWMAN"
   },
   "PALADIN": {
-    "id": 28,
+    "id": 32,
     "name": "Paladin",
     "symbol": "PALADIN"
   },
   "WHEAT": {
-    "id": 29,
+    "id": 35,
     "name": "Wheat",
     "symbol": "WHEAT"
   },
   "FISH": {
-    "id": 30,
+    "id": 36,
     "name": "Fish",
     "symbol": "FISH"
   }

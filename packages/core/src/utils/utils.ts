@@ -80,24 +80,34 @@ export const currentTickCount = (time: number) => {
   return Number(time / tickIntervalInSeconds);
 };
 
-export function calculateDistance(start: Position, destination: Position): number | undefined {
+export function calculateDistance(start: Position, destination: Position): number {
   // d = √((x2-x1)² + (y2-y1)²)
 
-  if (start && destination) {
-    // Calculate the difference in x and y coordinates
-    const deltaX = Math.abs(start.x - destination.x);
-    const deltaY = Math.abs(start.y - destination.y);
+  // Calculate the difference in x and y coordinates
+  const deltaX = Math.abs(start.x - destination.x);
+  const deltaY = Math.abs(start.y - destination.y);
 
-    // Calculate the distance using the Pythagorean theorem
-    // Each tile is 1 km, so we don't need to divide by 10000 here
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  // Calculate the distance using the Pythagorean theorem
+  // Each tile is 1 km, so we don't need to divide by 10000 here
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    return distance;
-  }
+  return distance;
 }
+
+export const nanogramToKg = (value: number) => {
+  return value / 10 ** 12;
+};
+
+export const kgToNanogram = (value: number) => {
+  return value * 10 ** 12;
+};
 
 export const gramToKg = (value: number) => {
   return value / 1000;
+};
+
+export const kgToGram = (value: number) => {
+  return value * 1000;
 };
 
 export function multiplyByPrecision(value: number): number {
@@ -106,4 +116,33 @@ export function multiplyByPrecision(value: number): number {
 
 export function divideByPrecision(value: number): number {
   return value / RESOURCE_PRECISION;
+}
+
+export function divideWithPrecision(
+  numerator: bigint,
+  denominator: bigint,
+  decimalPlaces: number = 5,
+  round: number = 2,
+) {
+  // Scale up by multiplying by 10^decimalPlaces
+  const scaleFactor = 10n ** BigInt(decimalPlaces);
+  const scaledNumerator = numerator * scaleFactor;
+
+  // Perform the division
+  const quotient = scaledNumerator / denominator;
+
+  // Convert to string and insert decimal point
+  let result = quotient.toString();
+
+  // Pad with leading zeros if needed
+  while (result.length <= decimalPlaces) {
+    result = "0" + result;
+  }
+
+  // Insert decimal point
+  const insertAt = result.length - decimalPlaces;
+  let a = result.slice(0, insertAt) + "." + result.slice(insertAt);
+
+  // convert to decimal
+  return Number(Number(a).toFixed(round));
 }

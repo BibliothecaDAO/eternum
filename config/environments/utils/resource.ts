@@ -1,12 +1,14 @@
 import {
   ResourcesIds,
   type ProductionByLaborParams,
+  type ResourceCost,
   type ResourceInputs,
   type ResourceOutputs,
 } from "@bibliothecadao/eternum";
 
 // weight in kg
-export const RESOURCES_WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
+// grams / 10^9
+export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Wood]: 1000,
   [ResourcesIds.Stone]: 1000,
   [ResourcesIds.Coal]: 1000,
@@ -33,8 +35,14 @@ export const RESOURCES_WEIGHTS_GRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.AncientFragment]: 1000,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 5000,
+  [ResourcesIds.KnightT2]: 5000,
+  [ResourcesIds.KnightT3]: 5000,
   [ResourcesIds.Crossbowman]: 3000,
+  [ResourcesIds.CrossbowmanT2]: 3000,
+  [ResourcesIds.CrossbowmanT3]: 3000,
   [ResourcesIds.Paladin]: 5000,
+  [ResourcesIds.PaladinT2]: 5000,
+  [ResourcesIds.PaladinT3]: 5000,
   [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 100,
   [ResourcesIds.Fish]: 100,
@@ -65,8 +73,14 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Dragonhide]: 30,
   [ResourcesIds.Donkey]: 0.5,
   [ResourcesIds.Knight]: 0.04,
+  [ResourcesIds.KnightT2]: 0.04,
+  [ResourcesIds.KnightT3]: 0.04,
   [ResourcesIds.Crossbowman]: 0.04,
+  [ResourcesIds.CrossbowmanT2]: 0.04,
+  [ResourcesIds.CrossbowmanT3]: 0.04,
   [ResourcesIds.Paladin]: 0.04,
+  [ResourcesIds.PaladinT2]: 0.04,
+  [ResourcesIds.PaladinT3]: 0.04,
   [ResourcesIds.Lords]: 0,
   [ResourcesIds.Wheat]: 50,
   [ResourcesIds.Fish]: 50,
@@ -250,6 +264,20 @@ export const RESOURCE_PRODUCTION_THROUGH_LABOR: ProductionByLaborParams = {
     wheat_burn_per_labor: 0,
     fish_burn_per_labor: 0,
   },
+  [ResourcesIds.KnightT2]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
+  [ResourcesIds.KnightT3]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
   [ResourcesIds.Crossbowman]: {
     resource_rarity: 0,
     depreciation_percent_num: 0,
@@ -257,7 +285,35 @@ export const RESOURCE_PRODUCTION_THROUGH_LABOR: ProductionByLaborParams = {
     wheat_burn_per_labor: 0,
     fish_burn_per_labor: 0,
   },
+  [ResourcesIds.CrossbowmanT2]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
+  [ResourcesIds.CrossbowmanT3]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
   [ResourcesIds.Paladin]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
+  [ResourcesIds.PaladinT2]: {
+    resource_rarity: 0,
+    depreciation_percent_num: 0,
+    depreciation_percent_denom: 0,
+    wheat_burn_per_labor: 0,
+    fish_burn_per_labor: 0,
+  },
+  [ResourcesIds.PaladinT3]: {
     resource_rarity: 0,
     depreciation_percent_num: 0,
     depreciation_percent_denom: 0,
@@ -414,11 +470,47 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Silver, amount: 2 },
     { resource: ResourcesIds.Ironwood, amount: 5 },
   ],
+  [ResourcesIds.KnightT2]: [
+    // 2 times the output
+    { resource: ResourcesIds.Knight, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Hartwood, amount: 3 },
+    { resource: ResourcesIds.Ruby, amount: 2 },
+    { resource: ResourcesIds.DeepCrystal, amount: 1 },
+  ],
+  [ResourcesIds.KnightT3]: [
+    // 2 times the output
+    { resource: ResourcesIds.KnightT2, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.TrueIce, amount: 3 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 2 },
+    { resource: ResourcesIds.Adamantine, amount: 1 },
+  ],
   [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
     { resource: ResourcesIds.Fish, amount: 50 },
     { resource: ResourcesIds.Obsidian, amount: 2 },
     { resource: ResourcesIds.ColdIron, amount: 5 },
+  ],
+  [ResourcesIds.CrossbowmanT2]: [
+    // 2 times the output
+    { resource: ResourcesIds.Crossbowman, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Diamonds, amount: 3 },
+    { resource: ResourcesIds.Sapphire, amount: 2 },
+    { resource: ResourcesIds.Ignium, amount: 1 },
+  ],
+  [ResourcesIds.CrossbowmanT3]: [
+    // 2 times the output
+    { resource: ResourcesIds.CrossbowmanT2, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 3 },
+    { resource: ResourcesIds.TrueIce, amount: 2 },
+    { resource: ResourcesIds.Mithral, amount: 1 },
   ],
   [ResourcesIds.Paladin]: [
     { resource: ResourcesIds.Wheat, amount: 50 },
@@ -426,9 +518,89 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 2 },
     { resource: ResourcesIds.Gold, amount: 5 },
   ],
+  [ResourcesIds.PaladinT2]: [
+    // 2 times the output
+    { resource: ResourcesIds.Paladin, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 75 },
+    { resource: ResourcesIds.Fish, amount: 75 },
+    { resource: ResourcesIds.Ruby, amount: 3 },
+    { resource: ResourcesIds.Hartwood, amount: 2 },
+    { resource: ResourcesIds.EtherealSilica, amount: 1 },
+  ],
+  [ResourcesIds.PaladinT3]: [
+    // 2 times the output
+    { resource: ResourcesIds.PaladinT2, amount: 0.08 },
+    { resource: ResourcesIds.Wheat, amount: 100 },
+    { resource: ResourcesIds.Fish, amount: 100 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 3 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 2 },
+    { resource: ResourcesIds.Dragonhide, amount: 1 },
+  ],
   [ResourcesIds.Wheat]: [],
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
   [ResourcesIds.AncientFragment]: [],
   [ResourcesIds.Labor]: [],
 };
+
+export const STARTING_RESOURCES: ResourceCost[] = [
+  { resource: ResourcesIds.Wheat, amount: 1_200_000 },
+  { resource: ResourcesIds.Fish, amount: 1_200_000 },
+  { resource: ResourcesIds.Wood, amount: 5_000 },
+  { resource: ResourcesIds.Stone, amount: 5_000 },
+  { resource: ResourcesIds.Coal, amount: 5_000 },
+  { resource: ResourcesIds.Copper, amount: 5_000 },
+  { resource: ResourcesIds.Obsidian, amount: 5_000 },
+  { resource: ResourcesIds.Silver, amount: 5_000 },
+  { resource: ResourcesIds.Ironwood, amount: 5_000 },
+  { resource: ResourcesIds.ColdIron, amount: 5_000 },
+  { resource: ResourcesIds.Gold, amount: 5_000 },
+  { resource: ResourcesIds.Hartwood, amount: 5_000 },
+  { resource: ResourcesIds.Diamonds, amount: 5_000 },
+  { resource: ResourcesIds.Sapphire, amount: 5_000 },
+  { resource: ResourcesIds.Ruby, amount: 5_000 },
+  { resource: ResourcesIds.DeepCrystal, amount: 5_000 },
+  { resource: ResourcesIds.Ignium, amount: 5_000 },
+  { resource: ResourcesIds.EtherealSilica, amount: 5_000 },
+  { resource: ResourcesIds.TrueIce, amount: 5_000 },
+  { resource: ResourcesIds.TwilightQuartz, amount: 5_000 },
+  { resource: ResourcesIds.AlchemicalSilver, amount: 5_000 },
+  { resource: ResourcesIds.Adamantine, amount: 5_000 },
+  { resource: ResourcesIds.Mithral, amount: 5_000 },
+  { resource: ResourcesIds.Dragonhide, amount: 5_000 },
+  { resource: ResourcesIds.Donkey, amount: 800 },
+  { resource: ResourcesIds.Knight, amount: 1200 },
+  { resource: ResourcesIds.Crossbowman, amount: 1200 },
+  { resource: ResourcesIds.Paladin, amount: 1200 },
+  { resource: ResourcesIds.AncientFragment, amount: 200 },
+];
+
+export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {
+  return STARTING_RESOURCES.map((resource) => ({
+    resource: resource.resource,
+    amount: resource.amount * multiplier,
+  }));
+};
+
+export const RESOURCE_BANDS = {
+  T1_TROOPS_PRIMARY: [
+    ResourcesIds.Copper,
+    ResourcesIds.Obsidian,
+    ResourcesIds.Silver,
+    ResourcesIds.Ironwood,
+    ResourcesIds.ColdIron,
+    ResourcesIds.Gold,
+  ],
+  T2_TROOPS_SECONDARY: [ResourcesIds.Hartwood, ResourcesIds.Diamonds, ResourcesIds.Sapphire, ResourcesIds.Ruby],
+  T2_TROOPS_TERTIARY: [ResourcesIds.DeepCrystal, ResourcesIds.Ignium, ResourcesIds.EtherealSilica],
+  T3_TROOPS_SECONDARY: [ResourcesIds.TrueIce, ResourcesIds.TwilightQuartz, ResourcesIds.AlchemicalSilver],
+  T3_TROOPS_TERTIARY: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
+};
+
+export const RESOURCE_TO_BAND: { [key in ResourcesIds]?: string } = {};
+
+Object.entries(RESOURCE_BANDS).forEach(([bandName, resources]) => {
+  (resources as ResourcesIds[]).forEach((resourceId) => {
+    RESOURCE_TO_BAND[resourceId] = bandName;
+  });
+});

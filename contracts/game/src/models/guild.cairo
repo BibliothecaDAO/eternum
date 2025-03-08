@@ -5,31 +5,32 @@ use starknet::ContractAddress;
 #[dojo::model]
 pub struct Guild {
     #[key]
-    entity_id: ID,
-    is_public: bool,
-    member_count: u16
+    pub entity_id: ID,
+    pub is_public: bool,
+    pub member_count: u16,
+    pub owner: ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct GuildMember {
     #[key]
-    address: ContractAddress,
-    guild_entity_id: ID
+    pub address: ContractAddress,
+    pub guild_entity_id: ID,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct GuildWhitelist {
     #[key]
-    address: ContractAddress,
+    pub address: ContractAddress,
     #[key]
-    guild_entity_id: ID,
-    is_whitelisted: bool
+    pub guild_entity_id: ID,
+    pub is_whitelisted: bool,
 }
 
 #[generate_trait]
-impl GuildMemberImpl of GuildMemberTrait {
+pub impl GuildMemberImpl of GuildMemberTrait {
     fn assert_has_guild(self: GuildMember) {
         assert(self.guild_entity_id != 0, 'Not member of a guild');
     }
@@ -40,7 +41,7 @@ impl GuildMemberImpl of GuildMemberTrait {
 }
 
 #[generate_trait]
-impl GuildWhitelistImpl of GuildWhitelistTrait {
+pub impl GuildWhitelistImpl of GuildWhitelistTrait {
     fn assert_is_whitelisted(self: GuildWhitelist) {
         assert(self.is_whitelisted == true, 'Player is not whitelisted');
     }

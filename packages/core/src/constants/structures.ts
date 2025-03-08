@@ -1,6 +1,5 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
-import { ResourceInputs } from "../types";
 
 // Knip ignore tag
 /** @public */
@@ -9,7 +8,7 @@ export enum StructureType {
   Hyperstructure = 2,
   Bank = 3,
   FragmentMine = 4,
-  Settlement = 5,
+  Village = 5,
 }
 
 export enum BuildingType {
@@ -18,19 +17,20 @@ export enum BuildingType {
   Resource = 2,
   Farm = 3,
   FishingVillage = 4,
-  Barracks = 5,
-  Market = 6,
-  ArcheryRange = 7,
-  Stable = 8,
-  // unused
-  TradingPost = 9,
-  WorkersHut = 10,
-  // unused
-  WatchTower = 11,
-  Walls = 12,
-  Storehouse = 13,
-  Bank = 14,
-  FragmentMine = 15,
+  Barracks1 = 5,
+  Barracks2 = 6,
+  Barracks3 = 7,
+  Market = 8,
+  ArcheryRange1 = 9,
+  ArcheryRange2 = 10,
+  ArcheryRange3 = 11,
+  Stable1 = 12,
+  Stable2 = 13,
+  Stable3 = 14,
+  WorkersHut = 15,
+  Storehouse = 16,
+  Bank = 17,
+  FragmentMine = 18,
 }
 
 export const BuildingEnumToString: Record<BuildingType, string> = {
@@ -39,14 +39,17 @@ export const BuildingEnumToString: Record<BuildingType, string> = {
   [BuildingType.Resource]: "Resource",
   [BuildingType.Farm]: "Farm",
   [BuildingType.FishingVillage]: "Fishing Village",
-  [BuildingType.Barracks]: "Barracks",
+  [BuildingType.Barracks1]: "Barracks 1",
+  [BuildingType.Barracks2]: "Barracks 2",
+  [BuildingType.Barracks3]: "Barracks 3",
   [BuildingType.Market]: "Market",
-  [BuildingType.ArcheryRange]: "Archery Range",
-  [BuildingType.Stable]: "Stable",
-  [BuildingType.TradingPost]: "Trading Post",
+  [BuildingType.ArcheryRange1]: "Archery Range 1",
+  [BuildingType.ArcheryRange2]: "Archery Range 2",
+  [BuildingType.ArcheryRange3]: "Archery Range 3",
+  [BuildingType.Stable1]: "Stable 1",
+  [BuildingType.Stable2]: "Stable 2",
+  [BuildingType.Stable3]: "Stable 3",
   [BuildingType.WorkersHut]: "Workers Hut",
-  [BuildingType.WatchTower]: "Watch Tower",
-  [BuildingType.Walls]: "Walls",
   [BuildingType.Storehouse]: "Storehouse",
   [BuildingType.Bank]: "Bank",
   [BuildingType.FragmentMine]: "Fragment Mine",
@@ -64,22 +67,28 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Farm: {} });
     case BuildingType.FishingVillage:
       return new CairoCustomEnum({ FishingVillage: {} });
-    case BuildingType.Barracks:
-      return new CairoCustomEnum({ Barracks: {} });
+    case BuildingType.Barracks1:
+      return new CairoCustomEnum({ Barracks1: {} });
+    case BuildingType.Barracks2:
+      return new CairoCustomEnum({ Barracks2: {} });
+    case BuildingType.Barracks3:
+      return new CairoCustomEnum({ Barracks3: {} });
     case BuildingType.Market:
       return new CairoCustomEnum({ Market: {} });
-    case BuildingType.ArcheryRange:
-      return new CairoCustomEnum({ ArcheryRange: {} });
-    case BuildingType.Stable:
-      return new CairoCustomEnum({ Stable: {} });
-    case BuildingType.TradingPost:
-      return new CairoCustomEnum({ TradingPost: {} });
+    case BuildingType.ArcheryRange1:
+      return new CairoCustomEnum({ ArcheryRange1: {} });
+    case BuildingType.ArcheryRange2:
+      return new CairoCustomEnum({ ArcheryRange2: {} });
+    case BuildingType.ArcheryRange3:
+      return new CairoCustomEnum({ ArcheryRange3: {} });
+    case BuildingType.Stable1:
+      return new CairoCustomEnum({ Stable1: {} });
+    case BuildingType.Stable2:
+      return new CairoCustomEnum({ Stable2: {} });
+    case BuildingType.Stable3:
+      return new CairoCustomEnum({ Stable3: {} });
     case BuildingType.WorkersHut:
       return new CairoCustomEnum({ WorkersHut: {} });
-    case BuildingType.WatchTower:
-      return new CairoCustomEnum({ WatchTower: {} });
-    case BuildingType.Walls:
-      return new CairoCustomEnum({ Walls: {} });
     case BuildingType.Storehouse:
       return new CairoCustomEnum({ Storehouse: {} });
     case BuildingType.Bank:
@@ -101,21 +110,27 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.Wheat;
     case BuildingType.FishingVillage:
       return ResourcesIds.Fish;
-    case BuildingType.Barracks:
+    case BuildingType.Barracks1:
       return ResourcesIds.Knight;
+    case BuildingType.Barracks2:
+      return ResourcesIds.KnightT2;
+    case BuildingType.Barracks3:
+      return ResourcesIds.KnightT3;
     case BuildingType.Market:
       return 0;
-    case BuildingType.ArcheryRange:
+    case BuildingType.ArcheryRange1:
       return ResourcesIds.Crossbowman;
-    case BuildingType.Stable:
+    case BuildingType.ArcheryRange2:
+      return ResourcesIds.CrossbowmanT2;
+    case BuildingType.ArcheryRange3:
+      return ResourcesIds.CrossbowmanT3;
+    case BuildingType.Stable1:
       return ResourcesIds.Paladin;
-    case BuildingType.TradingPost:
-      return 0;
+    case BuildingType.Stable2:
+      return ResourcesIds.PaladinT2;
+    case BuildingType.Stable3:
+      return ResourcesIds.PaladinT3;
     case BuildingType.WorkersHut:
-      return 0;
-    case BuildingType.WatchTower:
-      return 0;
-    case BuildingType.Walls:
       return 0;
     case BuildingType.Storehouse:
       return 0;
@@ -126,7 +141,7 @@ export function getProducedResource(name: BuildingType): number {
   }
 }
 
-export enum CapacityConfigCategory {
+export enum CapacityConfig {
   None = 0,
   Structure = 1,
   Donkey = 2,
@@ -176,12 +191,3 @@ export function determineEntityState(
   }
   return EntityState.Idle; // Default state
 }
-
-export const STRUCTURE_COSTS: ResourceInputs = {
-  [StructureType.Hyperstructure]: [], //todo hyperstructure costs
-  [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
-  [StructureType.Settlement]: [
-    { resource: ResourcesIds.Wheat, amount: 100_000 },
-    { resource: ResourcesIds.Fish, amount: 100_000 },
-  ],
-};

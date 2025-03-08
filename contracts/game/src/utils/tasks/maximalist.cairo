@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Maximalist of TaskTrait {
+pub impl Maximalist of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'MAXIMALIST'

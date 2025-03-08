@@ -1,5 +1,4 @@
 import { Position } from "@/types/position";
-import { FragmentMinePanel } from "@/ui/components/fragmentMines/fragment-mine-panel";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
 import { EntityList } from "@/ui/components/list/entity-list";
@@ -7,29 +6,17 @@ import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
-  BattleSide,
   ContractAddress,
-  divideByPrecision,
-  findResourceById,
   getAddressFromEntity,
   getAddressNameFromEntity,
-  getBalance,
   getGuildFromPlayerAddress,
   ID,
   LeaderboardManager,
-  ResourcesIds,
+  MERCENARIES,
 } from "@bibliothecadao/eternum";
-import {
-  useArmiesAtPosition,
-  useDojo,
-  useFragmentMines,
-  useHyperstructureProgress,
-  useHyperstructures,
-} from "@bibliothecadao/react";
+import { useDojo, useHyperstructureProgress, useHyperstructures } from "@bibliothecadao/react";
 import { ArrowRight } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
@@ -43,8 +30,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
-  const { hyperstructures } = useHyperstructures();
-  const fragmentMines = useFragmentMines();
+  const hyperstructures = useHyperstructures();
 
   const myHyperstructures = useMemo(
     () =>
@@ -55,27 +41,27 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   );
 
   const renderExtraContent = useCallback(
-    (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
-      const entities = type === "hyperstructure" ? hyperstructures : fragmentMines;
-      const entity = entities.find((e) => e.entity_id === entityId);
+    (entityId: ID, type: "hyperstructure") => {
+      const entity = hyperstructures.find((e) => e?.entity_id === entityId);
       if (!entity) return null;
 
-      return type === "hyperstructure" ? (
-        <HyperStructureExtraContent hyperstructureEntityId={entity.entity_id!} x={entity.x!} y={entity.y!} />
-      ) : (
-        <FragmentMineExtraContent x={Number(entity.x!)} y={Number(entity.y!)} entityId={entityId!} />
+      return (
+        <HyperStructureExtraContent
+          hyperstructureEntityId={entity.entity_id!}
+          x={entity.position.x}
+          y={entity.position.y}
+        />
       );
     },
-    [hyperstructures, fragmentMines],
+    [hyperstructures],
   );
 
   const renderEntityHeader = useCallback(
-    (entityId: ID, type: "hyperstructure" | "fragmentMine") => {
-      const entities = type === "hyperstructure" ? hyperstructures : fragmentMines;
-      const entity = entities.find((e) => e.entity_id === entityId);
+    (entityId: ID, type: "hyperstructure") => {
+      const entity = hyperstructures.find((e) => e?.entity_id === entityId);
       return entity ? <EntityHeader entity={entity} /> : null;
     },
-    [hyperstructures, fragmentMines],
+    [hyperstructures],
   );
 
   const tabs = useMemo(
@@ -93,48 +79,20 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               entityContent={(id: any) => renderExtraContent(id, "hyperstructure")}
               chunkSize={10}
               list={hyperstructures
-                .filter((h) => h.created_at)
-                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
+                .filter((h) => h?.base?.created_at)
+                .sort((a, b) => Number(a?.entity_id) - Number(b?.entity_id))
                 .map((h) => ({
-                  id: h.entity_id,
-                  position: { x: h.x, y: h.y },
                   ...h,
+                  id: h?.entity_id,
+                  position: { x: h?.position.x, y: h?.position.y },
                 }))}
               filterEntityIds={showOnlyMine ? Array.from(myHyperstructures) : undefined}
             />
           </>
         ),
       },
-      {
-        key: "Mines",
-        label: "Mines",
-        component: (
-          <>
-            <FilterCheckbox showOnlyMine={showOnlyMine} setShowOnlyMine={setShowOnlyMine} />
-            <EntityList
-              title="FragmentMines"
-              panel={({ entity }) => <FragmentMinePanel entity={entity} />}
-              entityHeader={(id: any) => renderEntityHeader(id, "fragmentMine")}
-              entityContent={(id: any) => renderExtraContent(id, "fragmentMine")}
-              chunkSize={10}
-              list={fragmentMines
-                .sort((a, b) => Number(a.entity_id) - Number(b.entity_id))
-                .map((m) => ({
-                  id: m.entity_id,
-                  position: { x: m.x, y: m.y },
-                  ...m,
-                }))}
-              filterEntityIds={
-                showOnlyMine
-                  ? fragmentMines.filter((m) => m.owner === account.address).map((m) => m.entity_id as ID)
-                  : undefined
-              }
-            />
-          </>
-        ),
-      },
     ],
-    [selectedTab, hyperstructures, fragmentMines, showOnlyMine, account.address, myHyperstructures],
+    [selectedTab, hyperstructures, showOnlyMine, account.address, myHyperstructures],
   );
 
   return (
@@ -190,8 +148,6 @@ const BaseStructureExtraContent = ({
     setup: { components },
   } = useDojo();
 
-  const armies = useArmiesAtPosition({ position: { x, y } });
-
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId, components);
     const address = getAddressFromEntity(entityId, components);
@@ -199,42 +155,11 @@ const BaseStructureExtraContent = ({
     return { name: ownerName, guildName };
   }, [entityId]);
 
-  const { defensiveArmy, attackingArmy } = useMemo(() => {
-    const defensive = armies.find((army) => army.protectee?.protectee_id);
-    const attacking = armies.find(
-      (army) => army.battle_side === BattleSide[BattleSide.Attack] && army.battle_id === defensive?.battle_id,
-    );
-
-    const getArmyInfo = (army?: any) => {
-      if (!army) return;
-      const ownerName = getAddressNameFromEntity(army.entity_id || 0, components);
-      const guildName = getGuildFromPlayerAddress(army.owner?.address || 0n, components)?.name;
-      const totalTroops =
-        (army.troops?.knight_count || 0n) + (army.troops?.paladin_count || 0n) + (army.troops?.crossbowman_count || 0n);
-      return { totalTroops, army, name: ownerName, guildName };
-    };
-
-    return {
-      defensiveArmy: getArmyInfo(defensive) || { totalTroops: 0n },
-      attackingArmy: getArmyInfo(attacking),
-    };
-  }, [armies]);
-
   return (
     <div className="grid grid-cols-2 gap-4 text-xs">
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Owner:</span>
-        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || "Mercenaries"}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-gold/80">Defense:</span>
-        <span className="font-medium">{currencyFormat(Number(defensiveArmy.totalTroops), 0)}</span>
-      </div>
-      <div className="flex items-center gap-2 col-span-2">
-        <span className="text-gold/80">Battle:</span>
-        <span className="font-medium">
-          {attackingArmy ? `${attackingArmy.guildName || attackingArmy.name || "Mercenaries"}⚔` : "None"}
-        </span>
+        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || MERCENARIES}</span>
       </div>
       {children}
     </div>
@@ -274,29 +199,6 @@ const HyperStructureExtraContent = ({
       <div className="flex items-center gap-2">
         <span className="text-gold/80">Shares:</span>
         <span className="font-medium">{currencyIntlFormat(shares * 100, 0)}%</span>
-      </div>
-    </BaseStructureExtraContent>
-  );
-};
-
-const FragmentMineExtraContent = ({ x, y, entityId }: { x: number; y: number; entityId: ID }) => {
-  const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-
-  const { balance } = getBalance(entityId, ResourcesIds.AncientFragment, currentDefaultTick, dojo.setup.components);
-  const trait = useMemo(() => findResourceById(ResourcesIds.AncientFragment)?.trait, []);
-
-  return (
-    <BaseStructureExtraContent x={x} y={y} entityId={entityId}>
-      <div className="flex items-center gap-2">
-        <span className="text-gold/80">Balance:</span>
-        <span className="font-medium flex items-center">
-          {Intl.NumberFormat("en-US", {
-            notation: "compact",
-            maximumFractionDigits: 1,
-          }).format(divideByPrecision(balance || 0))}
-          <ResourceIcon className="ml-1" withTooltip={false} resource={trait || ""} size="xs" />
-        </span>
       </div>
     </BaseStructureExtraContent>
   );

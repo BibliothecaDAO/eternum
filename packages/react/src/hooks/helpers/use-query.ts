@@ -27,7 +27,7 @@ export const useQuery = () => {
 
   const isLocation = useCallback(
     (col: number, row: number) => hexPosition.col === col && hexPosition.row === row,
-    [hexPosition],
+    [hexPosition.col, hexPosition.row],
   );
 
   return {

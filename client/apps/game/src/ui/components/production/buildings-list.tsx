@@ -1,7 +1,8 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo } from "@bibliothecadao/react";
+import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
@@ -22,11 +23,15 @@ export const BuildingsList = ({
       building.category === BuildingType[BuildingType.Resource] ||
       building.category === BuildingType[BuildingType.Farm] ||
       building.category === BuildingType[BuildingType.FishingVillage] ||
-      building.category === BuildingType[BuildingType.Barracks] ||
-      building.category === BuildingType[BuildingType.ArcheryRange] ||
+      building.category === BuildingType[BuildingType.Barracks1] ||
+      building.category === BuildingType[BuildingType.ArcheryRange1] ||
       building.category === BuildingType[BuildingType.Castle] ||
       building.category === BuildingType[BuildingType.Market] ||
-      building.category === BuildingType[BuildingType.Stable],
+      building.category === BuildingType[BuildingType.Stable1] ||
+      building.category === BuildingType[BuildingType.Stable2] ||
+      building.category === BuildingType[BuildingType.Stable3] ||
+      building.category === BuildingType[BuildingType.ArcheryRange2] ||
+      building.category === BuildingType[BuildingType.ArcheryRange3],
   );
 
   const {
@@ -37,6 +42,8 @@ export const BuildingsList = ({
 
   const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
+  const resourceManager = useResourceManager(realm.entityId);
+
   const productions = useMemo(() => {
     return producedResources
       .map((resourceId) => {
@@ -46,12 +53,13 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        if (!resource?.production) return null;
+        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
+        const production = resourceManager.getProduction(resourceId);
 
         return {
           resource: resourceId,
-          balance: resource?.balance || 0,
-          production: resource.production,
+          balance: balance,
+          production,
           buildings: buildingsForResource,
           isLabor: resourceId === ResourcesIds.Labor,
         };
@@ -106,7 +114,7 @@ export const BuildingsList = ({
                 <div className="w-[280px] flex-shrink-0">
                   <ResourceChip
                     resourceId={production.resource}
-                    entityId={realm.entityId}
+                    resourceManager={resourceManager}
                     maxStorehouseCapacityKg={realm.capacity || 0}
                     tick={0}
                   />

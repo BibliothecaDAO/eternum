@@ -1,5 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { findResourceById, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION } from "@/utils/constants";
+import { findResourceById } from "@/utils/resources";
+import { ResourcesIds } from "@/utils/types";
 import { useMemo } from "react";
 import ResourceIcon from "./ResourceIcon";
 
@@ -49,7 +51,7 @@ export default function ResourceTable() {
                 </div>
               </td>
 
-              <td className="text-center border-b border-gray-500">{resource.amount}</td>
+              <td className="text-center border-b border-gray-500">{resource.amount.toString()}</td>
 
               <td className="py-2 border-b border-gray-500">
                 <div className="flex flex-col gap-4">
@@ -58,7 +60,7 @@ export default function ResourceTable() {
                       <div className="flex items-center gap-2">
                         <ResourceIcon size="lg" id={cost.resource} name={cost.name || ""} />
                         <div>
-                          <span className="text-md">{cost.amount}</span>
+                          <span className="text-md">{cost.amount.toString()}</span>
                           <div className="font-bold">{cost.name}</div>
                         </div>
                       </div>

@@ -1,6 +1,6 @@
-import { BUILDING_CAPACITY, BuildingType } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { BuildingType } from "@/utils/types";
 import BuildingCosts from "./BuildingCosts";
-import { BUILDING_POPULATION } from "@bibliothecadao/eternum";
 
 interface ImageType {
   src: string;
@@ -16,8 +16,8 @@ interface BuildingCardProps {
 }
 
 export default function BuildingCard({ title, image, buildingType, description, multipleImages }: BuildingCardProps) {
-  const population = BUILDING_POPULATION[buildingType] || 0;
-  const populationCapacity = BUILDING_CAPACITY[buildingType] || 0;
+  const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
+  const populationCapacity = ETERNUM_CONFIG().buildings.buildingCapacity[buildingType] || 0;
 
   return (
     <div className="p-6 mb-6 rounded-lg border border-gray-700 bg-white/5">

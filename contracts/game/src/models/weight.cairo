@@ -1,38 +1,58 @@
-use s1_eternum::alias::ID;
-use s1_eternum::models::config::{CapacityConfig, CapacityConfigTrait};
-use s1_eternum::models::quantity::{Quantity};
+use core::num::traits::Bounded;
+use core::num::traits::zero::Zero;
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
+#[derive(Introspect, Copy, Drop, Serde, Default, PartialEq)]
 pub struct Weight {
-    #[key]
-    entity_id: ID,
-    value: u128,
+    pub capacity: u128,
+    pub weight: u128,
+}
+
+pub impl WeightZeroableImpl of Zero<Weight> {
+    fn zero() -> Weight {
+        Weight { capacity: 0, weight: 0 }
+    }
+
+    fn is_non_zero(self: @Weight) -> bool {
+        self.weight > @0 || self.capacity > @0
+    }
+
+    fn is_zero(self: @Weight) -> bool {
+        !self.is_non_zero()
+    }
 }
 
 #[generate_trait]
-impl WeightImpl of WeightTrait {
-    fn deduct(ref self: Weight, capacity: CapacityConfig, amount: u128) {
-        if self.entity_id == 0 {
-            return;
-        };
-        if capacity.is_capped() {
-            assert!(self.value >= amount, "weight deducted > entity {}'s weight", self.entity_id);
-            if amount > self.value {
-                self.value = 0;
-            } else {
-                self.value -= amount;
-            }
+pub impl WeightImpl of WeightTrait {
+    fn deduct_capacity(ref self: Weight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.capacity -= amount;
+            assert!(self.weight <= self.capacity, "{} - {} capacity < {} weight", self.capacity, amount, self.weight);
         }
     }
 
-    fn add(ref self: Weight, capacity: CapacityConfig, quantity: Quantity, amount: u128) {
-        if self.entity_id == 0 {
-            return;
-        };
-        if capacity.is_capped() {
-            self.value += amount;
-            capacity.assert_can_carry(quantity, self);
-        };
+    fn add_capacity(ref self: Weight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.capacity += amount;
+        }
+    }
+
+    fn deduct(ref self: Weight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.weight -= amount;
+        }
+    }
+
+    fn add(ref self: Weight, amount: u128) {
+        if self.capacity != Bounded::MAX {
+            self.weight += amount;
+            assert!(self.weight <= self.capacity, "{} + {} weight > {} capacity", self.weight, amount, self.capacity);
+        }
+    }
+
+    fn unused(ref self: Weight) -> u128 {
+        if self.capacity != Bounded::MAX {
+            return self.capacity - self.weight;
+        }
+        return Bounded::MAX;
     }
 }

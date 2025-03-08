@@ -123,7 +123,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
             </TableCell>
 
             <TableCell className="text-center">{getResourceTier(resource.id)}</TableCell>
-            <TableCell className="text-center">{getResourceWeight(resource.id)}</TableCell>
+            <TableCell className="text-center">{getResourceWeightKg(resource.id)}</TableCell>
             <TableCell className="rounded flex gap-2 justify-center">
               {RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED[resource.id]?.map((input, idx) => (
                 <Badge className="border p-1" key={idx} style={{ borderColor: resourceColor(input.resource) }}>

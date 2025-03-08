@@ -8,10 +8,9 @@ import {
   divideByPrecision,
   multiplyByPrecision,
   RealmInfo,
-  ResourceManager,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -39,7 +38,6 @@ export const ResourceProductionControls = ({
     setup: {
       account: { account },
       systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
-      components,
       components: { Resource },
     },
   } = useDojo();
@@ -54,7 +52,7 @@ export const ResourceProductionControls = ({
     const calldata = {
       from_entity_id: realm.entityId,
       produced_resource_types: [selectedResource],
-      production_tick_counts: [ticks],
+      production_tick_counts: [ticks * outputResource.amount],
       signer: account,
     };
 
@@ -95,6 +93,8 @@ export const ResourceProductionControls = ({
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
 
+  const resourceManager = useResourceManager(realm.entityId);
+
   const resourceBalances = useMemo(() => {
     if (!selectedResource) return {};
 
@@ -110,12 +110,11 @@ export const ResourceProductionControls = ({
     const { currentDefaultTick } = getBlockTimestamp();
 
     allResources.forEach((resource) => {
-      const resourceManager = new ResourceManager(components, realm.entityId, resource.resource);
-      const balance = resourceManager.balance(currentDefaultTick);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource);
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;
-  }, [selectedResource, Resource, realm.entityId]);
+  }, [selectedResource, resourceManager]);
 
   useEffect(() => {
     setTicks(Math.floor(productionAmount / outputResource.amount));

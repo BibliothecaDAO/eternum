@@ -60,7 +60,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "realms settled",
-          value: formatNumber(data?.s1EternumRealmModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.realms?.totalCount ?? 0, 0),
           icon: <Castle />,
           backgroundImage: "/images/avatars/09.png",
         },
@@ -69,7 +69,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "hyperstructures",
-          value: formatNumber(data?.s1EternumHyperstructureModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.hyperstructures?.totalCount ?? 0, 0),
           icon: <Sparkles />,
           backgroundImage: "/images/avatars/06.png",
         },
@@ -78,7 +78,7 @@ function Index() {
         colSpan: { sm: 2, md: 2, lg: 2 },
         data: {
           title: "mines discovered",
-          value: formatNumber(data?.s1EternumFragmentMineDiscoveredModels?.totalCount ?? 0, 0),
+          value: formatNumber(data?.mines?.totalCount ?? 0, 0),
           icon: <Pickaxe />,
           backgroundImage: "/images/covers/03.png",
         },

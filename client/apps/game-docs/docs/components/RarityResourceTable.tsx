@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@/utils/types";
 import ResourceIcon from "./ResourceIcon";
 
 const RESOURCE_RARITIES = [

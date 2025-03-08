@@ -1,5 +1,4 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -8,22 +7,23 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
-import { currencyFormat, formatNumber, formatStringNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   ArmyManager,
-  configManager,
   divideByPrecision,
   getBalance,
+  getFreeDirectionsAroundStructure,
+  getTroopResourceId,
   ID,
-  multiplyByPrecision,
-  ResourcesIds,
+  resources,
+  TroopTier,
+  TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -31,123 +31,256 @@ type ArmyManagementCardProps = {
   setSelectedEntity?: (entity: ArmyInfo | null) => void;
 };
 
-// TODO Unify this. Push all useComponentValues up to the top level
-export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: ArmyManagementCardProps) => {
+type ArmyCreateProps = {
+  owner_entity: ID;
+  army: ArmyInfo | undefined;
+  armyManager: ArmyManager;
+  isExplorer: boolean;
+  guardSlot?: number;
+  onCancel?: () => void;
+};
+
+export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardSlot, onCancel }: ArmyCreateProps) => {
   const {
+    setup: { components },
     account: { account },
-    network: { provider },
-    setup: {
-      components: { Position },
-    },
   } = useDojo();
 
-  const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-
-  const maxTroopCountPerArmy = configManager.getTroopConfig().maxTroopCount;
-
-  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entity_id || 0);
-
-  const isDefendingArmy = Boolean(army?.protectee);
-
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
+  const [troopCount, setTroopCount] = useState<number>(0);
+  const [selectedTroopType, setSelectedTroopType] = useState<TroopType>(
+    army
+      ? army.troops.count === 0n
+        ? TroopType.Crossbowman
+        : (army.troops.category as TroopType)
+      : TroopType.Crossbowman,
+  );
+  const [selectedTier, setSelectedTier] = useState<TroopTier>(TroopTier.T1);
 
-  // TODO: Clean this up
-  const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
-
-  const rawEntityOwnerPosition = useComponentValue(
-    Position,
-    getEntityIdFromKeys([BigInt(army?.entityOwner.entity_owner_id || 0)]),
-  ) || {
-    x: 0n,
-    y: 0n,
-  };
-  const entityOwnerPosition = { x: Number(rawEntityOwnerPosition.x), y: Number(rawEntityOwnerPosition.y) };
-
-  const [editName, setEditName] = useState(false);
-  const [naming, setNaming] = useState("");
-
-  const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    [ResourcesIds.Knight]: 0,
-    [ResourcesIds.Crossbowman]: 0,
-    [ResourcesIds.Paladin]: 0,
-  });
-
-  const handleTroopCountChange = (troopName: number, count: number) => {
-    setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
+  const handleTroopCountChange = (count: number) => {
+    setTroopCount(count);
   };
 
-  const handleDeleteArmy = async () => {
+  const handleTierChange = (tier: TroopTier) => {
+    setSelectedTier(tier);
+  };
+
+  const freeDirections = useMemo(
+    () => getFreeDirectionsAroundStructure(owner_entity, components),
+    [owner_entity, components],
+  );
+
+  const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
 
-    try {
-      await armyManager.deleteArmy(account, army?.entity_id || 0);
-      setSelectedEntity && setSelectedEntity(null);
-    } catch (e) {
-      console.error(e);
+    if (isExplorer) {
+      if (army) {
+        if (army.isHome) {
+          await armyManager.addTroopsToExplorer(account, army.entityId, troopType, troopTier, troopCount);
+        }
+      } else {
+        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, freeDirections[0]);
+      }
+    } else {
+      if (guardSlot !== undefined) {
+        await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
+      }
     }
-    setIsLoading(false);
-  };
 
-  const handleBuyArmy = async () => {
-    setIsLoading(true);
-    armyManager.addTroops(account, {
-      [ResourcesIds.Knight]: multiplyByPrecision(troopCounts[ResourcesIds.Knight]),
-      [ResourcesIds.Crossbowman]: multiplyByPrecision(troopCounts[ResourcesIds.Crossbowman]),
-      [ResourcesIds.Paladin]: multiplyByPrecision(troopCounts[ResourcesIds.Paladin]),
-    });
-
-    setTroopCounts({
-      [ResourcesIds.Knight]: 0,
-      [ResourcesIds.Crossbowman]: 0,
-      [ResourcesIds.Paladin]: 0,
-    });
-
+    setTroopCount(0);
     setIsLoading(false);
   };
 
   useEffect(() => {
     let canCreate = true;
-    Object.keys(troopCounts).forEach((troopId) => {
-      const count = troopCounts[Number(troopId)];
-      const balance = getBalance(owner_entity, Number(troopId), currentDefaultTick, dojo.setup.components).balance;
-      if (count > balance) {
-        canCreate = false;
-      }
-    });
 
-    if (
-      troopCounts[ResourcesIds.Knight] === 0 &&
-      troopCounts[ResourcesIds.Crossbowman] === 0 &&
-      troopCounts[ResourcesIds.Paladin] === 0
-    ) {
+    const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
+    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
+
+    if (troopCount > balance) {
       canCreate = false;
     }
 
-    if (!army?.isHome) {
+    if (troopCount === 0) {
+      canCreate = false;
+    }
+
+    if (isExplorer && army && !army.isHome) {
+      canCreate = false;
+    }
+
+    if (isExplorer && freeDirections.length === 0) {
       canCreate = false;
     }
 
     setCanCreate(canCreate);
-  }, [troopCounts]);
+  }, [troopCount, selectedTroopType, army?.isHome, owner_entity, currentDefaultTick, components, isExplorer]);
 
   const troops = [
     {
-      name: ResourcesIds.Crossbowman,
-      current: currencyFormat(Number(army?.troops.crossbowman_count || 0), 0),
+      troopType: TroopType.Crossbowman,
+      current: army?.troops.category === TroopType.Crossbowman ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
-      name: ResourcesIds.Knight,
-      current: currencyFormat(Number(army?.troops.knight_count || 0), 0),
+      troopType: TroopType.Knight,
+      current: army?.troops.category === TroopType.Knight ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
     {
-      name: ResourcesIds.Paladin,
-      current: currencyFormat(Number(army?.troops.paladin_count || 0), 0),
+      troopType: TroopType.Paladin,
+      current: army?.troops.category === TroopType.Paladin ? currencyFormat(Number(army?.troops.count || 0), 0) : 0,
     },
-  ];
+  ].filter((troop) => {
+    // If no army or army has no troops, show all troop types
+    if (!army || army.troops.count === 0n) return true;
+    // If army has troops, only show the current troop type
+    return army.troops.category === troop.troopType;
+  });
+
+  return (
+    <>
+      {/* {isExplorer && (
+        <div className="text-xs text-yellow-500 mb-2">
+          ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
+        </div>
+      )} */}
+
+      {isExplorer && !army && freeDirections.length === 0 && (
+        <div className="text-xs text-red-500 mb-2">
+          ⚠️ No space available to create an army. Clear adjacent tiles to create an army.
+        </div>
+      )}
+
+      {(!army || army.troops.count === 0n) && (
+        <div className="flex justify-center gap-2 mb-4">
+          {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
+            <Button
+              key={tier}
+              variant={selectedTier === tier ? "primarySelected" : "primary"}
+              onClick={() => handleTierChange(tier)}
+            >
+              {tier}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      <div className={clsx("grid gap-3 my-4", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
+        {troops.map((troop) => {
+          const balance = getBalance(
+            owner_entity,
+            getTroopResourceId(troop.troopType, selectedTier),
+            currentDefaultTick,
+            components,
+          ).balance;
+          const isCurrentTroopType =
+            !army || army.troops.count === 0n
+              ? selectedTroopType === troop.troopType
+              : army.troops.category === troop.troopType;
+
+          return (
+            <div
+              className={clsx(
+                "p-2 bg-gold/10 flex flex-col cursor-pointer",
+                isCurrentTroopType ? "ring-2 ring-gold" : "opacity-50",
+              )}
+              key={troop.troopType}
+              onClick={() => {
+                if (!army || army.troops.count === 0n) {
+                  setSelectedTroopType(troop.troopType);
+                }
+              }}
+            >
+              <div className="font-bold mb-4">
+                <div className="flex justify-between">
+                  <div className="text-md">{TroopType[troop.troopType]}</div>
+                </div>
+                <div className="px-2 py-1 bg-white/10  flex justify-between">
+                  <ResourceIcon
+                    withTooltip={false}
+                    resource={
+                      resources.find((resource) => resource.id === getTroopResourceId(troop.troopType, selectedTier))
+                        ?.trait || ""
+                    }
+                    size="lg"
+                  />
+                  <div className="text-green self-center">x {troop.current}</div>
+                </div>
+              </div>
+
+              {isCurrentTroopType && (
+                <div className="flex items-center mt-auto flex-col">
+                  <div className="px-2 text-xs font-bold mb-3">
+                    Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                  </div>
+                  <NumberInput
+                    max={divideByPrecision(balance)}
+                    min={0}
+                    step={100}
+                    value={troopCount}
+                    onChange={handleTroopCountChange}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex justify-center gap-2 w-full">
+        <Button
+          className={onCancel ? "w-1/2" : "w-full"}
+          disabled={!canCreate}
+          variant="primary"
+          isLoading={isLoading}
+          onClick={() =>
+            handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount).finally(() => {
+              setTroopCount(0);
+              setIsLoading(false);
+              onCancel?.();
+            })
+          }
+        >
+          {isExplorer
+            ? army
+              ? army.isHome
+                ? "Reinforce army"
+                : "Must be at Base to Reinforce"
+              : "Create Army"
+            : army
+              ? "Add Troops"
+              : "Add Defense"}
+        </Button>
+        {onCancel && (
+          <Button variant="secondary" className="w-1/2" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+      </div>
+    </>
+  );
+};
+
+// TODO Unify this. Push all useComponentValues up to the top level
+export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: ArmyManagementCardProps) => {
+  const {
+    account: { account },
+    network: { provider },
+  } = useDojo();
+
+  const dojo = useDojo();
+
+  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, army?.entityId || 0);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // TODO: Clean this up
+  const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
+
+  const [editName, setEditName] = useState(false);
+  const [naming, setNaming] = useState("");
 
   return (
     army && (
@@ -170,7 +303,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                     setIsLoading(true);
 
                     try {
-                      await provider.set_entity_name({ signer: account, entity_id: army.entity_id, name: naming });
+                      await provider.set_entity_name({ signer: account, entity_id: army.entityId, name: naming });
                       army.name = naming;
                     } catch (e) {
                       console.error(e);
@@ -196,76 +329,9 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
                 />
               </div>
             )}
-            {army.health.current === 0n && !army.protectee && (
-              <div className="flex items-center">
-                {confirmDelete ? (
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      handleDeleteArmy();
-                      setConfirmDelete(false);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                ) : (
-                  <Trash
-                    className="ml-2 self-center m-auto w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
-                    onClick={() => setConfirmDelete(true)}
-                  />
-                )}
-              </div>
-            )}
           </div>
 
-          {!isDefendingArmy && (
-            <div className="text-xs text-yellow-500 mb-2">
-              ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-3 my-4">
-            {troops.map((troop) => {
-              const balance = getBalance(owner_entity, troop.name, currentDefaultTick, dojo.setup.components).balance;
-
-              return (
-                <div className="p-2 bg-gold/10  hover:bg-gold/30 flex flex-col" key={troop.name}>
-                  <div className="font-bold mb-4">
-                    <div className="flex justify-between">
-                      <div className="text-md">{ResourcesIds[troop.name]}</div>
-                    </div>
-                    <div className="px-2 py-1 bg-white/10  flex justify-between">
-                      <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
-                      <div className="text-green self-center">x {troop.current}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center mt-auto flex-col">
-                    <div className="px-2 text-xs  font-bold mb-3">
-                      Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
-                    </div>
-                    <NumberInput
-                      max={divideByPrecision(balance)}
-                      min={0}
-                      step={100}
-                      value={troopCounts[troop.name]}
-                      onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <Button
-            className="w-full "
-            disabled={!canCreate}
-            variant="primary"
-            isLoading={isLoading}
-            onClick={handleBuyArmy}
-          >
-            {army.isHome ? "Reinforce army" : "Must be at Base to Reinforce"}
-          </Button>
+          <ArmyCreate owner_entity={owner_entity} army={army} armyManager={armyManager} isExplorer={true} />
         </div>
       </>
     )

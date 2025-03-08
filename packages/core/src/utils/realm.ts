@@ -2,34 +2,31 @@ import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, gramToKg } from "..";
-import { BuildingType, CapacityConfigCategory, findResourceIdByTrait, orders } from "../constants";
+import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { packResources, unpackResources } from "./packed-data";
+import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
-  const { Realm, Owner, Position } = components;
-  const realm = getComponentValue(Realm, entity);
-  if (!realm) return undefined;
-
-  const position = getComponentValue(Position, entity);
-  const owner = getComponentValue(Owner, entity);
+  const { Structure } = components;
+  const structure = getComponentValue(Structure, entity);
+  if (structure?.base.category !== StructureType.Realm) return undefined;
 
   return {
-    ...realm,
-    resources: unpackResources(BigInt(realm.produced_resources)),
-    position,
-    name: getRealmNameById(realm.realm_id),
-    owner,
+    ...structure,
+    resources: unpackValue(BigInt(structure.resources_packed)),
+    position: { x: structure?.base.coord_x, y: structure?.base.coord_y },
+    name: getRealmNameById(structure.metadata.realm_id),
+    owner: structure?.owner,
   } as RealmWithPosition;
 };
 
 export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
-  const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  const addressName = owner
-    ? getComponentValue(components.AddressName, getEntityIdFromKeys([owner.address]))
-    : undefined;
+  // use value strict because we know the structure exists
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  if (!structure) return "";
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
 
   if (addressName) {
     return shortString.decodeShortString(String(addressName.name));
@@ -62,29 +59,28 @@ export const getRealmNameById = (realmId: ID): string => {
 };
 
 export function getRealmInfo(entity: Entity, components: ClientComponents): RealmInfo | undefined {
-  const realm = getComponentValue(components.Realm, entity);
-  const owner = getComponentValue(components.Owner, entity);
-  const position = getComponentValue(components.Position, entity);
-  const population = getComponentValue(components.Population, entity);
+  const structure = getComponentValue(components.Structure, entity);
+  const structureBuildings = getComponentValue(components.StructureBuildings, entity);
+
+  const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
+
+  const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
 
   const storehouses = (() => {
-    const quantity =
-      getComponentValue(
-        components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || 0), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfigCategory.Storehouse);
-    return { capacityKg: (quantity + 1) * gramToKg(storehouseCapacity), quantity };
+    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
+    return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
   })();
 
-  if (realm && owner && position) {
-    const { realm_id, entity_id, produced_resources, order, level } = realm;
+  if (structure) {
+    const realm_id = structure.metadata.realm_id;
+    const order = structure.metadata.order;
+    const level = structure.base.level;
+    const entity_id = structure.entity_id;
+    const produced_resources = structure.resources_packed;
 
     const name = getRealmNameById(realm_id);
 
-    const resources = unpackResources(BigInt(produced_resources));
-
-    const { address } = owner;
+    const resources = unpackValue(BigInt(produced_resources));
 
     return {
       realmId: realm_id,
@@ -94,13 +90,16 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       level,
       resources,
       order,
-      position,
-      ...population,
+      position: { x: structure.base.coord_x, y: structure.base.coord_y },
+      population: structureBuildings?.population.current,
+      capacity: structureBuildings?.population.max,
       hasCapacity:
-        !population || population.capacity + configManager.getBasePopulationCapacity() > population.population,
-      owner: address,
-      ownerName: getRealmAddressName(realm.entity_id, components),
-      hasWonder: realm.has_wonder,
+        !structureBuildings?.population ||
+        structureBuildings.population.max + configManager.getBasePopulationCapacity() >
+          structureBuildings.population.current,
+      owner: structure?.owner,
+      ownerName: getRealmAddressName(entity_id, components),
+      hasWonder: structure.metadata.has_wonder,
     };
   }
 }
@@ -114,7 +113,7 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
 
-  const resourceTypesPacked = BigInt(packResources(resourceIds));
+  const resourceTypesPacked = BigInt(packValues(resourceIds));
 
   const getAttributeValue = (attributeName: string): number => {
     const attribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === attributeName);

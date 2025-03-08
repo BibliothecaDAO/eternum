@@ -1,10 +1,18 @@
-import { Entity, getComponentValue, Has, HasValue, NotValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ArmyInfo, getArmyTotalCapacityInKg } from "..";
-import { CapacityConfigCategory, RESOURCE_PRECISION } from "../constants";
+import {
+  ArmyInfo,
+  configManager,
+  Direction,
+  divideByPrecision,
+  getArmyTotalCapacityInKg,
+  getNeighborHexes,
+  gramToKg,
+  ResourcesIds,
+} from "..";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID } from "../types";
+import { ContractAddress, ID, TickIds, TroopTier, TroopType } from "../types";
 
 export const formatArmies = (
   armies: Entity[],
@@ -13,129 +21,153 @@ export const formatArmies = (
 ): ArmyInfo[] => {
   return armies
     .map((armyEntityId) => {
-      const army = getComponentValue(components.Army, armyEntityId);
-      if (!army) return undefined;
+      const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntityId);
+      if (!explorerTroops) return undefined;
 
-      const position = getComponentValue(components.Position, armyEntityId);
-      if (!position) return undefined;
+      const position = explorerTroops.coord;
 
-      const entityOwner = getComponentValue(components.EntityOwner, armyEntityId);
-      if (!entityOwner) return undefined;
+      const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
+      const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
 
-      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      const resource = getComponentValue(components.Resource, armyEntityId);
+      const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
-      let health = structuredClone(getComponentValue(components.Health, armyEntityId));
-      if (health) {
-        health.current = health.current / BigInt(RESOURCE_PRECISION);
-        health.lifetime = health.lifetime / BigInt(RESOURCE_PRECISION);
-      } else {
-        health = {
-          entity_id: army.entity_id,
-          current: 0n,
-          lifetime: 0n,
-        };
-      }
-      const protectee = getComponentValue(components.Protectee, armyEntityId);
+      const stamina = explorerTroops.troops.stamina.amount;
+      const name = getComponentValue(components.AddressName, armyEntityId);
+      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
-      let quantity = structuredClone(getComponentValue(components.Quantity, armyEntityId));
-      if (quantity) {
-        quantity.value = BigInt(quantity.value) / BigInt(RESOURCE_PRECISION);
-      } else {
-        quantity = {
-          entity_id: army.entity_id,
-          value: 0n,
-        };
-      }
+      const isMine = (structure?.owner || 0n) === playerAddress;
 
-      const movable = getComponentValue(components.Movable, armyEntityId);
+      const isMercenary = structure?.owner === 0n;
 
-      const armyCapacityConfigEntityId = getEntityIdFromKeys([BigInt(CapacityConfigCategory.Army)]);
-      const capacity = getComponentValue(components.CapacityConfig, armyCapacityConfigEntityId);
-      const totalCapacity = capacity ? getArmyTotalCapacityInKg(army, capacity) : 0n;
-
-      const weightComponentValue = getComponentValue(components.Weight, armyEntityId);
-      const weight = weightComponentValue ? weightComponentValue.value / BigInt(RESOURCE_PRECISION) : 0n;
-
-      const arrivalTime = getComponentValue(components.ArrivalTime, armyEntityId);
-      const stamina = getComponentValue(components.Stamina, armyEntityId);
-      const name = getComponentValue(components.EntityName, armyEntityId);
-      const realm =
-        entityOwner && getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
-      const homePosition =
-        realm && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(realm.entity_id)]));
-
-      const structure = getComponentValue(
-        components.Structure,
-        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-      );
-
-      const structurePosition =
-        structure && getComponentValue(components.Position, getEntityIdFromKeys([BigInt(structure.entity_id)]));
-
-      const isMine = (owner?.address || 0n) === playerAddress;
-      const isMercenary = owner === undefined;
-
-      const isHome = structurePosition && position.x === structurePosition.x && position.y === structurePosition.y;
+      const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;
 
       return {
-        ...army,
-        protectee,
-        health,
-        movable,
-        quantity,
-        totalCapacity,
-        weight,
-        arrivalTime,
+        entityId: explorerTroops.explorer_id,
+        troops: explorerTroops.troops,
+        totalCapacity: totalCapacityKg,
+        weight: weightKg,
         position,
-        entityOwner,
+        entity_owner_id: explorerTroops.owner,
         stamina,
-        owner,
-        realm,
-        homePosition,
+        owner: structure?.owner,
+        structure,
         isMine,
         isMercenary,
         isHome,
-        name: name
-          ? shortString.decodeShortString(name.name.toString())
-          : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army.entity_id}`,
+        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${explorerTroops.explorer_id}`,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);
 };
 
 export const getArmy = (
-  armyEntityId: ID,
+  armyEntityId: ID | Entity,
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): ArmyInfo | undefined => {
-  return formatArmies([getEntityIdFromKeys([BigInt(armyEntityId)])], playerAddress, components)[0];
-};
-
-export const getArmiesInBattle = (battleEntityId: ID, playerAddress: ContractAddress, components: ClientComponents) => {
-  const armiesEntityIds = runQuery([
-    Has(components.Army),
-    NotValue(components.Health, { current: 0n }),
-    NotValue(components.Army, { battle_id: 0 }),
-    HasValue(components.Army, { battle_id: battleEntityId }),
-  ]);
-
-  const armies = formatArmies(Array.from(armiesEntityIds), playerAddress, components);
-
-  return armies;
+  const entityId = typeof armyEntityId === "string" ? armyEntityId : getEntityIdFromKeys([BigInt(armyEntityId)]);
+  return formatArmies([entityId], playerAddress, components)[0];
 };
 
 export const armyHasTroops = (entityArmies: (ArmyInfo | undefined)[]) => {
-  return entityArmies.some(
-    (army) =>
-      army &&
-      (Number(army.troops.knight_count) !== 0 ||
-        Number(army.troops.crossbowman_count) !== 0 ||
-        Number(army.troops.paladin_count) !== 0),
-  );
+  return entityArmies.some((army) => army && army.troops.count !== 0n);
 };
 
 export const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
   return entityArmies.some(
     (army) => army && realmPosition && (army.position.x !== realmPosition.x || army.position.y !== realmPosition.y),
   );
+};
+
+export const getTroopResourceId = (troopType: TroopType, troopTier: TroopTier): ResourcesIds => {
+  switch (troopType) {
+    case TroopType.Knight:
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Knight;
+        case TroopTier.T2:
+          return ResourcesIds.KnightT2;
+        case TroopTier.T3:
+          return ResourcesIds.KnightT3;
+      }
+    case TroopType.Crossbowman:
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Crossbowman;
+        case TroopTier.T2:
+          return ResourcesIds.CrossbowmanT2;
+        case TroopTier.T3:
+          return ResourcesIds.CrossbowmanT3;
+      }
+    case TroopType.Paladin:
+      switch (troopTier) {
+        case TroopTier.T1:
+          return ResourcesIds.Paladin;
+        case TroopTier.T2:
+          return ResourcesIds.PaladinT2;
+        case TroopTier.T3:
+          return ResourcesIds.PaladinT3;
+      }
+  }
+};
+
+export const getGuardsByStructure = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+  if (!structure?.troop_guards) return [];
+
+  const guardResurrectionDelay = configManager.getTroopConfig().troop_limit_config.guard_resurrection_delay;
+
+  const armiesTickInSeconds = configManager.getTick(TickIds.Armies);
+
+  // Extract guard troops from the structure
+  const guards = [
+    {
+      slot: 0,
+      troops: structure.troop_guards.delta,
+      destroyedTick: structure.troop_guards.delta_destroyed_tick,
+      // timestamp
+      cooldownEnd: structure.troop_guards.delta_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+    },
+    {
+      slot: 1,
+      troops: structure.troop_guards.charlie,
+      destroyedTick: structure.troop_guards.charlie_destroyed_tick,
+      cooldownEnd: structure.troop_guards.charlie_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+    },
+    {
+      slot: 2,
+      troops: structure.troop_guards.bravo,
+      destroyedTick: structure.troop_guards.bravo_destroyed_tick,
+      cooldownEnd: structure.troop_guards.bravo_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+    },
+    {
+      slot: 3,
+      troops: structure.troop_guards.alpha,
+      destroyedTick: structure.troop_guards.alpha_destroyed_tick,
+      cooldownEnd: structure.troop_guards.alpha_destroyed_tick * armiesTickInSeconds + guardResurrectionDelay,
+    },
+  ];
+
+  // Filter out guards with no troops
+  return guards;
+};
+
+export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
+  const freeDirections: Direction[] = [];
+
+  if (!structure) return freeDirections;
+
+  const adjacentHexes = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
+
+  adjacentHexes.forEach((hex) => {
+    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(hex.col), BigInt(hex.row)]));
+
+    if (tile?.occupier_id === 0) {
+      freeDirections.push(hex.direction);
+    }
+  });
+
+  return freeDirections;
 };

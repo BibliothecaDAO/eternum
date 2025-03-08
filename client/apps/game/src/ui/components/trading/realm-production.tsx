@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { configManager, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
 import { useRealms } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
@@ -18,7 +18,7 @@ export const RealmProduction = () => {
 
   const realmsProduction = useMemo(() => {
     return realms.map((realm) => {
-      const resourcesProduced = unpackResources(realm.produced_resources);
+      const resourcesProduced = unpackValue(realm.resources_packed);
 
       return {
         ...realm,

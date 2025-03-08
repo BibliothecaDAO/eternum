@@ -8,12 +8,12 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  computeTravelTime,
   configManager,
   ContractAddress,
   divideByPrecision,
-  DONKEY_ENTITY_TYPE,
   getBalance,
-  getStructure,
+  getClosestBank,
   ID,
   MarketManager,
   multiplyByPrecision,
@@ -22,18 +22,10 @@ import {
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, useTravel } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export const ResourceSwap = ({
-  bankEntityId,
-  entityId,
-  listResourceId,
-}: {
-  bankEntityId: ID;
-  entityId: ID;
-  listResourceId: number;
-}) => {
+export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
     setup,
@@ -41,7 +33,6 @@ export const ResourceSwap = ({
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { computeTravelTime } = useTravel();
   const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
   const [isBuyResource, setIsBuyResource] = useState(true);
@@ -52,17 +43,12 @@ export const ResourceSwap = ({
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
-  const bankProtector = useMemo(() => {
-    const structure = getStructure(bankEntityId, ContractAddress(account.address), setup.components);
-    return structure?.protector;
-  }, [bankEntityId]);
-
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
-    [setup, bankEntityId, resourceId, account.address],
+    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
+    [setup, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -93,14 +79,9 @@ export const ResourceSwap = ({
     return multiplyByPrecision(amount) <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
 
-  const canSwap = useMemo(
-    () => amountsBiggerThanZero && hasEnough && !isBankResourcesLocked && !isMyResourcesLocked,
-    [lordsAmount, resourceAmount, hasEnough, isBankResourcesLocked, isMyResourcesLocked],
-  );
+  const canSwap = useMemo(() => amountsBiggerThanZero && hasEnough, [lordsAmount, resourceAmount, hasEnough]);
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
@@ -108,39 +89,29 @@ export const ResourceSwap = ({
     setIsLoading(true);
     const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
 
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
+    console.log({ closestBank });
+
     const performSwap = () => {
       return operation({
         signer: account,
-        bank_entity_id: bankEntityId,
+        bank_entity_id: closestBank.bankId,
         entity_id: entityId,
         resource_type: resourceId,
         amount: multiplyByPrecision(Number(resourceAmount.toFixed(2))),
       });
     };
 
-    if (bankProtector?.battle_id) {
-      // If there's a bank protector in battle, resolve battle first then perform swap
-      setup.systemCalls
-        .battle_resolve({
-          signer: account,
-          battle_id: bankProtector.battle_id,
-          army_id: bankProtector.entity_id,
-        })
-        .then(performSwap)
-        .finally(() => {
-          playLordsSound();
-          setIsLoading(false);
-          setOpenConfirmation(false);
-        });
-    } else {
-      // If no bank protector, just perform swap
-      performSwap().finally(() => {
-        playLordsSound();
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
-    }
-  }, [isBuyResource, setup, account, entityId, bankEntityId, resourceId, resourceAmount, bankProtector]);
+    // If no bank protector, just perform swap
+    performSwap().finally(() => {
+      playLordsSound();
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
+  }, [isBuyResource, setup, account, entityId, resourceId, resourceAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
@@ -241,6 +212,10 @@ export const ResourceSwap = ({
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
 
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
     return (
       <ConfirmationPopup
         title="Confirm Swap"
@@ -267,12 +242,7 @@ export const ResourceSwap = ({
               <TravelInfo
                 entityId={entityId}
                 resources={resourcesToTransport}
-                travelTime={computeTravelTime(
-                  bankEntityId,
-                  entityId,
-                  configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
-                  true,
-                )}
+                travelTime={closestBank.travelTime}
                 setCanCarry={setCanCarry}
                 isAmm={true}
               />
@@ -293,7 +263,6 @@ export const ResourceSwap = ({
     onSwap,
     entityId,
     computeTravelTime,
-    bankEntityId,
     setCanCarry,
   ]);
 
@@ -339,13 +308,18 @@ export const ResourceSwap = ({
                     </td>
                   </tr>
                   <tr>
-                    <td>Bank Owner Fees</td>
+                    <td>
+                      Bank Owner Fees{" "}
+                      <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
+                    </td>
                     <td className="text-left text-danger px-8">
                       {formatNumber(-ownerFee, 4)} {"Lords"}
                     </td>
                   </tr>
                   <tr>
-                    <td>LP Fees</td>
+                    <td>
+                      LP Fees <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
+                    </td>
                     <td className="text-left text-danger px-8">
                       {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
@@ -368,8 +342,6 @@ export const ResourceSwap = ({
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
                 {!amountsBiggerThanZero && <div>Warning: Amount must be greater than zero</div>}
                 {!hasEnough && <div>Warning: Not enough resources for this swap</div>}
-                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
-                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>

@@ -18,13 +18,13 @@ export const formatGuilds = (
       const guild = getComponentValue(components.Guild, guild_entity_id);
       if (!guild) return;
 
-      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(guild.entity_id)]));
       const name = getEntityName(guild.entity_id, components);
 
       return {
         entityId: guild.entity_id,
         name,
-        isOwner: owner?.address === playerAddress,
+        // todo: fix
+        isOwner: false,
         memberCount: guild.member_count,
         isPublic: guild.is_public,
         isMember: guild.entity_id === guildMember?.guild_entity_id,
@@ -51,7 +51,6 @@ export const formatGuildMembers = (
       const guildMember = getComponentValue(components.GuildMember, entity);
       if (!guildMember) return;
 
-      const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)]));
       const addressName = getAddressName(guildMember.address, components);
 
       return {
@@ -59,7 +58,7 @@ export const formatGuildMembers = (
         guildEntityId: guildMember.guild_entity_id,
         name: addressName ? addressName : "Unknown",
         isUser: guildMember.address === playerAddress,
-        isGuildMaster: owner?.address === guildMember.address,
+        isGuildMaster: false, // todo: fix
       };
     })
     .filter((guildMember): guildMember is NonNullable<typeof guildMember> => guildMember !== undefined);

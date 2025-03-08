@@ -11,10 +11,7 @@ export function useMarket(currentBlockTimestamp: number) {
 
   const playerRealms = usePlayerOwnedRealms();
 
-  const allMarket = useEntityQuery([
-    HasValue(components.Status, { value: 0n }),
-    HasValue(components.Trade, { taker_id: 0 }),
-  ]);
+  const allMarket = useEntityQuery([HasValue(components.Trade, { taker_id: 0 })]);
   const allTrades = useMemo(() => {
     return computeTrades(allMarket, currentBlockTimestamp, components);
   }, [allMarket]);

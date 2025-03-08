@@ -1,13 +1,13 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { kgToGram } from "@/ui/utils/utils";
 import { BuildingType, configManager, getRealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
-  const capacity = kgToGram(storehouseCapacity);
+  const capacity = storehouseCapacity;
   return (
     <div className="text-xs text-gray-200 p-1 max-w-xs z-50">
       <p className="font-semibold">Max Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
@@ -15,33 +15,33 @@ const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) 
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Lords)).toLocaleString()} Lords
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Lords)).toLocaleString()} Lords
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wheat)).toLocaleString()} Food
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wheat)).toLocaleString()} Food
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Wood)).toLocaleString()} Other
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wood)).toLocaleString()} Other
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Labor)).toLocaleString()} Labor
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Labor)).toLocaleString()} Labor
           </li>
         </ul>
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Knight)).toLocaleString()} Knights
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Knight)).toLocaleString()} Knights
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Crossbowman)).toLocaleString()} Crossbowmen
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
-            {(capacity / configManager.getResourceWeight(ResourcesIds.Paladin)).toLocaleString()} Paladins
+            {(capacity / configManager.getResourceWeightKg(ResourcesIds.Paladin)).toLocaleString()} Paladins
           </li>
         </ul>
       </div>
@@ -76,9 +76,15 @@ export const CapacityInfo = ({
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
+  // get update when structureBuildings changes
+  const structureBuildings = useComponentValue(
+    setup.components.StructureBuildings,
+    getEntityIdFromKeys([BigInt(structureEntityId)]),
+  );
+
   const realmInfo = useMemo(() => {
     return getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), setup.components);
-  }, [structureEntityId, setup.components]);
+  }, [structureEntityId, setup.components, structureBuildings]);
 
   return (
     <div className={className}>

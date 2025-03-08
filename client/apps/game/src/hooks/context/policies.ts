@@ -173,8 +173,8 @@ export const policies: ContractPolicies = {
         entrypoint: "set_travel_stamina_cost_config",
       },
       {
-        name: "set_weight_config",
-        entrypoint: "set_weight_config",
+        name: "set_resource_weight_config",
+        entrypoint: "set_resource_weight_config",
       },
       {
         name: "set_battle_config",
@@ -197,16 +197,12 @@ export const policies: ContractPolicies = {
         entrypoint: "set_stamina_refill_config",
       },
       {
-        name: "set_leveling_config",
-        entrypoint: "set_leveling_config",
-      },
-      {
         name: "set_production_config",
         entrypoint: "set_production_config",
       },
       {
-        name: "set_speed_config",
-        entrypoint: "set_speed_config",
+        name: "set_donkey_speed_config",
+        entrypoint: "set_donkey_speed_config",
       },
       {
         name: "set_hyperstructure_config",
@@ -253,12 +249,12 @@ export const policies: ContractPolicies = {
         entrypoint: "set_resource_bridge_whitelist_config",
       },
       {
-        name: "set_realm_max_level_config",
-        entrypoint: "set_realm_max_level_config",
+        name: "set_structure_max_level_config",
+        entrypoint: "set_structure_max_level_config",
       },
       {
-        name: "set_realm_level_config",
-        entrypoint: "set_realm_level_config",
+        name: "set_structure_level_config",
+        entrypoint: "set_structure_level_config",
       },
       {
         name: "set_settlement_config",
@@ -467,10 +463,6 @@ export const policies: ContractPolicies = {
       {
         name: "set_address_name",
         entrypoint: "set_address_name",
-      },
-      {
-        name: "set_entity_name",
-        entrypoint: "set_entity_name",
       },
       {
         name: "world_dispatcher",

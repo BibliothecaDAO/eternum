@@ -1,55 +1,52 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
   findResourceById,
   formatTime,
   ID,
+  ResourceManager,
   TickIds,
   TimeFormat,
 } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
-  isLabor = false,
   resourceId,
-  entityId,
+  resourceManager,
   maxStorehouseCapacityKg,
   tick,
 }: {
-  isLabor?: boolean;
   resourceId: ID;
-  entityId: ID;
+  resourceManager: ResourceManager;
   maxStorehouseCapacityKg: number;
   tick: number;
 }) => {
-  const resourceManager = useResourceManager(entityId, resourceId);
-
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
 
   const getBalance = useCallback(() => {
-    return resourceManager.balance(tick);
+    return resourceManager.balanceWithProduction(tick, resourceId);
   }, [resourceManager, tick]);
 
   const production = useMemo(() => {
-    setBalance(getBalance());
-    return resourceManager.getProduction();
+    const balance = getBalance();
+    setBalance(balance);
+    return resourceManager.getProduction(resourceId);
   }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeight(resourceId) || 1000);
+    return maxStorehouseCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
   const timeUntilValueReached = useMemo(() => {
-    return resourceManager.timeUntilValueReached(currentTick);
+    return resourceManager.timeUntilValueReached(currentTick, resourceId);
   }, [resourceManager, currentTick]);
 
   const productionRate = useMemo(() => {
@@ -57,41 +54,40 @@ export const ResourceChip = ({
   }, [production]);
 
   const productionEndsAt = useMemo(() => {
-    return resourceManager.getProductionEndsAt();
+    return resourceManager.getProductionEndsAt(resourceId);
   }, [resourceManager]);
 
   const isActive = useMemo(() => {
-    return resourceManager.isActive();
+    return resourceManager.isActive(resourceId);
   }, [resourceManager]);
 
   useEffect(() => {
     const tickTime = configManager.getTick(TickIds.Default) * 1000;
     let realTick = currentTick;
 
-    const newBalance = resourceManager.balance(realTick);
+    const newBalance = resourceManager.balanceWithProduction(realTick, resourceId);
     setBalance(newBalance);
 
     if (isActive) {
       const interval = setInterval(() => {
         realTick += 1;
-        const newBalance = resourceManager.balance(realTick);
+        const newBalance = resourceManager.balanceWithProduction(realTick, resourceId);
         setBalance(newBalance);
       }, tickTime);
       return () => clearInterval(interval);
     }
   }, [resourceManager, currentTick, isActive]);
 
-  const icon = useMemo(
-    () => (
+  const icon = useMemo(() => {
+    return (
       <ResourceIcon
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait as string}
         size="sm"
         className="mr-3 self-center"
       />
-    ),
-    [resourceId, isLabor],
-  );
+    );
+  }, [resourceId]);
 
   const reachedMaxCap = useMemo(() => {
     return maxAmountStorable === balance && isActive;
@@ -103,7 +99,7 @@ export const ResourceChip = ({
       content: <>{findResourceById(resourceId)?.trait as string}</>,
     });
     setShowPerHour(false);
-  }, [resourceId, isLabor, setTooltip]);
+  }, [resourceId, setTooltip]);
 
   const handleMouseLeave = useCallback(() => {
     setTooltip(null);
@@ -128,7 +124,7 @@ export const ResourceChip = ({
             : ""}
         </div>
 
-        {isActive && (productionEndsAt > currentTick || resourceManager.isFood()) ? (
+        {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
           <div
             className={`${
               productionRate < 0 ? "text-light-red" : "text-green/80"

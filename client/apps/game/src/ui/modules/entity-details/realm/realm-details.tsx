@@ -33,11 +33,11 @@ export const RealmDetails = () => {
   );
 
   const isRealm = useMemo(() => {
-    return structure?.category === StructureType[StructureType.Realm];
+    return structure?.structure.base.category === StructureType.Realm;
   }, [structure]);
 
   const address = useMemo(() => {
-    return toHexString(structure?.owner?.address || 0n);
+    return toHexString(structure?.owner || 0n);
   }, [structure]);
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -58,7 +58,7 @@ export const RealmDetails = () => {
   );
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure, currentBlockTimestamp || 0),
+    () => isStructureImmune(structure?.structure.base, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],
   );
   const timer = useMemo(
@@ -103,7 +103,7 @@ export const RealmDetails = () => {
           <div>
             <span
               className="ml-1 hover:text-white cursor-pointer"
-              onClick={() => copyPlayerAddressToClipboard(structure.owner.address, structure.ownerName || "")}
+              onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
             >
               {displayAddress(address)}
             </span>

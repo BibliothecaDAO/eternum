@@ -315,9 +315,8 @@ EOF
 if [ "$COMMAND" = "katana" ]; then
     echo -e "${YELLOW}► Setting up Katana network...${NC}"
     slot deployments create -t epic $PROJECT_NAME katana \
-        --version v1.0.5 \
+        --version v1.2.1 \
         --invoke-max-steps "$KATANA_MAX_INVOKE_STEPS" \
-        --block-time "$KATANA_BLOCK_TIME" \
         --dev --dev.no-fee
 
     echo -e "\n${YELLOW}► Deployment accounts:${NC}"
@@ -329,7 +328,7 @@ fi
 if [ "$COMMAND" = "torii" ]; then
     echo -e "\n${YELLOW}► Setting up Torii indexer...${NC}"
     slot deployments create -t epic $PROJECT_NAME torii \
-        --version v1.0.5 \
+        --version v1.2.1 \
         --world $WORLD \
         --rpc $RPC_URL \
         --indexing.pending \

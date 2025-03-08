@@ -33,7 +33,7 @@ export function getConfigFromNetwork(chain: Chain): Config {
       case "slot":
         return slotConfig.configuration as any;
       case "local":
-        return localConfig.configuration;
+        return localConfig.configuration as any;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }

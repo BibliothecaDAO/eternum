@@ -1,4 +1,3 @@
-import { STRUCTURE_IMAGE_PATHS } from "@/ui/components/structures/construction/structure-construction-menu";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
@@ -13,6 +12,15 @@ import {
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
+
+const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
+const STRUCTURE_IMAGE_PATHS = {
+  [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "hyperstructure.png",
+  [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.FragmentMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.Village]: STRUCTURE_IMAGE_PREFIX + "village.png",
+};
 
 export const WorldStructures = () => {
   const chapters = useMemo(

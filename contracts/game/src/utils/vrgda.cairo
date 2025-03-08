@@ -39,7 +39,7 @@ impl LinearVRGDAImpl of LinearVRGDATrait {
     fn get_vrgda_price(self: @LinearVRGDA, time_since_start: Fixed, sold: Fixed) -> Fixed {
         *self.target_price
             * exp(
-                *self.decay_constant * (time_since_start - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
+                *self.decay_constant * (time_since_start - self.get_target_sale_time(sold + FixedTrait::new(1, false))),
             )
     }
 }

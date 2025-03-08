@@ -8,11 +8,11 @@ import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
   ADMIN_BANK_ENTITY_ID,
-  DONKEY_ENTITY_TYPE,
   Resources,
   ResourcesIds,
-  configManager,
+  calculateDonkeysNeeded,
   divideByPrecision,
+  getTotalResourceWeightGrams,
   multiplyByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
@@ -29,7 +29,6 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
-import { calculateDonkeysNeeded, getTotalResourceWeight } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
@@ -39,14 +38,14 @@ export const BridgeIn = () => {
   const { getBalance, isLoading: isResourcesLoading } = useResourceBalance({ entityId: realmEntityId });
   const { data } = useQuery({
     queryKey: ["capacitySpeedConfig"],
-    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG, { category: "Donkey", entityType: DONKEY_ENTITY_TYPE }),
+    queryFn: () => execute(GET_CAPACITY_SPEED_CONFIG),
     refetchInterval: 10_000,
   });
 
   const donkeyConfig = useMemo(
     () => ({
-      capacity: Number(data?.s1EternumCapacityConfigModels?.edges?.[0]?.node?.weight_gram ?? 0),
-      speed: data?.s1EternumSpeedConfigModels?.edges?.[0]?.node?.sec_per_km ?? 0,
+      capacity: Number(data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.capacity_config?.donkey_capacity ?? 0),
+      speed: data?.s1EternumWorldConfigModels?.edges?.[0]?.node?.speed_config?.donkey_sec_per_km ?? 0,
     }),
     [data],
   );
@@ -64,7 +63,7 @@ export const BridgeIn = () => {
   const { computeTravelTime } = useTravel(
     Number(ADMIN_BANK_ENTITY_ID),
     Number(realmEntityId!),
-    configManager.getSpeedConfig(DONKEY_ENTITY_TYPE),
+    donkeyConfig.speed,
     true,
   );
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +103,7 @@ export const BridgeIn = () => {
   const orderWeight = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeight(
+      const totalWeight = getTotalResourceWeightGrams(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
           amount: multiplyByPrecision(amount),
@@ -118,7 +117,7 @@ export const BridgeIn = () => {
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight, Number(donkeyConfig.capacity));
+      return calculateDonkeysNeeded(orderWeight);
     } else {
       return 0;
     }

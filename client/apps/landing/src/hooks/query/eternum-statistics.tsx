@@ -5,13 +5,19 @@ export const GET_ETERNUM_STATISTICS = graphql(`
     s1EternumAddressNameModels {
       totalCount
     }
-    s1EternumHyperstructureModels {
+    realms: s1EternumStructureModels(where: { category: 1 }) {
       totalCount
     }
-    s1EternumRealmModels {
+    hyperstructures: s1EternumStructureModels(where: { category: 2 }) {
       totalCount
     }
-    s1EternumFragmentMineDiscoveredModels {
+    banks: s1EternumStructureModels(where: { category: 3 }) {
+      totalCount
+    }
+    mines: s1EternumStructureModels(where: { category: 4 }) {
+      totalCount
+    }
+    villages: s1EternumStructureModels(where: { category: 5 }) {
       totalCount
     }
   }
