@@ -5,7 +5,7 @@ import { ActionPath, ActionType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { getWorldPositionForHex } from "../utils";
 
-export const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
+const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
   switch (actionType) {
     case ActionType.Explore:
       return new THREE.Vector3(0.0, 1.5, 1.5); // More intense cyan

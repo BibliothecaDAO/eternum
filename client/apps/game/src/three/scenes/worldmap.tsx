@@ -280,7 +280,7 @@ export default class WorldmapScene extends HexagonScene {
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     if (army?.owner === account) {
-      this.onArmySelection(army.id);
+      this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id);
     } else {
@@ -382,14 +382,18 @@ export default class WorldmapScene extends HexagonScene {
 
     const structure = new StructureActionManager(this.dojo.components, selectedEntityId);
 
-    const actionPaths = structure.findActionPaths(this.armyHexes, this.exploredTiles);
+    const playerAddress = useAccountStore.getState().account?.address;
+
+    if (!playerAddress) return;
+
+    const actionPaths = structure.findActionPaths(this.armyHexes, this.exploredTiles, ContractAddress(playerAddress));
 
     this.state.updateActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
-  private onArmySelection(selectedEntityId: ID) {
+  private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
     this.state.updateSelectedEntityId(selectedEntityId);
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.network.provider, selectedEntityId);
@@ -402,6 +406,7 @@ export default class WorldmapScene extends HexagonScene {
       this.exploredTiles,
       currentDefaultTick,
       currentArmiesTick,
+      playerAddress,
     );
     this.state.updateActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());

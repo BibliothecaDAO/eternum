@@ -40,7 +40,7 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
@@ -576,11 +576,11 @@ export const setWeightConfig = async (config: Config) => {
   const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => {
     const calldata = {
       entity_type: resourceId,
-      weight_nanogram: weight,
+      weight_gram: weight,
     };
     console.log(
       chalk.cyan(
-        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_nanogram / 1000))} kg`,
+        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_gram / 1000))} kg`,
       ),
     );
     return calldata;

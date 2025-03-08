@@ -18,10 +18,12 @@ export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
   className = "",
+  tooltipContent = "Navigate to Army",
 }: {
   position: Position;
   hideTooltip?: boolean;
   className?: string;
+  tooltipContent?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
@@ -39,7 +41,7 @@ export const NavigateToPositionIcon = ({
       onMouseEnter={() => {
         if (hideTooltip) return;
         setTooltip({
-          content: "Navigate to Army",
+          content: tooltipContent,
           position: "top",
         });
       }}

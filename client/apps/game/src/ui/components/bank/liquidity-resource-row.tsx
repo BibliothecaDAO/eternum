@@ -13,7 +13,7 @@ import {
   configManager,
   divideByPrecision,
   getClosestBank,
-  resources
+  resources,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -39,10 +39,7 @@ export const LiquidityResourceRow = ({
   const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
   const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
-  const marketEntityId = useMemo(
-    () => getEntityIdFromKeys([BigInt(resourceId)]),
-    [resourceId],
-  );
+  const marketEntityId = useMemo(() => getEntityIdFromKeys([BigInt(resourceId)]), [resourceId]);
   const liquidityEntityId = useMemo(
     () => getEntityIdFromKeys([BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
     [resourceId],
@@ -53,11 +50,7 @@ export const LiquidityResourceRow = ({
 
   const marketManager = useMemo(
     () =>
-      new MarketManager(
-        dojoContext.setup.components,
-        ContractAddress(dojoContext.account.account.address),
-        resourceId,
-      ),
+      new MarketManager(dojoContext.setup.components, ContractAddress(dojoContext.account.account.address), resourceId),
     [dojoContext, resourceId, market, liquidity],
   );
 
@@ -88,11 +81,8 @@ export const LiquidityResourceRow = ({
       setIsLoading(true);
       const { withdrawShares } = calculateWithdrawAmounts(percentage);
 
-      const closestBank = getClosestBank(
-        entityId,
-        dojoContext.setup.components,
-      );
-      
+      const closestBank = getClosestBank(entityId, dojoContext.setup.components);
+
       if (!closestBank) return;
 
       const calldata = {
@@ -101,15 +91,13 @@ export const LiquidityResourceRow = ({
         resource_type: BigInt(resourceId),
         shares: withdrawShares,
         signer: dojoContext.account.account,
-      }
+      };
       console.log(calldata);
 
-      dojoContext.setup.systemCalls
-        .remove_liquidity(calldata)
-        .finally(() => {
-          setIsLoading(false);
-          setOpenConfirmation(false);
-        });
+      dojoContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
     },
     [dojoContext, entityId, resourceId, marketManager],
   );
@@ -141,10 +129,7 @@ export const LiquidityResourceRow = ({
       { amount: divideByPrecision(resource), resourceId: resourceId },
     ];
 
-    const closestBank = getClosestBank(
-      entityId,
-      dojoContext.setup.components,
-    );
+    const closestBank = getClosestBank(entityId, dojoContext.setup.components);
 
     if (!closestBank) return null;
 
@@ -364,11 +349,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
   if (!inputResources?.length) return null;
   const totalPrice =
     inputResources.reduce((sum, resource) => {
-      const price = new MarketManager(
-        setup.components,
-        marketManager.player,
-        resource.resource,
-      ).getMarketPrice();
+      const price = new MarketManager(setup.components, marketManager.player, resource.resource).getMarketPrice();
       return sum + Number(price) * resource.amount;
     }, 0) / outputAmount;
   return (

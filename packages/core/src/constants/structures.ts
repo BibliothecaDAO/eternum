@@ -8,7 +8,7 @@ export enum StructureType {
   Hyperstructure = 2,
   Bank = 3,
   FragmentMine = 4,
-  Village = 5
+  Village = 5,
 }
 
 export enum BuildingType {
@@ -68,7 +68,6 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
     case BuildingType.FishingVillage:
       return new CairoCustomEnum({ FishingVillage: {} });
     case BuildingType.Barracks1:
-
       return new CairoCustomEnum({ Barracks1: {} });
     case BuildingType.Barracks2:
       return new CairoCustomEnum({ Barracks2: {} });

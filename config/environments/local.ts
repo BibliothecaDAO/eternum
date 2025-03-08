@@ -63,7 +63,7 @@ export const LocalEternumGlobalConfig: Config = {
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
-    donkey: 1,
+    donkey: 0,
   },
   season: {
     ...CommonEternumGlobalConfig.season,

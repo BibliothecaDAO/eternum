@@ -1,11 +1,12 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
-import { getEntityIdFromKeys, gramToKg } from "@/ui/utils/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   BuildingType,
   CapacityConfig,
   configManager,
   getBuildingQuantity,
+  gramToKg,
   ID,
   multiplyByPrecision,
   RESOURCE_TIERS,

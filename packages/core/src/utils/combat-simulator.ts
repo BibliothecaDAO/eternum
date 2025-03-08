@@ -226,7 +226,7 @@ export class CombatSimulator {
       damage_beta_large: 2213609288845146193n, // 0.12
       damage_scaling_factor: 64563604257983430656n, // 3.5
       damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
-      damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000  
+      damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100
       t2_damage_multiplier: 46116860184273879040n, // 2.5
       t3_damage_multiplier: 129127208515966861312n, // 7

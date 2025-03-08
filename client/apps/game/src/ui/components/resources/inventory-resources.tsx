@@ -1,6 +1,6 @@
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, ID, ResourceManager } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { divideByPrecision, ID } from "@bibliothecadao/eternum";
+import { useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
@@ -16,15 +16,13 @@ export const InventoryResources = ({
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
-  const dojo = useDojo();
   const [showAll, setShowAll] = useState(false);
 
-  const sortedResources = useMemo(() => {
-    const resourceManager = new ResourceManager(dojo.setup.components, entityId);
-    return resourceManager.getResourceBalances().sort((a, b) => b.amount - a.amount);
-  }, [dojo.setup.components, entityId]);
+  const resourceManager = useResourceManager(entityId);
 
-  console.log({ sortedResources });
+  const sortedResources = useMemo(() => {
+    return resourceManager.getResourceBalances().sort((a, b) => b.amount - a.amount);
+  }, [resourceManager]);
 
   const updatedMax = useMemo(() => {
     if (showAll) return Infinity;

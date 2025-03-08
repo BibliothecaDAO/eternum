@@ -3,8 +3,6 @@ use core::num::traits::zero::Zero;
 use core::option::OptionTrait;
 use core::traits::Into;
 use core::traits::TryInto;
-use s1_eternum::alias::ID;
-
 use s1_eternum::utils::number::{NumberTrait};
 
 // todo@credence revisit zone calculation
@@ -228,49 +226,6 @@ pub impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
         let distance = self.km_distance(destination);
         let time = distance * sec_per_km.into();
         time.try_into().unwrap()
-    }
-}
-
-
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
-#[dojo::model]
-pub struct Position {
-    #[key]
-    pub entity_id: ID,
-    pub x: u32,
-    pub y: u32,
-}
-
-
-pub impl PositionIntoCoord of Into<Position, Coord> {
-    fn into(self: Position) -> Coord {
-        Coord { x: self.x, y: self.y }
-    }
-}
-
-
-pub impl PositionIntoCube of Into<Position, Cube> {
-    fn into(self: Position) -> Cube {
-        Into::<Coord, Cube>::into(Into::<Position, Coord>::into(self))
-    }
-}
-
-
-#[generate_trait]
-pub impl PositionImpl of PositionTrait {
-    // world is divided into 10 timezones
-    fn get_zone(self: Position) -> u32 {
-        // use highest and lowest x to divide map into 10 timezones
-        1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
-    }
-    fn assert_same_location(self: Position, other: Coord) {
-        assert(self.x == other.x && self.y == other.y, 'Coord: not same');
-    }
-    fn assert_not_same_location(self: Position, other: Coord) {
-        assert(self.x != other.x || self.y != other.y, 'Coord: same');
-    }
-    fn assert_not_zero(self: Position) {
-        assert(self.x != 0 || self.y != 0, 'Coord: zero');
     }
 }
 // #[cfg(test)]
