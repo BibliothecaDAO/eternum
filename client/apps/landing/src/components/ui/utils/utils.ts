@@ -266,7 +266,3 @@ export const separateCamelCase = (str: string): string => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
-
-export const calculateDonkeysNeeded = (orderWeight: number, donkeyCapacity: number): number => {
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacity);
-};

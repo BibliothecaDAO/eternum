@@ -10,7 +10,9 @@ import {
   ADMIN_BANK_ENTITY_ID,
   Resources,
   ResourcesIds,
+  calculateDonkeysNeeded,
   divideByPrecision,
+  getTotalResourceWeightGrams,
   multiplyByPrecision,
   resources,
 } from "@bibliothecadao/eternum";
@@ -27,7 +29,6 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
-import { calculateDonkeysNeeded, getTotalResourceWeightGrams } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeIn = () => {
@@ -116,7 +117,7 @@ export const BridgeIn = () => {
 
   const donkeysNeeded = useMemo(() => {
     if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight, Number(donkeyConfig.capacity));
+      return calculateDonkeysNeeded(orderWeight);
     } else {
       return 0;
     }
