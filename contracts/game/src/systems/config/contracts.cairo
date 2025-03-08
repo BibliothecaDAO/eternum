@@ -144,16 +144,7 @@ pub trait IResourceBridgeConfig<T> {
 
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
-    fn set_settlement_config(
-        ref self: T,
-        center: u32,
-        base_distance: u32,
-        min_first_layer_distance: u32,
-        points_placed: u32,
-        current_layer: u32,
-        current_side: u32,
-        current_point_on_side: u32,
-    );
+    fn set_settlement_config(ref self: T, center: u32, base_distance: u32, subsequent_distance: u32);
 }
 
 #[starknet::interface]
@@ -678,31 +669,14 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
-        fn set_settlement_config(
-            ref self: ContractState,
-            center: u32,
-            base_distance: u32,
-            min_first_layer_distance: u32,
-            points_placed: u32,
-            current_layer: u32,
-            current_side: u32,
-            current_point_on_side: u32,
-        ) {
+        fn set_settlement_config(ref self: ContractState, center: u32, base_distance: u32, subsequent_distance: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(
                 ref world,
                 selector!("settlement_config"),
-                SettlementConfig {
-                    center,
-                    base_distance,
-                    min_first_layer_distance,
-                    points_placed,
-                    current_layer,
-                    current_side,
-                    current_point_on_side,
-                },
+                SettlementConfig { center, base_distance, subsequent_distance },
             );
         }
     }

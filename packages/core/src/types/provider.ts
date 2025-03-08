@@ -570,11 +570,7 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetSettlementConfigProps extends SystemSigner {
   center: num.BigNumberish;
   base_distance: num.BigNumberish;
-  min_first_layer_distance: num.BigNumberish;
-  points_placed: num.BigNumberish;
-  current_layer: num.BigNumberish;
-  current_side: num.BigNumberish;
-  current_point_on_side: num.BigNumberish;
+  subsequent_distance: num.BigNumberish;
 }
 
 export interface MintTestRealmProps extends SystemSigner {

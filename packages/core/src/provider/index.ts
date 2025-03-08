@@ -2164,11 +2164,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const {
       center,
       base_distance,
-      min_first_layer_distance,
-      points_placed,
-      current_layer,
-      current_side,
-      current_point_on_side,
+      subsequent_distance,
       signer,
     } = props;
     return await this.executeAndCheckTransaction(signer, {
@@ -2177,11 +2173,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [
         center,
         base_distance,
-        min_first_layer_distance,
-        points_placed,
-        current_layer,
-        current_side,
-        current_point_on_side,
+        subsequent_distance
       ],
     });
   }

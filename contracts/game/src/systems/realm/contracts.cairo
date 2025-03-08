@@ -14,6 +14,12 @@ pub trait IERC20<TState> {
     fn approve(ref self: TState, spender: ContractAddress, amount: u256) -> bool;
 }
 
+#[derive(Copy, Drop, Serde)]
+pub struct RealmSettlement {
+    pub side: u32,
+    pub layer: u32,
+    pub point: u32,
+}
 
 #[starknet::interface]
 pub trait IRealmSystems<T> {
@@ -23,6 +29,7 @@ pub trait IRealmSystems<T> {
         realm_id: ID,
         frontend: ContractAddress,
         lords_resource_index: u8,
+        settlement: RealmSettlement,
     ) -> ID;
 }
 
@@ -39,7 +46,8 @@ pub mod realm_systems {
         DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
     };
     use s1_eternum::models::config::{
-        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
+        RealmCountConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
@@ -65,6 +73,7 @@ pub mod realm_systems {
     use starknet::ContractAddress;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
+
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         /// Create a new realm
@@ -83,6 +92,7 @@ pub mod realm_systems {
             realm_id: ID,
             frontend: ContractAddress,
             lords_resource_index: u8,
+            settlement: super::RealmSettlement,
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -102,8 +112,25 @@ pub mod realm_systems {
                 season_addresses_config.season_pass_address, realm_id,
             );
 
+            // update realm count
+            let realm_count_selector: felt252 = selector!("realm_count");
+            let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
+            realm_count.count += 1;
+            WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);
+
+            // get realm coordinates
+            let settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("settlement_config"),
+            );
+            let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(realm_count.count.into());
+            let coord: Coord = settlement_config
+                .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point);
+
+            // ensure realm spawn coord is not occupied
+            let mut tile: Tile = world.read_model((coord.x, coord.y));
+            assert!(tile.not_occupied(), "Realm spawn location is occupied");
+
             // create realm
-            let mut coord: Coord = InternalRealmLogicImpl::get_new_location(ref world);
             let structure_id = InternalRealmLogicImpl::create_realm(
                 ref world, owner, realm_id, resources, order, 0, wonder, coord,
             );
@@ -250,30 +277,6 @@ pub mod realm_systems {
             let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
             let (name_and_attrs, _urla, _urlb) = season_pass.get_encoded_metadata(realm_id.try_into().unwrap());
             RealmNameAndAttrsDecodingImpl::decode(name_and_attrs)
-        }
-
-        fn get_new_location(ref world: WorldStorage) -> Coord {
-            // ensure that the coord is not occupied by any other structure
-            let mut found_coords = false;
-            let mut coord: Coord = Coord { x: 0, y: 0 };
-            let mut settlement_config: SettlementConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("settlement_config"),
-            );
-            while (!found_coords) {
-                //todo: note: ask if its okay if new realm is not settled at
-                // correct location when a troop is on it
-                coord = settlement_config.get_next_settlement_coord();
-                let tile: Tile = world.read_model((coord.x, coord.y));
-                if tile.not_occupied() {
-                    // todo: critical: check that structure can settle directly beside another
-                    found_coords = true;
-                }
-            };
-
-            // save the new config so that if there's no already a structure at the coord we can
-            // find a new one
-            WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
-            return coord;
         }
 
         fn get_starting_resources(ref world: WorldStorage, structure_id: ID) {
