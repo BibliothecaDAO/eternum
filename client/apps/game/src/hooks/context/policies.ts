@@ -131,7 +131,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0xb3d474aded507a7350baa69474463d33886be66ed6d1a0ae8d1a4f19d919a": {
+    "0x11a287955d3d3ed0ecb09cd2efa7cff790a4fc51855a9686e7a6550c0b77759": {
       methods: [
         {
           name: "dojo_name",
@@ -299,7 +299,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x7f180ec4de002861bf8e86cdd9f41e19165c468ea7703ccc7c707702fa6909c": {
+    "0x7359e457467997d408b6076b937cb7113d62c59228979dad1b438c4612e609b": {
       methods: [
         {
           name: "dojo_name",
@@ -327,7 +327,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x654e2cfc842dd37395a4595dc8bb78f6546c2b377b5fa74ff2487a3ea8c25d6": {
+    "0x70371c660e5f3ec3e5be9145c9ce2617d4de847a47b7af2d6125c52242af8d3": {
       methods: [
         {
           name: "dojo_name",
@@ -363,7 +363,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x1c148f3082414b1bf1320d421bad2a325675545f1f213af3219c3727f0de11e": {
+    "0x56a46bc9102292c4d9f6bde68f9456d077f55a3510e7cceca85a7bb1534bf45": {
       methods: [
         {
           name: "dojo_name",
@@ -399,7 +399,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x171c6fae95acd58233dfa472e86184a53f42da7d9a4dd94ff4b2a2f3dd8e9de": {
+    "0x1787fe6ce363eb00e36978a7cbf21cd1f4c96cdd8d88ca8fcc762d79127568": {
       methods: [
         {
           name: "dojo_name",
@@ -455,7 +455,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x34a8564ce24af9c57333fdf579945eba6a99a0624ca0d0a428905e074c2ada0": {
+    "0x4689dfaef6f420319ce563d34fb1dd9b6977de2df92b1c0a017bc3d8655bc94": {
       methods: [
         {
           name: "dojo_name",
@@ -471,7 +471,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x442687ef27c6fcb84177efac8b75ec80b8be87d40f9befe2780bf2ea98a8c08": {
+    "0x6a6f3c146615de99d4a8ee3e0ee1502273f9afa77cfb1c043d48da00273031b": {
       methods: [
         {
           name: "dojo_name",
@@ -507,7 +507,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x3eb0f666216653f8bd1b27b4640e4730580f5899b73456c059fb157e1e1e9a": {
+    "0x191873803184fc4e0451b81dfe2669da6f0cf58c88dea309f1fa9a4619f5eb6": {
       methods: [
         {
           name: "dojo_name",
@@ -535,7 +535,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x524a24ace42046b73845153567d5a31ca914aaabbf34fd4c4fe758da41e66df": {
+    "0x723ba0c92e633c8a6102f712622e150929a3648473b3f41fc3d44980ff52a2c": {
       methods: [
         {
           name: "dojo_name",
@@ -559,7 +559,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x6f1ecad7e45043715d052ec7075910fe49379ccec56caa30773bffb1bd8ce42": {
+    "0x3f9d839acf395f17f8981a294086039a7da36ac4379a3948d8d99ce53ea4c8b": {
       methods: [
         {
           name: "dojo_name",
@@ -579,7 +579,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x3c4b44ff5b2dd18a8e388d38f453cfc4c5262d110b13f5f26a5c28e5ac40fd9": {
+    "0x3492ee537f3e7764c154bb0925138c5e42686e765aadfdfdf6e05317fdeb0e8": {
       methods: [
         {
           name: "dojo_name",
@@ -599,7 +599,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x2dde744795e94a6c8934f224741da3e0408d82c07463858b7566664f7bb8633": {
+    "0x2879f978463222b47af7334efec7c7b23da6c7fdba76386710fcca3f8a6d95a": {
       methods: [
         {
           name: "dojo_name",
@@ -671,7 +671,7 @@ export const policies = toSessionPolicies({
         },
       ],
     },
-    "0x56347b8808383046242a9240124ac42b4d8a718ba2925bb900ba6a3ac7c8454": {
+    "0x78c5142660121a5d0fba6e82a10f0530c7b824d69aa0075165320acc76cb9c6": {
       methods: [
         {
           name: "dojo_name",
