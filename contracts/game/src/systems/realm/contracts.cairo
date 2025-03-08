@@ -50,7 +50,7 @@ pub mod realm_systems {
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::map::{TileImpl, TileOccupier};
     use s1_eternum::models::name::{AddressName};
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
@@ -125,10 +125,6 @@ pub mod realm_systems {
             let settlement_max_layer: u32 = SettlementConfigImpl::max_layer(realm_count.count.into());
             let coord: Coord = settlement_config
                 .generate_coord(settlement_max_layer, settlement.side, settlement.layer, settlement.point);
-
-            // ensure realm spawn coord is not occupied
-            let mut tile: Tile = world.read_model((coord.x, coord.y));
-            assert!(tile.not_occupied(), "Realm spawn location is occupied");
 
             // create realm
             let structure_id = InternalRealmLogicImpl::create_realm(
