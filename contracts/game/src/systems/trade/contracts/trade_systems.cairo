@@ -33,16 +33,18 @@ pub mod trade_systems {
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureOwnerStoreImpl,
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use s1_eternum::systems::utils::village::{iVillageImpl};
     use starknet::ContractAddress;
 
 
@@ -213,8 +215,15 @@ pub mod trade_systems {
             assert!(taker_buys_count.is_non_zero(), "taker buys resource amount is 0");
             assert!(taker_buys_count <= trade.maker_gives_max_count, "attempting to buy more than available");
 
-            // compute resource arrival time
+            // ensure taker can't receive troops from an unconnected realm
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
+            if taker_structure.category == StructureCategory::Village.into() {
+                if TroopResourceImpl::is_troop(trade.maker_gives_resource_type) {
+                    iVillageImpl::ensure_village_realm(ref world, taker_structure, maker_structure);
+                }
+            }
+
+            // compute resource arrival time
             let donkey_speed = SpeedImpl::for_donkey(ref world);
             let travel_time = iDistanceKmImpl::time_required(
                 ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,

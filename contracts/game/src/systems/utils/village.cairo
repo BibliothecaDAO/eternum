@@ -1,12 +1,40 @@
 use dojo::world::WorldStorage;
-use s1_eternum::constants::ResourceTypes;
+use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{WorldConfigUtilImpl};
+use s1_eternum::models::position::{TravelImpl};
+use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureCategory};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
 
+
 #[generate_trait]
-pub impl VillageResourceImpl of VillageResourceTrait {
+pub impl iVillageImpl of iVillageTrait {
+    // note: we assume the village is 2 tiles away from the realm
+    // and that A VILLAGE CAN ONLY BE TWO TILES AWAY FROM ONE REALM.
+    // IT CANNOT BE 2 TILES AWAY FROM TWO OR MORE REALMS.
+    // This assumption is used in the `ensure_village_realm` function.
+    fn village_realm_distance() -> u32 {
+        2
+    }
+
+    fn ensure_village_realm(
+        ref world: WorldStorage, village_structure_base: StructureBase, village_realm_structure_base: StructureBase,
+    ) {
+        assert!(village_structure_base.category == StructureCategory::Village.into(), "village is not a village");
+        assert!(
+            village_realm_structure_base.category == StructureCategory::Realm.into(), "village realm is not a realm",
+        );
+
+        // ensure it is the village's realm
+        let distance = village_structure_base.coord().tile_distance(village_realm_structure_base.coord());
+        assert!(distance == Self::village_realm_distance().into(), "village is not connected to realm");
+    }
+}
+
+
+#[generate_trait]
+pub impl iVillageResourceImpl of iVillageResourceTrait {
     fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
         let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
