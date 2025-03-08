@@ -18,6 +18,7 @@ export const StructureArrivals = memo(
     toggleStructure: (id: string) => void;
   }) => {
     const arrivals = useArrivalsByStructure(structure.entityId);
+
     const { currentBlockTimestamp } = getBlockTimestamp();
 
     if (arrivals.length === 0) return null;
@@ -35,25 +36,25 @@ export const StructureArrivals = memo(
           className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
           onClick={() => toggleStructure(structure.entityId.toString())}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
             <h4 className="text-gold font-medium">{structure.name}</h4>
-            <div className="flex items-center gap-2">
-              {readyArrivals > 0 && (
-                <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <span>{readyArrivals} ready</span>
-                </div>
-              )}
-              {pendingArrivals > 0 && (
-                <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
-                  <span>{pendingArrivals} pending</span>
-                </div>
-              )}
-              <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
-            </div>
           </div>
-          <div className="text-gold">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
+          <div className="flex items-center gap-2">
+            {readyArrivals > 0 && (
+              <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span>{readyArrivals} ready</span>
+              </div>
+            )}
+            {pendingArrivals > 0 && (
+              <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                <span>{pendingArrivals} pending</span>
+              </div>
+            )}
+            <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
+            <div className="text-gold ml-2">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
+          </div>
         </button>
 
         {isExpanded && (
@@ -120,14 +121,7 @@ const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   }, [arrival.resources, isArrived]);
 
   return (
-    <div
-      className={clsx(
-        "flex flex-col p-3 rounded-md text-gold border",
-        isArrived
-          ? "border-emerald-700/30 bg-gradient-to-br from-gold/10 to-emerald-900/20"
-          : "border-amber-700/30 bg-gradient-to-br from-gold/10 to-amber-900/20",
-      )}
-    >
+    <div className={clsx("flex flex-col p-3 rounded-md text-gold")}>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold/20 border border-gold/30">

@@ -979,7 +979,7 @@
     "4": 300000000
   },
   "speed": {
-    "donkey": 1,
+    "donkey": 0,
     "army": 1
   },
   "battle": {
