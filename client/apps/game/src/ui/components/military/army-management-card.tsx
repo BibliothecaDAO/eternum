@@ -12,9 +12,9 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyInfo,
   ArmyManager,
-  Direction,
   divideByPrecision,
   getBalance,
+  getFreeDirectionsAroundStructure,
   getTroopResourceId,
   ID,
   resources,
@@ -23,7 +23,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -47,7 +47,6 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   } = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  // const maxTroopCountPerArmy = configManager.getTroopConfig().troop_limit_config.explorer_guard_max_troop_count;
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -69,6 +68,11 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
     setSelectedTier(tier);
   };
 
+  const freeDirections = useMemo(
+    () => getFreeDirectionsAroundStructure(owner_entity, components),
+    [owner_entity, components],
+  );
+
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
 
@@ -78,7 +82,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
           await armyManager.addTroopsToExplorer(account, army.entityId, troopType, troopTier, troopCount);
         }
       } else {
-        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, Direction.NORTH_EAST);
+        await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, freeDirections[0]);
       }
     } else {
       if (guardSlot !== undefined) {
@@ -105,6 +109,10 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
     }
 
     if (isExplorer && army && !army.isHome) {
+      canCreate = false;
+    }
+
+    if (isExplorer && freeDirections.length === 0) {
       canCreate = false;
     }
 
@@ -138,6 +146,12 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
           ⚠️ Maximum troops per attacking army is {formatStringNumber(formatNumber(maxTroopCountPerArmy, 0))}
         </div>
       )} */}
+
+      {isExplorer && !army && freeDirections.length === 0 && (
+        <div className="text-xs text-red-500 mb-2">
+          ⚠️ No space available to create an army. Clear adjacent tiles to create an army.
+        </div>
+      )}
 
       {(!army || army.troops.count === 0n) && (
         <div className="flex justify-center gap-2 mb-4">

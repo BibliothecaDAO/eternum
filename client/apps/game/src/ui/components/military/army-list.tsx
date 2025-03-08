@@ -6,9 +6,10 @@ import { ArmyCreate } from "@/ui/components/military/army-management-card";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ArmyManager, ClientComponents, configManager, getEntityName, StructureType } from "@bibliothecadao/eternum";
+import { ArmyManager, ClientComponents, getEntityName, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";
+import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StructureDefence } from "./structure-defence";
 
@@ -39,8 +40,6 @@ export const EntityArmyList = ({
     });
     return slotsTimeLeft;
   }, [guards]);
-
-  const troopConfig = useMemo(() => configManager.getTroopConfig(), []);
 
   const [showTroopSelection, setShowTroopSelection] = useState<boolean>(false);
 
@@ -88,42 +87,45 @@ export const EntityArmyList = ({
         </div>
       </div>
 
-      <div className="gap-4 my-6 border-2 border-gold/50 rounded-lg p-4">
-        <div
-          className="flex justify-center items-center p-4 "
-          onMouseEnter={() => {
-            if (!isRealm) {
-              setTooltip({
-                content: "Can only create attacking armies on realms",
-                position: "top",
-              });
-            } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
-              setTooltip({
-                content: "Maximum number of armies reached",
-                position: "top",
-              });
-            }
-          }}
-          onMouseLeave={() => setTooltip(null)}
-        >
-          <Button
-            variant="primary"
-            disabled={!isRealm || totalExplorersCount >= structure.base.troop_max_explorer_count}
-            className="attack-army-selector px-6 py-2 text-lg"
-            onClick={() => setShowTroopSelection(!showTroopSelection)}
+      <div className="">
+        {showTroopSelection && armyManager ? (
+          <div className="border-2 border-gold/50 rounded-lg p-4">
+            <ArmyCreate
+              owner_entity={structure.entity_id || 0}
+              army={undefined}
+              armyManager={armyManager}
+              isExplorer={true}
+              onCancel={() => setShowTroopSelection(false)}
+            />
+          </div>
+        ) : (
+          <div
+            className="flex justify-center items-center p-4"
+            onMouseEnter={() => {
+              if (!isRealm) {
+                setTooltip({
+                  content: "Can only create attacking armies on realms",
+                  position: "top",
+                });
+              } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
+                setTooltip({
+                  content: "Maximum number of armies reached",
+                  position: "top",
+                });
+              }
+            }}
+            onMouseLeave={() => setTooltip(null)}
           >
-            {showTroopSelection ? "Create Attack Army" : "Create Attack Army"}
-          </Button>
-        </div>
-
-        {showTroopSelection && armyManager && (
-          <ArmyCreate
-            owner_entity={structure.entity_id || 0}
-            army={undefined}
-            armyManager={armyManager}
-            isExplorer={true}
-            onCancel={() => setShowTroopSelection(false)}
-          />
+            <Button
+              variant="primary"
+              disabled={!isRealm || totalExplorersCount >= structure.base.troop_max_explorer_count}
+              className="attack-army-selector px-6 py-2 text-lg flex items-center gap-2"
+              onClick={() => setShowTroopSelection(true)}
+            >
+              <PlusIcon className="h-5 w-5" />
+              <span>Create Attack Army</span>
+            </Button>
+          </div>
         )}
       </div>
 
