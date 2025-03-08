@@ -1,6 +1,6 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::{alias::ID, models::{guild::{GuildMember}, position::{PositionIntoCoord}}};
+use s1_eternum::{alias::ID, models::{guild::{GuildMember}}};
 
 use starknet::ContractAddress;
 
