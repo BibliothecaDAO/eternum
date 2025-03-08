@@ -11,7 +11,7 @@ import {
   ResourcesIds,
   calculateDonkeysNeeded,
   findResourceById,
-  getTotalResourceWeight,
+  getTotalResourceWeightGrams,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
@@ -65,7 +65,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         amount: Number(call.resources[1]),
       };
     });
-    const totalWeight = getTotalResourceWeight(resources);
+    const totalWeight = getTotalResourceWeightGrams(resources);
     const multipliedWeight = multiplyByPrecision(totalWeight);
 
     setResourceWeight(multipliedWeight);
@@ -200,7 +200,7 @@ const RealmTransferBalance = memo(
     const [resourceWeight, setResourceWeight] = useState(0);
 
     useEffect(() => {
-      const totalWeight = getTotalResourceWeight([{ resourceId: resource, amount: input }]);
+      const totalWeight = getTotalResourceWeightGrams([{ resourceId: resource, amount: input }]);
       const multipliedWeight = multiplyByPrecision(totalWeight);
 
       setResourceWeight(multipliedWeight);

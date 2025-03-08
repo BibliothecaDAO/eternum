@@ -12,5 +12,6 @@ export function createClientComponents({ contractComponents }: { contractCompone
     Resource: overridableComponent(contractComponents.Resource),
     Structure: overridableComponent(contractComponents.Structure),
     StructureBuildings: overridableComponent(contractComponents.StructureBuildings),
+    ResourceArrival: overridableComponent(contractComponents.ResourceArrival),
   };
 }

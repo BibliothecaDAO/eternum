@@ -164,7 +164,7 @@ export const ActionInfo = memo(() => {
   );
 });
 
-export const AttackInfo = memo(
+const AttackInfo = memo(
   ({
     selectedEntityId,
     path,

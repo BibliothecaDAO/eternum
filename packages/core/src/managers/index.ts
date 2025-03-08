@@ -9,3 +9,4 @@ export * from "./stamina-manager";
 export * from "./structure-action-manager";
 export * from "./tile-manager";
 export * from "./utils";
+export * from "./resource-arrivals-manager";

@@ -20,7 +20,7 @@ export default defineConfig({
         enabled: process.env.VITE_PUBLIC_CHAIN === "local",
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5000000,
+        maximumFileSizeToCacheInBytes: 8000000,
         clientsClaim: true,
         skipWaiting: false,
       },

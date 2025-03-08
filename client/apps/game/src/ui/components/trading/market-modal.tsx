@@ -4,24 +4,18 @@ import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { useMarketStore } from "@/hooks/store/use-market-store";
-import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HintModal } from "@/ui/components/hints/hint-modal";
 import { ModalContainer } from "@/ui/components/modal-container";
-import { BuildingThumbs } from "@/ui/config";
-import CircleButton from "@/ui/elements/circle-button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  ID,
-  ResourcesIds
-} from "@bibliothecadao/eternum";
-import { useDojo, useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
-import { Suspense, lazy, useMemo, useState } from "react";
+import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { lazy, Suspense, useMemo, useState } from "react";
+import { MarketHeader } from "./market-header";
 
 const MarketResourceSidebar = lazy(() =>
   import("@/ui/components/trading/market-resource-sidebar").then((module) => ({
@@ -50,18 +44,13 @@ const TransferView = lazy(() =>
 );
 
 export const MarketModal = () => {
-  const dojo = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
 
   const playerStructures = usePlayerStructures();
-  const { toggleModal } = useModalStore();
 
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
   const { bidOffers, askOffers } = useMarket(currentBlockTimestamp);
-
-  console.log({ bidOffers, askOffers });
-
 
   const selectedEntityId = useUIStore((state) => state.structureEntityId);
   const [structureEntityId, setStructureEntityId] = useState<ID>(selectedEntityId);
@@ -72,10 +61,12 @@ export const MarketModal = () => {
   const structureResourceManager = useResourceManager(structureEntityId);
 
   const structureLordsBalance = useMemo(
-    () => Number(structureResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)),
+    () =>
+      Number(
+        structureResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords),
+      ),
     [structureResourceManager],
   );
-
 
   const tabs = useMemo(
     () => [
@@ -108,10 +99,7 @@ export const MarketModal = () => {
         ),
         component: (
           <Suspense fallback={<LoadingAnimation />}>
-            <BankPanel
-              structureEntityId={structureEntityId}
-              selectedResource={selectedResource}
-            />
+            <BankPanel structureEntityId={structureEntityId} selectedResource={selectedResource} />
           </Suspense>
         ),
       },
@@ -202,40 +190,7 @@ export const MarketModal = () => {
           </Suspense>
         </div>
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
-          <div className="grid grid-cols-3 p-3 flex-wrap justify-between items-start gap-6 mb-8 rounded-xl shadow-lg border border-gold/20 relative">
-            <div className="self-center flex-grow max-w-2xl mx-auto">
-              <h3 className="text-5xl font-extrabold mb-1">The Lords Market</h3>
-              <div className="flex flex-row">
-                <p className="text-xs">
-                  Engage in direct player-to-player trades through the orderbook, leverage the AMM for bank liquidity
-                  trades, or boost your earnings by providing liquidity to the bank.
-                </p>
-              </div>
-            </div>
-            <div className="absolute top-4 right-4">
-              <CircleButton
-                onClick={() => {
-                  toggleModal(null);
-                  toggleModal(<HintModal initialActiveSection={"Trading"} />);
-                }}
-                size={"lg"}
-                image={BuildingThumbs.question}
-                className="hover:bg-gold/20 transition-colors duration-200"
-              />
-            </div>
-
-            <div className="bank-combat-selector bg-brown border border-gold/30 p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
-              <div>
-                <h3 className="text-xl font-bold">AMM Status</h3>
-                <div className="space-y-3 flex-grow">
-                  <div className="flex items-center text-green mb-2 font-medium">
-                    <span className="mr-2">✓</span> No combat on Bank, AMM available
-                  </div>
-                </div>
-              </div>
-            </div>
-            <h3 className="text-xl font-bold mt-2">Bank Defence</h3>
-          </div>
+          <MarketHeader />
           <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
             <Tabs.List className=" flex w-full">
               {tabs.map((tab, index) => (

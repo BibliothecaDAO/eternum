@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, multiplyByPrecision } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToNanogram, multiplyByPrecision, nanogramToKg } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -12,7 +12,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { ContractAddress, HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -159,6 +159,7 @@ export class ArmyActionManager {
     exploredHexes: Map<number, Map<number, BiomeType>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
+    playerAddress: ContractAddress,
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
     if (armyStamina === 0n) return new ActionPaths();
@@ -179,14 +180,16 @@ export class ArmyActionManager {
     for (const { col, row } of neighbors) {
       const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isStructureMine = structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isStructureMine =
+        structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
+
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
       const staminaCost = biome
@@ -197,7 +200,6 @@ export class ArmyActionManager {
 
       let actionType;
       if (isMine) {
-        // TODO: put back attack action when finish dev
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
@@ -308,9 +310,10 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeight: number) => {
+  private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
     const resource = getComponentValue(this.components.Resource, this.entity);
     const weight = resource?.weight || { capacity: 0n, weight: 0n };
+    const additionalWeight = kgToNanogram(additionalWeightKg);
 
     this.components.Resource.addOverride(overrideId, {
       entity: this.entity,
@@ -338,12 +341,7 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticExplore = (
-    blockTimestamp: number,
-    col: number,
-    row: number,
-    currentArmiesTick: number,
-  ) => {
+  private readonly _optimisticExplore = (col: number, row: number) => {
     const overrideId = uuid();
 
     this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
@@ -375,7 +373,7 @@ export class ArmyActionManager {
     const direction = this._findDirection(path);
     if (direction === undefined || direction === null) return;
 
-    const overrideId = this._optimisticExplore(blockTimestamp, path[1].col, path[1].row, currentArmiesTick);
+    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
 
     this.provider
       .explorer_move({
@@ -404,14 +402,6 @@ export class ArmyActionManager {
     currentArmiesTick: number,
   ) => {
     const overrideId = uuid();
-
-    console.log({
-      overrideId,
-      staminaCost: configManager.getTravelStaminaCost() * pathLength,
-      currentArmiesTick,
-      col,
-      row,
-    });
 
     this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
@@ -510,11 +500,16 @@ export class ArmyActionManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
+    // this weight is in nanograms
     const armyWeight = getComponentValue(this.components.Resource, this.entity)?.weight.weight || 0;
+
+    const armyWeightKg = nanogramToKg(Number(armyWeight));
 
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     if (!explorerTroops) return 0;
 
-    return getRemainingCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count)), Number(armyWeight));
+    const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
+
+    return getRemainingCapacityInKg(actualExplorerTroopsCount, armyWeightKg);
   };
 }

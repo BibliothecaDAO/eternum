@@ -7,14 +7,14 @@ import Button from "@/ui/elements/button";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import TextInput from "@/ui/elements/text-input";
-import { normalizeDiacriticalMarks } from "@/ui/utils/utils";
+import { calculateArrivalTime, formatArrivalTime, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
   computeTravelTime,
   configManager,
   EntityType,
   getRealmAddressName,
   ID,
-  multiplyByPrecision
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
@@ -76,24 +76,30 @@ const SelectEntitiesStep = memo(
     setSelectedStepId: (stepId: STEP_ID) => void;
   }) => {
     const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
-      return entities.some((entity) => entity.entity_id === selectedEntityId);
+      return entities.some((entity) => entity.entityId === selectedEntityId);
     };
 
     const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
       const normalizedSearchTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
       return entities.filter(
         (entity) =>
-          entity.entity_id === selectedEntityId ||
+          entity.entityId === selectedEntityId ||
           normalizeDiacriticalMarks(entity.name.toLowerCase()).includes(normalizedSearchTerm) ||
           (entity.accountName &&
             normalizeDiacriticalMarks(entity.accountName.toLowerCase()).includes(normalizedSearchTerm)),
       );
     };
 
+    // Calculate the arrival time based on the travel time
+    const arrivalTime = calculateArrivalTime(travelTime);
+    const formattedArrivalTime = formatArrivalTime(arrivalTime);
+
     return (
       <>
-        <div className="w-full flex justify-center items-center">
-          Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
+        <div className="w-full flex flex-col justify-center items-center">
+          {formattedArrivalTime && (
+            <div className="text-gold font-semibold">Estimated Arrival: {formattedArrivalTime}</div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-6 mt-3">
           {/* From column */}
@@ -199,7 +205,6 @@ export const TransferBetweenEntities = ({
     },
   } = useDojo();
 
-
   useEffect(() => {
     selectedEntityIdFrom &&
       selectedEntityIdTo &&
@@ -213,12 +218,13 @@ export const TransferBetweenEntities = ({
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
+  console.log("speed", configManager.getSpeedConfig(EntityType.DONKEY));
   const onSendResources = () => {
     setIsLoading(true);
-    const resourcesList = selectedResourceIds.flatMap((id: number) => [
-      Number(id),
-      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
-    ]);
+    const resourcesList = selectedResourceIds.map((id: number) => ({
+      resource: Number(id),
+      amount: multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    }));
     const systemCall = !isOriginDonkeys
       ? pickup_resources({
           signer: account,
@@ -251,6 +257,7 @@ export const TransferBetweenEntities = ({
   };
 
   const entitiesListWithAccountNames = useMemo(() => {
+    console.log(entitiesList);
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,

@@ -1,13 +1,13 @@
 import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
+import { calculateArrivalTime, currencyFormat, formatArrivalTime } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
   divideByPrecision,
   getBalance,
-  getTotalResourceWeight,
+  getTotalResourceWeightGrams,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
@@ -35,8 +35,11 @@ export const TravelInfo = ({
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
 
+  const arrivalTime = calculateArrivalTime(travelTime);
+  const formattedArrivalTime = formatArrivalTime(arrivalTime);
+
   useEffect(() => {
-    const totalWeight = getTotalResourceWeight(resources);
+    const totalWeight = getTotalResourceWeightGrams(resources);
 
     const multipliedWeight = multiplyByPrecision(totalWeight);
     setResourceWeight(multipliedWeight);
@@ -63,12 +66,10 @@ export const TravelInfo = ({
     <>
       <table className="w-full border-collapse text-sm">
         <tbody className="divide-y divide-gold/20">
-          {travelTime ? (
+          {formattedArrivalTime ? (
             <tr className="hover:bg-gold/5 transition-colors">
-              <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Travel Time</td>
-              <td className="px-4 py-1 text-gold text-left whitespace-nowrap">
-                {`${Math.floor(travelTime / 60)} hrs ${travelTime % 60} mins`}
-              </td>
+              <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Estimated Arrival</td>
+              <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{formattedArrivalTime}</td>
             </tr>
           ) : (
             ""
@@ -105,29 +106,29 @@ const ResourceWeight = ({ className }: { className?: string }) => {
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
+            {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-            {`(Food) ${configManager.getResourceWeightKg(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}
+            {`(Food) ${configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit`}
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-            {`(Other) ${configManager.getResourceWeightKg(ResourcesIds.Wood) / GRAMS_PER_KG} kg/unit`}
+            {`(Other) ${configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit`}
           </li>
         </ul>
         <ul className="list-none">
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Knight) / GRAMS_PER_KG} kg/unit`}
+            {`${configManager.getResourceWeightKg(ResourcesIds.Knight)} kg/unit`}
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Crossbowman) / GRAMS_PER_KG} kg/unit`}
+            {`${configManager.getResourceWeightKg(ResourcesIds.Crossbowman)} kg/unit`}
           </li>
           <li className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="xs" className="mr-1" />
-            {`${configManager.getResourceWeightKg(ResourcesIds.Paladin) / GRAMS_PER_KG} kg/unit`}
+            {`${configManager.getResourceWeightKg(ResourcesIds.Paladin)} kg/unit`}
           </li>
         </ul>
       </div>

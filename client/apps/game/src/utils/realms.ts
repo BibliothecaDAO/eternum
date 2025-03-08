@@ -1,10 +1,11 @@
 import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
-
 export const getRandomRealmEntity = (components: ClientComponents) => {
-  
-  const realms = runQuery([Has(components.Structure), HasValue(components.Structure, { category: StructureType.Realm })]);
+  const realms = runQuery([
+    Has(components.Structure),
+    HasValue(components.Structure, { category: StructureType.Realm }),
+  ]);
 
   if (realms.size === 0) {
     return;

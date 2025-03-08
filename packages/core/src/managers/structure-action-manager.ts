@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BiomeType, FELT_CENTER, getNeighborHexes } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { HexEntityInfo, ID } from "../types";
+import { ContractAddress, HexEntityInfo, ID } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
 export class StructureActionManager {
@@ -30,6 +30,7 @@ export class StructureActionManager {
   public findActionPaths(
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
+    playerAddress: ContractAddress,
   ): ActionPaths {
     const actionPaths = new ActionPaths();
     const startPos = this._getCurrentPosition();
@@ -48,7 +49,7 @@ export class StructureActionManager {
       if (!isExplored) continue;
 
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
-      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER) || false;
+      const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
 
       // Check if there's an army
       if (hasArmy) {

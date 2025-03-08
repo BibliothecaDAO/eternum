@@ -327,6 +327,7 @@ export default class HexceptionScene extends HexagonScene {
             buildingType.resource,
           );
         } catch (error) {
+          console.log("catched error so removing building", error);
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
@@ -395,7 +396,7 @@ export default class HexceptionScene extends HexagonScene {
       ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
       : undefined;
 
-    const isActive = building? productionManager?.isActive(building?.produced_resource_type): false;
+    const isActive = building ? productionManager?.isActive(building?.produced_resource_type) : false;
 
     if (building && building.produced_resource_type) {
       this.state.setTooltip({
@@ -489,7 +490,6 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          console.log({ building });
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 

@@ -25,7 +25,6 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-
   const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
       (resourceId) =>

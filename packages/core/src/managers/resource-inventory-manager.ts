@@ -35,7 +35,7 @@ export class ResourceInventoryManager {
           signer,
           sender_entity_id: this.carrierEntityId,
           recipient_entity_id: receiverEntityId,
-          resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
+          resources: inventoryResources.map((resource) => ({ resource: resource.resourceId, amount: resource.amount })),
         })
         .finally(() => {
           this.components.Resource.removeOverride(overrideId);

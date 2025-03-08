@@ -1,14 +1,15 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import {
   CapacityConfig,
-  RESOURCE_PRECISION,
-  ResourcesIds,
   configManager,
   findResourceById,
+  gramToKg,
   multiplyByPrecision,
+  RESOURCE_PRECISION,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
