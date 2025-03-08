@@ -1121,22 +1121,14 @@ export const setSettlementConfig = async (config: Config) => {
   const {
     center,
     base_distance,
-    min_first_layer_distance,
-    points_placed,
-    current_layer,
-    current_side,
-    current_point_on_side,
+    subsequent_distance,
   } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
     center,
     base_distance,
-    min_first_layer_distance,
-    points_placed,
-    current_layer,
-    current_side,
-    current_point_on_side,
+    subsequent_distance,
   };
 
   console.log(
@@ -1144,13 +1136,8 @@ export const setSettlementConfig = async (config: Config) => {
     ┌─ ${chalk.yellow("Layout Parameters")}
     │  ${chalk.gray("Center:")}            ${chalk.white(`(${calldata.center}, ${calldata.center})`)}
     │  ${chalk.gray("Base Distance:")}     ${chalk.white(calldata.base_distance)}
-    │  ${chalk.gray("Min First Layer:")}   ${chalk.white(calldata.min_first_layer_distance)}
+    │  ${chalk.gray("Subsequent Distance:")}   ${chalk.white(calldata.subsequent_distance)}
     │
-    │  ${chalk.yellow("Current State")}
-    │  ${chalk.gray("Points Placed:")}     ${chalk.white(calldata.points_placed)}
-    │  ${chalk.gray("Current Layer:")}     ${chalk.white(calldata.current_layer)}
-    │  ${chalk.gray("Current Side:")}      ${chalk.white(calldata.current_side)}
-    │  ${chalk.gray("Point on Side:")}     ${chalk.white(calldata.current_point_on_side)}
     └────────────────────────────────`),
   );
 
