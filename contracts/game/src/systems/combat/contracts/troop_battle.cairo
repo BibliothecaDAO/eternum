@@ -165,7 +165,9 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
-                StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+                if guarded_structure.category != StructureCategory::Village.into() {
+                    StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+                }
                 return;
             }
 
@@ -233,7 +235,9 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+                        if guarded_structure.category != StructureCategory::Village.into() {
+                            StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+                        }
                     }
                 }
             } else {
@@ -352,7 +356,9 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
+                        if structure_aggressor_base.category != StructureCategory::Village.into() {
+                            StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
+                        }
                     }
                 }
             } else {

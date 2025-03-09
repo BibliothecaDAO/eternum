@@ -33,16 +33,18 @@ pub mod trade_systems {
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use s1_eternum::systems::utils::village::{iVillageImpl};
     use starknet::ContractAddress;
 
 
@@ -212,6 +214,16 @@ pub mod trade_systems {
             // ensure buy amount is valid
             assert!(taker_buys_count.is_non_zero(), "taker buys resource amount is 0");
             assert!(taker_buys_count <= trade.maker_gives_max_count, "attempting to buy more than available");
+
+            // ensure taker can't receive troops from an unconnected realm
+            if taker_structure.category == StructureCategory::Village.into() {
+                if TroopResourceImpl::is_troop(trade.maker_gives_resource_type) {
+                    let taker_village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                        ref world, taker_id,
+                    );
+                    iVillageImpl::ensure_village_realm(ref world, taker_village_structure_metadata, trade.maker_id);
+                }
+            }
 
             // compute resource arrival time
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);

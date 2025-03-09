@@ -1,12 +1,34 @@
+use core::num::traits::Zero;
 use dojo::world::WorldStorage;
-use s1_eternum::constants::ResourceTypes;
+use s1_eternum::alias::ID;
+use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{WorldConfigUtilImpl};
+use s1_eternum::models::position::{TravelImpl};
+use s1_eternum::models::structure::{StructureBaseImpl, StructureMetadata};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use starknet::ContractAddress;
 
+
 #[generate_trait]
-pub impl VillageResourceImpl of VillageResourceTrait {
+pub impl iVillageImpl of iVillageTrait {
+    fn village_realm_distance() -> u32 {
+        2
+    }
+
+    fn ensure_village_realm(ref world: WorldStorage, village_structure_metadata: StructureMetadata, realm: ID) {
+        assert!(village_structure_metadata.village_realm.is_non_zero(), "village owner is not set");
+        assert!(realm.is_non_zero(), "village realm owner is not set");
+        assert!(
+            village_structure_metadata.village_realm == realm,
+            "your village can only perform this action if the Realm you are interacting with is owned by the same address as the Realm connected to your village",
+        );
+    }
+}
+
+
+#[generate_trait]
+pub impl iVillageResourceImpl of iVillageResourceTrait {
     fn random(owner: starknet::ContractAddress, world: WorldStorage) -> u8 {
         let vrf_provider: ContractAddress = WorldConfigUtilImpl::get_member(world, selector!("vrf_provider_address"));
         let vrf_seed: u256 = VRFImpl::seed(owner, vrf_provider);
@@ -65,8 +87,9 @@ pub impl VillageResourceImpl of VillageResourceTrait {
             0_556, // 0.556%
             0_494, // 0.494%
             0_401, // 0.401%
-            0_279, // 0.279%
-            0_0932 // 0.0932%
+            0_278, // 0.278%
+            0_185, // 0.185%
+            0_093, // 0.093%
         ]
     }
 }

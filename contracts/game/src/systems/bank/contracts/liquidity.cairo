@@ -164,7 +164,7 @@ mod liquidity_systems {
                 ref bank_structure_weight,
                 entity_id,
                 player_structure_owner,
-                player_structure_base.coord(),
+                player_structure_base,
                 ref player_structure_weight,
                 resources,
                 true,
