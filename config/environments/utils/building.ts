@@ -72,22 +72,21 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Bank]: [],
   [BuildingType.FragmentMine]: [],
   [BuildingType.Resource]: [], // resource building costs are handled in `RESOURCE_BUILDING_COSTS`
-  
   // Basic Buildings - primarily Common resources
   [BuildingType.Farm]: [
     { resource: ResourcesIds.Wood, amount: 500_000 },
     { resource: ResourcesIds.Stone, amount: 300_000 },
-    { resource: ResourcesIds.Coal, amount: 200_000 }
+    { resource: ResourcesIds.Coal, amount: 200_000 },
   ],
   [BuildingType.FishingVillage]: [
     { resource: ResourcesIds.Wood, amount: 500_000 },
     { resource: ResourcesIds.Stone, amount: 300_000 },
-    { resource: ResourcesIds.Coal, amount: 200_000 }
+    { resource: ResourcesIds.Coal, amount: 200_000 },
   ],
   [BuildingType.WorkersHut]: [
     { resource: ResourcesIds.Wood, amount: 400_000 },
     { resource: ResourcesIds.Stone, amount: 250_000 },
-    { resource: ResourcesIds.Coal, amount: 150_000 }
+    { resource: ResourcesIds.Coal, amount: 150_000 },
   ],
 
   // T1 Military Buildings - primarily Uncommon resources
@@ -95,19 +94,19 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Copper, amount: 800_000 },
     { resource: ResourcesIds.Silver, amount: 100_000 },
     { resource: ResourcesIds.ColdIron, amount: 75_000 },
-    { resource: ResourcesIds.Wood, amount: 50_000 }
+    { resource: ResourcesIds.Wood, amount: 50_000 },
   ],
   [BuildingType.ArcheryRange1]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
     { resource: ResourcesIds.Obsidian, amount: 75_000 },
-    { resource: ResourcesIds.Wood, amount: 50_000 }
+    { resource: ResourcesIds.Wood, amount: 50_000 },
   ],
   [BuildingType.Stable1]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
     { resource: ResourcesIds.Silver, amount: 100_000 },
     { resource: ResourcesIds.Ironwood, amount: 75_000 },
-    { resource: ResourcesIds.Wood, amount: 50_000 }
+    { resource: ResourcesIds.Wood, amount: 50_000 },
   ],
 
   // T2 Military Buildings - include Rare resources
@@ -116,21 +115,21 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Silver, amount: 100_000 },
     { resource: ResourcesIds.ColdIron, amount: 75_000 },
     { resource: ResourcesIds.Gold, amount: 50_000 },
-    { resource: ResourcesIds.Diamonds, amount: 25_000 }
+    { resource: ResourcesIds.Diamonds, amount: 25_000 },
   ],
   [BuildingType.ArcheryRange2]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
     { resource: ResourcesIds.Obsidian, amount: 75_000 },
     { resource: ResourcesIds.Diamonds, amount: 50_000 },
-    { resource: ResourcesIds.Ruby, amount: 25_000 }
+    { resource: ResourcesIds.Ruby, amount: 25_000 },
   ],
   [BuildingType.Stable2]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
     { resource: ResourcesIds.Silver, amount: 100_000 },
     { resource: ResourcesIds.Ironwood, amount: 75_000 },
     { resource: ResourcesIds.Gold, amount: 50_000 },
-    { resource: ResourcesIds.Diamonds, amount: 25_000 }
+    { resource: ResourcesIds.Diamonds, amount: 25_000 },
   ],
 
   // T3 Military Buildings - include Epic and Legendary resources
@@ -140,7 +139,7 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.ColdIron, amount: 75_000 },
     { resource: ResourcesIds.Gold, amount: 50_000 },
     { resource: ResourcesIds.Adamantine, amount: 25_000 },
-    { resource: ResourcesIds.TrueIce, amount: 15_000 }
+    { resource: ResourcesIds.TrueIce, amount: 15_000 },
   ],
   [BuildingType.ArcheryRange3]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
@@ -148,7 +147,7 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Obsidian, amount: 75_000 },
     { resource: ResourcesIds.Diamonds, amount: 50_000 },
     { resource: ResourcesIds.DeepCrystal, amount: 25_000 },
-    { resource: ResourcesIds.TwilightQuartz, amount: 15_000 }
+    { resource: ResourcesIds.TwilightQuartz, amount: 15_000 },
   ],
   [BuildingType.Stable3]: [
     { resource: ResourcesIds.Copper, amount: 800_000 },
@@ -156,7 +155,7 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Ironwood, amount: 75_000 },
     { resource: ResourcesIds.Gold, amount: 50_000 },
     { resource: ResourcesIds.Mithral, amount: 25_000 },
-    { resource: ResourcesIds.Dragonhide, amount: 15_000 }
+    { resource: ResourcesIds.Dragonhide, amount: 15_000 },
   ],
 
   // Specialist Buildings - mix of resources across tiers
@@ -165,13 +164,13 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Stone, amount: 300_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
     { resource: ResourcesIds.Diamonds, amount: 50_000 },
-    { resource: ResourcesIds.DeepCrystal, amount: 25_000 }
+    { resource: ResourcesIds.DeepCrystal, amount: 25_000 },
   ],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Wood, amount: 500_000 },
     { resource: ResourcesIds.Stone, amount: 300_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
-    { resource: ResourcesIds.Sapphire, amount: 25_000 }
+    { resource: ResourcesIds.Sapphire, amount: 25_000 },
   ],
 };
 

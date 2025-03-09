@@ -1,7 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, currencyIntlFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
@@ -40,7 +40,7 @@ export const ResourceChip = ({
   }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / gramToKg(configManager.getResourceWeightKg(resourceId) || 1000);
+    return maxStorehouseCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
 
   const { currentDefaultTick: currentTick } = useBlockTimestamp();

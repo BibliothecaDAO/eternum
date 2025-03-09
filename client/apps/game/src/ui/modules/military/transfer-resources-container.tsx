@@ -154,11 +154,14 @@ export const TransferResourcesContainer = ({
       }));
 
       if (transferDirection === TransferDirection.ExplorerToStructure) {
-        await troop_structure_adjacent_transfer({
-          signer: account,
+        const calldata = {
           from_explorer_id: selectedEntityId,
           to_structure_id: targetEntityId,
           resources: resourcesWithAmounts,
+        };
+        await troop_structure_adjacent_transfer({
+          signer: account,
+          ...calldata,
         });
       } else if (transferDirection === TransferDirection.StructureToExplorer) {
         await structure_troop_adjacent_transfer({
@@ -225,18 +228,7 @@ export const TransferResourcesContainer = ({
     <div className="flex flex-col space-y-4">
       {/* Always show capacity information regardless of transfer direction */}
       <div className="sticky top-0 z-10 bg-dark-brown/95 pt-2 pb-3">
-        {transferDirection === TransferDirection.StructureToExplorer ? (
-          renderExplorerCapacity()
-        ) : (
-          <div className="mb-4 p-3 border border-gold/30 rounded-md bg-dark-brown/50">
-            <h4 className="text-gold font-semibold mb-2">Explorer Capacity</h4>
-            <div className="text-sm text-gold/80">
-              <span>
-                Current Load: {explorerCapacity.currentLoad} kg / {explorerCapacity.maxCapacity} kg
-              </span>
-            </div>
-          </div>
-        )}
+        {transferDirection === TransferDirection.StructureToExplorer && renderExplorerCapacity()}
       </div>
 
       <label className="text-gold font-semibold">Select Resources to Transfer:</label>

@@ -68,7 +68,7 @@ export interface CancelOrderProps extends SystemSigner {
 export interface SendResourcesProps extends SystemSigner {
   sender_entity_id: num.BigNumberish;
   recipient_entity_id: num.BigNumberish;
-  resources: num.BigNumberish[];
+  resources: ResourceCosts[];
 }
 
 export interface SendResourcesMultipleProps extends SystemSigner {
@@ -82,7 +82,14 @@ export interface SendResourcesMultipleProps extends SystemSigner {
 export interface PickupResourcesProps extends SystemSigner {
   recipient_entity_id: num.BigNumberish;
   owner_entity_id: num.BigNumberish;
-  resources: num.BigNumberish[];
+  resources: ResourceCosts[];
+}
+
+export interface ArrivalsOffloadProps extends SystemSigner {
+  structureId: num.BigNumberish;
+  day: num.BigNumberish;
+  slot: num.BigNumberish;
+  resource_count: num.BigNumberish;
 }
 
 export interface TransferResourcesProps extends SystemSigner {

@@ -1,7 +1,7 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import {} from "@/ui/utils/utils";
+import { } from "@/ui/utils/utils";
 import {
   configManager,
   findResourceById,
@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
-export const STRUCTURE_IMAGE_PATHS = {
+const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "hyperstructure.png",
   [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",

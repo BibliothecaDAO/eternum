@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID, RealmInfo } from "@bibliothecadao/eternum";
+import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 
@@ -11,7 +11,7 @@ const ProductionSidebar = lazy(() =>
 
 const ProductionBody = lazy(() => import("./production-body").then((module) => ({ default: module.ProductionBody })));
 
-export const ProductionModal = () => {
+export const ProductionModal = ({ preSelectedResource }: { preSelectedResource?: ResourcesIds }) => {
   const playerRealms = usePlayerOwnedRealms();
 
   const initialRealm = useMemo(() => {
@@ -47,7 +47,7 @@ export const ProductionModal = () => {
         <div className="col-span-9 h-full row-span-10 overflow-y-auto p-4 pb-36">
           <h2 className="text-4xl font-bold mb-6">Production</h2>
           <Suspense fallback={<LoadingAnimation />}>
-            {selectedRealm && <ProductionBody realm={selectedRealm} />}
+            {selectedRealm && <ProductionBody realm={selectedRealm} preSelectedResource={preSelectedResource} />}
           </Suspense>
         </div>
       </div>

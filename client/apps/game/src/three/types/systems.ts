@@ -1,4 +1,3 @@
-import { Position } from "@/types/position";
 import { BiomeType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import { StructureProgress } from "./common";
 
@@ -26,15 +25,6 @@ export type TileSystemUpdate = {
   hexCoords: HexPosition;
   removeExplored: boolean;
   biome: BiomeType;
-};
-
-export type BattleSystemUpdate = {
-  entityId: ID;
-  hexCoords: Position;
-  isEmpty: boolean;
-  deleted: boolean;
-  isSiege: boolean;
-  isOngoing: boolean;
 };
 
 export type BuildingSystemUpdate = {

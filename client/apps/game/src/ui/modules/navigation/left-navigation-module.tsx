@@ -1,4 +1,3 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -52,12 +51,6 @@ export const LeftNavigationModule = memo(() => {
 
   const { toggleModal } = useModalStore();
   const { isMapView } = useQuery();
-  const { currentBlockTimestamp } = useBlockTimestamp();
-
-  // todo: need to implement this
-  // const { arrivedNotificationLength, arrivals } = usePlayerArrivalsNotifications(currentBlockTimestamp);
-  const arrivedNotificationLength = 0;
-  const arrivals: any[] = [];
 
   const structureInfo = useMemo(
     () =>
@@ -135,7 +128,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
-            disabled={disableButtons || !isRealm}
+            disabled={disableButtons || !isRealm || isMapView}
             className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -157,7 +150,6 @@ export const LeftNavigationModule = memo(() => {
             active={view === LeftView.ResourceArrivals}
             size={IS_MOBILE ? "lg" : "xl"}
             onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
-            primaryNotification={{ value: arrivedNotificationLength, color: "green", location: "topright" }}
           />
         ),
       },
@@ -211,7 +203,7 @@ export const LeftNavigationModule = memo(() => {
       [
         MenuEnum.entityDetails,
         MenuEnum.military,
-        MenuEnum.construction,
+        ...(isMapView ? [] : [MenuEnum.construction]),
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.trade,
@@ -220,7 +212,7 @@ export const LeftNavigationModule = memo(() => {
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealm, arrivedNotificationLength]);
+  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealm]);
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -245,7 +237,7 @@ export const LeftNavigationModule = memo(() => {
                 <SelectPreviewBuildingMenu entityId={structureEntityId} />
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
-              {/* {view === LeftView.ResourceArrivals && <AllResourceArrivals arrivals={arrivals} />} */}
+              {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
               {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>

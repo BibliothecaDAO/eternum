@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { kgToGram } from "@/ui/utils/utils";
 import { BuildingType, configManager, getRealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -8,7 +7,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 
 const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
-  const capacity = kgToGram(storehouseCapacity);
+  const capacity = storehouseCapacity;
   return (
     <div className="text-xs text-gray-200 p-1 max-w-xs z-50">
       <p className="font-semibold">Max Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>

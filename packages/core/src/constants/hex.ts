@@ -64,7 +64,7 @@ export const BiomeIdToType: Record<number, BiomeType> = Object.entries(BiomeType
     ...acc,
     [id]: type as BiomeType,
   }),
-  {} as Record<number, BiomeType>
+  {} as Record<number, BiomeType>,
 );
 
 export enum Direction {

@@ -1,15 +1,10 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { findResourceById } from "@/utils/resources";
-import { BuildingType, ResourcesIds } from "@/utils/types";
-import { formatAmount } from "../utils/formatting";
-import ResourceIcon from "./ResourceIcon";
+import { BuildingType } from "@/utils/types";
 
 type Props = {
   buildingType: BuildingType;
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
-
   // const costs = ETERNUM_CONFIG().buildings.buildingCosts[buildingType] || [];
   // const resourceCostsWheat = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Wood] || [];
   // const resourceCostsFish = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Stone] || [];

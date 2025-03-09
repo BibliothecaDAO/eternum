@@ -31,17 +31,11 @@ export class MarketManager {
   }
 
   public getPlayerLiquidity() {
-    return getComponentValue(
-      this.components.Liquidity,
-      getEntityIdFromKeys([this.player, BigInt(this.resourceId)]),
-    );
+    return getComponentValue(this.components.Liquidity, getEntityIdFromKeys([this.player, BigInt(this.resourceId)]));
   }
 
   public getMarket() {
-    return getComponentValue(
-      this.components.Market,
-      getEntityIdFromKeys([BigInt(this.resourceId)]),
-    );
+    return getComponentValue(this.components.Market, getEntityIdFromKeys([BigInt(this.resourceId)]));
   }
 
   public getPlayerSharesScaled = () => {

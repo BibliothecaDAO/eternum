@@ -94,8 +94,20 @@ export function calculateDistance(start: Position, destination: Position): numbe
   return distance;
 }
 
+export const nanogramToKg = (value: number) => {
+  return value / 10 ** 12;
+};
+
+export const kgToNanogram = (value: number) => {
+  return value * 10 ** 12;
+};
+
 export const gramToKg = (value: number) => {
   return value / 1000;
+};
+
+export const kgToGram = (value: number) => {
+  return value * 1000;
 };
 
 export function multiplyByPrecision(value: number): number {
@@ -106,26 +118,30 @@ export function divideByPrecision(value: number): number {
   return value / RESOURCE_PRECISION;
 }
 
-
-export function divideWithPrecision(numerator: bigint, denominator: bigint, decimalPlaces: number = 5, round: number = 2) {
+export function divideWithPrecision(
+  numerator: bigint,
+  denominator: bigint,
+  decimalPlaces: number = 5,
+  round: number = 2,
+) {
   // Scale up by multiplying by 10^decimalPlaces
   const scaleFactor = 10n ** BigInt(decimalPlaces);
   const scaledNumerator = numerator * scaleFactor;
-  
+
   // Perform the division
   const quotient = scaledNumerator / denominator;
-  
+
   // Convert to string and insert decimal point
   let result = quotient.toString();
-  
+
   // Pad with leading zeros if needed
   while (result.length <= decimalPlaces) {
-    result = '0' + result;
+    result = "0" + result;
   }
-  
+
   // Insert decimal point
   const insertAt = result.length - decimalPlaces;
-  let a = result.slice(0, insertAt) + '.' + result.slice(insertAt);
+  let a = result.slice(0, insertAt) + "." + result.slice(insertAt);
 
   // convert to decimal
   return Number(Number(a).toFixed(round));

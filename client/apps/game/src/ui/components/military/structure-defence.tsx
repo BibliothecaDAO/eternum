@@ -24,7 +24,7 @@ interface CooldownTimerProps {
   time: number; // seconds
 }
 
-const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
+export const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(time);
 
   useEffect(() => {

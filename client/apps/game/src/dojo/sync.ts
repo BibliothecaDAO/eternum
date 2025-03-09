@@ -46,24 +46,28 @@ const syncEntitiesDebounced = async <S extends Schema>(
     const mergeDeep = (target: any, source: any) => {
       if (!source) return target;
       const output = { ...target };
-      
-      Object.keys(source).forEach(key => {
-        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && 
-            output[key] && typeof output[key] === 'object' && !Array.isArray(output[key])) {
+
+      Object.keys(source).forEach((key) => {
+        if (
+          source[key] &&
+          typeof source[key] === "object" &&
+          !Array.isArray(source[key]) &&
+          output[key] &&
+          typeof output[key] === "object" &&
+          !Array.isArray(output[key])
+        ) {
           output[key] = mergeDeep(output[key], source[key]);
         } else {
           output[key] = source[key];
         }
       });
-      
+
       return output;
     };
 
     // Merge new data with existing data for this entity, handling nested structs
-    entityBatch[fetchedEntities] = entityBatch[fetchedEntities] 
-      ? mergeDeep(entityBatch[fetchedEntities], data)
-      : data;
-      
+    entityBatch[fetchedEntities] = entityBatch[fetchedEntities] ? mergeDeep(entityBatch[fetchedEntities], data) : data;
+
     debouncedSetEntities();
   });
 
@@ -95,8 +99,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
-  // const sync = await syncEntitiesDebounced(
-  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], true);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
@@ -341,12 +344,7 @@ export const syncStructureData = async (
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
       [structureEntityId],
-      [
-        "s1_eternum-Hyperstructure",
-        "s1_eternum-Resource",
-        "s1_eternum-Building",
-        "s1_eternum-StructureBuildings",
-      ],
+      ["s1_eternum-Hyperstructure", "s1_eternum-Resource", "s1_eternum-Building", "s1_eternum-StructureBuildings"],
       position ? [position] : undefined,
       () => setLoading(LoadingStateKey.SelectedStructure, false),
     );
@@ -379,6 +377,7 @@ export const syncPlayerStructuresData = async (
           "s1_eternum-Resource",
           "s1_eternum-Building",
           "s1_eternum-StructureBuildings",
+          "s1_eternum-ResourceArrival",
         ],
         structures.map((structure) => ({ x: structure.position.x, y: structure.position.y })),
         () => {

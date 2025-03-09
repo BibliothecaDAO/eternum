@@ -1,12 +1,6 @@
 import { SortInterface } from "@/ui/elements/sort-button";
-import {
-  ContractAddress,
-  divideByPrecision,
-  ResourceCost,
-  ResourcesIds,
-  toHexString,
-  type Resource,
-} from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { ContractAddress, divideByPrecision, ResourceCost, ResourcesIds, toHexString } from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
@@ -84,23 +78,6 @@ export const copyPlayerAddressToClipboard = (address: ContractAddress, name: str
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
-};
-
-export function gramToKg(grams: number): number {
-  return Number(grams) / 1000;
-}
-
-export function kgToGram(kg: number): number {
-  return Number(kg) * 1000;
-}
-
-export const formatResources = (resources: any[]): Resource[] => {
-  return resources
-    .map((resource) => ({
-      resourceId: Number(resource[0].value),
-      amount: Number(resource[1].value),
-    }))
-    .filter((resource) => resource.amount > 0);
 };
 
 const accentsToAscii = (str: string) => {
@@ -229,4 +206,40 @@ export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
 
 export const normalizeDiacriticalMarks = (str: string) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
+export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
+  if (travelTimeMinutes === undefined) return null;
+
+  const currentBlockTimestampMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+  const travelTimeMs = travelTimeMinutes * 60 * 1000;
+  const arrivalTimeMs = currentBlockTimestampMs + travelTimeMs;
+
+  // Calculate the next hour boundary after arrival
+  const arrivalDate = new Date(arrivalTimeMs);
+  const nextHourDate = new Date(arrivalDate);
+  nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
+
+  return nextHourDate;
+};
+
+export const formatArrivalTime = (date: Date | null) => {
+  if (!date) return "";
+
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  // Calculate time difference in minutes
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+  const hoursUntil = Math.floor(diffMinutes / 60);
+  const minutesUntil = diffMinutes % 60;
+
+  // Format the time difference
+  const timeUntil = `(${hoursUntil}h ${minutesUntil}m)`;
+
+  return `${month}/${day} at ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${timeUntil}`;
 };

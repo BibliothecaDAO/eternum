@@ -4,16 +4,16 @@ import { Troops, TroopType } from "../../types";
 import { divideByPrecision, gramToKg } from "../../utils";
 
 // troop count without precision
-export const getRemainingCapacityInKg = (troopsCount: number, weightInKg: number) => {
-  const totalCapacity = getArmyTotalCapacityInKg(troopsCount); // in kg
-  return totalCapacity - BigInt(weightInKg); // in kg
+export const getRemainingCapacityInKg = (actualTroopsCount: number, weightInKg: number) => {
+  const totalCapacity = getArmyTotalCapacityInKg(actualTroopsCount); // in kg
+  return totalCapacity - BigInt(Math.floor(weightInKg)); // in kg
 };
 
 // number of troops needs to be divided by precision
-export const getArmyTotalCapacityInKg = (troopsCount: number) => {
+export const getArmyTotalCapacityInKg = (actualTroopsCount: number) => {
   // Convert weight_gram to kg and multiply by number of troops
-  const capacity = configManager.getCapacityConfig(CapacityConfig.Army);
-  return BigInt(gramToKg(Number(capacity))) * BigInt(troopsCount); // in kg
+  const capacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Army));
+  return BigInt(capacityKg) * BigInt(actualTroopsCount); // in kg
 };
 
 export const computeTravelFoodCosts = (troops: Troops) => {

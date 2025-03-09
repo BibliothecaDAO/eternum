@@ -1,7 +1,16 @@
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { ArmyInfo, configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg, ResourcesIds } from "..";
+import {
+  ArmyInfo,
+  configManager,
+  Direction,
+  divideByPrecision,
+  getArmyTotalCapacityInKg,
+  getNeighborHexes,
+  gramToKg,
+  ResourcesIds,
+} from "..";
 import { ClientComponents } from "../dojo";
 import { ContractAddress, ID, TickIds, TroopTier, TroopType } from "../types";
 
@@ -17,7 +26,8 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const totalCapacityKg = Number(getArmyTotalCapacityInKg(divideByPrecision(Number(explorerTroops.troops.count))));
+      const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
+      const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
 
       const resource = getComponentValue(components.Resource, armyEntityId);
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
@@ -140,4 +150,24 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
 
   // Filter out guards with no troops
   return guards;
+};
+
+export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+
+  const freeDirections: Direction[] = [];
+
+  if (!structure) return freeDirections;
+
+  const adjacentHexes = getNeighborHexes(structure.base.coord_x, structure.base.coord_y);
+
+  adjacentHexes.forEach((hex) => {
+    const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(hex.col), BigInt(hex.row)]));
+
+    if (tile?.occupier_id === 0) {
+      freeDirections.push(hex.direction);
+    }
+  });
+
+  return freeDirections;
 };

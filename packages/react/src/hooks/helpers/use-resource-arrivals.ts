@@ -1,145 +1,108 @@
-// import { ArrivalInfo, ContractAddress } from "@bibliothecadao/eternum";
-// import { useEntityQuery } from "@dojoengine/react";
-// import { Entity, Has, HasValue, defineQuery, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
-// import { getEntityIdFromKeys } from "@dojoengine/utils";
-// import { useCallback, useEffect, useMemo, useState } from "react";
-// import { useDojo } from "../";
+import { ClientComponents, ID, Resource, ResourceArrivalInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { ComponentValue, Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../";
 
-// const getCurrentDonkeyWeightMinimum = () => {
-//   return Number(localStorage.getItem("WEIGHT_MINIMUM") || 0) * 1000;
-// };
+export const useArrivalsByStructure = (structureEntityId: ID) => {
+  const {
+    setup: {
+      components: { ResourceArrival },
+    },
+  } = useDojo();
 
-// const usePlayerArrivals = () => {
-//   const {
-//     account: { account },
-//     setup: {
-//       components: { Position, Owner, EntityOwner, Structure, Resource },
-//     },
-//   } = useDojo();
+  const arrivalEntities = useEntityQuery([
+    Has(ResourceArrival),
+    HasValue(ResourceArrival, { structure_id: structureEntityId }),
+  ]);
 
-//   const minWeight = getCurrentDonkeyWeightMinimum();
+  const arrivals = arrivalEntities
+    .map((arrivalsEntityId) => {
+      return getComponentValue(ResourceArrival, arrivalsEntityId);
+    })
+    .filter(Boolean) as ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[];
 
-//   const playerStructures = useEntityQuery([
-//     Has(Structure),
-//     HasValue(Owner, { address: ContractAddress(account.address) }),
-//   ]);
+  return formatArrivals(arrivals);
+};
 
-//   const playerStructurePositions = useMemo(() => {
-//     return playerStructures.map((entityId) => {
-//       const position = getComponentValue(Position, entityId);
-//       return { x: position?.x ?? 0, y: position?.y ?? 0, entityId: position?.entity_id || 0 };
-//     });
-//   }, [playerStructures, Position]);
+export const formatArrivals = (arrivals: ComponentValue<ClientComponents["ResourceArrival"]["schema"]>[]) => {
+  const arrivalsInfo: ResourceArrivalInfo[] = [];
 
-//   const [entitiesWithInventory, setEntitiesWithInventory] = useState<ArrivalInfo[]>([]);
+  arrivals.forEach((arrival) => {
+    const structureEntityId = arrival.structure_id;
+    const day = arrival.day;
 
-//   const hasMinWeight = useCallback(
-//     (entity: Entity) => {
-//       const weight = getComponentValue(Resource, entity);
-//       return !!(weight && Number(weight) >= minWeight);
-//     },
-//     [minWeight],
-//   );
+    for (let slotNumber = 1; slotNumber <= 24; slotNumber++) {
+      const slotKey = `slot_${slotNumber}` as keyof typeof arrival;
 
-//   const createArrivalInfo = useCallback(
-//     (id: Entity): ArrivalInfo | undefined => {
-//       // Get required component values
-//       const position = getComponentValue(Position, id);
-//       const entityOwner = getComponentValue(EntityOwner, id);
-//       const resource = getComponentValue(Resource, id);
+      const rawSlotResources = arrival[slotKey];
+      if (!rawSlotResources || (Array.isArray(rawSlotResources) && rawSlotResources.length === 0)) {
+        continue;
+      }
 
-//       // Return early if missing required components
-//       if (!position) return undefined;
+      const resources: Resource[] = [];
+      if (Array.isArray(rawSlotResources)) {
+        for (const item of rawSlotResources) {
+          if (Array.isArray(item) && item.length >= 2) {
+            const resourceIdObj = item[0];
+            const resourceId =
+              resourceIdObj && typeof resourceIdObj === "object" && "value" in resourceIdObj
+                ? Number(resourceIdObj.value)
+                : 0;
 
-//       // Get owner information
-//       const ownerEntityId = getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]);
-//       const owner = getComponentValue(Owner, ownerEntityId);
-//       const isOwner = owner?.address === ContractAddress(account.address);
+            const amountObj = item[1];
+            let amount = 0;
 
-//       // Check if entity has resources
-//       const hasResources = !!(resource && resource.weight > 0);
-//       // Find matching player structure at position
-//       const playerStructurePosition = playerStructurePositions.find(
-//         (structurePosition) => structurePosition.x === position.x && structurePosition.y === position.y,
-//       );
+            if (amountObj && typeof amountObj === "object" && "value" in amountObj) {
+              const amountValue = amountObj.value;
+              if (typeof amountValue === "string" && amountValue.startsWith("0x")) {
+                amount = Number(BigInt(amountValue));
+              } else {
+                amount = Number(amountValue);
+              }
+            }
 
-//       return {
-//         entityId: position.entity_id,
-//         recipientEntityId: playerStructurePosition?.entityId || 0,
-//         // fix
-//         arrivesAt: 17048448000n, // January 10, 2024
-//         isOwner,
-//         position: { x: position.x, y: position.y },
-//         hasResources,
-//         isHome: !!playerStructurePosition,
-//       };
-//     },
-//     [account, playerStructurePositions],
-//   );
+            if (amount > 0) {
+              resources.push({
+                resourceId: resourceId as ResourcesIds,
+                amount,
+              });
+            }
+          }
+        }
+      }
 
-//   const isMine = useCallback(
-//     (entity: Entity) => {
-//       const entityOwner = getComponentValue(EntityOwner, entity);
-//       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
-//       return owner?.address === ContractAddress(account.address);
-//     },
-//     [account.address],
-//   );
+      if (resources.length === 0) {
+        continue;
+      }
 
-//   useEffect(() => {
-//     const query = defineQuery([Has(Position), Has(EntityOwner)], { runOnInit: false });
+      // Calculate arrivesAt based on day and slot
+      // Based on the Cairo implementation:
+      // - day is days since Unix epoch (day = timestamp / 86400)
+      // - slot is 1-indexed hour of the day (1-24), where:
+      //   - slot 1 = 00:00:00 to 00:59:59
+      //   - slot 2 = 01:00:00 to 01:59:59
+      //   - ...
+      //   - slot 24 = 23:00:00 to 23:59:59
 
-//     const handleArrivalUpdate = (arrivals: ArrivalInfo[], newArrival: ArrivalInfo | undefined) => {
-//       if (!newArrival) return arrivals;
+      // Convert day to seconds (86400 seconds per day)
+      const dayInSeconds = BigInt(day) * 86400n;
 
-//       if (!newArrival.hasResources || !newArrival.isHome || !newArrival.isOwner) {
-//         return arrivals.filter((arrival) => arrival.entityId !== newArrival.entityId);
-//       }
+      // Calculate the hour timestamp for this slot
+      // Slot 1 = hour 0 (00:00:00), Slot 2 = hour 1 (01:00:00), etc.
+      const hourInSeconds = BigInt(slotNumber) * 3600n;
 
-//       const index = arrivals.findIndex((arrival) => arrival.entityId === newArrival.entityId);
-//       if (index !== -1) {
-//         return [...arrivals.slice(0, index), newArrival, ...arrivals.slice(index + 1)];
-//       }
-//       return [...arrivals, newArrival];
-//     };
+      // Calculate the timestamp (exact hour boundary)
+      const arrivesAt = dayInSeconds + hourInSeconds;
 
-//     const sub = query.update$.subscribe((update) => {
-//       if (
-//         isComponentUpdate(update, Position) ||
-//         isComponentUpdate(update, Weight) ||
-//         isComponentUpdate(update, EntityOwner) ||
-//         isComponentUpdate(update, ArrivalTime) ||
-//         isComponentUpdate(update, OwnedResourcesTracker)
-//       ) {
-//         setEntitiesWithInventory((arrivals) => handleArrivalUpdate(arrivals, createArrivalInfo(update.entity)));
-//       }
-//     });
+      arrivalsInfo.push({
+        structureEntityId,
+        resources,
+        arrivesAt,
+        day,
+        slot: BigInt(slotNumber),
+      });
+    }
+  });
 
-//     return () => sub.unsubscribe();
-//   }, [account, playerStructurePositions, createArrivalInfo, isMine]);
-
-//   return useMemo(
-//     () => entitiesWithInventory.sort((a, b) => Number(a.arrivesAt) - Number(b.arrivesAt)),
-//     [entitiesWithInventory],
-//   );
-// };
-
-// export const usePlayerArrivalsNotifications = (currentBlockTimestamp: number) => {
-//   const [arrivedNotificationLength, setArrivedNotificationLength] = useState(0);
-//   const [nonArrivedNotificationLength, setNonArrivedNotificationLength] = useState(0);
-
-//   const arrivals = usePlayerArrivals();
-
-//   useEffect(() => {
-//     const arrivedCount = arrivals.filter(
-//       (arrival) => Number(arrival.arrivesAt) <= (currentBlockTimestamp || 0) && arrival.hasResources,
-//     ).length;
-//     const nonArrivedCount = arrivals.filter(
-//       (arrival) => Number(arrival.arrivesAt) > (currentBlockTimestamp || 0) && arrival.hasResources,
-//     ).length;
-//     setArrivedNotificationLength(arrivedCount);
-//     setNonArrivedNotificationLength(nonArrivedCount);
-//   }, [arrivals, currentBlockTimestamp]);
-
-//   return { arrivedNotificationLength, nonArrivedNotificationLength, arrivals };
-// };
+  return arrivalsInfo;
+};

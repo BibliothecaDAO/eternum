@@ -1,15 +1,15 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-    BuildingType,
-    CapacityConfig,
-    GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
-    HYPERSTRUCTURE_CONFIG_ID,
-    RESOURCE_PRECISION,
-    ResourcesIds,
-    ResourceTier,
-    StructureType,
-    WORLD_CONFIG_ID,
+  BuildingType,
+  CapacityConfig,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  HYPERSTRUCTURE_CONFIG_ID,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
+  WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -189,12 +189,15 @@ export class ClientConfigManager {
         }
         const resourceType = buildingConfig.resource_type;
 
-        if (resourceType !== 0) {
+        if (BuildingType[buildingConfig.category as keyof typeof BuildingType] === BuildingType.Resource) {
           this.resourceBuildingCosts[Number(resourceType)] = inputs;
-          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
-            Number(resourceType);
         } else {
           this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
+        }
+
+        if (resourceType !== 0) {
+          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
+            Number(resourceType);
         }
       }
     }
