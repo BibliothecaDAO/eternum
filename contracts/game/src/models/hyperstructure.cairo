@@ -10,7 +10,8 @@ use starknet::ContractAddress;
 pub struct HyperstructureGlobals {
     #[key]
     pub world_id: ID,
-    pub count: u64,
+    pub created_count: u32,
+    pub completed_count: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

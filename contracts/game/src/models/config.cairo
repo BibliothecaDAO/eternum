@@ -580,8 +580,8 @@ pub struct ResourceBridgeFeeSplitConfig {
     pub client_fee_on_dpt_percent: u16,
     pub client_fee_on_wtdr_percent: u16,
     // max bank fee amount
-    pub max_bank_fee_dpt_percent: u16,
-    pub max_bank_fee_wtdr_percent: u16,
+    pub realm_fee_dpt_percent: u16,
+    pub realm_fee_wtdr_percent: u16,
     // the address that will receive the velords fee percentage
     pub velords_fee_recipient: ContractAddress,
     // the address that will receive the season pool fee

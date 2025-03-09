@@ -570,7 +570,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address, lords_resource_index } = props;
+    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -583,7 +583,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCalls = realm_ids.map((realm_id) => ({
       contractAddress: realmSystemsContractAddress,
       entrypoint: "create",
-      calldata: [owner, realm_id, frontend, lords_resource_index],
+      calldata: [owner, realm_id, frontend],
     }));
 
     const approvalCloseForAllCall = {
@@ -1774,8 +1774,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       season_pool_fee_on_wtdr_percent,
       client_fee_on_dpt_percent,
       client_fee_on_wtdr_percent,
-      max_bank_fee_dpt_percent,
-      max_bank_fee_wtdr_percent,
+      realm_fee_dpt_percent,
+      realm_fee_wtdr_percent,
       velords_fee_recipient,
       season_pool_fee_recipient,
       signer,
@@ -1791,8 +1791,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         season_pool_fee_on_wtdr_percent,
         client_fee_on_dpt_percent,
         client_fee_on_wtdr_percent,
-        max_bank_fee_dpt_percent,
-        max_bank_fee_wtdr_percent,
+        realm_fee_dpt_percent,
+        realm_fee_wtdr_percent,
         velords_fee_recipient,
         season_pool_fee_recipient,
       ],

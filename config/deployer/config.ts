@@ -988,8 +988,8 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
     client_fee_on_wtdr_percent: config.config.bridge.client_fee_on_wtdr_percent,
     velords_fee_recipient: config.config.bridge.velords_fee_recipient,
     season_pool_fee_recipient: config.config.bridge.season_pool_fee_recipient,
-    max_bank_fee_dpt_percent: config.config.bridge.max_bank_fee_dpt_percent,
-    max_bank_fee_wtdr_percent: config.config.bridge.max_bank_fee_wtdr_percent,
+    realm_fee_dpt_percent: config.config.bridge.realm_fee_dpt_percent,
+    realm_fee_wtdr_percent: config.config.bridge.realm_fee_wtdr_percent,
   };
   console.log(
     chalk.cyan(`
@@ -1002,13 +1002,13 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
       "veLORDS Deposit": (bridgeFeesCalldata.velords_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Deposit": (bridgeFeesCalldata.season_pool_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Deposit": (bridgeFeesCalldata.client_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Bank Fee on Deposit": (bridgeFeesCalldata.max_bank_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Deposit By Village": (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
     withdrawals: {
       "veLORDS Withdraw": (bridgeFeesCalldata.velords_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Withdraw": (bridgeFeesCalldata.season_pool_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Withdraw": (bridgeFeesCalldata.client_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Bank Fee on Withdraw": (bridgeFeesCalldata.max_bank_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Withdrawal By Village": (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
   };
 

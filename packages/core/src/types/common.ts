@@ -1,14 +1,14 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
-  BiomeType,
-  BuildingType,
-  CapacityConfig,
-  QuestType,
-  RealmLevels,
-  ResourcesIds,
-  ResourceTier,
-  StructureType,
+    BiomeType,
+    BuildingType,
+    CapacityConfig,
+    QuestType,
+    RealmLevels,
+    ResourcesIds,
+    ResourceTier,
+    StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -394,8 +394,8 @@ export interface Config {
     client_fee_on_wtdr_percent: number;
     velords_fee_recipient: string;
     season_pool_fee_recipient: string;
-    max_bank_fee_dpt_percent: number;
-    max_bank_fee_wtdr_percent: number;
+    realm_fee_dpt_percent: number;
+    realm_fee_wtdr_percent: number;
   };
   vrf: {
     vrfProviderAddress: string;
