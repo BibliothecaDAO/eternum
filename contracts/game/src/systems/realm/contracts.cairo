@@ -184,7 +184,7 @@ pub mod realm_systems {
                 StructureCategory::Realm,
                 false,
                 resources.span(),
-                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder },
+                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder, village_realm: 0 },
                 tile_occupier.into(),
             );
 

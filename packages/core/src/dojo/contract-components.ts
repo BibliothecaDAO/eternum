@@ -954,6 +954,7 @@ export function defineContractComponents(world: World) {
             realm_id: RecsType.Number,
             order: RecsType.Number,
             has_wonder: RecsType.Boolean,
+            village_realm: RecsType.Number,
           },
           category: RecsType.Number,
         },

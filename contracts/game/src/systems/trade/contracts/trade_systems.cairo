@@ -37,8 +37,8 @@ pub mod trade_systems {
     };
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-        StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
@@ -216,14 +216,17 @@ pub mod trade_systems {
             assert!(taker_buys_count <= trade.maker_gives_max_count, "attempting to buy more than available");
 
             // ensure taker can't receive troops from an unconnected realm
-            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             if taker_structure.category == StructureCategory::Village.into() {
                 if TroopResourceImpl::is_troop(trade.maker_gives_resource_type) {
-                    iVillageImpl::ensure_village_realm(ref world, taker_structure, maker_structure);
+                    let taker_village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                        ref world, taker_id,
+                    );
+                    iVillageImpl::ensure_village_realm(ref world, taker_village_structure_metadata, trade.maker_id);
                 }
             }
 
             // compute resource arrival time
+            let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
             let donkey_speed = SpeedImpl::for_donkey(ref world);
             let travel_time = iDistanceKmImpl::time_required(
                 ref world, maker_structure.coord(), taker_structure.coord(), donkey_speed, true,

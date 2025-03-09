@@ -6706,6 +6706,7 @@ type s1_eternum_StructureMetadata {
   has_wonder: bool
   order: u8
   realm_id: u16
+  village_realm: u32
 }
 
 input s1_eternum_StructureOrder {
