@@ -1224,8 +1224,8 @@ export function defineContractComponents(world: World) {
             season_pool_fee_on_wtdr_percent: RecsType.Number,
             client_fee_on_dpt_percent: RecsType.Number,
             client_fee_on_wtdr_percent: RecsType.Number,
-            max_bank_fee_dpt_percent: RecsType.Number,
-            max_bank_fee_wtdr_percent: RecsType.Number,
+            realm_fee_dpt_percent: RecsType.Number,
+            realm_fee_wtdr_percent: RecsType.Number,
             velords_fee_recipient: RecsType.BigInt,
             season_pool_fee_recipient: RecsType.BigInt,
           },
@@ -1332,8 +1332,8 @@ export function defineContractComponents(world: World) {
               "u16", // ResourceBridgeFeeSplitConfig season_pool_fee_on_wtdr_percent
               "u16", // ResourceBridgeFeeSplitConfig client_fee_on_dpt_percent
               "u16", // ResourceBridgeFeeSplitConfig client_fee_on_wtdr_percent
-              "u16", // ResourceBridgeFeeSplitConfig max_bank_fee_dpt_percent
-              "u16", // ResourceBridgeFeeSplitConfig max_bank_fee_wtdr_percent
+              "u16", // ResourceBridgeFeeSplitConfig realm_fee_dpt_percent
+              "u16", // ResourceBridgeFeeSplitConfig realm_fee_wtdr_percent
               "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // StructureMaxLevelConfig realm_max

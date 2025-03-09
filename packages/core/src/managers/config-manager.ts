@@ -1,15 +1,15 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-  BuildingType,
-  CapacityConfig,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
-  HYPERSTRUCTURE_CONFIG_ID,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  ResourceTier,
-  StructureType,
-  WORLD_CONFIG_ID,
+    BuildingType,
+    CapacityConfig,
+    GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+    HYPERSTRUCTURE_CONFIG_ID,
+    RESOURCE_PRECISION,
+    ResourcesIds,
+    ResourceTier,
+    StructureType,
+    WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -404,8 +404,8 @@ export class ClientConfigManager {
           client_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.client_fee_on_wtdr_percent ?? 0),
           velords_fee_recipient: resourceBridgeFeeSplitConfig?.velords_fee_recipient ?? BigInt(0),
           season_pool_fee_recipient: resourceBridgeFeeSplitConfig?.season_pool_fee_recipient ?? BigInt(0),
-          max_bank_fee_dpt_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_dpt_percent ?? 0),
-          max_bank_fee_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_wtdr_percent ?? 0),
+          realm_fee_dpt_percent: Number(resourceBridgeFeeSplitConfig?.realm_fee_dpt_percent ?? 0),
+          realm_fee_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.realm_fee_wtdr_percent ?? 0),
         };
       },
       {
@@ -417,8 +417,8 @@ export class ClientConfigManager {
         client_fee_on_wtdr_percent: 0,
         velords_fee_recipient: BigInt(0),
         season_pool_fee_recipient: BigInt(0),
-        max_bank_fee_dpt_percent: 0,
-        max_bank_fee_wtdr_percent: 0,
+        realm_fee_dpt_percent: 0,
+        realm_fee_wtdr_percent: 0,
       },
     );
   }

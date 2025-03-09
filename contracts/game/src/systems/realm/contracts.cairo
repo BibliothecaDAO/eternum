@@ -17,13 +17,7 @@ pub trait IERC20<TState> {
 
 #[starknet::interface]
 pub trait IRealmSystems<T> {
-    fn create(
-        ref self: T,
-        owner: starknet::ContractAddress,
-        realm_id: ID,
-        frontend: ContractAddress,
-        lords_resource_index: u8,
-    ) -> ID;
+    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
 }
 
 #[dojo::contract]
@@ -77,13 +71,7 @@ pub mod realm_systems {
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(
-            ref self: ContractState,
-            owner: ContractAddress,
-            realm_id: ID,
-            frontend: ContractAddress,
-            lords_resource_index: u8,
-        ) -> ID {
+        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut season: Season = world.read_model(WORLD_CONFIG_ID);
@@ -116,12 +104,7 @@ pub mod realm_systems {
             // bridge attached lords into the realm
             if lords_amount_attached.is_non_zero() {
                 InternalRealmLogicImpl::bridge_lords_into_realm(
-                    ref world,
-                    season_addresses_config.lords_address,
-                    structure_id,
-                    lords_amount_attached,
-                    frontend,
-                    lords_resource_index,
+                    ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
                 );
             }
 
@@ -230,7 +213,6 @@ pub mod realm_systems {
             realm_structure_id: ID,
             amount: u256,
             frontend: ContractAddress,
-            lords_resource_index: u8,
         ) {
             // get bridge systems address
             let (bridge_systems_address, _namespace_hash) =
@@ -246,7 +228,7 @@ pub mod realm_systems {
 
             // deposit lords
             IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit_initial(lords_address, realm_structure_id, amount, frontend, lords_resource_index);
+                .deposit(lords_address, realm_structure_id, amount, frontend);
         }
 
 

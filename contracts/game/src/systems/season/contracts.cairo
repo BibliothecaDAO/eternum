@@ -12,6 +12,7 @@ pub trait ISeasonSystems<T> {
 pub mod season_systems {
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
+    use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
 
     use s1_eternum::{
         alias::ID, constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID},
@@ -25,10 +26,7 @@ pub mod season_systems {
                 LeaderboardRegisterShare, LeaderboardRewardClaimed,
             },
         },
-        systems::{
-            hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl,
-            resources::contracts::resource_bridge_systems::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait},
-        },
+        systems::{hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl},
     };
     use starknet::ContractAddress;
 

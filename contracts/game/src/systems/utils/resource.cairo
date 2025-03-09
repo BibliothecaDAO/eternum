@@ -103,6 +103,15 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         );
     }
 
+    #[inline(always)]
+    fn portal_to_structure_arrivals_instant(
+        ref world: WorldStorage, to_structure_id: ID, mut resources: Span<(u8, u128)>,
+    ) {
+        let from_id = 0;
+        let mut from_weight = Default::default();
+        Self::_instant_arrivals_transfer(ref world, from_id, ref from_weight, to_structure_id, resources, true);
+    }
+
 
     fn _instant_transfer(
         ref world: WorldStorage,
@@ -148,6 +157,57 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
 
         // update to_resource weight
         to_weight.store(ref world, to_id);
+    }
+
+    fn _instant_arrivals_transfer(
+        ref world: WorldStorage,
+        from_id: ID,
+        ref from_weight: Weight,
+        to_id: ID,
+        mut resources: Span<(u8, u128)>,
+        mint: bool,
+    ) {
+        let mut resources_clone = resources.clone();
+        loop {
+            match resources_clone.pop_front() {
+                Option::Some((
+                    resource_type, resource_amount,
+                )) => {
+                    // spend from from_resource balance
+                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+                    if mint == false {
+                        let mut from_resource = SingleResourceStoreImpl::retrieve(
+                            ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
+                        );
+                        from_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
+                        from_resource.store(ref world);
+                    }
+
+                    // add resource to balance
+                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, 0);
+                    let mut realm_resources_array = ResourceArrivalImpl::read_slot(
+                        ref world, to_id, arrival_day, arrival_slot,
+                    );
+                    let mut realm_arrival_total_amount = ResourceArrivalImpl::read_day_total(
+                        ref world, to_id, arrival_day,
+                    );
+                    ResourceArrivalImpl::slot_increase_balances(
+                        ref realm_resources_array,
+                        array![(resource_type, resource_amount)].span(),
+                        ref realm_arrival_total_amount,
+                    );
+                    ResourceArrivalImpl::write_slot(ref world, to_id, arrival_day, arrival_slot, realm_resources_array);
+                    ResourceArrivalImpl::write_day_total(ref world, to_id, arrival_day, realm_arrival_total_amount);
+                },
+                Option::None => { break; },
+            }
+        };
+
+        if mint == false {
+            // update from_resource weight
+            from_weight.store(ref world, from_id);
+        }
     }
 
 
