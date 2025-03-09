@@ -19,18 +19,10 @@ export const useBank = (bankEntityId: ID) => {
 
   const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(structure.owner)]));
   const bankConfig = getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.bank_config;
-
-  const bridgeFeeConfig = getComponentValue(
-    WorldConfig,
-    getEntityIdFromKeys([WORLD_CONFIG_ID]),
-  )?.res_bridge_fee_split_config;
-
   return {
     entityId: structure.entity_id,
     position: { x: structure.base.coord_x, y: structure.base.coord_y },
     owner: addressName?.name ? shortString.decodeShortString(addressName.name.toString()) : MERCENARIES,
     ownerFee: Number(bankConfig?.owner_fee_num) / Number(bankConfig?.owner_fee_denom),
-    depositFee: Number(bridgeFeeConfig?.max_bank_fee_dpt_percent),
-    withdrawFee: Number(bridgeFeeConfig?.max_bank_fee_wtdr_percent),
   };
 };

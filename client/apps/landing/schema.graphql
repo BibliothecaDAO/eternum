@@ -1905,7 +1905,8 @@ input s1_eternum_HyperstructureFinishedWhereInput {
 }
 
 type s1_eternum_HyperstructureGlobals {
-  count: u64
+  completed_count: u32
+  created_count: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   world_id: u32
@@ -1928,22 +1929,33 @@ input s1_eternum_HyperstructureGlobalsOrder {
 }
 
 enum s1_eternum_HyperstructureGlobalsOrderField {
-  COUNT
+  COMPLETED_COUNT
   WORLD_ID
 }
 
 input s1_eternum_HyperstructureGlobalsWhereInput {
-  count: u64
-  countEQ: u64
-  countGT: u64
-  countGTE: u64
-  countIN: [u64]
-  countLIKE: u64
-  countLT: u64
-  countLTE: u64
-  countNEQ: u64
-  countNOTIN: [u64]
-  countNOTLIKE: u64
+  completed_count: u32
+  completed_countEQ: u32
+  completed_countGT: u32
+  completed_countGTE: u32
+  completed_countIN: [u32]
+  completed_countLIKE: u32
+  completed_countLT: u32
+  completed_countLTE: u32
+  completed_countNEQ: u32
+  completed_countNOTIN: [u32]
+  completed_countNOTLIKE: u32
+  created_count: u32
+  created_countEQ: u32
+  created_countGT: u32
+  created_countGTE: u32
+  created_countIN: [u32]
+  created_countLIKE: u32
+  created_countLT: u32
+  created_countLTE: u32
+  created_countNEQ: u32
+  created_countNOTIN: [u32]
+  created_countNOTLIKE: u32
   world_id: u32
   world_idEQ: u32
   world_idGT: u32
@@ -3678,8 +3690,8 @@ type s1_eternum_ResourceBridgeConfig {
 type s1_eternum_ResourceBridgeFeeSplitConfig {
   client_fee_on_dpt_percent: u16
   client_fee_on_wtdr_percent: u16
-  max_bank_fee_dpt_percent: u16
-  max_bank_fee_wtdr_percent: u16
+  realm_fee_dpt_percent: u16
+  realm_fee_wtdr_percent: u16
   season_pool_fee_on_dpt_percent: u16
   season_pool_fee_on_wtdr_percent: u16
   season_pool_fee_recipient: ContractAddress
@@ -8454,28 +8466,28 @@ input s1_eternum_WorldConfig_res_bridge_fee_split_configWhereInput {
   client_fee_on_wtdr_percentNEQ: u16
   client_fee_on_wtdr_percentNOTIN: [u16]
   client_fee_on_wtdr_percentNOTLIKE: u16
-  max_bank_fee_dpt_percent: u16
-  max_bank_fee_dpt_percentEQ: u16
-  max_bank_fee_dpt_percentGT: u16
-  max_bank_fee_dpt_percentGTE: u16
-  max_bank_fee_dpt_percentIN: [u16]
-  max_bank_fee_dpt_percentLIKE: u16
-  max_bank_fee_dpt_percentLT: u16
-  max_bank_fee_dpt_percentLTE: u16
-  max_bank_fee_dpt_percentNEQ: u16
-  max_bank_fee_dpt_percentNOTIN: [u16]
-  max_bank_fee_dpt_percentNOTLIKE: u16
-  max_bank_fee_wtdr_percent: u16
-  max_bank_fee_wtdr_percentEQ: u16
-  max_bank_fee_wtdr_percentGT: u16
-  max_bank_fee_wtdr_percentGTE: u16
-  max_bank_fee_wtdr_percentIN: [u16]
-  max_bank_fee_wtdr_percentLIKE: u16
-  max_bank_fee_wtdr_percentLT: u16
-  max_bank_fee_wtdr_percentLTE: u16
-  max_bank_fee_wtdr_percentNEQ: u16
-  max_bank_fee_wtdr_percentNOTIN: [u16]
-  max_bank_fee_wtdr_percentNOTLIKE: u16
+  realm_fee_dpt_percent: u16
+  realm_fee_dpt_percentEQ: u16
+  realm_fee_dpt_percentGT: u16
+  realm_fee_dpt_percentGTE: u16
+  realm_fee_dpt_percentIN: [u16]
+  realm_fee_dpt_percentLIKE: u16
+  realm_fee_dpt_percentLT: u16
+  realm_fee_dpt_percentLTE: u16
+  realm_fee_dpt_percentNEQ: u16
+  realm_fee_dpt_percentNOTIN: [u16]
+  realm_fee_dpt_percentNOTLIKE: u16
+  realm_fee_wtdr_percent: u16
+  realm_fee_wtdr_percentEQ: u16
+  realm_fee_wtdr_percentGT: u16
+  realm_fee_wtdr_percentGTE: u16
+  realm_fee_wtdr_percentIN: [u16]
+  realm_fee_wtdr_percentLIKE: u16
+  realm_fee_wtdr_percentLT: u16
+  realm_fee_wtdr_percentLTE: u16
+  realm_fee_wtdr_percentNEQ: u16
+  realm_fee_wtdr_percentNOTIN: [u16]
+  realm_fee_wtdr_percentNOTLIKE: u16
   season_pool_fee_on_dpt_percent: u16
   season_pool_fee_on_dpt_percentEQ: u16
   season_pool_fee_on_dpt_percentGT: u16

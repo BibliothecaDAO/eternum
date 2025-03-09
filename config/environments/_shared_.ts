@@ -169,8 +169,8 @@ export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
 export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
 export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
 export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
-export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
-export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
+export const REALM_FEE_ON_DEPOSIT = 5; // 5%
+export const REALM_FEE_ON_WITHDRAWAL = 5; // 5%
 export const MAX_NUM_BANKS = 6;
 
 export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
@@ -315,8 +315,8 @@ export const EternumGlobalConfig: Config = {
     client_fee_on_wtdr_percent: CLIENT_FEE_ON_WITHDRAWAL,
     velords_fee_recipient: VELORDS_FEE_RECIPIENT,
     season_pool_fee_recipient: SEASON_POOL_FEE_RECIPIENT,
-    max_bank_fee_dpt_percent: MAX_BANK_FEE_ON_DEPOSIT,
-    max_bank_fee_wtdr_percent: MAX_BANK_FEE_ON_WITHDRAWAL,
+    realm_fee_dpt_percent: REALM_FEE_ON_DEPOSIT,
+    realm_fee_wtdr_percent: REALM_FEE_ON_WITHDRAWAL,
   },
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,

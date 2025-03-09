@@ -63,7 +63,9 @@ pub mod hyperstructure_systems {
                 WorldConfigUtilImpl,
             },
             guild::{GuildMember},
-            hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
+            hyperstructure::{
+                Access, Contribution, Epoch, Hyperstructure, HyperstructureGlobals, HyperstructureImpl, Progress,
+            },
             name::{AddressName}, owner::{OwnerAddressTrait}, resource::resource::{}, season::{Leaderboard},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
@@ -274,6 +276,10 @@ pub mod hyperstructure_systems {
                 let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_entity_id);
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
+
+                let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+                hyperstructure_globals.completed_count += 1;
+                world.write_model(@hyperstructure_globals);
 
                 let hyperstructure_owner_name: AddressName = world.read_model(hyperstructure_owner);
 

@@ -150,7 +150,6 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         realm_ids: realmIds,
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-        lords_resource_index: 0,
         signer: account,
         season_pass_address: getSeasonPassAddress(),
       });

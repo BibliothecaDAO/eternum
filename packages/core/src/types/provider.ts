@@ -100,7 +100,6 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
   owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
   frontend: num.BigNumberish;
-  lords_resource_index: num.BigNumberish;
   season_pass_address: string;
 }
 
@@ -499,8 +498,8 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
   client_fee_on_wtdr_percent: num.BigNumberish;
   velords_fee_recipient: num.BigNumberish;
   season_pool_fee_recipient: num.BigNumberish;
-  max_bank_fee_dpt_percent: num.BigNumberish;
-  max_bank_fee_wtdr_percent: num.BigNumberish;
+  realm_fee_dpt_percent: num.BigNumberish;
+  realm_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {

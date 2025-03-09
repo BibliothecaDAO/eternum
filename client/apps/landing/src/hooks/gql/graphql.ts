@@ -1137,22 +1137,34 @@ export type S1_Eternum_HyperstructureGlobalsOrder = {
 };
 
 export enum S1_Eternum_HyperstructureGlobalsOrderField {
-  Count = 'COUNT',
+  CompletedCount = 'COMPLETED_COUNT',
+  CreatedCount = 'CREATED_COUNT',
   WorldId = 'WORLD_ID'
 }
 
 export type S1_Eternum_HyperstructureGlobalsWhereInput = {
-  count?: InputMaybe<Scalars['u64']['input']>;
-  countEQ?: InputMaybe<Scalars['u64']['input']>;
-  countGT?: InputMaybe<Scalars['u64']['input']>;
-  countGTE?: InputMaybe<Scalars['u64']['input']>;
-  countIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  countLIKE?: InputMaybe<Scalars['u64']['input']>;
-  countLT?: InputMaybe<Scalars['u64']['input']>;
-  countLTE?: InputMaybe<Scalars['u64']['input']>;
-  countNEQ?: InputMaybe<Scalars['u64']['input']>;
-  countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  countNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  created_count?: InputMaybe<Scalars['u32']['input']>;
+  created_countEQ?: InputMaybe<Scalars['u32']['input']>;
+  created_countGT?: InputMaybe<Scalars['u32']['input']>;
+  created_countGTE?: InputMaybe<Scalars['u32']['input']>;
+  created_countIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  created_countLIKE?: InputMaybe<Scalars['u32']['input']>;
+  created_countLT?: InputMaybe<Scalars['u32']['input']>;
+  created_countLTE?: InputMaybe<Scalars['u32']['input']>;
+  created_countNEQ?: InputMaybe<Scalars['u32']['input']>;
+  created_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  created_countNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
+  completed_count?: InputMaybe<Scalars['u32']['input']>;
+  completed_countEQ?: InputMaybe<Scalars['u32']['input']>;
+  completed_countGT?: InputMaybe<Scalars['u32']['input']>;
+  completed_countGTE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  completed_countLIKE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countLT?: InputMaybe<Scalars['u32']['input']>;
+  completed_countLTE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countNEQ?: InputMaybe<Scalars['u32']['input']>;
+  completed_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  completed_countNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
   world_id?: InputMaybe<Scalars['u32']['input']>;
   world_idEQ?: InputMaybe<Scalars['u32']['input']>;
   world_idGT?: InputMaybe<Scalars['u32']['input']>;
@@ -6589,28 +6601,28 @@ export type S1_Eternum_WorldConfig_Res_Bridge_Fee_Split_ConfigWhereInput = {
   client_fee_on_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
   client_fee_on_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
   client_fee_on_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentGTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_dpt_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentLT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentLTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_dpt_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percent?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentGT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentGTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_wtdr_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentLT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentLTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentGTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_dpt_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentLT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentLTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_dpt_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percent?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentGT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentGTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_wtdr_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentLT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentLTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;

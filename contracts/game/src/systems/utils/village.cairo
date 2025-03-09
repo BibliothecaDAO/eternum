@@ -89,7 +89,7 @@ pub impl iVillageResourceImpl of iVillageResourceTrait {
             0_401, // 0.401%
             0_278, // 0.278%
             0_185, // 0.185%
-            0_093, // 0.093%
+            0_093 // 0.093%
         ]
     }
 }
