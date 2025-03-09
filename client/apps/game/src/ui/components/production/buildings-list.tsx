@@ -48,6 +48,7 @@ export const BuildingsList = ({
       .filter((production) => production !== null);
   }, [producedResources]);
 
+
   return (
     <div className="bg-dark-brown panel-wood p-3 h-[400px] overflow-y-auto">
       <h3 className="text-3xl border-gold/20">Production Buildings</h3>
