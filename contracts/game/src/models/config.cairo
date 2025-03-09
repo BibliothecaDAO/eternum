@@ -8,7 +8,6 @@ use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 
 use s1_eternum::models::position::Coord;
 
-use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
@@ -33,11 +32,10 @@ pub struct WorldConfig {
     pub settlement_config: SettlementConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
-    pub population_config: PopulationConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub structure_max_level_config: StructureMaxLevelConfig,
-    pub building_general_config: BuildingGeneralConfig,
+    pub building_config: BuildingConfig,
     pub troop_damage_config: TroopDamageConfig,
     pub troop_stamina_config: TroopStaminaConfig,
     pub troop_limit_config: TroopLimitConfig,
@@ -459,36 +457,21 @@ pub struct BankConfig {
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct BuildingGeneralConfig {
+pub struct BuildingConfig {
+    pub base_population: u32,
     pub base_cost_percent_increase: u16,
 }
 
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct BuildingConfig {
+pub struct BuildingCategoryConfig {
     #[key]
-    pub config_id: ID,
-    #[key]
-    pub category: BuildingCategory,
-    #[key]
-    pub resource_type: u8,
-    pub resource_cost_id: ID,
-    pub resource_cost_count: u32,
-}
-
-#[generate_trait]
-pub impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
-        return world
-            .read_model(
-                (
-                    WORLD_CONFIG_ID,
-                    Into::<BuildingCategory, felt252>::into(category),
-                    Into::<u8, felt252>::into(resource_type),
-                ),
-            );
-    }
+    pub category: u8,
+    pub erection_cost_id: ID,
+    pub erection_cost_count: u32,
+    pub population_cost: u32,
+    pub capacity_grant: u32,
 }
 
 
@@ -502,28 +485,6 @@ pub struct BattleConfig {
 pub impl BattleConfigImpl of BattleConfigTrait {
     fn get(ref world: WorldStorage) -> BattleConfig {
         WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
-    }
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct BuildingCategoryPopConfig {
-    #[key]
-    pub building_category: BuildingCategory,
-    pub population: u32,
-    pub capacity: u32,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct PopulationConfig {
-    pub base_population: u32,
-}
-
-#[generate_trait]
-pub impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
-    fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        world.read_model(building_id)
     }
 }
 

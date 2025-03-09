@@ -101,13 +101,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         structure_weight.store(ref world, structure_id);
         // create shards production building
         BuildingImpl::create(
-            ref world,
-            structure_id,
-            StructureCategory::FragmentMine.into(),
-            coord,
-            BuildingCategory::Resource,
-            Option::Some(ResourceTypes::EARTHEN_SHARD),
-            BuildingImpl::center(),
+            ref world, structure_id, StructureCategory::FragmentMine.into(), coord, BuildingCategory::ResourceEarthenShard, BuildingImpl::center(),
         );
 
         return true;
