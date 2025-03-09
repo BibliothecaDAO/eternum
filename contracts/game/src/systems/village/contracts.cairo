@@ -21,7 +21,7 @@ pub mod village_systems {
     use s1_eternum::models::season::Season;
     use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureOwnerStoreImpl,
     };
     use s1_eternum::systems::utils::map::IMapImpl;
@@ -55,6 +55,10 @@ pub mod village_systems {
             let village_owner: ContractAddress = starknet::get_caller_address();
             let village_resources: Span<u8> = array![iVillageResourceImpl::random(village_owner, world)].span();
 
+            // set village metadata
+            let mut villiage_metadata: StructureMetadata = Default::default();
+            villiage_metadata.village_realm = connected_realm;
+
             // create village
             iStructureImpl::create(
                 ref world,
@@ -64,7 +68,7 @@ pub mod village_systems {
                 StructureCategory::Village,
                 false,
                 village_resources,
-                Default::default(),
+                villiage_metadata,
                 TileOccupier::Village,
             );
 

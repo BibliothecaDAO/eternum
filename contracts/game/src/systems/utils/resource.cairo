@@ -9,7 +9,10 @@ use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
 use s1_eternum::models::season::SeasonImpl;
-use s1_eternum::models::structure::{StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory};
+use s1_eternum::models::structure::{
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
+    StructureMetadataStoreImpl,
+};
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
@@ -193,10 +196,13 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
             // if the recipient is a village, and troops are being transferred,
-            //  ensure the sender is the connected realm
+            //  ensure the sender realm owner is the connected realm owner
             if to_structure_base.category == StructureCategory::Village.into() {
                 if TroopResourceImpl::is_troop(resource_type) {
-                    iVillageImpl::ensure_village_realm(ref world, to_structure_base, from_structure_base);
+                    let village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                        ref world, to_id,
+                    );
+                    iVillageImpl::ensure_village_realm(ref world, village_structure_metadata, from_id);
                 }
             }
 
