@@ -20,7 +20,7 @@ import {
   RESOURCE_TIERS,
   Resources,
   resources,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";

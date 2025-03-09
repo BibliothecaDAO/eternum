@@ -357,8 +357,10 @@ pub struct WeightConfig {
 pub struct ProductionConfig {
     #[key]
     pub resource_type: u8,
-    // production amount per building, per tick
-    pub amount_per_building_per_tick: u128,
+    // production amount per building, per tick for realm
+    pub realm_output_per_tick: u64,
+    // production amount per building, per tick for village
+    pub village_output_per_tick: u64,
     // values needed for converting resources to labor and vice versa
     pub labor_burn_strategy: LaborBurnPrStrategy,
     // values needed for converting multiple resources to a single resource

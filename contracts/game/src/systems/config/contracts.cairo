@@ -102,7 +102,8 @@ pub trait IProductionConfig<T> {
     fn set_production_config(
         ref self: T,
         resource_type: u8,
-        amount_per_building_per_tick: u128,
+        realm_output_per_tick: u64,
+        village_output_per_tick: u64,
         labor_burn_strategy: LaborBurnPrStrategy,
         predefined_resource_burn_cost: Span<(u8, u128)>,
     );
@@ -403,7 +404,8 @@ pub mod config_systems {
         fn set_production_config(
             ref self: ContractState,
             resource_type: u8,
-            amount_per_building_per_tick: u128,
+            realm_output_per_tick: u64,
+            village_output_per_tick: u64,
             labor_burn_strategy: LaborBurnPrStrategy,
             predefined_resource_burn_cost: Span<(u8, u128)>,
         ) {
@@ -427,7 +429,8 @@ pub mod config_systems {
 
             // save production config
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            resource_production_config.amount_per_building_per_tick = amount_per_building_per_tick;
+            resource_production_config.realm_output_per_tick = realm_output_per_tick;
+            resource_production_config.village_output_per_tick = village_output_per_tick;
             resource_production_config.labor_burn_strategy = labor_burn_strategy;
             resource_production_config
                 .multiple_resource_burn_strategy =

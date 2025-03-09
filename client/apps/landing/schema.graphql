@@ -3080,7 +3080,8 @@ type s1_eternum_Production {
 }
 
 type s1_eternum_ProductionConfig {
-  amount_per_building_per_tick: u128
+  realm_output_per_tick: u64
+  village_output_per_tick: u64
   entity: World__Entity
   eventMessage: World__EventMessage
   labor_burn_strategy: s1_eternum_LaborBurnPrStrategy
@@ -3105,24 +3106,36 @@ input s1_eternum_ProductionConfigOrder {
 }
 
 enum s1_eternum_ProductionConfigOrderField {
-  AMOUNT_PER_BUILDING_PER_TICK
+  REALM_OUTPUT_PER_TICK
+  VILLAGE_OUTPUT_PER_TICK
   LABOR_BURN_STRATEGY
   MULTIPLE_RESOURCE_BURN_STRATEGY
   RESOURCE_TYPE
 }
 
 input s1_eternum_ProductionConfigWhereInput {
-  amount_per_building_per_tick: u128
-  amount_per_building_per_tickEQ: u128
-  amount_per_building_per_tickGT: u128
-  amount_per_building_per_tickGTE: u128
-  amount_per_building_per_tickIN: [u128]
-  amount_per_building_per_tickLIKE: u128
-  amount_per_building_per_tickLT: u128
-  amount_per_building_per_tickLTE: u128
-  amount_per_building_per_tickNEQ: u128
-  amount_per_building_per_tickNOTIN: [u128]
-  amount_per_building_per_tickNOTLIKE: u128
+  realm_output_per_tick: u64
+  realm_output_per_tickEQ: u64
+  realm_output_per_tickGT: u64
+  realm_output_per_tickGTE: u64
+  realm_output_per_tickIN: [u64]
+  realm_output_per_tickLIKE: u64
+  realm_output_per_tickLT: u64
+  realm_output_per_tickLTE: u64
+  realm_output_per_tickNEQ: u64
+  realm_output_per_tickNOTIN: [u64]
+  realm_output_per_tickNOTLIKE: u64
+  village_output_per_tick: u64
+  village_output_per_tickEQ: u64
+  village_output_per_tickGT: u64
+  village_output_per_tickGTE: u64
+  village_output_per_tickIN: [u64]
+  village_output_per_tickLIKE: u64
+  village_output_per_tickLT: u64
+  village_output_per_tickLTE: u64
+  village_output_per_tickNEQ: u64
+  village_output_per_tickNOTIN: [u64]
+  village_output_per_tickNOTLIKE: u64
   labor_burn_strategy: s1_eternum_ProductionConfig_labor_burn_strategyWhereInput
   multiple_resource_burn_strategy: s1_eternum_ProductionConfig_multiple_resource_burn_strategyWhereInput
   resource_type: u8

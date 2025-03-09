@@ -72,7 +72,6 @@ export const OTHER_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Bank]: [],
   [BuildingType.FragmentMine]: [],
   [BuildingType.Resource]: [], // resource building costs are handled in `RESOURCE_BUILDING_COSTS`
-
   // Basic Buildings - primarily Common resources
   [BuildingType.Farm]: [
     { resource: ResourcesIds.Wood, amount: 500_000 },

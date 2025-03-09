@@ -15,7 +15,9 @@ use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
-use s1_eternum::models::structure::{StructureBase, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl};
+use s1_eternum::models::structure::{
+    StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
+};
 use s1_eternum::models::weight::{Weight, WeightImpl, WeightTrait};
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
@@ -283,7 +285,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Storehouse => 0,
         }
     }
-    fn update_production(ref self: Building, ref world: WorldStorage, ref structure_weight: Weight, stop: bool) {
+    fn update_production(
+        ref self: Building, ref world: WorldStorage, structure_category: u8, ref structure_weight: Weight, stop: bool,
+    ) {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
         let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
@@ -302,7 +306,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             true => {
                 // ensure production amount is gotten BEFORE updating
                 // bonus received percent so production rate is decreased correctly
-                let production_amount = self.production_amount(ref world);
+                let production_amount = self.production_amount(structure_category, ref world);
 
                 // update bonus received percent
                 self.update_bonus_received_percent(ref world, delete: true);
@@ -319,7 +323,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
                 // ensure production amount is gotten AFTER updating
                 // bonus received percent so production rate is increased correctly
-                let production_amount = self.production_amount(ref world);
+                let production_amount = self.production_amount(structure_category, ref world);
                 assert!(production_amount.is_non_zero(), "resource cannot be produced");
 
                 // increase building count
@@ -336,16 +340,16 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn start_production(ref self: Building, ref world: WorldStorage) {
+    fn start_production(ref self: Building, ref world: WorldStorage, structure_category: u8) {
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
 
         if self.is_resource_producer() {
-            self.update_production(ref world, ref structure_weight, stop: false);
+            self.update_production(ref world, structure_category, ref structure_weight, stop: false);
         }
 
         if self.is_adjacent_building_booster() {
             // give out bonuses to surrounding buildings
-            self.update_bonuses_supplied(ref world, ref structure_weight, delete: false);
+            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: false);
         }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
@@ -355,16 +359,16 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn stop_production(ref self: Building, ref world: WorldStorage) {
+    fn stop_production(ref self: Building, ref world: WorldStorage, structure_category: u8) {
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
 
         if self.is_resource_producer() {
-            self.update_production(ref world, ref structure_weight, stop: true);
+            self.update_production(ref world, structure_category, ref structure_weight, stop: true);
         }
 
         if self.is_adjacent_building_booster() {
             // remove bonuses it gave to surrounding buildings
-            self.update_bonuses_supplied(ref world, ref structure_weight, delete: true);
+            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: true);
         }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
@@ -373,17 +377,23 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         world.write_model(@self);
     }
 
-    fn production_amount(self: @Building, ref world: WorldStorage) -> u128 {
+    fn production_amount(self: @Building, structure_category: u8, ref world: WorldStorage) -> u128 {
         if (*self).exists() == false {
             return 0;
         }
 
         let produced_resource_type = (*self).produced_resource();
         let production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let bonus_amount: u128 = (production_config.amount_per_building_per_tick * (*self.bonus_percent).into())
+        let production_amount: u128 = if structure_category == StructureCategory::Village.into() {
+            production_config.village_output_per_tick.into()
+        } else {
+            production_config.realm_output_per_tick.into()
+        };
+
+        let bonus_amount: u128 = (production_amount * (*self.bonus_percent).into())
             / PercentageValueImpl::_100().into();
 
-        production_config.amount_per_building_per_tick + bonus_amount
+        production_amount + bonus_amount
     }
 
 
@@ -418,7 +428,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     }
 
 
-    fn update_bonuses_supplied(self: @Building, ref world: WorldStorage, ref structure_weight: Weight, delete: bool) {
+    fn update_bonuses_supplied(
+        self: @Building, ref world: WorldStorage, structure_category: u8, ref structure_weight: Weight, delete: bool,
+    ) {
         let self = *self;
 
         if self.is_adjacent_building_booster() {
@@ -426,27 +438,43 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::East), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::East), structure_category, ref structure_weight, ref world, delete,
                 );
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthEast), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::NorthEast),
+                    structure_category,
+                    ref structure_weight,
+                    ref world,
+                    delete,
                 );
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthWest), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::NorthWest),
+                    structure_category,
+                    ref structure_weight,
+                    ref world,
+                    delete,
                 );
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::West), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::West), structure_category, ref structure_weight, ref world, delete,
                 );
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthWest), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::SouthWest),
+                    structure_category,
+                    ref structure_weight,
+                    ref world,
+                    delete,
                 );
             self
                 .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthEast), ref structure_weight, ref world, delete,
+                    self_coord.neighbor(Direction::SouthEast),
+                    structure_category,
+                    ref structure_weight,
+                    ref world,
+                    delete,
                 );
         }
     }
@@ -455,6 +483,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     fn update_bonus_supplied_to(
         self: Building,
         receiver_inner_coord: Coord,
+        structure_category: u8,
         ref structure_weight: Weight,
         ref world: WorldStorage,
         delete: bool,
@@ -480,7 +509,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
             // remove the recipient building's contribution from global resource production
             // first so that we can recalculate and add the new production rate
-            let recipient_building_resource_production_amount: u128 = recipient_building.production_amount(ref world);
+            let recipient_building_resource_production_amount: u128 = recipient_building
+                .production_amount(structure_category, ref world);
             let mut recipient_building_resource_production: Production = recipient_building_resource.production;
             recipient_building_resource_production
                 .decrease_production_rate(recipient_building_resource_production_amount.try_into().unwrap());
@@ -495,7 +525,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
             // update the global resource production to reflect the new production rate
             recipient_building_resource_production
-                .increase_production_rate(recipient_building.production_amount(ref world).try_into().unwrap());
+                .increase_production_rate(
+                    recipient_building.production_amount(structure_category, ref world).try_into().unwrap(),
+                );
             recipient_building_resource.production = recipient_building_resource_production;
             recipient_building_resource.store(ref world);
         }
@@ -513,6 +545,7 @@ pub impl BuildingImpl of BuildingTrait {
     fn create(
         ref world: WorldStorage,
         outer_entity_id: ID,
+        outer_structure_category: u8,
         outer_entity_coord: Coord,
         category: BuildingCategory,
         produce_resource_type: Option<u8>,
@@ -544,7 +577,7 @@ pub impl BuildingImpl of BuildingTrait {
         world.write_model(@building);
 
         // start production related to building
-        building.start_production(ref world);
+        building.start_production(ref world, outer_structure_category);
 
         // give capacity bonus
         building.grant_capacity_bonus(ref world, true);
@@ -602,7 +635,9 @@ pub impl BuildingImpl of BuildingTrait {
     /// stops consuming resources, stops giving bonuses to adjacent buildings,
     /// and stops receiving bonuses from adjacent buildings.
     ///
-    fn pause_production(ref world: WorldStorage, outer_entity_coord: Coord, inner_coord: Coord) {
+    fn pause_production(
+        ref world: WorldStorage, outer_structure_category: u8, outer_entity_coord: Coord, inner_coord: Coord,
+    ) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
             .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
@@ -610,7 +645,7 @@ pub impl BuildingImpl of BuildingTrait {
         assert!(building.paused == false, "building production is already paused");
 
         // stop building production
-        building.stop_production(ref world);
+        building.stop_production(ref world, outer_structure_category);
         building.paused = true;
         world.write_model(@building);
     }
@@ -620,7 +655,9 @@ pub impl BuildingImpl of BuildingTrait {
     /// When you restart production, the building resumes producing resources,
     /// resumes giving bonuses to adjacent buildings, and resumes consuming resources.
     ///
-    fn resume_production(ref world: WorldStorage, outer_entity_coord: Coord, inner_coord: Coord) {
+    fn resume_production(
+        ref world: WorldStorage, outer_structure_category: u8, outer_entity_coord: Coord, inner_coord: Coord,
+    ) {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
             .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
@@ -630,7 +667,7 @@ pub impl BuildingImpl of BuildingTrait {
         assert!(building.paused, "building production is not paused");
 
         // restart building production
-        building.start_production(ref world);
+        building.start_production(ref world, outer_structure_category);
         building.paused = false;
         world.write_model(@building);
     }
@@ -638,7 +675,11 @@ pub impl BuildingImpl of BuildingTrait {
     /// Destroy building and remove it from the structure
     ///
     fn destroy(
-        ref world: WorldStorage, outer_entity_id: ID, outer_entity_coord: Coord, inner_coord: Coord,
+        ref world: WorldStorage,
+        outer_entity_id: ID,
+        outer_structure_category: u8,
+        outer_entity_coord: Coord,
+        inner_coord: Coord,
     ) -> BuildingCategory {
         // ensure that inner coordinate is occupied
         let mut building: Building = world
@@ -647,7 +688,7 @@ pub impl BuildingImpl of BuildingTrait {
 
         // stop production related to building
         if !building.paused {
-            building.stop_production(ref world);
+            building.stop_production(ref world, outer_structure_category);
         }
 
         // remove granted capacity bonus

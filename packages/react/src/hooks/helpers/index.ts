@@ -8,6 +8,7 @@ export * from "./use-hyperstructures";
 export * from "./use-players";
 export * from "./use-query";
 export * from "./use-realm";
+export * from "./use-resource-arrivals";
 export * from "./use-resources";
 export * from "./use-rewards";
 export * from "./use-screen-orientation";
@@ -15,4 +16,4 @@ export * from "./use-season-start";
 export * from "./use-stamina";
 export * from "./use-structures";
 export * from "./use-trade";
-export * from "./use-resource-arrivals";
+

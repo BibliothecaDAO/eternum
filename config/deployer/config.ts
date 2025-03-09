@@ -213,7 +213,8 @@ export const setProductionConfig = async (config: Config) => {
     const resourceProductionByLaborParams = scaledResourceProductionByLaborParams[resourceId];
     const calldata = {
       resource_type: resourceId,
-      amount_per_building_per_tick: outputAmountPerBuildingPerTick,
+      realm_output_per_tick: outputAmountPerBuildingPerTick,
+      village_output_per_tick: outputAmountPerBuildingPerTick / 2,
       predefined_resource_burn_cost: predefinedResourceBurnCost,
       labor_burn_strategy: resourceProductionByLaborParams,
     };
@@ -223,8 +224,8 @@ export const setProductionConfig = async (config: Config) => {
     console.log(
       chalk.cyan(`
     ┌─ ${chalk.yellow(ResourcesIds[calldata.resource_type])}
-    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building:`)} ${chalk.white(`${inGameAmount(calldata.amount_per_building_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
-    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for realm:`)} ${chalk.white(`${inGameAmount(calldata.realm_output_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for village:`)} ${chalk.white(`${inGameAmount(calldata.village_output_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
     │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
     │     ${chalk.gray(``)} ${
       calldata.labor_burn_strategy.resource_rarity === 0
@@ -551,8 +552,8 @@ export const setStructureMaxLevelConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Levels Cap")}
-    │  ${chalk.gray(" Realm Maximum Level:")}     ${chalk.white(calldata.realm_max_level)}
-    │  ${chalk.gray(" Village Maximum Level:")}     ${chalk.white(calldata.village_max_level)}
+    │  ${chalk.gray(" Realm Maximum Level:")}     ${chalk.white(calldata.realm_max_level + 1)}
+    │  ${chalk.gray(" Village Maximum Level:")}     ${chalk.white(calldata.village_max_level + 1)}
     └────────────────────────────────`),
   );
 
@@ -576,11 +577,11 @@ export const setWeightConfig = async (config: Config) => {
   const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => {
     const calldata = {
       entity_type: resourceId,
-      weight_gram: weight,
+      weight_nanogram: weight,
     };
     console.log(
       chalk.cyan(
-        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_gram / 1000))} kg`,
+        `    │  ${chalk.gray(String(ResourcesIds[calldata.entity_type as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(addCommas(calldata.weight_nanogram / 1000))} kg`,
       ),
     );
     return calldata;

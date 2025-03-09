@@ -2024,7 +2024,7 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "amount_per_building_per_tick",
+                  "name": "realm_output_per_tick",
                   "type": "core::integer::u128"
                 },
                 {

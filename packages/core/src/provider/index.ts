@@ -1828,7 +1828,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_resource_weight_config",
-          calldata: [call.entity_type, call.weight_gram],
+          calldata: [call.entity_type, call.weight_nanogram],
         };
       }),
     );
@@ -1863,7 +1863,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         entrypoint: "set_production_config",
         calldata: [
           call.resource_type,
-          call.amount_per_building_per_tick,
+          call.realm_output_per_tick,
+          call.village_output_per_tick,
           call.labor_burn_strategy.resource_rarity,
           call.labor_burn_strategy.wheat_burn_per_labor,
           call.labor_burn_strategy.fish_burn_per_labor,

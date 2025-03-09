@@ -112,7 +112,7 @@ export class ClientConfigManager {
 
       this.resourceInputs[Number(resourceType)] = inputs;
 
-      const resourceOutput = Number(productionConfig?.amount_per_building_per_tick ?? 0n);
+      const resourceOutput = Number(productionConfig?.realm_output_per_tick ?? 0n);
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
         amount: this.divideByPrecision(resourceOutput),
@@ -647,7 +647,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
 
-      return Number(productionConfig?.amount_per_building_per_tick ?? 0);
+      return Number(productionConfig?.realm_output_per_tick ?? 0);
     }, 0);
   }
 

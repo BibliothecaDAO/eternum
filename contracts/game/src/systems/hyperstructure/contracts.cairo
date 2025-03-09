@@ -64,7 +64,8 @@ pub mod hyperstructure_systems {
             },
             guild::{GuildMember},
             hyperstructure::{Access, Contribution, Epoch, Hyperstructure, HyperstructureImpl, Progress},
-            name::{AddressName}, owner::{OwnerAddressTrait}, resource::resource::{}, season::{Leaderboard},
+            name::{AddressName}, owner::{OwnerAddressTrait}, position::{PositionIntoCoord}, resource::resource::{},
+            season::{Leaderboard},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
     };
