@@ -14,7 +14,7 @@ import {
   EntityType,
   getAddressNameFromEntity,
   ID,
-  multiplyByPrecision,
+  multiplyByPrecision
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
