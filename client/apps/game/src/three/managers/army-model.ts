@@ -7,9 +7,14 @@ const MAX_INSTANCES = 1000;
 const ANIMATION_STATE_IDLE = 0;
 const ANIMATION_STATE_WALKING = 1;
 
+interface AnimatedInstancedMesh extends THREE.InstancedMesh {
+  animated?: boolean;
+}
+
 interface ModelData {
-  mesh: THREE.InstancedMesh;
-  baseMesh: THREE.Object3D;
+  group: THREE.Group;
+  instancedMeshes: AnimatedInstancedMesh[];
+  biomeMeshes: THREE.Mesh[];
   mixer: AnimationMixer;
   animations: {
     idle: AnimationClip;
@@ -56,8 +61,7 @@ export class ArmyModel {
   }
 
   private async loadModels(): Promise<void> {
-    // Load all model variants
-    const modelTypes = ["knight1", "knight2"]; // Add more model types as needed
+    const modelTypes = ["knight1", "knight2"];
     const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
     await Promise.all(loadPromises);
   }
@@ -68,28 +72,48 @@ export class ArmyModel {
       loader.load(
         `models/units/${modelType}.glb`,
         (gltf) => {
-          const baseMesh = gltf.scene.children[0].children[1];
-          const geometry = (baseMesh as THREE.Mesh).geometry.clone();
-          const material = (baseMesh as THREE.Mesh).material;
-          const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
-          instancedMesh.frustumCulled = true;
-          instancedMesh.castShadow = true;
-          instancedMesh.instanceMatrix.needsUpdate = true;
-          this.scene.add(instancedMesh);
+          const group = new THREE.Group();
+          const instancedMeshes: AnimatedInstancedMesh[] = [];
+          const biomeMeshes: THREE.Mesh[] = [];
 
-          if (instancedMesh.morphTexture) {
-            for (let i = 0; i < MAX_INSTANCES; i++) {
-              instancedMesh.setMorphAt(i, baseMesh as any);
+          gltf.scene.traverse((child: THREE.Object3D) => {
+            if (child instanceof THREE.Mesh) {
+              const geometry = child.geometry.clone();
+              const material = child.material;
+              const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
+
+              instancedMesh.frustumCulled = true;
+              instancedMesh.castShadow = true;
+              instancedMesh.instanceMatrix.needsUpdate = true;
+
+              if (gltf.animations.length > 0) {
+                const hasAnimation = gltf.animations[0].tracks.find(
+                  (track: any) => track.name.split(".")[0] === child.name,
+                );
+                if (hasAnimation) {
+                  instancedMesh.animated = true;
+                  for (let i = 0; i < MAX_INSTANCES; i++) {
+                    instancedMesh.setMorphAt(i, child as any);
+                  }
+                  instancedMesh.morphTexture!.needsUpdate = true;
+                }
+              }
+
+              instancedMesh.count = 0;
+              group.add(instancedMesh);
+              instancedMeshes.push(instancedMesh);
+              biomeMeshes.push(child);
             }
-          }
+          });
 
-          instancedMesh.count = 0; // Always keep max count
+          this.scene.add(group);
 
           const mixer = new AnimationMixer(gltf.scene);
 
           this.models.set(modelType, {
-            mesh: instancedMesh,
-            baseMesh,
+            group,
+            instancedMeshes,
+            biomeMeshes,
             mixer,
             animations: {
               idle: gltf.animations[0],
@@ -112,7 +136,6 @@ export class ArmyModel {
   assignModelToEntity(entityId: number, modelType: string) {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
-
     this.entityModelMap.set(entityId, modelType);
   }
 
@@ -134,12 +157,6 @@ export class ArmyModel {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
       const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
 
-      // modelData.targetScales.set(index, targetScale.clone());
-      // if (!modelData.currentScales.has(index)) {
-      //   modelData.currentScales.set(index, targetScale.clone());
-      // }
-
-      // const currentScale = modelData.currentScales.get(index)!;
       this.dummyObject.position.copy(position);
       this.dummyObject.position.y += 0.15;
       this.dummyObject.scale.copy(targetScale);
@@ -147,50 +164,35 @@ export class ArmyModel {
         this.dummyObject.rotation.copy(rotation);
       }
 
-      if (color) {
-        modelData.mesh.setColorAt(index, color);
-        modelData.mesh.instanceColor!.needsUpdate = true;
-      }
       this.dummyObject.updateMatrix();
-      modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-      modelData.mesh.instanceMatrix.needsUpdate = true;
-      modelData.mesh.userData.entityIdMap = modelData.mesh.userData.entityIdMap || new Map();
-      modelData.mesh.userData.entityIdMap.set(index, entityId);
+
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.setMatrixAt(index, this.dummyObject.matrix);
+        mesh.instanceMatrix.needsUpdate = true;
+
+        if (color && mesh.instanceColor) {
+          //mesh.setColorAt(index, color);
+          mesh.instanceColor.needsUpdate = true;
+        }
+
+        mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
+        mesh.userData.entityIdMap.set(index, entityId);
+      });
     });
   }
 
   updateAnimations(deltaTime: number) {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+      return;
+    }
+
     const time = performance.now() * 0.001;
 
-    // if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
-    //   return;
-    // }
-
     this.models.forEach((modelData) => {
-      if (modelData.mesh.morphTexture) {
-        let needsMatrixUpdate = false;
+      modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+        if (!mesh.animated) return;
 
-        // modelData.targetScales.forEach((targetScale, index) => {
-        //   const currentScale = modelData.currentScales.get(index)!;
-        //   const matrix = new THREE.Matrix4();
-        //   modelData.mesh.getMatrixAt(index, matrix);
-
-        //   // Interpolate scale
-        //   currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
-        //   if (!currentScale.equals(targetScale)) {
-        //     this.dummyObject.matrix.copy(matrix);
-        //     this.dummyObject.scale.copy(currentScale);
-        //     this.dummyObject.updateMatrix();
-        //     modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-        //     needsMatrixUpdate = true;
-        //   }
-        // });
-
-        if (needsMatrixUpdate) {
-          modelData.mesh.instanceMatrix.needsUpdate = true;
-        }
-
-        for (let i = 0; i < modelData.mesh.count; i++) {
+        for (let i = 0; i < mesh.count; i++) {
           const animationState = this.animationStates[i];
           if (
             (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
@@ -218,24 +220,29 @@ export class ArmyModel {
           actions.walk.play();
 
           modelData.mixer.setTime(time + this.timeOffsets[i]);
-
-          modelData.mesh.setMorphAt(i, modelData.baseMesh as any);
+          mesh.setMorphAt(i, modelData.biomeMeshes[meshIndex] as any);
         }
 
-        modelData.mesh.morphTexture!.needsUpdate = true;
-      }
+        if (mesh.morphTexture) {
+          mesh.morphTexture.needsUpdate = true;
+        }
+      });
     });
   }
 
   updateInstanceMatrix() {
     this.models.forEach((modelData) => {
-      modelData.mesh.instanceMatrix.needsUpdate = true;
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+      });
     });
   }
 
   computeBoundingSphere() {
     this.models.forEach((modelData) => {
-      modelData.mesh.computeBoundingSphere();
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.computeBoundingSphere();
+      });
     });
   }
 
@@ -247,16 +254,17 @@ export class ArmyModel {
     const results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> = [];
 
     this.models.forEach((modelData) => {
-      const intersects = raycaster.intersectObject(modelData.mesh);
-      if (intersects.length > 0) {
-        results.push({
-          instanceId: intersects[0].instanceId,
-          mesh: modelData.mesh,
-        });
-      }
+      modelData.instancedMeshes.forEach((mesh) => {
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length > 0) {
+          results.push({
+            instanceId: intersects[0].instanceId,
+            mesh: mesh,
+          });
+        }
+      });
     });
 
-    // Sort by distance to get closest intersection first
     results.sort((a, b) => {
       const intersectsA = raycaster.intersectObject(a.mesh);
       const intersectsB = raycaster.intersectObject(b.mesh);
@@ -269,27 +277,32 @@ export class ArmyModel {
   resetInstanceCounts() {
     this.currentVisibleCount = 0;
     this.models.forEach((modelData) => {
-      modelData.mesh.count = 0;
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = 0;
+      });
       modelData.activeInstances.clear();
     });
   }
 
   updateAllInstances() {
     this.models.forEach((modelData) => {
-      modelData.mesh.instanceMatrix.needsUpdate = true;
-      if (modelData.mesh.instanceColor) {
-        modelData.mesh.instanceColor.needsUpdate = true;
-      }
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      });
     });
   }
 
   setVisibleCount(count: number) {
-    if (count === this.currentVisibleCount) return; // Skip if count hasn't changed
+    if (count === this.currentVisibleCount) return;
 
     this.currentVisibleCount = count;
-    // Update all meshes to have the same count
     this.models.forEach((modelData) => {
-      modelData.mesh.count = count;
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = count;
+      });
     });
   }
 }
