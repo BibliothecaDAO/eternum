@@ -16,7 +16,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x11a287955d3d3ed0ecb09cd2efa7cff790a4fc51855a9686e7a6550c0b77759": {
@@ -132,7 +132,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x7359e457467997d408b6076b937cb7113d62c59228979dad1b438c4612e609b": {
@@ -148,7 +148,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x70371c660e5f3ec3e5be9145c9ce2617d4de847a47b7af2d6125c52242af8d3": {
@@ -184,7 +184,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x56a46bc9102292c4d9f6bde68f9456d077f55a3510e7cceca85a7bb1534bf45": {
@@ -220,7 +220,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x1787fe6ce363eb00e36978a7cbf21cd1f4c96cdd8d88ca8fcc762d79127568": {
@@ -240,7 +240,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x4689dfaef6f420319ce563d34fb1dd9b6977de2df92b1c0a017bc3d8655bc94": {
@@ -256,7 +256,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x6a6f3c146615de99d4a8ee3e0ee1502273f9afa77cfb1c043d48da00273031b": {
@@ -272,7 +272,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x78c5142660121a5d0fba6e82a10f0530c7b824d69aa0075165320acc76cb9c6": {
@@ -312,7 +312,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x8f25e3b1b771b995d0a50e82c144fed466d7adf2476963e69becdbb4a63afa": {
@@ -328,7 +328,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x191873803184fc4e0451b81dfe2669da6f0cf58c88dea309f1fa9a4619f5eb6": {
@@ -356,7 +356,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x723ba0c92e633c8a6102f712622e150929a3648473b3f41fc3d44980ff52a2c": {
@@ -392,7 +392,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x3f9d839acf395f17f8981a294086039a7da36ac4379a3948d8d99ce53ea4c8b": {
@@ -412,7 +412,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x695b45a94306503c5c0ceb1848fcfe408dde60e3fdb0f76d9d522b0f8f31c40": {
@@ -428,7 +428,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x3492ee537f3e7764c154bb0925138c5e42686e765aadfdfdf6e05317fdeb0e8": {
@@ -448,7 +448,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x2879f978463222b47af7334efec7c7b23da6c7fdba76386710fcca3f8a6d95a": {
@@ -472,7 +472,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x46a0860e15595758e96626318572e5d5589b4e499c24f759f93b06207bde25c": {
@@ -496,7 +496,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x33b6485ea51e9c8933618fef1b35a0d5f899641d9d4dac684acef5bbdc672f0": {
@@ -540,7 +540,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x594943b8383d116b71744dd84a3ce4846716dd7787eac02678be85b95681de4": {
@@ -556,7 +556,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x64442d27db661d817687f8b361450ec0f40c7367f84ffaf923d93b21f0d9fd1": {
@@ -576,7 +576,7 @@ export const policies = toSessionPolicies({
         {
           name: "world_dispatcher",
           entrypoint: "world_dispatcher",
-        }
+        },
       ],
     },
     "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f": {
@@ -585,9 +585,9 @@ export const policies = toSessionPolicies({
           name: "VRF",
           description: "Verifiable Random Function",
           entrypoint: "request_random",
-        }
+        },
       ],
-    }
+    },
   },
   messages,
 });

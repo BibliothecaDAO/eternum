@@ -48,7 +48,7 @@ export const EntityInfoLabel = memo(() => {
   return <EntityInfoContent tile={tile} />;
 });
 
-export const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponents["Tile"]["schema"]> }) => {
+const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponents["Tile"]["schema"]> }) => {
   const dojo = useDojo();
   const userAddress = ContractAddress(dojo.account.account.address);
 
