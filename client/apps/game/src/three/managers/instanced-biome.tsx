@@ -23,8 +23,15 @@ export default class InstancedModel {
     for (let i = 0; i < count; i++) {
       this.timeOffsets[i] = Math.random() * 3;
     }
+    let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
+        if (!child.material.depthWrite) {
+          child.material.depthWrite = true;
+          renderOrder = 4;
+        } else {
+          renderOrder = 2;
+        }
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
@@ -37,8 +44,12 @@ export default class InstancedModel {
         if (name !== "Outline" && !name.toLowerCase().includes("ocean")) {
           tmp.castShadow = true;
           tmp.receiveShadow = true;
+          tmp.renderOrder = renderOrder;
         }
         if (name === "Outline") {
+          tmp.renderOrder = 5;
+        }
+        if (name.toLowerCase().includes("ocean")) {
           tmp.renderOrder = 1;
         }
         tmp.userData.isInstanceModel = true;

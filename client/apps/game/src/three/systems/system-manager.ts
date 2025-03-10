@@ -16,7 +16,6 @@ import {
   Component,
   ComponentValue,
   defineComponentSystem,
-  defineQuery,
   getComponentValue,
   Has,
   HasValue,
@@ -77,9 +76,7 @@ export class SystemManager {
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        const query = defineQuery([Has(this.setup.components.ExplorerTroops)], { runOnInit: true });
-
-        return query.update$.subscribe((update) => {
+        const handleUpdate = (update: any) => {
           if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
             const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
             const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
@@ -138,7 +135,16 @@ export class SystemManager {
               troopTier: explorer.troops.tier as TroopTier,
             });
           }
+        };
+
+        defineComponentSystem(this.setup.network.world, this.setup.components.ExplorerTroops, handleUpdate, {
+          runOnInit: true,
         });
+
+        return () => {
+          // No direct way to unsubscribe from defineComponentSystem
+          // This would need a proper cleanup mechanism
+        };
       },
     };
   }
@@ -215,18 +221,13 @@ export class SystemManager {
 
   public get Buildings() {
     return {
-      subscribeToHexUpdates: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
-        const query = defineQuery([
-          HasValue(this.setup.components.Building, {
-            outer_col: hexCoords.col,
-            outer_row: hexCoords.row,
-          }),
-        ]);
-
-        return query.update$.subscribe((update) => {
+      onUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
+        const handleUpdate = (update: any) => {
           if (isComponentUpdate(update, this.setup.components.Building)) {
             const building = getComponentValue(this.setup.components.Building, update.entity);
             if (!building) return;
+
+            if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
 
             const innerCol = building.inner_col;
             const innerRow = building.inner_row;
@@ -240,13 +241,18 @@ export class SystemManager {
               paused,
             });
           }
+        };
+
+        defineComponentSystem(this.setup.network.world, this.setup.components.Building, handleUpdate, {
+          runOnInit: true,
         });
+
+        return () => {
+          // No direct way to unsubscribe from defineComponentSystem
+          // This would need a proper cleanup mechanism
+        };
       },
     };
-  }
-
-  private getHexCoords(value: any): { col: number; row: number } {
-    return { col: value[0]?.x || 0, row: value[0]?.y || 0 };
   }
 
   public getStructureStage(structureType: StructureType, entityId: ID): number {

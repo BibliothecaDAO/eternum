@@ -55,7 +55,7 @@ export const CombatContainer = ({
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
 
-  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
+  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
   const toggleModal = useUIStore((state) => state.toggleModal);
 

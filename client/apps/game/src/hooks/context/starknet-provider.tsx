@@ -31,7 +31,7 @@ const nonLocalController = new ControllerConnector({
   defaultChainId:
     env.VITE_PUBLIC_CHAIN === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA,
   preset,
-  // policies: [policies],
+  policies,
   slot,
   namespace,
   tokens: {

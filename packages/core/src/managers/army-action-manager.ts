@@ -12,7 +12,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { EternumProvider } from "../provider";
-import { ContractAddress, HexEntityInfo, HexPosition, ID, TravelTypes, TroopType } from "../types";
+import { ContractAddress, HexEntityInfo, HexPosition, ID, TileOccupier, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
@@ -334,16 +334,30 @@ export class ArmyActionManager {
     this.components.Tile.addOverride(overrideId, {
       entity,
       value: {
-        col,
-        row,
+        occupier_id: this.entityId,
+        occupier_type: TileOccupier.Explorer,
         biome: BiomeTypeToId[Biome.getBiome(col, row)],
+      },
+    });
+  };
+
+  private readonly _optimisticClearPreviousTile = (overrideId: string, col: number, row: number) => {
+    const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
+
+    this.components.Tile.addOverride(overrideId, {
+      entity,
+      value: {
+        occupier_id: 0,
+        occupier_type: TileOccupier.None,
       },
     });
   };
 
   private readonly _optimisticExplore = (col: number, row: number) => {
     const overrideId = uuid();
+    const currentPosition = this._getCurrentPosition();
 
+    this._optimisticClearPreviousTile(overrideId, currentPosition.col, currentPosition.row);
     this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
     this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticCapacityUpdate(
@@ -394,16 +408,13 @@ export class ArmyActionManager {
       });
   };
 
-  private readonly _optimisticTravelHex = (
-    col: number,
-    row: number,
-    pathLength: number,
-    blockTimestamp: number,
-    currentArmiesTick: number,
-  ) => {
+  private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
     const overrideId = uuid();
+    const currentPosition = this._getCurrentPosition();
 
+    this._optimisticClearPreviousTile(overrideId, currentPosition.col, currentPosition.row);
     this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
+    this._optimisticTileUpdate(overrideId, col, row);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
     return overrideId;
@@ -418,7 +429,7 @@ export class ArmyActionManager {
   // you can remove all non visual overrides when the action fails or succeeds
   private readonly _removeNonVisualOverrides = (overrideId: string) => {
     this.components.Resource.removeOverride(overrideId);
-    this.components.ExplorerTroops.removeOverride(overrideId);
+    this.components.Tile.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
@@ -450,13 +461,7 @@ export class ArmyActionManager {
     blockTimestamp: number,
     currentArmiesTick: number,
   ) => {
-    const overrideId = this._optimisticTravelHex(
-      path[path.length - 1].col,
-      path[path.length - 1].row,
-      path.length - 1,
-      blockTimestamp,
-      currentArmiesTick,
-    );
+    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
 
     const directions = path
       .map((_, i) => {
