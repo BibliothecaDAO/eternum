@@ -61,7 +61,7 @@ export class ArmyModel {
   }
 
   private async loadModels(): Promise<void> {
-    const modelTypes = ["knight1", "knight2"];
+    const modelTypes = ["knight", "boat"];
     const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
     await Promise.all(loadPromises);
   }
@@ -75,6 +75,7 @@ export class ArmyModel {
           const group = new THREE.Group();
           const instancedMeshes: AnimatedInstancedMesh[] = [];
           const biomeMeshes: THREE.Mesh[] = [];
+          let meshIndex = 0;
 
           gltf.scene.traverse((child: THREE.Object3D) => {
             if (child instanceof THREE.Mesh) {
@@ -86,8 +87,13 @@ export class ArmyModel {
               instancedMesh.castShadow = true;
               instancedMesh.instanceMatrix.needsUpdate = true;
 
-              // Initialize instanceColor buffer
-              instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
+              // Skip color initialization for the first mesh (ground)
+              if (meshIndex > 0) {
+                instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(
+                  new Float32Array(MAX_INSTANCES * 3),
+                  3,
+                );
+              }
 
               if (gltf.animations.length > 0) {
                 const hasAnimation = gltf.animations[0].tracks.find(
@@ -106,6 +112,7 @@ export class ArmyModel {
               group.add(instancedMesh);
               instancedMeshes.push(instancedMesh);
               biomeMeshes.push(child);
+              meshIndex++;
             }
           });
 
