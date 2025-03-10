@@ -1,12 +1,20 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 
 export enum ModelType {
-  Land = "land",
-  Water = "water",
-  // Air = "air", // Future expansion
+  Boat = "boat",
+  Knight1 = "knight1",
+  Knight2 = "knight2",
+  Knight3 = "knight3",
+  Crossbowman1 = "crossbowman1",
+  Crossbowman2 = "crossbowman2",
+  Crossbowman3 = "crossbowman3",
+  Paladin1 = "paladin1",
+  Paladin2 = "paladin2",
+  Paladin3 = "paladin3",
 }
 
 export enum AnimationState {
@@ -18,10 +26,37 @@ const MAX_INSTANCES = 1000;
 const ANIMATION_STATE_IDLE = AnimationState.Idle;
 const ANIMATION_STATE_MOVING = AnimationState.Moving;
 
+// Map troop type and tier to model type
+export const TROOP_TO_MODEL: Record<TroopType, Record<TroopTier, ModelType>> = {
+  [TroopType.Knight]: {
+    [TroopTier.T1]: ModelType.Knight1,
+    [TroopTier.T2]: ModelType.Knight2,
+    [TroopTier.T3]: ModelType.Knight3,
+  },
+  [TroopType.Crossbowman]: {
+    [TroopTier.T1]: ModelType.Crossbowman1,
+    [TroopTier.T2]: ModelType.Crossbowman2,
+    [TroopTier.T3]: ModelType.Crossbowman3,
+  },
+  [TroopType.Paladin]: {
+    [TroopTier.T1]: ModelType.Paladin1,
+    [TroopTier.T2]: ModelType.Paladin2,
+    [TroopTier.T3]: ModelType.Paladin3,
+  },
+};
+
+// Map model type to file name
 const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
-  [ModelType.Land]: "knight",
-  [ModelType.Water]: "boat",
-  // [ModelType.Air]: "dragon", // Future expansion
+  [ModelType.Boat]: "boat",
+  [ModelType.Knight1]: "knight1",
+  [ModelType.Knight2]: "knight1",
+  [ModelType.Knight3]: "knight1",
+  [ModelType.Crossbowman1]: "knight2",
+  [ModelType.Crossbowman2]: "knight2",
+  [ModelType.Crossbowman3]: "knight2",
+  [ModelType.Paladin1]: "knight3",
+  [ModelType.Paladin2]: "knight3",
+  [ModelType.Paladin3]: "knight3",
 };
 
 interface AnimatedInstancedMesh extends THREE.InstancedMesh {

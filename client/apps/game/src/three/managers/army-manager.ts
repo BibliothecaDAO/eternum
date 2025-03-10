@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
-import { ArmyModel, ModelType } from "@/three/managers/army-model";
+import { ArmyModel, ModelType, TROOP_TO_MODEL } from "@/three/managers/army-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
 import {
@@ -73,7 +73,7 @@ export class ArmyManager {
                 guildName: "None",
               },
               1,
-              TroopType.Knight,
+              TroopType.Paladin,
               TroopTier.T1,
             );
           },
@@ -167,14 +167,14 @@ export class ArmyManager {
     this.renderVisibleArmies(chunkKey);
   }
 
-  private getModelTypeForBiome(biome: BiomeType): ModelType {
-    switch (biome) {
-      case BiomeType.Ocean:
-      case BiomeType.DeepOcean:
-        return ModelType.Water;
-      default:
-        return ModelType.Land;
+  private getModelTypeForBiome(biome: BiomeType, troopType: TroopType, troopTier: TroopTier): ModelType {
+    // For water biomes, always return boat model regardless of troop type
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      return ModelType.Boat;
     }
+
+    // For land biomes, return the appropriate model based on troop type and tier
+    return TROOP_TO_MODEL[troopType][troopTier];
   }
 
   private renderVisibleArmies(chunkKey: string) {
@@ -189,7 +189,7 @@ export class ArmyManager {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      const modelType = this.getModelTypeForBiome(biome);
+      const modelType = this.getModelTypeForBiome(biome, army.category, army.tier);
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
       // Update the specific model instance for this entity
@@ -290,7 +290,7 @@ export class ArmyManager {
 
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    const modelType = this.getModelTypeForBiome(biome);
+    const modelType = this.getModelTypeForBiome(biome, category, tier);
     this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);
@@ -430,7 +430,7 @@ export class ArmyManager {
 
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
       const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
-      const modelType = this.getModelTypeForBiome(biome);
+      const modelType = this.getModelTypeForBiome(biome, armyData.category, armyData.tier);
       this.armyModel.assignModelToEntity(entityId, modelType);
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
