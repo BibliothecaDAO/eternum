@@ -30,18 +30,12 @@ const ActionInstructions = lazy(() =>
   })),
 );
 
-const ArmyInfoLabel = lazy(() =>
-  import("../components/worldmap/armies/army-info-label").then((module) => ({
-    default: module.ArmyInfoLabelContainer,
-  })),
-);
-
 const BlankOverlayContainer = lazy(() =>
   import("../containers/blank-overlay-container").then((module) => ({ default: module.BlankOverlayContainer })),
 );
-const StructureInfoLabel = lazy(() =>
-  import("../components/worldmap/structures/structure-label").then((module) => ({
-    default: module.StructureInfoLabel,
+const EntitiesInfoLabel = lazy(() =>
+  import("../components/worldmap/entities/entities-label").then((module) => ({
+    default: module.EntityInfoLabel,
   })),
 );
 const TopCenterContainer = lazy(() => import("../containers/top-center-container"));
@@ -181,8 +175,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           {!IS_MOBILE && (
             <>
               <ActionInfo />
-              <ArmyInfoLabel />
-              <StructureInfoLabel />
+              <EntitiesInfoLabel />
             </>
           )}
 

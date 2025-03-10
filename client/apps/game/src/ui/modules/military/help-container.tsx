@@ -27,7 +27,7 @@ export const HelpContainer = ({
   const [transferType, setTransferType] = useState<TransferType>(TransferType.Resources);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const updateSelectedEntityId = useUIStore((state) => state.updateSelectedEntityId);
+  const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   // Determine if the selected entity is a structure or an explorer
