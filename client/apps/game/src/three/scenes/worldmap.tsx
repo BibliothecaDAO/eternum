@@ -288,7 +288,7 @@ export default class WorldmapScene extends HexagonScene {
         selectedEntityId,
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-      armyActionManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
+      armyActionManager.moveArmy(account!, selectedPath, isExplored);
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement

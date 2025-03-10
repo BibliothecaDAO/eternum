@@ -43,7 +43,9 @@ export const EntityInfoLabel = memo(() => {
     );
   }, [hoveredHex?.col, hoveredHex?.row]);
 
-  if (!tile) return null;
+  if (!tile?.occupier_id) {
+    return null;
+  }
 
   return <EntityInfoContent tile={tile} />;
 });

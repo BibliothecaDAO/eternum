@@ -10,7 +10,9 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
     setup: { components },
   } = useDojo();
 
-  const entities = useEntityQuery([HasValue(components.Structure, { owner: ContractAddress(account.address) })]);
+  const entities = useEntityQuery([
+    HasValue(components.Structure, { owner: playerAddress || ContractAddress(account.address) }),
+  ]);
 
   const playerStructures = useMemo(() => {
     return entities
