@@ -226,20 +226,8 @@ export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
 export const formatArrivalTime = (date: Date | null) => {
   if (!date) return "";
 
-  const day = date.getDate();
-  const month = date.getMonth() + 1;
   const hours = date.getHours();
   const minutes = date.getMinutes();
 
-  // Calculate time difference in minutes
-  const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
-  const diffMinutes = Math.max(0, Math.floor(diffMs / (1000 * 60)));
-  const hoursUntil = Math.floor(diffMinutes / 60);
-  const minutesUntil = diffMinutes % 60;
-
-  // Format the time difference
-  const timeUntil = `(${hoursUntil}h ${minutesUntil}m)`;
-
-  return `${month}/${day} at ${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${timeUntil}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
 };

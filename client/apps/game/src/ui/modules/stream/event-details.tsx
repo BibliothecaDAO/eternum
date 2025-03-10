@@ -14,7 +14,7 @@ export const eventDetails: {
   [key in EventType]: {
     to?: (
       compononentValue: ComponentValue<ClientComponents["events"][key]["schema"]>,
-      getAddressFromEntity: (id: ID) => ContractAddress | undefined,
+      getAddressFromStructureEntity: (id: ID) => ContractAddress | undefined,
     ) => ContractAddress | undefined;
     getAction: (
       componentValue: ComponentValue<ClientComponents["events"][key]["schema"]>,
@@ -54,8 +54,8 @@ export const eventDetails: {
   [EventType.HyperstructureFinished]: {
     to: (
       componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>,
-      getAddressFromEntity,
-    ) => getAddressFromEntity(componentValue.hyperstructure_entity_id),
+      getAddressFromStructureEntity,
+    ) => getAddressFromStructureEntity(componentValue.hyperstructure_entity_id),
     getAction: (
       _: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>,
       isPersonal,
@@ -66,8 +66,8 @@ export const eventDetails: {
   [EventType.HyperstructureContribution]: {
     to: (
       componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>,
-      getAddressFromEntity,
-    ) => getAddressFromEntity(componentValue.hyperstructure_entity_id),
+      getAddressFromStructureEntity,
+    ) => getAddressFromStructureEntity(componentValue.hyperstructure_entity_id),
     getAction: (
       _: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>,
       isPersonal,
@@ -78,8 +78,8 @@ export const eventDetails: {
   [EventType.AcceptOrder]: {
     to: (
       componentValue: ComponentValue<ClientComponents["events"][EventType.AcceptOrder]["schema"]>,
-      getAddressFromEntity,
-    ) => getAddressFromEntity(componentValue.maker_id),
+      getAddressFromStructureEntity,
+    ) => getAddressFromStructureEntity(componentValue.maker_id),
     getAction: (_: ComponentValue<ClientComponents["events"][EventType.AcceptOrder]["schema"]>, isPersonal) =>
       `accepted${isPersonal ? " your" : " a"} p2p order`,
     emoji: <Check className="w-6 self-center fill-current" />,
