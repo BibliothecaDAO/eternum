@@ -1,0 +1,19 @@
+{
+  "name": "eternum-config",
+  "module": "index.ts",
+  "scripts": {
+    "dev": "bun run index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "eslint": "^9.20.1"
+  },
+  "peerDependencies": {
+    "@bibliothecadao/eternum": "../eternum/client/sdk/packages/eternum",
+    "@dojoengine/core": "1.0.0-alpha.21",
+    "starknet": "6.11.0",
+    "typescript": "^5.0.0"
+  }
+}
