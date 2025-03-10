@@ -86,6 +86,9 @@ export class ArmyModel {
               instancedMesh.castShadow = true;
               instancedMesh.instanceMatrix.needsUpdate = true;
 
+              // Initialize instanceColor buffer
+              instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
+
               if (gltf.animations.length > 0) {
                 const hasAnimation = gltf.animations[0].tracks.find(
                   (track: any) => track.name.split(".")[0] === child.name,
@@ -171,7 +174,7 @@ export class ArmyModel {
         mesh.instanceMatrix.needsUpdate = true;
 
         if (color && mesh.instanceColor) {
-          //mesh.setColorAt(index, color);
+          mesh.setColorAt(index, color);
           mesh.instanceColor.needsUpdate = true;
         }
 
