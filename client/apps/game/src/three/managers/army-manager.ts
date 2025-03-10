@@ -184,9 +184,9 @@ export class ArmyManager {
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(army.entityId, "knight2");
+        this.armyModel.assignModelToEntity(army.entityId, "boat");
       } else {
-        this.armyModel.assignModelToEntity(army.entityId, "knight1");
+        this.armyModel.assignModelToEntity(army.entityId, "knight");
       }
 
       // Update the specific model instance for this entity
@@ -289,9 +289,9 @@ export class ArmyManager {
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
     if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      this.armyModel.assignModelToEntity(entityId, "knight2");
+      this.armyModel.assignModelToEntity(entityId, "boat");
     } else {
-      this.armyModel.assignModelToEntity(entityId, "knight1");
+      this.armyModel.assignModelToEntity(entityId, "knight");
     }
 
     const orderData = orders.find((_order) => _order.orderId === order);
@@ -432,9 +432,9 @@ export class ArmyManager {
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
       const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
       if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(entityId, "knight2");
+        this.armyModel.assignModelToEntity(entityId, "boat");
       } else {
-        this.armyModel.assignModelToEntity(entityId, "knight1");
+        this.armyModel.assignModelToEntity(entityId, "knight");
       }
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
