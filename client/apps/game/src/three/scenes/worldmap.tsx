@@ -277,7 +277,6 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
-    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
     const selectedPath = actionPath.map((path) => path.hex);
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
