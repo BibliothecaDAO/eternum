@@ -36,7 +36,7 @@ export class ArmyModel {
   animationStates: Float32Array;
   timeOffsets: Float32Array;
   private zeroScale = new THREE.Vector3(0, 0, 0);
-  private normalScale = new THREE.Vector3(0.3, 0.3, 0.3);
+  private normalScale = new THREE.Vector3(1, 1, 1);
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
   private readonly SCALE_TRANSITION_SPEED = 5.0; // Adjust this value to control transition speed
@@ -57,7 +57,7 @@ export class ArmyModel {
 
   private async loadModels(): Promise<void> {
     // Load all model variants
-    const modelTypes = ["knight", "boat"]; // Add more model types as needed
+    const modelTypes = ["knight1", "knight2"]; // Add more model types as needed
     const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
     await Promise.all(loadPromises);
   }
@@ -66,9 +66,9 @@ export class ArmyModel {
     const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
-        `models/${modelType}.glb`,
+        `models/units/${modelType}.glb`,
         (gltf) => {
-          const baseMesh = gltf.scene.children[0];
+          const baseMesh = gltf.scene.children[0].children[1];
           const geometry = (baseMesh as THREE.Mesh).geometry.clone();
           const material = (baseMesh as THREE.Mesh).material;
           const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
@@ -77,9 +77,12 @@ export class ArmyModel {
           instancedMesh.instanceMatrix.needsUpdate = true;
           this.scene.add(instancedMesh);
 
-          for (let i = 0; i < MAX_INSTANCES; i++) {
-            instancedMesh.setMorphAt(i, baseMesh as any);
+          if (instancedMesh.morphTexture) {
+            for (let i = 0; i < MAX_INSTANCES; i++) {
+              instancedMesh.setMorphAt(i, baseMesh as any);
+            }
           }
+
           instancedMesh.count = 0; // Always keep max count
 
           const mixer = new AnimationMixer(gltf.scene);
@@ -90,7 +93,7 @@ export class ArmyModel {
             mixer,
             animations: {
               idle: gltf.animations[0],
-              walk: gltf.animations[1] || gltf.animations[0].clone(),
+              walk: gltf.animations[1] || gltf.animations[0]?.clone(),
             },
             animationActions: new Map(),
             activeInstances: new Set(),
@@ -164,60 +167,63 @@ export class ArmyModel {
     // }
 
     this.models.forEach((modelData) => {
-      let needsMatrixUpdate = false;
+      if (modelData.mesh.morphTexture) {
+        let needsMatrixUpdate = false;
 
-      // modelData.targetScales.forEach((targetScale, index) => {
-      //   const currentScale = modelData.currentScales.get(index)!;
-      //   const matrix = new THREE.Matrix4();
-      //   modelData.mesh.getMatrixAt(index, matrix);
+        // modelData.targetScales.forEach((targetScale, index) => {
+        //   const currentScale = modelData.currentScales.get(index)!;
+        //   const matrix = new THREE.Matrix4();
+        //   modelData.mesh.getMatrixAt(index, matrix);
 
-      //   // Interpolate scale
-      //   currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
-      //   if (!currentScale.equals(targetScale)) {
-      //     this.dummyObject.matrix.copy(matrix);
-      //     this.dummyObject.scale.copy(currentScale);
-      //     this.dummyObject.updateMatrix();
-      //     modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-      //     needsMatrixUpdate = true;
-      //   }
-      // });
+        //   // Interpolate scale
+        //   currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
+        //   if (!currentScale.equals(targetScale)) {
+        //     this.dummyObject.matrix.copy(matrix);
+        //     this.dummyObject.scale.copy(currentScale);
+        //     this.dummyObject.updateMatrix();
+        //     modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
+        //     needsMatrixUpdate = true;
+        //   }
+        // });
 
-      if (needsMatrixUpdate) {
-        modelData.mesh.instanceMatrix.needsUpdate = true;
+        if (needsMatrixUpdate) {
+          modelData.mesh.instanceMatrix.needsUpdate = true;
+        }
+
+        for (let i = 0; i < modelData.mesh.count; i++) {
+          const animationState = this.animationStates[i];
+          if (
+            (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
+            GRAPHICS_SETTING === GraphicsSettings.LOW
+          ) {
+            continue;
+          }
+
+          if (!modelData.animationActions.has(i)) {
+            const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
+            const walkAction = modelData.mixer.clipAction(modelData.animations.walk);
+            modelData.animationActions.set(i, { idle: idleAction, walk: walkAction });
+          }
+
+          const actions = modelData.animationActions.get(i)!;
+          if (animationState === ANIMATION_STATE_IDLE) {
+            actions.idle.setEffectiveTimeScale(1);
+            actions.walk.setEffectiveTimeScale(0);
+          } else if (animationState === ANIMATION_STATE_WALKING) {
+            actions.idle.setEffectiveTimeScale(0);
+            actions.walk.setEffectiveTimeScale(1);
+          }
+
+          actions.idle.play();
+          actions.walk.play();
+
+          modelData.mixer.setTime(time + this.timeOffsets[i]);
+
+          modelData.mesh.setMorphAt(i, modelData.baseMesh as any);
+        }
+
+        modelData.mesh.morphTexture!.needsUpdate = true;
       }
-
-      for (let i = 0; i < modelData.mesh.count; i++) {
-        const animationState = this.animationStates[i];
-        if (
-          (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-          GRAPHICS_SETTING === GraphicsSettings.LOW
-        ) {
-          continue;
-        }
-
-        if (!modelData.animationActions.has(i)) {
-          const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
-          const walkAction = modelData.mixer.clipAction(modelData.animations.walk);
-          modelData.animationActions.set(i, { idle: idleAction, walk: walkAction });
-        }
-
-        const actions = modelData.animationActions.get(i)!;
-        if (animationState === ANIMATION_STATE_IDLE) {
-          actions.idle.setEffectiveTimeScale(1);
-          actions.walk.setEffectiveTimeScale(0);
-        } else if (animationState === ANIMATION_STATE_WALKING) {
-          actions.idle.setEffectiveTimeScale(0);
-          actions.walk.setEffectiveTimeScale(1);
-        }
-
-        actions.idle.play();
-        actions.walk.play();
-
-        modelData.mixer.setTime(time + this.timeOffsets[i]);
-
-        modelData.mesh.setMorphAt(i, modelData.baseMesh as any);
-      }
-      modelData.mesh.morphTexture!.needsUpdate = true;
     });
   }
 
