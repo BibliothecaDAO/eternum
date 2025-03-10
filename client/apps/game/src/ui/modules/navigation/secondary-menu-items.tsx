@@ -5,13 +5,16 @@ import { HintModal } from "@/ui/components/hints/hint-modal";
 import { HomeButton } from "@/ui/components/home-button";
 import { rewards, settings } from "@/ui/components/navigation/config";
 import { BuildingThumbs } from "@/ui/config";
+import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
+import { useAccount } from "@starknet-react/core";
 
 export const SecondaryMenuItems = () => {
   const {
@@ -26,6 +29,7 @@ export const SecondaryMenuItems = () => {
   const { connector } = useAccountStore();
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);
+  const { isConnected } = useAccount();
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -113,6 +117,22 @@ export const SecondaryMenuItems = () => {
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
         <HomeButton />
       </div>
+      {isConnected && (<div className="absolute top-12 right-0 bg-brown/90 mx-2">
+        <a
+          className="text-brown cursor-pointer text-lg w-full"
+          href={`https://empire.realms.world/trade`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button variant="secondary" className="w-full">
+            <div className="flex items-center gap-2">
+              <ResourceIcon resource="Lords" size="xs" />
+              Bridge Lords & Resources
+            </div>
+          </Button>
+          </a>
+        </div>
+      )}
     </div>
   );
 };

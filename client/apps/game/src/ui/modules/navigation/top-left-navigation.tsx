@@ -228,7 +228,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        {/* <QuestsMenu /> */}
       </div>
     </div>
   );
