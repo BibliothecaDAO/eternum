@@ -117,20 +117,18 @@ export const SecondaryMenuItems = () => {
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
         <HomeButton />
       </div>
-      {isConnected && (<div className="absolute top-12 right-0 bg-brown/90 mx-2">
-        <a
-          className="text-brown cursor-pointer text-lg w-full"
-          href={`https://empire.realms.world/trade`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button variant="secondary" className="w-full">
+      {isConnected && (
+        <div className="absolute top-12 right-0 bg-brown/90 mx-2">
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer")}
+          >
             <div className="flex items-center gap-2">
               <ResourceIcon resource="Lords" size="xs" />
               Bridge Lords & Resources
             </div>
           </Button>
-          </a>
         </div>
       )}
     </div>

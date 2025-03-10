@@ -1,4 +1,4 @@
-import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
+import { ReactComponent as WorldIcon } from "@/assets/icons/common/world.svg";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
@@ -17,7 +17,7 @@ export const ViewOnMapIcon = ({
   const navigateToMapView = useNavigateToMapView();
 
   return (
-    <Map
+    <WorldIcon
       className={clsx(
         "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
         className,
