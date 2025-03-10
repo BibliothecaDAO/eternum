@@ -9,7 +9,7 @@ import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   ContractAddress,
-  getAddressFromEntity,
+  getAddressFromStructureEntity,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
   ID,
@@ -150,7 +150,7 @@ const BaseStructureExtraContent = ({
 
   const structureOwner = useMemo(() => {
     const ownerName = getAddressNameFromEntity(entityId, components);
-    const address = getAddressFromEntity(entityId, components);
+    const address = getAddressFromStructureEntity(entityId, components);
     const guildName = getGuildFromPlayerAddress(address || 0n, components)?.name;
     return { name: ownerName, guildName };
   }, [entityId]);

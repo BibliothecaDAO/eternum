@@ -1,7 +1,7 @@
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { ContractAddress, getAddressFromEntity, ID, world } from "@bibliothecadao/eternum";
+import { ContractAddress, getAddressFromStructureEntity, ID, world } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { useCallback, useEffect, useState } from "react";
@@ -27,7 +27,7 @@ export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
 
       const owner = undefined;
 
-      const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) => getAddressFromEntity(id, components));
+      const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) => getAddressFromStructureEntity(id, components));
       const isPersonal = to === ContractAddress(account.address);
 
       return {
