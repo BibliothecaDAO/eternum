@@ -33,7 +33,6 @@ import {
   StructureActionManager,
 } from "@bibliothecadao/eternum";
 import { getEntities } from "@dojoengine/state";
-import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
@@ -61,7 +60,6 @@ export default class WorldmapScene extends HexagonScene {
   private structureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
   // store armies positions by ID, to remove previous positions when army moves
   private armiesPositions: Map<ID, HexPosition> = new Map();
-  private armySubscription: any;
   private selectedHexManager: SelectedHexManager;
   private minimap!: Minimap;
   private previouslyHoveredHex: HexPosition | null = null;
@@ -88,27 +86,9 @@ export default class WorldmapScene extends HexagonScene {
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
 
     useUIStore.subscribe(
-      (state) => state.hoveredArmyEntityId,
-      (hoveredArmyEntityId) => {
-        this.state.hoveredArmyEntityId = hoveredArmyEntityId;
-      },
-    );
-    useUIStore.subscribe(
-      (state) => state.hoveredStructure,
-      (hoveredStructure) => {
-        this.state.hoveredStructure = hoveredStructure;
-      },
-    );
-    useUIStore.subscribe(
       (state) => state.entityActions,
       (armyActions) => {
         this.state.entityActions = armyActions;
-      },
-    );
-    useUIStore.subscribe(
-      (state) => state.hoveredBattle,
-      (hoveredBattle) => {
-        this.state.hoveredBattle = hoveredBattle;
       },
     );
     useUIStore.subscribe(
@@ -130,10 +110,6 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    useAccountStore.subscribe((state) => {
-      const account = state.account;
-    });
-
     useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
       (selectedEntityId) => {
@@ -144,8 +120,9 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
     this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
 
-    this.armySubscription?.unsubscribe();
-    this.armySubscription = this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
+    // Store the unsubscribe function for Army updates
+    this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
+      this.updateArmyHexes(update);
       this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles).then((needsUpdate) => {
         if (needsUpdate) {
           this.updateVisibleChunks();
@@ -153,8 +130,10 @@ export default class WorldmapScene extends HexagonScene {
       });
     });
 
+    // Store the unsubscribe function for Tile updates
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
-    this.systemManager.Army.onUpdate((value) => this.updateArmyHexes(value));
+
+    // Store the unsubscribe function for Structure updates
     this.systemManager.Structure.onUpdate((value) => {
       this.updateStructureHexes(value);
 
@@ -176,18 +155,11 @@ export default class WorldmapScene extends HexagonScene {
       }
     });
 
+    // Store the unsubscribe function for Structure contributions
     this.systemManager.Structure.onContribution((value) => {
       this.structureManager.structures.updateStructureStage(value.entityId, value.structureType, value.stage);
       this.structureManager.updateChunk(this.currentChunk);
     });
-
-    this.inputManager.addListener(
-      "mousemove",
-      throttle((raycaster) => {
-        const entityId = this.armyManager.onMouseMove(raycaster);
-        this.onArmyMouseMove(entityId);
-      }, 10),
-    );
 
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
@@ -220,47 +192,22 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  private onArmyMouseMove(entityId: ID | undefined) {
-    if (entityId) {
-      this.state.setHoveredArmyEntityId(entityId);
-    } else if (this.state.hoveredArmyEntityId) {
-      this.state.setHoveredArmyEntityId(null);
-    }
-  }
-
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: THREE.Vector3 } | null): void {
     if (hex === null) {
-      this.state.updateHoveredHex(null);
-      this.state.setHoveredStructure(null);
+      this.state.updateEntityActionHoveredHex(null);
+      this.state.setHoveredHex(null);
       return;
     }
     const { hexCoords } = hex;
+    this.state.setHoveredHex(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
         this.previouslyHoveredHex = hexCoords;
       }
-      this.state.updateHoveredHex(hexCoords);
+      this.state.updateEntityActionHoveredHex(hexCoords);
     }
-
-    if (this.state.hoveredArmyEntityId) return;
-
-    const structure = this.structureManager.getStructureByHexCoords(hexCoords);
-    if (structure) {
-      this.state.setHoveredStructure(structure);
-    } else if (this.state.hoveredStructure) {
-      this.state.setHoveredStructure(null);
-    }
-
-    const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-  }
-
-  private _canBuildStructure(hexCoords: HexPosition) {
-    const isStructure = this.structureManager.structureHexCoords.get(hexCoords.col)?.has(hexCoords.row) || false;
-    const isExplored = this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) || false;
-
-    return !isStructure && isExplored;
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
@@ -313,8 +260,6 @@ export default class WorldmapScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
-    // console.log({ selectedEntityId: this.state.entityActions.selectedEntityId });
-
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
@@ -325,7 +270,7 @@ export default class WorldmapScene extends HexagonScene {
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
-          this.onArmyHelp(account, actionPath, selectedEntityId);
+          this.onArmyHelp(actionPath, selectedEntityId);
         }
       }
     }
@@ -344,7 +289,7 @@ export default class WorldmapScene extends HexagonScene {
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
       armyActionManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
-      this.state.updateHoveredHex(null);
+      this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
     this.clearSelection();
@@ -365,7 +310,7 @@ export default class WorldmapScene extends HexagonScene {
     );
   }
 
-  private onArmyHelp(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+  private onArmyHelp(actionPath: ActionPath[], selectedEntityId: ID) {
     const selectedPath = actionPath.map((path) => path.hex);
     const targetHex = selectedPath[selectedPath.length - 1];
 
@@ -378,7 +323,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onStructureSelection(selectedEntityId: ID) {
-    this.state.updateSelectedEntityId(selectedEntityId);
+    this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const structure = new StructureActionManager(this.dojo.components, selectedEntityId);
 
@@ -388,13 +333,13 @@ export default class WorldmapScene extends HexagonScene {
 
     const actionPaths = structure.findActionPaths(this.armyHexes, this.exploredTiles, ContractAddress(playerAddress));
 
-    this.state.updateActionPaths(actionPaths.getPaths());
+    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
 
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
-    this.state.updateSelectedEntityId(selectedEntityId);
+    this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.network.provider, selectedEntityId);
 
@@ -408,15 +353,15 @@ export default class WorldmapScene extends HexagonScene {
       currentArmiesTick,
       playerAddress,
     );
-    this.state.updateActionPaths(actionPaths.getPaths());
+    this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
   private clearSelection() {
     console.log("clearSelection");
     this.highlightHexManager.highlightHexes([]);
-    this.state.updateActionPaths(new Map());
-    this.state.updateSelectedEntityId(null);
+    this.state.updateEntityActionActionPaths(new Map());
+    this.state.updateEntityActionSelectedEntityId(null);
     this.state.setSelectedHex(null);
   }
 
@@ -714,10 +659,6 @@ export default class WorldmapScene extends HexagonScene {
 
     this.computeTileEntities(this.currentChunk);
 
-    // this.getChunksAround(this.currentChunk).forEach((chunkKey) => {
-    //   console.log("chunkKey", chunkKey);
-    //   this.computeTileEntities(chunkKey);
-    // });
     const processBatch = async () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
