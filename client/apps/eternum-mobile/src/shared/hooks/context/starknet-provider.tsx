@@ -1,12 +1,11 @@
 import { getResourceAddresses } from "@/shared/lib/addresses";
 import ControllerConnector from "@cartridge/connector/controller";
-import { ColorMode } from "@cartridge/controller";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import React, { useCallback } from "react";
 import { env } from "../../../../env";
 import { policies } from "./policies";
-import { signingPolicy } from "./signing-policy";
+import { messages } from "./signing-policy";
 
 enum StarknetChainId {
   SN_MAIN = "0x534e5f4d41494e", // encodeShortString('SN_MAIN'),
@@ -22,10 +21,8 @@ const otherResources = Object.entries(resourceAddresses)
   .toString();
 
 const preset: string = "eternum";
-const theme: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
-const colorMode: ColorMode = "dark";
 
 const controller =
   env.VITE_PUBLIC_CHAIN === "mainnet"
@@ -38,7 +35,6 @@ const controller =
         tokens: {
           erc20: [LORDS, ...otherResources],
         },
-        colorMode,
       })
     : new ControllerConnector({
         chains: [{ rpcUrl: env.VITE_PUBLIC_NODE_URL }],
@@ -46,12 +42,10 @@ const controller =
         namespace,
         slot,
         preset,
-        policies: { contracts: policies, messages: signingPolicy },
-        theme,
+        policies: { contracts: policies, messages },
         tokens: {
           erc20: [LORDS, ...otherResources],
         },
-        colorMode,
       });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {

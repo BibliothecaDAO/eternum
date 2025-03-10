@@ -4,7 +4,7 @@ import { create } from "zustand";
 
 interface AccountState {
   account: Account | AccountInterface | null;
-  setAccount: (account: Account | AccountInterface | null) => void;
+  setAccount: (account: AccountInterface | null) => void;
   connector: ControllerConnector | null;
   setConnector: (connector: ControllerConnector) => void;
 }
