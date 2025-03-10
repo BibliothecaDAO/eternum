@@ -10,7 +10,7 @@ import { EVENT_NOTIF_STORAGE_KEY, EVENT_STREAM_SIZE } from "./constants";
 import { eventDetails } from "./event-details";
 import { EventData, EventType } from "./types";
 
-export const EventStream = () => {
+export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
   const {
     setup: { components },
     account: { account },
@@ -90,8 +90,8 @@ export const EventStream = () => {
   });
 
   return (
-    <div className="h-full w-full md:justify-start justify-end pointer-events-auto">
-      <div className={`flex flex-row text-sm text-center md:justify-start justify-end `}>
+    <div className={`w-full md:justify-start justify-end pointer-events-auto ${hideChat ? "h-0 hidden" : "h-[20vh]"}`}>
+      <div className={`flex flex-row text-sm text-center md:justify-start justify-end ${hideChat ? "hidden" : ""}`}>
         <div className="flex ml-2">
           <div
             className={`px-3 py-1 cursor-pointer ${activeTab === "all" ? "bg-brown/40 text-gold" : "bg-brown/20"}`}
@@ -116,7 +116,7 @@ export const EventStream = () => {
         </div>
       </div>
 
-      <div className="bg-brown/90 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 overflow-y-auto">
+      <div className={`bg-brown/90 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 overflow-y-auto ${hideChat ? "hidden" : "h-[calc(100%-2rem)]"}`}>
         {filteredEvents
           .sort((a, b) => a.timestamp - b.timestamp)
           .slice(-EVENT_STREAM_SIZE)
