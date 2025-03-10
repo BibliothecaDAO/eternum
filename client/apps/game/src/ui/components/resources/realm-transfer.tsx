@@ -45,8 +45,6 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     return resourceManager.balanceWithProduction(tick, resource);
   }, [resourceManager, tick]);
 
-  const isOpen = useUIStore((state) => state.isPopupOpen(resource.toString()));
-
   const playerStructures = usePlayerStructures();
 
   const [isLoading, setIsLoading] = useState(false);
