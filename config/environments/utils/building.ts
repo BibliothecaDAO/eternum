@@ -194,7 +194,7 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Sapphire]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   [ResourcesIds.Ruby]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [ResourcesIds.DeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
-  [ResourcesIds.Ignium]: [{ resource: ResourcesIds.Wheat, amount: 750 }],
+  [ResourcesIds.Ignium]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [ResourcesIds.EtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   [ResourcesIds.TrueIce]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
   [ResourcesIds.TwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
