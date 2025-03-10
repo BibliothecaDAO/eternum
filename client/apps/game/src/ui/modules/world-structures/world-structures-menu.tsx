@@ -3,9 +3,9 @@ import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
 import { EntityList } from "@/ui/components/list/entity-list";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   ContractAddress,

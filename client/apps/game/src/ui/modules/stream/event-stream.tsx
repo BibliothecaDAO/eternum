@@ -1,6 +1,6 @@
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { ContractAddress, getAddressFromEntity, ID, world } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
@@ -116,7 +116,9 @@ export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
         </div>
       </div>
 
-      <div className={`bg-brown/90 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 overflow-y-auto ${hideChat ? "hidden" : "h-[calc(100%-2rem)]"}`}>
+      <div
+        className={`bg-brown/90 bg-hex-bg rounded-bl-2xl p-1 rounded-tr border border-gold/40 overflow-y-auto ${hideChat ? "hidden" : "h-[calc(100%-2rem)]"}`}
+      >
         {filteredEvents
           .sort((a, b) => a.timestamp - b.timestamp)
           .slice(-EVENT_STREAM_SIZE)

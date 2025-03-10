@@ -40,7 +40,7 @@ export const formatArmies = (
 
       const isMercenary = structure?.owner === 0n;
 
-      const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;
+      const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
 
       return {
         entityId: explorerTroops.explorer_id,
@@ -150,6 +150,15 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
 
   // Filter out guards with no troops
   return guards;
+};
+
+export const isArmyAdjacentToStructure = (
+  armyPosition: { x: number; y: number },
+  structureX: number,
+  structureY: number,
+): boolean => {
+  const adjacentHexes = getNeighborHexes(structureX, structureY);
+  return adjacentHexes.some((hex) => hex.col === armyPosition.x && hex.row === armyPosition.y);
 };
 
 export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {

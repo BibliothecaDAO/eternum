@@ -4,11 +4,11 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
 import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {

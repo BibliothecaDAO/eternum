@@ -3,6 +3,7 @@ import { Position } from "@/types/position";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -21,7 +22,6 @@ import { useBank, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { HintModal } from "../hints/hint-modal";
 import { NavigateToPositionIcon } from "../military/army-chip";
-import { ViewOnMapIcon } from "../military/army-management-card";
 import { CooldownTimer, DefenseTroop } from "../military/structure-defence";
 import { TroopChip } from "../military/troop-chip";
 
