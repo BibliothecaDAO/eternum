@@ -3,7 +3,11 @@ name: test season pass
 on:
   pull_request:
     paths-ignore:
-      - "contracts/**"
+      - "contracts/common/**"
+      - "contracts/game/**"
+      - "contracts/season_resources/**"
+      - "contracts/utils/**"
+      - "contracts/world/**"
       - "client/**"
       - "**/manifest.json"
       - "config/**"
@@ -20,11 +24,11 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: season_pass/contracts/.tool-versions
+          tool-versions: contracts/season_pass/.tool-versions
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: season_pass/contracts/.tool-versions
+          tool-versions: contracts/season_pass/.tool-versions
       - run: scarb build
-        working-directory: season_pass/contracts
+        working-directory: contracts/season_pass
       - run: snforge test
-        working-directory: season_pass/contracts
+        working-directory: contracts/season_pass

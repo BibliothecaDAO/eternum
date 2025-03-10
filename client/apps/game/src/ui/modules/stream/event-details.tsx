@@ -1,11 +1,6 @@
 import { ReactComponent as Check } from "@/assets/icons/check.svg";
-import { ReactComponent as Chest } from "@/assets/icons/chest.svg";
-import { ReactComponent as Coins } from "@/assets/icons/coins.svg";
-import { ReactComponent as Combat } from "@/assets/icons/combat.svg";
-import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Burn } from "@/assets/icons/fire.svg";
-import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
 import { ReactComponent as Wrench } from "@/assets/icons/wrench.svg";
@@ -40,55 +35,6 @@ export const eventDetails: {
       `burnt ${currencyFormat(Number(componentValue.amount), 0)} donkeys`,
     emoji: <Burn className="w-6 self-center fill-current" />,
     color: "#A5D6A7",
-  },
-  [EventType.MapExplored]: {
-    getAction: (_: ComponentValue<ClientComponents["events"][EventType.MapExplored]["schema"]>) => `explored a tile`,
-    emoji: <Compass className="w-6 self-center fill-current" />,
-    color: "#ED9733",
-  },
-  [EventType.BattleStart]: {
-    to: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.BattleStart]["schema"]>,
-      _getAddressFromEntity,
-    ) => componentValue.defender,
-    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleStart]["schema"]>, isPersonal) =>
-      `started a battle${isPersonal ? " with you" : ""}`,
-    emoji: <Combat className="w-6 self-center fill-current" />,
-    color: "#EF9A9A",
-  },
-  [EventType.BattleJoin]: {
-    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleJoin]["schema"]>) => `joined a battle`,
-    emoji: <Combat className="w-6 self-center fill-current" />,
-    color: "#EF9A9A",
-  },
-  [EventType.BattleLeave]: {
-    getAction: (_: ComponentValue<ClientComponents["events"][EventType.BattleLeave]["schema"]>) => "left a battle",
-    emoji: <Scroll className="w-6 self-center fill-current" />,
-    color: "#90CAF9",
-  },
-  [EventType.BattleClaim]: {
-    to: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.BattleClaim]["schema"]>,
-      getAddressFromEntity,
-    ) => getAddressFromEntity(componentValue.structure_entity_id),
-    getAction: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.BattleClaim]["schema"]>,
-      isPersonal,
-    ) => `claimed${isPersonal ? " your" : " a"} ${componentValue.structure_type}`,
-    emoji: <Chest className="w-6 self-center fill-current" />,
-    color: "#FFCC80",
-  },
-  [EventType.BattlePillage]: {
-    to: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.BattlePillage]["schema"]>,
-      _getAddressFromEntity,
-    ) => componentValue.pillaged_structure_owner,
-    getAction: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.BattlePillage]["schema"]>,
-      isPersonal,
-    ) => `pillaged${isPersonal ? " your" : " a"} ${componentValue.structure_type}`,
-    emoji: <Coins className="w-6 self-center fill-current" />,
-    color: "#CE93D8",
   },
   [EventType.Swap]: {
     getAction: (componentValue: ComponentValue<ClientComponents["events"][EventType.Swap]["schema"]>) => {

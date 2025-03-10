@@ -38,7 +38,7 @@ export const SelectResources = ({
   return (
     <div className=" items-center col-span-4 space-y-2 p-3">
       {selectedResourceIds.map((id: any, index: any) => {
-        const resource = getBalance(id);
+        const balance = getBalance(id);
         const options = [resources.find((res) => res.id === id), ...unselectedResources]
           .filter((res) => getBalance(res?.id || 0) > 0)
           .map((res: any) => ({
@@ -80,13 +80,13 @@ export const SelectResources = ({
             />
             <NumberInput
               className="h-10"
-              max={divideByPrecision(resource?.balance || 0)}
+              max={divideByPrecision(balance || 0)}
               min={1}
               value={selectedResourceAmounts[id]}
               onChange={(value) => {
                 setSelectedResourceAmounts({
                   ...selectedResourceAmounts,
-                  [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
+                  [id]: Math.min(divideByPrecision(balance || 0), value),
                 });
               }}
             />

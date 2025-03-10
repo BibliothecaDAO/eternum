@@ -1,11 +1,10 @@
-import { Entity, getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, Structure } from "..";
-import { StructureType } from "../constants";
+import { MERCENARIES, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, Position, TickIds } from "../types";
-import { getArmy } from "./army";
+import { ArmyInfo, ContractAddress, ID, Position, TickIds } from "../types";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 
@@ -14,8 +13,8 @@ export const getStructureAtPosition = (
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): Structure | undefined => {
-  const structureAtPosition = runQuery([HasValue(components.Position, { x, y }), Has(components.Structure)]);
-  const structureEntity = Array.from(structureAtPosition)[0];
+  const tile = getComponentValue(components.Tile, getEntityIdFromKeys([BigInt(x), BigInt(y)]));
+  const structureEntity = getEntityIdFromKeys([BigInt(tile?.occupier_id || 0n)]);
 
   if (!structureEntity) return;
 
@@ -39,44 +38,32 @@ const getStructureInfo = (
   const structure = getComponentValue(components.Structure, entity);
   if (!structure) return;
 
-  const entityOwner = getComponentValue(components.EntityOwner, entity);
-  if (!entityOwner) return;
+  const protectors: ArmyInfo[] = [];
 
-  const position = getComponentValue(components.Position, entity);
-  if (!position) return;
-
-  const ownerOnChain = getComponentValue(
-    components.Owner,
-    getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]),
-  );
-  const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: ContractAddress(0n) };
-
-  const protectorArmy = getComponentValue(components.Protector, entity);
-  const protector = protectorArmy ? getArmy(protectorArmy.army_id, playerAddress, components) : undefined;
-
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([owner?.address]));
-  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : "Bandits";
+  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
+  const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
 
   const name = getEntityName(structure.entity_id, components);
 
   return {
-    ...structure,
-    entityOwner,
-    owner,
+    entityId: structure.entity_id,
+    structure,
+    owner: structure.owner,
     name,
-    position,
-    protector,
-    isMine: ContractAddress(owner?.address || 0n) === playerAddress,
-    isMercenary: owner.address === 0n,
+    position: { x: structure.base.coord_x, y: structure.base.coord_y },
+    protectors,
+    isMine: ContractAddress(structure.owner) === playerAddress,
+    isMercenary: structure.owner === 0n,
     ownerName,
+    category: structure.base.category,
   };
 };
 
 export const isStructureImmune = (
-  structure: { category: string; created_at: bigint } | undefined,
+  structure: { category: number; created_at: number } | undefined,
   currentTimestamp: number,
 ): boolean => {
-  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+  const structureType = structure?.category as StructureType;
 
   const tickCount = currentTickCount(currentTimestamp);
   const allowAttackTick =
@@ -89,10 +76,10 @@ export const isStructureImmune = (
 };
 
 export const getStructureImmunityTimer = (structure: Structure | undefined, currentBlockTimestamp: number) => {
-  const structureType = StructureType[(structure?.category as keyof typeof StructureType) || 0];
+  const structureType = structure?.structure.base.category as StructureType;
 
   const immunityEndTimestamp =
-    Number(structure?.created_at || 0) +
+    Number(structure?.structure.base.created_at || 0) +
     (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0);
 
   if (!currentBlockTimestamp) return 0;

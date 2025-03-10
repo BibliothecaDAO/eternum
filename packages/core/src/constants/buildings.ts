@@ -14,14 +14,17 @@ export const BUILDING_INFORMATION: {
   [BuildingType.Farm]: "Enchanted Farms, blessed by Gaia, yield golden wheat.",
   [BuildingType.FishingVillage]:
     "Mystical Fishing Villages, guided by the Moon, harvest the bounty of the seas of Fish",
-  [BuildingType.Barracks]: "Barracks, where valor and magic intertwine, train noble Knights.",
+  [BuildingType.Barracks1]: "Barracks, where valor and magic intertwine, train noble Knights.",
+  [BuildingType.Barracks2]: "Barracks, where valor and magic intertwine, train noble Knights.",
+  [BuildingType.Barracks3]: "Barracks, where valor and magic intertwine, train noble Knights.",
   [BuildingType.Market]: "Markets, bustling with arcane traders, summon Donkeys for mystical trading.",
-  [BuildingType.ArcheryRange]: "Archery Ranges, under the watchful eyes of elven masters, train Crossbow men.",
-  [BuildingType.Stable]: "Stables, infused with ancient spirits, summon valiant Paladins.",
-  [BuildingType.TradingPost]: "Trading Posts, at the crossroads of destiny, expand the horizons of trade.",
+  [BuildingType.ArcheryRange1]: "Archery Ranges, under the watchful eyes of elven masters, train Crossbow men.",
+  [BuildingType.ArcheryRange2]: "Archery Ranges, under the watchful eyes of elven masters, train Crossbow men.",
+  [BuildingType.ArcheryRange3]: "Archery Ranges, under the watchful eyes of elven masters, train Crossbow men.",
+  [BuildingType.Stable1]: "Stables, infused with ancient spirits, summon valiant Paladins.",
+  [BuildingType.Stable2]: "Stables, infused with ancient spirits, summon valiant Paladins.",
+  [BuildingType.Stable3]: "Stables, infused with ancient spirits, summon valiant Paladins.",
   [BuildingType.WorkersHut]:
     "Workers Huts, blessed by the ancestors, expand the heart of your realm allowing for greater capacity.",
-  [BuildingType.WatchTower]: "Watch Towers, piercing the veils of fog, extend the gaze of your kingdom.",
-  [BuildingType.Walls]: "Walls, imbued with the strength of titans, fortify your domain against the shadows.",
   [BuildingType.Storehouse]: "Storehouses, where abundance flows, swell with the wealth of the land.",
 };

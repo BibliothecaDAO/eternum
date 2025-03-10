@@ -56,7 +56,6 @@ const useControllerAccount = () => {
   useEffect(() => {
     if (account) {
       useAccountStore.getState().setAccount(account);
-      console.log("account", account);
     }
   }, [account, isConnected]);
 

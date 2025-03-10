@@ -2,28 +2,28 @@ const sponsorsData = [
   {
     name: "Realms World",
     link: "https://realms.world",
-    image: "/logos/RealmsWorld.png",
+    image: "/images/logos/RealmsWorld.png",
     description:
       "Realms.World is the gateway to the Realms Autonomous World, seamlessly integrating gaming ecosystems, marketplace features, and developer tools into one comprehensive platform.",
   },
   {
     name: "Dojo",
     link: "https://dojoengine.com/",
-    image: "/logos/Dojo.svg",
+    image: "/images/logos/Dojo.svg",
     description:
       "Dojo is a cutting-edge open-source toolchain for creating provable onchain games and autonomous worlds. It empowers developers to design games with fully onchain state and logic, ensuring unparalleled transparency and trust.",
   },
   {
     name: "Cartridge",
     link: "https://cartridge.gg/",
-    image: "/logos/Cartridge.png",
+    image: "/images/logos/Cartridge.png",
     description:
       "Cartridge is a platform redefining Web3 gaming, offering players a secure and immersive space to discover, play, and engage with blockchain-based games in a decentralized ecosystem.",
   },
   {
     name: "Starknet",
     link: "https://www.starknet.io/",
-    image: "/logos/Starknet.png",
+    image: "/images/logos/Starknet.png",
     description:
       "Starknet is a decentralized Layer 2 network built on Ethereum, harnessing ZK-Rollup technology to deliver high scalability and low-cost transactions, all while maintaining Ethereum’s robust security and trustless guarantees.",
   },

@@ -1,34 +1,39 @@
+use dojo::model::ModelStorage;
+use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Trade {
     #[key]
-    trade_id: ID,
-    maker_id: ID,
-    maker_gives_resources_origin_id: ID,
-    maker_gives_resources_id: ID,
-    maker_gives_resources_hash: felt252,
-    maker_gives_resources_weight: u128,
-    taker_id: ID,
-    taker_gives_resources_origin_id: ID,
-    taker_gives_resources_id: ID,
-    taker_gives_resources_hash: felt252,
-    taker_gives_resources_weight: u128,
-    expires_at: u64,
+    pub trade_id: ID,
+    pub maker_id: ID,
+    pub taker_id: ID,
+    pub expires_at: u32,
+    pub maker_gives_resource_type: u8,
+    pub taker_pays_resource_type: u8,
+    pub maker_gives_min_resource_amount: u32,
+    pub taker_pays_min_resource_amount: u32,
+    pub maker_gives_max_count: u64,
 }
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct Status {
+pub struct TradeCount {
     #[key]
-    trade_id: ID,
-    value: u128,
+    pub structure_id: ID,
+    pub count: u8,
 }
 
-mod TradeStatus {
-    const OPEN: u128 = 0;
-    const ACCEPTED: u128 = 1;
-    const CANCELLED: u128 = 2;
+#[generate_trait]
+pub impl TradeCountImpl of TradeCountTrait {
+    fn decrease(ref self: TradeCount, ref world: WorldStorage) {
+        self.count -= 1;
+        if self.count == 0 {
+            world.erase_model(@self);
+        } else {
+            world.write_model(@self);
+        }
+    }
 }

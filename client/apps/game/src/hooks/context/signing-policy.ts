@@ -1,8 +1,9 @@
-import { SignMessagePolicy } from "@cartridge/controller";
 import { env } from "../../../env";
 
-export const signingPolicy: SignMessagePolicy[] = [
+export const messages = [
   {
+    name: "Eternum Message Signing",
+    description: "Allows signing messages for Eternum",
     types: {
       StarknetDomain: [
         { name: "name", type: "shortstring" },

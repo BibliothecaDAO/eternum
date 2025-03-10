@@ -1,6 +1,10 @@
 packages:
   - "client"
-  - "client/apps/*"
+  - "client/apps/landing"
+  - "client/apps/game"
+  - "client/apps/balancing"
+  - "client/apps/game-docs"
+  - "client/apps/eternum-mobile"
   - "config"
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"

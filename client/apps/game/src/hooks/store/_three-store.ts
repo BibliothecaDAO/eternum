@@ -1,20 +1,17 @@
-import { StructureInfo } from "@/three/types";
-import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
+import { ActionPath, BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
-  armyActions: ArmyActions;
-  setArmyActions: (armyActions: ArmyActions) => void;
-  updateHoveredHex: (hoveredHex: HexPosition | null) => void;
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
-  updateSelectedEntityId: (selectedEntityId: ID | null) => void;
+  hoveredHex: HexPosition | null;
+  setHoveredHex: (hex: HexPosition | null) => void;
+  entityActions: EntityActions;
+  setEntityActions: (entityActions: EntityActions) => void;
+  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => void;
+  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
+  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => void;
   selectedHex: HexPosition | null;
   setSelectedHex: (hex: HexPosition | null) => void;
-  hoveredArmyEntityId: ID | null;
-  setHoveredArmyEntityId: (id: ID | null) => void;
-  hoveredStructure: StructureInfo | null;
-  setHoveredStructure: (structure: StructureInfo | null) => void;
   hoveredBattle: Position | null;
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
@@ -33,33 +30,31 @@ export interface ThreeStore {
   }) => void;
 }
 
-interface ArmyActions {
+interface EntityActions {
   hoveredHex: HexPosition | null;
-  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  actionPaths: Map<string, ActionPath[]>;
   selectedEntityId: ID | null;
 }
 
 export const createThreeStoreSlice = (set: any, _get: any) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
-  armyActions: {
+  hoveredHex: null,
+  setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
+  entityActions: {
     hoveredHex: null,
-    travelPaths: new Map(),
+    actionPaths: new Map(),
     selectedEntityId: null,
   },
-  setArmyActions: (armyActions: ArmyActions) => set({ armyActions }),
-  updateHoveredHex: (hoveredHex: HexPosition | null) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, hoveredHex } })),
-  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, travelPaths } })),
-  updateSelectedEntityId: (selectedEntityId: ID | null) =>
-    set((state: any) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
+  setEntityActions: (entityActions: EntityActions) => set({ entityActions }),
+  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) =>
+    set((state: any) => ({ entityActions: { ...state.entityActions, hoveredHex } })),
+  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
+    set((state: any) => ({ entityActions: { ...state.entityActions, actionPaths } })),
+  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) =>
+    set((state: any) => ({ entityActions: { ...state.entityActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
-  hoveredArmyEntityId: null,
-  setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
-  hoveredStructure: null,
-  setHoveredStructure: (structure: StructureInfo | null) => set({ hoveredStructure: structure }),
   hoveredBattle: null,
   setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
   selectedBuilding: BuildingType.Farm,

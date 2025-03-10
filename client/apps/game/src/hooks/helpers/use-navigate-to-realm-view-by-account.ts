@@ -15,12 +15,14 @@ export const useNavigateToRealmViewByAccount = (components: ClientComponents) =>
   useEffect(() => {
     if (!account) {
       const randomRealmEntity = getRandomRealmEntity(components);
-      const position = randomRealmEntity ? getComponentValue(components.Position, randomRealmEntity) : undefined;
-      navigateToHexView(new Position(position || { x: 0, y: 0 }));
+      const strucutureBase = randomRealmEntity
+        ? getComponentValue(components.Structure, randomRealmEntity)?.base
+        : undefined;
+      strucutureBase && navigateToHexView(new Position({ x: strucutureBase.coord_x, y: strucutureBase.coord_y }));
     } else {
       const playerRealm = getPlayerFirstRealm(components, ContractAddress(account?.address || NULL_ACCOUNT.address));
-      const position = playerRealm ? getComponentValue(components.Position, playerRealm) : undefined;
-      position && navigateToHexView(new Position(position));
+      const structureBase = playerRealm ? getComponentValue(components.Structure, playerRealm)?.base : undefined;
+      structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
     }
   }, [account?.address]);
 };

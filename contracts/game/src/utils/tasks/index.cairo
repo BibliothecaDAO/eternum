@@ -9,7 +9,7 @@ use s1_eternum::utils::tasks;
 // Types
 
 #[derive(Copy, Drop)]
-enum Task {
+pub enum Task {
     None,
     Squire,
     Explorer,
@@ -28,7 +28,7 @@ enum Task {
 // Implementations
 
 #[generate_trait]
-impl TaskImpl of TaskTrait {
+pub impl TaskImpl of TaskTrait {
     #[inline]
     fn identifier(self: Task) -> felt252 {
         match self {
@@ -75,7 +75,7 @@ impl TaskImpl of TaskTrait {
     }
 }
 
-impl IntoTaskU8 of core::Into<Task, u8> {
+impl IntoTaskU8 of core::traits::Into<Task, u8> {
     #[inline]
     fn into(self: Task) -> u8 {
         match self {
@@ -96,7 +96,7 @@ impl IntoTaskU8 of core::Into<Task, u8> {
     }
 }
 
-impl IntoU8Task of core::Into<u8, Task> {
+impl IntoU8Task of core::traits::Into<u8, Task> {
     #[inline]
     fn into(self: u8) -> Task {
         let card: felt252 = self.into();
@@ -118,11 +118,11 @@ impl IntoU8Task of core::Into<u8, Task> {
         }
     }
 }
+// impl TaskPrint of core::debug::PrintTrait<Task> {
+//     #[inline]
+//     fn print(self: Task) {
+//         self.identifier().print();
+//     }
+// }
 
-impl TaskPrint of core::debug::PrintTrait<Task> {
-    #[inline]
-    fn print(self: Task) {
-        self.identifier().print();
-    }
-}
 

@@ -1,6 +1,7 @@
 import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
 import TroopsTable from "@/components/TroopsTable";
+import { ResourcesIds } from "@/utils/types";
 
 # Resources
 
@@ -17,8 +18,8 @@ out as ERC20 tokens through the central bank.
 #### Food
 
 <div className="flex items-baseline gap-1">
-  <ResourceIcon name="Wheat" id={254} />
-  <ResourceIcon name="Fish" id={255} />
+  <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
+  <ResourceIcon name="Fish" id={ResourcesIds.Fish} />
 </div>
 
 Food is the cornerstone of your realm's economy:
@@ -52,7 +53,7 @@ Military units have unique properties:
 #### Transport
 
 <div className="flex items-baseline gap-1">
-  <ResourceIcon name="Donkeys" id={249} />
+  <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
 </div>
 
 Essential for logistics:
@@ -68,7 +69,7 @@ Essential for logistics:
 #### **$LORDS** Currency
 
 <div className="flex items-baseline gap-1">
-  <ResourceIcon name="Lords" id={253} />
+  <ResourceIcon name="Lords" id={ResourcesIds.Lords} />
 </div>
 
 **$LORDS** is Eternum's economic backbone:
@@ -80,7 +81,7 @@ Essential for logistics:
 #### Ancient Fragments
 
 <div className="flex items-baseline gap-1">
-  <ResourceIcon name="Ancient Fragments" id={29} />
+  <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
 </div>
 
 Strategic end-game resource:

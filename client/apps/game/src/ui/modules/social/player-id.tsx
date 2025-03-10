@@ -65,9 +65,7 @@ export const PlayerId = ({
   } = useDojo();
 
   const {
-    Owner,
     Structure,
-    Position,
     events: { SettleRealmData },
   } = components;
 
@@ -75,8 +73,8 @@ export const PlayerId = ({
     if (!selectedPlayer) return;
 
     const playerEntityId = getComponentValue(
-      Owner,
-      Array.from(runQuery([HasValue(Owner, { address: selectedPlayer })]))[0],
+      Structure,
+      Array.from(runQuery([HasValue(Structure, { owner: selectedPlayer })]))[0],
     );
     return playerEntityId?.entity_id;
   }, [selectedPlayer]);
@@ -103,15 +101,12 @@ export const PlayerId = ({
   const playerStructures = useMemo(() => {
     if (!selectedPlayer) return;
 
-    const structuresEntityIds = runQuery([Has(Structure), HasValue(Owner, { address: selectedPlayer })]);
+    const structuresEntityIds = runQuery([Has(Structure), HasValue(Structure, { owner: selectedPlayer })]);
     const structures = Array.from(structuresEntityIds).map((entityId) => {
       const structure = getComponentValue(Structure, entityId);
       if (!structure) return undefined;
 
-      const positionComponentValue = getComponentValue(Position, entityId);
-      if (!positionComponentValue) return undefined;
-
-      const position = new PositionType({ x: positionComponentValue.x, y: positionComponentValue.y });
+      const position = new PositionType({ x: structure.base.coord_x, y: structure.base.coord_y });
 
       const structureName = getEntityName(structure.entity_id, components, true);
       return {
@@ -154,7 +149,7 @@ export const PlayerId = ({
             if (!structure) return null;
 
             let structureSpecificElement: JSX.Element | null;
-            if (structure?.category === StructureType[StructureType.Realm]) {
+            if (structure?.base.category === StructureType.Realm) {
               structureSpecificElement = (
                 <div key={structure.entity_id}>
                   <RealmResourcesIO

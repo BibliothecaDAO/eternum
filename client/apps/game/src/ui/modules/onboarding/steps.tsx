@@ -3,19 +3,80 @@ import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.s
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
+import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
-import { getSeasonPassAddress } from "@/utils/addresses";
+import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getRandomRealmEntity } from "@/utils/realms";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
+
+export const LocalStepOne = () => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { mint_test_realm, mint_season_passes, create_multiple_realms },
+    },
+  } = useDojo();
+  console.log(getSeasonPassAddress());
+
+  const random = Math.floor(Math.random() * 8000);
+  return (
+    <Button
+      onClick={async () => {
+        try {
+          await mint_test_realm({
+            token_id: random,
+            signer: account,
+            realms_address: getRealmsAddress(),
+          });
+        } catch (error) {
+          console.error("Error minting test realm:", error);
+          return; // Exit early if first step fails
+        }
+
+        try {
+          await mint_season_passes({
+            recipient: account.address,
+            token_ids: [random],
+            signer: account,
+            season_pass_address: getSeasonPassAddress(),
+          });
+        } catch (error) {
+          console.error("Error minting season passes:", error);
+          return; // Exit early if second step fails
+        }
+
+        try {
+          await create_multiple_realms({
+            realm_ids: [random],
+            owner: account.address,
+            frontend: account.address,
+            lords_resource_index: 0,
+            signer: account,
+            season_pass_address: getSeasonPassAddress(),
+          });
+        } catch (error) {
+          console.error("Error creating realms:", error);
+          // TODO: Show error toast/notification to user
+        }
+      }}
+      className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 animate-pulse`}
+    >
+      <div className="flex items-center">
+        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+        Settle Realm
+      </div>
+    </Button>
+  );
+};
 
 export const StepOne = () => {
   const {
@@ -30,8 +91,8 @@ export const StepOne = () => {
 
   const onSpectatorModeClick = () => {
     const randomRealmEntity = getRandomRealmEntity(components);
-    const position = randomRealmEntity && getComponentValue(components.Position, randomRealmEntity);
-    position && navigateToHexView(new Position(position));
+    const structure = randomRealmEntity ? getComponentValue(components.Structure, randomRealmEntity) : undefined;
+    structure && navigateToHexView(new Position({ x: structure.base.coord_x, y: structure.base.coord_y }));
   };
 
   const onPlayModeClick = () => {
@@ -89,6 +150,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         realm_ids: realmIds,
         owner: account.address,
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
+        lords_resource_index: 0,
         signer: account,
         season_pass_address: getSeasonPassAddress(),
       });

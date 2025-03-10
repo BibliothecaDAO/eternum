@@ -46,9 +46,9 @@ export const Leaderboard = ({
   });
 
   const isOwner = useMemo(() => {
-    const owner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
+    const owner = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]))?.owner;
     if (!owner) return false;
-    return ContractAddress(owner.address) === ContractAddress(account.address);
+    return ContractAddress(owner) === ContractAddress(account.address);
   }, [hyperstructureEntityId]);
 
   return hyperstructure ? (

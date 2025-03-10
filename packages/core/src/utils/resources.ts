@@ -3,17 +3,17 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
-import { configManager } from "../managers/config-manager";
-import { ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
-import { unpackResources } from "./packed-data";
+import { ID, ProductionByLaborParams, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
+import { unpackValue } from "./packed-data";
 
 // used for entities that don't have any production
 export const getInventoryResources = (entityId: ID, components: ClientComponents): Resource[] => {
   return resources
     .map(({ id }) => {
-      const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(id)]));
-      if (resource?.balance !== undefined && resource.balance > 0n) {
-        return { resourceId: id, amount: Number(resource.balance) };
+      const resourceManager = new ResourceManager(components, entityId);
+      const balance = resourceManager.balance(id);
+      if (balance > 0) {
+        return { resourceId: id, amount: Number(balance) };
       }
       return undefined;
     })
@@ -27,13 +27,13 @@ export const getBalance = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const resourceManager = new ResourceManager(components, entityId, resourceId);
-  return { balance: resourceManager.balance(currentDefaultTick), resourceId };
+  const resourceManager = new ResourceManager(components, entityId);
+  return { balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId), resourceId };
 };
 
 export const getResourceProductionInfo = (entityId: ID, resourceId: ResourcesIds, components: ClientComponents) => {
-  const resourceManager = new ResourceManager(components, entityId, resourceId);
-  return resourceManager.getProduction();
+  const resourceManager = new ResourceManager(components, entityId);
+  return resourceManager.getProduction(resourceId);
 };
 
 export const getResourcesFromBalance = (
@@ -41,28 +41,29 @@ export const getResourcesFromBalance = (
   currentDefaultTick: number,
   components: ClientComponents,
 ): Resource[] => {
-  const weight = getComponentValue(components.Weight, getEntityIdFromKeys([BigInt(entityId)]));
-  const hasWeightlessResources = configManager
-    .getWeightLessResources()
-    .some(
-      (resourceId) =>
-        (getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]))?.balance ??
-          0n) > 0n,
-    );
-  if (!weight?.value && !hasWeightlessResources) return [];
+  // const weight = getComponentValue(components.Weight, getEntityIdFromKeys([BigInt(entityId)]));
+  // const hasWeightlessResources = configManager
+  //   .getWeightLessResources()
+  //   .some(
+  //     (resourceId) =>
+  //       (getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]))?.balance ??
+  //         0n) > 0n,
+  //   );
+  // if (!weight?.value && !hasWeightlessResources) return [];
+  // todo: improve optimisation
   const resourceIds = resources.map((r) => r.id);
   return resourceIds
     .map((id) => {
-      const resourceManager = new ResourceManager(components, entityId, id);
-      const balance = resourceManager.balance(currentDefaultTick);
+      const resourceManager = new ResourceManager(components, entityId);
+      const balance = resourceManager.balanceWithProduction(currentDefaultTick, id);
       return { resourceId: id, amount: balance };
     })
     .filter((r) => r.amount > 0);
 };
 
 export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
-  const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  const resourcesProduced = realm ? unpackResources(realm.produced_resources) : [];
+  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];
 
   // todo: fix
   return getStartingResources(resourcesProduced, [], []);
@@ -73,9 +74,15 @@ export const isResourceProductionBuilding = (buildingId: BuildingType) => {
     buildingId === BuildingType.Resource ||
     buildingId === BuildingType.Farm ||
     buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks ||
-    buildingId === BuildingType.ArcheryRange ||
-    buildingId === BuildingType.Stable
+    buildingId === BuildingType.Barracks1 ||
+    buildingId === BuildingType.ArcheryRange1 ||
+    buildingId === BuildingType.Stable1 ||
+    buildingId === BuildingType.Barracks2 ||
+    buildingId === BuildingType.ArcheryRange2 ||
+    buildingId === BuildingType.Stable2 ||
+    buildingId === BuildingType.Barracks3 ||
+    buildingId === BuildingType.ArcheryRange3 ||
+    buildingId === BuildingType.Stable3
   );
 };
 
@@ -166,4 +173,17 @@ export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplie
     multipliedCosts[buildingType] = resourceOutputs[buildingType] * multiplier;
   }
   return multipliedCosts;
+};
+
+export const scaleResourceProductionByLaborParams = (config: ProductionByLaborParams, multiplier: number) => {
+  let multipliedValues: ProductionByLaborParams = {};
+
+  for (let buildingType in config) {
+    multipliedValues[buildingType] = {
+      ...config[buildingType],
+      wheat_burn_per_labor: config[buildingType].wheat_burn_per_labor * multiplier,
+      fish_burn_per_labor: config[buildingType].fish_burn_per_labor * multiplier,
+    };
+  }
+  return multipliedValues;
 };

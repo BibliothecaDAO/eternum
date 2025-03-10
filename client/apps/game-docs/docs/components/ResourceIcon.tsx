@@ -21,7 +21,7 @@ export default function ResourceIcon({ name, id, size = "xl" }: Props) {
   const imgPath = resources.find((r) => r.id === id)?.img;
   return (
     <div className={`flex self-center justify-center`}>
-      <img className={STYLES.size[size]} src={`/resources` + imgPath} alt={name} title={name} />
+      <img className={STYLES.size[size]} src={`/images/resources/` + imgPath} alt={name} title={name} />
     </div>
   );
 }

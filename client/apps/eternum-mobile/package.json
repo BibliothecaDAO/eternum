@@ -50,6 +50,6 @@
     "vite-plugin-mkcert": "^1.17.6"
   },
   "peerDependencies": {
-    "starknet": "6.11.0"
+    "starknet": "6.23.1"
   }
 }

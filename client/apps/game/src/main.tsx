@@ -68,6 +68,7 @@ async function init() {
 
   const state = useUIStore.getState();
 
+  console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },
     {
@@ -86,10 +87,10 @@ async function init() {
     },
   );
 
+  await initialSync(setupResult, state);
+
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);
-
-  await initialSync(setupResult, state);
 
   const graphic = new GameRenderer(setupResult);
 

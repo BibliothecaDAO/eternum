@@ -26,8 +26,7 @@ export enum TransactionType {
   REMOVE_GUILD_MEMBER = "remove_guild_member",
   ATTACH_LORDS = "attach_lords",
   APPROVE = "approve",
-  CREATE_BANK = "create_bank",
-  CREATE_ADMIN_BANK = "create_admin_bank",
+  CREATE_BANKS = "create_banks",
   SET_CO_OWNERS = "set_co_owners",
   CLAIM_LEADERBOARD_REWARDS = "claim_leaderboard_rewards",
   REGISTER_TO_LEADERBOARD = "register_to_leaderboard",
@@ -47,6 +46,5 @@ export enum TransactionType {
   SET_ENTITY_NAME = "set_entity_name",
   SET_ADDRESS_NAME = "set_address_name",
   UPGRADE_LEVEL = "upgrade_level",
-  QUEST_CLAIM = "quest_claim",
   CANCEL_ORDER = "cancel_order",
 }

@@ -8,14 +8,9 @@ import { configManager } from "./config-manager";
 export class MarketManager {
   constructor(
     private readonly components: ClientComponents,
-    private readonly _bankEntityId: ID,
     private readonly _player: ContractAddress,
     private readonly _resourceId: ResourcesIds,
   ) {}
-
-  get bankEntityId() {
-    return this._bankEntityId;
-  }
 
   get player() {
     return this._player;
@@ -36,23 +31,17 @@ export class MarketManager {
   }
 
   public getPlayerLiquidity() {
-    return getComponentValue(
-      this.components.Liquidity,
-      getEntityIdFromKeys([BigInt(this.bankEntityId), this.player, BigInt(this.resourceId)]),
-    );
+    return getComponentValue(this.components.Liquidity, getEntityIdFromKeys([this.player, BigInt(this.resourceId)]));
   }
 
   public getMarket() {
-    return getComponentValue(
-      this.components.Market,
-      getEntityIdFromKeys([BigInt(this.bankEntityId), BigInt(this.resourceId)]),
-    );
+    return getComponentValue(this.components.Market, getEntityIdFromKeys([BigInt(this.resourceId)]));
   }
 
   public getPlayerSharesScaled = () => {
     const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0;
-    return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
+    return Math.floor(Number(liquidity.shares));
   };
 
   public getMyLpPercentage = () => {
@@ -65,7 +54,7 @@ export class MarketManager {
   public getSharesUnscaled = () => {
     const liquidity = this.getPlayerLiquidity();
     if (!liquidity) return 0n;
-    return liquidity.shares.mag;
+    return liquidity.shares;
   };
 
   public getMarketPrice = () => {
@@ -247,19 +236,19 @@ export class MarketManager {
 
   public getTotalLiquidityUnscaled() {
     const liquidity = this.getTotalLiquidity();
-    return BigInt(liquidity * 2 ** 64);
+    return BigInt(liquidity);
   }
 
   public getTotalSharesUnScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return market.total_shares.mag;
+    return market.total_shares;
   }
 
   public getTotalSharesScaled() {
     const market = this.getMarket();
     if (!market) return 0;
-    return Math.floor(Number(market.total_shares.mag) / 2 ** 64);
+    return Math.floor(Number(market.total_shares));
   }
 
   public playerHasLiquidity() {
@@ -277,7 +266,6 @@ export class MarketManager {
     playerStructureIds.forEach((structureId) => {
       const liquidityEvents = runQuery([
         HasValue(this.components.events.LiquidityEvent, {
-          bank_entity_id: this.bankEntityId,
           entity_id: structureId,
           resource_type: this.resourceId,
         }),

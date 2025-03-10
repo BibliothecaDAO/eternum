@@ -1,18 +1,16 @@
 import { graphql } from "../gql";
 
 export const GET_CAPACITY_SPEED_CONFIG = graphql(`
-  query getCapacitySpeedConfig($category: Enum!, $entityType: u32!) {
-    s1EternumCapacityConfigModels(where: { category: $category }) {
+  query getCapacitySpeedConfig {
+    s1EternumWorldConfigModels {
       edges {
         node {
-          weight_gram
-        }
-      }
-    }
-    s1EternumSpeedConfigModels(where: { entity_type: $entityType }) {
-      edges {
-        node {
-          sec_per_km
+          capacity_config {
+            donkey_capacity
+          }
+          speed_config {
+            donkey_sec_per_km
+          }
         }
       }
     }

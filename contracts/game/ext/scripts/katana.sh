@@ -166,9 +166,8 @@ fi
 # Run katana in the background with log handling
 katana --invoke-max-steps $KATANA_MAX_INVOKE_STEPS \
     --http.cors_origins "*" \
-    --block-time $KATANA_BLOCK_TIME \
     --dev \
-    --dev.no-fee 2>&1 | setup_log_handling &
+    --dev.no-fee > >(setup_log_handling) 2>&1 &
 
 # Store the PID
 echo $! > "$PID_FILE"

@@ -10,8 +10,8 @@ export const findResourceIdByTrait = (trait: string) => {
 };
 
 // if it's labor, then remove 28 to get the icon resource id
-export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
-  return isLabor ? resourceId - 28 : resourceId;
+export const getIconResourceId = (resourceId: number) => {
+  return resourceId;
 };
 
 export const RESOURCE_PRECISION = 1_000_000_000;

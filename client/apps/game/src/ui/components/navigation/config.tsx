@@ -10,7 +10,6 @@ type OSWindows =
   | "Quests"
   | "Social"
   | "BattleSimulation"
-  | "PillageSimulation"
   | "Rewards";
 
 export interface OSInterface {
@@ -21,6 +20,7 @@ export interface OSInterface {
   height?: string;
   width?: string;
   hintSection?: HintSection;
+  className?: string;
 }
 
 export interface ExpandableOSInterface extends OSInterface {
@@ -37,4 +37,3 @@ export const construction: OSWindows = "Construction";
 export const social: OSWindows = "Social";
 export const rewards: OSWindows = "Rewards";
 export const battleSimulation: OSWindows = "BattleSimulation";
-export const pillageSimulation: OSWindows = "PillageSimulation";

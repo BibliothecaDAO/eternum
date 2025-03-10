@@ -14,10 +14,10 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   const { connector, account, setAccount } = useAccountStore();
   const { disconnect } = useDisconnect();
 
-  const connectWallet = async () => {
+  const connectWallet = () => {
     try {
       console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
+      connect({ connector: connectors[0] });
       console.log("Wallet connected successfully.");
     } catch (error) {
       console.error("Failed to connect wallet:", error);
@@ -43,7 +43,12 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   useEffect(() => {
     if (!connector || !connector!.controller) return;
 
-    connector.controller.username()?.then((name) => setUserName(name));
+    try {
+      connector.controller.username()?.then((name) => setUserName(name));
+    } catch (error) {
+      // controller in local
+      setUserName("adventurer");
+    }
   }, [connector]);
 
   return account ? (

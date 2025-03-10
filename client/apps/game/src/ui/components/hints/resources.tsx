@@ -1,14 +1,15 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { currencyFormat, gramToKg } from "@/ui/utils/utils";
+import { currencyFormat } from "@/ui/utils/utils";
 import {
-  CapacityConfigCategory,
-  RESOURCE_PRECISION,
-  ResourcesIds,
+  CapacityConfig,
   configManager,
   findResourceById,
+  gramToKg,
   multiplyByPrecision,
+  RESOURCE_PRECISION,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
@@ -40,7 +41,7 @@ export const Resources = () => {
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
             {` ${
-              gramToKg(configManager.getCapacityConfig(CapacityConfigCategory.Storehouse)) /
+              gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse)) /
               multiplyByPrecision(RESOURCE_PRECISION)
             }M capacity per resource type`}
           </span>

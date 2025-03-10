@@ -8,7 +8,7 @@ import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview
 import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
-import { SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
+import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -46,7 +46,7 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   const mintUrl =
     env.VITE_PUBLIC_CHAIN === "mainnet"
       ? "https://empire.realms.world/season-passes"
-      : "https://empire-next.realms.world/season-passes";
+      : "https://next-empire.realms.world/season-passes";
 
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
@@ -158,7 +158,12 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
 
 export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
   const [settleRealm, setSettleRealm] = useState(false);
-  const bottomChildren = useMemo(() => <SeasonPassButton setSettleRealm={setSettleRealm} />, [setSettleRealm]);
+  const bottomChildren = useMemo(() => {
+    if (env.VITE_PUBLIC_CHAIN === "local") {
+      return <LocalStepOne />;
+    }
+    return <SeasonPassButton setSettleRealm={setSettleRealm} />;
+  }, [setSettleRealm]);
 
   return (
     <>

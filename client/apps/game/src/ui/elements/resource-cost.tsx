@@ -43,7 +43,6 @@ export const ResourceCost = ({
     >
       <ResourceIcon
         className="self-center justify-center"
-        isLabor={isLabor}
         withTooltip={withTooltip}
         resource={trait || ""}
         size={size}

@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Ruler of TaskTrait {
+pub impl Ruler of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'RULER'

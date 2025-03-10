@@ -43,9 +43,15 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const militaryBuildings = buildings.filter(
     (building) =>
-      building.category === BuildingType[BuildingType.Barracks] ||
-      building.category === BuildingType[BuildingType.ArcheryRange] ||
-      building.category === BuildingType[BuildingType.Stable],
+      building.category === BuildingType[BuildingType.Barracks1] ||
+      building.category === BuildingType[BuildingType.ArcheryRange1] ||
+      building.category === BuildingType[BuildingType.Stable1] ||
+      building.category === BuildingType[BuildingType.Barracks2] ||
+      building.category === BuildingType[BuildingType.ArcheryRange2] ||
+      building.category === BuildingType[BuildingType.Stable2] ||
+      building.category === BuildingType[BuildingType.Barracks3] ||
+      building.category === BuildingType[BuildingType.ArcheryRange3] ||
+      building.category === BuildingType[BuildingType.Stable3],
   );
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {

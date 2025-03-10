@@ -2,7 +2,7 @@ import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-check
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
-import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackResources } from "@bibliothecadao/eternum";
+import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
@@ -117,7 +117,7 @@ export const getUnusedSeasonPasses = async (accountAddress: string, realms: Real
       if (!realmsResourcesPacked) return undefined;
       return {
         ...realmsResourcesPacked,
-        resourceTypesUnpacked: unpackResources(realmsResourcesPacked.resourceTypesPacked),
+        resourceTypesUnpacked: unpackValue(realmsResourcesPacked.resourceTypesPacked),
       };
     })
     .filter(

@@ -46,10 +46,6 @@ export function createSystemCalls({
     await provider.accept_order(props);
   };
 
-  const accept_partial_order = async (props: SystemProps.AcceptPartialOrderProps) => {
-    await provider.accept_partial_order(props);
-  };
-
   const cancel_order = async (props: SystemProps.CancelOrderProps) => {
     await provider.cancel_order(props);
   };
@@ -106,12 +102,12 @@ export function createSystemCalls({
     await provider.pickup_resources(props);
   };
 
-  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
-    await provider.transfer_resources(props);
+  const arrivals_offload = async (props: SystemProps.ArrivalsOffloadProps) => {
+    await provider.arrivals_offload(props);
   };
 
-  const travel_hex = async (props: SystemProps.TravelHexProps) => {
-    await provider.travel_hex(props);
+  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
+    await provider.transfer_resources(props);
   };
 
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
@@ -120,10 +116,6 @@ export function createSystemCalls({
 
   const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
     await provider.set_entity_name(props);
-  };
-
-  const explore = async (props: SystemProps.ExploreProps) => {
-    await provider.explore(props);
   };
 
   const create_building = async (props: SystemProps.CreateBuildingProps) => {
@@ -140,14 +132,6 @@ export function createSystemCalls({
 
   const resume_production = async (props: SystemProps.ResumeProductionProps) => {
     await provider.resume_production(props);
-  };
-
-  const create_bank = async (props: SystemProps.CreateBankProps) => {
-    await provider.create_bank(props);
-  };
-
-  const open_account = async (props: SystemProps.OpenAccountProps) => {
-    await provider.open_account(props);
   };
 
   const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps) => {
@@ -168,26 +152,6 @@ export function createSystemCalls({
 
   const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
     await provider.remove_liquidity(props);
-  };
-
-  const create_army = async (props: SystemProps.ArmyCreateProps) => {
-    await provider.create_army(props);
-  };
-
-  const delete_army = async (props: SystemProps.ArmyDeleteProps) => {
-    await provider.delete_army(props);
-  };
-
-  const army_buy_troops = async (props: SystemProps.ArmyBuyTroopsProps) => {
-    await provider.army_buy_troops(props);
-  };
-
-  const army_merge_troops = async (props: SystemProps.ArmyMergeTroopsProps) => {
-    await provider.army_merge_troops(props);
-  };
-
-  const claim_quest = async (props: SystemProps.ClaimQuestProps) => {
-    await provider.claim_quest(props);
   };
 
   const mint_resources = async (props: SystemProps.MintResourcesProps) => {
@@ -254,42 +218,6 @@ export function createSystemCalls({
     await provider.remove_player_from_whitelist(props);
   };
 
-  const battle_start = async (props: SystemProps.BattleStartProps) => {
-    await provider.battle_start(props);
-  };
-
-  const battle_resolve = async (props: SystemProps.BattleResolveProps) => {
-    await provider.battle_resolve(props);
-  };
-
-  const battle_force_start = async (props: SystemProps.BattleForceStartProps) => {
-    await provider.battle_force_start(props);
-  };
-
-  const battle_leave = async (props: SystemProps.BattleLeaveProps) => {
-    await provider.battle_leave(props);
-  };
-
-  const battle_join = async (props: SystemProps.BattleJoinProps) => {
-    await provider.battle_join(props);
-  };
-
-  const battle_leave_and_claim = async (props: SystemProps.BattleClaimAndLeaveProps) => {
-    await provider.battle_claim_and_leave(props);
-  };
-
-  const battle_leave_and_pillage = async (props: SystemProps.BattleLeaveAndRaidProps) => {
-    await provider.battle_leave_and_pillage(props);
-  };
-
-  const battle_claim = async (props: SystemProps.BattleClaimProps) => {
-    await provider.battle_claim(props);
-  };
-
-  const battle_pillage = async (props: SystemProps.BattlePillageProps) => {
-    await provider.battle_pillage(props);
-  };
-
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -299,35 +227,103 @@ export function createSystemCalls({
     }
   };
 
+  const burn_other_resources_for_labor_production = async (
+    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
+  ) => {
+    await provider.burn_other_resources_for_labor_production(props);
+  };
+
+  const burn_labor_resources_for_other_production = async (
+    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
+  ) => {
+    await provider.burn_labor_resources_for_other_production(props);
+  };
+
+  const burn_other_predefined_resources_for_resources = async (
+    props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
+  ) => {
+    await provider.burn_other_predefined_resources_for_resources(props);
+  };
+
+  const guard_add = async (props: SystemProps.GuardAddProps) => {
+    await provider.guard_add(props);
+  };
+
+  const guard_delete = async (props: SystemProps.GuardDeleteProps) => {
+    await provider.guard_delete(props);
+  };
+
+  const explorer_create = async (props: SystemProps.ExplorerCreateProps) => {
+    await provider.explorer_create(props);
+  };
+
+  const explorer_add = async (props: SystemProps.ExplorerAddProps) => {
+    await provider.explorer_add(props);
+  };
+
+  const explorer_delete = async (props: SystemProps.ExplorerDeleteProps) => {
+    await provider.explorer_delete(props);
+  };
+
+  const explorer_explorer_swap = async (props: SystemProps.ExplorerExplorerSwapProps) => {
+    await provider.explorer_explorer_swap(props);
+  };
+
+  const explorer_guard_swap = async (props: SystemProps.ExplorerGuardSwapProps) => {
+    await provider.explorer_guard_swap(props);
+  };
+
+  const guard_explorer_swap = async (props: SystemProps.GuardExplorerSwapProps) => {
+    await provider.guard_explorer_swap(props);
+  };
+
+  const explorer_move = async (props: SystemProps.ExplorerMoveProps) => {
+    await provider.explorer_move(props);
+  };
+
+  const attack_explorer_vs_explorer = async (props: SystemProps.AttackExplorerVsExplorerProps) => {
+    await provider.attack_explorer_vs_explorer(props);
+  };
+
+  const attack_explorer_vs_guard = async (props: SystemProps.AttackExplorerVsGuardProps) => {
+    await provider.attack_explorer_vs_guard(props);
+  };
+
+  const attack_guard_vs_explorer = async (props: SystemProps.AttackGuardVsExplorerProps) => {
+    await provider.attack_guard_vs_explorer(props);
+  };
+
+  const troop_structure_adjacent_transfer = async (props: SystemProps.TroopStructureAdjacentTransferProps) => {
+    await provider.troop_structure_adjacent_transfer(props);
+  };
+
+  const structure_troop_adjacent_transfer = async (props: SystemProps.StructureTroopAdjacentTransferProps) => {
+    await provider.structure_troop_adjacent_transfer(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
     pickup_resources: withAuth(pickup_resources),
+    arrivals_offload: withAuth(arrivals_offload),
     remove_liquidity: withAuth(remove_liquidity),
     add_liquidity: withAuth(add_liquidity),
     sell_resources: withAuth(sell_resources),
     buy_resources: withAuth(buy_resources),
     change_bank_owner_fee: withAuth(change_bank_owner_fee),
-    open_account: withAuth(open_account),
-    create_bank: withAuth(create_bank),
-    explore: withAuth(explore),
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
     isLive: isLive,
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
-    accept_partial_order: withAuth(accept_partial_order),
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     transfer_resources: withAuth(transfer_resources),
-    travel_hex: withAuth(travel_hex),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
     create_building: withAuth(create_building),
-    create_army: withAuth(create_army),
-    delete_army: withAuth(delete_army),
     uuid: uuid,
 
     create_hyperstructure: withAuth(create_hyperstructure),
@@ -339,11 +335,7 @@ export function createSystemCalls({
     register_to_leaderboard: withAuth(register_to_leaderboard),
     claim_leaderboard_rewards: withAuth(claim_leaderboard_rewards),
 
-    claim_quest: withAuth(claim_quest),
     mint_resources: withAuth(mint_resources),
-
-    army_buy_troops: withAuth(army_buy_troops),
-    army_merge_troops: withAuth(army_merge_troops),
 
     create_guild: withAuth(create_guild),
     join_guild: withAuth(join_guild),
@@ -353,16 +345,6 @@ export function createSystemCalls({
     disband_guild: withAuth(disband_guild),
     remove_player_from_whitelist: withAuth(remove_player_from_whitelist),
 
-    battle_start: withAuth(battle_start),
-    battle_force_start: withAuth(battle_force_start),
-    battle_resolve: withAuth(battle_resolve),
-    battle_leave: withAuth(battle_leave),
-    battle_join: withAuth(battle_join),
-    battle_claim: withAuth(battle_claim),
-    battle_pillage: withAuth(battle_pillage),
-    battle_leave_and_claim: withAuth(battle_leave_and_claim),
-    battle_leave_and_pillage: withAuth(battle_leave_and_pillage),
-
     mint_test_realm: withAuth(mint_test_realm),
     mint_season_passes: withAuth(mint_season_passes),
     attach_lords: withAuth(attach_lords),
@@ -371,6 +353,26 @@ export function createSystemCalls({
     bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
     bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
     bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),
+
+    burn_other_resources_for_labor_production: withAuth(burn_other_resources_for_labor_production),
+    burn_labor_resources_for_other_production: withAuth(burn_labor_resources_for_other_production),
+    burn_other_predefined_resources_for_resources: withAuth(burn_other_predefined_resources_for_resources),
+
+    guard_add: withAuth(guard_add),
+    guard_delete: withAuth(guard_delete),
+    explorer_create: withAuth(explorer_create),
+    explorer_add: withAuth(explorer_add),
+    explorer_delete: withAuth(explorer_delete),
+    explorer_explorer_swap: withAuth(explorer_explorer_swap),
+    explorer_guard_swap: withAuth(explorer_guard_swap),
+    guard_explorer_swap: withAuth(guard_explorer_swap),
+    explorer_move: withAuth(explorer_move),
+    attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
+    attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
+    attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
+
+    troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
+    structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
   };
 
   return systemCalls;
