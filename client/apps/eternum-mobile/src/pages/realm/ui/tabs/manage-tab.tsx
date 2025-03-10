@@ -62,11 +62,7 @@ const dummyResourceBalances = [
   { resourceId: ResourcesIds.Fish, balance: 1200 },
 ];
 
-export interface ManageTabProps {
-  className?: string;
-}
-
-export function ManageTab({ className }: ManageTabProps) {
+export function ManageTab() {
   const handleStartProduction = useCallback((buildingId: string, mode: "raw" | "labor") => {
     console.log("Start production", { buildingId, mode });
   }, []);

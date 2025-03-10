@@ -15,6 +15,7 @@ const generateDummyData = () => {
   };
 };
 
+// @ts-ignore
 export const ArrivedDonkeys = ({ entityId, onClaim }: ArrivedDonkeysProps) => {
   const { donkeysCount } = generateDummyData();
 

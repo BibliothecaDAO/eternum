@@ -38,6 +38,7 @@ const generateDummyData = () => {
   return { enemiesCount, distance };
 };
 
+// @ts-ignore
 export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
   const { enemiesCount, distance } = generateDummyData();
   const { color, bgColor, icon: Icon } = getDangerLevel(distance);

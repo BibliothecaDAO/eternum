@@ -54,7 +54,7 @@ export const RealmInfoHeader = ({
           <h1 className="text-5xl font-bold font-bokor">
             {realmName}{" "}
             <span className="text-3xl font-normal text-muted-foreground">
-              {RealmLevelNames[RealmLevels[realmLevel]]}
+              {RealmLevelNames[RealmLevels[realmLevel] as keyof typeof RealmLevelNames]}
             </span>
           </h1>
         </div>

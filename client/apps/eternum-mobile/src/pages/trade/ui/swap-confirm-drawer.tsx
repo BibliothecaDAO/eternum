@@ -28,6 +28,7 @@ export const SwapConfirmDrawer = ({
 }: ConfirmDrawerProps) => {
   const [state, setState] = useState<SwapState>("confirm");
   const [error, setError] = useState<string>("");
+  // @ts-ignore
   const [timeLeft, setTimeLeft] = useState("0 hrs 10 mins");
 
   // Reset state when drawer is closed

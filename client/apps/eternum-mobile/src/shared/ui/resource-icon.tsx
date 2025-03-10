@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/utils";
-import { Resource, resources } from "@bibliothecadao/eternum";
+import { Resources, resources } from "@bibliothecadao/eternum";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 export interface ResourceIconProps {
@@ -28,7 +28,7 @@ export interface ResourceIconProps {
  */
 export const ResourceIcon = ({ resourceId, size = 24, className, showTooltip = false }: ResourceIconProps) => {
   // Get the resource data based on ID
-  const resourceData = resources.find((r: Resource) => r.id === resourceId);
+  const resourceData = resources.find((r: Resources) => r.id === resourceId);
 
   if (!resourceData) {
     console.warn(`Resource with ID ${resourceId} not found`);
