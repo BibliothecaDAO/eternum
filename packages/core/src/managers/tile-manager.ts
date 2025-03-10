@@ -2,7 +2,14 @@ import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@d
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { CairoOption, CairoOptionVariant } from "starknet";
-import { type DojoAccount } from "..";
+import {
+  ResourceManager,
+  getBuildingCosts,
+  getBuildingCount,
+  getResourceBuildingCosts,
+  setBuildingCount,
+  type DojoAccount,
+} from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -43,13 +50,13 @@ export class TileManager {
   }
 
   getRealmLevel = (realmEntityId: number): RealmLevels => {
-    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    return (realm?.level || RealmLevels.Settlement) as RealmLevels;
+    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return (structure?.base.level || RealmLevels.Settlement) as RealmLevels;
   };
 
   getWonder = (realmEntityId: number) => {
-    const realm = getComponentValue(this.components.Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    return realm?.has_wonder || false;
+    const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return structure?.metadata.has_wonder || false;
   };
 
   existingBuildings = () => {
@@ -95,13 +102,14 @@ export class TileManager {
   };
 
   structureType = () => {
-    const structures = Array.from(
-      runQuery([Has(this.components.Structure), HasValue(this.components.Position, { x: this.col, y: this.row })]),
-    );
-    if (structures?.length === 1) {
-      const structure = getComponentValue(this.components.Structure, structures[0])!;
-      let category = structure.category;
-      return StructureType[category as keyof typeof StructureType];
+    const tile = getComponentValue(this.components.Tile, getEntityIdFromKeys([BigInt(this.col), BigInt(this.row)]));
+
+    if (tile?.occupier_is_structure) {
+      const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(tile?.occupier_id)]));
+      if (structure) {
+        let category = structure.base.category;
+        return category as StructureType;
+      }
     }
   };
 
@@ -131,15 +139,34 @@ export class TileManager {
       case BuildingType.FishingVillage:
         producedResourceType = ResourcesIds.Fish;
         break;
-      case BuildingType.Barracks:
+      case BuildingType.Barracks1:
         producedResourceType = ResourcesIds.Knight;
         break;
-      case BuildingType.ArcheryRange:
+      case BuildingType.ArcheryRange1:
         producedResourceType = ResourcesIds.Crossbowman;
         break;
-      case BuildingType.Stable:
+      case BuildingType.Stable1:
         producedResourceType = ResourcesIds.Paladin;
         break;
+      case BuildingType.Barracks2:
+        producedResourceType = ResourcesIds.KnightT2;
+        break;
+      case BuildingType.ArcheryRange2:
+        producedResourceType = ResourcesIds.CrossbowmanT2;
+        break;
+      case BuildingType.Stable2:
+        producedResourceType = ResourcesIds.PaladinT2;
+        break;
+      case BuildingType.Barracks3:
+        producedResourceType = ResourcesIds.KnightT3;
+        break;
+      case BuildingType.ArcheryRange3:
+        producedResourceType = ResourcesIds.CrossbowmanT3;
+        break;
+      case BuildingType.Stable3:
+        producedResourceType = ResourcesIds.PaladinT3;
+        break;
+
       case BuildingType.Resource:
         producedResourceType = resourceType!;
         break;
@@ -158,6 +185,7 @@ export class TileManager {
     let overrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
+    // override building
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
@@ -174,59 +202,61 @@ export class TileManager {
       },
     });
 
+    // override resource balance
+    // need to retrieve the reosurce cost before adding extra building to the structure
+    // because the resource cost increase when adding more buildings
+    const resourceChange =
+      buildingType === BuildingType.Resource
+        ? getResourceBuildingCosts(entityId, this.components, resourceType!)
+        : getBuildingCosts(entityId, this.components, buildingType);
+
+    resourceChange?.forEach((resource) => {
+      this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
+    });
+
     const populationOverrideId = uuid();
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
+    const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
 
-    this.components.Population.addOverride(populationOverrideId, {
-      entity: realmEntity,
-      value: {
-        population:
-          (getComponentValue(this.components.Population, realmEntity)?.population || 0) +
-          configManager.getBuildingPopConfig(buildingType).population,
-        capacity:
-          (getComponentValue(this.components.Population, realmEntity)?.capacity || 0) +
-          configManager.getBuildingPopConfig(buildingType).capacity,
-      },
-    });
     const quantityOverrideId = uuid();
 
-    const buildingQuantityEntity = getEntityIdFromKeys([BigInt(entityId), BigInt(buildingType)]);
+    const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts || 0n);
 
-    const storehouseQuantity =
-      getComponentValue(this.components.BuildingQuantityv2, buildingQuantityEntity)?.value || 0;
+    // Ensure array has values at all indices up to buildingType
+    const packedBuildingCount = setBuildingCount(
+      buildingType,
+      structureBuildings?.packed_counts || 0n,
+      buildingCount + 1,
+    );
 
-    this.components.BuildingQuantityv2.addOverride(quantityOverrideId, {
-      entity: buildingQuantityEntity,
+    // override structure buildings
+    this.components.StructureBuildings.addOverride(quantityOverrideId, {
+      entity: realmEntity,
       value: {
-        value: storehouseQuantity + 1,
+        ...structureBuildings,
+        packed_counts: BigInt(packedBuildingCount),
+        population: {
+          current:
+            (structureBuildings?.population.current || 0) + configManager.getBuildingPopConfig(buildingType).population,
+          max: (structureBuildings?.population.max || 0) + configManager.getBuildingPopConfig(buildingType).capacity,
+        },
       },
-    });
-
-    const resourceChange = configManager.buildingCosts[buildingType];
-    resourceChange.forEach((resource) => {
-      this._overrideResource(realmEntity, resource.resource, -BigInt(resource.amount));
     });
 
     return { overrideId, populationOverrideId, quantityOverrideId };
   };
 
-  private _overrideResource = (entity: Entity, resourceType: number, change: bigint) => {
-    const currentBalance = getComponentValue(this.components.Resource, entity)?.balance || 0n;
-    const resourceOverrideId = uuid();
-    this.components.Resource.addOverride(resourceOverrideId, {
-      entity,
-      value: {
-        resource_type: resourceType,
-        balance: currentBalance + change,
-      },
-    });
+  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: bigint) => {
+    const resourceManager = new ResourceManager(this.components, entity);
+    const overrideId = uuid();
+    resourceManager.optimisticResourceUpdate(overrideId, resourceType, actualResourceChange);
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmPosition = getComponentValue(this.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
-    const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+    const realmBase = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base;
+    const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
 
     const currentBuilding = getComponentValue(this.components.Building, entity);
@@ -234,6 +264,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...currentBuilding,
         outer_col: outercol,
         outer_row: outerrow,
         inner_col: col,
@@ -252,15 +283,20 @@ export class TileManager {
 
     const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
 
-    this.components.Population.addOverride(populationOverrideId, {
+    const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
+
+    this.components.StructureBuildings.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
-        population:
-          (getComponentValue(this.components.Population, realmEntityId)?.population || 0) -
-          configManager.getBuildingPopConfig(type).population,
-        capacity:
-          (getComponentValue(this.components.Population, realmEntityId)?.capacity || 0) -
-          configManager.getBuildingPopConfig(type).capacity,
+        ...currentStructureBuildings,
+        population: {
+          current:
+            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.current || 0) -
+            configManager.getBuildingPopConfig(type).population,
+          max:
+            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.max || 0) -
+            configManager.getBuildingPopConfig(type).capacity,
+        },
       },
     });
 
@@ -274,6 +310,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...building,
         outer_col: building?.outer_col,
         outer_row: building?.outer_row,
         inner_col: building?.inner_col,
@@ -296,6 +333,7 @@ export class TileManager {
     this.components.Building.addOverride(overrideId, {
       entity,
       value: {
+        ...building,
         outer_col: building?.outer_col,
         outer_row: building?.outer_row,
         inner_col: building?.inner_col,
@@ -314,24 +352,23 @@ export class TileManager {
   private _optimisticStructure = (coords: Position, structureType: StructureType) => {
     const overrideId = DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString();
     const entity: Entity = getEntityIdFromKeys([BigInt(DUMMY_HYPERSTRUCTURE_ENTITY_ID)]);
+    const structure = getComponentValue(this.components.Structure, entity);
 
-    this.components.Position.addOverride(overrideId, {
-      entity,
-      value: {
-        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        x: coords.x,
-        y: coords.y,
-      },
-    });
-
-    this.components.Structure.addOverride(overrideId, {
-      entity,
-      value: {
-        category: StructureType[structureType],
-        entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        created_at: 0n,
-      },
-    });
+    if (structure) {
+      this.components.Structure.addOverride(overrideId, {
+        entity,
+        value: {
+          ...structure,
+          base: {
+            ...structure?.base,
+            category: Number(structureType),
+            coord_x: coords.x,
+            coord_y: coords.y,
+          },
+          entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+        },
+      });
+    }
 
     return { overrideId };
   };
@@ -349,14 +386,18 @@ export class TileManager {
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
 
+    let overrideId: string;
+    let populationOverrideId: string;
+    let quantityOverrideId: string;
+
     // add optimistic rendering
-    const { overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
+    ({ overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
       structureEntityId,
       col,
       row,
       buildingType,
       resourceType,
-    );
+    ));
 
     try {
       await this.systemCalls.create_building({
@@ -371,9 +412,9 @@ export class TileManager {
       });
     } catch (error) {
       this.components.Building.removeOverride(overrideId);
-      this.components.Population.removeOverride(populationOverrideId);
-      this.components.BuildingQuantityv2.removeOverride(quantityOverrideId);
-
+      this.components.StructureBuildings.removeOverride(populationOverrideId);
+      this.components.Structure.removeOverride(overrideId);
+      this.components.StructureBuildings.removeOverride(quantityOverrideId);
       console.error(error);
       throw error;
     }
@@ -449,7 +490,6 @@ export class TileManager {
       }
     } catch (error) {
       this.components.Structure.removeOverride(overrideId);
-      this.components.Position.removeOverride(overrideId);
       console.error(error);
       throw error;
     }

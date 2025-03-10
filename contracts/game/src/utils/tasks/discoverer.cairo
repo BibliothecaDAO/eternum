@@ -1,6 +1,6 @@
 use s1_eternum::utils::tasks::interface::TaskTrait;
 
-impl Discoverer of TaskTrait {
+pub impl Discoverer of TaskTrait {
     #[inline]
     fn identifier() -> felt252 {
         'DISCOVERER'

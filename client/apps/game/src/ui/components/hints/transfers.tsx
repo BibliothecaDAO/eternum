@@ -1,7 +1,6 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { GRAMS_PER_KG } from "@/ui/constants";
 import { Headline } from "@/ui/elements/headline";
-import { BuildingType, CapacityConfigCategory, configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, CapacityConfig, configManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Transfers = () => {
@@ -20,17 +19,12 @@ export const Transfers = () => {
             possess a finite carrying capacity, with each resource type assigned a specific weight.
           </p>
           <p>
-            Donkey carry capacity:{" "}
-            <strong>{configManager.getCapacityConfig(CapacityConfigCategory.Donkey) / GRAMS_PER_KG} kg</strong>
+            Donkey carry capacity: <strong>{configManager.getCapacityConfig(CapacityConfig.Donkey)} kg</strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
-            <div className="ml-2">
-              Lords: {`${configManager.getResourceWeight(ResourcesIds.Lords) / GRAMS_PER_KG} kg/unit`}
-            </div>
-            <div>Food: {`${configManager.getResourceWeight(ResourcesIds.Wheat) / GRAMS_PER_KG} kg/unit`}</div>
-            <div className="ml-2">
-              Resource: {`${configManager.getResourceWeight(ResourcesIds.Wood) / GRAMS_PER_KG} kg/unit`}
-            </div>
+            <div className="ml-2">Lords: {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}</div>
+            <div>Food: {`${configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit`}</div>
+            <div className="ml-2">Resource: {`${configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit`}</div>
           </div>
         </>
       ),

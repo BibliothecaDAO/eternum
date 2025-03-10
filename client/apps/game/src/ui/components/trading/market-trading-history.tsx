@@ -1,7 +1,7 @@
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { getTradeResources, ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
+import { ContractAddress, getTradeResources, ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -41,10 +41,16 @@ export const MarketTradingHistory = memo(() => {
         if (!event) return;
         const trade = getComponentValue(components.Trade, getEntityIdFromKeys([BigInt(event.trade_id)]));
         if (!trade) return;
-        const takerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.taker_id)]));
+        const takerOwner = getComponentValue(
+          components.Structure,
+          getEntityIdFromKeys([BigInt(event.taker_id)]),
+        )?.owner;
         if (!takerOwner) return;
 
-        const makerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.maker_id)]));
+        const makerOwner = getComponentValue(
+          components.Structure,
+          getEntityIdFromKeys([BigInt(event.maker_id)]),
+        )?.owner;
         if (!makerOwner) return;
 
         const { makerGets, takerGets } = getTradeResources(trade.trade_id, components);
@@ -57,7 +63,7 @@ export const MarketTradingHistory = memo(() => {
               event: {
                 takerId: event.taker_id,
                 makerId: event.maker_id,
-                isYours: takerOwner.address === BigInt(address) || makerOwner.address === BigInt(address),
+                isYours: takerOwner === ContractAddress(address) || makerOwner === ContractAddress(address),
                 resourceGiven: makerGets[0],
                 resourceTaken: takerGets[0],
                 eventTime: new Date(event.timestamp * 1000),
@@ -72,7 +78,10 @@ export const MarketTradingHistory = memo(() => {
       if (isComponentUpdate(update, events.SwapEvent)) {
         const event = getComponentValue(events.SwapEvent, update.entity);
         if (!event) return;
-        const takerOwner = getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(event.entity_id)]));
+        const takerOwner = getComponentValue(
+          components.Structure,
+          getEntityIdFromKeys([BigInt(event.entity_id)]),
+        )?.owner;
         if (!takerOwner) return;
 
         setTradeEvents((prevTradeEvents) => {
@@ -83,7 +92,7 @@ export const MarketTradingHistory = memo(() => {
               event: {
                 takerId: event.entity_id,
                 makerId: event.bank_entity_id,
-                isYours: takerOwner.address === BigInt(address),
+                isYours: takerOwner === ContractAddress(address),
                 resourceGiven: event.buy
                   ? { resourceId: ResourcesIds.Lords, amount: Number(event.lords_amount) }
                   : { resourceId: event.resource_type, amount: Number(event.resource_amount) },

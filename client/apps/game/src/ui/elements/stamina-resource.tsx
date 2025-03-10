@@ -1,7 +1,7 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { configManager, ID } from "@bibliothecadao/eternum";
+import { configManager, ID, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -14,8 +14,8 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
   const staminaManager = useStaminaManager(entityId || 0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const maxStamina = staminaManager.getMaxStamina(
-    getComponentValue(setup.components.Army, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
+  const maxStamina = StaminaManager.getMaxStamina(
+    getComponentValue(setup.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId || 0)]))?.troops,
   );
 
   const stamina = useMemo(

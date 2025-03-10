@@ -1,10 +1,10 @@
-import { STAMINA_REFILL_PER_TICK } from "@bibliothecadao/eternum";
+import { ETERNUM_CONFIG } from "@/utils/config";
 
 ## Military Units
 
 ### Unit Advantages
 
-**Paladins** <img src="/resources/252.png" alt="Market" width="100" className="float-right" />
+**Paladins** <img src="/images/resources/28.png" alt="Market" width="100" className="float-right" />
 
 - Larger energy pool for extended movement
 - Same energy regeneration rate as other units
@@ -12,14 +12,14 @@ import { STAMINA_REFILL_PER_TICK } from "@bibliothecadao/eternum";
 
 <br />
 
-**Crossbowmen** <img src="/resources/251.png" alt="Market" width="100" className="float-right" />
+**Crossbowmen** <img src="/images/resources/27.png" alt="Market" width="100" className="float-right" />
 
 - Reduced food consumption (50% less)
 - More efficient for exploration and movement
 
 <br />
 
-**Knights** <img src="/resources/250.png" alt="Market" width="100" className="float-right" />
+**Knights** <img src="/images/resources/26.png" alt="Market" width="100" className="float-right" />
 
 - Standard unit with baseline stats
 
@@ -37,7 +37,7 @@ import { STAMINA_REFILL_PER_TICK } from "@bibliothecadao/eternum";
 
 - Army maximum stamina is determined by its composition
 - The unit with the **lowest** stamina pool sets the army limit
-- Regenerates {STAMINA_REFILL_PER_TICK} ⚡️ stamina every Eternum day.
+- Regenerates {ETERNUM_CONFIG().stamina.refillPerTick} ⚡️ stamina every Eternum day.
 - Stamina is consumed when moving across tiles
 
 ### Unit-Specific Movement

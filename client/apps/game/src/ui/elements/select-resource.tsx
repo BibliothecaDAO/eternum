@@ -10,11 +10,19 @@ interface SelectResourceProps {
   onSelect: (resourceId: number | null) => void;
   className?: string;
   realmProduction?: boolean;
+  defaultValue?: number;
+  excludeResourceIds?: number[];
 }
 
-export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, className, realmProduction = false }) => {
+export const SelectResource: React.FC<SelectResourceProps> = ({
+  onSelect,
+  className,
+  realmProduction = false,
+  defaultValue,
+  excludeResourceIds = [],
+}) => {
   const [searchInput, setSearchInput] = useState("");
-  const [selectedResource, setSelectedResource] = useState<string>("");
+  const [selectedResource, setSelectedResource] = useState<string>(defaultValue?.toString() || "");
   const [open, setOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +35,8 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
     ResourcesIds.Fish,
     ResourcesIds.Wheat,
     ResourcesIds.Donkey,
+    ResourcesIds.Lords,
+    ResourcesIds.Labor,
   ];
 
   const orderedResources = useMemo(() => {
@@ -35,9 +45,10 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
       .filter((resourceId) => {
         if (resourceId === ResourcesIds.Lords) return false;
         if (realmProduction && REALM_PRODUCTION_EXCLUDED.includes(resourceId)) return false;
+        if (excludeResourceIds.includes(resourceId)) return false;
         return true;
       });
-  }, [realmProduction]);
+  }, [realmProduction, excludeResourceIds]);
 
   const filteredResourceIds = orderedResources.filter((resourceId) =>
     ResourcesIds[resourceId].toLowerCase().startsWith(searchInput.toLowerCase()),
@@ -68,6 +79,13 @@ export const SelectResource: React.FC<SelectResourceProps> = ({ onSelect, classN
       e.stopPropagation();
     }
   };
+
+  // Call onSelect with default value on mount
+  React.useEffect(() => {
+    if (defaultValue !== undefined) {
+      onSelect(defaultValue);
+    }
+  }, []);
 
   return (
     <div className="flex items-center">

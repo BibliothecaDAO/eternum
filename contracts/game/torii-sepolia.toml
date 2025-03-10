@@ -8,11 +8,11 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 index_transactions = true
 contracts = [
-    "erc721:0xf13c0880fd96d4960be5042f564ce50921531c8cd9bae3a0c5b1687f053263",
-    "erc721:0x731af37beee9f49d1927b997cb5b1a2f6b2f0c341753d9bdfe23768ef65f53f",
-    "erc20:0x6bf1ddd27d699ddef8818e9d23a085b787798d9b557d79f22a6e155891506fb",
+    "erc721:0x4f059d99f0251243e502d2c7dd41ab208aa5e54a5ba566d25fa029c61863b43",
+    "erc721:0x4bc17690868c26b87298c8e1953ffad4f58cc314bd54722cace2059c106e1d8",
+    "erc20:0x10469f30c7392b591f81946e598ee5ec180926fd84782f7206f4d47fc1c6d08",
 ]
 
 [events]
-raw = true
+raw = false
 historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]

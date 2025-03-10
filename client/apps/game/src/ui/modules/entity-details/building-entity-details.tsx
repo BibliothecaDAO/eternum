@@ -2,6 +2,7 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
+import { ProductionModal } from "@/ui/components/production/production-modal";
 import Button from "@/ui/elements/button";
 import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -22,6 +23,7 @@ import {
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
+import { PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
@@ -42,6 +44,7 @@ export const BuildingEntityDetails = () => {
   const [isOwnedByPlayer, setIsOwnedByPlayer] = useState<boolean>(false);
   const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
 
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
@@ -62,7 +65,7 @@ export const BuildingEntityDetails = () => {
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
-      selectedStructureInfo?.structureCategory === StructureType[StructureType.Realm],
+      selectedStructureInfo?.structureCategory === StructureType.Realm,
     [selectedBuildingHex.innerCol, selectedBuildingHex.innerRow],
   );
 
@@ -79,7 +82,7 @@ export const BuildingEntityDetails = () => {
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
-      setIsOwnedByPlayer(playerStructures.some((structure) => structure.entity_id === building.outer_entity_id));
+      setIsOwnedByPlayer(playerStructures.some((structure) => structure.entityId === building.outer_entity_id));
     } else {
       setBuildingState({
         buildingType: undefined,
@@ -136,18 +139,18 @@ export const BuildingEntityDetails = () => {
   const canDestroyBuilding = useMemo(() => {
     if (buildingState.buildingType !== BuildingType.WorkersHut) return true;
 
-    const realmId = getComponentValue(
-      dojo.setup.components.EntityOwner,
+    const structure = getComponentValue(
+      dojo.setup.components.Structure,
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
     const populationImpact = configManager.getBuildingPopConfig(buildingState.buildingType).capacity;
 
     const population = getComponentValue(
-      dojo.setup.components.Population,
-      getEntityIdFromKeys([BigInt(realmId?.entity_owner_id || 0)]),
+      dojo.setup.components.StructureBuildings,
+      getEntityIdFromKeys([BigInt(structure?.entity_id || 0)]),
     );
-    return (population?.capacity || 0) - (population?.population || 0) >= populationImpact;
+    return (population?.population.max || 0) - (population?.population.current || 0) >= populationImpact;
   }, [buildingState.buildingType, buildingState.ownerEntityId]);
 
   return (
@@ -180,9 +183,23 @@ export const BuildingEntityDetails = () => {
             <div className="flex justify-center space-x-3">
               <Button
                 className="mb-4"
+                onClick={() => {
+                  toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
+                }}
+                isLoading={isLoading}
+                variant="primary"
+                withoutSound
+              >
+                <div className="flex items-center gap-2">
+                  <PlusIcon className="w-4 h-4" />
+                  Produce
+                </div>
+              </Button>
+              <Button
+                className="mb-4"
                 onClick={handlePauseResumeProduction}
                 isLoading={isLoading}
-                variant="outline"
+                variant="secondary"
                 withoutSound
               >
                 {isPaused ? "Resume" : "Pause"}
@@ -191,7 +208,7 @@ export const BuildingEntityDetails = () => {
                 disabled={!canDestroyBuilding}
                 className="mb-4"
                 onClick={handleDestroyBuilding}
-                variant="danger"
+                variant="secondary"
                 withoutSound
               >
                 {showDestroyConfirm ? "Confirm Destroy" : "Destroy"}

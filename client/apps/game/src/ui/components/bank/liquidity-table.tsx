@@ -4,7 +4,6 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useState } from "react";
 
 type LiquidityTableProps = {
-  bankEntityId: ID | undefined;
   entity_id: ID;
 };
 
@@ -19,16 +18,12 @@ export const LiquidityTableHeader = () => (
   </div>
 );
 
-export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps) => {
+export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const {
     account: { account },
   } = useDojo();
 
   const [searchTerm, setSearchTerm] = useState("");
-
-  if (!bankEntityId) {
-    return <div>Entity not found</div>;
-  }
 
   const filteredResources = Object.entries(RESOURCE_TIERS).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
@@ -43,7 +38,7 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   return (
     <div className="amm-liquidity-selector p-4 h-full bg-gold/10 overflow-x-auto relative">
@@ -61,7 +56,6 @@ export const LiquidityTable = ({ bankEntityId, entity_id }: LiquidityTableProps)
             <LiquidityResourceRow
               key={resourceId}
               playerStructureIds={playerStructureIds}
-              bankEntityId={bankEntityId!}
               entityId={entity_id}
               resourceId={resourceId}
               isFirst={index === 0 ? true : false}

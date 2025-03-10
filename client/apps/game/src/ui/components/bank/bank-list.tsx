@@ -3,27 +3,15 @@ import { LiquidityTable } from "@/ui/components/bank/liquidity-table";
 import { ResourceSwap } from "@/ui/components/bank/swap";
 import { Tabs } from "@/ui/elements/tab";
 import { ID } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 
 type BankListProps = {
-  bankEntityId: ID;
   structureEntityId: ID;
   selectedResource: number;
 };
 
-export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }: BankListProps) => {
-  const {
-    setup: {
-      components: { Position },
-    },
-  } = useDojo();
-
+export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
-
-  const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(bankEntityId)]));
 
   const tabs = useMemo(
     () => [
@@ -34,9 +22,7 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
             <div>Swap</div>
           </div>
         ),
-        component: (
-          <ResourceSwap bankEntityId={bankEntityId} entityId={structureEntityId} listResourceId={selectedResource} />
-        ),
+        component: <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />,
       },
       {
         key: "all",
@@ -47,21 +33,21 @@ export const BankPanel = ({ bankEntityId, structureEntityId, selectedResource }:
         ),
         component: (
           <div>
-            <AddLiquidity bankEntityId={bankEntityId} entityId={structureEntityId!} listResourceId={selectedResource} />
+            <AddLiquidity entityId={structureEntityId!} listResourceId={selectedResource} />
           </div>
         ),
       },
     ],
-    [structureEntityId, position],
+    [structureEntityId],
   );
 
   const liquidityTable = useMemo(() => {
     return (
       <div className="mt-4 text-xs">
-        <LiquidityTable bankEntityId={bankEntityId} entity_id={structureEntityId} />
+        <LiquidityTable entity_id={structureEntityId} />
       </div>
     );
-  }, [bankEntityId, structureEntityId]);
+  }, [structureEntityId]);
 
   return (
     <div className="amm-selector m-4">

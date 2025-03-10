@@ -1,4 +1,2 @@
-mod bank;
-mod realm;
-mod resource;
-
+pub mod realm;
+pub mod resource;

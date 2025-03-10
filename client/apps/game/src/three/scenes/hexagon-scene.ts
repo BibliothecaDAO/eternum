@@ -2,7 +2,6 @@ import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { LocationManager } from "@/three/helpers/location-manager";
 import { gltfLoader } from "@/three/helpers/utils";
-import { type BiomeType } from "@/three/managers/biome";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
@@ -12,7 +11,7 @@ import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { type HexPosition, type SetupResult } from "@bibliothecadao/eternum";
+import { BiomeType, type HexPosition, type SetupResult } from "@bibliothecadao/eternum";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -65,7 +64,7 @@ export abstract class HexagonScene {
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.scene.background = new THREE.Color(0x8790a1);
     this.state = useUIStore.getState();
-    this.fog = new THREE.Fog(0xffffff, 21, 30);
+    this.fog = new THREE.Fog(0xffffff, 21, 42);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
       this.scene.fog = this.fog;
     }
@@ -75,10 +74,12 @@ export abstract class HexagonScene {
       (state) => ({
         leftNavigationView: state.leftNavigationView,
         rightNavigationView: state.rightNavigationView,
+        structureEntityId: state.structureEntityId,
       }),
-      ({ leftNavigationView, rightNavigationView }) => {
+      ({ leftNavigationView, rightNavigationView, structureEntityId }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.rightNavigationView = rightNavigationView;
+        this.state.structureEntityId = structureEntityId;
       },
     );
   }
@@ -95,7 +96,7 @@ export abstract class HexagonScene {
   }
 
   private setupDirectionalLight(): void {
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
     this.configureDirectionalLight();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
@@ -103,15 +104,15 @@ export abstract class HexagonScene {
 
   private configureDirectionalLight(): void {
     this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 1024;
-    this.mainDirectionalLight.shadow.mapSize.height = 1024;
+    this.mainDirectionalLight.shadow.mapSize.width = 2048;
+    this.mainDirectionalLight.shadow.mapSize.height = 2048;
     this.mainDirectionalLight.shadow.camera.left = -22;
     this.mainDirectionalLight.shadow.camera.right = 18;
     this.mainDirectionalLight.shadow.camera.top = 14;
     this.mainDirectionalLight.shadow.camera.bottom = -12;
     this.mainDirectionalLight.shadow.camera.far = 38;
     this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.0015;
+    this.mainDirectionalLight.shadow.bias = -0.0285;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
   }
@@ -154,6 +155,7 @@ export abstract class HexagonScene {
     this.setupHemisphereLightGUI();
     this.setupDirectionalLightGUI();
     this.setupShadowGUI();
+    this.setupFogGUI();
   }
 
   private setupSceneGUI(): void {
@@ -193,6 +195,24 @@ export abstract class HexagonScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow, "bias", -0.1, 0.1, 0.0015);
     shadowFolder.close();
+  }
+
+  private setupFogGUI(): void {
+    const fogFolder = this.GUIFolder.addFolder("Fog");
+    fogFolder.addColor(this.fog, "color").name("Color");
+    fogFolder.add(this.fog, "near", 0, 100, 0.1).name("Near");
+    fogFolder.add(this.fog, "far", 0, 100, 0.1).name("Far");
+
+    // Add toggle for fog
+    const fogParams = { enabled: !IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH };
+    fogFolder
+      .add(fogParams, "enabled")
+      .name("Enable Fog")
+      .onChange((value: boolean) => {
+        this.scene.fog = value ? this.fog : null;
+      });
+
+    fogFolder.close();
   }
 
   private setupGroundMeshGUI(): void {

@@ -1,5 +1,6 @@
-import { Position } from "@/types/position";
 import {
+  BiomeIdToType,
+  BiomeType,
   ClientComponents,
   configManager,
   divideByPrecision,
@@ -7,13 +8,14 @@ import {
   RealmLevels,
   SetupResult,
   StructureType,
+  TroopTier,
+  TroopType,
   type HexPosition,
 } from "@bibliothecadao/eternum";
 import {
   Component,
   ComponentValue,
   defineComponentSystem,
-  defineQuery,
   getComponentValue,
   Has,
   HasValue,
@@ -25,9 +27,7 @@ import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 import {
   ArmySystemUpdate,
-  BattleSystemUpdate,
   BuildingSystemUpdate,
-  RealmSystemUpdate,
   StructureProgress,
   StructureSystemUpdate,
   TileSystemUpdate,
@@ -76,83 +76,75 @@ export class SystemManager {
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        const query = defineQuery(
-          [
-            Has(this.setup.components.Army),
-            Has(this.setup.components.Position),
-            Has(this.setup.components.EntityOwner),
-            Has(this.setup.components.Health),
-          ],
-          { runOnInit: true },
-        );
+        const handleUpdate = (update: any) => {
+          if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+            const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+            const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
 
-        return query.update$.subscribe((update) => {
-          if (
-            isComponentUpdate(update, this.setup.components.Army) ||
-            isComponentUpdate(update, this.setup.components.Position) ||
-            isComponentUpdate(update, this.setup.components.Health)
-          ) {
-            const army = getComponentValue(this.setup.components.Army, update.entity);
+            if (!newState.explorer_id) {
+              if (prevState && prevState.explorer_id) {
+                callback({
+                  entityId: prevState.explorer_id,
+                  hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
+                  order: 0,
+                  owner: { address: 0n, ownerName: "", guildName: "" },
+                  troopType: TroopType.Knight,
+                  troopTier: TroopTier.T1,
+                  deleted: true,
+                });
+                return;
+              }
+              return;
+            }
 
-            if (!army) return;
+            const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+            if (!explorer) return;
 
-            const position = getComponentValue(this.setup.components.Position, update.entity);
-            if (!position) return;
-
-            const health = getComponentValue(this.setup.components.Health, update.entity);
-            if (!health) return;
-
-            const protectee = getComponentValue(this.setup.components.Protectee, update.entity);
-            if (protectee) return;
-
-            const healthMultiplier = BigInt(configManager.getResourcePrecision());
-
-            const entityOwner = getComponentValue(this.setup.components.EntityOwner, update.entity);
-            if (!entityOwner) return;
-
-            const realm = getComponentValue(
-              this.setup.components.Realm,
-              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+            const structure = getComponentValue(
+              this.setup.components.Structure,
+              getEntityIdFromKeys([BigInt(explorer.owner)]),
             );
-            if (!realm) return;
+            if (!structure) return;
 
-            const owner = getComponentValue(
-              this.setup.components.Owner,
-              getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-            );
+            const owner = structure.owner;
 
             const addressName = getComponentValue(
               this.setup.components.AddressName,
-              getEntityIdFromKeys([BigInt(owner?.address || 0)]),
+              getEntityIdFromKeys([BigInt(owner || 0)]),
             );
 
             const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
 
-            const guild = getComponentValue(
-              this.setup.components.GuildMember,
-              getEntityIdFromKeys([owner?.address || 0n]),
-            );
+            const guild = getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]));
 
             let guildName = "";
             if (guild?.guild_entity_id) {
               const guildEntityName = getComponentValue(
-                this.setup.components.EntityName,
+                this.setup.components.AddressName,
                 getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
               );
               guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
             }
 
             callback({
-              entityId: army.entity_id,
-              hexCoords: { col: position.x, row: position.y },
-              battleId: army.battle_id,
-              defender: Boolean(protectee),
-              currentHealth: health.current / healthMultiplier,
-              order: realm.order,
-              owner: { address: owner?.address || 0n, ownerName, guildName },
+              entityId: explorer.explorer_id,
+              hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
+              order: structure.metadata.order,
+              owner: { address: owner || 0n, ownerName, guildName },
+              troopType: explorer.troops.category as TroopType,
+              troopTier: explorer.troops.tier as TroopTier,
             });
           }
+        };
+
+        defineComponentSystem(this.setup.network.world, this.setup.components.ExplorerTroops, handleUpdate, {
+          runOnInit: true,
         });
+
+        return () => {
+          // No direct way to unsubscribe from defineComponentSystem
+          // This would need a proper cleanup mechanism
+        };
       },
     };
   }
@@ -168,13 +160,13 @@ export class SystemManager {
 
           if (!structure) return;
 
-          const categoryKey = structure.category as keyof typeof StructureType;
+          const category = structure.base.category as StructureType;
 
-          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          const stage = this.getStructureStage(category, structure.entity_id);
 
           return {
             entityId: structure.entity_id,
-            structureType: StructureType[categoryKey],
+            structureType: category,
             stage,
           };
         });
@@ -184,89 +176,23 @@ export class SystemManager {
           const structure = getComponentValue(this.setup.components.Structure, update.entity);
           if (!structure) return;
 
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!position) return;
-
-          const owner = getComponentValue(this.setup.components.Owner, update.entity);
-          const categoryKey = structure.category as keyof typeof StructureType;
-          const stage = this.getStructureStage(StructureType[categoryKey], structure.entity_id);
+          const stage = this.getStructureStage(structure.base.category as StructureType, structure.entity_id);
 
           let level = 0;
           let hasWonder = false;
-          if (StructureType[categoryKey] === StructureType.Realm) {
-            const realm = getComponentValue(this.setup.components.Realm, update.entity);
-            level = realm?.level || RealmLevels.Settlement;
-            hasWonder = realm?.has_wonder || false;
+          if (structure.base.category === StructureType.Realm) {
+            level = structure.base.level || RealmLevels.Settlement;
+            hasWonder = structure.metadata.has_wonder || false;
           }
 
           return {
             entityId: structure.entity_id,
-            hexCoords: { col: position.x, row: position.y },
-            structureType: StructureType[categoryKey],
+            hexCoords: { col: structure.base.coord_x, row: structure.base.coord_y },
+            structureType: structure.base.category as StructureType,
             stage,
             level,
-            owner: { address: owner?.address || 0n },
+            owner: { address: structure.owner },
             hasWonder,
-          };
-        });
-      },
-    };
-  }
-
-  public get Realm() {
-    return {
-      onUpdate: (callback: (value: RealmSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Realm, callback, (update: any) => {
-          const realm = getComponentValue(this.setup.components.Realm, update.entity);
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!realm || !position) return;
-
-          return {
-            level: realm.level,
-            hexCoords: { col: position.x, row: position.y },
-          };
-        });
-      },
-    };
-  }
-
-  public get Battle() {
-    return {
-      onUpdate: (callback: (value: BattleSystemUpdate) => void) => {
-        this.setupSystem(this.setup.components.Battle, callback, (update: any) => {
-          const battle = getComponentValue(this.setup.components.Battle, update.entity);
-          if (!battle) {
-            return {
-              entityId: update.value[1].entity_id,
-              hexCoords: new Position({ x: 0, y: 0 }),
-              isEmpty: false,
-              deleted: true,
-              isSiege: false,
-              isOngoing: false,
-            };
-          }
-
-          const position = getComponentValue(this.setup.components.Position, update.entity);
-          if (!position) return;
-
-          const healthMultiplier = BigInt(configManager.getResourcePrecision());
-          const isEmpty =
-            battle.attack_army_health.current < healthMultiplier &&
-            battle.defence_army_health.current < healthMultiplier;
-
-          const isSiege = battle.start_at > Date.now() / 1000;
-          const currentTimestamp = Math.floor(Date.now() / 1000);
-          const isOngoing =
-            battle.duration_left !== 0n &&
-            currentTimestamp - Number(battle.last_updated) < Number(battle.duration_left);
-
-          return {
-            entityId: battle.entity_id,
-            hexCoords: new Position({ x: position.x, y: position.y }),
-            isEmpty,
-            deleted: false,
-            isSiege,
-            isOngoing,
           };
         });
       },
@@ -280,10 +206,13 @@ export class SystemManager {
           const newState = update.value[0];
           const prevState = update.value[1];
 
+          const newStateBiomeType = BiomeIdToType[newState?.biome];
           const { col, row } = prevState || newState;
           return {
             hexCoords: { col, row },
             removeExplored: !newState,
+            biome:
+              newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
           };
         });
       },
@@ -292,18 +221,13 @@ export class SystemManager {
 
   public get Buildings() {
     return {
-      subscribeToHexUpdates: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
-        const query = defineQuery([
-          HasValue(this.setup.components.Building, {
-            outer_col: hexCoords.col,
-            outer_row: hexCoords.row,
-          }),
-        ]);
-
-        return query.update$.subscribe((update) => {
+      onUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
+        const handleUpdate = (update: any) => {
           if (isComponentUpdate(update, this.setup.components.Building)) {
             const building = getComponentValue(this.setup.components.Building, update.entity);
             if (!building) return;
+
+            if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
 
             const innerCol = building.inner_col;
             const innerRow = building.inner_row;
@@ -317,13 +241,18 @@ export class SystemManager {
               paused,
             });
           }
+        };
+
+        defineComponentSystem(this.setup.network.world, this.setup.components.Building, handleUpdate, {
+          runOnInit: true,
         });
+
+        return () => {
+          // No direct way to unsubscribe from defineComponentSystem
+          // This would need a proper cleanup mechanism
+        };
       },
     };
-  }
-
-  private getHexCoords(value: any): { col: number; row: number } {
-    return { col: value[0]?.x || 0, row: value[0]?.y || 0 };
   }
 
   public getStructureStage(structureType: StructureType, entityId: ID): number {

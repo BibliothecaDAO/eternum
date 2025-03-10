@@ -1,163 +1,105 @@
-use dojo::world::IWorldDispatcher;
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Coord};
+use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
+
+#[derive(Copy, Drop, Serde)]
+struct BankCreateParams {
+    name: felt252,
+    coord: Coord,
+    guard_slot: GuardSlot,
+    troop_tier: TroopTier,
+    troop_type: TroopType,
+}
 
 #[starknet::interface]
-trait IBankSystems<T> {
-    fn change_owner_amm_fee(ref self: T, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,);
-    fn change_owner_bridge_fee(
-        ref self: T, bank_entity_id: ID, owner_bridge_fee_dpt_percent: u16, owner_bridge_fee_wtdr_percent: u16,
-    );
+pub trait IBankSystems<T> {
+    fn create_banks(ref self: T, banks: Span<BankCreateParams>) -> Span<ID>;
 }
 
 #[dojo::contract]
-mod bank_systems {
-    use dojo::event::EventStorage;
+pub mod bank_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use s1_eternum::models::bank::bank::{Bank};
-    use s1_eternum::models::capacity::{CapacityCategory};
-    use s1_eternum::models::config::{BankConfig, CapacityConfigCategory};
-    use s1_eternum::models::owner::{Owner, EntityOwner};
-    use s1_eternum::models::position::{Position, Coord};
-    use s1_eternum::models::resource::resource::{Resource, ResourceImpl};
+    use s1_eternum::constants::{
+        DEFAULT_NS, REGIONAL_BANK_FIVE_ID, REGIONAL_BANK_FOUR_ID, REGIONAL_BANK_ONE_ID, REGIONAL_BANK_SIX_ID,
+        REGIONAL_BANK_THREE_ID, REGIONAL_BANK_TWO_ID,
+    };
+    use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
+    use s1_eternum::models::config::{WorldConfigUtilImpl};
+    use s1_eternum::models::map::{TileOccupier};
+    use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::season::SeasonImpl;
-    use s1_eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountTrait};
-    use s1_eternum::systems::resources::contracts::resource_systems::resource_systems::{InternalResourceSystemsImpl};
+    use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
+    use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::systems::utils::structure::{iStructureImpl};
+    use s1_eternum::systems::utils::troop::iMercenariesImpl;
 
-    use traits::Into;
+    const MAX_BANK_COUNT: u8 = 6;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
-        fn change_owner_amm_fee(
-            ref self: ContractState, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
-        ) {
+        fn create_banks(ref self: ContractState, banks: Span<super::BankCreateParams>) -> Span<ID> {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
 
-            let player = starknet::get_caller_address();
+            // ensure caller is game admin
+            assert_caller_is_admin(world);
 
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
+            // ensure only `max bank count` banks can be created and they are created at once;
+            assert!(banks.len() == MAX_BANK_COUNT.into(), "cannot create more than {} banks", MAX_BANK_COUNT);
 
-            let mut bank: Bank = world.read_model(bank_entity_id);
-            bank.owner_fee_num = new_owner_fee_num;
-            bank.owner_fee_denom = new_owner_fee_denom;
-            world.write_model(@bank);
-        }
-
-
-        fn change_owner_bridge_fee(
-            ref self: ContractState,
-            bank_entity_id: ID,
-            owner_bridge_fee_dpt_percent: u16,
-            owner_bridge_fee_wtdr_percent: u16
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
-
-            let player = starknet::get_caller_address();
-
-            let owner: Owner = world.read_model(bank_entity_id);
-            assert(owner.address == player, 'Only owner can change fee');
-
-            let mut bank: Bank = world.read_model(bank_entity_id);
-            bank.owner_bridge_fee_dpt_percent = owner_bridge_fee_dpt_percent;
-            bank.owner_bridge_fee_wtdr_percent = owner_bridge_fee_wtdr_percent;
-            world.write_model(@bank);
-        }
-    }
-
-    #[generate_trait]
-    pub impl InternalBankSystemsImpl of BankSystemsTrait {
-        fn create_bank(
-            ref world: WorldStorage,
-            realm_entity_id: ID,
-            coord: Coord,
-            owner_fee_num: u128,
-            owner_fee_denom: u128,
-            owner_bridge_fee_dpt_percent: u16,
-            owner_bridge_fee_wtdr_percent: u16
-        ) -> ID {
-            // SeasonImpl::assert_season_is_not_over(world);
-
-            let bank_entity_id: ID = world.dispatcher.uuid();
-
-            //todo: check that tile is explored
-
-            // ensure that the coord is not occupied by any other structure
-            let structure_count: StructureCount = world.read_model(coord);
-            structure_count.assert_none();
-
-            // remove the resources from the realm
-            let bank_config: BankConfig = world.read_model(WORLD_CONFIG_ID);
-            let mut realm_resource: Resource = world.read_model((realm_entity_id, ResourceTypes::LORDS));
-
-            realm_resource.burn(bank_config.lords_cost);
-            realm_resource.save(ref world);
-
-            world
-                .write_model(
-                    @Structure {
-                        entity_id: bank_entity_id,
-                        category: StructureCategory::Bank,
-                        created_at: starknet::get_block_timestamp()
-                    },
+            let caller = starknet::get_caller_address();
+            let mut bank_ids = array![
+                REGIONAL_BANK_ONE_ID,
+                REGIONAL_BANK_TWO_ID,
+                REGIONAL_BANK_THREE_ID,
+                REGIONAL_BANK_FOUR_ID,
+                REGIONAL_BANK_FIVE_ID,
+                REGIONAL_BANK_SIX_ID,
+            ];
+            for bank in banks {
+                // create the bank structure
+                let bank_entity_id = bank_ids.pop_front().unwrap();
+                iStructureImpl::create(
+                    ref world,
+                    *bank.coord,
+                    caller,
+                    bank_entity_id,
+                    StructureCategory::Bank,
+                    false,
+                    array![].span(),
+                    Default::default(),
+                    TileOccupier::Bank,
                 );
-            world.write_model(@StructureCount { coord, count: 1 },);
-            world
-                .write_model(
-                    @CapacityCategory { entity_id: bank_entity_id, category: CapacityConfigCategory::Structure },
+
+                // save bank name model
+                world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });
+
+                // add guards to structure
+                let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
+                let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
+                let bank_guard_slot_tier = array![(*bank.guard_slot, *bank.troop_tier, *bank.troop_type)].span();
+                let tick = TickImpl::get_tick_config(ref world);
+                let seed = 'what could possibly go wrong'.into() - bank_entity_id.into();
+                iMercenariesImpl::add(
+                    ref world,
+                    bank_entity_id,
+                    seed,
+                    bank_guard_slot_tier,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    tick,
                 );
-            world
-                .write_model(
-                    @Bank {
-                        entity_id: bank_entity_id,
-                        owner_fee_num,
-                        owner_fee_denom,
-                        owner_bridge_fee_dpt_percent,
-                        owner_bridge_fee_wtdr_percent,
-                        exists: true
-                    }
-                );
-            world.write_model(@Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },);
-            world.write_model(@Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() });
 
-            bank_entity_id
-        }
-
-        fn pickup_resources_from_bank(
-            ref world: WorldStorage, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
-        ) -> ID {
-            let mut resources_clone = resources.clone();
-
-            loop {
-                match resources_clone.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(ref world, (bank_entity_id, resource_type));
-                        recipient_resource.add(resource_amount);
-                        recipient_resource.save(ref world);
-                    },
-                    Option::None => { break; }
-                }
+                bank_ids.append(bank_entity_id);
             };
 
-            // then entity picks up the resources at the bank
-            let (donkey_id, _, _) = InternalResourceSystemsImpl::transfer(
-                ref world, bank_entity_id, entity_id, resources, entity_id, true, true
-            );
-
-            donkey_id
+            bank_ids.span()
         }
     }
 }

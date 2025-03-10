@@ -17,11 +17,11 @@ interface Config {
 export class EternumConfig {
   async setup(account: Account, provider: EternumProvider) {
     const config = { account, provider };
-    await setResourceBridgeWhitlelistConfig(config);
+    await setResourceBridgeWhitelistConfig(config);
   }
 }
 
-export const setResourceBridgeWhitlelistConfig = async (config: Config) => {
+export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   let resourceWhitelistConfigs: ResourceWhitelistConfig[] = [];
   for (const [resourceName, [resourceId, tokenAddress]] of Object.entries(resourceAddresses)) {
     resourceWhitelistConfigs.push({

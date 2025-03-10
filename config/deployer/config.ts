@@ -1,21 +1,17 @@
 import {
   ADMIN_BANK_ENTITY_ID,
-  ARMY_ENTITY_TYPE,
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
-  CapacityConfigCategory,
-  DONKEY_ENTITY_TYPE,
+  CapacityConfig,
   EternumProvider,
-  FELT_CENTER,
-  QuestType,
+  HexGrid,
   ResourcesIds,
   ResourceTier,
   scaleResourceCostMinMax,
   scaleResourceInputs,
   scaleResourceOutputs,
+  scaleResourceProductionByLaborParams,
   scaleResources,
-  TickIds,
-  TravelTypes,
   type Config as EternumConfig,
   type ResourceInputs,
   type ResourceOutputs,
@@ -23,8 +19,10 @@ import {
 } from "@bibliothecadao/eternum";
 
 import chalk from "chalk";
+
+import fs from "fs";
 import { Account } from "starknet";
-import { SHARDS_MINES_WIN_PROBABILITY } from "../environments/_shared_";
+import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
@@ -42,14 +40,16 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
+    await setWorldConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
-    await setQuestRewardConfig(config);
+    await setTradeConfig(config);
+    await setStartingResourcesConfig(config);
     await setSeasonConfig(config);
     await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
@@ -58,30 +58,27 @@ export class GameConfigDeployer {
     await setBuildingConfig(config);
     await setWeightConfig(config);
     await setBattleConfig(config);
-    await setCombatConfig(config);
+    await setTroopConfig(config);
     await setRealmUpgradeConfig(config);
-    await setRealmMaxLevelConfig(config);
+    await setStructureMaxLevelConfig(config);
     await setupGlobals(config);
     await setCapacityConfig(config);
     await setSpeedConfig(config);
     await setHyperstructureConfig(config);
-    await setStaminaConfig(config);
-    await setStaminaRefillConfig(config);
-    await setMercenariesConfig(config);
     await setBuildingGeneralConfig(config);
     await setSettlementConfig(config);
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await createAdminBank(config);
+    await createBanks(config);
     await mintResources(config);
     await addLiquidity(config);
   }
 
   getResourceBuildingCostsScaled(): ResourceInputs {
     return scaleResourceInputs(
-      this.globalConfig.resources.resourceBuildingCosts,
+      this.globalConfig.buildings.resourceBuildingCosts,
       this.globalConfig.resources.resourcePrecision,
     );
   }
@@ -95,7 +92,7 @@ export class GameConfigDeployer {
 
   getBuildingCostsScaled(): ResourceInputs {
     return scaleResourceInputs(
-      this.globalConfig.buildings.buildingCosts,
+      this.globalConfig.buildings.otherBuildingCosts,
       this.globalConfig.resources.resourcePrecision,
     );
   }
@@ -129,48 +126,63 @@ export class GameConfigDeployer {
   }
 }
 
-export const setQuestRewardConfig = async (config: Config) => {
+export const setStartingResourcesConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  🏆 Quest Rewards Configuration 
+  🏆 Starting Resources Configuration 
   ═══════════════════════════════`),
   );
 
   const calldataArray = [];
-  let scaledQuestResources = scaleResourceInputs(
-    config.config.questResources,
-    config.config.resources.resourcePrecision,
-  );
-
-  for (const questId of Object.keys(scaledQuestResources) as unknown as QuestType[]) {
-    const resources = scaledQuestResources[questId];
+  for (const elem of Object.values(config.config.startingResources)) {
     const calldata = {
-      quest_id: questId,
-      resources: resources,
+      resource: elem.resource,
+      amount: elem.amount * config.config.resources.resourcePrecision,
     };
 
     console.log(
       chalk.cyan(`
-    ✧ Quest ${chalk.yellow(calldata.quest_id)} Rewards:`),
+    ✧ Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
     );
 
-    calldata.resources.forEach((r) => {
-      console.log(
-        chalk.cyan(
-          `      ∙ ${chalk.cyan(inGameAmount(r.amount, config.config))} ${chalk.yellow(ResourcesIds[r.resource])}`,
-        ),
-      );
-    });
+    console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
 
     calldataArray.push(calldata);
   }
 
-  const tx = await config.provider.set_quest_reward_config({
+  const tx = await config.provider.set_starting_resources_config({
     signer: config.account,
-    calls: calldataArray,
+    startingResources: calldataArray,
   });
 
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));
+};
+
+export const setWorldConfig = async (config: Config) => {
+  console.log(
+    chalk.cyan(`
+   🌎 WORLD CONFIGURATION ⚡
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`),
+  );
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow(`Admin Address`)}
+    │  ${chalk.gray(`${config.account.address}`)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_world_config({
+    signer: config.account,
+    admin_address: config.account.address,
+  });
+
+  console.log(
+    chalk.cyan(`
+    ${chalk.green("✨ Configuration successfully deployed")}
+    ${chalk.gray("Transaction:")} ${chalk.white(tx.statusReceipt)}
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `),
+  );
 };
 
 export const setProductionConfig = async (config: Config) => {
@@ -190,29 +202,51 @@ export const setProductionConfig = async (config: Config) => {
     config.config.resources.resourcePrecision,
   );
 
+  const scaledResourceProductionByLaborParams = scaleResourceProductionByLaborParams(
+    config.config.resources.resourceProductionByLaborParams,
+    config.config.resources.resourcePrecision,
+  );
+
   for (const resourceId of Object.keys(scaledResourceInputs) as unknown as ResourcesIds[]) {
-    const outputAmountPerLabor = scaledResourceOutputs[resourceId];
-    const resourceCostPerLabor = scaledResourceInputs[resourceId];
+    const outputAmountPerBuildingPerTick = scaledResourceOutputs[resourceId];
+    const predefinedResourceBurnCost = scaledResourceInputs[resourceId];
+    const resourceProductionByLaborParams = scaledResourceProductionByLaborParams[resourceId];
     const calldata = {
-      amount: outputAmountPerLabor,
       resource_type: resourceId,
-      cost: resourceCostPerLabor,
+      amount_per_building_per_tick: outputAmountPerBuildingPerTick,
+      predefined_resource_burn_cost: predefinedResourceBurnCost,
+      labor_burn_strategy: resourceProductionByLaborParams,
     };
+
     calldataArray.push(calldata);
 
     console.log(
       chalk.cyan(`
     ┌─ ${chalk.yellow(ResourcesIds[calldata.resource_type])}
-    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per labor:`)} ${chalk.white(`${inGameAmount(calldata.amount, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
-    │  ${chalk.gray(`Cost of producing 1 ${ResourcesIds[calldata.resource_type]} labor:`)} ${
-      calldata.cost.length > 0
-        ? calldata.cost
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building:`)} ${chalk.white(`${inGameAmount(calldata.amount_per_building_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
+    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
+    │     ${chalk.gray(``)} ${
+      calldata.labor_burn_strategy.resource_rarity === 0
+        ? chalk.red("Cannot be produced with labor")
+        : `
+    │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
+    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${(calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom) * 100}%`)}
+    │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
+    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`
+    }
+    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`Using Multiple Resource Burn Production Strategy:`)}
+    │  ${
+      calldata.predefined_resource_burn_cost.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
+          calldata.predefined_resource_burn_cost
             .map(
               (c) => `
-    │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
+    │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : chalk.blue("Can't be produced with resources")
+        : `    ${chalk.blue("Can't be produced with multiple resources")}`
     }
     └────────────────────────────────`),
     );
@@ -358,14 +392,14 @@ export const setBuildingConfig = async (config: Config) => {
 
   const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
-  const buildingCosts = config.config.buildings.buildingCosts;
-  const scaledNonResourceBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const buildingCosts = config.config.buildings.otherBuildingCosts;
+  const scaledOtherBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
 
   // Non Resource Building Config
   for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaledNonResourceBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledNonResourceBuildingCosts[buildingId];
+    if (scaledOtherBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledOtherBuildingCosts[buildingId];
       const calldata = {
         building_category: buildingId,
         building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
@@ -405,7 +439,7 @@ export const setBuildingConfig = async (config: Config) => {
 
   // Resource Building Config
   const scaledResourceBuildingCosts = scaleResourceInputs(
-    config.config.resources.resourceBuildingCosts,
+    config.config.buildings.resourceBuildingCosts,
     config.config.resources.resourcePrecision,
   );
   for (const resourceId of Object.keys(scaledResourceBuildingCosts) as unknown as ResourcesIds[]) {
@@ -495,31 +529,34 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     }
   }
 
-  const tx = await config.provider.set_realm_level_config({ signer: config.account, calls: calldataArray });
+  const tx = await config.provider.set_structure_level_config({ signer: config.account, calls: calldataArray });
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setRealmMaxLevelConfig = async (config: Config) => {
+export const setStructureMaxLevelConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
   👑 Realm Level Configuration
   ═══════════════════════════`),
   );
 
-  const new_max_level = config.config.realmMaxLevel - 1;
+  const realm_max_level = config.config.realmMaxLevel - 1;
+  const village_max_level = config.config.villageMaxLevel - 1;
   const calldata = {
     signer: config.account,
-    new_max_level,
+    realm_max_level,
+    village_max_level,
   };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Level Cap")}
-    │  ${chalk.gray("Maximum Level:")}     ${chalk.white(calldata.new_max_level)}
+    ┌─ ${chalk.yellow("Levels Cap")}
+    │  ${chalk.gray(" Realm Maximum Level:")}     ${chalk.white(calldata.realm_max_level)}
+    │  ${chalk.gray(" Village Maximum Level:")}     ${chalk.white(calldata.village_max_level)}
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_realm_max_level_config(calldata);
+  const tx = await config.provider.set_structure_max_level_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
@@ -550,7 +587,7 @@ export const setWeightConfig = async (config: Config) => {
   });
   console.log(chalk.cyan(`    └────────────────────────────────`));
 
-  const tx = await config.provider.set_weight_config({
+  const tx = await config.provider.set_resource_weight_config({
     signer: config.account,
     calls: calldataArray,
   });
@@ -565,18 +602,13 @@ export const setBattleConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const {
-    graceTickCount: regular_immunity_ticks,
-    graceTickCountHyp: hyperstructure_immunity_ticks,
-    delaySeconds: battle_delay_seconds,
-  } = config.config.battle;
+  const { graceTickCount: regular_immunity_ticks, graceTickCountHyp: hyperstructure_immunity_ticks } =
+    config.config.battle;
 
   const calldata = {
     signer: config.account,
-    config_id: 0,
     regular_immunity_ticks,
     hyperstructure_immunity_ticks,
-    battle_delay_seconds,
   };
 
   console.log(
@@ -584,7 +616,6 @@ export const setBattleConfig = async (config: Config) => {
     ┌─ ${chalk.yellow("Battle Parameters")}
     │  ${chalk.gray("Regular Immunity:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
     │  ${chalk.gray("Structure Immunity:")}    ${chalk.white(calldata.hyperstructure_immunity_ticks + " ticks")}
-    │  ${chalk.gray("Battle Seige Delay:")}    ${chalk.white(hourMinutesSeconds(calldata.battle_delay_seconds))}
     └────────────────────────────────`),
   );
 
@@ -593,74 +624,123 @@ export const setBattleConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setCombatConfig = async (config: Config) => {
+export const setTroopConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  ⚔️  Combat System Configuration
+  ⚔️  Troop System Configuration
   ═══════════════════════════════`),
   );
 
   const {
-    health,
-    knightStrength: knight_strength,
-    paladinStrength: paladin_strength,
-    crossbowmanStrength: crossbowman_strength,
-    advantagePercent: advantage_percent,
-    disadvantagePercent: disadvantage_percent,
-    maxTroopCount: max_troop_count,
-    pillageHealthDivisor: pillage_health_divisor,
-    baseArmyNumberForStructure: army_free_per_structure,
-    armyExtraPerMilitaryBuilding: army_extra_per_military_building,
-    maxArmiesPerStructure: max_armies_per_structure,
-    battleLeaveSlashNum: battle_leave_slash_num,
-    battleLeaveSlashDenom: battle_leave_slash_denom,
-    battleTimeReductionScale: battle_time_scale,
-    battleMaxTimeSeconds: battle_max_time_seconds,
+    damage: {
+      t1DamageValue: t1_damage_value,
+      t2DamageMultiplier: t2_damage_multiplier,
+      t3DamageMultiplier: t3_damage_multiplier,
+      damageBiomeBonusNum: damage_biome_bonus_num,
+      damageScalingFactor: damage_scaling_factor,
+      damageBetaSmall: damage_beta_small,
+      damageBetaLarge: damage_beta_large,
+      damageC0: damage_c0,
+      damageDelta: damage_delta,
+    },
+    stamina: {
+      staminaGainPerTick: stamina_gain_per_tick,
+      staminaInitial: stamina_initial,
+      staminaBonusValue: stamina_bonus_value,
+      staminaKnightMax: stamina_knight_max,
+      staminaPaladinMax: stamina_paladin_max,
+      staminaCrossbowmanMax: stamina_crossbowman_max,
+      staminaAttackReq: stamina_attack_req,
+      staminaAttackMax: stamina_attack_max,
+      staminaExploreWheatCost: stamina_explore_wheat_cost,
+      staminaExploreFishCost: stamina_explore_fish_cost,
+      staminaExploreStaminaCost: stamina_explore_stamina_cost,
+      staminaTravelWheatCost: stamina_travel_wheat_cost,
+      staminaTravelFishCost: stamina_travel_fish_cost,
+      staminaTravelStaminaCost: stamina_travel_stamina_cost,
+    },
+    limit: {
+      explorerMaxPartyCount: explorer_max_party_count,
+      explorerAndGuardMaxTroopCount: explorer_guard_max_troop_count,
+      guardResurrectionDelay: guard_resurrection_delay,
+      mercenariesTroopLowerBound: mercenaries_troop_lower_bound,
+      mercenariesTroopUpperBound: mercenaries_troop_upper_bound,
+    },
   } = config.config.troop;
 
   const calldata = {
     signer: config.account,
-    config_id: 0,
-    health,
-    knight_strength,
-    paladin_strength,
-    crossbowman_strength,
-    advantage_percent,
-    disadvantage_percent,
-    max_troop_count: max_troop_count * config.config.resources.resourcePrecision,
-    pillage_health_divisor: pillage_health_divisor,
-    army_free_per_structure: army_free_per_structure,
-    army_extra_per_military_building: army_extra_per_military_building,
-    army_max_per_structure: max_armies_per_structure,
-    battle_leave_slash_num,
-    battle_leave_slash_denom,
-    battle_time_scale,
-    battle_max_time_seconds,
+    damage_config: {
+      t1_damage_value: t1_damage_value,
+      t2_damage_multiplier: t2_damage_multiplier,
+      t3_damage_multiplier: t3_damage_multiplier,
+      damage_biome_bonus_num: damage_biome_bonus_num,
+      damage_scaling_factor: damage_scaling_factor,
+      damage_beta_small: damage_beta_small,
+      damage_beta_large: damage_beta_large,
+      damage_c0: damage_c0,
+      damage_delta: damage_delta,
+    },
+    stamina_config: {
+      stamina_gain_per_tick: stamina_gain_per_tick,
+      stamina_initial: stamina_initial,
+      stamina_bonus_value: stamina_bonus_value,
+      stamina_knight_max: stamina_knight_max,
+      stamina_paladin_max: stamina_paladin_max,
+      stamina_crossbowman_max: stamina_crossbowman_max,
+      stamina_attack_req: stamina_attack_req,
+      stamina_attack_max: stamina_attack_max,
+      stamina_explore_wheat_cost: stamina_explore_wheat_cost,
+      stamina_explore_fish_cost: stamina_explore_fish_cost,
+      stamina_explore_stamina_cost: stamina_explore_stamina_cost,
+      stamina_travel_wheat_cost: stamina_travel_wheat_cost,
+      stamina_travel_fish_cost: stamina_travel_fish_cost,
+      stamina_travel_stamina_cost: stamina_travel_stamina_cost,
+    },
+    limit_config: {
+      explorer_max_party_count: explorer_max_party_count,
+      explorer_guard_max_troop_count: explorer_guard_max_troop_count,
+      guard_resurrection_delay: guard_resurrection_delay,
+      mercenaries_troop_lower_bound: mercenaries_troop_lower_bound,
+      mercenaries_troop_upper_bound: mercenaries_troop_upper_bound,
+    },
   };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Unit Stats")}
-    │  ${chalk.gray("Base Health:")}          ${chalk.white(calldata.health)}
-    │  ${chalk.gray("Knight Strength:")}      ${chalk.white(calldata.knight_strength)}
-    │  ${chalk.gray("Paladin Strength:")}     ${chalk.white(calldata.paladin_strength)}
-    │  ${chalk.gray("Crossbow Strength:")}    ${chalk.white(calldata.crossbowman_strength)}
+    ┌─ ${chalk.yellow("Damage Configuration")}
+    │  ${chalk.gray("T1 Damage Value:")}      ${chalk.white(calldata.damage_config.t1_damage_value)}
+    │  ${chalk.gray("T2 Damage Multiplier:")}     ${chalk.white(calldata.damage_config.t2_damage_multiplier)}
+    │  ${chalk.gray("T3 Damage Multiplier:")}    ${chalk.white(calldata.damage_config.t3_damage_multiplier)}
+    │  ${chalk.gray("Damage Biome Bonus:")}         ${chalk.white(calldata.damage_config.damage_biome_bonus_num)}
+    │  ${chalk.gray("Damage Scaling Factor:")}         ${chalk.white(calldata.damage_config.damage_scaling_factor)}
+    │  ${chalk.gray("Damage Beta Small:")}             ${chalk.white(calldata.damage_config.damage_beta_small)}
+    │  ${chalk.gray("Damage Beta Large:")}             ${chalk.white(calldata.damage_config.damage_beta_large)}
+    │  ${chalk.gray("Damage C0:")}             ${chalk.white(calldata.damage_config.damage_c0)}
+    │  ${chalk.gray("Damage Delta:")}             ${chalk.white(calldata.damage_config.damage_delta)}
     │
-    │  ${chalk.yellow("Combat Modifiers")}
-    │  ${chalk.gray("Advantage:")}            ${chalk.white((calldata.advantage_percent / 10_000) * 100 + "%")}
-    │  ${chalk.gray("Disadvantage:")}         ${chalk.white((calldata.disadvantage_percent / 10_000) * 100 + "%")}
-    │  ${chalk.gray("Max Troop Count Per Army:")} ${chalk.white(inGameAmount(calldata.max_troop_count, config.config))}
+    │  ${chalk.yellow("Stamina Configuration")}
+    │  ${chalk.gray("Gain Per Tick:")}           ${chalk.white(calldata.stamina_config.stamina_gain_per_tick)}
+    │  ${chalk.gray("Initial Stamina:")}         ${chalk.white(calldata.stamina_config.stamina_initial)}
+    │  ${chalk.gray("Biome Bonus:")}             ${chalk.white(calldata.stamina_config.stamina_bonus_value)}
+    │  ${chalk.gray("Knight Max Stamina:")}      ${chalk.white(calldata.stamina_config.stamina_knight_max)}
+    │  ${chalk.gray("Paladin Max Stamina:")}     ${chalk.white(calldata.stamina_config.stamina_paladin_max)}
+    │  ${chalk.gray("Crossbow Max Stamina:")}    ${chalk.white(calldata.stamina_config.stamina_crossbowman_max)}
+    │  ${chalk.gray("Attack Requirement:")}       ${chalk.white(calldata.stamina_config.stamina_attack_req)}
+    │  ${chalk.gray("Attack Max:")}              ${chalk.white(calldata.stamina_config.stamina_attack_max)}
+    │  ${chalk.gray("Explore Wheat Cost:")}     ${chalk.white(calldata.stamina_config.stamina_explore_wheat_cost)}
+    │  ${chalk.gray("Explore Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_explore_fish_cost)}
+    │  ${chalk.gray("Explore Stamina Cost:")}    ${chalk.white(calldata.stamina_config.stamina_explore_stamina_cost)}
+    │  ${chalk.gray("Travel Wheat Cost:")}       ${chalk.white(calldata.stamina_config.stamina_travel_wheat_cost)}
+    │  ${chalk.gray("Travel Fish Cost:")}        ${chalk.white(calldata.stamina_config.stamina_travel_fish_cost)}
+    │  ${chalk.gray("Travel Stamina Cost:")}     ${chalk.white(calldata.stamina_config.stamina_travel_stamina_cost)}
     │
-    │  ${chalk.yellow("Army Parameters")}
-    │  ${chalk.gray("Free per Structure:")}   ${chalk.white(calldata.army_free_per_structure)}
-    │  ${chalk.gray("Extra per Military:")}   ${chalk.white(calldata.army_extra_per_military_building)}
-    │  ${chalk.gray("Max per Structure:")}    ${chalk.white(calldata.army_max_per_structure)}
-    │
-    │  ${chalk.yellow("Battle Mechanics")}
-    │  ${chalk.gray("Pillage Divisor:")}      ${chalk.white(calldata.pillage_health_divisor)}
-    │  ${chalk.gray("Early Battle Leave Troop Slash:")} ${chalk.white(`${calldata.battle_leave_slash_num}/${calldata.battle_leave_slash_denom}`)}
-    │  ${chalk.gray("Time Scale:")}           ${chalk.white(calldata.battle_time_scale)}
-    │  ${chalk.gray("Max Duration:")}         ${chalk.white(hourMinutesSeconds(calldata.battle_max_time_seconds))}
+    │  ${chalk.yellow("Limit Configuration")}
+    │  ${chalk.gray("Max Explorer Party:")}       ${chalk.white(calldata.limit_config.explorer_max_party_count)}
+    │  ${chalk.gray("Max Explorer and Guard Troops:")}      ${chalk.white(calldata.limit_config.explorer_guard_max_troop_count)}
+    │  ${chalk.gray("Guard Resurrection:")}       ${chalk.white(calldata.limit_config.guard_resurrection_delay)}
+    │  ${chalk.gray("Mercenary Min:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_lower_bound)}
+    │  ${chalk.gray("Mercenary Max:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_upper_bound)}
     └────────────────────────────────`),
   );
 
@@ -672,7 +752,8 @@ export const setCombatConfig = async (config: Config) => {
 export const setupGlobals = async (config: Config) => {
   const bankCalldata = {
     signer: config.account,
-    lords_cost: config.config.banks.lordsCost * config.config.resources.resourcePrecision,
+    owner_fee_num: config.config.banks.ownerFeesNumerator,
+    owner_fee_denom: config.config.banks.ownerFeesDenominator,
     lp_fee_num: config.config.banks.lpFeesNumerator,
     lp_fee_denom: config.config.banks.lpFeesDenominator,
   };
@@ -686,8 +767,8 @@ export const setupGlobals = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Bank Parameters")}
-    │  ${chalk.gray("LORDS Cost:")}        ${chalk.white(inGameAmount(bankCalldata.lords_cost, config.config))}
     │  ${chalk.gray("LP Fee Rate:")}       ${chalk.white(`${bankCalldata.lp_fee_num}/${bankCalldata.lp_fee_denom}`)}
+    │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${bankCalldata.owner_fee_num}/${bankCalldata.owner_fee_denom}`)}
     └────────────────────────────────`),
   );
 
@@ -696,28 +777,17 @@ export const setupGlobals = async (config: Config) => {
 
   // Tick Configs
 
-  const defaultTickCalldata = {
-    signer: config.account,
-    tick_id: TickIds.Default,
-    tick_interval_in_seconds: config.config.tick.defaultTickIntervalInSeconds,
-  };
-
   const armiesTickCalldata = {
     signer: config.account,
-    tick_id: TickIds.Armies,
     tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Tick Intervals")}
-    │  ${chalk.gray("Default:")}           ${chalk.white(hourMinutesSeconds(defaultTickCalldata.tick_interval_in_seconds))}
     │  ${chalk.gray("Armies:")}            ${chalk.white(hourMinutesSeconds(armiesTickCalldata.tick_interval_in_seconds))}
     └────────────────────────────────`),
   );
-
-  const txDefaultTick = await config.provider.set_tick_config(defaultTickCalldata);
-  console.log(chalk.green(`    ✔ Default tick configured `) + chalk.gray(txDefaultTick.statusReceipt));
 
   const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
   console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
@@ -725,116 +795,98 @@ export const setupGlobals = async (config: Config) => {
   // Map Config
   const mapCalldata = {
     signer: config.account,
-    config_id: 0,
-    reward_amount: config.config.exploration.reward * config.config.resources.resourcePrecision,
+    reward_amount: config.config.exploration.reward,
+    shards_mines_win_probability: config.config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
+    hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
+    hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
+    hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
+    hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
+    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
+    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
+
+  let shardsMinesFailRate =
+    (mapCalldata.shards_mines_fail_probability /
+      (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
+    100;
+  let hyperstructureFailRateAtTheCenter =
+    (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHex =
+    (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+  let hyperstructureFailRateIncreasePerHyperstructureFound =
+    (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
-    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(inGameAmount(mapCalldata.reward_amount, config.config))}
-    │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + SHARDS_MINES_WIN_PROBABILITY)) * 100).toFixed(2) + "%")}
+    │  ${chalk.gray("Exploration Reward:")} ${chalk.white(mapCalldata.reward_amount)}
+    │  ${chalk.gray("Shards Mines Fail Probability:")} ${chalk.white(shardsMinesFailRate) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability At The Center:")} ${chalk.white(hyperstructureFailRateAtTheCenter) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hex:")} ${chalk.white(hyperstructureFailRateIncreasePerHex) + "%"}
+    │  ${chalk.gray("Hyperstructure Fail Probability Increase Per Hyperstructure Found:")} ${chalk.white(hyperstructureFailRateIncreasePerHyperstructureFound) + "%"}
+    │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
+    │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
+    │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
     └────────────────────────────────`),
   );
 
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
-
-  // Stamina Costs
-  const explorationStaminaCalldata = {
-    signer: config.account,
-    travel_type: TravelTypes.Explore,
-    cost: config.config.stamina.exploreCost,
-  };
-
-  const travelStaminaCalldata = {
-    signer: config.account,
-    travel_type: TravelTypes.Travel,
-    cost: config.config.stamina.travelCost,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Stamina Costs")}
-    │  ${chalk.gray("For Exploration:")}   ${chalk.white(explorationStaminaCalldata.cost)} stamina
-    │  ${chalk.gray("For Travel:")}    ${chalk.white(travelStaminaCalldata.cost)} stamina
-    └────────────────────────────────`),
-  );
-
-  const txExploreStaminaCost = await config.provider.set_travel_stamina_cost_config(explorationStaminaCalldata);
-  console.log(chalk.green(`    ✔ Explore Stamina costs configured `) + chalk.gray(txExploreStaminaCost.statusReceipt));
-
-  const txTravelStaminaCost = await config.provider.set_travel_stamina_cost_config(travelStaminaCalldata);
-  console.log(chalk.green(`    ✔ Travel Stamina costs configured `) + chalk.gray(txTravelStaminaCost.statusReceipt));
-
-  // Food Consumption
-  const foodConsumptionCalldata = Object.entries(config.config.troop.troopFoodConsumption).map(([unit_type, costs]) => {
-    return {
-      signer: config.account,
-      config_id: 0,
-      unit_type,
-      explore_wheat_burn_amount: costs.explore_wheat_burn_amount,
-      explore_fish_burn_amount: costs.explore_fish_burn_amount,
-      travel_wheat_burn_amount: costs.travel_wheat_burn_amount,
-      travel_fish_burn_amount: costs.travel_fish_burn_amount,
-    };
-  });
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Unit Food Consumption")}`),
-  );
-
-  for (const calldata of foodConsumptionCalldata) {
-    console.log(
-      chalk.cyan(`    │  ${chalk.gray(ResourcesIds[calldata.unit_type as keyof typeof ResourcesIds])}
-    │     ${chalk.gray("Explore:")}  ${chalk.white(`${inGameAmount(calldata.explore_wheat_burn_amount, config.config)} wheat, ${inGameAmount(calldata.explore_fish_burn_amount, config.config)} fish`)}
-    │     ${chalk.gray("Travel:")}   ${chalk.white(`${inGameAmount(calldata.travel_wheat_burn_amount, config.config)} wheat, ${inGameAmount(calldata.travel_fish_burn_amount, config.config)} fish`)}`),
-    );
-
-    const tx = await config.provider.set_travel_food_cost_config(calldata);
-    console.log(
-      chalk.green(`    │  ✔ ${ResourcesIds[calldata.unit_type as keyof typeof ResourcesIds]} configured `) +
-        chalk.gray(tx.statusReceipt),
-    );
-  }
-  console.log(chalk.cyan(`    └────────────────────────────────`));
 };
 
 export const setCapacityConfig = async (config: Config) => {
-  const calldata = Object.entries(config.config.carryCapacityGram).map(([category, weight]) => {
-    return {
-      signer: config.account,
-      category,
-      weight_gram: weight,
-    };
-  });
+  const calldata = {
+    signer: config.account,
+    structure_capacity: config.config.carryCapacityGram[CapacityConfig.Structure],
+    troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
+    donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
+    storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
+  };
+
   console.log(
     chalk.cyan(`
   📦 Carry Capacity Configuration
   ═══════════════════════════════`),
   );
 
+  const capacities = [
+    { name: "Structure", value: calldata.structure_capacity },
+    { name: "Troops", value: calldata.troop_capacity },
+    { name: "Donkeys", value: calldata.donkey_capacity },
+    { name: "Storehouse Added Capacity Per Building", value: calldata.storehouse_boost_capacity },
+  ];
+
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Max Weight Per Category")}${calldata
+    ┌─ ${chalk.yellow("Max Weight Per Category")}${capacities
       .map(
-        ({ category, weight_gram }) => `
-    │  ${chalk.gray(String(CapacityConfigCategory[category as keyof typeof CapacityConfigCategory]).padEnd(12))} ${chalk.white(addCommas(BigInt(weight_gram)))} ${chalk.gray("grams")} 
-    │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(weight_gram) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")})`,
+        ({ name, value }) => `
+    │  ${chalk.gray(name.padEnd(12))} ${chalk.white(addCommas(BigInt(value)))} ${chalk.gray("grams")} 
+    │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(value) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")}`,
       )
       .join("")}
     └────────────────────────────────`),
   );
 
-  for (const data of calldata) {
-    const tx = await config.provider.set_capacity_config(data);
-    console.log(
-      chalk.green(
-        `    ✔ ${CapacityConfigCategory[data.category as keyof typeof CapacityConfigCategory]} weight configured `,
-      ) + chalk.gray(tx.statusReceipt),
-    );
-  }
-  console.log();
+  const tx = await config.provider.set_capacity_config(calldata);
+  console.log(chalk.green(`\n    ✔ Capacity configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setTradeConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    max_count: config.config.trade.maxCount,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Trade Configuration")}
+    │  ${chalk.gray("Max Count:")} ${chalk.white(calldata.max_count)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_trade_config(calldata);
+  console.log(chalk.green(`\n    ✔ Trade configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSeasonConfig = async (config: Config) => {
@@ -887,6 +939,11 @@ export const setSeasonConfig = async (config: Config) => {
 };
 
 export const setVRFConfig = async (config: Config) => {
+  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
+    return;
+  }
+
   console.log(
     chalk.cyan(`
   🎲 VRF Configuration
@@ -987,31 +1044,21 @@ export const setSpeedConfig = async (config: Config) => {
   ════════════════════════════`),
   );
 
-  const speeds = [
-    { type: "Donkey", speed: config.config.speed.donkey },
-    { type: "Army", speed: config.config.speed.army },
-  ];
+  const donkeySpeed = config.config.speed.donkey;
+  const donkeyCalldata = {
+    signer: config.account,
+    sec_per_km: donkeySpeed,
+  };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Travel Speeds")}${speeds
-      .map(
-        ({ type, speed }) => `
-    │  ${chalk.gray(type.padEnd(8))} ${chalk.white(speed.toString())} ${chalk.gray("seconds/km")}`,
-      )
-      .join("")}
+    ┌─ ${chalk.yellow("Donkey Travel Speed")}
+    │  ${chalk.gray("Speed:")} ${chalk.white(donkeySpeed.toString())} ${chalk.gray("seconds/km")}
     └────────────────────────────────`),
   );
 
-  for (const { type, speed } of speeds) {
-    const tx = await config.provider.set_speed_config({
-      signer: config.account,
-      entity_type: type === "Donkey" ? DONKEY_ENTITY_TYPE : ARMY_ENTITY_TYPE,
-      sec_per_km: speed,
-    });
-    console.log(chalk.green(`    ✔ ${type} speed configured `) + chalk.gray(tx.statusReceipt));
-  }
-  console.log();
+  const tx = await config.provider.set_donkey_speed_config(donkeyCalldata);
+  console.log(chalk.green(` ✔ Donkey speed configured `) + chalk.gray(tx.statusReceipt));
 };
 
 export const setHyperstructureConfig = async (config: Config) => {
@@ -1059,125 +1106,6 @@ export const setHyperstructureConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
   const tx = await config.provider.set_hyperstructure_config(hyperstructureCalldata);
-
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
-export const setStaminaConfig = async (config: Config) => {
-  console.log(
-    chalk.cyan(`
-  ⚡ Stamina Configuration
-  ═══════════════════════`),
-  );
-
-  const { troopStaminas } = config.config.troop;
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Unit Stamina Caps")}${Object.entries(troopStaminas)
-      .map(
-        ([unit, stamina]) => `
-    │  ${chalk.gray(String(ResourcesIds[unit as keyof typeof ResourcesIds]).padEnd(12))} ${chalk.white(stamina)}`,
-      )
-      .join("")}
-    └────────────────────────────────`),
-  );
-
-  for (const [unit_type, stamina] of Object.entries(troopStaminas)) {
-    const tx = await config.provider.set_stamina_config({
-      signer: config.account,
-      unit_type: unit_type,
-      max_stamina: stamina,
-    });
-    console.log(
-      chalk.green(`    ✔ ${ResourcesIds[unit_type as keyof typeof ResourcesIds]} configured `) +
-        chalk.gray(tx.statusReceipt),
-    );
-  }
-  console.log();
-};
-
-export const setStaminaRefillConfig = async (config: Config) => {
-  const staminaRefillCalldata = {
-    signer: config.account,
-    amount_per_tick: config.config.stamina.refillPerTick,
-    start_boost_tick_count: config.config.stamina.startBoostTickCount,
-  };
-
-  console.log(
-    chalk.cyan(`
-  🔋 Stamina Refill Configuration
-  ══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Refill Parameters")}
-    │  ${chalk.gray("Amount per Tick:")}    ${chalk.white(staminaRefillCalldata.amount_per_tick)}
-    │  ${chalk.gray("Initial Boost:")}      ${chalk.white(staminaRefillCalldata.start_boost_tick_count + " ticks worth of stamina immediately after army creation")}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_stamina_refill_config(staminaRefillCalldata);
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
-export const setMercenariesConfig = async (config: Config) => {
-  console.log(
-    chalk.cyan(`
-  ⚔️  Mercenaries Configuration
-  ═══════════════════════════════`),
-  );
-
-  const calldata = {
-    signer: config.account,
-    knights_lower_bound: config.config.mercenaries.knights_lower_bound * config.config.resources.resourcePrecision,
-    knights_upper_bound: config.config.mercenaries.knights_upper_bound * config.config.resources.resourcePrecision,
-    paladins_lower_bound: config.config.mercenaries.paladins_lower_bound * config.config.resources.resourcePrecision,
-    paladins_upper_bound: config.config.mercenaries.paladins_upper_bound * config.config.resources.resourcePrecision,
-    crossbowmen_lower_bound:
-      config.config.mercenaries.crossbowmen_lower_bound * config.config.resources.resourcePrecision,
-    crossbowmen_upper_bound:
-      config.config.mercenaries.crossbowmen_upper_bound * config.config.resources.resourcePrecision,
-    rewards: config.config.mercenaries.rewards.map((reward) => ({
-      resource: reward.resource,
-      amount: reward.amount * config.config.resources.resourcePrecision,
-    })),
-  };
-  const bounds = {
-    Knights: {
-      lower: calldata.knights_lower_bound,
-      upper: calldata.knights_upper_bound,
-    },
-    Paladins: {
-      lower: calldata.paladins_lower_bound,
-      upper: calldata.paladins_upper_bound,
-    },
-    Crossbowmen: {
-      lower: calldata.crossbowmen_lower_bound,
-      upper: calldata.crossbowmen_upper_bound,
-    },
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Unit Bounds")}${Object.entries(bounds)
-      .map(
-        ([unit, { lower, upper }]) => `
-    │  ${chalk.gray(unit.padEnd(12))} ${chalk.white(inGameAmount(lower, config.config))} ${chalk.gray("to")} ${chalk.white(inGameAmount(upper, config.config))}`,
-      )
-      .join("")}
-    │
-    │  ${chalk.yellow("Rewards:")}${calldata.rewards
-      .map(
-        (r) => `
-    │     ${chalk.white(`${inGameAmount(r.amount, config.config)} ${ResourcesIds[r.resource]}`)}`,
-      )
-      .join("")}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_mercenaries_config(calldata);
 
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
@@ -1230,36 +1158,57 @@ export const setSettlementConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const createAdminBank = async (config: Config) => {
+export const createBanks = async (config: Config) => {
   console.log(
     chalk.cyan(`
-  🏦 Admin Bank Creation
+  🏦 Bank Creation
   ═══════════════════════`),
   );
 
-  const calldata = {
+  let banks = [];
+  let bank_coords = [];
+  // Find coordinates x steps from center in each direction
+  const stepsFromCenter = 80;
+  const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
+  for (const [_, coord] of Object.entries(distantCoordinates)) {
+    bank_coords.push({ x: coord.x, y: coord.y });
+  }
+
+  for (let i = 0; i < config.config.banks.maxNumBanks; i++) {
+    banks.push({
+      name: `${config.config.banks.name} ${i + 1}`,
+      coord: bank_coords[i],
+      guard_slot: 0, // delta
+      troop_tier: 1, // T2
+      troop_type: 2, // Crossbowman
+    });
+  }
+
+  let calldata = {
     signer: config.account,
-    name: config.config.banks.name,
-    coord: { x: FELT_CENTER, y: FELT_CENTER },
-    owner_fee_num: config.config.banks.ownerFeesNumerator,
-    owner_fee_denom: config.config.banks.ownerFeesDenominator,
-    owner_bridge_fee_dpt_percent: config.config.banks.ownerBridgeFeeOnDepositPercent,
-    owner_bridge_fee_wtdr_percent: config.config.banks.ownerBridgeFeeOnWithdrawalPercent,
+    banks,
   };
 
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Bank Parameters")}
-    │  ${chalk.gray("Name:")}              ${chalk.white(calldata.name)}
-    │  ${chalk.gray("Location:")}          ${chalk.white(`(${FELT_CENTER}, ${FELT_CENTER})`)}
-    │  ${chalk.gray("Owner Fee Rate:")}    ${chalk.white(`${calldata.owner_fee_num}/${calldata.owner_fee_denom}`)}
-    │  ${chalk.gray("Bridge Fee (In):")}   ${chalk.white((calldata.owner_bridge_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%")}
-    │  ${chalk.gray("Bridge Fee (Out):")}  ${chalk.white((calldata.owner_bridge_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%")}
-    └────────────────────────────────`),
-  );
+  let guard_slot_names = ["Delta", "Charlie", "Bravo", "Alpha"];
+  let troop_tier_names = ["T1", "T2", "T3"];
+  let troop_type_names = ["Knight", "Paladin", "Crossbowman"];
 
-  const tx = await config.provider.create_admin_bank(calldata);
-  console.log(chalk.green(`\n    ✔ Bank created successfully `) + chalk.gray(tx.statusReceipt) + "\n");
+  for (const bank of calldata.banks) {
+    console.log("\n");
+    console.log(
+      chalk.cyan(`
+    ┌─ ${chalk.yellow("Bank Parameters")}
+    │  ${chalk.gray("Name:")}              ${chalk.white(bank.name)}
+    │  ${chalk.gray("Location:")}          ${chalk.white(`(${bank.coord.x}, ${bank.coord.y})`)}
+    │  ${chalk.gray("Guard Slot:")}        ${chalk.white(guard_slot_names[bank.guard_slot])}
+    │  ${chalk.gray("Troop Tier:")}        ${chalk.white(troop_tier_names[bank.troop_tier])}
+    │  ${chalk.gray("Troop Type:")}        ${chalk.white(troop_type_names[bank.troop_type])}
+    └────────────────────────────────`),
+    );
+  }
+
+  const tx = await config.provider.create_banks(calldata);
+  console.log(chalk.green(`\n    ✔ Banks created successfully `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const mintResources = async (config: Config) => {
@@ -1359,5 +1308,32 @@ export const addLiquidity = async (config: Config) => {
     console.log(chalk.green(`\n    ✔ Liquidity added successfully `) + chalk.gray(tx.statusReceipt) + "\n");
   } catch (e) {
     console.log(chalk.red(`\n    ✖ Failed to add liquidity: `) + chalk.gray(e) + "\n");
+  }
+};
+
+export const nodeReadConfig = async (chain: Chain) => {
+  try {
+    let path = "./environments/data";
+    switch (chain) {
+      case "sepolia":
+        path += "/sepolia.json"; // as any to avoid type errors
+        break;
+      case "mainnet":
+        path += "/mainnet.json";
+        break;
+      case "slot":
+        path += "/slot.json";
+        break;
+      case "local":
+        path += "/local.json";
+        break;
+      default:
+        throw new Error(`Invalid chain: ${chain}`);
+    }
+
+    const config = JSON.parse(fs.readFileSync(path, "utf8"));
+    return config.configuration as any; // as any to avoid type errors
+  } catch (error) {
+    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
   }
 };

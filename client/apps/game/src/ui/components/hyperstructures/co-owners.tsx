@@ -12,8 +12,8 @@ import {
   formatTime,
   getAddressName,
   getStructure,
-  HYPERSTRUCTURE_CONFIG_ID,
   ID,
+  WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -60,15 +60,15 @@ const CoOwnersRows = ({
     account: { account },
     setup: { components },
   } = useDojo();
-  const { Hyperstructure, HyperstructureConfig } = components;
+  const { Hyperstructure, WorldConfig } = components;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const hyperstructureConfig = useMemo(() => {
-    return getComponentValue(HyperstructureConfig, getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]));
-  }, [hyperstructureEntityId]);
+    return getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+  }, [hyperstructureEntityId])?.hyperstructure_config;
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
 

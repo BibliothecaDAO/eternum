@@ -1,12 +1,9 @@
-import { AppStore, useUIStore } from "@/hooks/store/use-ui-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
-import { LocationManager } from "@/three/helpers/location-manager";
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
 import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
-import { SystemManager } from "@/three/systems/system-manager";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/eternum";
 import throttle from "lodash/throttle";
@@ -16,7 +13,11 @@ import {
   EffectComposer,
   EffectPass,
   FXAAEffect,
+  HueSaturationEffect,
   RenderPass,
+  ToneMappingEffect,
+  ToneMappingMode,
+  VignetteEffect,
 } from "postprocessing";
 import * as THREE from "three";
 import { CSS2DRenderer } from "three-stdlib";
@@ -37,22 +38,14 @@ export default class GameRenderer {
   private composer!: EffectComposer;
   private renderPass!: RenderPass;
 
-  private locationManager!: LocationManager;
-
-  // Store
-  private state: AppStore;
-  private unsubscribe: () => void;
-
   // Stats
   private stats!: Stats;
-  private lerpFactor = 0.9;
 
   // Camera settings
   private cameraDistance = Math.sqrt(2 * 7 * 7); // Maintain the same distance
   private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
 
   // Components
-
   private transitionManager!: TransitionManager;
 
   // Scenes
@@ -60,53 +53,64 @@ export default class GameRenderer {
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
-  // private currentScene: "worldmap" | "hexception" = "worldmap";
-
   private lastTime: number = 0;
-
   private dojo: SetupResult;
-
   private sceneManager!: SceneManager;
-  private systemManager!: SystemManager;
-
   private graphicsSetting: GraphicsSettings;
 
   constructor(dojoContext: SetupResult) {
     this.graphicsSetting = GRAPHICS_SETTING;
-    this.initializeRenderer();
     this.dojo = dojoContext;
-    this.locationManager = new LocationManager();
 
-    // Ensure we keep the raycaster and mouse
+    this.initializeRenderer();
+    this.initializeCamera();
+    this.initializeRaycaster();
+    this.setupGUIControls();
+
+    this.waitForLabelRendererElement().then((labelRendererElement) => {
+      this.labelRendererElement = labelRendererElement;
+      this.initializeLabelRenderer();
+    });
+  }
+
+  private initializeRaycaster() {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+  }
 
-    // Store
-    this.state = useUIStore.getState();
-    this.unsubscribe = useUIStore.subscribe((state) => {
-      this.state = state;
-    });
-
+  private initializeCamera() {
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, IS_FLAT_MODE ? 50 : 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, cameraDepth);
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
+  }
 
+  private setupGUIControls() {
+    this.setupSceneSwitchingGUI();
+    this.setupCameraMovementGUI();
+    this.setupRendererGUI();
+  }
+
+  private setupSceneSwitchingGUI() {
     const changeSceneFolder = GUIManager.addFolder("Switch scene");
     const changeSceneParams = { scene: SceneName.WorldMap };
     changeSceneFolder.add(changeSceneParams, "scene", [SceneName.WorldMap, SceneName.Hexception]).name("Scene");
     changeSceneFolder.add({ switchScene: () => this.sceneManager.switchScene(changeSceneParams.scene) }, "switchScene");
     changeSceneFolder.close();
-    // Add new button for moving camera to specific col and row
+  }
+
+  private setupCameraMovementGUI() {
     const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0, x: 0, y: 0, z: 0 };
+
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
     moveCameraFolder.add(moveCameraParams, "row").name("Row");
     moveCameraFolder.add(moveCameraParams, "x").name("X");
     moveCameraFolder.add(moveCameraParams, "y").name("Y");
     moveCameraFolder.add(moveCameraParams, "z").name("Z");
+
     moveCameraFolder
       .add(
         {
@@ -115,14 +119,18 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+
     moveCameraFolder.add(
       {
         move: () => this.worldmapScene.moveCameraToXYZ(moveCameraParams.x, moveCameraParams.y, moveCameraParams.z, 0),
       },
       "move",
     );
-    moveCameraFolder.close();
 
+    moveCameraFolder.close();
+  }
+
+  private setupRendererGUI() {
     const rendererFolder = GUIManager.addFolder("Renderer");
     rendererFolder
       .add(this.renderer, "toneMapping", {
@@ -135,11 +143,6 @@ export default class GameRenderer {
       .name("Tone Mapping");
     rendererFolder.add(this.renderer, "toneMappingExposure", 0, 2).name("Tone Mapping Exposure");
     rendererFolder.close();
-
-    this.waitForLabelRendererElement().then((labelRendererElement) => {
-      this.labelRendererElement = labelRendererElement;
-      this.initializeLabelRenderer();
-    });
   }
 
   private initializeLabelRenderer() {
@@ -175,6 +178,7 @@ export default class GameRenderer {
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1;
     this.renderer.autoClear = false;
+    //this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.HalfFloatType,
     });
@@ -249,7 +253,7 @@ export default class GameRenderer {
     // Create HUD scene
     this.hudScene = new HUDScene(this.sceneManager, this.controls);
 
-    this.renderModels();
+    this.prepareScenes();
     // Init animation
     this.animate();
   }
@@ -272,68 +276,187 @@ export default class GameRenderer {
     }
   };
 
-  async renderModels() {
+  async prepareScenes() {
+    this.initializeSceneManagement();
+    this.initializeScenes();
+    this.applyEnvironment();
+    this.setupPostProcessingEffects();
+    this.sceneManager.moveCameraForScene();
+  }
+
+  private initializeSceneManagement() {
     this.transitionManager = new TransitionManager(this.renderer);
-
     this.sceneManager = new SceneManager(this.transitionManager);
+  }
 
-    this.systemManager = new SystemManager(this.dojo);
-
+  private initializeScenes() {
+    // Initialize Hexception scene
     this.hexceptionScene = new HexceptionScene(this.controls, this.dojo, this.mouse, this.raycaster, this.sceneManager);
     this.sceneManager.addScene(SceneName.Hexception, this.hexceptionScene);
 
-    // Add grid
+    // Initialize WorldMap scene
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene(SceneName.WorldMap, this.worldmapScene);
-    this.applyEnvironment();
 
+    // Set up render pass
     this.renderPass = new RenderPass(this.hexceptionScene.getScene(), this.camera);
     this.composer.addPass(this.renderPass);
+  }
 
-    const obj = { brightness: -0.1, contrast: 0 };
-    const folder = GUIManager.addFolder("BrightnesContrastt");
-    if (GRAPHICS_SETTING !== GraphicsSettings.LOW) {
-      const BCEffect = new BrightnessContrastEffect({
-        brightness: obj.brightness,
-        contrast: obj.contrast,
-      });
-
-      folder
-        .add(obj, "brightness")
-        .name("Brightness")
-        .min(-1)
-        .max(1)
-        .step(0.01)
-        .onChange((value: number) => {
-          BCEffect.brightness = value;
-        });
-      folder
-        .add(obj, "contrast")
-        .name("Contrast")
-        .min(-1)
-        .max(1)
-        .step(0.01)
-        .onChange((value: number) => {
-          BCEffect.contrast = value;
-        });
-
-      this.composer.addPass(
-        new EffectPass(
-          this.camera,
-
-          new FXAAEffect(),
-          new BloomEffect({
-            luminanceThreshold: 1.1,
-            mipmapBlur: true,
-            intensity: 0.25,
-          }),
-          BCEffect,
-        ),
-      );
+  private setupPostProcessingEffects() {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+      return; // Skip post-processing for low graphics settings
     }
 
-    this.sceneManager.moveCameraForScene();
+    // Create effects configuration object
+    const effectsConfig = this.createEffectsConfiguration();
+
+    // Create and configure all effects
+    const effects = [
+      this.createToneMappingEffect(effectsConfig),
+      new FXAAEffect(),
+      this.createBloomEffect(),
+      this.createHueSaturationEffect(effectsConfig),
+      this.createBrightnessContrastEffect(effectsConfig),
+      this.createVignetteEffect(effectsConfig),
+    ];
+
+    // Add all effects in a single pass
+    this.composer.addPass(new EffectPass(this.camera, ...effects));
+  }
+
+  private createEffectsConfiguration() {
+    return {
+      brightness: -0.05,
+      contrast: 0.1,
+      hue: 0,
+      saturation: 0.2,
+      toneMapping: {
+        mode: ToneMappingMode.LINEAR,
+        exposure: 1.0,
+        whitePoint: 1.0,
+      },
+      vignette: {
+        darkness: 0.7,
+        offset: 0.25,
+      },
+    };
+  }
+
+  private createBrightnessContrastEffect(config: any) {
+    const effect = new BrightnessContrastEffect({
+      brightness: config.brightness,
+      contrast: config.contrast,
+    });
+
+    const folder = GUIManager.addFolder("BrightnesContrastt");
+    folder
+      .add(config, "brightness")
+      .name("Brightness")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.brightness = value;
+      });
+    folder
+      .add(config, "contrast")
+      .name("Contrast")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.contrast = value;
+      });
+
+    return effect;
+  }
+
+  private createHueSaturationEffect(config: any) {
+    const effect = new HueSaturationEffect({
+      hue: config.hue,
+      saturation: config.saturation,
+    });
+
+    const folder = GUIManager.addFolder("Hue & Saturation");
+    folder
+      .add(config, "hue")
+      .name("Hue")
+      .min(-Math.PI)
+      .max(Math.PI)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.hue = value;
+      });
+    folder
+      .add(config, "saturation")
+      .name("Saturation")
+      .min(-1)
+      .max(1)
+      .step(0.01)
+      .onChange((value: number) => {
+        effect.saturation = value;
+      });
+
+    return effect;
+  }
+
+  private createToneMappingEffect(config: any) {
+    const effect = new ToneMappingEffect({
+      mode: config.toneMapping.mode,
+    });
+
+    const folder = GUIManager.addFolder("Tone Mapping");
+    folder
+      .add(config.toneMapping, "mode", {
+        ...ToneMappingMode,
+      })
+      .onChange((value: ToneMappingMode) => {
+        effect.mode = value;
+      });
+
+    folder.add(config.toneMapping, "exposure", 0.0, 2.0, 0.01).onChange((value: number) => {
+      // @ts-ignore
+      effect.exposure = value;
+    });
+
+    folder.add(config.toneMapping, "whitePoint", 0.0, 2.0, 0.01).onChange((value: number) => {
+      // @ts-ignore
+      effect.whitePoint = value;
+    });
+
+    folder.close();
+
+    return effect;
+  }
+
+  private createVignetteEffect(config: any) {
+    const effect = new VignetteEffect({
+      darkness: config.vignette.darkness,
+      offset: config.vignette.offset,
+    });
+
+    const folder = GUIManager.addFolder("Vignette");
+    folder.add(config.vignette, "darkness", 0.0, 1.0, 0.01).onChange((value: number) => {
+      effect.darkness = value;
+    });
+
+    folder.add(config.vignette, "offset", 0.0, 1.0, 0.01).onChange((value: number) => {
+      effect.offset = value;
+    });
+
+    folder.close();
+
+    return effect;
+  }
+
+  private createBloomEffect() {
+    return new BloomEffect({
+      luminanceThreshold: 1.1,
+      mipmapBlur: true,
+      intensity: 0.25,
+    });
   }
 
   applyEnvironment() {
@@ -344,8 +467,8 @@ export default class GameRenderer {
     const hdriTexture = hdriLoader.load("/textures/environment/models_env.hdr", (texture) => {
       const envMap = pmremGenerator.fromEquirectangular(texture).texture;
       texture.dispose();
-      this.hexceptionScene.setEnvironment(envMap, 0.7);
-      this.worldmapScene.setEnvironment(envMap, 0.7);
+      this.hexceptionScene.setEnvironment(envMap, 0.3);
+      this.worldmapScene.setEnvironment(envMap, 0.3);
     });
   }
 
@@ -398,7 +521,7 @@ export default class GameRenderer {
 
     // Skip frame if not enough time has passed (for 30 FPS)
     if (this.graphicsSetting !== GraphicsSettings.HIGH) {
-      const frameTime = 1000 / 30; // 33.33ms for 30 FPS
+      const frameTime = 1000 / 120; // 33.33ms for 30 FPS
       if (currentTime - this.lastTime < frameTime) {
         requestAnimationFrame(() => this.animate());
         return;

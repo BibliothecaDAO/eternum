@@ -5,34 +5,6 @@ import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { LogicalOperator } from "@dojoengine/torii-wasm";
 
-export const getOneKeyModelbyRealmEntityIdFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  entityID: string[],
-) => {
-  await getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: [
-          ...entityID.map((id) => ({
-            Keys: {
-              keys: [id],
-              pattern_matching: "VariableLen" as PatternMatching,
-              models: [],
-            },
-          })),
-        ],
-      },
-    },
-    components,
-    [],
-    ["s1_eternum-ArrivalTime", "s1_eternum-OwnedResourcesTracker"],
-    20_000,
-  );
-};
-
 export const getEntitiesFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -84,15 +56,15 @@ export const getMarketFromTorii = async <S extends Schema>(
     client,
     {
       Member: {
-        model: "s1_eternum-DetachedResource",
-        member: "resource_amount",
+        model: "s1_eternum-ResourceList",
+        member: "amount",
         operator: "Gt",
         value: { Primitive: { U128: "0" } },
       },
     },
     components,
     [],
-    ["s1_eternum-DetachedResource"],
+    ["s1_eternum-ResourceList"],
     30_000,
     false,
   );
@@ -132,8 +104,8 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
         operator: "Or",
         clauses: entityIds.map((id) => ({
           Member: {
-            model: "s1_eternum-EntityOwner",
-            member: "entity_owner_id",
+            model: "s1_eternum-ExplorerTroops",
+            member: "owner",
             operator: "Eq",
             value: { Primitive: { U32: id } },
           },
@@ -142,18 +114,7 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
     },
     components,
     [],
-    [
-      "s1_eternum-Army",
-      "s1_eternum-Position",
-      "s1_eternum-Health",
-      "s1_eternum-EntityOwner",
-      "s1_eternum-Protectee",
-      "s1_eternum-Stamina",
-      "s1_eternum-Weight",
-      "s1_eternum-OwnedResourcesTracker",
-      "s1_eternum-ArrivalTime",
-      "s1_eternum-Quantity",
-    ],
+    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
     1000,
     false,
   );

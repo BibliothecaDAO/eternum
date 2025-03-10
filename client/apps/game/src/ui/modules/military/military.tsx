@@ -1,60 +1,20 @@
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
-import { UserBattles } from "@/ui/components/military/user-battles";
-import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, getStructure, ID } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, ID } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useMemo, useState } from "react";
+import { useComponentValue } from "@dojoengine/react";
 
 export const Military = ({ entityId, className }: { entityId: ID | undefined; className?: string }) => {
   const {
-    account: {
-      account: { address },
-    },
     setup: { components },
   } = useDojo();
 
   const { isMapView } = useQuery();
-  const selectedStructure = useMemo(
-    () => (entityId ? getStructure(entityId, ContractAddress(address), components) : undefined),
-    [entityId, address, components],
-  );
-
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const tabs = [
-    {
-      label: "Army",
-      component: isMapView ? (
-        <EntitiesArmyTable />
-      ) : (
-        selectedStructure && <EntityArmyList structure={selectedStructure} />
-      ),
-    },
-    { label: "Battles", component: <UserBattles /> },
-  ];
+  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
   return (
     <div className={`relative ${className}`}>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => {
-          setSelectedTab(index);
-        }}
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {isMapView ? <EntitiesArmyTable /> : structure && <EntityArmyList structure={structure} />}
     </div>
   );
 };

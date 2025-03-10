@@ -3,6 +3,18 @@ pub mod config {
     #[cfg(test)]
     mod tests;
 }
+
+pub mod village {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
+
+pub mod structure {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod realm {
     pub mod contracts;
     #[cfg(test)]
@@ -18,11 +30,7 @@ pub mod resources {
     #[cfg(test)]
     mod tests;
 }
-pub mod transport {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests;
-}
+
 pub mod name {
     pub mod contracts;
 }
@@ -36,21 +44,21 @@ pub mod production {
     #[cfg(test)]
     mod tests;
 }
-pub mod map {
-    pub mod contracts;
-    pub mod map_generation;
-    #[cfg(test)]
-    mod tests;
-}
+
 pub mod dev {
     pub mod contracts;
 }
 pub mod combat {
     #[cfg(test)]
-    mod tests;
+    mod tests {
+        mod test_troop_battle;
+        mod test_troop_management;
+        mod test_troop_movement;
+    }
     pub mod contracts {
-        pub mod battle_systems;
-        pub mod troop_systems;
+        pub mod troop_battle;
+        pub mod troop_management;
+        pub mod troop_movement;
     }
 }
 pub mod bank {
@@ -73,4 +81,15 @@ pub mod season {
     pub mod contracts;
     #[cfg(test)]
     mod tests;
+}
+
+pub mod utils {
+    pub mod distance;
+    pub mod donkey;
+    pub mod hyperstructure;
+    pub mod map;
+    pub mod mine;
+    pub mod resource;
+    pub mod structure;
+    pub mod troop;
 }

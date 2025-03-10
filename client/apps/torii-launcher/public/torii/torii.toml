@@ -1,0 +1,11 @@
+[indexing]
+events_chunk_size = 1024 # Size of events page to fetch
+blocks_chunk_size = 1024 # Blocks to process before DB commit
+pending = true # Enable indexing pending blocks
+polling_interval = 500 # Polling interval in milliseconds
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+contracts = []
+
+[events]
+raw = true
+historical = ["s0_eternum-TrophyCreation", "s0_eternum-TrophyProgression"]

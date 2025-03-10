@@ -9,24 +9,17 @@ import {
   ContractAddress,
   divideByPrecision,
   getBalance,
+  getClosestBank,
   ID,
   MarketManager,
   multiplyByPrecision,
   resources,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useIsStructureResourcesLocked, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
-const AddLiquidity = ({
-  bankEntityId,
-  entityId,
-  listResourceId,
-}: {
-  bankEntityId: ID;
-  entityId: ID;
-  listResourceId: number;
-}) => {
+const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
     setup,
@@ -35,7 +28,7 @@ const AddLiquidity = ({
 
   const playerStructures = usePlayerStructures(ContractAddress(account.address));
 
-  const playerStructureIds = playerStructures.map((structure) => structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
@@ -44,8 +37,8 @@ const AddLiquidity = ({
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, bankEntityId, ContractAddress(account.address), resourceId),
-    [setup, bankEntityId, resourceId, account.address],
+    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
+    [setup, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -73,17 +66,19 @@ const AddLiquidity = ({
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
-  const isBankResourcesLocked = useIsStructureResourcesLocked(bankEntityId, currentDefaultTick);
-  const isMyResourcesLocked = useIsStructureResourcesLocked(entityId, currentDefaultTick);
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
-  const canAdd = hasEnough && isNotZero && !isBankResourcesLocked && !isMyResourcesLocked;
+  const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
+    const closestBank = getClosestBank(entityId, setup.components);
+
+    if (!closestBank) return;
+
     setIsLoading(true);
     setup.systemCalls
       .add_liquidity({
         signer: account,
-        bank_entity_id: bankEntityId,
+        bank_entity_id: closestBank.bankId,
         entity_id: entityId,
         calls: [
           {
@@ -151,12 +146,7 @@ const AddLiquidity = ({
         </div>
         <div className="p-2">
           <LiquidityTableHeader />
-          <LiquidityResourceRow
-            playerStructureIds={playerStructureIds}
-            bankEntityId={bankEntityId}
-            entityId={entityId}
-            resourceId={resourceId}
-          />
+          <LiquidityResourceRow playerStructureIds={playerStructureIds} entityId={entityId} resourceId={resourceId} />
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
               variant="primary"
@@ -171,8 +161,6 @@ const AddLiquidity = ({
               <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
                 {!isNotZero && <div>Warning: Amount must be greater than zero</div>}
                 {!hasEnough && <div>Warning: Not enough resources for this operation</div>}
-                {isBankResourcesLocked && <div>Warning: Bank resources are currently locked</div>}
-                {isMyResourcesLocked && <div>Warning: Your resources are currently locked</div>}
               </div>
             )}
           </div>

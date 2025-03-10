@@ -1,10 +1,11 @@
 use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{FixedTrait, Fixed};
-use cubit::f128::types::vec3::{Vec3, Vec3Trait};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use cubit::f128::types::vec3::{Vec3Trait};
 
 use s1_eternum::utils::map::constants::fixed_constants as fc;
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
+    None,
     DeepOcean,
     Ocean,
     Beach,
@@ -26,6 +27,7 @@ pub enum Biome {
 impl BiomeIntoFelt252 of Into<Biome, felt252> {
     fn into(self: Biome) -> felt252 {
         match self {
+            Biome::None => 'None',
             Biome::DeepOcean => 'Deep Ocean',
             Biome::Ocean => 'Ocean',
             Biome::Beach => 'Beach',
@@ -45,8 +47,62 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
         }
     }
 }
+
+
+impl BiomeIntoU8 of Into<Biome, u8> {
+    fn into(self: Biome) -> u8 {
+        match self {
+            Biome::None => 0,
+            Biome::DeepOcean => 1,
+            Biome::Ocean => 2,
+            Biome::Beach => 3,
+            Biome::Scorched => 4,
+            Biome::Bare => 5,
+            Biome::Tundra => 6,
+            Biome::Snow => 7,
+            Biome::TemperateDesert => 8,
+            Biome::Shrubland => 9,
+            Biome::Taiga => 10,
+            Biome::Grassland => 11,
+            Biome::TemperateDeciduousForest => 12,
+            Biome::TemperateRainForest => 13,
+            Biome::SubtropicalDesert => 14,
+            Biome::TropicalSeasonalForest => 15,
+            Biome::TropicalRainForest => 16,
+        }
+    }
+}
+
+
+impl U8IntoBiome of Into<u8, Biome> {
+    fn into(self: u8) -> Biome {
+        match self {
+            0 => Biome::None,
+            1 => Biome::DeepOcean,
+            2 => Biome::Ocean,
+            3 => Biome::Beach,
+            4 => Biome::Scorched,
+            5 => Biome::Bare,
+            6 => Biome::Tundra,
+            7 => Biome::Snow,
+            8 => Biome::TemperateDesert,
+            9 => Biome::Shrubland,
+            10 => Biome::Taiga,
+            11 => Biome::Grassland,
+            12 => Biome::TemperateDeciduousForest,
+            13 => Biome::TemperateRainForest,
+            14 => Biome::SubtropicalDesert,
+            15 => Biome::TropicalSeasonalForest,
+            16 => Biome::TropicalRainForest,
+            _ => panic!("invalid biome"),
+        }
+    }
+}
+
+
 fn bdepth(biome: Biome) -> Fixed {
     match biome {
+        Biome::None => FixedTrait::ZERO(),
         Biome::DeepOcean => fc::_0_1(),
         Biome::Ocean => fc::_0_1(),
         Biome::Beach => fc::_0_2(),
@@ -67,30 +123,30 @@ fn bdepth(biome: Biome) -> Fixed {
 }
 
 mod LEVEL {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128};
+    use cubit::f128::types::fixed::{Fixed};
     use s1_eternum::utils::map::constants::fixed_constants as fc;
 
-    fn DEEP_OCEAN() -> Fixed {
+    pub fn DEEP_OCEAN() -> Fixed {
         fc::_0_25()
     }
 
-    fn OCEAN() -> Fixed {
+    pub fn OCEAN() -> Fixed {
         fc::_0_5()
     }
 
-    fn SAND() -> Fixed {
+    pub fn SAND() -> Fixed {
         fc::_0_53()
     }
 
-    fn FOREST() -> Fixed {
+    pub fn FOREST() -> Fixed {
         fc::_0_6()
     }
 
-    fn DESERT() -> Fixed {
+    pub fn DESERT() -> Fixed {
         fc::_0_72()
     }
 
-    fn MOUNTAIN() -> Fixed {
+    pub fn MOUNTAIN() -> Fixed {
         fc::_0_8()
     }
 }
@@ -123,7 +179,7 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
 }
 
 
-fn get_biome(col: u128, row: u128) -> Biome {
+pub fn get_biome(col: u128, row: u128) -> Biome {
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -220,7 +276,7 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
 
 #[cfg(test)]
 mod tests {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed};
+    // use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use super::get_biome;
 
     #[test]

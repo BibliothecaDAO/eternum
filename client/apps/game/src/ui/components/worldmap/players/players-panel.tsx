@@ -10,7 +10,7 @@ import {
   toHexString,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { KeyboardEvent, useMemo, useState } from "react";
 
 export const PlayersPanel = ({
@@ -28,7 +28,7 @@ export const PlayersPanel = ({
     account: { account },
   } = useDojo();
 
-  const { Structure, Owner, GuildWhitelist } = components;
+  const { Structure, GuildWhitelist } = components;
 
   const userGuild = getGuildFromPlayerAddress(ContractAddress(account.address), components);
 
@@ -41,10 +41,7 @@ export const PlayersPanel = ({
     const sortedPlayers = [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
 
     const playersWithStructures = sortedPlayers.map((player, index) => {
-      const structuresEntityIds = runQuery([
-        Has(Structure),
-        HasValue(Owner, { address: ContractAddress(player.address) }),
-      ]);
+      const structuresEntityIds = runQuery([HasValue(Structure, { owner: ContractAddress(player.address) })]);
       const structures = Array.from(structuresEntityIds)
         .map((entityId) => {
           const structure = getComponentValue(Structure, entityId);

@@ -2,8 +2,9 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { divideByPrecision } from ".";
-import { CAPACITY_CONFIG_CATEGORY_STRING_MAP } from "../constants";
+import { CapacityConfig, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
+import { configManager } from "../managers/config-manager";
 import { ContractAddress, EntityType, ID } from "../types";
 import { getRealmNameById } from "./realm";
 import { getResourcesFromBalance } from "./resources";
@@ -14,69 +15,64 @@ export const getEntityInfo = (
   currentDefaultTick: number,
   components: ClientComponents,
 ) => {
-  const { ArrivalTime, Movable, CapacityCategory, CapacityConfig, EntityOwner, Owner, Structure, Army, Position } =
-    components;
+  const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
-  const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
-  const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
 
-  const entityCapacityCategory = getComponentValue(CapacityCategory, getEntityIdFromKeys([entityIdBigInt]))
-    ?.category as unknown as string;
-  const capacityCategoryId = CAPACITY_CONFIG_CATEGORY_STRING_MAP[entityCapacityCategory] || 0n;
-  const capacity = getComponentValue(CapacityConfig, getEntityIdFromKeys([BigInt(capacityCategoryId)]));
-
-  const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
-  const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+  const explorer = getComponentValue(ExplorerTroops, getEntityIdFromKeys([entityIdBigInt]));
 
   const name = getEntityName(entityId, components);
 
   const structure = getComponentValue(Structure, getEntityIdFromKeys([entityIdBigInt]));
 
+  let owner = undefined;
+
+  if (explorer) {
+    owner = explorer.owner;
+    const structureOwner = getComponentValue(Structure, getEntityIdFromKeys([BigInt(explorer.owner)]));
+    owner = structureOwner?.owner;
+  } else if (structure) {
+    owner = structure.owner;
+  }
+
+  const capacityCategoryId = explorer
+    ? CapacityConfig.Army
+    : structure
+      ? CapacityConfig.Storehouse
+      : structure
+        ? CapacityConfig.Structure
+        : CapacityConfig.None;
+  const capacity = configManager.getCapacityConfig(capacityCategoryId);
+
   const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
-  const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
-  const rawIntermediateDestination = movable
-    ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }
-    : undefined;
-  const intermediateDestination = rawIntermediateDestination
-    ? { x: rawIntermediateDestination.x, y: rawIntermediateDestination.y }
-    : undefined;
-
-  const position = getComponentValue(Position, getEntityIdFromKeys([entityIdBigInt]));
-
-  const homePosition = entityOwner
-    ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]))
-    : undefined;
 
   return {
     entityId,
-    arrivalTime: arrivalTime?.arrives_at,
-    blocked: Boolean(movable?.blocked),
-    capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
-    intermediateDestination,
-    position: position ? { x: position.x, y: position.y } : undefined,
-    homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
-    owner: owner?.address,
-    isMine: ContractAddress(owner?.address || 0n) === playerAccount,
-    isRoundTrip: movable?.round_trip || false,
+    capacity: divideByPrecision(Number(capacity) || 0),
+    position: explorer
+      ? { x: explorer.coord.x, y: explorer.coord.y }
+      : structure
+        ? { x: structure.base.coord_x, y: structure.base.coord_y }
+        : undefined,
+    owner,
+    isMine: ContractAddress(owner || 0n) === playerAccount,
     resources,
-    entityType: army ? EntityType.TROOP : EntityType.DONKEY,
-    structureCategory: structure?.category,
+    entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
+    structureCategory: structure?.base.category,
     structure,
     name,
   };
 };
 
-const getRealmName = (realm: ComponentValue<ClientComponents["Realm"]["schema"]>) => {
-  const baseName = getRealmNameById(realm.realm_id);
-  return realm.has_wonder ? `WONDER - ${baseName}` : baseName;
+const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
+  const baseName = getRealmNameById(structure.metadata.realm_id);
+  return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
-  const entityName = getComponentValue(components.EntityName, getEntityIdFromKeys([BigInt(entityId)]));
-  const realm = getComponentValue(components.Realm, getEntityIdFromKeys([BigInt(entityId)]));
+  const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-  if (structure?.category === "Realm" && realm) {
-    return getRealmName(realm);
+  if (structure?.base.category === StructureType.Realm) {
+    return getRealmName(structure);
   }
 
   if (entityName) {
@@ -90,12 +86,12 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
       Bank: "BK",
     };
 
-    const abbr = abbreviations[structure.category];
+    const abbr = abbreviations[structure.base.category];
     if (abbr) {
       return `${abbr} ${structure.entity_id}`;
     }
   }
-  return `${structure?.category} ${structure?.entity_id}`;
+  return `${structure?.base.category} ${structure?.entity_id}`;
 };
 
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
@@ -114,8 +110,8 @@ export const getAddressNameFromEntity = (entityId: ID, components: ClientCompone
 };
 
 export const getAddressFromEntity = (entityId: ID, components: ClientComponents): ContractAddress | undefined => {
-  const entityOwner = getComponentValue(components.EntityOwner, getEntityIdFromKeys([BigInt(entityId)]));
-  return entityOwner?.entity_owner_id
-    ? getComponentValue(components.Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))?.address
+  const explorerTroops = getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]));
+  return explorerTroops?.owner
+    ? getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]))?.owner
     : undefined;
 };

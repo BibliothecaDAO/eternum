@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 
 export enum SceneName {
@@ -38,6 +38,8 @@ export interface ArmyData {
   owner: { address: bigint; ownerName: string; guildName: string };
   order: string;
   color: string;
+  category: TroopType;
+  tier: TroopTier;
 }
 
 export interface MovingArmyData {

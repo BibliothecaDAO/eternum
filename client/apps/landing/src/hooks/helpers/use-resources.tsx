@@ -1,11 +1,12 @@
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ClientComponents, ID, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { execute } from "../gql/execute";
 
+import { ComponentValue } from "@dojoengine/recs";
 import { GET_ENTITIES_RESOURCES } from "../query/resources";
 
-export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; resourceId?: ResourcesIds }) {
+export function useResourceBalance({ entityId }: { entityId?: ID }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["entityResources", entityId],
     queryFn: () => (entityId ? execute(GET_ENTITIES_RESOURCES, { entityIds: [entityId] }) : null),
@@ -15,8 +16,10 @@ export function useResourceBalance({ entityId, resourceId }: { entityId?: ID; re
 
   const getBalance = useMemo(
     () => (resourceId: ResourcesIds) => {
-      return (
-        data?.s1EternumResourceModels?.edges?.find((r) => r?.node?.resource_type === resourceId)?.node?.balance ?? 0
+      const resource = data?.s1EternumResourceModels?.edges?.[0]?.node;
+      if (!resource) return 0;
+      return Number(
+        ResourceManager.balance(resource as ComponentValue<ClientComponents["Resource"]["schema"]>, resourceId),
       );
     },
     [data],
