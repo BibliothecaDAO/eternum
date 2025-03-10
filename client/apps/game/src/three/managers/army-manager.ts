@@ -330,6 +330,8 @@ export class ArmyManager {
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
+    console.log({ path });
+
     if (!path || path.length === 0) return;
 
     // Set initial direction before movement starts
