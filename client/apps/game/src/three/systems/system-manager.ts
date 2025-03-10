@@ -76,75 +76,70 @@ export class SystemManager {
   public get Army() {
     return {
       onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
-        const handleUpdate = (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-            const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-            const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+        this.setupSystem(
+          this.setup.components.ExplorerTroops,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+              const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
 
-            if (!newState.explorer_id) {
-              if (prevState && prevState.explorer_id) {
-                callback({
-                  entityId: prevState.explorer_id,
-                  hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
-                  order: 0,
-                  owner: { address: 0n, ownerName: "", guildName: "" },
-                  troopType: TroopType.Knight,
-                  troopTier: TroopTier.T1,
-                  deleted: true,
-                });
+              if (!newState.explorer_id) {
+                if (prevState && prevState.explorer_id) {
+                  return {
+                    entityId: prevState.explorer_id,
+                    hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
+                    order: 0,
+                    owner: { address: 0n, ownerName: "", guildName: "" },
+                    troopType: TroopType.Knight,
+                    troopTier: TroopTier.T1,
+                    deleted: true,
+                  };
+                }
                 return;
               }
-              return;
-            }
 
-            const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
-            if (!explorer) return;
+              const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+              if (!explorer) return;
 
-            const structure = getComponentValue(
-              this.setup.components.Structure,
-              getEntityIdFromKeys([BigInt(explorer.owner)]),
-            );
-            if (!structure) return;
-
-            const owner = structure.owner;
-
-            const addressName = getComponentValue(
-              this.setup.components.AddressName,
-              getEntityIdFromKeys([BigInt(owner || 0)]),
-            );
-
-            const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
-
-            const guild = getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]));
-
-            let guildName = "";
-            if (guild?.guild_entity_id) {
-              const guildEntityName = getComponentValue(
-                this.setup.components.AddressName,
-                getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+              const structure = getComponentValue(
+                this.setup.components.Structure,
+                getEntityIdFromKeys([BigInt(explorer.owner)]),
               );
-              guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+              if (!structure) return;
+
+              const owner = structure.owner;
+
+              const addressName = getComponentValue(
+                this.setup.components.AddressName,
+                getEntityIdFromKeys([BigInt(owner || 0)]),
+              );
+
+              const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+              const guild = getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]));
+
+              let guildName = "";
+              if (guild?.guild_entity_id) {
+                const guildEntityName = getComponentValue(
+                  this.setup.components.AddressName,
+                  getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+                );
+                guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+              }
+
+              return {
+                entityId: explorer.explorer_id,
+                hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
+                order: structure.metadata.order,
+                owner: { address: owner || 0n, ownerName, guildName },
+                troopType: explorer.troops.category as TroopType,
+                troopTier: explorer.troops.tier as TroopTier,
+              };
             }
-
-            callback({
-              entityId: explorer.explorer_id,
-              hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
-              order: structure.metadata.order,
-              owner: { address: owner || 0n, ownerName, guildName },
-              troopType: explorer.troops.category as TroopType,
-              troopTier: explorer.troops.tier as TroopTier,
-            });
-          }
-        };
-
-        defineComponentSystem(this.setup.network.world, this.setup.components.ExplorerTroops, handleUpdate, {
-          runOnInit: true,
-        });
-
-        return () => {
-          // No direct way to unsubscribe from defineComponentSystem
-          // This would need a proper cleanup mechanism
-        };
+          },
+          true,
+        );
       },
     };
   }
@@ -222,35 +217,31 @@ export class SystemManager {
   public get Buildings() {
     return {
       onUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
-        const handleUpdate = (update: any) => {
-          if (isComponentUpdate(update, this.setup.components.Building)) {
-            const building = getComponentValue(this.setup.components.Building, update.entity);
-            if (!building) return;
+        this.setupSystem(
+          this.setup.components.Building,
+          callback,
+          (update: any) => {
+            if (isComponentUpdate(update, this.setup.components.Building)) {
+              const building = getComponentValue(this.setup.components.Building, update.entity);
+              if (!building) return;
 
-            if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
+              if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
 
-            const innerCol = building.inner_col;
-            const innerRow = building.inner_row;
-            const buildingType = building.category;
-            const paused = building.paused;
+              const innerCol = building.inner_col;
+              const innerRow = building.inner_row;
+              const buildingType = building.category;
+              const paused = building.paused;
 
-            callback({
-              buildingType,
-              innerCol,
-              innerRow,
-              paused,
-            });
-          }
-        };
-
-        defineComponentSystem(this.setup.network.world, this.setup.components.Building, handleUpdate, {
-          runOnInit: true,
-        });
-
-        return () => {
-          // No direct way to unsubscribe from defineComponentSystem
-          // This would need a proper cleanup mechanism
-        };
+              return {
+                buildingType,
+                innerCol,
+                innerRow,
+                paused,
+              };
+            }
+          },
+          true,
+        );
       },
     };
   }

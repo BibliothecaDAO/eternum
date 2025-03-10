@@ -2,7 +2,16 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToNanogram, multiplyByPrecision, nanogramToKg } from "..";
+import {
+  Biome,
+  BiomeType,
+  divideByPrecision,
+  DojoAccount,
+  kgToNanogram,
+  multiplyByPrecision,
+  nanogramToKg,
+  world,
+} from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -328,38 +337,47 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
-    const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
+  private readonly _optimisticTileUpdate = (
+    overrideId: string,
+    newPosition: HexPosition,
+    previousPosition: HexPosition,
+  ) => {
+    const previousEntity = getEntityIdFromKeys([BigInt(previousPosition.col), BigInt(previousPosition.row)]);
 
     this.components.Tile.addOverride(overrideId, {
-      entity,
+      entity: previousEntity,
       value: {
-        occupier_id: this.entityId,
-        occupier_type: TileOccupier.Explorer,
-        biome: BiomeTypeToId[Biome.getBiome(col, row)],
-      },
-    });
-  };
-
-  private readonly _optimisticClearPreviousTile = (overrideId: string, col: number, row: number) => {
-    const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
-
-    this.components.Tile.addOverride(overrideId, {
-      entity,
-      value: {
+        col: previousPosition.col,
+        row: previousPosition.row,
         occupier_id: 0,
         occupier_type: TileOccupier.None,
+      },
+    });
+
+    const newEntity = world.registerEntity({
+      id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
+    });
+
+    this.components.Tile.addOverride(overrideId, {
+      entity: newEntity,
+      value: {
+        col: newPosition.col,
+        row: newPosition.row,
+        occupier_id: this.entityId,
+        occupier_type: TileOccupier.Explorer,
+        biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
       },
     });
   };
 
   private readonly _optimisticExplore = (col: number, row: number) => {
     const overrideId = uuid();
-    const currentPosition = this._getCurrentPosition();
 
-    this._optimisticClearPreviousTile(overrideId, currentPosition.col, currentPosition.row);
-    this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), { col, row });
-    this._optimisticTileUpdate(overrideId, col, row);
+    const previousPosition = this._getCurrentPosition();
+    const newPosition = { col, row };
+
+    this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), newPosition);
+    this._optimisticTileUpdate(overrideId, newPosition, previousPosition);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -378,12 +396,7 @@ export class ArmyActionManager {
     return getDirectionBetweenAdjacentHexes(startPos, endPos);
   };
 
-  private readonly _exploreHex = async (
-    signer: DojoAccount,
-    blockTimestamp: number,
-    path: HexPosition[],
-    currentArmiesTick: number,
-  ) => {
+  private readonly _exploreHex = async (signer: DojoAccount, path: HexPosition[]) => {
     const direction = this._findDirection(path);
     if (direction === undefined || direction === null) return;
 
@@ -410,11 +423,12 @@ export class ArmyActionManager {
 
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
     const overrideId = uuid();
-    const currentPosition = this._getCurrentPosition();
 
-    this._optimisticClearPreviousTile(overrideId, currentPosition.col, currentPosition.row);
-    this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, { col, row });
-    this._optimisticTileUpdate(overrideId, col, row);
+    const previousPosition = this._getCurrentPosition();
+    const newPosition = { col, row };
+
+    this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, newPosition);
+    this._optimisticTileUpdate(overrideId, newPosition, previousPosition);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
     return overrideId;
@@ -429,7 +443,6 @@ export class ArmyActionManager {
   // you can remove all non visual overrides when the action fails or succeeds
   private readonly _removeNonVisualOverrides = (overrideId: string) => {
     this.components.Resource.removeOverride(overrideId);
-    this.components.Tile.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
@@ -455,12 +468,7 @@ export class ArmyActionManager {
     );
   };
 
-  private readonly _travelToHex = async (
-    signer: Account | AccountInterface,
-    path: HexPosition[],
-    blockTimestamp: number,
-    currentArmiesTick: number,
-  ) => {
+  private readonly _travelToHex = async (signer: Account | AccountInterface, path: HexPosition[]) => {
     const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
 
     const directions = path
@@ -490,17 +498,11 @@ export class ArmyActionManager {
       });
   };
 
-  public moveArmy = (
-    signer: Account | AccountInterface,
-    path: HexPosition[],
-    isExplored: boolean,
-    blockTimestamp: number,
-    currentArmiesTick: number,
-  ) => {
+  public moveArmy = (signer: Account | AccountInterface, path: HexPosition[], isExplored: boolean) => {
     if (!isExplored) {
-      this._exploreHex(signer, blockTimestamp, path, currentArmiesTick);
+      this._exploreHex(signer, path);
     } else {
-      this._travelToHex(signer, path, blockTimestamp, currentArmiesTick);
+      this._travelToHex(signer, path);
     }
   };
 
