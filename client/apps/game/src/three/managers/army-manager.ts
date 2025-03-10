@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
-import { ArmyModel } from "@/three/managers/army-model";
+import { ArmyModel, ModelType } from "@/three/managers/army-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
 import {
@@ -167,6 +167,16 @@ export class ArmyManager {
     this.renderVisibleArmies(chunkKey);
   }
 
+  private getModelTypeForBiome(biome: BiomeType): ModelType {
+    switch (biome) {
+      case BiomeType.Ocean:
+      case BiomeType.DeepOcean:
+        return ModelType.Water;
+      default:
+        return ModelType.Land;
+    }
+  }
+
   private renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
@@ -177,17 +187,10 @@ export class ArmyManager {
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      // this.armyModel.dummyObject.position.copy(position);
-      // this.armyModel.dummyObject.scale.copy(this.scale);
-      // this.armyModel.dummyObject.updateMatrix();
-      // Determine model type based on order or other criteria
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(army.entityId, "boat");
-      } else {
-        this.armyModel.assignModelToEntity(army.entityId, "knight");
-      }
+      const modelType = this.getModelTypeForBiome(biome);
+      this.armyModel.assignModelToEntity(army.entityId, modelType);
 
       // Update the specific model instance for this entity
       this.armyModel.updateInstance(
@@ -285,14 +288,10 @@ export class ArmyManager {
   ) {
     if (this.armies.has(entityId)) return;
 
-    // Determine model type based on order or other criteria
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      this.armyModel.assignModelToEntity(entityId, "boat");
-    } else {
-      this.armyModel.assignModelToEntity(entityId, "knight");
-    }
+    const modelType = this.getModelTypeForBiome(biome);
+    this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);
     this.armies.set(entityId, {
@@ -431,11 +430,8 @@ export class ArmyManager {
 
       const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
       const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
-      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(entityId, "boat");
-      } else {
-        this.armyModel.assignModelToEntity(entityId, "knight");
-      }
+      const modelType = this.getModelTypeForBiome(biome);
+      this.armyModel.assignModelToEntity(entityId, modelType);
 
       const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
       const angle = Math.atan2(direction.x, direction.z);

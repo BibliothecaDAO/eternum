@@ -3,9 +3,26 @@ import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 
+export enum ModelType {
+  Land = "land",
+  Water = "water",
+  // Air = "air", // Future expansion
+}
+
+export enum AnimationState {
+  Idle = 0,
+  Moving = 1,
+}
+
 const MAX_INSTANCES = 1000;
-const ANIMATION_STATE_IDLE = 0;
-const ANIMATION_STATE_WALKING = 1;
+const ANIMATION_STATE_IDLE = AnimationState.Idle;
+const ANIMATION_STATE_MOVING = AnimationState.Moving;
+
+const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
+  [ModelType.Land]: "knight",
+  [ModelType.Water]: "boat",
+  // [ModelType.Air]: "dragon", // Future expansion
+};
 
 interface AnimatedInstancedMesh extends THREE.InstancedMesh {
   animated?: boolean;
@@ -18,13 +35,13 @@ interface ModelData {
   mixer: AnimationMixer;
   animations: {
     idle: AnimationClip;
-    walk: AnimationClip;
+    moving: AnimationClip;
   };
   animationActions: Map<
     number,
     {
       idle: THREE.AnimationAction;
-      walk: THREE.AnimationAction;
+      moving: THREE.AnimationAction;
     }
   >;
   activeInstances: Set<number>;
@@ -36,8 +53,8 @@ export class ArmyModel {
   private scene: THREE.Scene;
   dummyObject: THREE.Object3D;
   loadPromise: Promise<void>;
-  private models: Map<string, ModelData> = new Map();
-  private entityModelMap: Map<number, string> = new Map(); // Maps entity IDs to model types
+  private models: Map<ModelType, ModelData> = new Map();
+  private entityModelMap: Map<number, ModelType> = new Map(); // Maps entity IDs to model types
   animationStates: Float32Array;
   timeOffsets: Float32Array;
   private zeroScale = new THREE.Vector3(0, 0, 0);
@@ -61,16 +78,16 @@ export class ArmyModel {
   }
 
   private async loadModels(): Promise<void> {
-    const modelTypes = ["knight", "boat"];
-    const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
+    const modelTypes = Object.entries(MODEL_TYPE_TO_FILE);
+    const loadPromises = modelTypes.map(([type, fileName]) => this.loadSingleModel(type as ModelType, fileName));
     await Promise.all(loadPromises);
   }
 
-  private async loadSingleModel(modelType: string): Promise<void> {
+  private async loadSingleModel(modelType: ModelType, fileName: string): Promise<void> {
     const loader = gltfLoader;
     return new Promise((resolve, reject) => {
       loader.load(
-        `models/units/${modelType}.glb`,
+        `models/units/${fileName}.glb`,
         (gltf) => {
           const group = new THREE.Group();
           const instancedMeshes: AnimatedInstancedMesh[] = [];
@@ -87,7 +104,6 @@ export class ArmyModel {
               instancedMesh.castShadow = true;
               instancedMesh.instanceMatrix.needsUpdate = true;
 
-              // Skip color initialization for the first mesh (ground)
               if (meshIndex > 0) {
                 instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(
                   new Float32Array(MAX_INSTANCES * 3),
@@ -127,7 +143,7 @@ export class ArmyModel {
             mixer,
             animations: {
               idle: gltf.animations[0],
-              walk: gltf.animations[1] || gltf.animations[0]?.clone(),
+              moving: gltf.animations[1] || gltf.animations[0]?.clone(),
             },
             animationActions: new Map(),
             activeInstances: new Set(),
@@ -143,7 +159,7 @@ export class ArmyModel {
     });
   }
 
-  assignModelToEntity(entityId: number, modelType: string) {
+  assignModelToEntity(entityId: number, modelType: ModelType) {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
     this.entityModelMap.set(entityId, modelType);
@@ -213,21 +229,21 @@ export class ArmyModel {
 
           if (!modelData.animationActions.has(i)) {
             const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
-            const walkAction = modelData.mixer.clipAction(modelData.animations.walk);
-            modelData.animationActions.set(i, { idle: idleAction, walk: walkAction });
+            const movingAction = modelData.mixer.clipAction(modelData.animations.moving);
+            modelData.animationActions.set(i, { idle: idleAction, moving: movingAction });
           }
 
           const actions = modelData.animationActions.get(i)!;
           if (animationState === ANIMATION_STATE_IDLE) {
             actions.idle.setEffectiveTimeScale(1);
-            actions.walk.setEffectiveTimeScale(0);
-          } else if (animationState === ANIMATION_STATE_WALKING) {
+            actions.moving.setEffectiveTimeScale(0);
+          } else if (animationState === ANIMATION_STATE_MOVING) {
             actions.idle.setEffectiveTimeScale(0);
-            actions.walk.setEffectiveTimeScale(1);
+            actions.moving.setEffectiveTimeScale(1);
           }
 
           actions.idle.play();
-          actions.walk.play();
+          actions.moving.play();
 
           modelData.mixer.setTime(time + this.timeOffsets[i]);
           mesh.setMorphAt(i, modelData.biomeMeshes[meshIndex] as any);
@@ -257,7 +273,7 @@ export class ArmyModel {
   }
 
   setAnimationState(index: number, isWalking: boolean) {
-    this.animationStates[index] = isWalking ? ANIMATION_STATE_WALKING : ANIMATION_STATE_IDLE;
+    this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
   }
 
   raycastAll(raycaster: THREE.Raycaster): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
