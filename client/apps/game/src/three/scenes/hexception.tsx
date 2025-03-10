@@ -108,8 +108,6 @@ export default class HexceptionScene extends HexagonScene {
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
-  private buildingSubscription: any;
-  private realmSubscription: any;
   private labels: {
     col: number;
     row: number;
@@ -257,8 +255,7 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
 
     // subscribe to buiding updates (create and destroy)
-    this.buildingSubscription?.unsubscribe();
-    this.buildingSubscription = this.systemManager.Buildings.subscribeToHexUpdates(
+    this.systemManager.Buildings.onUpdate(
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
@@ -269,8 +266,7 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
-    this.realmSubscription?.unsubscribe();
-    this.realmSubscription = this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
+    this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
       if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
         this.structureStage = update.level as RealmLevels;
         this.removeCastleFromScene();
