@@ -408,13 +408,7 @@ export class ArmyActionManager {
       });
   };
 
-  private readonly _optimisticTravelHex = (
-    col: number,
-    row: number,
-    pathLength: number,
-    blockTimestamp: number,
-    currentArmiesTick: number,
-  ) => {
+  private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
     const overrideId = uuid();
     const currentPosition = this._getCurrentPosition();
 
@@ -467,13 +461,7 @@ export class ArmyActionManager {
     blockTimestamp: number,
     currentArmiesTick: number,
   ) => {
-    const overrideId = this._optimisticTravelHex(
-      path[path.length - 1].col,
-      path[path.length - 1].row,
-      path.length - 1,
-      blockTimestamp,
-      currentArmiesTick,
-    );
+    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
 
     const directions = path
       .map((_, i) => {
