@@ -56,7 +56,7 @@ pub mod resource_bridge_systems {
             let season_bridge_config: SeasonBridgeConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("season_bridge_config"),
             );
-            season_bridge_config.assert_bridge_is_open(world);
+            season_bridge_config.assert_inbound_bridge_open(world);
 
             // ensure the recipient of the bridged resources is a realm or village
             let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
@@ -145,7 +145,7 @@ pub mod resource_bridge_systems {
             let season_bridge_config: SeasonBridgeConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("season_bridge_config"),
             );
-            season_bridge_config.assert_bridge_is_open(world);
+            season_bridge_config.assert_outbound_bridge_open(world);
 
             // ensure bridge withdrawal is not paused
             iBridgeImpl::assert_withdraw_not_paused(world);

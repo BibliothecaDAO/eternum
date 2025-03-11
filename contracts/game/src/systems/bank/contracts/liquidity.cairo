@@ -18,13 +18,13 @@ mod liquidity_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
+    use s1_eternum::models::config::{SeasonConfigImpl, SeasonBridgeConfigImpl};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
@@ -60,7 +60,7 @@ mod liquidity_systems {
             lords_amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::assert_season_ongoing(world);
 
             // ensure caller owns structure adding liquidity
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
@@ -118,7 +118,11 @@ mod liquidity_systems {
 
         fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+
+            // only allow or disable liquidity removal 
+            // when bridge out is open or closed
+            let season_bridge_config = SeasonBridgeConfigImpl::get(world);
+            season_bridge_config.assert_outbound_bridge_open(world);
 
             // ensure resource type is not lords
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
