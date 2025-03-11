@@ -24,6 +24,8 @@ import {
   STARTING_RESOURCES,
 } from "./utils/resource";
 import {
+  TROOP_AGENTS_TROOP_LOWER_BOUND,
+  TROOP_AGENTS_TROOP_UPPER_BOUND,
   TROOP_BASE_DAMAGE,
   TROOP_DAMAGE_BETA_LARGE,
   TROOP_DAMAGE_BETA_SMALL,
@@ -88,10 +90,13 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 1000; // 1000 / 100_000 = 1%
-export const SHARDS_MINES_FAIL_PROBABILITY = 99000; // 99000 / 100_000 = 99%
+export const SHARDS_MINES_WIN_PROBABILITY = 100; // 100 / 10_000 = 1%
+export const SHARDS_MINES_FAIL_PROBABILITY = 9900; // 9900 / 10_000 = 99%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
+
+export const AGENT_FIND_PROBABILITY = 1;  // --> 1 / (1+2) = 1/3
+export const AGENT_FIND_FAIL_PROBABILITY = 2;  // --> 2 / (1+2) = 2/3
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
@@ -211,6 +216,8 @@ export const EternumGlobalConfig: Config = {
     reward: EXPLORATION_REWARD,
     shardsMinesFailProbability: SHARDS_MINES_FAIL_PROBABILITY,
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
+    agentFindProbability: AGENT_FIND_PROBABILITY,
+    agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
@@ -273,6 +280,8 @@ export const EternumGlobalConfig: Config = {
       guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
       mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+      agentTroopLowerBound: TROOP_AGENTS_TROOP_LOWER_BOUND,
+      agentTroopUpperBound: TROOP_AGENTS_TROOP_UPPER_BOUND,
     },
   },
   settlement: {

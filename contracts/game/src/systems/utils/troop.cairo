@@ -1,12 +1,13 @@
 use core::num::traits::zero::Zero;
 use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::WorldConfigUtilImpl;
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
+use s1_eternum::models::config::{CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileOccupier};
+use s1_eternum::models::name::AddressName;
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -118,6 +119,45 @@ pub impl iGuardImpl of iGuardTrait {
 
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
+    fn create(
+        ref world: WorldStorage,
+        ref tile: Tile,
+        explorer_id: ID,
+        owner: ID,
+        troop_type: TroopType,
+        troop_tier: TroopTier,
+        troop_amount: u128,
+        troop_stamina_config: TroopStaminaConfig,
+        troop_limit_config: TroopLimitConfig,
+        current_tick: u64,
+    ) -> ExplorerTroops {
+        // set explorer as occupier of tile
+        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+
+        // ensure explorer amount does not exceed max
+        assert!(
+            troop_amount <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
+            "reached limit of explorers amount per army",
+        );
+
+        // set troop stamina
+        let mut troops = Troops {
+            category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
+        };
+        let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+
+        // set explorer
+        let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
+        world.write_model(@explorer);
+
+        // initialize explorer resource model
+        ResourceImpl::initialize(ref world, explorer_id);
+        // increase troop capacity
+        Self::update_capacity(ref world, explorer_id, explorer, troop_amount, true);
+        return explorer;
+    }
+
     fn burn_stamina_cost(
         ref world: WorldStorage,
         ref explorer: ExplorerTroops,
@@ -164,6 +204,11 @@ pub impl iExplorerImpl of iExplorerTrait {
     fn burn_food_cost(
         ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool,
     ) {
+        if explorer.owner == DAYDREAMS_AGENT_ID {
+            // daydreams agent does not consume food
+            return;
+        }
+
         let (wheat_cost, fish_cost) = match explore {
             true => {
                 (
@@ -373,5 +418,73 @@ pub impl iMercenariesImpl of iMercenariesTrait {
 
         // update structure base
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+    }
+}
+
+
+#[generate_trait]
+pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
+    fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into()].span(),
+            array![].span(),
+            1,
+            true,
+            vrf_seed,
+        )[0];
+        return success;
+    }
+
+
+    fn create(
+        ref world: WorldStorage,
+        ref tile: Tile,
+        mut seed: u256,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        current_tick: u64,
+    ) -> ExplorerTroops {
+        let mut salt: u128 = 124;
+        let lower_bound: u128 = troop_limit_config.agents_troop_lower_bound.into() * RESOURCE_PRECISION;
+        let upper_bound: u128 = troop_limit_config.agents_troop_upper_bound.into() * RESOURCE_PRECISION;
+        let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
+        let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
+        troop_amount += lower_bound;
+
+        // select a troop type with equal probability
+        let troop_type: TroopType = *random::choices(
+            array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin].span(),
+            array![1, 1, 1].span(),
+            array![].span(),
+            1,
+            true,
+            seed,
+        )
+            .at(0);
+
+        // agent discovery
+        let explorer_id: ID = world.dispatcher.uuid();
+        let explorer: ExplorerTroops = iExplorerImpl::create(
+            ref world,
+            ref tile,
+            explorer_id,
+            DAYDREAMS_AGENT_ID,
+            troop_type,
+            TroopTier::T3,
+            troop_amount,
+            troop_stamina_config,
+            troop_limit_config,
+            current_tick,
+        );
+
+        // set name based on id
+        let name: felt252 = 'Daydreams Agent Bread';
+        let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
+        world.write_model(@name);
+
+        // give agent resources
+        // emit event
+        return explorer;
     }
 }

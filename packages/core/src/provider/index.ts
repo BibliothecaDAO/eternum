@@ -1686,6 +1686,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       reward_amount,
       shards_mines_win_probability,
       shards_mines_fail_probability,
+      agent_find_probability,
+      agent_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -1702,6 +1704,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         reward_amount,
         shards_mines_win_probability,
         shards_mines_fail_probability,
+        agent_find_probability,
+        agent_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -1931,6 +1935,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         limit_config.guard_resurrection_delay,
         limit_config.mercenaries_troop_lower_bound,
         limit_config.mercenaries_troop_upper_bound,
+        limit_config.agent_troop_lower_bound,
+        limit_config.agent_troop_upper_bound,
       ],
     });
   }

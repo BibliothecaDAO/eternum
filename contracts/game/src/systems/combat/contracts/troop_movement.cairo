@@ -24,7 +24,8 @@ pub mod troop_movement_systems {
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{
-        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl, troop::{iExplorerImpl, iTroopImpl},
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
+        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
     };
     use s1_eternum::utils::map::{biomes::{Biome, get_biome}};
     use s1_eternum::utils::random::{VRFImpl};
@@ -55,6 +56,7 @@ pub mod troop_movement_systems {
             IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
             let caller = starknet::get_caller_address();
+            let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             // move explorer to target coordinate
@@ -109,6 +111,22 @@ pub mod troop_movement_systems {
                             iMineDiscoveryImpl::create(
                                 ref world, next, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                             );
+                        } else {
+                            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(ref world, map_config, vrf_seed);
+                            if agent_lottery_won {
+                                // ensure explorer does not occupy fragment mine tile
+                                occupy_destination = false;
+
+                                // create daydreams agent
+                                iAgentDiscoveryImpl::create(
+                                    ref world,
+                                    ref tile,
+                                    vrf_seed,
+                                    troop_limit_config,
+                                    troop_stamina_config,
+                                    current_tick,
+                                );
+                            }
                         }
                     }
 
@@ -153,12 +171,7 @@ pub mod troop_movement_systems {
             // burn stamina cost
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             iExplorerImpl::burn_stamina_cost(
-                ref world,
-                ref explorer,
-                troop_stamina_config,
-                explore,
-                biomes,
-                TickImpl::get_tick_config(ref world).current(),
+                ref world, ref explorer, troop_stamina_config, explore, biomes, current_tick,
             );
 
             // burn food cost

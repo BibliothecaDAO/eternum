@@ -326,6 +326,8 @@ export interface Config {
     reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
+    agentFindProbability: number;
+    agentFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -381,6 +383,8 @@ export interface Config {
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
+      agentTroopLowerBound: number;
+      agentTroopUpperBound: number;
     };
   };
   settlement: {

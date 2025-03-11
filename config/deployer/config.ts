@@ -537,6 +537,8 @@ export const setTroopConfig = async (config: Config) => {
       guardResurrectionDelay: guard_resurrection_delay,
       mercenariesTroopLowerBound: mercenaries_troop_lower_bound,
       mercenariesTroopUpperBound: mercenaries_troop_upper_bound,
+      agentTroopLowerBound: agent_troop_lower_bound,
+      agentTroopUpperBound: agent_troop_upper_bound,
     },
   } = config.config.troop;
 
@@ -575,6 +577,8 @@ export const setTroopConfig = async (config: Config) => {
       guard_resurrection_delay: guard_resurrection_delay,
       mercenaries_troop_lower_bound: mercenaries_troop_lower_bound,
       mercenaries_troop_upper_bound: mercenaries_troop_upper_bound,
+      agent_troop_lower_bound: agent_troop_lower_bound,
+      agent_troop_upper_bound: agent_troop_upper_bound,
     },
   };
 
@@ -613,6 +617,8 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Guard Resurrection:")}       ${chalk.white(calldata.limit_config.guard_resurrection_delay)}
     │  ${chalk.gray("Mercenary Min:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_lower_bound)}
     │  ${chalk.gray("Mercenary Max:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_upper_bound)}
+    │  ${chalk.gray("Agent Min:")}               ${chalk.white(calldata.limit_config.agent_troop_lower_bound)}
+    │  ${chalk.gray("Agent Max:")}               ${chalk.white(calldata.limit_config.agent_troop_upper_bound)}
     └────────────────────────────────`),
   );
 
@@ -670,6 +676,8 @@ export const setupGlobals = async (config: Config) => {
     reward_amount: config.config.exploration.reward,
     shards_mines_win_probability: config.config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
+    agent_find_probability: config.config.exploration.agentFindProbability,
+    agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,

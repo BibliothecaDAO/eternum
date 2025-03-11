@@ -1160,6 +1160,8 @@ export function defineContractComponents(world: World) {
             reward_resource_amount: RecsType.Number,
             shards_mines_win_probability: RecsType.Number,
             shards_mines_fail_probability: RecsType.Number,
+            agent_discovery_prob: RecsType.Number,
+            agent_discovery_fail_prob: RecsType.Number,
             hyps_win_prob: RecsType.Number,
             hyps_fail_prob: RecsType.Number,
             hyps_fail_prob_increase_p_hex: RecsType.Number,
@@ -1245,6 +1247,8 @@ export function defineContractComponents(world: World) {
             guard_resurrection_delay: RecsType.Number,
             mercenaries_troop_lower_bound: RecsType.BigInt,
             mercenaries_troop_upper_bound: RecsType.BigInt,
+            agents_troop_lower_bound: RecsType.BigInt,
+            agents_troop_upper_bound: RecsType.BigInt,
           },
           capacity_config: {
             structure_capacity: RecsType.Number,
@@ -1284,8 +1288,10 @@ export function defineContractComponents(world: World) {
               "u16", // SpeedConfig donkey_sec_per_km
               "u16", // SpeedConfig army_sec_per_km
               "u16", // MapConfig reward_resource_amount
-              "u32", // MapConfig shards_mines_win_probability
-              "u32", // MapConfig shards_mines_fail_probability
+              "u16", // MapConfig shards_mines_win_probability
+              "u16", // MapConfig shards_mines_fail_probability
+              "u16", // MapConfig agent_discovery_prob
+              "u16", // MapConfig agent_discovery_fail_prob
               "u32", // MapConfig hyps_win_prob
               "u32", // MapConfig hyps_fail_prob
               "u32", // MapConfig hyps_fail_prob_increase_p_hex
@@ -1347,8 +1353,10 @@ export function defineContractComponents(world: World) {
               "u8", // TroopLimitConfig explorer_max_party_count
               "u32", // TroopLimitConfig explorer_guard_max_troop_count
               "u32", // TroopLimitConfig guard_resurrection_delay
-              "u64", // TroopLimitConfig mercenaries_troop_lower_bound
-              "u64", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u32", // TroopLimitConfig mercenaries_troop_lower_bound
+              "u32", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u32", // TroopLimitConfig agents_troop_lower_bound
+              "u32", // TroopLimitConfig agents_troop_upper_bound
               "u32", // CapacityConfig structure_capacity
               "u32", // CapacityConfig troop_capacity
               "u32", // CapacityConfig donkey_capacity
