@@ -44,7 +44,6 @@ export class LeaderboardManager {
 
   public getGuildsByRank(currentTimestamp: number): [ID, number][] {
     const pointsPerGuild = new Map<ID, number>();
-
     const seasonConfig = configManager.getSeasonConfig();
     if (!seasonConfig) return [];
     const finishedHyperstructuresEntityIds = runQuery([HasValue(this.components.Hyperstructure, { completed: true })]);
