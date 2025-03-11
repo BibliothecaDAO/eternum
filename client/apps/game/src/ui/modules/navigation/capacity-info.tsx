@@ -51,7 +51,7 @@ const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) 
 };
 
 const WorkersHutInfo = () => {
-  const capacity = configManager.getBuildingPopConfig(BuildingType.WorkersHut).capacity;
+  const capacity = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;
   return (
     <div className="text-xs text-gray-200 p-1 max-w-xs z-50">
       <p className="font-semibold">Population Capacity</p>

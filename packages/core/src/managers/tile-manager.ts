@@ -1,14 +1,7 @@
 import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import {
-  ResourceManager,
-  getBuildingCosts,
-  getBuildingCount,
-  getResourceBuildingCosts,
-  setBuildingCount,
-  type DojoAccount,
-} from "..";
+import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, type DojoAccount } from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -16,10 +9,10 @@ import {
   Direction,
   FELT_CENTER,
   RealmLevels,
-  ResourcesIds,
   StructureType,
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
+  getProducedResource,
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { SystemCalls } from "../dojo/create-system-calls";
@@ -75,7 +68,7 @@ export class TileManager {
         col: Number(productionModelValue?.inner_col),
         row: Number(productionModelValue?.inner_row),
         category,
-        resource: productionModelValue?.produced_resource_type,
+        resource: getProducedResource(category),
         paused: productionModelValue?.paused,
         structureType: null,
       };
@@ -97,7 +90,7 @@ export class TileManager {
       this.components.Building,
       getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
     );
-    return building !== undefined && building.category !== BuildingType[BuildingType.None];
+    return building !== undefined && building.category !== BuildingType.None;
   };
 
   structureType = () => {
@@ -122,56 +115,10 @@ export class TileManager {
         getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(coord.col), BigInt(coord.row)]),
       );
 
-      if (building?.category === BuildingType[BuildingType.Farm]) bonusPercent += building.bonus_percent;
+      if (building?.category === BuildingType.ResourceWheat) bonusPercent += building.bonus_percent;
     });
 
     return bonusPercent;
-  };
-
-  private _getProducedResourceType = (buildingType: BuildingType, resourceType: number | undefined) => {
-    let producedResourceType = 0;
-
-    switch (buildingType) {
-      case BuildingType.Farm:
-        producedResourceType = ResourcesIds.Wheat;
-        break;
-      case BuildingType.FishingVillage:
-        producedResourceType = ResourcesIds.Fish;
-        break;
-      case BuildingType.Barracks1:
-        producedResourceType = ResourcesIds.Knight;
-        break;
-      case BuildingType.ArcheryRange1:
-        producedResourceType = ResourcesIds.Crossbowman;
-        break;
-      case BuildingType.Stable1:
-        producedResourceType = ResourcesIds.Paladin;
-        break;
-      case BuildingType.Barracks2:
-        producedResourceType = ResourcesIds.KnightT2;
-        break;
-      case BuildingType.ArcheryRange2:
-        producedResourceType = ResourcesIds.CrossbowmanT2;
-        break;
-      case BuildingType.Stable2:
-        producedResourceType = ResourcesIds.PaladinT2;
-        break;
-      case BuildingType.Barracks3:
-        producedResourceType = ResourcesIds.KnightT3;
-        break;
-      case BuildingType.ArcheryRange3:
-        producedResourceType = ResourcesIds.CrossbowmanT3;
-        break;
-      case BuildingType.Stable3:
-        producedResourceType = ResourcesIds.PaladinT3;
-        break;
-
-      case BuildingType.Resource:
-        producedResourceType = resourceType!;
-        break;
-    }
-
-    return producedResourceType;
   };
 
   private _optimisticBuilding = (
@@ -192,8 +139,7 @@ export class TileManager {
         outer_row: this.row,
         inner_col: col,
         inner_row: row,
-        category: BuildingType[buildingType],
-        produced_resource_type: this._getProducedResourceType(buildingType, resourceType),
+        category: buildingType,
         bonus_percent: this._getBonusFromNeighborBuildings(col, row),
         entity_id: entityId,
         outer_entity_id: entityId,
@@ -204,10 +150,7 @@ export class TileManager {
     // override resource balance
     // need to retrieve the reosurce cost before adding extra building to the structure
     // because the resource cost increase when adding more buildings
-    const resourceChange =
-      buildingType === BuildingType.Resource
-        ? getResourceBuildingCosts(entityId, this.components, resourceType!)
-        : getBuildingCosts(entityId, this.components, buildingType);
+    const resourceChange = getBuildingCosts(entityId, this.components, buildingType);
 
     resourceChange?.forEach((resource) => {
       this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
@@ -237,8 +180,11 @@ export class TileManager {
         packed_counts: BigInt(packedBuildingCount),
         population: {
           current:
-            (structureBuildings?.population.current || 0) + configManager.getBuildingPopConfig(buildingType).population,
-          max: (structureBuildings?.population.max || 0) + configManager.getBuildingPopConfig(buildingType).capacity,
+            (structureBuildings?.population.current || 0) +
+            configManager.getBuildingCategoryConfig(buildingType)?.population_cost,
+          max:
+            (structureBuildings?.population.max || 0) +
+            configManager.getBuildingCategoryConfig(buildingType)?.capacity_grant,
         },
       },
     });
@@ -268,8 +214,7 @@ export class TileManager {
         outer_row: outerrow,
         inner_col: col,
         inner_row: row,
-        category: "None",
-        produced_resource_type: 0,
+        category: BuildingType.None,
         bonus_percent: 0,
         entity_id: 0,
         outer_entity_id: 0,
@@ -280,7 +225,7 @@ export class TileManager {
 
     const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
 
-    const type = BuildingType[currentBuilding?.category as keyof typeof BuildingType];
+    const type = currentBuilding?.category as BuildingType;
 
     const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
 
@@ -291,10 +236,10 @@ export class TileManager {
         population: {
           current:
             (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.current || 0) -
-            configManager.getBuildingPopConfig(type).population,
+            configManager.getBuildingCategoryConfig(type).population_cost,
           max:
             (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.max || 0) -
-            configManager.getBuildingPopConfig(type).capacity,
+            configManager.getBuildingCategoryConfig(type).capacity_grant,
         },
       },
     });
@@ -315,7 +260,6 @@ export class TileManager {
         inner_col: building?.inner_col,
         inner_row: building?.inner_row,
         category: building?.category,
-        produced_resource_type: building?.produced_resource_type,
         bonus_percent: building?.bonus_percent,
         entity_id: building?.entity_id,
         outer_entity_id: building?.outer_entity_id,
@@ -338,7 +282,6 @@ export class TileManager {
         inner_col: building?.inner_col,
         inner_row: building?.inner_row,
         category: building?.category,
-        produced_resource_type: building?.produced_resource_type,
         bonus_percent: building?.bonus_percent,
         entity_id: building?.entity_id,
         outer_entity_id: building?.outer_entity_id,

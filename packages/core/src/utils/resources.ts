@@ -1,6 +1,6 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { BuildingType, RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
+import { RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
 import { ID, ProductionByLaborParams, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
@@ -67,23 +67,6 @@ export const getQuestResources = (realmEntityId: ID, components: ClientComponent
 
   // todo: fix
   return getStartingResources(resourcesProduced, [], []);
-};
-
-export const isResourceProductionBuilding = (buildingId: BuildingType) => {
-  return (
-    buildingId === BuildingType.Resource ||
-    buildingId === BuildingType.Farm ||
-    buildingId === BuildingType.FishingVillage ||
-    buildingId === BuildingType.Barracks1 ||
-    buildingId === BuildingType.ArcheryRange1 ||
-    buildingId === BuildingType.Stable1 ||
-    buildingId === BuildingType.Barracks2 ||
-    buildingId === BuildingType.ArcheryRange2 ||
-    buildingId === BuildingType.Stable2 ||
-    buildingId === BuildingType.Barracks3 ||
-    buildingId === BuildingType.ArcheryRange3 ||
-    buildingId === BuildingType.Stable3
-  );
 };
 
 export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {

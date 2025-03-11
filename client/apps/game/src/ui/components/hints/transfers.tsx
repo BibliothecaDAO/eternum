@@ -33,7 +33,7 @@ export const Transfers = () => {
       title: "Producing Donkeys",
       content: (
         <div className="flex gap-3 items-center">
-          <img className="h-36 min-w-20" src={BUILDING_IMAGES_PATH[BuildingType.Market]} alt="" />
+          <img className="h-36 min-w-20" src={BUILDING_IMAGES_PATH[BuildingType.ResourceDonkey]} alt="" />
           <div className="flex flex-col">
             <p className="font-bold">Donkeys can be acquired through:</p>
             <p>

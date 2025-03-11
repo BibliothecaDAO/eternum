@@ -35,7 +35,7 @@ export const BUILDING_INFORMATION: {
   [BuildingType.ResourceEtherealSilica]: "Ethereal gardens, where reality thins, crystallize Ethereal Silica.",
   [BuildingType.ResourceDragonhide]: "Dragonhide sanctuaries, where ancient beasts rest, yield mystical Dragonhide.",
   [BuildingType.ResourceLabor]: "Labor camps, where dedicated workers toil, produce valuable Labor.",
-  [BuildingType.ResourceEarthenShard]: "Ancient ruins, where history sleeps, reveal powerful Earthen Shards.",
+  [BuildingType.ResourceAncientFragment]: "Ancient ruins, where history sleeps, reveal powerful Ancient Fragments.",
   [BuildingType.ResourceDonkey]: "Markets, bustling with arcane traders, summon Donkeys for mystical trading.",
   [BuildingType.ResourceKnightT1]: "Tier 1 Barracks, where valor and magic intertwine, train noble Knights.",
   [BuildingType.ResourceKnightT2]: "Tier 2 Barracks, where heroes are forged, train elite Knights.",

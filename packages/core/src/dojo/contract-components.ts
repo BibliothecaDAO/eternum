@@ -28,8 +28,7 @@ export function defineContractComponents(world: World) {
           outer_row: RecsType.Number,
           inner_col: RecsType.Number,
           inner_row: RecsType.Number,
-          category: RecsType.String,
-          produced_resource_type: RecsType.Number,
+          category: RecsType.Number,
           bonus_percent: RecsType.Number,
           entity_id: RecsType.Number,
           outer_entity_id: RecsType.Number,
@@ -39,7 +38,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Building",
-            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
+            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u32", "u32", "bool"],
             customTypes: ["BuildingCategory"],
           },
         },

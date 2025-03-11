@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { BuildingEnumToString, BuildingType, configManager } from "@bibliothecadao/eternum";
+import { BuildingType, BuildingTypeToString, configManager } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const Buildings = () => {
@@ -14,9 +14,9 @@ export const Buildings = () => {
       const buildingCosts = configManager.buildingCosts[buildingId];
 
       if (buildingCosts.length !== 0) {
-        const buildingPopCapacityConfig = configManager.getBuildingPopConfig(buildingId);
-        const population = buildingPopCapacityConfig.population;
-        const capacity = buildingPopCapacityConfig.capacity;
+        const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
+        const population = buildingPopCapacityConfig.population_cost;
+        const capacity = buildingPopCapacityConfig.capacity_grant;
 
         const calldata = {
           building_category: buildingId,
@@ -56,7 +56,7 @@ export const Buildings = () => {
             <tr key={building.building_category} className="border-b border-gold/10">
               <td className="p-2 border-r border-gold/10">
                 {" "}
-                <h5>{BuildingEnumToString[building.building_category]}</h5>
+                <h5>{BuildingTypeToString[building.building_category]}</h5>
                 <img
                   className="h-32 min-w-20 bg-brown/40 rounded-xl m-1 p-2"
                   src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}

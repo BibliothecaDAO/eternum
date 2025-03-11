@@ -1,14 +1,14 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
-    BiomeType,
-    BuildingType,
-    CapacityConfig,
-    QuestType,
-    RealmLevels,
-    ResourcesIds,
-    ResourceTier,
-    StructureType,
+  BiomeType,
+  BuildingType,
+  CapacityConfig,
+  QuestType,
+  RealmLevels,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -100,7 +100,7 @@ export interface Prize {
 
 export interface Building {
   name: string;
-  category: string;
+  category: BuildingType;
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
@@ -404,8 +404,7 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    otherBuildingCosts: ResourceInputs;
-    resourceBuildingCosts: ResourceInputs;
+    buildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 

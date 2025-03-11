@@ -149,7 +149,7 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  const buildingPopulation = configManager.getBuildingPopConfig(building).population;
+  const buildingPopulation = configManager.getBuildingCategoryConfig(building).population_cost;
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);

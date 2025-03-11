@@ -40,7 +40,7 @@ export enum BuildingType {
   ResourceEtherealSilica = 23,
   ResourceDragonhide = 24,
   ResourceLabor = 25,
-  ResourceEarthenShard = 26,
+  ResourceAncientFragment = 26,
   ResourceDonkey = 27,
   ResourceKnightT1 = 28,
   ResourceKnightT2 = 29,
@@ -82,7 +82,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceEtherealSilica]: "Ethereal Silica Resource",
   [BuildingType.ResourceDragonhide]: "Dragonhide Resource",
   [BuildingType.ResourceLabor]: "Labor Resource",
-  [BuildingType.ResourceEarthenShard]: "Earthen Shard Resource",
+  [BuildingType.ResourceAncientFragment]: "Ancient Fragment Resource",
   [BuildingType.ResourceDonkey]: "Donkey Resource",
   [BuildingType.ResourceKnightT1]: "Knight T1 Resource",
   [BuildingType.ResourceKnightT2]: "Knight T2 Resource",
@@ -101,7 +101,66 @@ export function getBuildingCategory(category: BuildingType): CairoCustomEnum {
   return new CairoCustomEnum({ [BuildingTypeToString[category].replace(/\s+/g, "")]: {} });
 }
 
-export function getProducedResource(category: BuildingType): number {
+export function getBuildingFromResource(resourceId: ResourcesIds): BuildingType {
+  switch (resourceId) {
+    case ResourcesIds.Stone:
+      return BuildingType.ResourceStone;
+    case ResourcesIds.Coal:
+      return BuildingType.ResourceCoal;
+    case ResourcesIds.Wood:
+      return BuildingType.ResourceWood;
+    case ResourcesIds.Copper:
+      return BuildingType.ResourceCopper;
+    case ResourcesIds.Ironwood:
+      return BuildingType.ResourceIronwood;
+    case ResourcesIds.Obsidian:
+      return BuildingType.ResourceObsidian;
+    case ResourcesIds.Gold:
+      return BuildingType.ResourceGold;
+    case ResourcesIds.Silver:
+      return BuildingType.ResourceSilver;
+    case ResourcesIds.Mithral:
+      return BuildingType.ResourceMithral;
+    case ResourcesIds.AlchemicalSilver:
+      return BuildingType.ResourceAlchemicalSilver;
+    case ResourcesIds.ColdIron:
+      return BuildingType.ResourceColdIron;
+    case ResourcesIds.DeepCrystal:
+      return BuildingType.ResourceDeepCrystal;
+    case ResourcesIds.Ruby:
+      return BuildingType.ResourceRuby;
+    case ResourcesIds.Diamonds:
+      return BuildingType.ResourceDiamonds;
+    case ResourcesIds.Hartwood:
+      return BuildingType.ResourceHartwood;
+    case ResourcesIds.Ignium:
+      return BuildingType.ResourceIgnium;
+    case ResourcesIds.TwilightQuartz:
+      return BuildingType.ResourceTwilightQuartz;
+    case ResourcesIds.TrueIce:
+      return BuildingType.ResourceTrueIce;
+    case ResourcesIds.Adamantine:
+      return BuildingType.ResourceAdamantine;
+    case ResourcesIds.Sapphire:
+      return BuildingType.ResourceSapphire;
+    case ResourcesIds.EtherealSilica:
+      return BuildingType.ResourceEtherealSilica;
+    case ResourcesIds.Dragonhide:
+      return BuildingType.ResourceDragonhide;
+    case ResourcesIds.Labor:
+      return BuildingType.ResourceLabor;
+    case ResourcesIds.AncientFragment:
+      return BuildingType.ResourceAncientFragment;
+    case ResourcesIds.Wheat:
+      return BuildingType.ResourceWheat;
+    case ResourcesIds.Fish:
+      return BuildingType.ResourceFish;
+    default:
+      return BuildingType.None;
+  }
+}
+
+export function getProducedResource(category: BuildingType): ResourcesIds | undefined {
   switch (category) {
     case BuildingType.ResourceStone:
       return ResourcesIds.Stone;
@@ -149,7 +208,7 @@ export function getProducedResource(category: BuildingType): number {
       return ResourcesIds.Dragonhide;
     case BuildingType.ResourceLabor:
       return ResourcesIds.Labor;
-    case BuildingType.ResourceEarthenShard:
+    case BuildingType.ResourceAncientFragment:
       return ResourcesIds.AncientFragment;
     case BuildingType.ResourceDonkey:
       return ResourcesIds.Donkey;
@@ -176,7 +235,7 @@ export function getProducedResource(category: BuildingType): number {
     case BuildingType.ResourceFish:
       return ResourcesIds.Fish;
     default:
-      return 0;
+      return undefined;
   }
 }
 
@@ -230,3 +289,58 @@ export function determineEntityState(
   }
   return EntityState.Idle; // Default state
 }
+
+export const isMilitaryBuilding = (buildingType: BuildingType) => {
+  return (
+    buildingType === BuildingType.ResourceKnightT1 ||
+    buildingType === BuildingType.ResourceKnightT2 ||
+    buildingType === BuildingType.ResourceKnightT3 ||
+    buildingType === BuildingType.ResourceCrossbowmanT1 ||
+    buildingType === BuildingType.ResourceCrossbowmanT2 ||
+    buildingType === BuildingType.ResourceCrossbowmanT3 ||
+    buildingType === BuildingType.ResourcePaladinT1 ||
+    buildingType === BuildingType.ResourcePaladinT2 ||
+    buildingType === BuildingType.ResourcePaladinT3
+  );
+};
+
+export const isResourceBuilding = (buildingType: BuildingType) => {
+  return (
+    buildingType === BuildingType.ResourceStone ||
+    buildingType === BuildingType.ResourceCoal ||
+    buildingType === BuildingType.ResourceWood ||
+    buildingType === BuildingType.ResourceCopper ||
+    buildingType === BuildingType.ResourceIronwood ||
+    buildingType === BuildingType.ResourceObsidian ||
+    buildingType === BuildingType.ResourceGold ||
+    buildingType === BuildingType.ResourceSilver ||
+    buildingType === BuildingType.ResourceMithral ||
+    buildingType === BuildingType.ResourceAlchemicalSilver ||
+    buildingType === BuildingType.ResourceColdIron ||
+    buildingType === BuildingType.ResourceDeepCrystal ||
+    buildingType === BuildingType.ResourceRuby ||
+    buildingType === BuildingType.ResourceDiamonds ||
+    buildingType === BuildingType.ResourceHartwood ||
+    buildingType === BuildingType.ResourceIgnium ||
+    buildingType === BuildingType.ResourceTwilightQuartz ||
+    buildingType === BuildingType.ResourceTrueIce ||
+    buildingType === BuildingType.ResourceAdamantine ||
+    buildingType === BuildingType.ResourceSapphire ||
+    buildingType === BuildingType.ResourceEtherealSilica ||
+    buildingType === BuildingType.ResourceDragonhide
+  );
+};
+
+export const isEconomyBuilding = (buildingType: BuildingType) => {
+  return (
+    buildingType === BuildingType.ResourceWheat ||
+    buildingType === BuildingType.ResourceFish ||
+    buildingType === BuildingType.ResourceDonkey ||
+    buildingType === BuildingType.WorkersHut ||
+    buildingType === BuildingType.Storehouse
+  );
+};
+
+export const isFoodBuilding = (buildingType: BuildingType) => {
+  return buildingType === BuildingType.ResourceWheat || buildingType === BuildingType.ResourceFish;
+};
