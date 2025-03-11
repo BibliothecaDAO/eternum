@@ -29,11 +29,10 @@ pub mod realm_systems {
     use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{
-        DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
-    };
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids};
     use s1_eternum::models::config::{
-        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
+        SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
@@ -45,8 +44,6 @@ pub mod realm_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::Season;
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
         StructureOwnerStoreImpl,
@@ -74,9 +71,7 @@ pub mod realm_systems {
         fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            season.assert_has_started();
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(

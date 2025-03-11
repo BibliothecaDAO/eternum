@@ -9,14 +9,14 @@ pub mod name_systems {
 
     use dojo::world::WorldStorage;
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::SeasonConfigImpl;
     use s1_eternum::models::name::AddressName;
-    use s1_eternum::models::season::SeasonImpl;
 
     #[abi(embed_v0)]
     pub impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(ref self: ContractState, name: felt252) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller = starknet::get_caller_address();
 

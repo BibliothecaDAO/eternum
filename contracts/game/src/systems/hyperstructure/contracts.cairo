@@ -23,7 +23,7 @@ trait IHyperstructureSystems<T> {
     fn set_access(ref self: T, hyperstructure_entity_id: ID, access: Access);
 
     fn get_points(
-        ref self: T,
+        self: @T,
         player_address: ContractAddress,
         hyperstructures_contributed_to: Span<ID>,
         hyperstructure_shareholder_epochs: Span<(ID, u16)>,
@@ -43,10 +43,10 @@ pub mod hyperstructure_systems {
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{SeasonConfig};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::{Season, SeasonImpl};
     use s1_eternum::models::weight::{Weight, WeightImpl};
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::random::VRFImpl;
@@ -59,7 +59,7 @@ pub mod hyperstructure_systems {
         },
         models::{
             config::{
-                HyperstructureConfig, HyperstructureResourceConfig, HyperstructureResourceConfigTrait,
+                HyperstructureConfig, HyperstructureResourceConfig, HyperstructureResourceConfigTrait, SeasonConfigImpl,
                 WorldConfigUtilImpl,
             },
             guild::{GuildMember},
@@ -135,7 +135,7 @@ pub mod hyperstructure_systems {
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn initialize(ref self: ContractState, hyperstructure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure caller owns the structure
             let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
@@ -222,7 +222,7 @@ pub mod hyperstructure_systems {
             contributions: Span<(u8, u128)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a hyperstructure
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_entity_id);
@@ -307,7 +307,7 @@ pub mod hyperstructure_systems {
             ref self: ContractState, hyperstructure_entity_id: ID, co_owners: Span<(ContractAddress, u16)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             assert!(co_owners.len() <= 10, "too many co-owners");
 
@@ -375,6 +375,7 @@ pub mod hyperstructure_systems {
 
         fn set_access(ref self: ContractState, hyperstructure_entity_id: ID, access: Access) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure the structure is a hyperstructure
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -407,7 +408,7 @@ pub mod hyperstructure_systems {
             hyperstructure_shareholder_epochs: Span<(ID, u16)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let player_address = starknet::get_caller_address();
             let mut total_points: u128 = 0;
@@ -433,7 +434,7 @@ pub mod hyperstructure_systems {
                 hyperstructure_config.points_for_win,
             );
 
-            SeasonImpl::end_season(ref world);
+            SeasonConfigImpl::end_season(ref world);
 
             let winner_address = starknet::get_caller_address();
             world.emit_event(@GameEnded { winner_address, timestamp: starknet::get_block_timestamp() });
@@ -450,8 +451,9 @@ pub mod hyperstructure_systems {
         }
 
 
+        // todo: ensure this does not save any storage variable
         fn get_points(
-            ref self: ContractState,
+            self: @ContractState,
             player_address: ContractAddress,
             hyperstructures_contributed_to: Span<ID>,
             hyperstructure_shareholder_epochs: Span<(ID, u16)>,
@@ -620,9 +622,9 @@ pub mod hyperstructure_systems {
             let mut points = 0;
             let mut i = 0;
             let mut end_point_generation_at = starknet::get_block_timestamp();
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            if season.ended_at.is_non_zero() {
-                end_point_generation_at = season.ended_at;
+            let mut season: SeasonConfig = WorldConfigUtilImpl::get_member(world, selector!("season_config"));
+            if season.end_at.is_non_zero() {
+                end_point_generation_at = season.end_at;
             }
 
             let mut points_already_added: Felt252Dict<bool> = Default::default();

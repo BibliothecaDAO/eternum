@@ -8,18 +8,16 @@ pub trait IVillageSystems<T> {
 
 #[dojo::contract]
 pub mod village_systems {
-    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{DEFAULT_NS};
+    use s1_eternum::models::config::{SeasonConfigImpl};
 
     use s1_eternum::models::map::{TileOccupier};
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::position::{Direction};
-    use s1_eternum::models::season::Season;
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureOwnerStoreImpl,
@@ -35,9 +33,7 @@ pub mod village_systems {
         fn create(ref self: ContractState, connected_realm: ID, direction: Direction) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            season.assert_has_started();
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
             // todo: add payment
 

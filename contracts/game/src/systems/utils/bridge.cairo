@@ -8,7 +8,6 @@ use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use s1_eternum::models::config::{
     ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, WorldConfigUtilImpl,
 };
-use s1_eternum::models::config::{SeasonBridgeConfigImpl};
 use s1_eternum::models::hyperstructure::{HyperstructureGlobals};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{

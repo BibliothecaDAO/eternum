@@ -1,15 +1,15 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-    BuildingType,
-    CapacityConfig,
-    GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
-    HYPERSTRUCTURE_CONFIG_ID,
-    RESOURCE_PRECISION,
-    ResourcesIds,
-    ResourceTier,
-    StructureType,
-    WORLD_CONFIG_ID,
+  BuildingType,
+  CapacityConfig,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  HYPERSTRUCTURE_CONFIG_ID,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
+  WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -751,12 +751,12 @@ export class ClientConfigManager {
   getSeasonBridgeConfig() {
     return this.getValueOrDefault(
       () => {
-        const seasonBridgeConfig = getComponentValue(
+        const seasonConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.season_bridge_config;
+        )?.season_config;
         return {
-          closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
+          closeAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
         };
       },
       {

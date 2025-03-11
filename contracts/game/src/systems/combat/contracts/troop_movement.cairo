@@ -14,12 +14,13 @@ pub mod troop_movement_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::{
         config::{
-            CombatConfigImpl, MapConfig, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
+            CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
         },
         map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction},
         resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
-        season::SeasonImpl, structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl},
-        troop::{ExplorerTroops, GuardImpl}, weight::{Weight},
+        structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl}, troop::{ExplorerTroops, GuardImpl},
+        weight::{Weight},
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::{
@@ -40,7 +41,7 @@ pub mod troop_movement_systems {
             assert!(directions.len().is_non_zero(), "directions must be more than 0");
 
             let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);

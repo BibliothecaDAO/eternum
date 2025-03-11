@@ -9,7 +9,6 @@ use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 use s1_eternum::models::position::Coord;
 
 use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
@@ -26,7 +25,6 @@ pub struct WorldConfig {
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub season_addresses_config: SeasonAddressesConfig,
-    pub season_bridge_config: SeasonBridgeConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
@@ -52,11 +50,11 @@ pub struct SeasonConfig {
     pub start_settling_at: u64,
     pub start_main_at: u64,
     pub end_at: u64,
+    pub end_grace_seconds: u32,
 }
 
 #[generate_trait]
 pub impl SeasonConfigImpl of SeasonConfigTrait {
-
     fn get(world: WorldStorage) -> SeasonConfig {
         WorldConfigUtilImpl::get_member(world, selector!("season_config"))
     }
@@ -98,16 +96,34 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             (self.start_main_at - now) % 60,
         );
     }
-
-
-    fn assert_not_over(self: SeasonConfig) {
+    fn assert_settling_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_settling();
         assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_settling_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_settling();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+    fn assert_main_game_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
     }
 
     fn end_season(ref world: WorldStorage) {
         let season_config_selector = selector!("season_config");
-        let mut season_config: SeasonConfig 
-            = WorldConfigUtilImpl::get_member(world, season_config_selector);
+        let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
         // ensure season is not over
         assert!(season_config.has_ended() == false, "Season is over");
         // set season as over
@@ -140,43 +156,6 @@ pub struct SeasonAddressesConfig {
     pub lords_address: ContractAddress,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct SeasonBridgeConfig {
-    pub close_after_end_seconds: u64,
-}
-
-#[generate_trait]
-pub impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
-
-    fn get(world: WorldStorage) -> SeasonBridgeConfig {
-        WorldConfigUtilImpl::get_member(world, selector!("season_bridge_config"))
-    }
-
-    fn assert_inbound_bridge_open(self: SeasonBridgeConfig, world: WorldStorage) {
-        // ensure bridge in can be done immediately SETTLING is allowed
-        let season_config: SeasonConfig = SeasonConfigImpl::get(world);
-        season_config.assert_started_settling();
-
-        // ensure bridge in can only be done before grace period has elapsed
-        // after the season is over
-        if season_config.has_ended() {
-            let now = starknet::get_block_timestamp();
-            assert!(now <= season_config.end_at + self.close_after_end_seconds, "Bridge is closed");
-        }
-    }
-    fn assert_outbound_bridge_open(self: SeasonBridgeConfig, world: WorldStorage) {
-        // ensure bridge out can be done immediately THE MAIN GAME LOOP starts
-        let season_config: SeasonConfig = SeasonConfigImpl::get(world);
-        season_config.assert_started_main();
-
-        // ensure bridge out can only be done before grace period has elapsed
-        // after the season is over
-        if season_config.has_ended() {
-            let now = starknet::get_block_timestamp();
-            assert!(now <= season_config.end_at + self.close_after_end_seconds, "Bridge is closed");
-        }
-    }
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

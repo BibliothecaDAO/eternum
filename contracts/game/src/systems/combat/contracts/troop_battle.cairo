@@ -21,8 +21,8 @@ pub mod troop_battle_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{
-        BattleConfig, CombatConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig, WorldConfigUtilImpl,
-        SeasonConfigImpl,
+        BattleConfig, CombatConfigImpl, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
@@ -41,10 +41,10 @@ pub mod troop_battle_systems {
             ref self: ContractState, aggressor_id: ID, defender_id: ID, defender_direction: Direction,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            
+
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
             StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
@@ -133,9 +133,10 @@ pub mod troop_battle_systems {
             ref self: ContractState, explorer_id: ID, structure_id: ID, structure_direction: Direction,
         ) {
             let mut world = self.world(DEFAULT_NS());
+
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
             let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -260,8 +261,8 @@ pub mod troop_battle_systems {
         ) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller structure owns aggressor
             let structure_aggressor_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, structure_id,

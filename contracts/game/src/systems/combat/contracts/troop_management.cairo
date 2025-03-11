@@ -65,8 +65,10 @@ pub mod troop_management_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{RESOURCE_PRECISION};
     use s1_eternum::models::{
-        config::{CombatConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
-        SeasonConfigImpl},
+        config::{
+            CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
+            WorldConfigUtilImpl,
+        },
         map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
         resource::{
             resource::{
@@ -100,8 +102,8 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
@@ -143,8 +145,8 @@ pub mod troop_management_systems {
         fn guard_delete(ref self: ContractState, for_structure_id: ID, slot: GuardSlot) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
@@ -178,8 +180,8 @@ pub mod troop_management_systems {
         ) -> ID {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
 
@@ -254,8 +256,8 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(to_explorer_id);
             StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
@@ -289,8 +291,8 @@ pub mod troop_management_systems {
         fn explorer_delete(ref self: ContractState, explorer_id: ID) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
             StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
@@ -326,8 +328,8 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller address owns both explorers
             // (not necessarily the same structure)
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
@@ -432,8 +434,8 @@ pub mod troop_management_systems {
 
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure caller owns explorer
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
             StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
@@ -555,7 +557,7 @@ pub mod troop_management_systems {
             assert!(count % RESOURCE_PRECISION == 0, "count must be divisible by resource precision");
 
             let mut world = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure caller owns explorer
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);

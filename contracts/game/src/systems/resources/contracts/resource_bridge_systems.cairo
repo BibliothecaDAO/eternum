@@ -24,7 +24,7 @@ pub mod resource_bridge_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, WorldConfigUtilImpl};
-    use s1_eternum::models::config::{SeasonBridgeConfig, SeasonBridgeConfigImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -53,10 +53,7 @@ pub mod resource_bridge_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the bridge is open
-            let season_bridge_config: SeasonBridgeConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("season_bridge_config"),
-            );
-            season_bridge_config.assert_inbound_bridge_open(world);
+            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
 
             // ensure the recipient of the bridged resources is a realm or village
             let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
@@ -142,10 +139,7 @@ pub mod resource_bridge_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure the bridge is open
-            let season_bridge_config: SeasonBridgeConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("season_bridge_config"),
-            );
-            season_bridge_config.assert_outbound_bridge_open(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure bridge withdrawal is not paused
             iBridgeImpl::assert_withdraw_not_paused(world);

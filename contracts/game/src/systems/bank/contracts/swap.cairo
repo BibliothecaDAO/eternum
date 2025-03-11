@@ -17,7 +17,7 @@ pub mod swap_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::constants::{ResourceTypes};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl, SeasonConfigImpl};
+    use s1_eternum::models::config::{BankConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use s1_eternum::models::config::{TickImpl};
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::resource::resource::{
@@ -58,7 +58,7 @@ pub mod swap_systems {
 
             // ensure season is open
             let season_config = SeasonConfigImpl::get(world);
-            season_config.assert_started_main();
+            season_config.assert_started_and_not_over();
 
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -148,9 +148,8 @@ pub mod swap_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
             // ensure season is open
-            let season_config = SeasonConfigImpl::get(world);
-            season_config.assert_started_main();
-            
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             player_structure_base.assert_exists();

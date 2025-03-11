@@ -13,14 +13,13 @@ pub mod structure_systems {
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
         StructureOwnerStoreImpl,
@@ -33,6 +32,7 @@ pub mod structure_systems {
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
         fn level_up(ref self: ContractState, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure caller owns the structure
             let mut structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);

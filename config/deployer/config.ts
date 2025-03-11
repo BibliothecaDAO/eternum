@@ -898,32 +898,38 @@ export const setSeasonConfig = async (config: Config) => {
   );
 
   const now = Math.floor(new Date().getTime() / 1000);
-  const startAt = now + config.config.season.startAfterSeconds;
+  const startMainAt = now + config.config.season.startMainAfterSeconds;
+  const startSettlingAt = now + config.config.season.startSettlingAfterSeconds;
 
   const seasonCalldata = {
     signer: config.account,
     season_pass_address: config.config.setup!.addresses.seasonPass,
     realms_address: config.config.setup!.addresses.realms,
     lords_address: config.config.setup!.addresses.lords,
-    start_at: startAt,
+    start_settling_at: startSettlingAt,
+    start_main_at: startMainAt,
+    end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
   };
 
-  const seasonBridgeCalldata = {
-    signer: config.account,
-    close_after_end_seconds: config.config.season.bridgeCloseAfterEndSeconds,
-  };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Season Parameters")}
-    │  ${chalk.gray("Start Time:")}   ${chalk.white(
-      new Date(seasonCalldata.start_at * 1000).toLocaleString("en-US", {
+    │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
         dateStyle: "full",
         timeStyle: "short",
         timeZone: "UTC",
       }),
     )} UTC
-    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonBridgeCalldata.close_after_end_seconds))} after game ends
+    │  ${chalk.gray("Start Main Game Time:")}   ${chalk.white(
+      new Date(seasonCalldata.start_main_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
+    )} UTC
+    │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.end_grace_seconds))} after game ends
     │
     │  ${chalk.yellow("Contract Addresses")}
     │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
@@ -933,10 +939,7 @@ export const setSeasonConfig = async (config: Config) => {
   );
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
-  const setSeasonBridgeTx = await config.provider.set_season_bridge_config(seasonBridgeCalldata);
-
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
-  console.log(chalk.green(`    ✔ Bridge configured `) + chalk.gray(setSeasonBridgeTx.statusReceipt) + "\n");
 };
 
 export const setVRFConfig = async (config: Config) => {
