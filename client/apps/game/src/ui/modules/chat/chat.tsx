@@ -142,7 +142,7 @@ export const Chat = () => {
             changeTabs={changeTabs}
           />
         ) : (
-          <EventStream />
+          <EventStream hideChat={hideChat} />
         )}
         <div
           style={{
@@ -306,7 +306,7 @@ const Messages = ({
 
   return (
     <div
-      className={` text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
+      className={`text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
         hideChat ? "h-0 hidden" : "block h-[20vh]"
       }`}
     >

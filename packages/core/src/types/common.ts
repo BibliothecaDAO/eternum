@@ -12,6 +12,17 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
+export enum TileOccupier {
+  None,
+  RealmRegular,
+  RealmWonder,
+  Hyperstructure,
+  FragmentMine,
+  Village,
+  Bank,
+  Explorer,
+}
+
 /**
  * Interface representing season contract addresses and resources
  * @interface SeasonAddresses
@@ -382,7 +393,8 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    startAfterSeconds: number;
+    startSettlingAfterSeconds: number;
+    startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
   bridge: {

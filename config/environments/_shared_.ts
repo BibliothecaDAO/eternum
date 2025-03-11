@@ -167,8 +167,13 @@ export const REALM_FEE_ON_DEPOSIT = 5; // 5%
 export const REALM_FEE_ON_WITHDRAWAL = 5; // 5%
 export const MAX_NUM_BANKS = 6;
 
-export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
-export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
+const ONE_MINUTE_IN_SECONDS = 60;
+const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+
+export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
+export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + (ONE_HOUR_IN_SECONDS * 12); // 1 and half day
+export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 2 days
 
 export const TRADE_MAX_COUNT = 5;
 
@@ -296,7 +301,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
   },
   season: {
-    startAfterSeconds: SEASON_START_AFTER_SECONDS,
+    startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
+    startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
   },
   bridge: {

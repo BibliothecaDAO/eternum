@@ -17,13 +17,12 @@ pub mod swap_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::constants::{ResourceTypes};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
-    use s1_eternum::models::config::{BankConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{BankConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use s1_eternum::models::config::{TickImpl};
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
@@ -56,7 +55,10 @@ pub mod swap_systems {
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(ref self: ContractState, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure season is open
+            let season_config = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
 
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -122,6 +124,10 @@ pub mod swap_systems {
                 true,
             );
 
+            // store structure weights
+            player_structure_weight.store(ref world, structure_id);
+            bank_structure_weight.store(ref world, bank_entity_id);
+
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 ref world,
@@ -140,7 +146,9 @@ pub mod swap_systems {
 
         fn sell(ref self: ContractState, bank_entity_id: ID, structure_id: ID, resource_type: u8, amount: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure season is open
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure player entity is a structure
             let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -185,11 +193,6 @@ pub mod swap_systems {
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
             bank_lords_resource.store(ref world);
 
-            // update market liquidity
-            market.lords_amount -= lords_received_from_amm;
-            market.resource_amount += amount;
-            world.write_model(@market);
-
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -209,6 +212,15 @@ pub mod swap_systems {
                 true,
                 true,
             );
+
+            // update structure weights
+            player_structure_weight.store(ref world, structure_id);
+            bank_structure_weight.store(ref world, bank_entity_id);
+
+            // update market liquidity
+            market.lords_amount -= lords_received_from_amm;
+            market.resource_amount += amount;
+            world.write_model(@market);
 
             // emit event
             InternalSwapSystemsImpl::emit_event(

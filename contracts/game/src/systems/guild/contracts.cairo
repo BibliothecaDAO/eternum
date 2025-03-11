@@ -20,18 +20,17 @@ pub mod guild_systems {
     use dojo::world::{IWorldDispatcherTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::SeasonConfigImpl;
     use s1_eternum::models::event::{CreateGuild, JoinGuild};
     use s1_eternum::models::guild::{Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait};
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::season::SeasonImpl;
     use starknet::ContractAddress;
-
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
         fn create_guild(ref self: ContractState, is_public: bool, guild_name: felt252) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller_address = starknet::get_caller_address();
 
@@ -64,7 +63,7 @@ pub mod guild_systems {
 
         fn join_guild(ref self: ContractState, guild_entity_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller_address = starknet::get_caller_address();
 
@@ -100,7 +99,7 @@ pub mod guild_systems {
             ref self: ContractState, player_address_to_whitelist: ContractAddress, guild_entity_id: ID,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let guild: Guild = world.read_model(guild_entity_id);
             guild.owner.assert_caller_owner();
@@ -118,7 +117,7 @@ pub mod guild_systems {
 
         fn transfer_guild_ownership(ref self: ContractState, guild_entity_id: ID, to_player_address: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let mut guild: Guild = world.read_model(guild_entity_id);
             guild.owner.assert_caller_owner();
@@ -134,7 +133,7 @@ pub mod guild_systems {
 
         fn remove_guild_member(ref self: ContractState, player_address_to_remove: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
             let caller_address = starknet::get_caller_address();
 
             let guild_member: GuildMember = world.read_model(player_address_to_remove);
@@ -163,7 +162,7 @@ pub mod guild_systems {
             ref self: ContractState, player_address_to_remove: ContractAddress, guild_entity_id: ID,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let guild_whitelist: GuildWhitelist = world.read_model((player_address_to_remove, guild_entity_id));
             guild_whitelist.assert_is_whitelisted();

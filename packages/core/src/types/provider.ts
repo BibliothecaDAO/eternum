@@ -473,15 +473,13 @@ export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
   realms_address: num.BigNumberish;
   lords_address: num.BigNumberish;
-  start_at: num.BigNumberish;
+  start_settling_at: num.BigNumberish;
+  start_main_at: num.BigNumberish;
+  end_grace_seconds: num.BigNumberish;
 }
 
 export interface SetVRFConfigProps extends SystemSigner {
   vrf_provider_address: num.BigNumberish;
-}
-
-export interface SetSeasonBridgeConfigProps extends SystemSigner {
-  close_after_end_seconds: num.BigNumberish;
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {

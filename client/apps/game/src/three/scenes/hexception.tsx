@@ -109,8 +109,6 @@ export default class HexceptionScene extends HexagonScene {
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   private tileManager: TileManager;
-  private buildingSubscription: any;
-  private realmSubscription: any;
   private labels: {
     col: number;
     row: number;
@@ -258,8 +256,7 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
 
     // subscribe to buiding updates (create and destroy)
-    this.buildingSubscription?.unsubscribe();
-    this.buildingSubscription = this.systemManager.Buildings.subscribeToHexUpdates(
+    this.systemManager.Buildings.onUpdate(
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
@@ -270,8 +267,7 @@ export default class HexceptionScene extends HexagonScene {
       },
     );
 
-    this.realmSubscription?.unsubscribe();
-    this.realmSubscription = this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
+    this.systemManager.Structure.onUpdate((update: RealmSystemUpdate) => {
       if (update.hexCoords.col === this.centerColRow[0] && update.hexCoords.row === this.centerColRow[1]) {
         this.structureStage = update.level as RealmLevels;
         this.removeCastleFromScene();
@@ -520,6 +516,7 @@ export default class HexceptionScene extends HexagonScene {
 
           if (buildingData) {
             const instance = buildingData.model.clone();
+
             instance.applyMatrix4(building.matrix);
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
@@ -532,18 +529,18 @@ export default class HexceptionScene extends HexagonScene {
                 }
               });
             }
-            if (buildingType === ResourceMiningTypes.Mine) {
-              const crystalMesh1 = instance.children[1] as THREE.Mesh;
-              const crystalMesh2 = instance.children[2] as THREE.Mesh;
-              if (!this.minesMaterials.has(building.resource)) {
-                const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-                this.minesMaterials.set(building.resource, material);
-              }
-              // @ts-ignoreq
-              crystalMesh1.material = this.minesMaterials.get(building.resource);
-              // @ts-ignore
-              crystalMesh2.material = this.minesMaterials.get(building.resource);
-            }
+            // if (buildingType === ResourceMiningTypes.Mine) {
+            //   const crystalMesh1 = instance.children[1] as THREE.Mesh;
+            //   const crystalMesh2 = instance.children[2] as THREE.Mesh;
+            //   if (!this.minesMaterials.has(building.resource)) {
+            //     const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+            //     this.minesMaterials.set(building.resource, material);
+            //   }
+            //   // @ts-ignoreq
+            //   crystalMesh1.material = this.minesMaterials.get(building.resource);
+            //   // @ts-ignore
+            //   crystalMesh2.material = this.minesMaterials.get(building.resource);
+            // }
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 

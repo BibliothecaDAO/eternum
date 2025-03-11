@@ -17,10 +17,10 @@ pub trait ISeasonConfig<T> {
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
         lords_address: starknet::ContractAddress,
-        start_at: u64,
+        start_settling_at: u64,
+        start_main_at: u64,
+        end_grace_seconds: u32,
     );
-
-    fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
 }
 
 
@@ -175,17 +175,17 @@ pub mod config_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
-        BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
-        HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ProductionConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
-        SeasonBridgeConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
+        HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
+        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig,
+        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig,
+        WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
     use s1_eternum::models::resource::resource::{ResourceList};
-    use s1_eternum::models::season::{Season};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
 
@@ -239,16 +239,16 @@ pub mod config_systems {
             trophy_id -= 1;
         }
     }
-
-
-    pub fn assert_caller_is_admin(world: WorldStorage) {
-        let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
-
+    pub fn check_caller_is_admin(world: WorldStorage) -> bool {
         // ENSURE
         // 1. ADMIN ADDRESS IS SET (IT MUST NEVER BE THE ZERO ADDRESS)
         // 2. CALLER IS ADMIN
-        let admin_address = world_config.admin_address;
-        assert!(starknet::get_caller_address() == admin_address, "caller not admin");
+        let mut admin_address = WorldConfigUtilImpl::get_member(world, selector!("admin_address"));
+        return starknet::get_caller_address() == admin_address;
+    }
+
+    pub fn assert_caller_is_admin(world: WorldStorage) {
+        assert!(check_caller_is_admin(world), "caller not admin");
     }
 
     #[abi(embed_v0)]
@@ -277,7 +277,9 @@ pub mod config_systems {
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
             lords_address: starknet::ContractAddress,
-            start_at: u64,
+            start_settling_at: u64,
+            start_main_at: u64,
+            end_grace_seconds: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -288,21 +290,14 @@ pub mod config_systems {
                 SeasonAddressesConfig { season_pass_address, realms_address, lords_address },
             );
 
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            if !season.is_over {
-                season.start_at = start_at;
-                world.write_model(@season);
+            let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, selector!("season_config"));
+            if season_config.end_at.is_zero() {
+                assert!(start_settling_at < start_main_at, "start_settling_at must be before start_main_at");
+                season_config.start_settling_at = start_settling_at;
+                season_config.start_main_at = start_main_at;
+                season_config.end_grace_seconds = end_grace_seconds;
+                WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
             }
-        }
-
-
-        fn set_season_bridge_config(ref self: ContractState, close_after_end_seconds: u64) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("season_bridge_config"), SeasonBridgeConfig { close_after_end_seconds },
-            );
         }
     }
 

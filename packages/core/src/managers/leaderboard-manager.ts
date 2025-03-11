@@ -1,6 +1,6 @@
 import { ComponentValue, Entity, getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { RESOURCE_RARITY, ResourcesIds, WORLD_CONFIG_ID } from "../constants";
+import { RESOURCE_RARITY, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ContractAddress, ID, Resource, TickIds } from "../types";
 import { divideByPrecision, getGuildFromPlayerAddress } from "../utils";
@@ -44,9 +44,9 @@ export class LeaderboardManager {
 
   public getGuildsByRank(currentTimestamp: number): [ID, number][] {
     const pointsPerGuild = new Map<ID, number>();
-
-    const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    if (!season) return [];
+    
+    const seasonConfig = configManager.getSeasonConfig();
+    if (!seasonConfig) return [];
     const finishedHyperstructuresEntityIds = runQuery([HasValue(this.components.Hyperstructure, { completed: true })]);
 
     this.getPoints(
@@ -76,8 +76,8 @@ export class LeaderboardManager {
     getKey: (identifier: ContractAddress) => any,
     keyPointsMap: Map<any, number>,
   ): boolean {
-    const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    if (!season) return false;
+    const seasonConfig = configManager.getSeasonConfig();
+    if (!seasonConfig) return false;
 
     const pointsOnCompletion = configManager.getHyperstructureConfig().pointsOnCompletion;
 
@@ -126,10 +126,10 @@ export class LeaderboardManager {
         );
 
         const epochEndTimestamp =
-          season.is_over && nextEpoch === undefined
-            ? season.ended_at
+          seasonConfig.endAt && nextEpoch === undefined
+            ? seasonConfig.endAt
             : (nextEpoch?.start_timestamp ?? BigInt(currentTimestamp));
-        const epochDuration = epochEndTimestamp - epoch.start_timestamp;
+        const epochDuration = Number(epochEndTimestamp) - Number(epoch.start_timestamp);
 
         const nbOfCycles = Number(epochDuration) / configManager.getTick(TickIds.Default);
 

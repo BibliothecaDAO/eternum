@@ -8,7 +8,6 @@ use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::season::SeasonImpl;
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl,
@@ -302,6 +301,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         let donkey_amount = iDonkeyImpl::needed_amount(ref world, total_resources_weight);
         iDonkeyImpl::burn(ref world, donkey_provider_id, ref donkey_provider_weight, donkey_amount);
         iDonkeyImpl::burn_finialize(ref world, donkey_provider_id, donkey_amount, donkey_provider_owner);
+
+        if donkey_provider_id == from_id {
+            from_weight = donkey_provider_weight;
+        } else {
+            to_weight = donkey_provider_weight;
+        }
 
         // update both structures weights
         from_weight.store(ref world, from_id);

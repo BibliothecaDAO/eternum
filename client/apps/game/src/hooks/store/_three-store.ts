@@ -1,20 +1,17 @@
-import { StructureInfo } from "@/three/types";
 import { ActionPath, BuildingType, HexPosition, ID, Position } from "@bibliothecadao/eternum";
 
 export interface ThreeStore {
   navigationTarget: HexPosition | null;
   setNavigationTarget: (hex: HexPosition | null) => void;
+  hoveredHex: HexPosition | null;
+  setHoveredHex: (hex: HexPosition | null) => void;
   entityActions: EntityActions;
   setEntityActions: (entityActions: EntityActions) => void;
-  updateHoveredHex: (hoveredHex: HexPosition | null) => void;
-  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
-  updateSelectedEntityId: (selectedEntityId: ID | null) => void;
+  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => void;
+  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
+  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => void;
   selectedHex: HexPosition | null;
   setSelectedHex: (hex: HexPosition | null) => void;
-  hoveredArmyEntityId: ID | null;
-  setHoveredArmyEntityId: (id: ID | null) => void;
-  hoveredStructure: StructureInfo | null;
-  setHoveredStructure: (structure: StructureInfo | null) => void;
   hoveredBattle: Position | null;
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
@@ -42,24 +39,22 @@ interface EntityActions {
 export const createThreeStoreSlice = (set: any, _get: any) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
+  hoveredHex: null,
+  setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
   entityActions: {
     hoveredHex: null,
     actionPaths: new Map(),
     selectedEntityId: null,
   },
   setEntityActions: (entityActions: EntityActions) => set({ entityActions }),
-  updateHoveredHex: (hoveredHex: HexPosition | null) =>
+  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) =>
     set((state: any) => ({ entityActions: { ...state.entityActions, hoveredHex } })),
-  updateActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
+  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
     set((state: any) => ({ entityActions: { ...state.entityActions, actionPaths } })),
-  updateSelectedEntityId: (selectedEntityId: ID | null) =>
+  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) =>
     set((state: any) => ({ entityActions: { ...state.entityActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
-  hoveredArmyEntityId: null,
-  setHoveredArmyEntityId: (id: ID | null) => set({ hoveredArmyEntityId: id }),
-  hoveredStructure: null,
-  setHoveredStructure: (structure: StructureInfo | null) => set({ hoveredStructure: structure }),
   hoveredBattle: null,
   setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
   selectedBuilding: BuildingType.ResourceWheat,

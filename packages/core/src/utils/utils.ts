@@ -115,7 +115,7 @@ export function multiplyByPrecision(value: number): number {
 }
 
 export function divideByPrecision(value: number): number {
-  return value / RESOURCE_PRECISION;
+  return Math.floor(value / RESOURCE_PRECISION);
 }
 
 export function divideWithPrecision(

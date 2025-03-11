@@ -743,12 +743,12 @@ export class ClientConfigManager {
   getSeasonBridgeConfig() {
     return this.getValueOrDefault(
       () => {
-        const seasonBridgeConfig = getComponentValue(
+        const seasonConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.season_bridge_config;
+        )?.season_config;
         return {
-          closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
+          closeAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
         };
       },
       {
@@ -760,17 +760,22 @@ export class ClientConfigManager {
   getSeasonConfig() {
     return this.getValueOrDefault(
       () => {
-        const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const seasonConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.season_config;
         return {
-          startAt: season?.start_at,
-          isOver: season?.is_over,
-          endedAt: season?.ended_at,
+          startSettlingAt: seasonConfig?.start_settling_at ?? 0n,
+          startMainAt: seasonConfig?.start_main_at ?? 0n,
+          endAt: seasonConfig?.end_at ?? 0n,
+          bridgeCloseAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
         };
       },
       {
-        startAt: 0n,
-        isOver: true,
-        endedAt: 0n,
+        startSettlingAt: 0n,
+        startMainAt: 0n,
+        endAt: 0n,
+        bridgeCloseAfterEndSeconds: 0n,
       },
     );
   }

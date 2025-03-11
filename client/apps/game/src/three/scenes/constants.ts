@@ -16,11 +16,11 @@ export const HEX_SIZE = 1;
 export const PREVIEW_BUILD_COLOR_VALID = 0x00a300;
 export const PREVIEW_BUILD_COLOR_INVALID = 0xff0000;
 
-const BIOMES_BASE_PATH = "/models/biomes/";
+const BIOMES_BASE_PATH = "/models/new-biomes-opt/";
 const BIOMES_FLAT_PATH = "/models/biomes-flat/";
 const BIOMES_MODELS_PATH = IS_FLAT_MODE ? BIOMES_FLAT_PATH : BIOMES_BASE_PATH;
 
-const BUILDINGS_MODELS_PATH = "/models/buildings/";
+const BUILDINGS_MODELS_PATH = "/models/new-buildings-opt/";
 
 enum BiomeFilenames {
   Bare = "bare.glb",
