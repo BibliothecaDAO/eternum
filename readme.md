@@ -23,9 +23,9 @@ In Eternum, players forge alliances across an infinite hexagonal procedurally ge
 immutable seasons. They build resource stockpiles, train troops, trade, and strategically cooperate or deceive to
 achieve victory in this world of diplomacy, resource management, and tactical decision-making.
 
-Entry is via a Season ticket minted off the original Loot Realms NFTs. Using $LORDS, players trade in a free market
-within the world and on Starknet to gain competitive advantages. The open nature of the design allows players to extend
-the game world and introduce their own features if they choose.
+Entry is via a Season pass minted off the original Loot Realms NFTs. Using $LORDS, players trade in a free market within
+the world and on Starknet to gain competitive advantages. The open nature of the design allows players to extend the
+game world and introduce their own features if they choose.
 
 ### Eternum as a Platform
 

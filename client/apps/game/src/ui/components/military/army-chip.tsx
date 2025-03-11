@@ -4,16 +4,18 @@ import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
 import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { ArmyManagementCard, ViewOnMapIcon } from "@/ui/components/military/army-management-card";
+import { ArmyManagementCard } from "@/ui/components/military/army-management-card";
 import { TroopChip } from "@/ui/components/military/troop-chip";
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { armyHasTroops, ArmyInfo } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+
 export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
@@ -87,7 +89,7 @@ export const ArmyChip = ({
               <span> Exit</span>
             </div>
           </Button>
-          <ArmyManagementCard army={army} owner_entity={army.entityId} />
+          <ArmyManagementCard army={army} owner_entity={army.entity_owner_id} />
         </>
       ) : showTroopSwap ? (
         <ArmyMergeTroopsPanel giverArmy={army} setShowMergeTroopsPopup={setShowTroopSwap} />

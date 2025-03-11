@@ -97,21 +97,20 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
 
-  return addressName ? addressName.name.toString() : undefined;
+  return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
 };
 
 export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents) => {
-  const address = getAddressFromEntity(entityId, components);
+  const address = getAddressFromStructureEntity(entityId, components);
   if (!address) return;
-
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
 
-  return addressName ? addressName.name.toString() : undefined;
+  return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
 };
 
-export const getAddressFromEntity = (entityId: ID, components: ClientComponents): ContractAddress | undefined => {
-  const explorerTroops = getComponentValue(components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]));
-  return explorerTroops?.owner
-    ? getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]))?.owner
-    : undefined;
+export const getAddressFromStructureEntity = (
+  entityId: ID,
+  components: ClientComponents,
+): ContractAddress | undefined => {
+  return getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.owner || undefined;
 };

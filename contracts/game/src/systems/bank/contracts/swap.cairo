@@ -124,6 +124,10 @@ pub mod swap_systems {
                 true,
             );
 
+            // store structure weights
+            player_structure_weight.store(ref world, structure_id);
+            bank_structure_weight.store(ref world, bank_entity_id);
+
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 ref world,
@@ -190,11 +194,6 @@ pub mod swap_systems {
             bank_lords_resource.add(bank_lords_fee_amount, ref bank_structure_weight, lords_weight_grams);
             bank_lords_resource.store(ref world);
 
-            // update market liquidity
-            market.lords_amount -= lords_received_from_amm;
-            market.resource_amount += amount;
-            world.write_model(@market);
-
             // pickup player lords
             let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -214,6 +213,15 @@ pub mod swap_systems {
                 true,
                 true,
             );
+
+            // update structure weights
+            player_structure_weight.store(ref world, structure_id);
+            bank_structure_weight.store(ref world, bank_entity_id);
+
+            // update market liquidity
+            market.lords_amount -= lords_received_from_amm;
+            market.resource_amount += amount;
+            world.write_model(@market);
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
