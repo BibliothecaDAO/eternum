@@ -33,7 +33,6 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
-    use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
@@ -49,6 +48,7 @@ mod production_systems {
     };
 
     use starknet::ContractAddress;
+    use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
 
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
@@ -111,7 +111,7 @@ mod production_systems {
                     "You can't erect the requested building on this structure",
                 );
             }
-            
+
             // pay one time cost of the building
             building.make_payment(building_count, ref world);
         }
