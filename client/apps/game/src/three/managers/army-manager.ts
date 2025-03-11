@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
-import { ArmyModel, ModelType, TROOP_TO_MODEL } from "@/three/managers/army-model";
+import { ArmyModel } from "@/three/managers/army-model";
 import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
 import {
@@ -17,8 +17,10 @@ import {
 } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
+import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
