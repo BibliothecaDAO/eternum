@@ -12,6 +12,9 @@ interface MovementData {
   progress: number;
   matrixIndex: number;
   currentPathIndex: number;
+  floatingHeight: number;
+  currentRotation: number; // Current rotation angle in radians
+  targetRotation: number; // Target rotation angle in radians
 }
 
 interface LabelData {
@@ -128,6 +131,9 @@ export class ArmyModel {
   private currentVisibleCount: number = 0;
   private readonly SCALE_TRANSITION_SPEED = 5.0;
   private readonly MOVEMENT_SPEED = 1.25;
+  private readonly FLOAT_HEIGHT = 0.5;
+  private readonly FLOAT_TRANSITION_SPEED = 3.0;
+  private readonly ROTATION_SPEED = 5.0; // Speed of rotation interpolation
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -429,6 +435,9 @@ export class ArmyModel {
       progress: 0,
       matrixIndex,
       currentPathIndex: 0,
+      floatingHeight: 0,
+      currentRotation: 0,
+      targetRotation: 0,
     });
 
     this.setAnimationState(matrixIndex, true);
@@ -441,6 +450,61 @@ export class ArmyModel {
       if (!instanceData) {
         this.stopMovement(entityId);
         return;
+      }
+
+      // Update rotation smoothly
+      const rotationDiff = movement.targetRotation - movement.currentRotation;
+      // Normalize the difference to [-PI, PI] to ensure shortest rotation path
+      const normalizedDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff));
+      movement.currentRotation += normalizedDiff * this.ROTATION_SPEED * deltaTime;
+
+      // Apply the current rotation to the dummy object
+      this.dummyObject.rotation.set(0, movement.currentRotation, 0);
+
+      // Check if this is a boat model
+      const modelType = this.entityModelMap.get(entityId);
+      const isBoat = modelType === ModelType.Boat;
+
+      // Special case for descent animation
+      if (movement.currentPathIndex === -1) {
+        // Only handle descent for non-boat models
+        if (!isBoat) {
+          // Decrease floating height
+          movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
+        }
+
+        // Create a position with the floating height applied (zero for boats)
+        const displayPosition = movement.startPos.clone();
+        if (!isBoat) {
+          displayPosition.y += movement.floatingHeight;
+        }
+
+        // Update the instance with the new position
+        this.updateInstance(
+          entityId,
+          movement.matrixIndex,
+          displayPosition,
+          instanceData.scale,
+          this.dummyObject.rotation,
+          instanceData.color,
+        );
+
+        this.updateLabelPosition(entityId, displayPosition);
+
+        // If we've reached the ground or it's a boat, remove the movement data
+        if (movement.floatingHeight <= 0 || isBoat) {
+          this.movingInstances.delete(entityId);
+        }
+
+        return; // Skip the rest of the movement logic
+      }
+
+      // Update floating height (gradually increase to FLOAT_HEIGHT) for non-boat models
+      if (!isBoat) {
+        movement.floatingHeight = Math.min(
+          this.FLOAT_HEIGHT,
+          movement.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
+        );
       }
 
       const distance = movement.startPos.distanceTo(movement.endPos);
@@ -472,16 +536,22 @@ export class ArmyModel {
         this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
       }
 
+      // Create a position with the floating height applied (zero for boats)
+      const displayPosition = instanceData.position.clone();
+      if (!isBoat) {
+        displayPosition.y += movement.floatingHeight;
+      }
+
       this.updateInstance(
         entityId,
         movement.matrixIndex,
-        instanceData.position,
+        displayPosition,
         instanceData.scale,
         this.dummyObject.rotation,
         instanceData.color,
       );
 
-      this.updateLabelPosition(entityId, instanceData.position);
+      this.updateLabelPosition(entityId, displayPosition);
     });
   }
 
@@ -489,7 +559,28 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (movement) {
       this.setAnimationState(movement.matrixIndex, false);
-      this.movingInstances.delete(entityId);
+
+      // Set up descent animation if we have some height to descend from
+      if (movement.floatingHeight > 0) {
+        const instanceData = this.instanceData.get(entityId);
+        if (instanceData) {
+          // Create a new movement entry just for the descent animation
+          this.movingInstances.set(entityId, {
+            startPos: instanceData.position.clone(),
+            endPos: instanceData.position.clone(), // Same position, just descending
+            progress: 0,
+            matrixIndex: movement.matrixIndex,
+            currentPathIndex: -1, // Special value to indicate this is a descent animation
+            floatingHeight: movement.floatingHeight,
+            currentRotation: movement.currentRotation, // Preserve current rotation
+            targetRotation: movement.currentRotation, // Keep target same as current to prevent further rotation
+          });
+        } else {
+          this.movingInstances.delete(entityId);
+        }
+      } else {
+        this.movingInstances.delete(entityId);
+      }
 
       const instanceData = this.instanceData.get(entityId);
       if (instanceData) {
@@ -500,9 +591,18 @@ export class ArmyModel {
   }
 
   private updateInstanceDirection(entityId: number, fromPos: THREE.Vector3, toPos: THREE.Vector3) {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
-    const angle = Math.atan2(direction.x, direction.z);
-    this.dummyObject.rotation.set(0, angle + Math.PI / 6, 0);
+    const targetAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
+
+    // Store the target rotation
+    movement.targetRotation = targetAngle;
+    if (movement.currentRotation === 0) {
+      // If this is the first movement, set current rotation to target to avoid initial spin
+      movement.currentRotation = targetAngle;
+    }
   }
 
   private updateModelTypeForPosition(entityId: number, position: THREE.Vector3, category: TroopType, tier: TroopTier) {
