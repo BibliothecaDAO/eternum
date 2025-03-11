@@ -1,4 +1,5 @@
 use core::num::traits::zero::Zero;
+use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
@@ -422,6 +423,17 @@ pub impl iMercenariesImpl of iMercenariesTrait {
 }
 
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::event(historical: false)]
+struct AgentCreatedEvent {
+    #[key]
+    explorer_id: ID,
+    troop_type: TroopType,
+    troop_tier: TroopTier,
+    troop_amount: u128,
+    timestamp: u64,
+}
+
 #[generate_trait]
 pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
     fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
@@ -465,13 +477,14 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();
+        let troop_tier: TroopTier = TroopTier::T3;
         let explorer: ExplorerTroops = iExplorerImpl::create(
             ref world,
             ref tile,
             explorer_id,
             DAYDREAMS_AGENT_ID,
             troop_type,
-            TroopTier::T3,
+            troop_tier,
             troop_amount,
             troop_stamina_config,
             troop_limit_config,
@@ -483,8 +496,15 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
         world.write_model(@name);
 
-        // give agent resources
+        // todo: give agent resources
+
         // emit event
+        world
+            .emit_event(
+                @AgentCreatedEvent {
+                    explorer_id, troop_type, troop_tier, troop_amount, timestamp: starknet::get_block_timestamp(),
+                },
+            );
         return explorer;
     }
 }
