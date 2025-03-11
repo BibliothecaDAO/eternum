@@ -29,13 +29,12 @@ pub mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
@@ -98,7 +97,7 @@ pub mod trade_systems {
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure maker structure is owned by caller
             let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
@@ -186,7 +185,7 @@ pub mod trade_systems {
 
         fn accept_order(ref self: ContractState, taker_id: ID, trade_id: ID, taker_buys_count: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure trade exists
             let mut trade: Trade = world.read_model(trade_id);
@@ -329,7 +328,7 @@ pub mod trade_systems {
 
         fn cancel_order(ref self: ContractState, trade_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure trade exists
             let mut trade: Trade = world.read_model(trade_id);

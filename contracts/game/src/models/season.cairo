@@ -1,44 +1,7 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
-use s1_eternum::{alias::ID, constants::WORLD_CONFIG_ID};
+use s1_eternum::{alias::ID};
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct Season {
-    #[key]
-    pub config_id: ID,
-    pub start_at: u64,
-    pub is_over: bool,
-    pub ended_at: u64,
-}
-
-#[generate_trait]
-pub impl SeasonImpl of SeasonTrait {
-    fn end_season(ref world: WorldStorage) {
-        let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-        season.is_over = true;
-        season.ended_at = starknet::get_block_timestamp();
-        world.write_model(@season);
-    }
-
-
-    fn assert_has_started(self: Season) {
-        let now = starknet::get_block_timestamp();
-        assert!(
-            self.start_at <= now,
-            "Season starts in {} hours {} minutes, {} seconds",
-            (self.start_at - now) / 60 / 60,
-            ((self.start_at - now) / 60) % 60,
-            (self.start_at - now) % 60,
-        );
-    }
-
-
-    fn assert_season_is_not_over(world: WorldStorage) {
-        let season: Season = world.read_model(WORLD_CONFIG_ID);
-        assert!(season.is_over == false, "Season is over");
-    }
-}
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]

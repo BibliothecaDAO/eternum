@@ -1,14 +1,14 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
-    BiomeType,
-    BuildingType,
-    CapacityConfig,
-    QuestType,
-    RealmLevels,
-    ResourcesIds,
-    ResourceTier,
-    StructureType,
+  BiomeType,
+  BuildingType,
+  CapacityConfig,
+  QuestType,
+  RealmLevels,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -393,7 +393,8 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    startAfterSeconds: number;
+    startSettlingAfterSeconds: number;
+    startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
   bridge: {

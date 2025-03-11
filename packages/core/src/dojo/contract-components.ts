@@ -912,26 +912,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Season: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          start_at: RecsType.BigInt,
-          is_over: RecsType.Boolean,
-          ended_at: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Season",
-            types: ["u32", "u64", "bool", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     ExplorerTroops: (() => {
       return defineComponent(
         world,
@@ -1168,9 +1148,6 @@ export function defineContractComponents(world: World) {
             realms_address: RecsType.BigInt,
             lords_address: RecsType.BigInt,
           },
-          season_bridge_config: {
-            close_after_end_seconds: RecsType.Number,
-          },
           hyperstructure_config: {
             points_per_cycle: RecsType.BigInt,
             points_for_win: RecsType.BigInt,
@@ -1283,6 +1260,12 @@ export function defineContractComponents(world: World) {
             regular_immunity_ticks: RecsType.Number,
             hyperstructure_immunity_ticks: RecsType.Number,
           },
+          season_config: {
+            start_settling_at: RecsType.Number,
+            start_main_at: RecsType.Number,
+            end_at: RecsType.Number,
+            end_grace_seconds: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -1295,7 +1278,6 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // season_pass_address
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address
-              "u64", // SeasonBridgeConfig close_after_end_seconds
               "u128", // HyperstructureConfig points_per_cycle
               "u128", // HyperstructureConfig points_for_win
               "u128", // HyperstructureConfig points_on_completion
@@ -1374,6 +1356,10 @@ export function defineContractComponents(world: World) {
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig hyperstructure_immunity_ticks
+              "u64", // SeasonConfig start_settling_at
+              "u64", // SeasonConfig start_main_at
+              "u64", // SeasonConfig end_at
+              "u32", // SeasonConfig end_grace_seconds
             ],
             customTypes: [],
           },

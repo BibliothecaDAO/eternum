@@ -1737,12 +1737,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
-    const { season_pass_address, realms_address, lords_address, start_at, signer } = props;
+    const { season_pass_address, realms_address, lords_address, start_settling_at, start_main_at, end_grace_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
-      calldata: [season_pass_address, realms_address, lords_address, start_at],
+      calldata: [season_pass_address, realms_address, lords_address, start_settling_at, start_main_at, end_grace_seconds],
     });
   }
 
@@ -1753,16 +1753,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_vrf_config",
       calldata: [vrf_provider_address],
-    });
-  }
-
-  public async set_season_bridge_config(props: SystemProps.SetSeasonBridgeConfigProps) {
-    const { close_after_end_seconds, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_season_bridge_config",
-      calldata: [close_after_end_seconds],
     });
   }
 

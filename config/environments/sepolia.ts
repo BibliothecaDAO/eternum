@@ -57,7 +57,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startAfterSeconds: 0, // 1 minute
+    startSettlingAfterSeconds: 0, 
+    startMainAfterSeconds: 1,
   },
 };
 
