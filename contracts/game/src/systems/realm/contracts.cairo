@@ -168,7 +168,12 @@ pub mod realm_systems {
 
             // place castle building
             BuildingImpl::create(
-                ref world, structure_id, StructureCategory::Realm.into(), coord, BuildingCategory::ResourceLabor, BuildingImpl::center(),
+                ref world,
+                structure_id,
+                StructureCategory::Realm.into(),
+                coord,
+                BuildingCategory::ResourceLabor,
+                BuildingImpl::center(),
             );
 
             structure_id

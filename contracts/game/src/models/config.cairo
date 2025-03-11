@@ -8,7 +8,6 @@ use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 
 use s1_eternum::models::position::Coord;
 
-use s1_eternum::models::resource::production::building::BuildingCategory;
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;

@@ -1049,58 +1049,127 @@
       "12": 0,
       "13": 0,
       "14": 0,
-      "15": 5,
+      "15": 0,
       "16": 0,
       "17": 0,
-      "18": 0
+      "18": 0,
+      "19": 0,
+      "20": 0,
+      "21": 0,
+      "22": 0,
+      "23": 0,
+      "24": 0,
+      "25": 5,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0,
+      "38": 0
     },
     "buildingPopulation": {
       "0": 0,
       "1": 0,
       "2": 2,
-      "3": 1,
-      "4": 1,
+      "3": 2,
+      "4": 2,
       "5": 2,
       "6": 2,
       "7": 2,
-      "8": 3,
+      "8": 2,
       "9": 2,
       "10": 2,
       "11": 2,
-      "12": 3,
-      "13": 3,
-      "14": 3,
-      "15": 0,
+      "12": 2,
+      "13": 2,
+      "14": 2,
+      "15": 2,
       "16": 2,
-      "17": 0,
-      "18": 0
+      "17": 2,
+      "18": 2,
+      "19": 2,
+      "20": 2,
+      "21": 2,
+      "22": 2,
+      "23": 2,
+      "24": 2,
+      "25": 0,
+      "26": 2,
+      "27": 3,
+      "28": 2,
+      "29": 2,
+      "30": 2,
+      "31": 2,
+      "32": 2,
+      "33": 2,
+      "34": 2,
+      "35": 2,
+      "36": 2,
+      "37": 1,
+      "38": 1
     },
     "buildingResourceProduced": {
-      "0": 0,
-      "1": 23,
-      "2": 0,
-      "3": 35,
-      "4": 36,
-      "5": 26,
-      "6": 27,
-      "7": 28,
-      "8": 25,
-      "9": 29,
-      "10": 30,
-      "11": 31,
-      "12": 32,
-      "13": 33,
-      "14": 34,
-      "15": 0,
-      "16": 0,
-      "17": 0,
-      "18": 24
+      "3": 1,
+      "4": 2,
+      "5": 3,
+      "6": 4,
+      "7": 5,
+      "8": 6,
+      "9": 7,
+      "10": 8,
+      "11": 9,
+      "12": 10,
+      "13": 11,
+      "14": 12,
+      "15": 13,
+      "16": 14,
+      "17": 15,
+      "18": 16,
+      "19": 17,
+      "20": 18,
+      "21": 19,
+      "22": 20,
+      "23": 21,
+      "24": 22,
+      "25": 23,
+      "26": 24,
+      "27": 25,
+      "28": 26,
+      "29": 27,
+      "30": 28,
+      "31": 29,
+      "32": 30,
+      "33": 31,
+      "34": 32,
+      "35": 33,
+      "36": 34,
+      "37": 35,
+      "38": 36
     },
-    "otherBuildingCosts": {
+    "buildingCosts": {
       "0": [],
-      "1": [],
-      "2": [],
-      "3": [
+      "1": [
+        {
+          "resource": 3,
+          "amount": 400000
+        },
+        {
+          "resource": 1,
+          "amount": 250000
+        },
+        {
+          "resource": 2,
+          "amount": 150000
+        }
+      ],
+      "2": [
         {
           "resource": 3,
           "amount": 500000
@@ -1110,12 +1179,150 @@
           "amount": 300000
         },
         {
-          "resource": 2,
-          "amount": 200000
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 20,
+          "amount": 25000
+        }
+      ],
+      "3": [
+        {
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "4": [
         {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "5": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "6": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "7": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "8": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "9": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "10": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "11": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "12": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "13": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "14": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "15": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "16": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "17": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "18": [
+        {
+          "resource": 35,
+          "amount": 750
+        }
+      ],
+      "19": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "20": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "21": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "22": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "23": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "24": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "25": [],
+      "26": [],
+      "27": [
+        {
           "resource": 3,
           "amount": 500000
         },
@@ -1124,11 +1331,19 @@
           "amount": 300000
         },
         {
-          "resource": 2,
-          "amount": 200000
+          "resource": 15,
+          "amount": 100000
+        },
+        {
+          "resource": 14,
+          "amount": 50000
+        },
+        {
+          "resource": 12,
+          "amount": 25000
         }
       ],
-      "5": [
+      "28": [
         {
           "resource": 4,
           "amount": 800000
@@ -1146,7 +1361,7 @@
           "amount": 50000
         }
       ],
-      "6": [
+      "29": [
         {
           "resource": 4,
           "amount": 800000
@@ -1168,7 +1383,7 @@
           "amount": 25000
         }
       ],
-      "7": [
+      "30": [
         {
           "resource": 4,
           "amount": 800000
@@ -1194,29 +1409,7 @@
           "amount": 15000
         }
       ],
-      "8": [
-        {
-          "resource": 3,
-          "amount": 500000
-        },
-        {
-          "resource": 1,
-          "amount": 300000
-        },
-        {
-          "resource": 15,
-          "amount": 100000
-        },
-        {
-          "resource": 14,
-          "amount": 50000
-        },
-        {
-          "resource": 12,
-          "amount": 25000
-        }
-      ],
-      "9": [
+      "31": [
         {
           "resource": 4,
           "amount": 800000
@@ -1234,7 +1427,7 @@
           "amount": 50000
         }
       ],
-      "10": [
+      "32": [
         {
           "resource": 4,
           "amount": 800000
@@ -1256,7 +1449,7 @@
           "amount": 25000
         }
       ],
-      "11": [
+      "33": [
         {
           "resource": 4,
           "amount": 800000
@@ -1282,7 +1475,7 @@
           "amount": 15000
         }
       ],
-      "12": [
+      "34": [
         {
           "resource": 4,
           "amount": 800000
@@ -1300,7 +1493,7 @@
           "amount": 50000
         }
       ],
-      "13": [
+      "35": [
         {
           "resource": 4,
           "amount": 800000
@@ -1322,7 +1515,7 @@
           "amount": 25000
         }
       ],
-      "14": [
+      "36": [
         {
           "resource": 4,
           "amount": 800000
@@ -1348,21 +1541,7 @@
           "amount": 15000
         }
       ],
-      "15": [
-        {
-          "resource": 3,
-          "amount": 400000
-        },
-        {
-          "resource": 1,
-          "amount": 250000
-        },
-        {
-          "resource": 2,
-          "amount": 150000
-        }
-      ],
-      "16": [
+      "37": [
         {
           "resource": 3,
           "amount": 500000
@@ -1372,148 +1551,22 @@
           "amount": 300000
         },
         {
-          "resource": 15,
-          "amount": 100000
+          "resource": 2,
+          "amount": 200000
+        }
+      ],
+      "38": [
+        {
+          "resource": 3,
+          "amount": 500000
         },
         {
-          "resource": 20,
-          "amount": 25000
-        }
-      ],
-      "17": [],
-      "18": []
-    },
-    "resourceBuildingCosts": {
-      "1": [
+          "resource": 1,
+          "amount": 300000
+        },
         {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "2": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "3": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "4": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "5": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "6": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "7": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "8": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "9": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "10": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "11": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "12": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "13": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "14": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "15": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "16": [
-        {
-          "resource": 35,
-          "amount": 750
-        }
-      ],
-      "17": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "18": [
-        {
-          "resource": 35,
-          "amount": 750000
-        }
-      ],
-      "19": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "20": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "21": [
-        {
-          "resource": 36,
-          "amount": 750000
-        }
-      ],
-      "22": [
-        {
-          "resource": 36,
-          "amount": 750000
+          "resource": 2,
+          "amount": 200000
         }
       ]
     },
@@ -1622,7 +1675,8 @@
     "hyperstructurePointsForWin": 9620000
   },
   "season": {
-    "startAfterSeconds": 60,
+    "startSettlingAfterSeconds": 59,
+    "startMainAfterSeconds": 60,
     "bridgeCloseAfterEndSeconds": 172800
   },
   "bridge": {
@@ -1633,7 +1687,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x4d948f9c8a7e46c437f22835186722858518c1cfc17d969e2baa10edf2c0146",
+    "season_pool_fee_recipient": "0x56ddbf285c0e25e5478c76b501d975676e5ff6701a6dd0747ec4e8ef886b784",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1830,129 +1884,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x1e90d90804e17f401214383698f3dd882b7dc556f4d17f564c2f395c4d17f6e",
-      "realms": "0x5d05cc484d5476342a43e95af31dc75214cac493e0f702dc026c7c95fad1a92",
-      "lords": "0x7f08586241540f5b0b01a97bdeeabdd3063d16cbc6db97c1f83aca01bbfbd64",
+      "seasonPass": "0x6ce4a540966010494bcd9c4de22d0ba655989ee1b3c3ef669a578bfce444433",
+      "realms": "0x5c369ee09fd34196c527d94b5ff0767cbee519fcfe89d394299e73c3dfe7a08",
+      "lords": "0x46e997b0993282e78a4fb54a8ba4970fc56f204fe33a45ec060f8c2ca1a29d3",
       "resources": {
         "STONE": [
           1,
-          "0x4c8d59492a918f7ce7e2efeae4b0419daccb0f1878be2ce6f4b9e1cc7350941"
+          "0x7845f8a260e18c8c78cb087e14867d198e2677c8aee4afe86c84a5a3f552e36"
         ],
         "COAL": [
           2,
-          "0x72e036ce1b2901bfc61349c9ccf7afad2e82b3650fcdaf188a47d409a054c48"
+          "0x5a740236c6d13c7964b1076c0888eafa356c3c79740d56013c8667101e1f7c8"
         ],
         "WOOD": [
           3,
-          "0x5ce2f5487e5a85cd12ac32c64cfc4025a709f43477e020360f6099daabafcf2"
+          "0x4d3a0f6f432d4290dfe1317a4bb747d1de57393423e70d42d6a22aac9c081b2"
         ],
         "COPPER": [
           4,
-          "0x31d254da5aef46fc584ac59892586fd613af73e8a57c155ec2aa7d8cfaee1c4"
+          "0x4ec2bc663eb7ccd9b392d94f3407dd5dd9eed9397fad5b7845e43df82e5195c"
         ],
         "IRONWOOD": [
           5,
-          "0x915869909bd4ebf16ea0d1d93df9390816e7abef0778596e3110f901d16e1"
+          "0xa97305368cf9387ec7ceafbb6f9524850f34a685e936065c4c3c513919923a"
         ],
         "OBSIDIAN": [
           6,
-          "0x3952741ef5623b24d29f4c000f89293b3cbb56aeec67374ac926c3e2f01336f"
+          "0x75fef122049d140813718438e05188308e8464aace1724cfb44c9af519d17d0"
         ],
         "GOLD": [
           7,
-          "0x60e5982777c177f1b35a7c8c561a9492917b9d4e5af764585676f330554fba"
+          "0x4bdf86be28c341a6e7f1178343ff2c0cdc5470fcad5bdaf09731bff00d7f12b"
         ],
         "SILVER": [
           8,
-          "0x4bb31b8c8d7bf8bd35983bf393bb43e1c853f4b816702c92c7f79416d7c7fc4"
+          "0x71cd0345b65ab2f08764770667abb50c6f12071e9f5e36e18ced683d48adc72"
         ],
         "MITHRAL": [
           9,
-          "0x53262fc733e3bf55104d9c17e46889a5dd7e58820989c3f14fd8d8d899dfad1"
+          "0x3584a242dc54b0ae51d1f2f9e186280d300d9a9b85f57883384bce795d2a3bc"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x41c1afe06228d317836894cb28f20847a01b6e1e70dfd239db0cc82a167225e"
+          "0x35b699ca88dee04d9007744b512a3a129383b9729246f980bdf48459584b5a2"
         ],
         "COLDIRON": [
           11,
-          "0x4d152be37fa39ae5066d50b95825eaa5a8fe28b3c2d77f28fcb1bda75780897"
+          "0x7a5592fb3b29841632ff1972448b0997c9ce21bfec1195879dd80e488836937"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x2a344d4c786294fabe57d1543e28bb3f7338a80d1235667e5f05da43e7e0df3"
+          "0x2ae3cdbd8d00ef2d659576d8bda1613732c5e63ad0421d88b559ed91cb43e9d"
         ],
         "RUBY": [
           13,
-          "0x53911470a6516721719f6ebb95bf27f7143d7895b074a104d0ddca9ac893bbd"
+          "0x7f417da57c7a0d4cf6fcbf6681da1d9951d682bf3aef5e29a61f1e507e04fe9"
         ],
         "DIAMONDS": [
           14,
-          "0x66fb5ff5a68d229884e222a7c286140ba97d8870259eea06068fb08d10243ba"
+          "0x2788a591f2bc47c447d8c10c6abade03d553067b2fbd054604c0d8fd24cdd40"
         ],
         "HARTWOOD": [
           15,
-          "0x3a9b864ec815c4eb28d64151bc4bf6857490b1d7c37ca65c4ef41b8fdaa651d"
+          "0x3bd4704ead31067b1f1b3ab35b4d633cb8678dd625d3c927405842e85211468"
         ],
         "IGNIUM": [
           16,
-          "0x3076f7abd1d8f99584cced48f6ad147954e3415d50b7a7d844a5a468c66179d"
+          "0x66a587a4b18866b8eef8337d18555f746ac171b23f1371b068bcb104e06fc35"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x65bb412e082b740efe927434a8c9b4cf14db6310cace4ff818afafd87fa8b78"
+          "0xc78f25b8257e5da2bc8351decc1bdc5a33d89459c4e42b06d0cc2a2a7cf5d2"
         ],
         "TRUEICE": [
           18,
-          "0x4dba205a57544a4801c96ec4ff24f10c2c9f5be03b4c7504b15adb4d7e10e66"
+          "0x30b11f58d619394b06bc5486bf98e408e27beaf8021c1d45fc0cb2c94ff02dc"
         ],
         "ADAMANTINE": [
           19,
-          "0x6d3fefed27396c3798678b0e58e1e4216f32690ed491c236819685f64cd811d"
+          "0x76d7fb9fa7530e9ce8637a78663e47dd4846d05989e07d656f9a0b280c1c775"
         ],
         "SAPPHIRE": [
           20,
-          "0x64d0583641e1a85311f40f72e5abeea17f2a4a4c8f15759fdbad8cdaeaa1986"
+          "0x7e2f61f9a3946d12ef37fea4d9124e4edf654ef42ffcdfc2656f2dfeddc891"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x3d0726206be1e5415c0eea5eac06e92369d7fe53159630326e56646290d2fb7"
+          "0x1995a24d93d6adc375f3f526fe2ccff161f960ffa0897b724b8e26acd501d54"
         ],
         "DRAGONHIDE": [
           22,
-          "0x6aef720428d218992507f0ee7024b1000793852a39194e766cff538a3cbbd6d"
+          "0x24d415f4875d671a66eeb8009b769aeaa9125cbcb5887d51c19c5add3fd0c"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x2b7de6b9341ee7ea7caf6d7109d639e20dee1ff937c4af438a9d70b65f62dac"
+          "0x19bd1e2fc9e7079627462689a00dec47cc3329126d47742dff08c57e457d60a"
         ],
         "DONKEY": [
           25,
-          "0xaff515c21af368135bd93f374ca2bad318200f0728f9492b597ce194e8a611"
+          "0x1ea733c8c7bae40731097b5d76a467aa863ae97e112d51acb1be194f06e2bee"
         ],
         "KNIGHT": [
           26,
-          "0x7c5049d8be22d602b456c76c8d8ea28c577500072fe041034bf183210ba18a8"
+          "0x6530205432818456700b3604dbec3a7499a54515eae9c1d77dd7d29a6b5ad1"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x6b774ee61f68c032848018fe43dbb354b6b9d81940a6ae204167a2436eeb99d"
+          "0x272859a1749403616ddc4788c02315041f58435502992fe45075333b0d27fcf"
         ],
         "PALADIN": [
           32,
-          "0x602e45523ef9c20fbf5b1b20b9d57935b01c74b6944db286f773b970628b12a"
+          "0x6962204791613f453ff279af87dfb9d81870d70d5358779a51311d733704374"
         ],
         "WHEAT": [
           35,
-          "0x8ce68c730c2160fecc33b7278555a29ea3673839588fd769856319267081f4"
+          "0x110e21b2f32c2ac75aa21497db210b69e8add000ee137f58d4693f73827aa1"
         ],
         "FISH": [
           36,
-          "0x4a1e0a98a31407602919325d760f13aa56d5ba2a5adf82e5f21c20dd673a4a"
+          "0x424e188df10e0c2d0389647fd241920a2e0b93fbb17eff3fc0d05dad4d42bb7"
         ],
         "LORDS": [
           37,
-          "0x7f08586241540f5b0b01a97bdeeabdd3063d16cbc6db97c1f83aca01bbfbd64"
+          "0x46e997b0993282e78a4fb54a8ba4970fc56f204fe33a45ec060f8c2ca1a29d3"
         ]
       }
     },
@@ -3270,8 +3324,8 @@
       },
       "contracts": [
         {
-          "address": "0x1cd84635bf45785e60ef28bde19d8c8459212a951696db00d0913799950919d",
-          "class_hash": "0x12d6f2136180c355034fbfbf867e239efe7f63d93611a40ec651899826a15c8",
+          "address": "0x4814264cd9431a532e013b2df44aaceaf3b3f23f49e3e3471c087f4f3045aa5",
+          "class_hash": "0x2479bcf013d0e3046654362f4ae629f282cc7ffb028ef046260d589ca2daebc",
           "abi": [
             {
               "type": "impl",
@@ -3592,8 +3646,8 @@
           ]
         },
         {
-          "address": "0x516a396c5a1d24cdb6ca5c422e490dad37ce78d821b40eb7fb27a4d0421443e",
-          "class_hash": "0x1fd4ebcaccd6454626dbac02009ee5d32ae64d7b09fd055352074310fcb0217",
+          "address": "0x5abcaa48b196a9f2af1ee2782848cceb3e05cd7f0fd3928f767bfe0f4230535",
+          "class_hash": "0x1bd97b169aff63f42a1b58132ead32f0b968950e2936f6209809e9b31755ea6",
           "abi": [
             {
               "type": "impl",
@@ -3701,20 +3755,16 @@
                       "type": "core::starknet::contract_address::ContractAddress"
                     },
                     {
-                      "name": "start_at",
+                      "name": "start_settling_at",
                       "type": "core::integer::u64"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "set_season_bridge_config",
-                  "inputs": [
+                    },
                     {
-                      "name": "close_after_end_seconds",
+                      "name": "start_main_at",
                       "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "end_grace_seconds",
+                      "type": "core::integer::u32"
                     }
                   ],
                   "outputs": [],
@@ -4904,7 +4954,6 @@
           "systems": [
             "set_world_config",
             "set_season_config",
-            "set_season_bridge_config",
             "set_vrf_config",
             "set_starting_resources_config",
             "set_map_config",
@@ -4930,8 +4979,8 @@
           ]
         },
         {
-          "address": "0x1bceb034d4c00a956e5b5ee83a12a34ff27c9dc8baead08f95925050dec8115",
-          "class_hash": "0x40e21aec69f96a4f3c32b39758eb8f2f8723671893cc3359ec6488711e301ac",
+          "address": "0x435d11762e7e76acfa8e9da5ec1513cab8af1cbf6ae958f832a6a95c3169c80",
+          "class_hash": "0x7510127a5f9db2aabf2658d49ed1fb9a1ca2a19cd7f1dc2a9380188a3a31456",
           "abi": [
             {
               "type": "impl",
@@ -5144,8 +5193,8 @@
           ]
         },
         {
-          "address": "0x4f8f44af9414a214c60dad494ff0a8be6d867666feb9d75d1b8b0fb000c7d1f",
-          "class_hash": "0x719ff67ce67b728b387af3b7162c2a68a56a80cfea326a16ea0d21d29a93247",
+          "address": "0x2549298c0c71e3eba6773d3fbc68a6f40425a2c3edffc4a17a9aa23e008177d",
+          "class_hash": "0x4dc0d137fe07c809dc277bbdb3bd3331f37270dcdcb6ff0c1ba05d70be36c42",
           "abi": [
             {
               "type": "impl",
@@ -5443,8 +5492,8 @@
           ]
         },
         {
-          "address": "0x45296da603ae6c1b578b735d96f0d78766654591c8d8ac69ca8c78104891269",
-          "class_hash": "0x43e6930b5d28655d6627b9ad981c24dec450c93b89fc308d906c1e5260cb405",
+          "address": "0x5d7227036de77929b1af99a45d6c3db93db1b616c058bca86673122a53c1e6",
+          "class_hash": "0x23f2aff65ce645472713f84b8ae2a29912cb9203d5838a160c97aaa75c36eff",
           "abi": [
             {
               "type": "impl",
@@ -5665,7 +5714,7 @@
                       "type": "(core::integer::u128, core::integer::u128, core::integer::u128, core::integer::u128)"
                     }
                   ],
-                  "state_mutability": "external"
+                  "state_mutability": "view"
                 }
               ]
             },
@@ -5793,13 +5842,12 @@
             "set_co_owners",
             "end_game",
             "set_access",
-            "get_points",
             "upgrade"
           ]
         },
         {
-          "address": "0x3fd48de9ce8d3e9debc6f786183a82fcff6e5c1fbac8164158460529236f12",
-          "class_hash": "0x1b57373f55ed20c274e81647a72df123de2e4f7b510edbe8c9e6dafad0b36bb",
+          "address": "0x649f73e81067d3535e9edd539d363ccf42f3b9e3f2263adaa4ba6bf6ef5b6ae",
+          "class_hash": "0x671f7491263b2ba84a712e4a2a1aba889dd00c2481e9251d22043ace628c749",
           "abi": [
             {
               "type": "impl",
@@ -6039,8 +6087,8 @@
           ]
         },
         {
-          "address": "0x305f6092647f07610747f46e10778d2b1f33cf266d4e25f9dbb0794053f71f0",
-          "class_hash": "0x5134e707c350a01db2ae5dbb39ca77b40cb06d5e3a6babc98e8f1463932ec9c",
+          "address": "0x75a4f9d1e9615455da0af2bdea7cb9f70b0e67372f77868d3cdde00953b1efd",
+          "class_hash": "0x2193f41756ea4b2646e7b4b1c75a0d6dc75d51f2f4a44db270a6fc54e3e01a4",
           "abi": [
             {
               "type": "impl",
@@ -6443,8 +6491,8 @@
           ]
         },
         {
-          "address": "0x7b9a65d6d3d0ed8ee0951af11199ad16a23687fbfa566b38b54b29ea1f031af",
-          "class_hash": "0x53a40b9c834c71e52ce14f24070680f5706c678a6889d5476d79f4dea5e69de",
+          "address": "0x4eee13aa360c61cea6b1ef331c0313c0230f6f178f4038080250cc88bb5c98a",
+          "class_hash": "0x34b7db6697f84557fe5fea21dba5dbb783b6b63e1b2c0b5ae14d82ae027ca3a",
           "abi": [
             {
               "type": "impl",
@@ -7001,8 +7049,8 @@
           ]
         },
         {
-          "address": "0x78d3a7ebdf038d00ccd850688c374a3e298f3376d5ff312734e9a2009b7a80",
-          "class_hash": "0x5769fd6e4f2eed0037b88d96d573fb4df6b89cef4d2edaf4446178867163a0a",
+          "address": "0xb5fc394a68d00732f3e6d6ec203bd3914240948efb4a916f9c0f8d24831299",
+          "class_hash": "0x22a7abdaf0c6287f98381b3a111b8cde296cefc53ecdde3834fedf33d930b32",
           "abi": [
             {
               "type": "impl",
@@ -7213,8 +7261,8 @@
           ]
         },
         {
-          "address": "0x3c7f3fda68ff87d9c17f66ce1a69332b781b0738e14935f97c2af0ab244d22a",
-          "class_hash": "0x3d76d0e71cd13553fcea0b171443c4585468e9b908e19a9e7a88e2cf2ba9161",
+          "address": "0x6821eb45d3b2c2128459f1bc42d710a5421e635ac76d452cb920ea90d3f87af",
+          "class_hash": "0x64a4d4e5587c91ab1afb637993c268ee4552c2139531305fde4f2d019d28981",
           "abi": [
             {
               "type": "impl",
@@ -7468,8 +7516,8 @@
           ]
         },
         {
-          "address": "0x261aee3a422c1e165c25af90d71fc3199c2a5228c2ac978548a50d86529452",
-          "class_hash": "0x3c480f90566ba3a5d347bed2c72ae8404821a207c6dd0d476a8c4e8ba2c97ec",
+          "address": "0x3e0e5ee747b3f2ea1476719a0903aa339f27067878a3916124c697ad2b6326e",
+          "class_hash": "0x62bffcdbd02664b686aa03d6985b61a75284c74600f0aeb5234876e36441236",
           "abi": [
             {
               "type": "impl",
@@ -7795,8 +7843,8 @@
           ]
         },
         {
-          "address": "0x4d948f9c8a7e46c437f22835186722858518c1cfc17d969e2baa10edf2c0146",
-          "class_hash": "0x59da2cafd3d628fa8694a3173f204bfc4736b12f7b530e52426a251d52f9d22",
+          "address": "0x56ddbf285c0e25e5478c76b501d975676e5ff6701a6dd0747ec4e8ef886b784",
+          "class_hash": "0x5cd54401086d11251a5fa78f9fc1d9fc46da99df2941bc162fd3a7e0ec60cc3",
           "abi": [
             {
               "type": "impl",
@@ -8032,8 +8080,8 @@
           ]
         },
         {
-          "address": "0xc23b8cb0969041254207edb8723cef7a3920104fda944d31b10fb47fc209bf",
-          "class_hash": "0x202d56d4b049d45339e5cf82839d39325272c19564c0b68e8c5532cfd00a9f4",
+          "address": "0x5ad96fd938bf6c05652fb5e7577252e63f2b14251b9f2fe89154f38e4922936",
+          "class_hash": "0x257ff2e523aa80b8148861fa35f32a0d5ad18a74a82ca5cf7eb04b4b150953",
           "abi": [
             {
               "type": "impl",
@@ -8232,8 +8280,8 @@
           ]
         },
         {
-          "address": "0x6b2d64612b1f8fceb859b1f4c5004b4e536a3316f7372cd326b0147ebf8518",
-          "class_hash": "0x567d9f853da58e8f40327c0037a56669142404469af5c26b21ca2b6fb9899bf",
+          "address": "0x27a50d2d072596d019eb0ffdd25f9608db46c20c8a7c2d55cbe6f3bedf035d3",
+          "class_hash": "0x476306f5309c32aebd494efe9b8d6a1a1667fa83fe4db5c83f16693caa1a461",
           "abi": [
             {
               "type": "impl",
@@ -8469,8 +8517,8 @@
           ]
         },
         {
-          "address": "0x1f566bfdfd54364062cda53d94f6bdbb6da46d860a01f5174c78788e935d922",
-          "class_hash": "0x4c0ed4dfb66a88bb2ec3649259a2a17b70bcec2649ccee6748892a4b944f7ee",
+          "address": "0x409482a4c74d7777cffba67ed38dfdb4da1a5743b7c5b362aae6b7e775e3673",
+          "class_hash": "0x2e15b83602a9ba82f987dfc8e858ca57bdd3f6dcbf4da5f491e22a935465f72",
           "abi": [
             {
               "type": "impl",
@@ -8735,8 +8783,8 @@
           ]
         },
         {
-          "address": "0x758fef3c97074debaddd1ba6ef9d1440e82649ee432c3b3d66d019c19d5649d",
-          "class_hash": "0x35a5522d58d345bcf3607fe0916f20651f3c3f8a5c92f36b5b0e6dd7b85234f",
+          "address": "0x7efe7c5ed6da79c7710a88f78f5842cd502aa08ed8c6a532067bbb28bf30b28",
+          "class_hash": "0xc199950473b50280a79141eed5d7179cced4ca176ae7262a0984860254ee2b",
           "abi": [
             {
               "type": "impl",
@@ -9041,8 +9089,8 @@
           ]
         },
         {
-          "address": "0x46994c6714b731809ec6b4cf436441316e9c89b104b0511fc095908149d9454",
-          "class_hash": "0x2985c8e4705dbb1beaeb86f8d6513b1bb337d4f859c9dfb219a222d8494ef56",
+          "address": "0x697221843d4b6fdfd2244fae9c3535a6ae71dc942da6030b1b6c53f4161adf7",
+          "class_hash": "0x5f498b0302265f080db897f3d1bf6a4156f8422a5e9716f36c55cf884ff79ba",
           "abi": [
             {
               "type": "impl",
@@ -9512,8 +9560,8 @@
           ]
         },
         {
-          "address": "0x742623cd00b5a24ddc6a8d36f5a617fbbe982828e8720b0785eabc98dc784a2",
-          "class_hash": "0x7c95d4d26bc1784d7551185fc4508872a6541c5e1cae56774f8974d4954eb5b",
+          "address": "0x74c812717bc28fb7a29a905efe5c5cfb4fc05d2eb5426bd2d278e668e26c136",
+          "class_hash": "0x1051ee96d4628ff9a8ea227a2d89773cbc6f8db63fdebe6c50c02b3f297b0e",
           "abi": [
             {
               "type": "impl",
@@ -9774,8 +9822,8 @@
           ]
         },
         {
-          "address": "0x553382e0085048c420ca2187fc3ba888b00684f750a67e96a07ea649f40488e",
-          "class_hash": "0x61026378767cc5b9a60e186e5e2bffd44f92541fe5dd581c635954f521d1273",
+          "address": "0x5e8d2fcf465bcce0ba5ace8cbd69f1e09e891aa3eb6fbfcdeef8f8f1f282af6",
+          "class_hash": "0x235b3f910bf5fc32790b9f30e5a82426ffa001a61a0da59c8d793cfc127ac4f",
           "abi": [
             {
               "type": "impl",
@@ -10196,12 +10244,6 @@
         },
         {
           "members": [],
-          "class_hash": "0x678c85caae34a1c360b24e6c630cc112e2b1f57730266170a7eb43084f40008",
-          "tag": "s1_eternum-Season",
-          "selector": "0x7a6034c750e0dc9a1fad3776dd6e6c6697eb36993aed5228e7729206dd560ab"
-        },
-        {
-          "members": [],
           "class_hash": "0x2ad4e1df7cc008980f3ae5088a285c551829f8afaac2f5802661fdf46923b68",
           "tag": "s1_eternum-StartingResourcesConfig",
           "selector": "0x6068016cd230b9788ea055b9c8512081ba653a83cb11229cb54b9aa78289d2c"
@@ -10250,7 +10292,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x47821a0f8b419bd279325736b5d29e3ea5e2cc1c86ac2bd229f89e08e4639c",
+          "class_hash": "0x32c00dd8bb7a2452779d09123f5d4f6d0947bd39060c514dec3bdcaf06b3952",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

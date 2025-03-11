@@ -92,7 +92,12 @@ mod production_systems {
             };
 
             let (building, building_count) = BuildingImpl::create(
-                ref world, structure_id,structure_base.category, structure_base.coord(), building_category, building_coord,
+                ref world,
+                structure_id,
+                structure_base.category,
+                structure_base.coord(),
+                building_category,
+                building_coord,
             );
 
             // ensure that the structure produces the resource

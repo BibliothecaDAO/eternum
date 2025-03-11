@@ -175,13 +175,12 @@ pub mod config_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
-        BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
-        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig,
-        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
+        HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ProductionConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
+        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
+        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
