@@ -3,7 +3,7 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { predeployedAccounts, PredeployedAccountsConnector } from "@dojoengine/predeployed-connector";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { Connector, jsonRpcProvider, StarknetConfig, voyager } from "@starknet-react/core";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { constants } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
@@ -43,15 +43,17 @@ const nonLocalController = new ControllerConnector({
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const [localConnector, setLocalConnector] = useState<PredeployedAccountsConnector | null>(null);
 
-  if (env.VITE_PUBLIC_CHAIN === "local") {
-    predeployedAccounts({
-      rpc: env.VITE_PUBLIC_NODE_URL as string,
-      id: "katana",
-      name: "Katana",
-    }).then((connectors) => {
-      setLocalConnector(connectors[0]);
-    });
-  }
+  useEffect(() => {
+    if (env.VITE_PUBLIC_CHAIN === "local") {
+      predeployedAccounts({
+        rpc: env.VITE_PUBLIC_NODE_URL as string,
+        id: "katana",
+        name: "Katana",
+      }).then((connectors) => {
+        setLocalConnector(connectors[0]);
+      });
+    }
+  }, []);
 
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
