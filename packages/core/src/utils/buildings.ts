@@ -6,7 +6,7 @@ import { ID, ResourceCost } from "../types/common";
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
   const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));
 
-  const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts || 0n);
+  const buildingCount = getBuildingCount(buildingType, [structureBuildings?.packed_counts_1 || 0n, structureBuildings?.packed_counts_2 || 0n, structureBuildings?.packed_counts_3 || 0n]);
   return buildingCount;
 };
 
@@ -29,6 +29,8 @@ export const getBuildingCosts = (realmEntityId: ID, components: ClientComponents
   const buildingQuantity = getBuildingQuantity(realmEntityId, buildingCategory, components);
 
   let updatedCosts: ResourceCost[] = [];
+
+  if (!configManager.buildingCosts[Number(buildingCategory)]) return undefined;
 
   configManager.buildingCosts[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;

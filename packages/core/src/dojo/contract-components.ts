@@ -385,7 +385,9 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          packed_counts: RecsType.BigInt,
+          packed_counts_1: RecsType.BigInt,
+          packed_counts_2: RecsType.BigInt,
+          packed_counts_3: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -395,7 +397,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u32", "u32"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
             customTypes: ["Population"],
           },
         },
@@ -1187,10 +1189,6 @@ export function defineContractComponents(world: World) {
             owner_fee_num: RecsType.Number,
             owner_fee_denom: RecsType.Number,
           },
-          building_config: {
-            base_population: RecsType.Number,
-            base_cost_percent_increase: RecsType.Number,
-          },
           resource_bridge_config: {
             deposit_paused: RecsType.Boolean,
             withdraw_paused: RecsType.Boolean,
@@ -1211,7 +1209,8 @@ export function defineContractComponents(world: World) {
             realm_max: RecsType.Number,
             village_max: RecsType.Number,
           },
-          building_general_config: {
+          building_config: {
+            base_population: RecsType.Number,
             base_cost_percent_increase: RecsType.Number,
           },
           troop_damage_config: {
@@ -1310,8 +1309,6 @@ export function defineContractComponents(world: World) {
               "u32", // BankConfig lp_fee_denom
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
-              "u32", // BuildingConfig base_population
-              "u16", // BuildingConfig base_cost_percent_increase
               "bool", // ResourceBridgeConfig deposit_paused
               "bool", // ResourceBridgeConfig withdraw_paused
               "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent
@@ -1326,7 +1323,8 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // StructureMaxLevelConfig realm_max
               "u8", // StructureMaxLevelConfig village_max
-              "u16", // BuildingGeneralConfig base_cost_percent_increase
+              "u32", // BuildingConfig base_population
+              "u16", // BuildingConfig base_cost_percent_increase
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small
               "u64", // TroopDamageConfig damage_beta_large

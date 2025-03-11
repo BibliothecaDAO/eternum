@@ -6,7 +6,7 @@ import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureT
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { packValues, unpackValue } from "./packed-data";
+import { getBuildingCount, packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
   const { Structure } = components;
@@ -62,9 +62,9 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
-  const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
+  const buildingCounts = [structureBuildings?.packed_counts_1 || 0n, structureBuildings?.packed_counts_2 || 0n, structureBuildings?.packed_counts_3 || 0n];
 
-  const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
+  const storehouseQuantity = getBuildingCount(BuildingType.Storehouse, buildingCounts) || 0;
 
   const storehouses = (() => {
     const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
@@ -151,6 +151,8 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
   const buildingPopulation = configManager.getBuildingCategoryConfig(building).population_cost;
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
+
+  console.log({ buildingPopulation, basePopulationCapacity, realm, building });
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
 };

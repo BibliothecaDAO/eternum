@@ -305,9 +305,16 @@ export const setBuildingConfig = async (config: Config) => {
   // Set base building config
   const tx = await config.provider.set_building_config({
     signer: config.account,
-    base_population: 0,
+    base_population: config.config.populationCapacity.basePopulation,
     base_cost_percent_increase: buildingScalePercent,
   });
+
+  console.log(chalk.cyan(`
+    ┌─ ${chalk.yellow("Building Config")}
+    │  ${chalk.gray("Base Population:")} ${chalk.white(config.config.populationCapacity.basePopulation)}
+    │  ${chalk.gray("Base Cost Percent Increase:")} ${chalk.white(buildingScalePercent)}
+    └────────────────────────────────`),
+  );
 
   console.log(chalk.green(`    ✔ Base configuration complete `) + chalk.gray(tx.statusReceipt));
 

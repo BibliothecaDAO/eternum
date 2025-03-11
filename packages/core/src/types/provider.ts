@@ -437,9 +437,7 @@ export interface TroopDamageConfigProps {
   t3_damage_multiplier: num.BigNumberish;
 }
 
-export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
-  calls: { building_category: BuildingType; population: num.BigNumberish; capacity: num.BigNumberish }[];
-}
+
 
 export interface SetBuildingConfigProps extends SystemSigner {
   base_population: num.BigNumberish;

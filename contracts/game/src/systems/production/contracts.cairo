@@ -33,7 +33,7 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
-    use core::num::traits::Zero;
+    use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
@@ -101,8 +101,8 @@ mod production_systems {
             );
 
             // ensure that the structure produces the resource
-            let building_produces_resource: u8 = building.produced_resource();
-            if building_produces_resource.is_non_zero() {
+            if !building.allowed_for_all_realms_and_villages() {
+                let building_produces_resource: u8 = building.produced_resource();
                 let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
                     ref world, structure_id,
                 );
@@ -111,7 +111,7 @@ mod production_systems {
                     "You can't erect the requested building on this structure",
                 );
             }
-
+            
             // pay one time cost of the building
             building.make_payment(building_count, ref world);
         }
