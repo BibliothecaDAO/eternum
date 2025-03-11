@@ -337,8 +337,8 @@ export class ArmyManager {
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
-    // Start movement in ArmyModel
-    this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex);
+    // Start movement in ArmyModel with troop information
+    this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
   public removeArmy(entityId: ID) {

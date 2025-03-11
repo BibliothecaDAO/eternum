@@ -1,9 +1,10 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
-import { TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { Biome, BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { getHexForWorldPosition } from "../utils";
 
 interface MovementData {
   startPos: THREE.Vector3;
@@ -26,6 +27,8 @@ interface ArmyInstanceData {
   color?: THREE.Color;
   isMoving: boolean;
   path?: THREE.Vector3[];
+  category?: TroopType;
+  tier?: TroopTier;
 }
 
 export enum ModelType {
@@ -395,7 +398,13 @@ export class ArmyModel {
     });
   }
 
-  public startMovement(entityId: number, path: THREE.Vector3[], matrixIndex: number) {
+  public startMovement(
+    entityId: number,
+    path: THREE.Vector3[],
+    matrixIndex: number,
+    category: TroopType,
+    tier: TroopTier,
+  ) {
     if (path.length < 2) return;
 
     // Clean up any existing movement data
@@ -410,6 +419,8 @@ export class ArmyModel {
       scale: this.normalScale.clone(),
       isMoving: true,
       path: path,
+      category,
+      tier,
     });
 
     this.movingInstances.set(entityId, {
@@ -456,6 +467,11 @@ export class ArmyModel {
         instanceData.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
       }
 
+      // Update model type based on current position and biome
+      if (instanceData.category && instanceData.tier) {
+        this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
+      }
+
       this.updateInstance(
         entityId,
         movement.matrixIndex,
@@ -487,6 +503,20 @@ export class ArmyModel {
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
     const angle = Math.atan2(direction.x, direction.z);
     this.dummyObject.rotation.set(0, angle + Math.PI / 6, 0);
+  }
+
+  private updateModelTypeForPosition(entityId: number, position: THREE.Vector3, category: TroopType, tier: TroopTier) {
+    const { col, row } = getHexForWorldPosition(position);
+    const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+
+    // For water biomes, always use boat model
+    const modelType =
+      biome === BiomeType.Ocean || biome === BiomeType.DeepOcean ? ModelType.Boat : TROOP_TO_MODEL[category][tier];
+
+    // Only update if model type has changed
+    if (this.entityModelMap.get(entityId) !== modelType) {
+      this.assignModelToEntity(entityId, modelType);
+    }
   }
 
   public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3) {
