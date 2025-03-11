@@ -3,6 +3,30 @@ import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+
+interface MovementData {
+  startPos: THREE.Vector3;
+  endPos: THREE.Vector3;
+  progress: number;
+  matrixIndex: number;
+  currentPathIndex: number;
+}
+
+interface LabelData {
+  label: CSS2DObject;
+  entityId: number;
+}
+
+interface ArmyInstanceData {
+  entityId: number;
+  position: THREE.Vector3;
+  scale: THREE.Vector3;
+  rotation?: THREE.Euler;
+  color?: THREE.Color;
+  isMoving: boolean;
+  path?: THREE.Vector3[];
+}
 
 export enum ModelType {
   Boat = "boat",
@@ -89,14 +113,18 @@ export class ArmyModel {
   dummyObject: THREE.Object3D;
   loadPromise: Promise<void>;
   private models: Map<ModelType, ModelData> = new Map();
-  private entityModelMap: Map<number, ModelType> = new Map(); // Maps entity IDs to model types
+  private entityModelMap: Map<number, ModelType> = new Map();
+  private movingInstances: Map<number, MovementData> = new Map();
+  private labels: Map<number, LabelData> = new Map();
+  private instanceData: Map<number, ArmyInstanceData> = new Map();
   animationStates: Float32Array;
   timeOffsets: Float32Array;
   private zeroScale = new THREE.Vector3(0, 0, 0);
   private normalScale = new THREE.Vector3(1, 1, 1);
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
-  private readonly SCALE_TRANSITION_SPEED = 5.0; // Adjust this value to control transition speed
+  private readonly SCALE_TRANSITION_SPEED = 5.0;
+  private readonly MOVEMENT_SPEED = 1.25;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -364,6 +392,136 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         mesh.count = count;
       });
+    });
+  }
+
+  public startMovement(entityId: number, path: THREE.Vector3[], matrixIndex: number) {
+    if (path.length < 2) return;
+
+    const currentPos = path[0];
+    const nextPos = path[1];
+
+    this.instanceData.set(entityId, {
+      entityId,
+      position: currentPos.clone(),
+      scale: this.normalScale.clone(),
+      isMoving: true,
+      path: path,
+    });
+
+    this.movingInstances.set(entityId, {
+      startPos: currentPos.clone(),
+      endPos: nextPos.clone(),
+      progress: 0,
+      matrixIndex,
+      currentPathIndex: 0,
+    });
+
+    this.setAnimationState(matrixIndex, true);
+    this.updateInstanceDirection(entityId, currentPos, nextPos);
+  }
+
+  public updateMovements(deltaTime: number) {
+    this.movingInstances.forEach((movement, entityId) => {
+      const instanceData = this.instanceData.get(entityId);
+      if (!instanceData) {
+        this.stopMovement(entityId);
+        return;
+      }
+
+      const distance = movement.startPos.distanceTo(movement.endPos);
+      const travelTime = distance / this.MOVEMENT_SPEED;
+      movement.progress += deltaTime / travelTime;
+
+      if (movement.progress >= 1) {
+        instanceData.position.copy(movement.endPos);
+
+        // Check for next path segment
+        if (instanceData.path && movement.currentPathIndex < instanceData.path.length - 2) {
+          movement.currentPathIndex++;
+          const nextPos = instanceData.path[movement.currentPathIndex + 1];
+
+          movement.startPos.copy(movement.endPos);
+          movement.endPos.copy(nextPos);
+          movement.progress = 0;
+
+          this.updateInstanceDirection(entityId, movement.startPos, movement.endPos);
+        } else {
+          this.stopMovement(entityId);
+        }
+      } else {
+        instanceData.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
+      }
+
+      this.updateInstance(
+        entityId,
+        movement.matrixIndex,
+        instanceData.position,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
+
+      this.updateLabelPosition(entityId, instanceData.position);
+    });
+  }
+
+  private stopMovement(entityId: number) {
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+      this.movingInstances.delete(entityId);
+
+      const instanceData = this.instanceData.get(entityId);
+      if (instanceData) {
+        instanceData.isMoving = false;
+        instanceData.path = undefined;
+      }
+    }
+  }
+
+  private updateInstanceDirection(entityId: number, fromPos: THREE.Vector3, toPos: THREE.Vector3) {
+    const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
+    const angle = Math.atan2(direction.x, direction.z);
+    this.dummyObject.rotation.set(0, angle + Math.PI / 6, 0);
+  }
+
+  public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3) {
+    const label = new CSS2DObject(labelElement);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    this.labels.set(entityId, { label, entityId });
+    this.scene.add(label);
+  }
+
+  public removeLabel(entityId: number) {
+    const labelData = this.labels.get(entityId);
+    if (labelData) {
+      this.scene.remove(labelData.label);
+      this.labels.delete(entityId);
+    }
+  }
+
+  private updateLabelPosition(entityId: number, position: THREE.Vector3) {
+    const labelData = this.labels.get(entityId);
+    if (labelData) {
+      labelData.label.position.copy(position);
+      labelData.label.position.y += 1.5;
+    }
+  }
+
+  public removeLabelsFromScene() {
+    this.labels.forEach((labelData) => {
+      this.scene.remove(labelData.label);
+    });
+  }
+
+  public addLabelsToScene() {
+    this.labels.forEach((labelData) => {
+      if (!this.scene.children.includes(labelData.label)) {
+        this.scene.add(labelData.label);
+      }
     });
   }
 }
