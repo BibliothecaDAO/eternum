@@ -45,40 +45,39 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingCategoryPopConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          building_category: RecsType.String,
-          population: RecsType.Number,
-          capacity: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingCategoryPopConfig",
-            types: ["enum", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
     BuildingConfig: (() => {
       return defineComponent(
         world,
         {
-          config_id: RecsType.Number,
-          category: RecsType.String,
-          resource_type: RecsType.Number,
-          resource_cost_id: RecsType.Number,
-          resource_cost_count: RecsType.Number,
+          base_population: RecsType.Number,
+          base_cost_percent_increase: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "BuildingConfig",
-            types: ["u32", "enum", "u8", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
+            types: ["u32", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    BuildingCategoryConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          category: RecsType.Number,
+          erection_cost_id: RecsType.Number,
+          erection_cost_count: RecsType.Number,
+          population_cost: RecsType.Number,
+          capacity_grant: RecsType.Number,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BuildingCategoryConfig",
+            types: ["u8", "u32", "u32", "u32", "u32"],
+            customTypes: [],
           },
         },
       );
@@ -1210,8 +1209,9 @@ export function defineContractComponents(world: World) {
             owner_fee_num: RecsType.Number,
             owner_fee_denom: RecsType.Number,
           },
-          population_config: {
+          building_config: {
             base_population: RecsType.Number,
+            base_cost_percent_increase: RecsType.Number,
           },
           resource_bridge_config: {
             deposit_paused: RecsType.Boolean,
@@ -1323,7 +1323,8 @@ export function defineContractComponents(world: World) {
               "u32", // BankConfig lp_fee_denom
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
-              "u32", // PopulationConfig base_population
+              "u32", // BuildingConfig base_population
+              "u16", // BuildingConfig base_cost_percent_increase
               "bool", // ResourceBridgeConfig deposit_paused
               "bool", // ResourceBridgeConfig withdraw_paused
               "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent

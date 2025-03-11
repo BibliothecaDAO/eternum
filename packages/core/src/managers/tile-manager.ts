@@ -1,7 +1,6 @@
 import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { CairoOption, CairoOptionVariant } from "starknet";
 import {
   ResourceManager,
   getBuildingCosts,
@@ -405,10 +404,6 @@ export class TileManager {
         entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
-        produce_resource_type:
-          buildingType == BuildingType.Resource && resourceType
-            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-            : new CairoOption<Number>(CairoOptionVariant.None, 0),
       });
     } catch (error) {
       this.components.Building.removeOverride(overrideId);

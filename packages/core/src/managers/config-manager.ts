@@ -1,15 +1,15 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
-    BuildingType,
-    CapacityConfig,
-    GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
-    HYPERSTRUCTURE_CONFIG_ID,
-    RESOURCE_PRECISION,
-    ResourcesIds,
-    ResourceTier,
-    StructureType,
-    WORLD_CONFIG_ID,
+  BuildingType,
+  CapacityConfig,
+  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  HYPERSTRUCTURE_CONFIG_ID,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  ResourceTier,
+  StructureType,
+  WORLD_CONFIG_ID,
 } from "../constants";
 import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
@@ -46,8 +46,7 @@ export class ClientConfigManager {
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
-    this.initializeResourceBuildingCosts();
-    // this.initializeBuildingCosts();
+    this.initializeBuildingCosts();
     this.initializeStructureCosts();
     this.initializeResourceWeights();
   }
@@ -164,14 +163,14 @@ export class ClientConfigManager {
     }
   }
 
-  private initializeResourceBuildingCosts() {
-    const buildingConfigsEntities = runQuery([Has(this.components.BuildingConfig)]);
+  private initializeBuildingCosts() {
+    const buildingConfigsEntities = runQuery([Has(this.components.BuildingCategoryConfig)]);
 
     for (const buildingConfigEntity of buildingConfigsEntities) {
-      const buildingConfig = getComponentValue(this.components.BuildingConfig, buildingConfigEntity);
+      const buildingConfig = getComponentValue(this.components.BuildingCategoryConfig, buildingConfigEntity);
       if (buildingConfig) {
-        const entityId = buildingConfig.resource_cost_id;
-        const resourceCount = buildingConfig.resource_cost_count || 0;
+        const entityId = buildingConfig.erection_cost_id;
+        const resourceCount = buildingConfig.erection_cost_count || 0;
         const inputs: { resource: ResourcesIds; amount: number }[] = [];
 
         for (let index = 0; index < resourceCount; index++) {
@@ -187,13 +186,10 @@ export class ClientConfigManager {
             });
           }
         }
-        const resourceType = buildingConfig.resource_type;
 
-        if (BuildingType[buildingConfig.category as keyof typeof BuildingType] === BuildingType.Resource) {
-          this.resourceBuildingCosts[Number(resourceType)] = inputs;
-        } else {
-          this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
-        }
+        this.buildingCosts[Number(buildingConfig.category)] = inputs;
+
+        const resourceType = buildingConfig.erection_cost_id;
 
         if (resourceType !== 0) {
           this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
@@ -220,9 +216,7 @@ export class ClientConfigManager {
   }
 
   // weight in grams, per actual resource (without precision)
-  getResourceWeightKg(resourceId: number): number {
-    return this.resourceWeightsKg[resourceId] || 0;
-  }
+  getResourceWeightKg(resourceId: number): number {}
 
   getTravelStaminaCost() {
     return this.getValueOrDefault(() => {
