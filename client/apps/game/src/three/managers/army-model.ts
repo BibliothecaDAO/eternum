@@ -398,6 +398,9 @@ export class ArmyModel {
   public startMovement(entityId: number, path: THREE.Vector3[], matrixIndex: number) {
     if (path.length < 2) return;
 
+    // Clean up any existing movement data
+    this.stopMovement(entityId);
+
     const currentPos = path[0];
     const nextPos = path[1];
 
@@ -487,6 +490,9 @@ export class ArmyModel {
   }
 
   public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3) {
+    // Remove any existing label first
+    this.removeLabel(entityId);
+
     const label = new CSS2DObject(labelElement);
     label.position.copy(position);
     label.position.y += 1.5;

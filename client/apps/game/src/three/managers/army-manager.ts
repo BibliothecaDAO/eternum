@@ -344,14 +344,8 @@ export class ArmyManager {
   public removeArmy(entityId: ID) {
     if (!this.armies.delete(entityId)) return;
 
-    this.removeEntityIdLabel(entityId);
+    this.armyModel.removeLabel(entityId);
     this.renderVisibleArmies(this.currentChunkKey!);
-
-    const label = this.labels.get(entityId);
-    if (label) {
-      this.labelManager.removeLabel(label, this.scene);
-      this.labels.delete(entityId);
-    }
   }
 
   public getArmies() {
