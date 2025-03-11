@@ -17,7 +17,7 @@ pub mod troop_movement_systems {
             CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{CoordTrait, Direction},
+        map::{Tile, TileImpl, TileOccupier}, position::{CoordTrait, Direction},
         resource::resource::{ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl},
         structure::{StructureBaseStoreImpl, StructureOwnerStoreImpl}, troop::{ExplorerTroops, GuardImpl},
         weight::{Weight},
@@ -46,7 +46,7 @@ pub mod troop_movement_systems {
 
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
+            explorer.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");

@@ -5,10 +5,11 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::config::{CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::name::AddressName;
+use s1_eternum::models::owner::OwnerAddressTrait;
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -16,7 +17,7 @@ use s1_eternum::models::resource::resource::{
 };
 use s1_eternum::models::stamina::{StaminaImpl};
 use s1_eternum::models::structure::{
-    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
 };
 use s1_eternum::models::troop::{
@@ -159,6 +160,32 @@ pub impl iExplorerImpl of iExplorerTrait {
         return explorer;
     }
 
+    fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+        if self.owner == DAYDREAMS_AGENT_ID {
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            assert!(
+                agent_controller_config.address == starknet::get_caller_address(), "caller is not the agent controller",
+            );
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_owner();
+        }
+    }
+    fn assert_caller_not_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+        if self.owner == DAYDREAMS_AGENT_ID {
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            assert!(agent_controller_config.address.is_non_zero(), "agent controller config is not set");
+            assert!(
+                agent_controller_config.address != starknet::get_caller_address(), "caller is not the agent controller",
+            );
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
+        }
+    }
+
     fn burn_stamina_cost(
         ref world: WorldStorage,
         ref explorer: ExplorerTroops,
@@ -268,16 +295,18 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
 
-    fn explorer_delete(
+    fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        Self::_explorer_delete(ref world, ref explorer);
+    }
+
+
+    fn explorer_from_structure_delete(
         ref world: WorldStorage,
         ref explorer: ExplorerTroops,
         structure_explorers: Array<ID>,
         ref structure_base: StructureBase,
         structure_id: ID,
     ) {
-        // ensure army is dead
-        assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
-
         // todo: check if this will cause panic if explorer count is too high
         //       and delete is called after another army wins a battle against this
 
@@ -294,6 +323,23 @@ pub impl iExplorerImpl of iExplorerTrait {
         structure_base.troop_explorer_count -= 1;
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
+        Self::_explorer_delete(ref world, ref explorer);
+    }
+
+    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
+        let (resource_types, resources_probs) = split_resources_and_probs();
+        let reward_resource_id: u8 = *random::choices(
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
+        )
+            .at(0);
+
+        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
+    }
+
+    fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        // ensure army is dead
+        assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
         // remove explorer from tile
         let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
         IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
@@ -305,17 +351,6 @@ pub impl iExplorerImpl of iExplorerTrait {
         // erase explorer model
         world.erase_model(@explorer);
         // todo: IMPORTANT: check the cost of erasing the resource model
-
-    }
-
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
-
-        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
     }
 }
 

@@ -1268,6 +1268,7 @@ export function defineContractComponents(world: World) {
             end_at: RecsType.Number,
             end_grace_seconds: RecsType.Number,
           },
+          agent_controller_config: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1366,6 +1367,7 @@ export function defineContractComponents(world: World) {
               "u64", // SeasonConfig start_main_at
               "u64", // SeasonConfig end_at
               "u32", // SeasonConfig end_grace_seconds
+              "ContractAddress", // AgentControllerConfig address
             ],
             customTypes: [],
           },

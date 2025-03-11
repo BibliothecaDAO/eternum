@@ -1792,6 +1792,16 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
   }
+  
+  public async set_agent_controller(props: SystemProps.SetAgentControllerProps) {
+    const { agent_controller, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_agent_controller",
+      calldata: [agent_controller],
+    });
+  }
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity, signer } = props;

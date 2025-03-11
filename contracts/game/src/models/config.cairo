@@ -41,6 +41,12 @@ pub struct WorldConfig {
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
     pub season_config: SeasonConfig,
+    pub agent_controller_config: AgentControllerConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct AgentControllerConfig {
+    pub address: ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

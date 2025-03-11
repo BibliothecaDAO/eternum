@@ -294,7 +294,7 @@ pub mod troop_management_systems {
                 ref world, explorer.owner,
             )
                 .into();
-            iExplorerImpl::explorer_delete(
+            iExplorerImpl::explorer_from_structure_delete(
                 ref world,
                 ref explorer,
                 explorer_owner_structure_explorers_list,
@@ -393,7 +393,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 )
                     .into();
-                iExplorerImpl::explorer_delete(
+                iExplorerImpl::explorer_from_structure_delete(
                     ref world,
                     ref from_explorer,
                     explorer_owner_structure_explorers_list,
@@ -490,7 +490,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 )
                     .into();
-                iExplorerImpl::explorer_delete(
+                iExplorerImpl::explorer_from_structure_delete(
                     ref world,
                     ref from_explorer,
                     explorer_owner_structure_explorers_list,

@@ -46,6 +46,7 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await setAgentControllerConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setTradeConfig(config);
@@ -720,6 +721,31 @@ export const setupGlobals = async (config: Config) => {
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
+
+
+export const setAgentControllerConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    agent_controller: config.account.address,
+  };
+
+  console.log(
+    chalk.cyan(`
+  📦 Agent Controller Configuration
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Agent Controller")}
+    │  ${chalk.gray("Address:")} ${chalk.white(calldata.agent_controller)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_agent_controller(calldata);
+  console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
 
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {

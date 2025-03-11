@@ -8,6 +8,10 @@ use s1_eternum::models::resource::production::building::BuildingCategory;
 pub trait IWorldConfig<T> {
     fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
+#[starknet::interface]
+pub trait IAgentControllerConfig<T> {
+    fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
+}
 
 
 #[starknet::interface]
@@ -175,12 +179,12 @@ pub mod config_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
-        BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig, HyperstructureConfig,
-        HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ProductionConfig,
-        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig,
-        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
+        HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
+        MultipleResourceBurnPrStrategy, ProductionConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -249,6 +253,21 @@ pub mod config_systems {
     pub fn assert_caller_is_admin(world: WorldStorage) {
         assert!(check_caller_is_admin(world), "caller not admin");
     }
+
+    #[abi(embed_v0)]
+    impl AgentControllerConfigImpl of super::IAgentControllerConfig<ContractState> {
+        fn set_agent_controller(ref self: ContractState, agent_controller_address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            agent_controller_config.address = agent_controller_address;
+            WorldConfigUtilImpl::set_member(ref world, selector!("agent_controller_config"), agent_controller_config);
+        }
+    }
+
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {

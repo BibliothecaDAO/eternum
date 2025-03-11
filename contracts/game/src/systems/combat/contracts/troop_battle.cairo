@@ -19,7 +19,7 @@ pub mod troop_battle_systems {
 
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use s1_eternum::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
@@ -31,7 +31,7 @@ pub mod troop_battle_systems {
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
-    use s1_eternum::systems::utils::{troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
+    use s1_eternum::systems::utils::{structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
 
 
@@ -47,11 +47,11 @@ pub mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer_aggressor.owner).assert_caller_owner();
+            explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure caller does not own defender
             let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
-            StructureOwnerStoreImpl::retrieve(ref world, explorer_defender.owner).assert_caller_not_owner();
+            explorer_defender.assert_caller_not_structure_or_agent_owner(ref world);
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -88,41 +88,49 @@ pub mod troop_battle_systems {
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
-                let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
-                );
-                let mut explorer_aggressor_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
-                )
-                    .into();
-                iExplorerImpl::explorer_delete(
-                    ref world,
-                    ref explorer_aggressor,
-                    explorer_aggressor_structure_explorers_list,
-                    ref explorer_aggressor_owner_structure,
-                    explorer_aggressor.owner,
-                );
+                if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
+                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
+                } else {
+                    let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                        ref world, explorer_aggressor.owner,
+                    );
+                    let mut explorer_aggressor_structure_explorers_list: Array<ID> =
+                        StructureTroopExplorerStoreImpl::retrieve(
+                        ref world, explorer_aggressor.owner,
+                    )
+                        .into();
+                    iExplorerImpl::explorer_from_structure_delete(
+                        ref world,
+                        ref explorer_aggressor,
+                        explorer_aggressor_structure_explorers_list,
+                        ref explorer_aggressor_owner_structure,
+                        explorer_aggressor.owner,
+                    );
+                }
             } else {
                 world.write_model(@explorer_aggressor);
             }
 
             if explorer_defender_troops.count.is_zero() {
-                let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
-                );
-                let mut explorer_defender_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
-                )
-                    .into();
-                iExplorerImpl::explorer_delete(
-                    ref world,
-                    ref explorer_defender,
-                    explorer_defender_structure_explorers_list,
-                    ref explorer_defender_owner_structure,
-                    explorer_defender.owner,
-                );
+                if explorer_defender.owner == DAYDREAMS_AGENT_ID {
+                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
+                } else {
+                    let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                        ref world, explorer_defender.owner,
+                    );
+                    let mut explorer_defender_structure_explorers_list: Array<ID> =
+                        StructureTroopExplorerStoreImpl::retrieve(
+                        ref world, explorer_defender.owner,
+                    )
+                        .into();
+                    iExplorerImpl::explorer_from_structure_delete(
+                        ref world,
+                        ref explorer_defender,
+                        explorer_defender_structure_explorers_list,
+                        ref explorer_defender_owner_structure,
+                        explorer_defender.owner,
+                    );
+                }
             } else {
                 world.write_model(@explorer_defender);
             }
@@ -139,10 +147,7 @@ pub mod troop_battle_systems {
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_aggressor.owner,
-            );
-            explorer_owner.assert_caller_owner();
+            explorer_aggressor.assert_caller_structure_or_agent_owner(ref world);
 
             // ensure caller does not own defender
             let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -169,9 +174,7 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
-                if guarded_structure.category != StructureCategory::Village.into() {
-                    StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
-                }
+                iStructureImpl::claim(ref world, ref guarded_structure, ref explorer_aggressor, structure_id);
                 return;
             }
 
@@ -200,21 +203,25 @@ pub mod troop_battle_systems {
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
             if explorer_aggressor_troops.count.is_zero() {
-                let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
-                );
-                let mut explorer_aggressor_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, explorer_aggressor.owner,
-                )
-                    .into();
-                iExplorerImpl::explorer_delete(
-                    ref world,
-                    ref explorer_aggressor,
-                    explorer_aggressor_structure_explorers_list,
-                    ref explorer_aggressor_owner_structure,
-                    explorer_aggressor.owner,
-                );
+                if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
+                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
+                } else {
+                    let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                        ref world, explorer_aggressor.owner,
+                    );
+                    let mut explorer_aggressor_structure_explorers_list: Array<ID> =
+                        StructureTroopExplorerStoreImpl::retrieve(
+                        ref world, explorer_aggressor.owner,
+                    )
+                        .into();
+                    iExplorerImpl::explorer_from_structure_delete(
+                        ref world,
+                        ref explorer_aggressor,
+                        explorer_aggressor_structure_explorers_list,
+                        ref explorer_aggressor_owner_structure,
+                        explorer_aggressor.owner,
+                    );
+                }
             } else {
                 world.write_model(@explorer_aggressor);
             }
@@ -239,9 +246,7 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        if guarded_structure.category != StructureCategory::Village.into() {
-                            StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
-                        }
+                        iStructureImpl::claim(ref world, ref guarded_structure, ref explorer_aggressor, structure_id);
                     }
                 }
             } else {
@@ -271,9 +276,9 @@ pub mod troop_battle_systems {
 
             // ensure caller does not own defender
             let mut explorer_defender: ExplorerTroops = world.read_model(explorer_id);
-            let explorer_defender_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, explorer_defender.owner,
-            );
+            // let explorer_defender_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+            //     ref world, explorer_defender.owner,
+            // );
             // explorer_defender_owner.assert_caller_not_owner();
 
             // ensure explorer has troops
@@ -322,21 +327,25 @@ pub mod troop_battle_systems {
 
             // update explorer
             if explorer_defender.troops.count.is_zero() {
-                let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
-                );
-                let mut explorer_defender_structure_explorers_list: Array<ID> =
-                    StructureTroopExplorerStoreImpl::retrieve(
-                    ref world, explorer_defender.owner,
-                )
-                    .into();
-                iExplorerImpl::explorer_delete(
-                    ref world,
-                    ref explorer_defender,
-                    explorer_defender_structure_explorers_list,
-                    ref explorer_defender_owner_structure,
-                    explorer_defender.owner,
-                );
+                if explorer_defender.owner == DAYDREAMS_AGENT_ID {
+                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
+                } else {
+                    let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                        ref world, explorer_defender.owner,
+                    );
+                    let mut explorer_defender_structure_explorers_list: Array<ID> =
+                        StructureTroopExplorerStoreImpl::retrieve(
+                        ref world, explorer_defender.owner,
+                    )
+                        .into();
+                    iExplorerImpl::explorer_from_structure_delete(
+                        ref world,
+                        ref explorer_defender,
+                        explorer_defender_structure_explorers_list,
+                        ref explorer_defender_owner_structure,
+                        explorer_defender.owner,
+                    );
+                }
             } else {
                 world.write_model(@explorer_defender);
             }
@@ -361,9 +370,9 @@ pub mod troop_battle_systems {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
                     if guard_slot.is_none() {
-                        if structure_aggressor_base.category != StructureCategory::Village.into() {
-                            StructureOwnerStoreImpl::store(explorer_defender_owner, ref world, structure_id);
-                        }
+                        iStructureImpl::claim(
+                            ref world, ref structure_aggressor_base, ref explorer_defender, structure_id,
+                        );
                     }
                 }
             } else {
