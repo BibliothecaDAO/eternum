@@ -6,6 +6,7 @@ import { Connector, jsonRpcProvider, StarknetConfig, voyager } from "@starknet-r
 import React, { useCallback, useState } from "react";
 import { constants } from "starknet";
 import { env } from "../../../env";
+import { policies } from "./policies";
 
 const resourceAddresses = getResourceAddresses();
 
@@ -23,7 +24,8 @@ const nonLocalController = new ControllerConnector({
   chains: [
     {
       rpcUrl:
-        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050"
+        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050" &&
+        env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
           ? env.VITE_PUBLIC_NODE_URL
           : "https://api.cartridge.gg/x/starknet/sepolia",
     },
