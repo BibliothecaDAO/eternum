@@ -4,6 +4,7 @@ import {
   BuildingType,
   CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  getProducedResource,
   HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
@@ -35,7 +36,6 @@ export class ClientConfigManager {
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
-  resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceWeightsKg: Record<number, number> = {};
 
@@ -46,8 +46,7 @@ export class ClientConfigManager {
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
-    this.initializeResourceBuildingCosts();
-    // this.initializeBuildingCosts();
+    this.initializeBuildingCosts();
     this.initializeStructureCosts();
     this.initializeResourceWeights();
   }
@@ -164,14 +163,14 @@ export class ClientConfigManager {
     }
   }
 
-  private initializeResourceBuildingCosts() {
-    const buildingConfigsEntities = runQuery([Has(this.components.BuildingConfig)]);
+  private initializeBuildingCosts() {
+    const buildingConfigsEntities = runQuery([Has(this.components.BuildingCategoryConfig)]);
 
     for (const buildingConfigEntity of buildingConfigsEntities) {
-      const buildingConfig = getComponentValue(this.components.BuildingConfig, buildingConfigEntity);
+      const buildingConfig = getComponentValue(this.components.BuildingCategoryConfig, buildingConfigEntity);
       if (buildingConfig) {
-        const entityId = buildingConfig.resource_cost_id;
-        const resourceCount = buildingConfig.resource_cost_count || 0;
+        const entityId = buildingConfig.erection_cost_id;
+        const resourceCount = buildingConfig.erection_cost_count || 0;
         const inputs: { resource: ResourcesIds; amount: number }[] = [];
 
         for (let index = 0; index < resourceCount; index++) {
@@ -187,17 +186,13 @@ export class ClientConfigManager {
             });
           }
         }
-        const resourceType = buildingConfig.resource_type;
 
-        if (BuildingType[buildingConfig.category as keyof typeof BuildingType] === BuildingType.Resource) {
-          this.resourceBuildingCosts[Number(resourceType)] = inputs;
-        } else {
-          this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
-        }
+        this.buildingCosts[Number(buildingConfig.category)] = inputs;
 
-        if (resourceType !== 0) {
-          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
-            Number(resourceType);
+        const resourceType = getProducedResource(buildingConfig.category);
+
+        if (resourceType) {
+          this.buildingOutputs[Number(buildingConfig.category)] = resourceType;
         }
       }
     }
@@ -517,33 +512,11 @@ export class ClientConfigManager {
     }, 0);
   }
 
-  getBuildingPopConfig(buildingId: BuildingType): {
-    population: number;
-    capacity: number;
-  } {
+  getBuildingConfig() {
     return this.getValueOrDefault(
-      () => {
-        const buildingConfig = getComponentValue(
-          this.components.BuildingCategoryPopConfig,
-          getEntityIdFromKeys([BigInt(buildingId)]),
-        );
-
-        return {
-          population: buildingConfig?.population ?? 0,
-          capacity: buildingConfig?.capacity ?? 0,
-        };
-      },
+      () => getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config,
       {
-        population: 0,
-        capacity: 0,
-      },
-    );
-  }
-  getBuildingGeneralConfig() {
-    return this.getValueOrDefault(
-      () =>
-        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_general_config,
-      {
+        base_population: 0,
         base_cost_percent_increase: 0,
       },
     );
@@ -634,10 +607,29 @@ export class ClientConfigManager {
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
       return (
-        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.population_config
+        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config
           ?.base_population ?? 0
       );
     }, 0);
+  }
+
+  getBuildingCategoryConfig(buildingType: BuildingType) {
+    return this.getValueOrDefault(
+      () => {
+        const buildingCategoryConfig = getComponentValue(
+          this.components.BuildingCategoryConfig,
+          getEntityIdFromKeys([BigInt(buildingType)]),
+        );
+        return {
+          population_cost: buildingCategoryConfig?.population_cost ?? 0,
+          capacity_grant: buildingCategoryConfig?.capacity_grant ?? 0,
+        };
+      },
+      {
+        population_cost: 0,
+        capacity_grant: 0,
+      },
+    );
   }
 
   getResourceOutputs(resourceType: number): number {

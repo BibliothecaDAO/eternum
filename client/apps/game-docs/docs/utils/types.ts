@@ -1,3 +1,5 @@
+// TODO: get all values from core package
+
 export enum CapacityConfigCategory {
   None = 0,
   Structure = 1,

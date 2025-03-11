@@ -30,6 +30,7 @@ import {
   findResourceById,
   getEntityIdFromKeys,
   getNeighborHexes,
+  getProducedResource,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
@@ -259,7 +260,7 @@ export default class HexceptionScene extends HexagonScene {
       { col: this.centerColRow[0], row: this.centerColRow[1] },
       (update: BuildingSystemUpdate) => {
         const { innerCol, innerRow, buildingType } = update;
-        if (buildingType === BuildingType[BuildingType.None] && innerCol && innerRow) {
+        if (buildingType === BuildingType.None && innerCol && innerRow) {
           this.removeBuilding(innerCol, innerRow);
         }
         this.updateHexceptionGrid(this.hexceptionRadius);
@@ -340,7 +341,7 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
+        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -355,7 +356,7 @@ export default class HexceptionScene extends HexagonScene {
           getEntityIdFromKeys([BigInt(outerCol), BigInt(outerRow), BigInt(hexCoords.col), BigInt(hexCoords.row)]),
         );
 
-        playBuildingSound(BuildingType[building?.category as keyof typeof BuildingType], isSoundOn, effectsLevel);
+        playBuildingSound(building?.category as BuildingType, isSoundOn, effectsLevel);
 
         this.state.setSelectedBuildingHex({
           outerCol,
@@ -392,17 +393,16 @@ export default class HexceptionScene extends HexagonScene {
       ? new ResourceManager(this.dojo.components, this.state.structureEntityId)
       : undefined;
 
-    const isActive = building ? productionManager?.isActive(building?.produced_resource_type) : false;
+    const producedResource = getProducedResource(building?.category as BuildingType);
 
-    if (building && building.produced_resource_type) {
+    const isActive = producedResource ? productionManager?.isActive(producedResource) : false;
+
+    if (building && producedResource) {
       this.state.setTooltip({
         content: (
           <div className="flex items-center space-x-1">
-            <ResourceIcon
-              size="sm"
-              resource={findResourceById(building.produced_resource_type as ResourcesIds)?.trait ?? ""}
-            />
-            <div>Producing {findResourceById(building.produced_resource_type as ResourcesIds)?.trait}</div>
+            <ResourceIcon size="sm" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
+            <div>Producing {findResourceById(producedResource as ResourcesIds)?.trait}</div>
             <div>—</div>
             <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
               {!isActive ? "Paused" : "Active"}
@@ -498,7 +498,7 @@ export default class HexceptionScene extends HexagonScene {
             buildingType = BuildingType[building.category].toString() as BUILDINGS_CATEGORIES_TYPES;
           }
 
-          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.Castle.toString()) {
+          if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor) {
             buildingType = castleLevelToRealmCastle[this.structureStage];
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
@@ -666,25 +666,16 @@ export default class HexceptionScene extends HexagonScene {
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
           buildingObj.rotation.y = rotation * 4;
-          if (building.category === BuildingType[BuildingType.Castle]) {
+          if (building.category === BuildingType.ResourceLabor) {
             buildingObj.rotation.y = rotation * 2;
           }
-          if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
-            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill
-          ) {
+          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill) {
             buildingObj.rotation.y = rotation * 2;
           }
-          if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
-            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide
-          ) {
+          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide) {
             buildingObj.rotation.y = rotation * 2;
           }
-          if (
-            BuildingType[building.category as keyof typeof BuildingType] === BuildingType.Resource &&
-            ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge
-          ) {
+          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge) {
             buildingObj.rotation.y = rotation * 6;
           }
           if (building.resource && building.resource === ResourcesIds.Crossbowman) {

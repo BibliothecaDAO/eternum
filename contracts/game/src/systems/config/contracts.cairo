@@ -112,25 +112,14 @@ pub trait IProductionConfig<T> {
 
 #[starknet::interface]
 pub trait IBuildingConfig<T> {
-    fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
-    fn set_building_config(
+    fn set_building_config(ref self: T, base_population: u32, base_cost_percent_increase: u16);
+    fn set_building_category_config(
         ref self: T,
         building_category: BuildingCategory,
-        building_resource_type: u8,
         cost_of_building: Span<(u8, u128)>,
+        population_cost: u32,
+        capacity_grant: u32,
     );
-}
-
-#[starknet::interface]
-pub trait IBuildingCategoryPopConfig<T> {
-    fn set_building_category_pop_config(
-        ref self: T, building_category: BuildingCategory, population: u32, capacity: u32,
-    );
-}
-
-#[starknet::interface]
-pub trait IPopulationConfig<T> {
-    fn set_population_config(ref self: T, base_population: u32);
 }
 
 
@@ -503,18 +492,6 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
-        fn set_building_category_pop_config(
-            ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32,
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@BuildingCategoryPopConfig { building_category, population, capacity })
-        }
-    }
-
-    #[abi(embed_v0)]
     impl TroopConfigImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(
             ref self: ContractState,
@@ -533,33 +510,22 @@ pub mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
-        fn set_population_config(ref self: ContractState, base_population: u32) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("population_config"), PopulationConfig { base_population },
-            );
-        }
-    }
-
-    #[abi(embed_v0)]
     impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
-        fn set_building_general_config(ref self: ContractState, base_cost_percent_increase: u16) {
+        fn set_building_config(ref self: ContractState, base_population: u32, base_cost_percent_increase: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("building_general_config"), BuildingGeneralConfig { base_cost_percent_increase },
+                ref world, selector!("building_config"), BuildingConfig { base_population, base_cost_percent_increase },
             );
         }
 
-        fn set_building_config(
+        fn set_building_category_config(
             ref self: ContractState,
             building_category: BuildingCategory,
-            building_resource_type: u8,
             cost_of_building: Span<(u8, u128)>,
+            population_cost: u32,
+            capacity_grant: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -580,12 +546,12 @@ pub mod config_systems {
             };
             world
                 .write_model(
-                    @BuildingConfig {
-                        config_id: WORLD_CONFIG_ID,
-                        category: building_category,
-                        resource_type: building_resource_type,
-                        resource_cost_id,
-                        resource_cost_count: cost_of_building.len(),
+                    @BuildingCategoryConfig {
+                        category: building_category.into(),
+                        erection_cost_id: resource_cost_id,
+                        erection_cost_count: cost_of_building.len(),
+                        population_cost,
+                        capacity_grant,
                     },
                 );
         }

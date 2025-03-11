@@ -40,7 +40,7 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    // await this.setupBank(account, provider);
+    await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
@@ -53,8 +53,6 @@ export class GameConfigDeployer {
     await setSeasonConfig(config);
     await setVRFConfig(config);
     await setResourceBridgeFeesConfig(config);
-    await setBuildingCategoryPopConfig(config);
-    await setPopulationConfig(config);
     await setBuildingConfig(config);
     await setWeightConfig(config);
     await setBattleConfig(config);
@@ -65,7 +63,6 @@ export class GameConfigDeployer {
     await setCapacityConfig(config);
     await setSpeedConfig(config);
     await setHyperstructureConfig(config);
-    await setBuildingGeneralConfig(config);
     await setSettlementConfig(config);
   }
 
@@ -74,13 +71,6 @@ export class GameConfigDeployer {
     await createBanks(config);
     await mintResources(config);
     await addLiquidity(config);
-  }
-
-  getResourceBuildingCostsScaled(): ResourceInputs {
-    return scaleResourceInputs(
-      this.globalConfig.buildings.resourceBuildingCosts,
-      this.globalConfig.resources.resourcePrecision,
-    );
   }
 
   getResourceOutputsScaled(): ResourceOutputs {
@@ -92,7 +82,7 @@ export class GameConfigDeployer {
 
   getBuildingCostsScaled(): ResourceInputs {
     return scaleResourceInputs(
-      this.globalConfig.buildings.otherBuildingCosts,
+      this.globalConfig.buildings.buildingCosts,
       this.globalConfig.resources.resourcePrecision,
     );
   }
@@ -297,93 +287,6 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   console.log(chalk.green("✔ ") + chalk.white("Configuration complete ") + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setBuildingCategoryPopConfig = async (config: Config) => {
-  console.log(
-    chalk.cyan(`
-  👥 Building Population Configuration
-  ══════════════════════════════════`),
-  );
-
-  const calldataArray: { building_category: BuildingType; population: number; capacity: number }[] = [];
-  const buildingPopulation = config.config.buildings.buildingPopulation;
-  const buildingCapacity = config.config.buildings.buildingCapacity;
-
-  for (const buildingId of Object.keys(buildingPopulation) as unknown as BuildingType[]) {
-    if (buildingPopulation[buildingId] !== 0 || buildingCapacity[buildingId] !== 0) {
-      const calldata = {
-        building_category: buildingId,
-        population: buildingPopulation[buildingId] ?? 0,
-        capacity: buildingCapacity[buildingId] ?? 0,
-      };
-
-      console.log(
-        chalk.cyan(`
-    ┌─ ${chalk.yellow(BuildingType[calldata.building_category])}
-    │  ${chalk.gray("Consumes")} ${chalk.white(calldata.population)} ${chalk.gray("population")}
-    │  ${chalk.gray("Adds")} ${chalk.white(calldata.capacity)} ${chalk.gray("capacity")}
-    └────────────────────────────────`),
-      );
-
-      calldataArray.push(calldata);
-    }
-  }
-
-  const tx = await config.provider.set_building_category_pop_config({
-    signer: config.account,
-    calls: calldataArray,
-  });
-
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
-export const setPopulationConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    base_population: config.config.populationCapacity.basePopulation,
-  };
-
-  console.log(
-    chalk.cyan(`
-  👥 Population Configuration
-  ══════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Base Parameters")}
-    │  ${chalk.gray("Starting Population:")}    ${chalk.white(calldata.base_population)}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_population_config(calldata);
-
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
-export const setBuildingGeneralConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    base_cost_percent_increase: config.config.buildings.buildingFixedCostScalePercent,
-  };
-
-  console.log(
-    chalk.cyan(`
-  🏗️  Building General Configuration
-  ══════════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Cost Parameters")}
-    │  ${chalk.gray("Base Cost Increase:")}    ${chalk.white((calldata.base_cost_percent_increase / 10_000) * 100 + "%")}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_building_general_config(calldata);
-
-  console.log(chalk.green(`\n   ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
 export const setBuildingConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -391,38 +294,45 @@ export const setBuildingConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const calldataArray = [];
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
-  const buildingCosts = config.config.buildings.otherBuildingCosts;
-  const scaledOtherBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const buildingPopulation = config.config.buildings.buildingPopulation;
+  const buildingCapacity = config.config.buildings.buildingCapacity;
+  const buildingCosts = config.config.buildings.buildingCosts;
+  const scaledBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
+  const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
+
+  // Set base building config
+  const tx = await config.provider.set_building_config({
+    signer: config.account,
+    base_population: 0,
+    base_cost_percent_increase: buildingScalePercent,
+  });
+
+  console.log(chalk.green(`    ✔ Base configuration complete `) + chalk.gray(tx.statusReceipt));
 
   // Non Resource Building Config
-  for (const buildingId of Object.keys(buildingResourceProduced) as unknown as BuildingType[]) {
-    if (scaledOtherBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledOtherBuildingCosts[buildingId];
-      const calldata = {
-        building_category: buildingId,
-        building_resource_type: buildingResourceProduced[buildingId] as ResourcesIds,
-        cost_of_building: costs,
-      };
-      calldataArray.push(calldata);
+  for (const buildingId of Object.keys(scaledBuildingCosts) as unknown as BuildingType[]) {
+    if (scaledBuildingCosts[buildingId].length !== 0) {
+      const costs = scaledBuildingCosts[buildingId];
+      const population = buildingPopulation[buildingId] ?? 0;
+      const capacity = buildingCapacity[buildingId] ?? 0;
 
-      // buildingScalePercent only used for display logic. not part of the calldata
-      const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
       console.log(
         chalk.cyan(`
     ┌─ ${chalk.yellow(BuildingType[buildingId])}
-    │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[calldata.building_resource_type as ResourcesIds])}
+    │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[buildingResourceProduced[buildingId] as ResourcesIds])}
+    │  ${chalk.gray("Consumes")} ${chalk.white(population)} ${chalk.gray("population")}
+    │  ${chalk.gray("Adds")} ${chalk.white(capacity)} ${chalk.gray("capacity")}
     │  ${chalk.gray("Building Costs (with ")}${chalk.white((buildingScalePercent / 10_000) * 100 + "%")}${chalk.gray(" increase per building):")}
     │  
-    │  ${chalk.gray("┌──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}
-    │  ${chalk.gray("│")} Building ${calldata.cost_of_building.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
-    │  ${chalk.gray("├──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}${Array.from(
+    │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
+    │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
+    │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
       { length: BUILDING_COST_DISPLAY_ROWS },
       (_, i) => {
         const buildingNum = i + 1;
-        const costsStr = calldata.cost_of_building
+        const costsStr = costs
           .map((c) => {
             const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
             return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
@@ -432,62 +342,23 @@ export const setBuildingConfig = async (config: Config) => {
     │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
       },
     ).join("")}
-    │  ${chalk.gray("└──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}
+    │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     └────────────────────────────────`),
       );
+
+      const categoryTx = await config.provider.set_building_category_config({
+        signer: config.account,
+        building_category: buildingId,
+        cost_of_building: costs,
+        population_cost: buildingPopulation[buildingId] ?? 0,
+        capacity_grant: buildingCapacity[buildingId] ?? 0,
+      });
+
+      console.log(chalk.green(`    ✔ Category configuration complete `) + chalk.gray(categoryTx.statusReceipt));
     }
   }
 
-  // Resource Building Config
-  const scaledResourceBuildingCosts = scaleResourceInputs(
-    config.config.buildings.resourceBuildingCosts,
-    config.config.resources.resourcePrecision,
-  );
-  for (const resourceId of Object.keys(scaledResourceBuildingCosts) as unknown as ResourcesIds[]) {
-    const costs = scaledResourceBuildingCosts[resourceId];
-    const calldata = {
-      building_category: BuildingType.Resource,
-      building_resource_type: resourceId,
-      cost_of_building: costs,
-    };
-
-    const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
-    console.log(
-      chalk.cyan(`
-    ┌─ ${chalk.yellow(ResourcesIds[resourceId])} Building
-    │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[calldata.building_resource_type as ResourcesIds])}
-    │  ${chalk.gray("Building Costs:")}${costs
-      .map(
-        (c) => `
-    │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
-      )
-      .join("")}
-
-    │  ${chalk.gray("┌──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}
-    │  ${chalk.gray("│")} Building ${calldata.cost_of_building.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
-    │  ${chalk.gray("├──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}${Array.from(
-      { length: BUILDING_COST_DISPLAY_ROWS },
-      (_, i) => {
-        const buildingNum = i + 1;
-        const costsStr = calldata.cost_of_building
-          .map((c) => {
-            const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
-            return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
-          })
-          .join("");
-        return `
-    │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
-      },
-    ).join("")}
-    │  ${chalk.gray("└──────────")}${calldata.cost_of_building.map((c) => "─".repeat(12)).join("")}
-    └────────────────────────────────`),
-    );
-
-    calldataArray.push(calldata);
-  }
-
-  const tx = await config.provider.set_building_config({ signer: config.account, calls: calldataArray });
-  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
+  console.log();
 };
 
 export const setRealmUpgradeConfig = async (config: Config) => {
@@ -1005,13 +876,15 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
       "veLORDS Deposit": (bridgeFeesCalldata.velords_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Deposit": (bridgeFeesCalldata.season_pool_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Deposit": (bridgeFeesCalldata.client_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Realm Fee on Deposit By Village": (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Deposit By Village":
+        (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
     withdrawals: {
       "veLORDS Withdraw": (bridgeFeesCalldata.velords_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Withdraw": (bridgeFeesCalldata.season_pool_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Withdraw": (bridgeFeesCalldata.client_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Realm Fee on Withdrawal By Village": (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Withdrawal By Village":
+        (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
   };
 

@@ -7,11 +7,7 @@ use s1_eternum::models::resource::production::production::{ProductionStrategyImp
 trait IProductionContract<TContractState> {
     /// Create and Destroy Buildings
     fn create_building(
-        ref self: TContractState,
-        structure_id: ID,
-        directions: Span<Direction>,
-        building_category: BuildingCategory,
-        requested_resource_type: Option<u8>,
+        ref self: TContractState, structure_id: ID, directions: Span<Direction>, building_category: BuildingCategory,
     );
     fn destroy_building(ref self: TContractState, structure_id: ID, building_coord: Coord);
 
@@ -37,6 +33,7 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
+    use core::num::traits::Zero;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
@@ -47,12 +44,11 @@ mod production_systems {
     };
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait},
-        resource::production::building::{BuildingCategory, BuildingImpl},
+        resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
         resource::production::production::{ProductionStrategyImpl},
     };
 
     use starknet::ContractAddress;
-
 
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
@@ -61,7 +57,6 @@ mod production_systems {
             structure_id: ID,
             mut directions: Span<s1_eternum::models::position::Direction>,
             building_category: BuildingCategory,
-            requested_resource_type: Option<u8>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure season is not over
@@ -88,19 +83,6 @@ mod production_systems {
                 directions_count <= structure_base.level.into() + 1, "building outside of what structure level allows",
             );
 
-            // ensure that the structure produces the resource
-            if requested_resource_type.is_some() {
-                let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
-                    ref world, structure_id,
-                );
-                assert!(
-                    StructureResourcesImpl::produces_resource(
-                        structure_resources_packed, requested_resource_type.unwrap(),
-                    ),
-                    "structure does not produce specified resource",
-                );
-            }
-
             let mut building_coord: Coord = BuildingImpl::center();
             loop {
                 match directions.pop_front() {
@@ -110,14 +92,20 @@ mod production_systems {
             };
 
             let (building, building_count) = BuildingImpl::create(
-                ref world,
-                structure_id,
-                structure_base.category,
-                structure_base.coord(),
-                building_category,
-                requested_resource_type,
-                building_coord,
+                ref world, structure_id,structure_base.category, structure_base.coord(), building_category, building_coord,
             );
+
+            // ensure that the structure produces the resource
+            let building_produces_resource: u8 = building.produced_resource();
+            if building_produces_resource.is_non_zero() {
+                let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
+                    ref world, structure_id,
+                );
+                assert!(
+                    StructureResourcesImpl::produces_resource(structure_resources_packed, building_produces_resource),
+                    "You can't erect the requested building on this structure",
+                );
+            }
 
             // pay one time cost of the building
             building.make_payment(building_count, ref world);

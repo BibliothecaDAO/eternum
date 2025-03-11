@@ -111,7 +111,7 @@ export interface Prize {
 
 export interface Building {
   name: string;
-  category: string;
+  category: BuildingType;
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
@@ -416,8 +416,7 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    otherBuildingCosts: ResourceInputs;
-    resourceBuildingCosts: ResourceInputs;
+    buildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 
