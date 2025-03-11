@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import { readFileSync, writeFileSync } from "fs";
 
 const MANIFEST_PATHS = {

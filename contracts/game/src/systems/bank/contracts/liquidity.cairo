@@ -104,6 +104,9 @@ mod liquidity_systems {
             player_lords_resource.spend(cost_lords, ref player_structure_weight, lords_weight_grams);
             player_lords_resource.store(ref world);
 
+            // store player structure weight
+            player_structure_weight.store(ref world, entity_id);
+
             // increase player liquidity
             let mut player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
             player_liquidity.shares += liquidity_shares;
@@ -170,6 +173,10 @@ mod liquidity_systems {
                 true,
                 true,
             );
+
+            // store structure weights
+            player_structure_weight.store(ref world, entity_id);
+            bank_structure_weight.store(ref world, bank_entity_id);
 
             // reduce player liquidity
             let mut player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));

@@ -2,9 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
-import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -85,19 +83,6 @@ export const RightNavigationModule = () => {
         <Suspense fallback={<div className="p-8">Loading...</div>}>
           {!!structureEntityId && (
             <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-              <a
-                className="text-brown cursor-pointer text-lg w-full"
-                href={`https://empire.realms.world/trade`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="secondary" className="w-full">
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resource="Lords" size="xs" />
-                    Bridge Lords & Resources
-                  </div>
-                </Button>
-              </a>
               <EntityResourceTable entityId={structureEntityId} />
             </div>
           )}

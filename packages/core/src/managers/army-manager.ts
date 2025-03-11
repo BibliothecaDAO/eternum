@@ -111,27 +111,27 @@ export class ArmyManager {
       if (isExplorer && armyEntityId) {
         const army = getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(armyEntityId)]));
         if (army) {
-          this._updateExplorerTroops(overrideId, armyEntityId, army, troopCount);
+          this._updateExplorerTroops(overrideId, armyEntityId, army, multiplyByPrecision(troopCount));
         }
       } else if (structureId !== undefined && guardSlot !== undefined) {
-        this._updateGuardTroops(overrideId, structureId, guardSlot, troopCount);
+        this._updateGuardTroops(overrideId, structureId, guardSlot, multiplyByPrecision(troopCount));
       }
     }
   }
 
-  // don't need to multiply by precision here because the explorer_add function already does it
   public async addTroopsToExplorer(
     signer: Account | AccountInterface,
     armyEntityId: ID,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
+    homeDirection: Direction,
   ): Promise<void> {
     this.provider.explorer_add({
       signer,
       to_explorer_id: armyEntityId,
       amount: multiplyByPrecision(troopCount),
-      home_direction: 0,
+      home_direction: homeDirection,
     });
 
     this._optimisticAddTroops(uuid(), troopType, troopTier, troopCount, true, armyEntityId);
