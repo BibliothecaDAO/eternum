@@ -226,6 +226,12 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         iDonkeyImpl::burn(ref world, donkey_provider_id, ref donkey_provider_weight, donkey_amount);
         iDonkeyImpl::burn_finialize(ref world, donkey_provider_id, donkey_amount, donkey_provider_owner);
 
+        if donkey_provider_id == from_id {
+            from_weight = donkey_provider_weight;
+        } else {
+            to_weight = donkey_provider_weight;
+        }
+
         // update both structures weights
         from_weight.store(ref world, from_id);
         to_weight.store(ref world, to_id);

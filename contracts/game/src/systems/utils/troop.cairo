@@ -314,6 +314,7 @@ pub impl iTroopImpl of iTroopTrait {
         );
         structure_troop_resource.spend(amount, ref structure_weight, troop_resource_weight_grams);
         structure_troop_resource.store(ref world);
+        structure_weight.store(ref world, from_structure_id);
     }
 }
 
