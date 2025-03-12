@@ -1002,13 +1002,15 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
       "veLORDS Deposit": (bridgeFeesCalldata.velords_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Deposit": (bridgeFeesCalldata.season_pool_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Deposit": (bridgeFeesCalldata.client_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Realm Fee on Deposit By Village": (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Deposit By Village":
+        (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
     withdrawals: {
       "veLORDS Withdraw": (bridgeFeesCalldata.velords_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Season Pool Withdraw": (bridgeFeesCalldata.season_pool_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Client Withdraw": (bridgeFeesCalldata.client_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
-      "Max Realm Fee on Withdrawal By Village": (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Max Realm Fee on Withdrawal By Village":
+        (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
   };
 
@@ -1118,11 +1120,7 @@ export const setSettlementConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const {
-    center,
-    base_distance,
-    subsequent_distance,
-  } = config.config.settlement;
+  const { center, base_distance, subsequent_distance } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
