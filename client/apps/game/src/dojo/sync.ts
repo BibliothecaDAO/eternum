@@ -3,12 +3,13 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+  ClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
   PlayerStructure,
   SetupResult,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
@@ -18,9 +19,40 @@ import {
   debouncedGetMarketFromTorii,
 } from "./debounced-queries";
 
+const handleVisualOverrides = (entityBatch: Record<string, any>, components: ClientComponents, entity: string) => {
+  const updates = entityBatch[entity];
+  if (!updates || Object.keys(updates).length === 0) return;
+
+  const componentNames = Object.keys(updates);
+
+  // Check for explorer troops updates
+  const hasExplorerUpdate = componentNames.some((component) => {
+    const componentName = component.split("-")[1];
+    return componentName === components.ExplorerTroops.metadata.name;
+  });
+
+  // Check for tile updates
+  const hasTileUpdate = componentNames.some((component) => {
+    const componentName = component.split("-")[1];
+    return componentName === components.Tile.metadata.name;
+  });
+
+  if (hasExplorerUpdate || hasTileUpdate) {
+    console.log({ title: "removing override", entity, hasExplorerUpdate, hasTileUpdate });
+
+    if (hasExplorerUpdate) {
+      components.ExplorerTroops.removeOverride(entity);
+    }
+
+    if (hasTileUpdate) {
+      components.Tile.removeOverride(entity);
+    }
+  }
+};
+
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
+  setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
   logging: boolean = true,
   historical: boolean = false,
@@ -29,11 +61,20 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
   let entityBatch: Record<string, any> = {};
 
+  const {
+    network: { contractComponents: components },
+    components: clientComponents,
+  } = setupResult;
+
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
-      if (logging) console.log("Applying batch update", entityBatch);
+      if (logging) console.log("Applying batch update override check", entityBatch);
 
-      setEntities(entityBatch, components, logging);
+      setEntities(entityBatch, components as any, logging);
+
+      for (const entity of Object.keys(entityBatch)) {
+        handleVisualOverrides(entityBatch, clientComponents, entity);
+      }
       entityBatch = {}; // Clear the batch after applying
     }
   }, 200); // Increased debounce time to 1 second for larger batches
@@ -99,7 +140,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
 
   setLoading(LoadingStateKey.Config, true);
   try {

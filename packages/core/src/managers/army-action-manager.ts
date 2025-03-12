@@ -292,9 +292,11 @@ export class ArmyActionManager {
     return actionPaths;
   }
 
-  private readonly _optimisticExplorerUpdate = (overrideId: string, staminaCost: number, newPosition: HexPosition) => {
+  private readonly _optimisticExplorerUpdate = (staminaCost: number, newPosition: HexPosition) => {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
+
+    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
 
     if (!stamina) return;
 
@@ -337,14 +339,10 @@ export class ArmyActionManager {
     });
   };
 
-  private readonly _optimisticTileUpdate = (
-    overrideId: string,
-    newPosition: HexPosition,
-    previousPosition: HexPosition,
-  ) => {
+  private readonly _optimisticTileUpdate = (newPosition: HexPosition, previousPosition: HexPosition) => {
     const previousEntity = getEntityIdFromKeys([BigInt(previousPosition.col), BigInt(previousPosition.row)]);
 
-    this.components.Tile.addOverride(overrideId, {
+    this.components.Tile.addOverride(previousEntity, {
       entity: previousEntity,
       value: {
         col: previousPosition.col,
@@ -358,7 +356,7 @@ export class ArmyActionManager {
       id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
     });
 
-    this.components.Tile.addOverride(overrideId, {
+    this.components.Tile.addOverride(newEntity, {
       entity: newEntity,
       value: {
         col: newPosition.col,
@@ -371,13 +369,13 @@ export class ArmyActionManager {
   };
 
   private readonly _optimisticExplore = (col: number, row: number) => {
-    const overrideId = uuid();
-
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
 
-    this._optimisticExplorerUpdate(overrideId, configManager.getExploreStaminaCost(), newPosition);
-    this._optimisticTileUpdate(overrideId, newPosition, previousPosition);
+    let overrideId = uuid();
+
+    this._optimisticExplorerUpdate(configManager.getExploreStaminaCost(), newPosition);
+    this._optimisticTileUpdate(newPosition, previousPosition);
     this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
@@ -411,37 +409,28 @@ export class ArmyActionManager {
       })
       .catch((e) => {
         console.log({ e });
-        // remove all visual overrides only when the action fails
-        this._removeVisualOverride(overrideId);
-        this._removeNonVisualOverrides(overrideId);
       })
-      .then(() => {
+      .finally(() => {
         // remove all non visual overrides
-        this._removeNonVisualOverrides(overrideId);
+        this._removeOverride(overrideId);
       });
   };
 
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
-    const overrideId = uuid();
+    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
 
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
 
-    this._optimisticExplorerUpdate(overrideId, configManager.getTravelStaminaCost() * pathLength, newPosition);
-    this._optimisticTileUpdate(overrideId, newPosition, previousPosition);
+    this._optimisticExplorerUpdate(configManager.getTravelStaminaCost() * pathLength, newPosition);
+    this._optimisticTileUpdate(newPosition, previousPosition);
     this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
     return overrideId;
   };
 
-  // only remove visual overrides (linked to models on world map) when the action fails
-  private readonly _removeVisualOverride = (overrideId: string) => {
-    this.components.Tile.removeOverride(overrideId);
-    this.components.ExplorerTroops.removeOverride(overrideId);
-  };
-
   // you can remove all non visual overrides when the action fails or succeeds
-  private readonly _removeNonVisualOverrides = (overrideId: string) => {
+  private readonly _removeOverride = (overrideId: string) => {
     this.components.Resource.removeOverride(overrideId);
     this.components.ExplorerTroops.removeOverride(overrideId);
   };
@@ -491,11 +480,9 @@ export class ArmyActionManager {
       })
       .catch((e) => {
         console.log({ e });
-        this._removeVisualOverride(overrideId);
-        this._removeNonVisualOverrides(overrideId);
       })
-      .then(() => {
-        this._removeNonVisualOverrides(overrideId);
+      .finally(() => {
+        this._removeOverride(overrideId);
       });
   };
 
