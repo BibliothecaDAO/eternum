@@ -4,6 +4,7 @@ packages:
   - "client/apps/game"
   - "client/apps/balancing"
   - "client/apps/game-docs"
+  - "client/apps/heavy-load"
   - "config"
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"
