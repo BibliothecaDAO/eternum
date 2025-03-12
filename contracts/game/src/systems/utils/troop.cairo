@@ -500,15 +500,9 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         troop_amount += lower_bound;
 
         // select a troop type with equal probability
-        let troop_type: TroopType = *random::choices(
-            array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin].span(),
-            array![1, 1, 1].span(),
-            array![].span(),
-            1,
-            true,
-            seed,
-        )
-            .at(0);
+        let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
+        let random_index: u128 = random::random(seed, salt, troop_types.len().into());
+        let troop_type: TroopType = *troop_types.at(random_index.try_into().unwrap());
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();
