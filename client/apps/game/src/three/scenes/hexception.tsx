@@ -486,7 +486,6 @@ export default class HexceptionScene extends HexagonScene {
       for (const building of this.buildings) {
         const key = `${building.col},${building.row}`;
         if (!this.buildingInstances.has(key)) {
-          console.log({ building });
           let buildingGroup: BUILDINGS_GROUPS;
           let buildingType: BUILDINGS_CATEGORIES_TYPES;
 
@@ -495,7 +494,7 @@ export default class HexceptionScene extends HexagonScene {
             buildingType = ResourceIdToMiningType[building.resource as ResourcesIds] as ResourceMiningTypes;
           } else {
             buildingGroup = BUILDINGS_GROUPS.BUILDINGS;
-            buildingType = BuildingType[building.category].toString() as BUILDINGS_CATEGORIES_TYPES;
+            buildingType = building.category as BUILDINGS_CATEGORIES_TYPES;
           }
 
           if (buildingGroup === BUILDINGS_GROUPS.BUILDINGS && buildingType === BuildingType.ResourceLabor) {
@@ -512,7 +511,9 @@ export default class HexceptionScene extends HexagonScene {
             buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
             buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
-          const buildingData = this.buildingModels.get(buildingGroup)?.get(buildingType);
+          const buildingData = this.buildingModels
+            .get(buildingGroup)
+            ?.get(buildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
 
           if (buildingData) {
             const instance = buildingData.model.clone();

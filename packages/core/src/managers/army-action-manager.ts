@@ -443,6 +443,7 @@ export class ArmyActionManager {
   // you can remove all non visual overrides when the action fails or succeeds
   private readonly _removeNonVisualOverrides = (overrideId: string) => {
     this.components.Resource.removeOverride(overrideId);
+    this.components.ExplorerTroops.removeOverride(overrideId);
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {

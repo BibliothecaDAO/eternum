@@ -24,6 +24,7 @@ import {
   gramToKg,
   hasEnoughPopulationForBuilding,
   ID,
+  isEconomyBuilding,
   isMilitaryBuilding,
   ResourceIdToMiningType,
   ResourceMiningTypes,
@@ -135,7 +136,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         component: (
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
-              .filter((a) => !isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType]))
+              .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 

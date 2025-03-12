@@ -50,7 +50,7 @@ export const ResourceChip = ({
   }, [resourceManager, currentTick]);
 
   const productionRate = useMemo(() => {
-    return Number(divideByPrecision(Number(production?.production_rate || 0)));
+    return Number(divideByPrecision(Number(production?.production_rate || 0), false));
   }, [production]);
 
   const productionEndsAt = useMemo(() => {
@@ -133,8 +133,8 @@ export const ResourceChip = ({
             <div className={`self-center`}>
               +
               {showPerHour
-                ? `${currencyIntlFormat(productionRate * 60 * 60, 2)}/h`
-                : `${currencyIntlFormat(productionRate, 2)}/s`}
+                ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
+                : `${currencyIntlFormat(productionRate, 4)}/s`}
             </div>
           </div>
         ) : (
