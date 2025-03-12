@@ -37,8 +37,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 20_000,
-    shardsMinesFailProbability: 100_000,
+    shardsMinesWinProbability: 2_000,
+    shardsMinesFailProbability: 10_000,
     hyperstructureWinProbAtCenter: 20_000,
     hyperstructureFailProbAtCenter: 100_000,
     hyperstructureFailProbIncreasePerHexDistance: 20,
@@ -67,7 +67,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startAfterSeconds: 60, // 1 minute
+    startSettlingAfterSeconds: 59, // 1 minute
+    startMainAfterSeconds: 60,
   },
 };
 

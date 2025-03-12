@@ -8,8 +8,6 @@ use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 
 use s1_eternum::models::position::Coord;
 
-use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
@@ -26,18 +24,16 @@ pub struct WorldConfig {
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub season_addresses_config: SeasonAddressesConfig,
-    pub season_bridge_config: SeasonBridgeConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
-    pub population_config: PopulationConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub structure_max_level_config: StructureMaxLevelConfig,
-    pub building_general_config: BuildingGeneralConfig,
+    pub building_config: BuildingConfig,
     pub troop_damage_config: TroopDamageConfig,
     pub troop_stamina_config: TroopStaminaConfig,
     pub troop_limit_config: TroopLimitConfig,
@@ -45,6 +41,100 @@ pub struct WorldConfig {
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
     pub realm_count: RealmCountConfig,
+    pub season_config: SeasonConfig,
+    pub agent_controller_config: AgentControllerConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct AgentControllerConfig {
+    pub address: ContractAddress,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct SeasonConfig {
+    pub start_settling_at: u64,
+    pub start_main_at: u64,
+    pub end_at: u64,
+    pub end_grace_seconds: u32,
+}
+
+#[generate_trait]
+pub impl SeasonConfigImpl of SeasonConfigTrait {
+    fn get(world: WorldStorage) -> SeasonConfig {
+        WorldConfigUtilImpl::get_member(world, selector!("season_config"))
+    }
+
+    fn has_ended(self: SeasonConfig) -> bool {
+        self.end_at.is_non_zero()
+    }
+
+    fn has_settling_started(self: SeasonConfig) -> bool {
+        let now = starknet::get_block_timestamp();
+        now >= self.start_settling_at
+    }
+
+    fn has_main_started(self: SeasonConfig) -> bool {
+        let now = starknet::get_block_timestamp();
+        now >= self.start_main_at
+    }
+
+
+    fn assert_started_settling(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_settling_started(),
+            "You will be able to settle your realm or village in {} hours {} minutes, {} seconds",
+            (self.start_settling_at - now) / 60 / 60,
+            ((self.start_settling_at - now) / 60) % 60,
+            (self.start_settling_at - now) % 60,
+        );
+    }
+
+
+    fn assert_started_main(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_main_started() && self.has_settling_started(),
+            "The game starts in {} hours {} minutes, {} seconds",
+            (self.start_main_at - now) / 60 / 60,
+            ((self.start_main_at - now) / 60) % 60,
+            (self.start_main_at - now) % 60,
+        );
+    }
+    fn assert_settling_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_settling();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_settling_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_settling();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+    fn assert_main_game_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+
+    fn end_season(ref world: WorldStorage) {
+        let season_config_selector = selector!("season_config");
+        let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
+        // ensure season is not over
+        assert!(season_config.has_ended() == false, "Season is over");
+        // set season as over
+        season_config.end_at = starknet::get_block_timestamp();
+        WorldConfigUtilImpl::set_member(ref world, season_config_selector, season_config);
+    }
 }
 
 #[generate_trait]
@@ -71,26 +161,6 @@ pub struct SeasonAddressesConfig {
     pub lords_address: ContractAddress,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct SeasonBridgeConfig {
-    pub close_after_end_seconds: u64,
-}
-
-#[generate_trait]
-pub impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
-    fn assert_bridge_is_open(self: SeasonBridgeConfig, world: WorldStorage) {
-        // ensure season has started
-        let season: Season = world.read_model(WORLD_CONFIG_ID);
-        season.assert_has_started();
-
-        // check if season is over
-        if season.ended_at.is_non_zero() {
-            // close bridge after grace period has elapsed
-            let now = starknet::get_block_timestamp();
-            assert!(now <= season.ended_at + self.close_after_end_seconds, "Bridge is closed");
-        }
-    }
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -135,8 +205,10 @@ pub impl SpeedImpl of SpeedTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
-    pub shards_mines_win_probability: u32,
-    pub shards_mines_fail_probability: u32,
+    pub shards_mines_win_probability: u16,
+    pub shards_mines_fail_probability: u16,
+    pub agent_discovery_prob: u16,
+    pub agent_discovery_fail_prob: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -318,13 +390,18 @@ pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
     // Troop count per army limits without precision
+    // Applies to both explorers and guards
     pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
     pub guard_resurrection_delay: u32,
     // Mercenary bounds without precision
-    pub mercenaries_troop_lower_bound: u64,
+    pub mercenaries_troop_lower_bound: u32,
     // without precision
-    pub mercenaries_troop_upper_bound: u64,
+    pub mercenaries_troop_upper_bound: u32,
+    // Agents bounds without precision
+    pub agents_troop_lower_bound: u32,
+    // without precision
+    pub agents_troop_upper_bound: u32,
 }
 
 
@@ -500,36 +577,21 @@ pub struct BankConfig {
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct BuildingGeneralConfig {
+pub struct BuildingConfig {
+    pub base_population: u32,
     pub base_cost_percent_increase: u16,
 }
 
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct BuildingConfig {
+pub struct BuildingCategoryConfig {
     #[key]
-    pub config_id: ID,
-    #[key]
-    pub category: BuildingCategory,
-    #[key]
-    pub resource_type: u8,
-    pub resource_cost_id: ID,
-    pub resource_cost_count: u32,
-}
-
-#[generate_trait]
-pub impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
-        return world
-            .read_model(
-                (
-                    WORLD_CONFIG_ID,
-                    Into::<BuildingCategory, felt252>::into(category),
-                    Into::<u8, felt252>::into(resource_type),
-                ),
-            );
-    }
+    pub category: u8,
+    pub erection_cost_id: ID,
+    pub erection_cost_count: u32,
+    pub population_cost: u32,
+    pub capacity_grant: u32,
 }
 
 
@@ -543,28 +605,6 @@ pub struct BattleConfig {
 pub impl BattleConfigImpl of BattleConfigTrait {
     fn get(ref world: WorldStorage) -> BattleConfig {
         WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
-    }
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct BuildingCategoryPopConfig {
-    #[key]
-    pub building_category: BuildingCategory,
-    pub population: u32,
-    pub capacity: u32,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct PopulationConfig {
-    pub base_population: u32,
-}
-
-#[generate_trait]
-pub impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
-    fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        world.read_model(building_id)
     }
 }
 

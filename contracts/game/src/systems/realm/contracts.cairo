@@ -37,16 +37,14 @@ pub mod realm_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{
-        DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
-    };
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids};
     use s1_eternum::models::config::{
-        RealmCountConfig, SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
-        WorldConfigUtilImpl,
+        RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
+        StartingResourcesConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl, TileOccupier};
@@ -58,8 +56,6 @@ pub mod realm_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::Season;
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
         StructureOwnerStoreImpl,
@@ -70,6 +66,7 @@ pub mod realm_systems {
     };
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
+    use super::RealmSettlement;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
 
@@ -90,13 +87,11 @@ pub mod realm_systems {
             owner: ContractAddress,
             realm_id: ID,
             frontend: ContractAddress,
-            settlement: super::RealmSettlement,
+            settlement: RealmSettlement,
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            season.assert_has_started();
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
@@ -210,8 +205,7 @@ pub mod realm_systems {
                 structure_id,
                 StructureCategory::Realm.into(),
                 coord,
-                BuildingCategory::Castle,
-                Option::None,
+                BuildingCategory::ResourceLabor,
                 BuildingImpl::center(),
             );
 
@@ -248,14 +242,7 @@ pub mod realm_systems {
             frontend: ContractAddress,
         ) {
             // get bridge systems address
-            let (bridge_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
-                dojo::world::Resource::Contract((
-                    contract_address, namespace_hash,
-                )) => (contract_address, namespace_hash),
-                _ => (Zero::zero(), Zero::zero()),
-            };
-
+            let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
             // approve bridge to spend lords
             IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
 

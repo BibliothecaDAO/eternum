@@ -1,14 +1,16 @@
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{RESOURCE_PRECISION};
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION};
 use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{ResourceImpl};
 use s1_eternum::models::structure::{
-    Structure, StructureCategory, StructureImpl, StructureMetadata, StructureResourcesImpl,
+    Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
+    StructureResourcesImpl,
 };
+use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
@@ -76,6 +78,20 @@ pub impl iStructureImpl of IStructureTrait {
         let structure_weight: Weight = Weight { capacity, weight: 0 };
         ResourceImpl::initialize(ref world, structure_id);
         ResourceImpl::write_weight(ref world, structure_id, structure_weight);
+    }
+
+
+    fn claim(
+        ref world: WorldStorage, ref structure_base: StructureBase, ref explorer: ExplorerTroops, structure_id: ID,
+    ) {
+        if explorer.owner != DAYDREAMS_AGENT_ID {
+            if structure_base.category != StructureCategory::Village.into() {
+                let explorer_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, explorer.owner,
+                );
+                StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
+            }
+        }
     }
 }
 

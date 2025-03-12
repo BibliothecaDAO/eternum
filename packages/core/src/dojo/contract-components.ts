@@ -28,8 +28,7 @@ export function defineContractComponents(world: World) {
           outer_row: RecsType.Number,
           inner_col: RecsType.Number,
           inner_row: RecsType.Number,
-          category: RecsType.String,
-          produced_resource_type: RecsType.Number,
+          category: RecsType.Number,
           bonus_percent: RecsType.Number,
           entity_id: RecsType.Number,
           outer_entity_id: RecsType.Number,
@@ -39,46 +38,28 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "Building",
-            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32", "bool"],
+            types: ["u32", "u32", "u32", "u32", "u8", "u8", "u32", "u32", "bool"],
             customTypes: ["BuildingCategory"],
           },
         },
       );
     })(),
-    BuildingCategoryPopConfig: (() => {
+    BuildingCategoryConfig: (() => {
       return defineComponent(
         world,
         {
-          building_category: RecsType.String,
-          population: RecsType.Number,
-          capacity: RecsType.Number,
+          category: RecsType.Number,
+          erection_cost_id: RecsType.Number,
+          erection_cost_count: RecsType.Number,
+          population_cost: RecsType.Number,
+          capacity_grant: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "BuildingCategoryPopConfig",
-            types: ["enum", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
-    BuildingConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          category: RecsType.String,
-          resource_type: RecsType.Number,
-          resource_cost_id: RecsType.Number,
-          resource_cost_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingConfig",
-            types: ["u32", "enum", "u8", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
+            name: "BuildingCategoryConfig",
+            types: ["u8", "u32", "u32", "u32", "u32"],
+            customTypes: [],
           },
         },
       );
@@ -387,7 +368,9 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          packed_counts: RecsType.BigInt,
+          packed_counts_1: RecsType.BigInt,
+          packed_counts_2: RecsType.BigInt,
+          packed_counts_3: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -397,7 +380,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u32", "u32"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
             customTypes: ["Population"],
           },
         },
@@ -912,26 +895,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Season: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.Number,
-          start_at: RecsType.BigInt,
-          is_over: RecsType.Boolean,
-          ended_at: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "Season",
-            types: ["u32", "u64", "bool", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-
     ExplorerTroops: (() => {
       return defineComponent(
         world,
@@ -1168,9 +1131,6 @@ export function defineContractComponents(world: World) {
             realms_address: RecsType.BigInt,
             lords_address: RecsType.BigInt,
           },
-          season_bridge_config: {
-            close_after_end_seconds: RecsType.Number,
-          },
           hyperstructure_config: {
             points_per_cycle: RecsType.BigInt,
             points_for_win: RecsType.BigInt,
@@ -1179,12 +1139,13 @@ export function defineContractComponents(world: World) {
           },
           speed_config: {
             donkey_sec_per_km: RecsType.Number,
-            army_sec_per_km: RecsType.Number,
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
             shards_mines_win_probability: RecsType.Number,
             shards_mines_fail_probability: RecsType.Number,
+            agent_discovery_prob: RecsType.Number,
+            agent_discovery_fail_prob: RecsType.Number,
             hyps_win_prob: RecsType.Number,
             hyps_fail_prob: RecsType.Number,
             hyps_fail_prob_increase_p_hex: RecsType.Number,
@@ -1206,9 +1167,6 @@ export function defineContractComponents(world: World) {
             owner_fee_num: RecsType.Number,
             owner_fee_denom: RecsType.Number,
           },
-          population_config: {
-            base_population: RecsType.Number,
-          },
           resource_bridge_config: {
             deposit_paused: RecsType.Boolean,
             withdraw_paused: RecsType.Boolean,
@@ -1229,7 +1187,8 @@ export function defineContractComponents(world: World) {
             realm_max: RecsType.Number,
             village_max: RecsType.Number,
           },
-          building_general_config: {
+          building_config: {
+            base_population: RecsType.Number,
             base_cost_percent_increase: RecsType.Number,
           },
           troop_damage_config: {
@@ -1265,6 +1224,8 @@ export function defineContractComponents(world: World) {
             guard_resurrection_delay: RecsType.Number,
             mercenaries_troop_lower_bound: RecsType.BigInt,
             mercenaries_troop_upper_bound: RecsType.BigInt,
+            agents_troop_lower_bound: RecsType.BigInt,
+            agents_troop_upper_bound: RecsType.BigInt,
           },
           capacity_config: {
             structure_capacity: RecsType.Number,
@@ -1282,6 +1243,13 @@ export function defineContractComponents(world: World) {
           realm_count_config: {
             realm_count: RecsType.Number,
           },
+          season_config: {
+            start_settling_at: RecsType.Number,
+            start_main_at: RecsType.Number,
+            end_at: RecsType.Number,
+            end_grace_seconds: RecsType.Number,
+          },
+          agent_controller_config: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1294,20 +1262,20 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // season_pass_address
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address
-              "u64", // SeasonBridgeConfig close_after_end_seconds
               "u128", // HyperstructureConfig points_per_cycle
               "u128", // HyperstructureConfig points_for_win
               "u128", // HyperstructureConfig points_on_completion
               "u64", // HyperstructureConfig time_between_shares_change
               "u16", // SpeedConfig donkey_sec_per_km
-              "u16", // SpeedConfig army_sec_per_km
               "u16", // MapConfig reward_resource_amount
-              "u32", // MapConfig shards_mines_win_probability
-              "u32", // MapConfig shards_mines_fail_probability
+              "u16", // MapConfig shards_mines_win_probability
+              "u16", // MapConfig shards_mines_fail_probability
+              "u16", // MapConfig agent_discovery_prob
+              "u16", // MapConfig agent_discovery_fail_prob
               "u32", // MapConfig hyps_win_prob
               "u32", // MapConfig hyps_fail_prob
-              "u32", // MapConfig hyps_fail_prob_increase_p_hex
-              "u32", // MapConfig hyps_fail_prob_increase_p_fnd
+              "u16", // MapConfig hyps_fail_prob_increase_p_hex
+              "u16", // MapConfig hyps_fail_prob_increase_p_fnd
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
@@ -1318,7 +1286,6 @@ export function defineContractComponents(world: World) {
               "u32", // BankConfig lp_fee_denom
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
-              "u32", // PopulationConfig base_population
               "bool", // ResourceBridgeConfig deposit_paused
               "bool", // ResourceBridgeConfig withdraw_paused
               "u16", // ResourceBridgeFeeSplitConfig velords_fee_on_dpt_percent
@@ -1333,7 +1300,8 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // StructureMaxLevelConfig realm_max
               "u8", // StructureMaxLevelConfig village_max
-              "u16", // BuildingGeneralConfig base_cost_percent_increase
+              "u32", // BuildingConfig base_population
+              "u16", // BuildingConfig base_cost_percent_increase
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small
               "u64", // TroopDamageConfig damage_beta_large
@@ -1360,8 +1328,10 @@ export function defineContractComponents(world: World) {
               "u8", // TroopLimitConfig explorer_max_party_count
               "u32", // TroopLimitConfig explorer_guard_max_troop_count
               "u32", // TroopLimitConfig guard_resurrection_delay
-              "u64", // TroopLimitConfig mercenaries_troop_lower_bound
-              "u64", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u32", // TroopLimitConfig mercenaries_troop_lower_bound
+              "u32", // TroopLimitConfig mercenaries_troop_upper_bound
+              "u32", // TroopLimitConfig agents_troop_lower_bound
+              "u32", // TroopLimitConfig agents_troop_upper_bound
               "u32", // CapacityConfig structure_capacity
               "u32", // CapacityConfig troop_capacity
               "u32", // CapacityConfig donkey_capacity
@@ -1370,6 +1340,11 @@ export function defineContractComponents(world: World) {
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig hyperstructure_immunity_ticks
               "u16", // RealmCountConfig realm_count
+              "u64", // SeasonConfig start_settling_at
+              "u64", // SeasonConfig start_main_at
+              "u64", // SeasonConfig end_at
+              "u32", // SeasonConfig end_grace_seconds
+              "ContractAddress", // AgentControllerConfig address
             ],
             customTypes: [],
           },

@@ -19,6 +19,7 @@ import {
   TileManager,
   configManager,
   getEntityInfo,
+  getProducedResource,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -77,8 +78,8 @@ export const BuildingEntityDetails = () => {
   useEffect(() => {
     if (building) {
       setBuildingState({
-        buildingType: BuildingType[building.category as keyof typeof BuildingType],
-        resource: building.produced_resource_type as ResourcesIds,
+        buildingType: building.category as BuildingType,
+        resource: getProducedResource(building.category as BuildingType),
         ownerEntityId: building.outer_entity_id,
       });
       setIsPaused(building.paused);
@@ -124,9 +125,9 @@ export const BuildingEntityDetails = () => {
       selectedBuildingHex.innerRow,
     );
     if (
-      buildingState.buildingType === BuildingType.Resource &&
-      (ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Forge ||
-        ResourceIdToMiningType[buildingState.resource!] === ResourceMiningTypes.Mine)
+      buildingState.resource &&
+      (ResourceIdToMiningType[buildingState.resource] === ResourceMiningTypes.Forge ||
+        ResourceIdToMiningType[buildingState.resource] === ResourceMiningTypes.Mine)
     ) {
       playDestroyStone();
     } else {
@@ -144,7 +145,7 @@ export const BuildingEntityDetails = () => {
       getEntityIdFromKeys([BigInt(structureEntityId)]),
     );
 
-    const populationImpact = configManager.getBuildingPopConfig(buildingState.buildingType).capacity;
+    const populationImpact = configManager.getBuildingCategoryConfig(buildingState.buildingType).capacity_grant;
 
     const population = getComponentValue(
       dojo.setup.components.StructureBuildings,
@@ -162,15 +163,16 @@ export const BuildingEntityDetails = () => {
       ) : (
         <>
           <div className="flex-grow w-full space-y-1 text-sm">
-            {buildingState.buildingType === BuildingType.Resource && buildingState.resource && (
+            {buildingState.resource && buildingState.buildingType && (
               <ResourceInfo
                 isPaused={isPaused}
                 resourceId={buildingState.resource}
+                buildingId={buildingState.buildingType}
                 entityId={buildingState.ownerEntityId}
                 hintModal
               />
             )}
-            {buildingState.buildingType && buildingState.buildingType !== BuildingType.Resource && (
+            {buildingState?.buildingType && !buildingState.resource && (
               <BuildingInfo
                 isPaused={isPaused}
                 buildingId={buildingState.buildingType}

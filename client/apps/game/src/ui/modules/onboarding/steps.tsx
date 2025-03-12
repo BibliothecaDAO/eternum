@@ -59,7 +59,6 @@ export const LocalStepOne = () => {
             realm_ids: [random],
             owner: account.address,
             frontend: account.address,
-            lords_resource_index: 0,
             signer: account,
             season_pass_address: getSeasonPassAddress(),
           });

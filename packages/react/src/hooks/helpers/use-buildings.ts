@@ -1,4 +1,10 @@
-import { Building, BuildingType, configManager, ResourceIdToMiningType, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  Building,
+  BuildingType,
+  BuildingTypeToString,
+  configManager,
+  getProducedResource,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -20,22 +26,13 @@ export const useBuildings = (outerCol: number, outerRow: number) => {
     return Array.from(buildingEntities)
       .map((entity) => {
         const building = getComponentValue(Building, entity);
-        if (!building || !building.produced_resource_type) return;
+        const producedResource = getProducedResource(building?.category as BuildingType);
+        if (!building || !producedResource) return;
 
-        const produced = configManager.resourceOutput[building.produced_resource_type];
-        const consumed = configManager.resourceInputs[building.produced_resource_type];
+        const produced = configManager.resourceOutput[producedResource];
+        const consumed = configManager.resourceInputs[producedResource];
 
-        let name = building.category;
-        name = name.replace(/([a-z])([A-Z])/g, "$1 $2"); // Add spaces before capital letters (except at the start of the string)
-
-        if (building.category === BuildingType[BuildingType.Resource]) {
-          name = ResourcesIds[building.produced_resource_type] + " ";
-
-          if (building.produced_resource_type != ResourcesIds.Dragonhide) {
-            name += ResourceIdToMiningType[building.produced_resource_type as ResourcesIds];
-          }
-          name = name.replace(/_/g, " "); // Replace underscores with spaces
-        }
+        let name = BuildingTypeToString[building.category as keyof typeof BuildingTypeToString];
 
         return {
           name,

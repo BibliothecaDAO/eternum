@@ -44,11 +44,6 @@ export enum ModelType {
   Paladin3 = "paladin3",
 }
 
-export enum AnimationState {
-  Idle = 0,
-  Moving = 1,
-}
-
 export interface AnimatedInstancedMesh extends THREE.InstancedMesh {
   animated?: boolean;
 }

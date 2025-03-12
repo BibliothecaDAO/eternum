@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { type Config } from "@bibliothecadao/eternum";
+import { CapacityConfig, type Config, type ResourceCost, type ResourceInputs } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -19,8 +19,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   tick: {
     ...CommonEternumGlobalConfig.tick,
-    // 10 minutes
-    armiesTickIntervalInSeconds: 600,
+    // 3 minutes
+    armiesTickIntervalInSeconds: 180,
   },
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
@@ -36,6 +36,27 @@ export const SepoliaEternumGlobalConfig: Config = {
         max_amount: cost.max_amount / 100,
       }),
     ),
+  },
+  exploration: {
+    ...CommonEternumGlobalConfig.exploration,
+    agentFindProbability: 1,
+    agentFindFailProbability: 5,
+  },
+  buildings: {
+    ...CommonEternumGlobalConfig.buildings,
+    buildingCosts: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.buildings.buildingCosts).map(([key, value]) => [
+        key,
+        value.map((cost: ResourceCost) => ({
+          resource: cost.resource,
+          amount: cost.amount / 10,
+        })),
+      ]),
+    ) as ResourceInputs,
+  },
+  carryCapacityGram: {
+    ...CommonEternumGlobalConfig.carryCapacityGram,
+    [CapacityConfig.Structure]: 4_000_000_000_000, // 4b kg
   },
   resources: {
     ...CommonEternumGlobalConfig.resources,
@@ -57,7 +78,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startAfterSeconds: 0, // 1 minute
+    startSettlingAfterSeconds: 0,
+    startMainAfterSeconds: 1,
   },
 };
 
