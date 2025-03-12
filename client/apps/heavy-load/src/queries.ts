@@ -66,17 +66,19 @@ export async function getRealmEntityIds(account: Account): Promise<number[]> {
 /**
  * Get all explorer entity IDs
  */
-export async function getExplorerEntityIds(): Promise<number[]> {
+export async function getExplorerEntityIds(realmEntityIds: number[]): Promise<number[]> {
+  const realmIdsString = JSON.stringify(realmEntityIds);
+
   const query = `
       query {
-        s1EternumExplorerTroopsModels {
-          edges {
-            node {
-              entity_id
-            }
+      s1EternumExplorerTroopsModels(where: { ownerIN: ${realmIdsString} }) {
+        edges {
+          node {
+            explorer_id
           }
         }
       }
+    }
     `;
 
   const data = await executeGraphQLQuery(query);
@@ -85,5 +87,5 @@ export async function getExplorerEntityIds(): Promise<number[]> {
     return [];
   }
 
-  return data.s1EternumExplorerTroopsModels.edges.map((edge: any) => edge.node.entity_id);
+  return data.s1EternumExplorerTroopsModels.edges.map((edge: any) => edge.node.explorer_id);
 }
