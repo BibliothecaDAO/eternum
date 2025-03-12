@@ -182,7 +182,12 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 
 export const TRADE_MAX_COUNT = 5;
 
+export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+
 export const EternumGlobalConfig: Config = {
+  agent: {
+    controller_address: AGENT_CONTROLLER_ADDRESS,
+  },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     resourceMultiplier: RESOURCE_PRECISION,

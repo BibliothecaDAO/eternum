@@ -293,6 +293,9 @@ export interface ProductionByLaborParams {
 }
 
 export interface Config {
+  agent: {
+    controller_address: string;
+  }
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;

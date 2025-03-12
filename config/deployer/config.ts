@@ -726,7 +726,7 @@ export const setupGlobals = async (config: Config) => {
 export const setAgentControllerConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    agent_controller: config.account.address,
+    agent_controller: config.config.agent.controller_address,
   };
 
   console.log(

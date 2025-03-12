@@ -179,7 +179,7 @@ pub impl iExplorerImpl of iExplorerTrait {
             );
             assert!(agent_controller_config.address.is_non_zero(), "agent controller config is not set");
             assert!(
-                agent_controller_config.address != starknet::get_caller_address(), "caller is not the agent controller",
+                agent_controller_config.address != starknet::get_caller_address(), "caller owns the agent but should not",
             );
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
