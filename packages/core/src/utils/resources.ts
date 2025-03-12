@@ -75,7 +75,7 @@ export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: 
   for (let buildingType in resourceInputs) {
     multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
       ...resourceInput,
-      amount: resourceInput.amount * multiplier,
+      amount: Math.round(resourceInput.amount * multiplier),
     }));
   }
 
