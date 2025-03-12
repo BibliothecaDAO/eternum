@@ -1137,22 +1137,34 @@ export type S1_Eternum_HyperstructureGlobalsOrder = {
 };
 
 export enum S1_Eternum_HyperstructureGlobalsOrderField {
-  Count = 'COUNT',
+  CompletedCount = 'COMPLETED_COUNT',
+  CreatedCount = 'CREATED_COUNT',
   WorldId = 'WORLD_ID'
 }
 
 export type S1_Eternum_HyperstructureGlobalsWhereInput = {
-  count?: InputMaybe<Scalars['u64']['input']>;
-  countEQ?: InputMaybe<Scalars['u64']['input']>;
-  countGT?: InputMaybe<Scalars['u64']['input']>;
-  countGTE?: InputMaybe<Scalars['u64']['input']>;
-  countIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  countLIKE?: InputMaybe<Scalars['u64']['input']>;
-  countLT?: InputMaybe<Scalars['u64']['input']>;
-  countLTE?: InputMaybe<Scalars['u64']['input']>;
-  countNEQ?: InputMaybe<Scalars['u64']['input']>;
-  countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  countNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  created_count?: InputMaybe<Scalars['u32']['input']>;
+  created_countEQ?: InputMaybe<Scalars['u32']['input']>;
+  created_countGT?: InputMaybe<Scalars['u32']['input']>;
+  created_countGTE?: InputMaybe<Scalars['u32']['input']>;
+  created_countIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  created_countLIKE?: InputMaybe<Scalars['u32']['input']>;
+  created_countLT?: InputMaybe<Scalars['u32']['input']>;
+  created_countLTE?: InputMaybe<Scalars['u32']['input']>;
+  created_countNEQ?: InputMaybe<Scalars['u32']['input']>;
+  created_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  created_countNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
+  completed_count?: InputMaybe<Scalars['u32']['input']>;
+  completed_countEQ?: InputMaybe<Scalars['u32']['input']>;
+  completed_countGT?: InputMaybe<Scalars['u32']['input']>;
+  completed_countGTE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  completed_countLIKE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countLT?: InputMaybe<Scalars['u32']['input']>;
+  completed_countLTE?: InputMaybe<Scalars['u32']['input']>;
+  completed_countNEQ?: InputMaybe<Scalars['u32']['input']>;
+  completed_countNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  completed_countNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
   world_id?: InputMaybe<Scalars['u32']['input']>;
   world_idEQ?: InputMaybe<Scalars['u32']['input']>;
   world_idGT?: InputMaybe<Scalars['u32']['input']>;
@@ -1972,24 +1984,36 @@ export type S1_Eternum_ProductionConfigOrder = {
 };
 
 export enum S1_Eternum_ProductionConfigOrderField {
-  AmountPerBuildingPerTick = 'AMOUNT_PER_BUILDING_PER_TICK',
+  RealmOutputPerTick = 'REALM_OUTPUT_PER_TICK',
+  VillageOutputPerTick = 'VILLAGE_OUTPUT_PER_TICK',
   LaborBurnStrategy = 'LABOR_BURN_STRATEGY',
   MultipleResourceBurnStrategy = 'MULTIPLE_RESOURCE_BURN_STRATEGY',
   ResourceType = 'RESOURCE_TYPE'
 }
 
 export type S1_Eternum_ProductionConfigWhereInput = {
-  amount_per_building_per_tick?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickEQ?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickGT?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickGTE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
-  amount_per_building_per_tickLIKE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickLT?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickLTE?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickNEQ?: InputMaybe<Scalars['u128']['input']>;
-  amount_per_building_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u128']['input']>>>;
-  amount_per_building_per_tickNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
+  realm_output_per_tick?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  realm_output_per_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  realm_output_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  realm_output_per_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tick?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickEQ?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickGT?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickGTE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  village_output_per_tickLIKE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickLT?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickLTE?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickNEQ?: InputMaybe<Scalars['u64']['input']>;
+  village_output_per_tickNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  village_output_per_tickNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
   labor_burn_strategy?: InputMaybe<S1_Eternum_ProductionConfig_Labor_Burn_StrategyWhereInput>;
   multiple_resource_burn_strategy?: InputMaybe<S1_Eternum_ProductionConfig_Multiple_Resource_Burn_StrategyWhereInput>;
   resource_type?: InputMaybe<Scalars['u8']['input']>;
@@ -4738,54 +4762,6 @@ export type S1_Eternum_Resource_WeightWhereInput = {
   weightNOTLIKE?: InputMaybe<Scalars['u128']['input']>;
 };
 
-export type S1_Eternum_SeasonOrder = {
-  direction: OrderDirection;
-  field: S1_Eternum_SeasonOrderField;
-};
-
-export enum S1_Eternum_SeasonOrderField {
-  ConfigId = 'CONFIG_ID',
-  EndedAt = 'ENDED_AT',
-  IsOver = 'IS_OVER',
-  StartAt = 'START_AT'
-}
-
-export type S1_Eternum_SeasonWhereInput = {
-  config_id?: InputMaybe<Scalars['u32']['input']>;
-  config_idEQ?: InputMaybe<Scalars['u32']['input']>;
-  config_idGT?: InputMaybe<Scalars['u32']['input']>;
-  config_idGTE?: InputMaybe<Scalars['u32']['input']>;
-  config_idIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
-  config_idLIKE?: InputMaybe<Scalars['u32']['input']>;
-  config_idLT?: InputMaybe<Scalars['u32']['input']>;
-  config_idLTE?: InputMaybe<Scalars['u32']['input']>;
-  config_idNEQ?: InputMaybe<Scalars['u32']['input']>;
-  config_idNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
-  config_idNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
-  ended_at?: InputMaybe<Scalars['u64']['input']>;
-  ended_atEQ?: InputMaybe<Scalars['u64']['input']>;
-  ended_atGT?: InputMaybe<Scalars['u64']['input']>;
-  ended_atGTE?: InputMaybe<Scalars['u64']['input']>;
-  ended_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  ended_atLIKE?: InputMaybe<Scalars['u64']['input']>;
-  ended_atLT?: InputMaybe<Scalars['u64']['input']>;
-  ended_atLTE?: InputMaybe<Scalars['u64']['input']>;
-  ended_atNEQ?: InputMaybe<Scalars['u64']['input']>;
-  ended_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  ended_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
-  is_over?: InputMaybe<Scalars['bool']['input']>;
-  start_at?: InputMaybe<Scalars['u64']['input']>;
-  start_atEQ?: InputMaybe<Scalars['u64']['input']>;
-  start_atGT?: InputMaybe<Scalars['u64']['input']>;
-  start_atGTE?: InputMaybe<Scalars['u64']['input']>;
-  start_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  start_atLIKE?: InputMaybe<Scalars['u64']['input']>;
-  start_atLT?: InputMaybe<Scalars['u64']['input']>;
-  start_atLTE?: InputMaybe<Scalars['u64']['input']>;
-  start_atNEQ?: InputMaybe<Scalars['u64']['input']>;
-  start_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  start_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
-};
 
 export type S1_Eternum_SettleRealmDataOrder = {
   direction: OrderDirection;
@@ -6203,7 +6179,6 @@ export enum S1_Eternum_WorldConfigOrderField {
   ResourceBridgeConfig = 'RESOURCE_BRIDGE_CONFIG',
   ResBridgeFeeSplitConfig = 'RES_BRIDGE_FEE_SPLIT_CONFIG',
   SeasonAddressesConfig = 'SEASON_ADDRESSES_CONFIG',
-  SeasonBridgeConfig = 'SEASON_BRIDGE_CONFIG',
   SettlementConfig = 'SETTLEMENT_CONFIG',
   SpeedConfig = 'SPEED_CONFIG',
   StructureMaxLevelConfig = 'STRUCTURE_MAX_LEVEL_CONFIG',
@@ -6212,7 +6187,8 @@ export enum S1_Eternum_WorldConfigOrderField {
   TroopDamageConfig = 'TROOP_DAMAGE_CONFIG',
   TroopLimitConfig = 'TROOP_LIMIT_CONFIG',
   TroopStaminaConfig = 'TROOP_STAMINA_CONFIG',
-  VrfProviderAddress = 'VRF_PROVIDER_ADDRESS'
+  VrfProviderAddress = 'VRF_PROVIDER_ADDRESS',
+  SeasonConfig = 'SEASON_CONFIG',
 }
 
 export type S1_Eternum_WorldConfigWhereInput = {
@@ -6248,7 +6224,6 @@ export type S1_Eternum_WorldConfigWhereInput = {
   res_bridge_fee_split_config?: InputMaybe<S1_Eternum_WorldConfig_Res_Bridge_Fee_Split_ConfigWhereInput>;
   resource_bridge_config?: InputMaybe<S1_Eternum_WorldConfig_Resource_Bridge_ConfigWhereInput>;
   season_addresses_config?: InputMaybe<S1_Eternum_WorldConfig_Season_Addresses_ConfigWhereInput>;
-  season_bridge_config?: InputMaybe<S1_Eternum_WorldConfig_Season_Bridge_ConfigWhereInput>;
   settlement_config?: InputMaybe<S1_Eternum_WorldConfig_Settlement_ConfigWhereInput>;
   speed_config?: InputMaybe<S1_Eternum_WorldConfig_Speed_ConfigWhereInput>;
   structure_max_level_config?: InputMaybe<S1_Eternum_WorldConfig_Structure_Max_Level_ConfigWhereInput>;
@@ -6268,6 +6243,54 @@ export type S1_Eternum_WorldConfigWhereInput = {
   vrf_provider_addressNEQ?: InputMaybe<Scalars['ContractAddress']['input']>;
   vrf_provider_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars['ContractAddress']['input']>>>;
   vrf_provider_addressNOTLIKE?: InputMaybe<Scalars['ContractAddress']['input']>;
+  season_config?: InputMaybe<S1_Eternum_WorldConfig_Season_ConfigWhereInput>;
+};
+
+export type S1_Eternum_WorldConfig_Season_ConfigWhereInput = {
+  start_settling_at?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atEQ?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atGT?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atGTE?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  start_settling_atLIKE?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atLT?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atLTE?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atNEQ?: InputMaybe<Scalars['u64']['input']>;
+  start_settling_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  start_settling_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  start_main_at?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atEQ?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atGT?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atGTE?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  start_main_atLIKE?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atLT?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atLTE?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atNEQ?: InputMaybe<Scalars['u64']['input']>;
+  start_main_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  start_main_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  end_at?: InputMaybe<Scalars['u64']['input']>;
+  end_atEQ?: InputMaybe<Scalars['u64']['input']>;
+  end_atGT?: InputMaybe<Scalars['u64']['input']>;
+  end_atGTE?: InputMaybe<Scalars['u64']['input']>;
+  end_atIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  end_atLIKE?: InputMaybe<Scalars['u64']['input']>;
+  end_atLT?: InputMaybe<Scalars['u64']['input']>;
+  end_atLTE?: InputMaybe<Scalars['u64']['input']>;
+  end_atNEQ?: InputMaybe<Scalars['u64']['input']>;
+  end_atNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
+  end_atNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
+  end_grace_seconds?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsEQ?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsGT?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsGTE?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  end_grace_secondsLIKE?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsLT?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsLTE?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsNEQ?: InputMaybe<Scalars['u32']['input']>;
+  end_grace_secondsNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u32']['input']>>>;
+  end_grace_secondsNOTLIKE?: InputMaybe<Scalars['u32']['input']>;
 };
 
 export type S1_Eternum_WorldConfig_Bank_ConfigWhereInput = {
@@ -6589,28 +6612,28 @@ export type S1_Eternum_WorldConfig_Res_Bridge_Fee_Split_ConfigWhereInput = {
   client_fee_on_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
   client_fee_on_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
   client_fee_on_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentGTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_dpt_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentLT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentLTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_dpt_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_dpt_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percent?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentGT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentGTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_wtdr_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentLT?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentLTE?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
-  max_bank_fee_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
-  max_bank_fee_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentGTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_dpt_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentLT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentLTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_dpt_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_dpt_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percent?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentGT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentGTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_wtdr_percentLIKE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentLT?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentLTE?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentNEQ?: InputMaybe<Scalars['u16']['input']>;
+  realm_fee_wtdr_percentNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  realm_fee_wtdr_percentNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percent?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percentEQ?: InputMaybe<Scalars['u16']['input']>;
   season_pool_fee_on_dpt_percentGT?: InputMaybe<Scalars['u16']['input']>;
@@ -6718,20 +6741,6 @@ export type S1_Eternum_WorldConfig_Season_Addresses_ConfigWhereInput = {
   season_pass_addressNEQ?: InputMaybe<Scalars['ContractAddress']['input']>;
   season_pass_addressNOTIN?: InputMaybe<Array<InputMaybe<Scalars['ContractAddress']['input']>>>;
   season_pass_addressNOTLIKE?: InputMaybe<Scalars['ContractAddress']['input']>;
-};
-
-export type S1_Eternum_WorldConfig_Season_Bridge_ConfigWhereInput = {
-  close_after_end_seconds?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsEQ?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsGT?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsGTE?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  close_after_end_secondsLIKE?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsLT?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsLTE?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsNEQ?: InputMaybe<Scalars['u64']['input']>;
-  close_after_end_secondsNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u64']['input']>>>;
-  close_after_end_secondsNOTLIKE?: InputMaybe<Scalars['u64']['input']>;
 };
 
 export type S1_Eternum_WorldConfig_Settlement_ConfigWhereInput = {

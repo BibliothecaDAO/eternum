@@ -20,15 +20,16 @@ mod liquidity_systems {
     use s1_eternum::constants::{DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::models::bank::liquidity::{Liquidity};
     use s1_eternum::models::bank::market::{Market, MarketTrait};
+    use s1_eternum::models::config::{SeasonConfigImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
+    use s1_eternum::systems::config::contracts::config_systems::{check_caller_is_admin};
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use starknet::ContractAddress;
 
@@ -60,7 +61,11 @@ mod liquidity_systems {
             lords_amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+
+            // ensure liquidity can only be added during main game time
+            if !check_caller_is_admin(world) {
+                SeasonConfigImpl::get(world).assert_started_and_not_over();
+            }
 
             // ensure caller owns structure adding liquidity
             let mut player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
@@ -121,7 +126,10 @@ mod liquidity_systems {
 
         fn remove(ref self: ContractState, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: u128) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+
+            // only liquidity removal is only allowed when main game has started
+            // and grace period has not elapsed
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure resource type is not lords
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
@@ -167,7 +175,7 @@ mod liquidity_systems {
                 ref bank_structure_weight,
                 entity_id,
                 player_structure_owner,
-                player_structure_base.coord(),
+                player_structure_base,
                 ref player_structure_weight,
                 resources,
                 true,

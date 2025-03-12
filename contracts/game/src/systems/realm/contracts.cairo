@@ -17,13 +17,7 @@ pub trait IERC20<TState> {
 
 #[starknet::interface]
 pub trait IRealmSystems<T> {
-    fn create(
-        ref self: T,
-        owner: starknet::ContractAddress,
-        realm_id: ID,
-        frontend: ContractAddress,
-        lords_resource_index: u8,
-    ) -> ID;
+    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
 }
 
 #[dojo::contract]
@@ -31,15 +25,14 @@ pub mod realm_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{
-        DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, WORLD_CONFIG_ID, all_resource_ids,
-    };
+    use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids};
     use s1_eternum::models::config::{
-        SeasonAddressesConfig, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig, WorldConfigUtilImpl,
+        SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
+        WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
@@ -51,8 +44,6 @@ pub mod realm_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::Season;
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
         StructureOwnerStoreImpl,
@@ -77,18 +68,10 @@ pub mod realm_systems {
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(
-            ref self: ContractState,
-            owner: ContractAddress,
-            realm_id: ID,
-            frontend: ContractAddress,
-            lords_resource_index: u8,
-        ) -> ID {
+        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            season.assert_has_started();
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
             // collect season pass
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
@@ -116,12 +99,7 @@ pub mod realm_systems {
             // bridge attached lords into the realm
             if lords_amount_attached.is_non_zero() {
                 InternalRealmLogicImpl::bridge_lords_into_realm(
-                    ref world,
-                    season_addresses_config.lords_address,
-                    structure_id,
-                    lords_amount_attached,
-                    frontend,
-                    lords_resource_index,
+                    ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
                 );
             }
 
@@ -184,13 +162,18 @@ pub mod realm_systems {
                 StructureCategory::Realm,
                 false,
                 resources.span(),
-                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder },
+                StructureMetadata { realm_id: realm_id.try_into().unwrap(), order, has_wonder, village_realm: 0 },
                 tile_occupier.into(),
             );
 
             // place castle building
             BuildingImpl::create(
-                ref world, structure_id, coord, BuildingCategory::Castle, Option::None, BuildingImpl::center(),
+                ref world,
+                structure_id,
+                StructureCategory::Realm.into(),
+                coord,
+                BuildingCategory::ResourceLabor,
+                BuildingImpl::center(),
             );
 
             structure_id
@@ -224,23 +207,15 @@ pub mod realm_systems {
             realm_structure_id: ID,
             amount: u256,
             frontend: ContractAddress,
-            lords_resource_index: u8,
         ) {
             // get bridge systems address
-            let (bridge_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
-                dojo::world::Resource::Contract((
-                    contract_address, namespace_hash,
-                )) => (contract_address, namespace_hash),
-                _ => (Zero::zero(), Zero::zero()),
-            };
-
+            let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
             // approve bridge to spend lords
             IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
 
             // deposit lords
             IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit_initial(lords_address, realm_structure_id, amount, frontend, lords_resource_index);
+                .deposit(lords_address, realm_structure_id, amount, frontend);
         }
 
 

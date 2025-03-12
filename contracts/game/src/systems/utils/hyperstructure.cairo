@@ -20,7 +20,7 @@ use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
-    fn lottery(ref world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
         let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
         let hyps_fail_prob_increase_p_hex: u128 = tile_distance_count * map_config.hyps_fail_prob_increase_p_hex.into();
@@ -37,7 +37,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // reduce find probabilities based on global hyperstructure found count
         let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
-        let hyperstructure_count: u64 = hyperstructure_globals.count;
+        let hyperstructure_count = hyperstructure_globals.created_count;
         let hyps_fail_prob_increase_p_fnd: u128 = hyperstructure_count.into()
             * map_config.hyps_fail_prob_increase_p_fnd.into();
         hyps_win_prob =
@@ -110,7 +110,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // increment hyperstructure count
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
-        hyperstructure_globals.count += 1;
+        hyperstructure_globals.created_count += 1;
         world.write_model(@hyperstructure_globals);
 
         // [Achievement] Hyperstructure Creation

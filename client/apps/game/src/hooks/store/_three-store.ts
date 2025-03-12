@@ -57,7 +57,7 @@ export const createThreeStoreSlice = (set: any, _get: any) => ({
   setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
   hoveredBattle: null,
   setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
-  selectedBuilding: BuildingType.Farm,
+  selectedBuilding: BuildingType.ResourceWheat,
   setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
   selectedBuildingEntityId: null,
   setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => set({ selectedBuildingEntityId }),

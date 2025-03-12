@@ -27,7 +27,9 @@ export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
 
       const owner = undefined;
 
-      const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) => getAddressFromStructureEntity(id, components));
+      const to = eventDetails[eventType].to?.(componentValue! as any, (id: ID) =>
+        getAddressFromStructureEntity(id, components),
+      );
       const isPersonal = to === ContractAddress(account.address);
 
       return {

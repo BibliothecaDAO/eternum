@@ -35,7 +35,7 @@ union ERC__Token = ERC20__Token | ERC721__Token
 
 scalar Enum
 
-union ModelUnion = s1_eternum_AcceptOrder | s1_eternum_AddressName | s1_eternum_Building | s1_eternum_BuildingCategoryPopConfig | s1_eternum_BuildingConfig | s1_eternum_BurnDonkey | s1_eternum_CancelOrder | s1_eternum_Contribution | s1_eternum_CreateGuild | s1_eternum_CreateOrder | s1_eternum_Epoch | s1_eternum_ExplorerTroops | s1_eternum_GameEnded | s1_eternum_Guild | s1_eternum_GuildMember | s1_eternum_GuildWhitelist | s1_eternum_Hyperstructure | s1_eternum_HyperstructureCoOwnersChange | s1_eternum_HyperstructureContribution | s1_eternum_HyperstructureFinished | s1_eternum_HyperstructureGlobals | s1_eternum_HyperstructureResourceConfig | s1_eternum_HyperstructureStarted | s1_eternum_JoinGuild | s1_eternum_Leaderboard | s1_eternum_LeaderboardEntry | s1_eternum_LeaderboardRegisterContribution | s1_eternum_LeaderboardRegisterShare | s1_eternum_LeaderboardRegistered | s1_eternum_LeaderboardRewardClaimed | s1_eternum_Liquidity | s1_eternum_LiquidityEvent | s1_eternum_Market | s1_eternum_Message | s1_eternum_Position | s1_eternum_ProductionConfig | s1_eternum_Progress | s1_eternum_Quantity | s1_eternum_QuantityTracker | s1_eternum_Resource | s1_eternum_ResourceAllowance | s1_eternum_ResourceArrival | s1_eternum_ResourceBridgeWhitelistConfig | s1_eternum_ResourceList | s1_eternum_Season | s1_eternum_SettleRealmData | s1_eternum_StartingResourcesConfig | s1_eternum_Structure | s1_eternum_StructureBuildings | s1_eternum_StructureLevelConfig | s1_eternum_SwapEvent | s1_eternum_Tile | s1_eternum_Trade | s1_eternum_TradeCount | s1_eternum_Transfer | s1_eternum_TrophyCreation | s1_eternum_TrophyProgression | s1_eternum_WeightConfig | s1_eternum_WorldConfig
+union ModelUnion = s1_eternum_AcceptOrder | s1_eternum_AddressName | s1_eternum_Building | s1_eternum_BuildingCategoryPopConfig | s1_eternum_BuildingConfig | s1_eternum_BurnDonkey | s1_eternum_CancelOrder | s1_eternum_Contribution | s1_eternum_CreateGuild | s1_eternum_CreateOrder | s1_eternum_Epoch | s1_eternum_ExplorerTroops | s1_eternum_GameEnded | s1_eternum_Guild | s1_eternum_GuildMember | s1_eternum_GuildWhitelist | s1_eternum_Hyperstructure | s1_eternum_HyperstructureCoOwnersChange | s1_eternum_HyperstructureContribution | s1_eternum_HyperstructureFinished | s1_eternum_HyperstructureGlobals | s1_eternum_HyperstructureResourceConfig | s1_eternum_HyperstructureStarted | s1_eternum_JoinGuild | s1_eternum_Leaderboard | s1_eternum_LeaderboardEntry | s1_eternum_LeaderboardRegisterContribution | s1_eternum_LeaderboardRegisterShare | s1_eternum_LeaderboardRegistered | s1_eternum_LeaderboardRewardClaimed | s1_eternum_Liquidity | s1_eternum_LiquidityEvent | s1_eternum_Market | s1_eternum_Message | s1_eternum_Position | s1_eternum_ProductionConfig | s1_eternum_Progress | s1_eternum_Quantity | s1_eternum_QuantityTracker | s1_eternum_Resource | s1_eternum_ResourceAllowance | s1_eternum_ResourceArrival | s1_eternum_ResourceBridgeWhitelistConfig | s1_eternum_ResourceList | s1_eternum_SettleRealmData | s1_eternum_StartingResourcesConfig | s1_eternum_Structure | s1_eternum_StructureBuildings | s1_eternum_StructureLevelConfig | s1_eternum_SwapEvent | s1_eternum_Tile | s1_eternum_Trade | s1_eternum_TradeCount | s1_eternum_Transfer | s1_eternum_TrophyCreation | s1_eternum_TrophyProgression | s1_eternum_WeightConfig | s1_eternum_WorldConfig
 
 enum OrderDirection {
   ASC
@@ -297,7 +297,6 @@ type World__Query {
   s1EternumResourceBridgeWhitelistConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_ResourceBridgeWhitelistConfigOrder, where: s1_eternum_ResourceBridgeWhitelistConfigWhereInput): s1_eternum_ResourceBridgeWhitelistConfigConnection
   s1EternumResourceListModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_ResourceListOrder, where: s1_eternum_ResourceListWhereInput): s1_eternum_ResourceListConnection
   s1EternumResourceModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_ResourceOrder, where: s1_eternum_ResourceWhereInput): s1_eternum_ResourceConnection
-  s1EternumSeasonModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_SeasonOrder, where: s1_eternum_SeasonWhereInput): s1_eternum_SeasonConnection
   s1EternumSettleRealmDataModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_SettleRealmDataOrder, where: s1_eternum_SettleRealmDataWhereInput): s1_eternum_SettleRealmDataConnection
   s1EternumStartingResourcesConfigModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_StartingResourcesConfigOrder, where: s1_eternum_StartingResourcesConfigWhereInput): s1_eternum_StartingResourcesConfigConnection
   s1EternumStructureBuildingsModels(after: Cursor, before: Cursor, first: Int, last: Int, limit: Int, offset: Int, order: s1_eternum_StructureBuildingsOrder, where: s1_eternum_StructureBuildingsWhereInput): s1_eternum_StructureBuildingsConnection
@@ -1905,7 +1904,8 @@ input s1_eternum_HyperstructureFinishedWhereInput {
 }
 
 type s1_eternum_HyperstructureGlobals {
-  count: u64
+  completed_count: u32
+  created_count: u32
   entity: World__Entity
   eventMessage: World__EventMessage
   world_id: u32
@@ -1928,22 +1928,33 @@ input s1_eternum_HyperstructureGlobalsOrder {
 }
 
 enum s1_eternum_HyperstructureGlobalsOrderField {
-  COUNT
+  COMPLETED_COUNT
   WORLD_ID
 }
 
 input s1_eternum_HyperstructureGlobalsWhereInput {
-  count: u64
-  countEQ: u64
-  countGT: u64
-  countGTE: u64
-  countIN: [u64]
-  countLIKE: u64
-  countLT: u64
-  countLTE: u64
-  countNEQ: u64
-  countNOTIN: [u64]
-  countNOTLIKE: u64
+  completed_count: u32
+  completed_countEQ: u32
+  completed_countGT: u32
+  completed_countGTE: u32
+  completed_countIN: [u32]
+  completed_countLIKE: u32
+  completed_countLT: u32
+  completed_countLTE: u32
+  completed_countNEQ: u32
+  completed_countNOTIN: [u32]
+  completed_countNOTLIKE: u32
+  created_count: u32
+  created_countEQ: u32
+  created_countGT: u32
+  created_countGTE: u32
+  created_countIN: [u32]
+  created_countLIKE: u32
+  created_countLT: u32
+  created_countLTE: u32
+  created_countNEQ: u32
+  created_countNOTIN: [u32]
+  created_countNOTLIKE: u32
   world_id: u32
   world_idEQ: u32
   world_idGT: u32
@@ -3080,7 +3091,8 @@ type s1_eternum_Production {
 }
 
 type s1_eternum_ProductionConfig {
-  amount_per_building_per_tick: u128
+  realm_output_per_tick: u64
+  village_output_per_tick: u64
   entity: World__Entity
   eventMessage: World__EventMessage
   labor_burn_strategy: s1_eternum_LaborBurnPrStrategy
@@ -3105,24 +3117,36 @@ input s1_eternum_ProductionConfigOrder {
 }
 
 enum s1_eternum_ProductionConfigOrderField {
-  AMOUNT_PER_BUILDING_PER_TICK
+  REALM_OUTPUT_PER_TICK
+  VILLAGE_OUTPUT_PER_TICK
   LABOR_BURN_STRATEGY
   MULTIPLE_RESOURCE_BURN_STRATEGY
   RESOURCE_TYPE
 }
 
 input s1_eternum_ProductionConfigWhereInput {
-  amount_per_building_per_tick: u128
-  amount_per_building_per_tickEQ: u128
-  amount_per_building_per_tickGT: u128
-  amount_per_building_per_tickGTE: u128
-  amount_per_building_per_tickIN: [u128]
-  amount_per_building_per_tickLIKE: u128
-  amount_per_building_per_tickLT: u128
-  amount_per_building_per_tickLTE: u128
-  amount_per_building_per_tickNEQ: u128
-  amount_per_building_per_tickNOTIN: [u128]
-  amount_per_building_per_tickNOTLIKE: u128
+  realm_output_per_tick: u64
+  realm_output_per_tickEQ: u64
+  realm_output_per_tickGT: u64
+  realm_output_per_tickGTE: u64
+  realm_output_per_tickIN: [u64]
+  realm_output_per_tickLIKE: u64
+  realm_output_per_tickLT: u64
+  realm_output_per_tickLTE: u64
+  realm_output_per_tickNEQ: u64
+  realm_output_per_tickNOTIN: [u64]
+  realm_output_per_tickNOTLIKE: u64
+  village_output_per_tick: u64
+  village_output_per_tickEQ: u64
+  village_output_per_tickGT: u64
+  village_output_per_tickGTE: u64
+  village_output_per_tickIN: [u64]
+  village_output_per_tickLIKE: u64
+  village_output_per_tickLT: u64
+  village_output_per_tickLTE: u64
+  village_output_per_tickNEQ: u64
+  village_output_per_tickNOTIN: [u64]
+  village_output_per_tickNOTLIKE: u64
   labor_burn_strategy: s1_eternum_ProductionConfig_labor_burn_strategyWhereInput
   multiple_resource_burn_strategy: s1_eternum_ProductionConfig_multiple_resource_burn_strategyWhereInput
   resource_type: u8
@@ -3678,8 +3702,8 @@ type s1_eternum_ResourceBridgeConfig {
 type s1_eternum_ResourceBridgeFeeSplitConfig {
   client_fee_on_dpt_percent: u16
   client_fee_on_wtdr_percent: u16
-  max_bank_fee_dpt_percent: u16
-  max_bank_fee_wtdr_percent: u16
+  realm_fee_dpt_percent: u16
+  realm_fee_wtdr_percent: u16
   season_pool_fee_on_dpt_percent: u16
   season_pool_fee_on_wtdr_percent: u16
   season_pool_fee_recipient: ContractAddress
@@ -6138,83 +6162,10 @@ input s1_eternum_Resource_weightWhereInput {
   weightNOTLIKE: u128
 }
 
-type s1_eternum_Season {
-  config_id: u32
-  ended_at: u64
-  entity: World__Entity
-  eventMessage: World__EventMessage
-  is_over: bool
-  start_at: u64
-}
-
 type s1_eternum_SeasonAddressesConfig {
   lords_address: ContractAddress
   realms_address: ContractAddress
   season_pass_address: ContractAddress
-}
-
-type s1_eternum_SeasonBridgeConfig {
-  close_after_end_seconds: u64
-}
-
-type s1_eternum_SeasonConnection {
-  edges: [s1_eternum_SeasonEdge]
-  pageInfo: World__PageInfo!
-  totalCount: Int!
-}
-
-type s1_eternum_SeasonEdge {
-  cursor: Cursor
-  node: s1_eternum_Season
-}
-
-input s1_eternum_SeasonOrder {
-  direction: OrderDirection!
-  field: s1_eternum_SeasonOrderField!
-}
-
-enum s1_eternum_SeasonOrderField {
-  CONFIG_ID
-  ENDED_AT
-  IS_OVER
-  START_AT
-}
-
-input s1_eternum_SeasonWhereInput {
-  config_id: u32
-  config_idEQ: u32
-  config_idGT: u32
-  config_idGTE: u32
-  config_idIN: [u32]
-  config_idLIKE: u32
-  config_idLT: u32
-  config_idLTE: u32
-  config_idNEQ: u32
-  config_idNOTIN: [u32]
-  config_idNOTLIKE: u32
-  ended_at: u64
-  ended_atEQ: u64
-  ended_atGT: u64
-  ended_atGTE: u64
-  ended_atIN: [u64]
-  ended_atLIKE: u64
-  ended_atLT: u64
-  ended_atLTE: u64
-  ended_atNEQ: u64
-  ended_atNOTIN: [u64]
-  ended_atNOTLIKE: u64
-  is_over: bool
-  start_at: u64
-  start_atEQ: u64
-  start_atGT: u64
-  start_atGTE: u64
-  start_atIN: [u64]
-  start_atLIKE: u64
-  start_atLT: u64
-  start_atLTE: u64
-  start_atNEQ: u64
-  start_atNOTIN: [u64]
-  start_atNOTLIKE: u64
 }
 
 type s1_eternum_SettleRealmData {
@@ -6450,6 +6401,13 @@ type s1_eternum_SettlementConfig {
   current_side: u32
   min_first_layer_distance: u32
   points_placed: u32
+}
+
+type s1_eternum_SeasonConfig {
+  start_settling_at: u64
+  start_main_at: u64
+  end_at: u64
+  end_grace_seconds: u32
 }
 
 type s1_eternum_SpeedConfig {
@@ -6706,6 +6664,7 @@ type s1_eternum_StructureMetadata {
   has_wonder: bool
   order: u8
   realm_id: u16
+  village_realm: u32
 }
 
 input s1_eternum_StructureOrder {
@@ -8026,7 +7985,6 @@ type s1_eternum_WorldConfig {
   res_bridge_fee_split_config: s1_eternum_ResourceBridgeFeeSplitConfig
   resource_bridge_config: s1_eternum_ResourceBridgeConfig
   season_addresses_config: s1_eternum_SeasonAddressesConfig
-  season_bridge_config: s1_eternum_SeasonBridgeConfig
   settlement_config: s1_eternum_SettlementConfig
   speed_config: s1_eternum_SpeedConfig
   structure_max_level_config: s1_eternum_StructureMaxLevelConfig
@@ -8036,6 +7994,7 @@ type s1_eternum_WorldConfig {
   troop_limit_config: s1_eternum_TroopLimitConfig
   troop_stamina_config: s1_eternum_TroopStaminaConfig
   vrf_provider_address: ContractAddress
+  season_config: s1_eternum_SeasonConfig
 }
 
 type s1_eternum_WorldConfigConnection {
@@ -8453,28 +8412,28 @@ input s1_eternum_WorldConfig_res_bridge_fee_split_configWhereInput {
   client_fee_on_wtdr_percentNEQ: u16
   client_fee_on_wtdr_percentNOTIN: [u16]
   client_fee_on_wtdr_percentNOTLIKE: u16
-  max_bank_fee_dpt_percent: u16
-  max_bank_fee_dpt_percentEQ: u16
-  max_bank_fee_dpt_percentGT: u16
-  max_bank_fee_dpt_percentGTE: u16
-  max_bank_fee_dpt_percentIN: [u16]
-  max_bank_fee_dpt_percentLIKE: u16
-  max_bank_fee_dpt_percentLT: u16
-  max_bank_fee_dpt_percentLTE: u16
-  max_bank_fee_dpt_percentNEQ: u16
-  max_bank_fee_dpt_percentNOTIN: [u16]
-  max_bank_fee_dpt_percentNOTLIKE: u16
-  max_bank_fee_wtdr_percent: u16
-  max_bank_fee_wtdr_percentEQ: u16
-  max_bank_fee_wtdr_percentGT: u16
-  max_bank_fee_wtdr_percentGTE: u16
-  max_bank_fee_wtdr_percentIN: [u16]
-  max_bank_fee_wtdr_percentLIKE: u16
-  max_bank_fee_wtdr_percentLT: u16
-  max_bank_fee_wtdr_percentLTE: u16
-  max_bank_fee_wtdr_percentNEQ: u16
-  max_bank_fee_wtdr_percentNOTIN: [u16]
-  max_bank_fee_wtdr_percentNOTLIKE: u16
+  realm_fee_dpt_percent: u16
+  realm_fee_dpt_percentEQ: u16
+  realm_fee_dpt_percentGT: u16
+  realm_fee_dpt_percentGTE: u16
+  realm_fee_dpt_percentIN: [u16]
+  realm_fee_dpt_percentLIKE: u16
+  realm_fee_dpt_percentLT: u16
+  realm_fee_dpt_percentLTE: u16
+  realm_fee_dpt_percentNEQ: u16
+  realm_fee_dpt_percentNOTIN: [u16]
+  realm_fee_dpt_percentNOTLIKE: u16
+  realm_fee_wtdr_percent: u16
+  realm_fee_wtdr_percentEQ: u16
+  realm_fee_wtdr_percentGT: u16
+  realm_fee_wtdr_percentGTE: u16
+  realm_fee_wtdr_percentIN: [u16]
+  realm_fee_wtdr_percentLIKE: u16
+  realm_fee_wtdr_percentLT: u16
+  realm_fee_wtdr_percentLTE: u16
+  realm_fee_wtdr_percentNEQ: u16
+  realm_fee_wtdr_percentNOTIN: [u16]
+  realm_fee_wtdr_percentNOTLIKE: u16
   season_pool_fee_on_dpt_percent: u16
   season_pool_fee_on_dpt_percentEQ: u16
   season_pool_fee_on_dpt_percentGT: u16

@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use s1_eternum::models::config::{TroopStaminaConfig};
 use s1_eternum::models::troop::TroopType;
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 pub struct Stamina {
     pub amount: u64,
     pub updated_tick: u64,
@@ -10,13 +10,11 @@ pub struct Stamina {
 
 #[generate_trait]
 pub impl StaminaImpl of StaminaTrait {
-    #[inline(always)]
     fn reset(ref self: Stamina, current_tick: u64) {
         self.amount = 0;
         self.updated_tick = 0;
     }
 
-    #[inline(always)]
     fn refill(ref self: Stamina, troop_type: TroopType, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
         if (self.updated_tick == current_tick) {
             return;
@@ -35,7 +33,6 @@ pub impl StaminaImpl of StaminaTrait {
         }
     }
 
-    #[inline(always)]
     fn spend(
         ref self: Stamina,
         troop_type: TroopType,
@@ -57,7 +54,6 @@ pub impl StaminaImpl of StaminaTrait {
         }
     }
 
-    #[inline(always)]
     fn add(
         ref self: Stamina,
         troop_type: TroopType,
@@ -71,7 +67,6 @@ pub impl StaminaImpl of StaminaTrait {
     }
 
 
-    #[inline(always)]
     fn max(troop_type: TroopType, troop_stamina_config: TroopStaminaConfig) -> u64 {
         match troop_type {
             TroopType::Knight => troop_stamina_config.stamina_knight_max.into(),

@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
+import { AllResourceArrivals } from "@/ui/components/trading/resource-arrivals";
 import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
@@ -30,9 +31,10 @@ const WorldStructuresMenu = lazy(() =>
   })),
 );
 
-const AllResourceArrivals = lazy(() =>
-  import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
-);
+// todo: implement this with new arrivals logic
+// const AllResourceArrivals = lazy(() =>
+//   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
+// );
 
 export const LeftNavigationModule = memo(() => {
   const {

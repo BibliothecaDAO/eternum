@@ -8,6 +8,9 @@ import {
   BuildingType,
   getEntityIdFromKeys,
   getRealmInfo,
+  isFoodBuilding,
+  isMilitaryBuilding,
+  isResourceBuilding,
   ResourcesIds,
   TileManager,
   toHexString,
@@ -33,26 +36,11 @@ export const Buildings = ({ structure }: { structure: any }) => {
 
   const buildings = useBuildings(realm?.position.x || 0, realm?.position.y || 0);
 
-  const economyBuildings = buildings.filter(
-    (building) =>
-      building.category === BuildingType[BuildingType.Farm] ||
-      building.category === BuildingType[BuildingType.FishingVillage],
-  );
+  const foodBuildings = buildings.filter((building) => isFoodBuilding(building.category));
 
-  const resourceBuildings = buildings.filter((building) => building.category === BuildingType[BuildingType.Resource]);
+  const resourceBuildings = buildings.filter((building) => isResourceBuilding(building.category));
 
-  const militaryBuildings = buildings.filter(
-    (building) =>
-      building.category === BuildingType[BuildingType.Barracks1] ||
-      building.category === BuildingType[BuildingType.ArcheryRange1] ||
-      building.category === BuildingType[BuildingType.Stable1] ||
-      building.category === BuildingType[BuildingType.Barracks2] ||
-      building.category === BuildingType[BuildingType.ArcheryRange2] ||
-      building.category === BuildingType[BuildingType.Stable2] ||
-      building.category === BuildingType[BuildingType.Barracks3] ||
-      building.category === BuildingType[BuildingType.ArcheryRange3] ||
-      building.category === BuildingType[BuildingType.Stable3],
-  );
+  const militaryBuildings = buildings.filter((building) => isMilitaryBuilding(building.category));
 
   const handlePauseResumeProduction = (paused: boolean, innerCol: number, innerRow: number) => {
     setIsLoading({ isLoading: true, innerCol, innerRow });
@@ -76,7 +64,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
       <div className="mb-4">
         <div
           className={clsx("economy-building-selector flex items-center cursor-pointer mb-2", {
-            "pointer-events-none opacity-50": !economyBuildings.length,
+            "pointer-events-none opacity-50": !foodBuildings.length,
           })}
           onClick={() => setShowEconomy(!showEconomy)}
         >
@@ -87,7 +75,7 @@ export const Buildings = ({ structure }: { structure: any }) => {
         </div>
 
         {showEconomy &&
-          economyBuildings.map((building, index) => (
+          foodBuildings.map((building, index) => (
             <BuildingRow
               key={`economy-${index}`}
               building={building}

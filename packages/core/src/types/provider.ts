@@ -1,4 +1,4 @@
-import { Account, AccountInterface, BigNumberish, CairoOption, num } from "starknet";
+import { Account, AccountInterface, BigNumberish, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { Resource } from "./common";
@@ -107,7 +107,6 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
   owner: num.BigNumberish;
   realm_ids: num.BigNumberish[];
   frontend: num.BigNumberish;
-  lords_resource_index: num.BigNumberish;
   season_pass_address: string;
 }
 
@@ -123,7 +122,6 @@ export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
   directions: num.BigNumberish[];
   building_category: BuildingType;
-  produce_resource_type: CairoOption<Number>;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
@@ -323,6 +321,8 @@ export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
   shards_mines_win_probability: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
+  agent_find_probability: num.BigNumberish;
+  agent_find_fail_probability: num.BigNumberish;
   hyps_win_prob: num.BigNumberish;
   hyps_fail_prob: num.BigNumberish;
   hyps_fail_prob_increase_p_hex: num.BigNumberish;
@@ -347,6 +347,10 @@ export interface SetCapacityConfigProps extends SystemSigner {
   storehouse_boost_capacity: num.BigNumberish; // grams
 }
 
+export interface SetAgentControllerProps extends SystemSigner {
+  agent_controller: num.BigNumberish;
+}
+
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: num.BigNumberish;
 }
@@ -354,7 +358,7 @@ export interface SetTradeConfigProps extends SystemSigner {
 export interface SetWeightConfigProps extends SystemSigner {
   calls: {
     entity_type: num.BigNumberish;
-    weight_gram: num.BigNumberish;
+    weight_nanogram: num.BigNumberish;
   }[];
 }
 
@@ -365,7 +369,8 @@ export interface SetTickConfigProps extends SystemSigner {
 export interface SetProductionConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    amount_per_building_per_tick: num.BigNumberish;
+    realm_output_per_tick: num.BigNumberish;
+    village_output_per_tick: num.BigNumberish;
     labor_burn_strategy: LaborBurnProductionStrategy;
     predefined_resource_burn_cost: ResourceCosts[];
   }[];
@@ -420,6 +425,8 @@ export interface TroopLimitConfigProps {
   guard_resurrection_delay: num.BigNumberish;
   mercenaries_troop_lower_bound: num.BigNumberish;
   mercenaries_troop_upper_bound: num.BigNumberish;
+  agent_troop_lower_bound: num.BigNumberish;
+  agent_troop_upper_bound: num.BigNumberish;
 }
 
 export interface TroopDamageConfigProps {
@@ -434,24 +441,16 @@ export interface TroopDamageConfigProps {
   t3_damage_multiplier: num.BigNumberish;
 }
 
-export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
-  calls: { building_category: BuildingType; population: num.BigNumberish; capacity: num.BigNumberish }[];
-}
-
-export interface SetBuildingGeneralConfigProps extends SystemSigner {
+export interface SetBuildingConfigProps extends SystemSigner {
+  base_population: num.BigNumberish;
   base_cost_percent_increase: num.BigNumberish;
 }
 
-export interface SetPopulationConfigProps extends SystemSigner {
-  base_population: num.BigNumberish;
-}
-
-export interface SetBuildingConfigProps extends SystemSigner {
-  calls: {
-    building_category: BuildingType;
-    building_resource_type: ResourcesIds;
-    cost_of_building: ResourceCosts[];
-  }[];
+export interface SetBuildingCategoryConfigProps extends SystemSigner {
+  building_category: BuildingType;
+  cost_of_building: ResourceCosts[];
+  population_cost: num.BigNumberish;
+  capacity_grant: num.BigNumberish;
 }
 
 export interface setRealmUpgradeConfigProps extends SystemSigner {
@@ -478,15 +477,13 @@ export interface SetSeasonConfigProps extends SystemSigner {
   season_pass_address: num.BigNumberish;
   realms_address: num.BigNumberish;
   lords_address: num.BigNumberish;
-  start_at: num.BigNumberish;
+  start_settling_at: num.BigNumberish;
+  start_main_at: num.BigNumberish;
+  end_grace_seconds: num.BigNumberish;
 }
 
 export interface SetVRFConfigProps extends SystemSigner {
   vrf_provider_address: num.BigNumberish;
-}
-
-export interface SetSeasonBridgeConfigProps extends SystemSigner {
-  close_after_end_seconds: num.BigNumberish;
 }
 
 export interface SetResourceBridgeWhitelistConfigProps extends SystemSigner {
@@ -506,8 +503,8 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
   client_fee_on_wtdr_percent: num.BigNumberish;
   velords_fee_recipient: num.BigNumberish;
   season_pool_fee_recipient: num.BigNumberish;
-  max_bank_fee_dpt_percent: num.BigNumberish;
-  max_bank_fee_wtdr_percent: num.BigNumberish;
+  realm_fee_dpt_percent: num.BigNumberish;
+  realm_fee_wtdr_percent: num.BigNumberish;
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {

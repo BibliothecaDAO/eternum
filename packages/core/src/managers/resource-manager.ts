@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, CapacityConfig, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID, Resource } from "../types";
-import { gramToKg, kgToGram, multiplyByPrecision, unpackValue } from "../utils";
+import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -634,11 +634,17 @@ export class ResourceManager {
     if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
-    const packedBuildingCount =
-      getComponentValue(this.components.StructureBuildings, getEntityIdFromKeys([BigInt(this.entityId || 0)]))
-        ?.packed_counts || 0n;
+    const structureBuildings = getComponentValue(
+      this.components.StructureBuildings,
+      getEntityIdFromKeys([BigInt(this.entityId || 0)]),
+    );
 
-    const quantity = unpackValue(packedBuildingCount)[BuildingType.Storehouse] || 0;
+    const packBuildingCounts = [
+      structureBuildings?.packed_counts_1 || 0n,
+      structureBuildings?.packed_counts_2 || 0n,
+      structureBuildings?.packed_counts_3 || 0n,
+    ];
+    const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
     return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
   }

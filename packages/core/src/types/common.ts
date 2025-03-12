@@ -111,7 +111,7 @@ export interface Prize {
 
 export interface Building {
   name: string;
-  category: string;
+  category: BuildingType;
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
@@ -293,6 +293,9 @@ export interface ProductionByLaborParams {
 }
 
 export interface Config {
+  agent: {
+    controller_address: string;
+  };
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;
@@ -326,6 +329,8 @@ export interface Config {
     reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
+    agentFindProbability: number;
+    agentFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -381,6 +386,8 @@ export interface Config {
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
+      agentTroopLowerBound: number;
+      agentTroopUpperBound: number;
     };
   };
   settlement: {
@@ -393,7 +400,8 @@ export interface Config {
     current_point_on_side: number;
   };
   season: {
-    startAfterSeconds: number;
+    startSettlingAfterSeconds: number;
+    startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
@@ -405,8 +413,8 @@ export interface Config {
     client_fee_on_wtdr_percent: number;
     velords_fee_recipient: string;
     season_pool_fee_recipient: string;
-    max_bank_fee_dpt_percent: number;
-    max_bank_fee_wtdr_percent: number;
+    realm_fee_dpt_percent: number;
+    realm_fee_wtdr_percent: number;
   };
   vrf: {
     vrfProviderAddress: string;
@@ -415,8 +423,7 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    otherBuildingCosts: ResourceInputs;
-    resourceBuildingCosts: ResourceInputs;
+    buildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 

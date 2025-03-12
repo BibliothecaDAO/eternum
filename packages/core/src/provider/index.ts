@@ -570,7 +570,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address, lords_resource_index } = props;
+    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -583,7 +583,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCalls = realm_ids.map((realm_id) => ({
       contractAddress: realmSystemsContractAddress,
       entrypoint: "create",
-      calldata: [owner, realm_id, frontend, lords_resource_index],
+      calldata: [owner, realm_id, frontend],
     }));
 
     const approvalCloseForAllCall = {
@@ -870,12 +870,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
-    const { entity_id, directions, building_category, produce_resource_type, signer } = props;
+    const { entity_id, directions, building_category, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category, produce_resource_type]),
+      calldata: CallData.compile([entity_id, directions, building_category]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1686,6 +1686,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       reward_amount,
       shards_mines_win_probability,
       shards_mines_fail_probability,
+      agent_find_probability,
+      agent_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -1702,6 +1704,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         reward_amount,
         shards_mines_win_probability,
         shards_mines_fail_probability,
+        agent_find_probability,
+        agent_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -1737,12 +1741,27 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
-    const { season_pass_address, realms_address, lords_address, start_at, signer } = props;
+    const {
+      season_pass_address,
+      realms_address,
+      lords_address,
+      start_settling_at,
+      start_main_at,
+      end_grace_seconds,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_season_config",
-      calldata: [season_pass_address, realms_address, lords_address, start_at],
+      calldata: [
+        season_pass_address,
+        realms_address,
+        lords_address,
+        start_settling_at,
+        start_main_at,
+        end_grace_seconds,
+      ],
     });
   }
 
@@ -1756,16 +1775,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_season_bridge_config(props: SystemProps.SetSeasonBridgeConfigProps) {
-    const { close_after_end_seconds, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_season_bridge_config",
-      calldata: [close_after_end_seconds],
-    });
-  }
-
   public async set_resource_bridge_fees_config(props: SystemProps.SetResourceBridgeFeesConfigProps) {
     const {
       velords_fee_on_dpt_percent,
@@ -1774,8 +1783,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       season_pool_fee_on_wtdr_percent,
       client_fee_on_dpt_percent,
       client_fee_on_wtdr_percent,
-      max_bank_fee_dpt_percent,
-      max_bank_fee_wtdr_percent,
+      realm_fee_dpt_percent,
+      realm_fee_wtdr_percent,
       velords_fee_recipient,
       season_pool_fee_recipient,
       signer,
@@ -1791,11 +1800,21 @@ export class EternumProvider extends EnhancedDojoProvider {
         season_pool_fee_on_wtdr_percent,
         client_fee_on_dpt_percent,
         client_fee_on_wtdr_percent,
-        max_bank_fee_dpt_percent,
-        max_bank_fee_wtdr_percent,
+        realm_fee_dpt_percent,
+        realm_fee_wtdr_percent,
         velords_fee_recipient,
         season_pool_fee_recipient,
       ],
+    });
+  }
+
+  public async set_agent_controller(props: SystemProps.SetAgentControllerProps) {
+    const { agent_controller, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_agent_controller",
+      calldata: [agent_controller],
     });
   }
 
@@ -1828,7 +1847,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_resource_weight_config",
-          calldata: [call.entity_type, call.weight_gram],
+          calldata: [call.entity_type, call.weight_nanogram],
         };
       }),
     );
@@ -1863,7 +1882,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         entrypoint: "set_production_config",
         calldata: [
           call.resource_type,
-          call.amount_per_building_per_tick,
+          call.realm_output_per_tick,
+          call.village_output_per_tick,
           call.labor_burn_strategy.resource_rarity,
           call.labor_burn_strategy.wheat_burn_per_labor,
           call.labor_burn_strategy.fish_burn_per_labor,
@@ -1940,6 +1960,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         limit_config.guard_resurrection_delay,
         limit_config.mercenaries_troop_lower_bound,
         limit_config.mercenaries_troop_upper_bound,
+        limit_config.agent_troop_lower_bound,
+        limit_config.agent_troop_upper_bound,
       ],
     });
   }
@@ -1951,41 +1973,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_battle_config",
       calldata: [regular_immunity_ticks, hyperstructure_immunity_ticks],
-    });
-  }
-
-  public async set_building_category_pop_config(props: SystemProps.SetBuildingCategoryPopConfigProps) {
-    const { calls, signer } = props;
-
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_building_category_pop_config",
-          calldata: [call.building_category, call.population, call.capacity],
-        };
-      }),
-    );
-  }
-
-  public async set_building_general_config(props: SystemProps.SetBuildingGeneralConfigProps) {
-    const { base_cost_percent_increase, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_building_general_config",
-      calldata: [base_cost_percent_increase],
-    });
-  }
-
-  public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
-    const { base_population, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_population_config",
-      calldata: [base_population],
     });
   }
 
@@ -2029,23 +2016,29 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
-    const { calls, signer } = props;
+    const { base_population, base_cost_percent_increase, signer } = props;
 
-    return await this.executeAndCheckTransaction(
-      signer,
-      calls.map((call) => {
-        return {
-          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-          entrypoint: "set_building_config",
-          calldata: [
-            call.building_category,
-            call.building_resource_type,
-            call.cost_of_building.length,
-            ...call.cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
-          ],
-        };
-      }),
-    );
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_building_config",
+      calldata: [base_population, base_cost_percent_increase],
+    });
+  }
+
+  public async set_building_category_config(props: SystemProps.SetBuildingCategoryConfigProps) {
+    const { building_category, cost_of_building, population_cost, capacity_grant, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_building_category_config",
+      calldata: [
+        building_category,
+        cost_of_building.length,
+        ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
+        population_cost,
+        capacity_grant,
+      ],
+    });
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {

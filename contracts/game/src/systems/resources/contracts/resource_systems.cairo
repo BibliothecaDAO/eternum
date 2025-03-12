@@ -23,7 +23,7 @@ pub mod resource_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SpeedImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
@@ -31,7 +31,6 @@ pub mod resource_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
     };
@@ -70,7 +69,8 @@ pub mod resource_systems {
             ref self: ContractState, caller_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(caller_structure_id != recipient_structure_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
@@ -127,7 +127,7 @@ pub mod resource_systems {
             ref self: ContractState, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(sender_structure_id != recipient_structure_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -160,7 +160,7 @@ pub mod resource_systems {
                 ref sender_structure_weight,
                 recipient_structure_id,
                 recipient_structure_owner,
-                recipient_structure_base.coord(),
+                recipient_structure_base,
                 ref recipient_structure_weight,
                 resources,
                 false,
@@ -185,7 +185,7 @@ pub mod resource_systems {
             ref self: ContractState, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert(owner_structure_id != recipient_structure_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
@@ -239,7 +239,7 @@ pub mod resource_systems {
                 ref owner_structure_weight,
                 recipient_structure_id,
                 recipient_structure_owner,
-                recipient_structure_base.coord(),
+                recipient_structure_base,
                 ref recipient_structure_weight,
                 resources,
                 false,
@@ -252,7 +252,7 @@ pub mod resource_systems {
             ref self: ContractState, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_explorer_id.is_non_zero(), "from_explorer_id does not exist");
             assert!(to_structure_id.is_non_zero(), "to_structure_id does not exist");
@@ -292,7 +292,7 @@ pub mod resource_systems {
             ref self: ContractState, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
             assert!(to_troop_id.is_non_zero(), "to_troop_id does not exist");
@@ -320,7 +320,7 @@ pub mod resource_systems {
 
         fn arrivals_offload(ref self: ContractState, from_structure_id: ID, day: u64, slot: u8, resource_count: u8) {
             let mut world = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             assert!(from_structure_id.is_non_zero(), "from_structure_id does not exist");
 

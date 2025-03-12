@@ -1,12 +1,15 @@
 use core::num::traits::zero::Zero;
+use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
-use dojo::world::WorldStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
-use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::WorldConfigUtilImpl;
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::map::{Tile, TileOccupier};
+use s1_eternum::models::name::AddressName;
+use s1_eternum::models::owner::OwnerAddressTrait;
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -14,7 +17,7 @@ use s1_eternum::models::resource::resource::{
 };
 use s1_eternum::models::stamina::{StaminaImpl};
 use s1_eternum::models::structure::{
-    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+    StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl,
 };
 use s1_eternum::models::troop::{
@@ -118,6 +121,71 @@ pub impl iGuardImpl of iGuardTrait {
 
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
+    fn create(
+        ref world: WorldStorage,
+        ref tile: Tile,
+        explorer_id: ID,
+        owner: ID,
+        troop_type: TroopType,
+        troop_tier: TroopTier,
+        troop_amount: u128,
+        troop_stamina_config: TroopStaminaConfig,
+        troop_limit_config: TroopLimitConfig,
+        current_tick: u64,
+    ) -> ExplorerTroops {
+        // set explorer as occupier of tile
+        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+
+        // ensure explorer amount does not exceed max
+        assert!(
+            troop_amount <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
+            "reached limit of explorers amount per army",
+        );
+
+        // set troop stamina
+        let mut troops = Troops {
+            category: troop_type, tier: troop_tier, count: troop_amount, stamina: Default::default(),
+        };
+        let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+        troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
+
+        // set explorer
+        let explorer: ExplorerTroops = ExplorerTroops { explorer_id, coord: tile.into(), troops, owner: owner };
+        world.write_model(@explorer);
+
+        // initialize explorer resource model
+        ResourceImpl::initialize(ref world, explorer_id);
+        // increase troop capacity
+        Self::update_capacity(ref world, explorer_id, explorer, troop_amount, true);
+        return explorer;
+    }
+
+    fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+        if self.owner == DAYDREAMS_AGENT_ID {
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            assert!(
+                agent_controller_config.address == starknet::get_caller_address(), "caller is not the agent controller",
+            );
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_owner();
+        }
+    }
+    fn assert_caller_not_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
+        if self.owner == DAYDREAMS_AGENT_ID {
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            assert!(agent_controller_config.address.is_non_zero(), "agent controller config is not set");
+            assert!(
+                agent_controller_config.address != starknet::get_caller_address(), "caller owns the agent but should not",
+            );
+        } else {
+            StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
+        }
+    }
+
     fn burn_stamina_cost(
         ref world: WorldStorage,
         ref explorer: ExplorerTroops,
@@ -164,6 +232,11 @@ pub impl iExplorerImpl of iExplorerTrait {
     fn burn_food_cost(
         ref world: WorldStorage, ref explorer: ExplorerTroops, troop_stamina_config: TroopStaminaConfig, explore: bool,
     ) {
+        if explorer.owner == DAYDREAMS_AGENT_ID {
+            // daydreams agent does not consume food
+            return;
+        }
+
         let (wheat_cost, fish_cost) = match explore {
             true => {
                 (
@@ -222,16 +295,18 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 
 
-    fn explorer_delete(
+    fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        Self::_explorer_delete(ref world, ref explorer);
+    }
+
+
+    fn explorer_from_structure_delete(
         ref world: WorldStorage,
         ref explorer: ExplorerTroops,
         structure_explorers: Array<ID>,
         ref structure_base: StructureBase,
         structure_id: ID,
     ) {
-        // ensure army is dead
-        assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
-
         // todo: check if this will cause panic if explorer count is too high
         //       and delete is called after another army wins a battle against this
 
@@ -248,6 +323,23 @@ pub impl iExplorerImpl of iExplorerTrait {
         structure_base.troop_explorer_count -= 1;
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
+        Self::_explorer_delete(ref world, ref explorer);
+    }
+
+    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
+        let (resource_types, resources_probs) = split_resources_and_probs();
+        let reward_resource_id: u8 = *random::choices(
+            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
+        )
+            .at(0);
+
+        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
+    }
+
+    fn _explorer_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        // ensure army is dead
+        assert!(explorer.troops.count.is_zero(), "explorer unit is alive");
+
         // remove explorer from tile
         let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
         IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
@@ -259,17 +351,6 @@ pub impl iExplorerImpl of iExplorerTrait {
         // erase explorer model
         world.erase_model(@explorer);
         // todo: IMPORTANT: check the cost of erasing the resource model
-
-    }
-
-    fn exploration_reward(ref world: WorldStorage, config: MapConfig, vrf_seed: u256) -> (u8, u128) {
-        let (resource_types, resources_probs) = split_resources_and_probs();
-        let reward_resource_id: u8 = *random::choices(
-            resource_types, resources_probs, array![].span(), 1, true, vrf_seed,
-        )
-            .at(0);
-
-        return (reward_resource_id, config.reward_resource_amount.into() * RESOURCE_PRECISION);
     }
 }
 
@@ -373,5 +454,92 @@ pub impl iMercenariesImpl of iMercenariesTrait {
 
         // update structure base
         StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+    }
+}
+
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::event(historical: false)]
+struct AgentCreatedEvent {
+    #[key]
+    explorer_id: ID,
+    troop_type: TroopType,
+    troop_tier: TroopTier,
+    troop_amount: u128,
+    timestamp: u64,
+}
+
+#[generate_trait]
+pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into()].span(),
+            array![].span(),
+            1,
+            true,
+            vrf_seed,
+        )[0];
+        return success;
+    }
+
+
+    fn create(
+        ref world: WorldStorage,
+        ref tile: Tile,
+        mut seed: u256,
+        troop_limit_config: TroopLimitConfig,
+        troop_stamina_config: TroopStaminaConfig,
+        current_tick: u64,
+    ) -> ExplorerTroops {
+        let mut salt: u128 = 124;
+        let lower_bound: u128 = troop_limit_config.agents_troop_lower_bound.into() * RESOURCE_PRECISION;
+        let upper_bound: u128 = troop_limit_config.agents_troop_upper_bound.into() * RESOURCE_PRECISION;
+        let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
+        let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
+        troop_amount += lower_bound;
+
+        // select a troop type with equal probability
+        let troop_type: TroopType = *random::choices(
+            array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin].span(),
+            array![1, 1, 1].span(),
+            array![].span(),
+            1,
+            true,
+            seed,
+        )
+            .at(0);
+
+        // agent discovery
+        let explorer_id: ID = world.dispatcher.uuid();
+        let troop_tier: TroopTier = TroopTier::T3;
+        let explorer: ExplorerTroops = iExplorerImpl::create(
+            ref world,
+            ref tile,
+            explorer_id,
+            DAYDREAMS_AGENT_ID,
+            troop_type,
+            troop_tier,
+            troop_amount,
+            troop_stamina_config,
+            troop_limit_config,
+            current_tick,
+        );
+
+        // set name based on id
+        let name: felt252 = 'Daydreams Agent Bread';
+        let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
+        world.write_model(@name);
+
+        // todo: give agent resources
+
+        // emit event
+        world
+            .emit_event(
+                @AgentCreatedEvent {
+                    explorer_id, troop_type, troop_tier, troop_amount, timestamp: starknet::get_block_timestamp(),
+                },
+            );
+        return explorer;
     }
 }

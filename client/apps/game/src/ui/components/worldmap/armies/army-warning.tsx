@@ -22,7 +22,10 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
-  const exploreFoodCosts = useMemo(() => computeExploreFoodCosts(army.troops), [army]);
+  const exploreFoodCosts = useMemo(
+    () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),
+    [army],
+  );
 
   const { missingWheat, missingFish, notEnoughFood } = useMemo(() => {
     const missingWheat = Math.max(0, exploreFoodCosts.wheatPayAmount - food.wheat);

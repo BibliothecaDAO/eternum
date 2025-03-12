@@ -1,6 +1,7 @@
 import { IOrder } from "../types";
 
 export const ORDER_NAME_DICT: { [key: number]: string } = {
+  0: "gods",
   1: "giants",
   2: "perfection",
   3: "rage",
@@ -20,6 +21,12 @@ export const ORDER_NAME_DICT: { [key: number]: string } = {
 };
 
 export const orders: IOrder[] = [
+  {
+    orderId: 0,
+    orderName: "gods",
+    fullOrderName: "Order of Gods",
+    color: "#94a3b8",
+  },
   {
     orderId: 1,
     orderName: "Giants",

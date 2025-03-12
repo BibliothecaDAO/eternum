@@ -4,6 +4,7 @@ import {
   BuildingType,
   CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  getProducedResource,
   HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
@@ -35,7 +36,6 @@ export class ClientConfigManager {
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   buildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
-  resourceBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceWeightsKg: Record<number, number> = {};
 
@@ -43,11 +43,13 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    console.log("worldConfig", worldConfig);
+
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
-    this.initializeResourceBuildingCosts();
-    // this.initializeBuildingCosts();
+    this.initializeBuildingCosts();
     this.initializeStructureCosts();
     this.initializeResourceWeights();
   }
@@ -112,7 +114,7 @@ export class ClientConfigManager {
 
       this.resourceInputs[Number(resourceType)] = inputs;
 
-      const resourceOutput = Number(productionConfig?.amount_per_building_per_tick ?? 0n);
+      const resourceOutput = Number(productionConfig?.realm_output_per_tick ?? 0n);
       this.resourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
         amount: this.divideByPrecision(resourceOutput),
@@ -164,14 +166,14 @@ export class ClientConfigManager {
     }
   }
 
-  private initializeResourceBuildingCosts() {
-    const buildingConfigsEntities = runQuery([Has(this.components.BuildingConfig)]);
+  private initializeBuildingCosts() {
+    const buildingConfigsEntities = runQuery([Has(this.components.BuildingCategoryConfig)]);
 
     for (const buildingConfigEntity of buildingConfigsEntities) {
-      const buildingConfig = getComponentValue(this.components.BuildingConfig, buildingConfigEntity);
+      const buildingConfig = getComponentValue(this.components.BuildingCategoryConfig, buildingConfigEntity);
       if (buildingConfig) {
-        const entityId = buildingConfig.resource_cost_id;
-        const resourceCount = buildingConfig.resource_cost_count || 0;
+        const entityId = buildingConfig.erection_cost_id;
+        const resourceCount = buildingConfig.erection_cost_count || 0;
         const inputs: { resource: ResourcesIds; amount: number }[] = [];
 
         for (let index = 0; index < resourceCount; index++) {
@@ -187,17 +189,13 @@ export class ClientConfigManager {
             });
           }
         }
-        const resourceType = buildingConfig.resource_type;
 
-        if (BuildingType[buildingConfig.category as keyof typeof BuildingType] === BuildingType.Resource) {
-          this.resourceBuildingCosts[Number(resourceType)] = inputs;
-        } else {
-          this.buildingCosts[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] = inputs;
-        }
+        this.buildingCosts[Number(buildingConfig.category)] = inputs;
 
-        if (resourceType !== 0) {
-          this.buildingOutputs[Number(BuildingType[buildingConfig.category as keyof typeof BuildingType])] =
-            Number(resourceType);
+        const resourceType = getProducedResource(buildingConfig.category);
+
+        if (resourceType) {
+          this.buildingOutputs[Number(buildingConfig.category)] = resourceType;
         }
       }
     }
@@ -404,8 +402,8 @@ export class ClientConfigManager {
           client_fee_on_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.client_fee_on_wtdr_percent ?? 0),
           velords_fee_recipient: resourceBridgeFeeSplitConfig?.velords_fee_recipient ?? BigInt(0),
           season_pool_fee_recipient: resourceBridgeFeeSplitConfig?.season_pool_fee_recipient ?? BigInt(0),
-          max_bank_fee_dpt_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_dpt_percent ?? 0),
-          max_bank_fee_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.max_bank_fee_wtdr_percent ?? 0),
+          realm_fee_dpt_percent: Number(resourceBridgeFeeSplitConfig?.realm_fee_dpt_percent ?? 0),
+          realm_fee_wtdr_percent: Number(resourceBridgeFeeSplitConfig?.realm_fee_wtdr_percent ?? 0),
         };
       },
       {
@@ -417,8 +415,8 @@ export class ClientConfigManager {
         client_fee_on_wtdr_percent: 0,
         velords_fee_recipient: BigInt(0),
         season_pool_fee_recipient: BigInt(0),
-        max_bank_fee_dpt_percent: 0,
-        max_bank_fee_wtdr_percent: 0,
+        realm_fee_dpt_percent: 0,
+        realm_fee_wtdr_percent: 0,
       },
     );
   }
@@ -509,41 +507,17 @@ export class ClientConfigManager {
 
       if (entityType === EntityType.DONKEY) {
         return Number(speedConfig?.donkey_sec_per_km ?? 0);
-      } else if (entityType === EntityType.TROOP) {
-        return Number(speedConfig?.army_sec_per_km ?? 0);
       } else {
         throw new Error("Undefined entity type in getSpeedConfig");
       }
     }, 0);
   }
 
-  getBuildingPopConfig(buildingId: BuildingType): {
-    population: number;
-    capacity: number;
-  } {
+  getBuildingConfig() {
     return this.getValueOrDefault(
-      () => {
-        const buildingConfig = getComponentValue(
-          this.components.BuildingCategoryPopConfig,
-          getEntityIdFromKeys([BigInt(buildingId)]),
-        );
-
-        return {
-          population: buildingConfig?.population ?? 0,
-          capacity: buildingConfig?.capacity ?? 0,
-        };
-      },
+      () => getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config,
       {
-        population: 0,
-        capacity: 0,
-      },
-    );
-  }
-  getBuildingGeneralConfig() {
-    return this.getValueOrDefault(
-      () =>
-        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_general_config,
-      {
+        base_population: 0,
         base_cost_percent_increase: 0,
       },
     );
@@ -634,10 +608,29 @@ export class ClientConfigManager {
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
       return (
-        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.population_config
+        getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.building_config
           ?.base_population ?? 0
       );
     }, 0);
+  }
+
+  getBuildingCategoryConfig(buildingType: BuildingType) {
+    return this.getValueOrDefault(
+      () => {
+        const buildingCategoryConfig = getComponentValue(
+          this.components.BuildingCategoryConfig,
+          getEntityIdFromKeys([BigInt(buildingType)]),
+        );
+        return {
+          population_cost: buildingCategoryConfig?.population_cost ?? 0,
+          capacity_grant: buildingCategoryConfig?.capacity_grant ?? 0,
+        };
+      },
+      {
+        population_cost: 0,
+        capacity_grant: 0,
+      },
+    );
   }
 
   getResourceOutputs(resourceType: number): number {
@@ -647,7 +640,7 @@ export class ClientConfigManager {
         getEntityIdFromKeys([BigInt(resourceType)]),
       );
 
-      return Number(productionConfig?.amount_per_building_per_tick ?? 0);
+      return Number(productionConfig?.realm_output_per_tick ?? 0);
     }, 0);
   }
 
@@ -743,7 +736,7 @@ export class ClientConfigManager {
       const buildingGeneralConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.building_general_config;
+      )?.building_config;
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
   }
@@ -751,12 +744,12 @@ export class ClientConfigManager {
   getSeasonBridgeConfig() {
     return this.getValueOrDefault(
       () => {
-        const seasonBridgeConfig = getComponentValue(
+        const seasonConfig = getComponentValue(
           this.components.WorldConfig,
           getEntityIdFromKeys([WORLD_CONFIG_ID]),
-        )?.season_bridge_config;
+        )?.season_config;
         return {
-          closeAfterEndSeconds: seasonBridgeConfig?.close_after_end_seconds ?? 0n,
+          closeAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
         };
       },
       {
@@ -768,17 +761,22 @@ export class ClientConfigManager {
   getSeasonConfig() {
     return this.getValueOrDefault(
       () => {
-        const season = getComponentValue(this.components.Season, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+        const seasonConfig = getComponentValue(
+          this.components.WorldConfig,
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
+        )?.season_config;
         return {
-          startAt: season?.start_at,
-          isOver: season?.is_over,
-          endedAt: season?.ended_at,
+          startSettlingAt: seasonConfig?.start_settling_at ?? 0n,
+          startMainAt: seasonConfig?.start_main_at ?? 0n,
+          endAt: seasonConfig?.end_at ?? 0n,
+          bridgeCloseAfterEndSeconds: seasonConfig?.end_grace_seconds ?? 0n,
         };
       },
       {
-        startAt: 0n,
-        isOver: true,
-        endedAt: 0n,
+        startSettlingAt: 0n,
+        startMainAt: 0n,
+        endAt: 0n,
+        bridgeCloseAfterEndSeconds: 0n,
       },
     );
   }

@@ -58,25 +58,6 @@ export const calculateDistanceInHexes = (start: Position, destination: Position)
   return undefined;
 };
 
-export const calculateOffset = (index: number, total: number, radius: number) => {
-  if (total === 1) return { x: 0, y: 0 };
-
-  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
-  let angle = angleIncrement * (index % 6);
-  let offsetRadius = radius;
-
-  if (index >= 6) {
-    // Adjustments for more than 6 armies, placing them in another layer
-    offsetRadius += 0.5; // Increase radius for each new layer
-    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
-  }
-
-  return {
-    x: offsetRadius * Math.cos(angle),
-    z: offsetRadius * Math.sin(angle),
-  };
-};
-
 const pseudoRandom = (x: number, y: number) => {
   const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
