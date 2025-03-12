@@ -310,7 +310,8 @@ export const setBuildingConfig = async (config: Config) => {
     base_cost_percent_increase: buildingScalePercent,
   });
 
-  console.log(chalk.cyan(`
+  console.log(
+    chalk.cyan(`
     ┌─ ${chalk.yellow("Building Config")}
     │  ${chalk.gray("Base Population:")} ${chalk.white(config.config.populationCapacity.basePopulation)}
     │  ${chalk.gray("Base Cost Percent Increase:")} ${chalk.white(buildingScalePercent)}
@@ -722,7 +723,6 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
 
-
 export const setAgentControllerConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -745,7 +745,6 @@ export const setAgentControllerConfig = async (config: Config) => {
   const tx = await config.provider.set_agent_controller(calldata);
   console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
-
 
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
@@ -822,7 +821,6 @@ export const setSeasonConfig = async (config: Config) => {
     start_main_at: startMainAt,
     end_grace_seconds: config.config.season.bridgeCloseAfterEndSeconds,
   };
-
 
   console.log(
     chalk.cyan(`

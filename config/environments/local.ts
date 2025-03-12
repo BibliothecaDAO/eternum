@@ -69,7 +69,7 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
-   } 
+  },
 };
 
 export default LocalEternumGlobalConfig;

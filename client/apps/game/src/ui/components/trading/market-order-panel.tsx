@@ -17,7 +17,7 @@ import {
   multiplyByPrecision,
   ResourcesIds,
   type ID,
-  type MarketInterface
+  type MarketInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -222,7 +222,6 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
     const { currentDefaultTick } = useBlockTimestamp();
@@ -323,7 +322,6 @@ const OrderRow = memo(
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
-    
 
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
