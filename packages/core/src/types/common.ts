@@ -111,7 +111,7 @@ export interface Prize {
 
 export interface Building {
   name: string;
-  category: string;
+  category: BuildingType;
   paused: boolean;
   produced: ResourceCost;
   consumed: ResourceCost[];
@@ -293,6 +293,9 @@ export interface ProductionByLaborParams {
 }
 
 export interface Config {
+  agent: {
+    controller_address: string;
+  };
   resources: {
     resourcePrecision: number;
     resourceMultiplier: number;
@@ -326,6 +329,8 @@ export interface Config {
     reward: number;
     shardsMinesFailProbability: number;
     shardsMinesWinProbability: number;
+    agentFindProbability: number;
+    agentFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
@@ -381,6 +386,8 @@ export interface Config {
       guardResurrectionDelay: number;
       mercenariesTroopLowerBound: number;
       mercenariesTroopUpperBound: number;
+      agentTroopLowerBound: number;
+      agentTroopUpperBound: number;
     };
   };
   settlement: {
@@ -389,7 +396,8 @@ export interface Config {
     subsequent_distance: number;
   };
   season: {
-    startAfterSeconds: number;
+    startSettlingAfterSeconds: number;
+    startMainAfterSeconds: number;
     bridgeCloseAfterEndSeconds: number;
   };
   bridge: {
@@ -411,8 +419,7 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    otherBuildingCosts: ResourceInputs;
-    resourceBuildingCosts: ResourceInputs;
+    buildingCosts: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 

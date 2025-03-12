@@ -23,7 +23,7 @@ const nonLocalController = new ControllerConnector({
   chains: [
     {
       rpcUrl:
-        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050"
+        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050" && env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
           ? env.VITE_PUBLIC_NODE_URL
           : "https://api.cartridge.gg/x/starknet/sepolia",
     },

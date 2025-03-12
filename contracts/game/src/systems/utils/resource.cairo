@@ -8,7 +8,6 @@ use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
 };
-use s1_eternum::models::season::SeasonImpl;
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
     StructureMetadataStoreImpl,

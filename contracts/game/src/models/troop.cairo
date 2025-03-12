@@ -643,7 +643,9 @@ mod tests {
             explorer_guard_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-            mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
+            mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
+            agents_troop_lower_bound: 100_000, // min of troops per agent
+            agents_troop_upper_bound: 100_000 // max of troops per agent
         }
     }
 

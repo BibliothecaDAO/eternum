@@ -12,7 +12,7 @@ pub const REGIONAL_BANK_THREE_ID: ID = Bounded::MAX - 3;
 pub const REGIONAL_BANK_FOUR_ID: ID = Bounded::MAX - 4;
 pub const REGIONAL_BANK_FIVE_ID: ID = Bounded::MAX - 5;
 pub const REGIONAL_BANK_SIX_ID: ID = Bounded::MAX - 6;
-
+pub const DAYDREAMS_AGENT_ID: ID = Bounded::MAX - 7;
 
 pub const GRAMS_PER_KG: u128 = 1_000;
 

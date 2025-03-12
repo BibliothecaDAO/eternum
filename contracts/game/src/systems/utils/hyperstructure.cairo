@@ -20,7 +20,7 @@ use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 #[generate_trait]
 pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
-    fn lottery(ref world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
         let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
         let hyps_fail_prob_increase_p_hex: u128 = tile_distance_count * map_config.hyps_fail_prob_increase_p_hex.into();
