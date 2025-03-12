@@ -33,7 +33,6 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
-    use core::num::traits::Zero;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
@@ -49,6 +48,7 @@ mod production_systems {
     };
 
     use starknet::ContractAddress;
+    use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
 
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
@@ -101,8 +101,8 @@ mod production_systems {
             );
 
             // ensure that the structure produces the resource
-            let building_produces_resource: u8 = building.produced_resource();
-            if building_produces_resource.is_non_zero() {
+            if !building.allowed_for_all_realms_and_villages() {
+                let building_produces_resource: u8 = building.produced_resource();
                 let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
                     ref world, structure_id,
                 );

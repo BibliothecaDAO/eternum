@@ -321,6 +321,8 @@ export interface SetMapConfigProps extends SystemSigner {
   reward_amount: num.BigNumberish;
   shards_mines_win_probability: num.BigNumberish;
   shards_mines_fail_probability: num.BigNumberish;
+  agent_find_probability: num.BigNumberish;
+  agent_find_fail_probability: num.BigNumberish;
   hyps_win_prob: num.BigNumberish;
   hyps_fail_prob: num.BigNumberish;
   hyps_fail_prob_increase_p_hex: num.BigNumberish;
@@ -343,6 +345,10 @@ export interface SetCapacityConfigProps extends SystemSigner {
   troop_capacity: num.BigNumberish; // grams
   donkey_capacity: num.BigNumberish; // grams
   storehouse_boost_capacity: num.BigNumberish; // grams
+}
+
+export interface SetAgentControllerProps extends SystemSigner {
+  agent_controller: num.BigNumberish;
 }
 
 export interface SetTradeConfigProps extends SystemSigner {
@@ -419,6 +425,8 @@ export interface TroopLimitConfigProps {
   guard_resurrection_delay: num.BigNumberish;
   mercenaries_troop_lower_bound: num.BigNumberish;
   mercenaries_troop_upper_bound: num.BigNumberish;
+  agent_troop_lower_bound: num.BigNumberish;
+  agent_troop_upper_bound: num.BigNumberish;
 }
 
 export interface TroopDamageConfigProps {

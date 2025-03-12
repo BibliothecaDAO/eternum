@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use s1_eternum::models::config::{TroopStaminaConfig};
 use s1_eternum::models::troop::TroopType;
 
-#[derive(Introspect, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde, Default)]
 pub struct Stamina {
     pub amount: u64,
     pub updated_tick: u64,

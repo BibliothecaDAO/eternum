@@ -736,7 +736,7 @@ export class ClientConfigManager {
       const buildingGeneralConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.building_general_config;
+      )?.building_config;
       return buildingGeneralConfig?.base_cost_percent_increase ?? 0;
     }, 0);
   }

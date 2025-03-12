@@ -310,6 +310,7 @@ const singleKeyModels = [
   "s1_eternum-LeaderboardRegistered",
   "s1_eternum-LeaderboardRewardClaimed",
   "s1_eternum-LeaderboardEntry",
+  "s1_eternum-BuildingCategoryConfig",
 ];
 
 const eventModels = [
@@ -340,7 +341,12 @@ export const syncStructureData = async (
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
       [structureEntityId],
-      ["s1_eternum-Hyperstructure", "s1_eternum-Resource", "s1_eternum-Building", "s1_eternum-StructureBuildings"],
+      [
+        "s1_eternum-Hyperstructure",
+        "s1_eternum-Resource",
+        "s1_eternum-Building",
+        "s1_eternum-StructureBuildings",
+      ],
       position ? [position] : undefined,
       () => setLoading(LoadingStateKey.SelectedStructure, false),
     );

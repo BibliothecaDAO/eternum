@@ -1686,6 +1686,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       reward_amount,
       shards_mines_win_probability,
       shards_mines_fail_probability,
+      agent_find_probability,
+      agent_find_fail_probability,
       hyps_win_prob,
       hyps_fail_prob,
       hyps_fail_prob_increase_p_hex,
@@ -1702,6 +1704,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         reward_amount,
         shards_mines_win_probability,
         shards_mines_fail_probability,
+        agent_find_probability,
+        agent_find_fail_probability,
         hyps_win_prob,
         hyps_fail_prob,
         hyps_fail_prob_increase_p_hex,
@@ -1786,6 +1790,16 @@ export class EternumProvider extends EnhancedDojoProvider {
         velords_fee_recipient,
         season_pool_fee_recipient,
       ],
+    });
+  }
+  
+  public async set_agent_controller(props: SystemProps.SetAgentControllerProps) {
+    const { agent_controller, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_agent_controller",
+      calldata: [agent_controller],
     });
   }
 
@@ -1931,6 +1945,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         limit_config.guard_resurrection_delay,
         limit_config.mercenaries_troop_lower_bound,
         limit_config.mercenaries_troop_upper_bound,
+        limit_config.agent_troop_lower_bound,
+        limit_config.agent_troop_upper_bound,
       ],
     });
   }

@@ -375,6 +375,52 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         self.boost_adjacent_building_production_by().is_non_zero()
     }
 
+    fn allowed_for_all_realms_and_villages(self: Building) -> bool {
+        let category: BuildingCategory = self.category.into();
+        match category {
+            BuildingCategory::None => false,
+            BuildingCategory::WorkersHut => true,
+            BuildingCategory::Storehouse => true,
+            BuildingCategory::ResourceStone => false,
+            BuildingCategory::ResourceCoal => false,
+            BuildingCategory::ResourceWood => false,
+            BuildingCategory::ResourceCopper => false,
+            BuildingCategory::ResourceIronwood => false,
+            BuildingCategory::ResourceObsidian => false,
+            BuildingCategory::ResourceGold => false,
+            BuildingCategory::ResourceSilver => false,
+            BuildingCategory::ResourceMithral => false,
+            BuildingCategory::ResourceAlchemicalSilver => false,
+            BuildingCategory::ResourceColdIron => false,
+            BuildingCategory::ResourceDeepCrystal => false,
+            BuildingCategory::ResourceRuby => false,
+            BuildingCategory::ResourceDiamonds => false,
+            BuildingCategory::ResourceHartwood => false,
+            BuildingCategory::ResourceIgnium => false,
+            BuildingCategory::ResourceTwilightQuartz => false,
+            BuildingCategory::ResourceTrueIce => false,
+            BuildingCategory::ResourceAdamantine => false,
+            BuildingCategory::ResourceSapphire => false,
+            BuildingCategory::ResourceEtherealSilica => false,
+            BuildingCategory::ResourceDragonhide => false,
+            BuildingCategory::ResourceLabor => false,
+            BuildingCategory::ResourceEarthenShard => false,
+            BuildingCategory::ResourceDonkey => true,
+            BuildingCategory::ResourceKnightT1 => true,
+            BuildingCategory::ResourceKnightT2 => true,
+            BuildingCategory::ResourceKnightT3 => true,
+            BuildingCategory::ResourceCrossbowmanT1 => true,
+            BuildingCategory::ResourceCrossbowmanT2 => true,
+            BuildingCategory::ResourceCrossbowmanT3 => true,
+            BuildingCategory::ResourcePaladinT1 => true,
+            BuildingCategory::ResourcePaladinT2 => true,
+            BuildingCategory::ResourcePaladinT3 => true,
+            BuildingCategory::ResourceWheat => true,
+            BuildingCategory::ResourceFish => true,
+            //  NEVER ALLOW LORDS TO BE BUILT
+        }
+    }
+
     fn produced_resource(self: Building) -> u8 {
         let category: BuildingCategory = self.category.into();
         match category {

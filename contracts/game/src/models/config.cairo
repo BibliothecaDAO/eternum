@@ -41,6 +41,12 @@ pub struct WorldConfig {
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
     pub season_config: SeasonConfig,
+    pub agent_controller_config: AgentControllerConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct AgentControllerConfig {
+    pub address: ContractAddress,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -198,8 +204,10 @@ pub impl SpeedImpl of SpeedTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
-    pub shards_mines_win_probability: u32,
-    pub shards_mines_fail_probability: u32,
+    pub shards_mines_win_probability: u16,
+    pub shards_mines_fail_probability: u16,
+    pub agent_discovery_prob: u16,
+    pub agent_discovery_fail_prob: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -341,13 +349,18 @@ pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
     // Troop count per army limits without precision
+    // Applies to both explorers and guards
     pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
     pub guard_resurrection_delay: u32,
     // Mercenary bounds without precision
-    pub mercenaries_troop_lower_bound: u64,
+    pub mercenaries_troop_lower_bound: u32,
     // without precision
-    pub mercenaries_troop_upper_bound: u64,
+    pub mercenaries_troop_upper_bound: u32,
+    // Agents bounds without precision
+    pub agents_troop_lower_bound: u32,
+    // without precision
+    pub agents_troop_upper_bound: u32,
 }
 
 

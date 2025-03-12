@@ -69,14 +69,14 @@ pub mod troop_management_systems {
             CombatConfigImpl, SeasonConfigImpl, TickImpl, TickTrait, TroopLimitConfig, TroopStaminaConfig,
             WorldConfigUtilImpl,
         },
-        map::{Tile, TileImpl, TileOccupier}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
+        map::{Tile, TileImpl}, owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, Direction},
         resource::{
             resource::{
                 ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
                 StructureSingleResourceFoodImpl, WeightStoreImpl,
             },
         },
-        stamina::{Stamina, StaminaTrait},
+        stamina::{StaminaTrait},
         structure::{
             StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
             StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
@@ -219,34 +219,22 @@ pub mod troop_management_systems {
             let mut tile: Tile = world.read_model((spawn_coord.x, spawn_coord.y));
             assert!(tile.not_occupied(), "explorer spawn location is occupied");
 
-            // set explorer as occupier of tile
-            IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
-
-            // ensure explorer amount does not exceed max
-            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
-            assert!(
-                amount <= troop_limit_config.explorer_guard_max_troop_count.into() * RESOURCE_PRECISION,
-                "reached limit of explorers amount per army",
-            );
-
-            // set troop stamina
-            let mut troops = Troops { category, tier, count: amount, stamina: Stamina { amount: 0, updated_tick: 0 } };
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let tick = TickImpl::get_tick_config(ref world);
             let current_tick: u64 = tick.current().try_into().unwrap();
-            troops.stamina.refill(troops.category, troop_stamina_config, current_tick);
-
-            // set explorer
-            let explorer: ExplorerTroops = ExplorerTroops {
-                explorer_id, coord: spawn_coord, troops, owner: for_structure_id,
-            };
-            world.write_model(@explorer);
-
-            // initialize explorer resource model
-            ResourceImpl::initialize(ref world, explorer_id);
-            // increase troop capacity
-            iExplorerImpl::update_capacity(ref world, explorer_id, explorer, amount, true);
-
+            iExplorerImpl::create(
+                ref world,
+                ref tile,
+                world.dispatcher.uuid(),
+                for_structure_id,
+                category,
+                tier,
+                amount,
+                troop_stamina_config,
+                troop_limit_config,
+                current_tick,
+            );
             explorer_id
         }
 
@@ -306,7 +294,7 @@ pub mod troop_management_systems {
                 ref world, explorer.owner,
             )
                 .into();
-            iExplorerImpl::explorer_delete(
+            iExplorerImpl::explorer_from_structure_delete(
                 ref world,
                 ref explorer,
                 explorer_owner_structure_explorers_list,
@@ -405,7 +393,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 )
                     .into();
-                iExplorerImpl::explorer_delete(
+                iExplorerImpl::explorer_from_structure_delete(
                     ref world,
                     ref from_explorer,
                     explorer_owner_structure_explorers_list,
@@ -502,7 +490,7 @@ pub mod troop_management_systems {
                     ref world, from_explorer.owner,
                 )
                     .into();
-                iExplorerImpl::explorer_delete(
+                iExplorerImpl::explorer_from_structure_delete(
                     ref world,
                     ref from_explorer,
                     explorer_owner_structure_explorers_list,

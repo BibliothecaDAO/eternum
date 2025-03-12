@@ -46,6 +46,7 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await setAgentControllerConfig(config);
     await setProductionConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setTradeConfig(config);
@@ -305,9 +306,16 @@ export const setBuildingConfig = async (config: Config) => {
   // Set base building config
   const tx = await config.provider.set_building_config({
     signer: config.account,
-    base_population: 0,
+    base_population: config.config.populationCapacity.basePopulation,
     base_cost_percent_increase: buildingScalePercent,
   });
+
+  console.log(chalk.cyan(`
+    ┌─ ${chalk.yellow("Building Config")}
+    │  ${chalk.gray("Base Population:")} ${chalk.white(config.config.populationCapacity.basePopulation)}
+    │  ${chalk.gray("Base Cost Percent Increase:")} ${chalk.white(buildingScalePercent)}
+    └────────────────────────────────`),
+  );
 
   console.log(chalk.green(`    ✔ Base configuration complete `) + chalk.gray(tx.statusReceipt));
 
@@ -537,6 +545,8 @@ export const setTroopConfig = async (config: Config) => {
       guardResurrectionDelay: guard_resurrection_delay,
       mercenariesTroopLowerBound: mercenaries_troop_lower_bound,
       mercenariesTroopUpperBound: mercenaries_troop_upper_bound,
+      agentTroopLowerBound: agent_troop_lower_bound,
+      agentTroopUpperBound: agent_troop_upper_bound,
     },
   } = config.config.troop;
 
@@ -575,6 +585,8 @@ export const setTroopConfig = async (config: Config) => {
       guard_resurrection_delay: guard_resurrection_delay,
       mercenaries_troop_lower_bound: mercenaries_troop_lower_bound,
       mercenaries_troop_upper_bound: mercenaries_troop_upper_bound,
+      agent_troop_lower_bound: agent_troop_lower_bound,
+      agent_troop_upper_bound: agent_troop_upper_bound,
     },
   };
 
@@ -613,6 +625,8 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("Guard Resurrection:")}       ${chalk.white(calldata.limit_config.guard_resurrection_delay)}
     │  ${chalk.gray("Mercenary Min:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_lower_bound)}
     │  ${chalk.gray("Mercenary Max:")}           ${chalk.white(calldata.limit_config.mercenaries_troop_upper_bound)}
+    │  ${chalk.gray("Agent Min:")}               ${chalk.white(calldata.limit_config.agent_troop_lower_bound)}
+    │  ${chalk.gray("Agent Max:")}               ${chalk.white(calldata.limit_config.agent_troop_upper_bound)}
     └────────────────────────────────`),
   );
 
@@ -670,6 +684,8 @@ export const setupGlobals = async (config: Config) => {
     reward_amount: config.config.exploration.reward,
     shards_mines_win_probability: config.config.exploration.shardsMinesWinProbability,
     shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
+    agent_find_probability: config.config.exploration.agentFindProbability,
+    agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
     hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
@@ -705,6 +721,31 @@ export const setupGlobals = async (config: Config) => {
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
+
+
+export const setAgentControllerConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    agent_controller: config.account.address,
+  };
+
+  console.log(
+    chalk.cyan(`
+  📦 Agent Controller Configuration
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Agent Controller")}
+    │  ${chalk.gray("Address:")} ${chalk.white(calldata.agent_controller)}
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_agent_controller(calldata);
+  console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
 
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
