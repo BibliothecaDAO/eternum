@@ -21,7 +21,7 @@ use s1_eternum::utils::random;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
-    fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
         let success: bool = *random::choices(
             array![true, false].span(),
             array![map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into()]

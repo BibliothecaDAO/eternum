@@ -25,8 +25,8 @@ pub mod realm_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
+    use dojo::world::{WorldStorage, WorldStorageTrait};
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids};
@@ -209,14 +209,7 @@ pub mod realm_systems {
             frontend: ContractAddress,
         ) {
             // get bridge systems address
-            let (bridge_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s1_eternum-resource_bridge_systems")) {
-                dojo::world::Resource::Contract((
-                    contract_address, namespace_hash,
-                )) => (contract_address, namespace_hash),
-                _ => (Zero::zero(), Zero::zero()),
-            };
-
+            let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
             // approve bridge to spend lords
             IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
 

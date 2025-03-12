@@ -44,12 +44,10 @@ impl CubeZeroable of Zero<Cube> {
     fn zero() -> Cube {
         Cube { q: 0, r: 0, s: 0 }
     }
-    #[inline(always)]
     fn is_zero(self: @Cube) -> bool {
         self.q == @0 && self.r == @0 && self.s == @0
     }
 
-    #[inline(always)]
     fn is_non_zero(self: @Cube) -> bool {
         !self.is_zero()
     }
@@ -172,12 +170,11 @@ pub impl CoordZeroable of Zero<Coord> {
     fn zero() -> Coord {
         Coord { x: 0, y: 0 }
     }
-    #[inline(always)]
+
     fn is_zero(self: @Coord) -> bool {
         self.x == @0 && self.y == @0
     }
 
-    #[inline(always)]
     fn is_non_zero(self: @Coord) -> bool {
         !self.is_zero()
     }

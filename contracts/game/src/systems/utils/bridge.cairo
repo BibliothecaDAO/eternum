@@ -1,7 +1,6 @@
 use core::num::traits::zero::Zero;
 use dojo::model::{ModelStorage};
-use dojo::world::IWorldDispatcherTrait;
-use dojo::world::WorldStorage;
+use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION};
 use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
@@ -53,13 +52,7 @@ pub impl iBridgeImpl of iBridgeTrait {
         world: WorldStorage, caller: ContractAddress, structure_owner: ContractAddress,
     ) {
         if caller != structure_owner {
-            let (realm_systems_address, _namespace_hash) =
-                match world.dispatcher.resource(selector_from_tag!("s1_eternum-realm_systems")) {
-                dojo::world::Resource::Contract((
-                    contract_address, namespace_hash,
-                )) => (contract_address, namespace_hash),
-                _ => (Zero::zero(), Zero::zero()),
-            };
+            let (realm_systems_address, _) = world.dns(@"realm_systems").unwrap();
             assert!(caller == realm_systems_address, "Bridge: caller is not owner or realm systems");
         }
     }

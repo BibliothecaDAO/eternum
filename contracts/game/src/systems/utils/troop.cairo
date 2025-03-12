@@ -471,7 +471,7 @@ struct AgentCreatedEvent {
 
 #[generate_trait]
 pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
-    fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
         let success: bool = *random::choices(
             array![true, false].span(),
             array![map_config.agent_discovery_prob.into(), map_config.agent_discovery_fail_prob.into()].span(),
