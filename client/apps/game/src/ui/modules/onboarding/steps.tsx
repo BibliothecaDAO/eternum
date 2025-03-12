@@ -152,6 +152,11 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
         signer: account,
         season_pass_address: getSeasonPassAddress(),
+        realm_settlement: {
+          side: 0,
+          layer: 0,
+          point: 0,
+        },
       });
       setSelectedRealms([]);
       onPrevious();

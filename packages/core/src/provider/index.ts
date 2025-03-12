@@ -570,7 +570,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address } = props;
+    let { realm_ids, owner, frontend, signer, season_pass_address, realm_settlement } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -583,7 +583,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCalls = realm_ids.map((realm_id) => ({
       contractAddress: realmSystemsContractAddress,
       entrypoint: "create",
-      calldata: [owner, realm_id, frontend],
+      calldata: [owner, realm_id, frontend, realm_settlement],
     }));
 
     const approvalCloseForAllCall = {
@@ -2187,20 +2187,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_settlement_config(props: SystemProps.SetSettlementConfigProps) {
-    const {
-      center,
-      base_distance,
-      subsequent_distance,
-      signer,
-    } = props;
+    const { center, base_distance, subsequent_distance, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
-      calldata: [
-        center,
-        base_distance,
-        subsequent_distance
-      ],
+      calldata: [center, base_distance, subsequent_distance],
     });
   }
 
