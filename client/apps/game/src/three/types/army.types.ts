@@ -56,7 +56,7 @@ export interface AnimatedInstancedMesh extends THREE.InstancedMesh {
 export interface ModelData {
   group: THREE.Group;
   instancedMeshes: AnimatedInstancedMesh[];
-  biomeMeshes: THREE.Mesh[];
+  baseMeshes: THREE.Mesh[];
   mixer: AnimationMixer;
   animations: {
     idle: THREE.AnimationClip;
