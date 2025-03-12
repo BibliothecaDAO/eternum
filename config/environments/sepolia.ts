@@ -37,19 +37,22 @@ export const SepoliaEternumGlobalConfig: Config = {
       }),
     ),
   },
+  exploration: {
+    ...CommonEternumGlobalConfig.exploration,
+    agentFindProbability: 1,
+    agentFindFailProbability: 5,
+  },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
     buildingCosts: Object.fromEntries(
       Object.entries(CommonEternumGlobalConfig.buildings.buildingCosts).map(([key, value]) => [
         key,
-        value.map((costs: ResourceInputs[]) => ({
-          costs.map((cost: ResourceCost) => ({
-            resource: cost.resource,
-            amount: cost.amount / 10,
-          })),
+        value.map((cost: ResourceCost) => ({
+          resource: cost.resource,
+          amount: cost.amount / 10,
         })),
       ]),
-    ),
+    ) as ResourceInputs,
   },
   carryCapacityGram: {
     ...CommonEternumGlobalConfig.carryCapacityGram,
