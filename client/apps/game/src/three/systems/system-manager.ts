@@ -106,18 +106,19 @@ export class SystemManager {
                 this.setup.components.Structure,
                 getEntityIdFromKeys([BigInt(explorer.owner)]),
               );
-              if (!structure) return;
 
-              const owner = structure.owner;
+              const owner = BigInt(structure?.owner || explorer.owner);
 
               const addressName = getComponentValue(
                 this.setup.components.AddressName,
-                getEntityIdFromKeys([BigInt(owner || 0)]),
+                getEntityIdFromKeys([structure?.owner || BigInt(explorer.explorer_id) || 0n]),
               );
 
               const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
 
-              const guild = getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]));
+              const guild = owner
+                ? getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]))
+                : undefined;
 
               let guildName = "";
               if (guild?.guild_entity_id) {
@@ -131,7 +132,7 @@ export class SystemManager {
               return {
                 entityId: explorer.explorer_id,
                 hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
-                order: structure.metadata.order,
+                order: structure?.metadata.order || 0,
                 owner: { address: owner || 0n, ownerName, guildName },
                 troopType: explorer.troops.category as TroopType,
                 troopTier: explorer.troops.tier as TroopTier,
