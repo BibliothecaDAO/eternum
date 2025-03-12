@@ -259,7 +259,6 @@ export const LeftNavigationModule = memo(() => {
       {!IS_MOBILE && (
         <div className="flex">
           <Chat />
-          {/* <EventStream /> */}
         </div>
       )}
     </div>

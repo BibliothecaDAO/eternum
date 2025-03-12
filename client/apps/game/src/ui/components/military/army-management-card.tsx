@@ -1,12 +1,10 @@
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import TextInput from "@/ui/elements/text-input";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -14,6 +12,7 @@ import {
   ArmyManager,
   divideByPrecision,
   getBalance,
+  getDirectionBetweenAdjacentHexes,
   getFreeDirectionsAroundStructure,
   getTroopResourceId,
   ID,
@@ -76,10 +75,25 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   const handleBuyArmy = async (isExplorer: boolean, troopType: TroopType, troopTier: TroopTier, troopCount: number) => {
     setIsLoading(true);
 
+    const homeDirection =
+      army?.position && army?.structure
+        ? getDirectionBetweenAdjacentHexes(
+            { col: army.position.x, row: army.position.y },
+            { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
+          )
+        : null;
+
     if (isExplorer) {
       if (army) {
-        if (army.isHome) {
-          await armyManager.addTroopsToExplorer(account, army.entityId, troopType, troopTier, troopCount);
+        if (army.isHome && homeDirection) {
+          await armyManager.addTroopsToExplorer(
+            account,
+            army.entityId,
+            troopType,
+            troopTier,
+            troopCount,
+            homeDirection,
+          );
         }
       } else {
         await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, freeDirections[0]);
@@ -276,9 +290,6 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // TODO: Clean this up
-  const armyPosition = { x: Number(army?.position.x || 0), y: Number(army?.position.y || 0) };
-
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
 
@@ -287,8 +298,8 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
       <>
         <div className="flex justify-between   p-2 text-xs">
           <div className="self-center flex flex-row mr-auto px-3 font-bold items-center gap-x-1">
-            {army.isHome ? <span className="text-green">At Base</span> : armyPosition ? `On Map` : "Unknown"}
-            <ViewOnMapIcon position={new PositionInterface(armyPosition)} />
+            {army.isHome ? <span className="text-green">At Base</span> : army.position ? `On Map` : "Unknown"}
+            <ViewOnMapIcon position={new PositionInterface(army.position)} />
           </div>
         </div>
         <div className="flex flex-col relative  p-2">
@@ -335,41 +346,5 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
         </div>
       </>
     )
-  );
-};
-
-export const ViewOnMapIcon = ({
-  position,
-  hideTooltip = false,
-  className,
-}: {
-  position: PositionInterface;
-  hideTooltip?: boolean;
-  className?: string;
-}) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
-  const navigateToMapView = useNavigateToMapView();
-
-  return (
-    <Map
-      className={clsx(
-        "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
-        className,
-      )}
-      onClick={() => {
-        setTooltip(null);
-        navigateToMapView(position);
-      }}
-      onMouseEnter={() => {
-        if (hideTooltip) return;
-        setTooltip({
-          content: "View on Map",
-          position: "top",
-        });
-      }}
-      onMouseLeave={() => {
-        setTooltip(null);
-      }}
-    />
   );
 };

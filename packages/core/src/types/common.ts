@@ -12,6 +12,17 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
+export enum TileOccupier {
+  None,
+  RealmRegular,
+  RealmWonder,
+  Hyperstructure,
+  FragmentMine,
+  Village,
+  Bank,
+  Explorer,
+}
+
 /**
  * Interface representing season contract addresses and resources
  * @interface SeasonAddresses

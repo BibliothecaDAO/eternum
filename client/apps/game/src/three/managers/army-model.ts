@@ -1,103 +1,86 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { Biome, BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
-import { AnimationClip, AnimationMixer } from "three";
-
-const MAX_INSTANCES = 1000;
-const ANIMATION_STATE_IDLE = 0;
-const ANIMATION_STATE_WALKING = 1;
-
-interface ModelData {
-  mesh: THREE.InstancedMesh;
-  baseMesh: THREE.Object3D;
-  mixer: AnimationMixer;
-  animations: {
-    idle: AnimationClip;
-    walk: AnimationClip;
-  };
-  animationActions: Map<
-    number,
-    {
-      idle: THREE.AnimationAction;
-      walk: THREE.AnimationAction;
-    }
-  >;
-  activeInstances: Set<number>;
-  targetScales: Map<number, THREE.Vector3>;
-  currentScales: Map<number, THREE.Vector3>;
-}
+import { AnimationMixer } from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import {
+  ANIMATION_STATE_IDLE,
+  ANIMATION_STATE_MOVING,
+  MAX_INSTANCES,
+  MODEL_TYPE_TO_FILE,
+  TROOP_TO_MODEL,
+} from "../constants/army.constants";
+import {
+  AnimatedInstancedMesh,
+  ArmyInstanceData,
+  LabelData,
+  ModelData,
+  ModelType,
+  MovementData,
+} from "../types/army.types";
+import { getHexForWorldPosition } from "../utils";
 
 export class ArmyModel {
-  private scene: THREE.Scene;
-  dummyObject: THREE.Object3D;
-  loadPromise: Promise<void>;
-  private models: Map<string, ModelData> = new Map();
-  private entityModelMap: Map<number, string> = new Map(); // Maps entity IDs to model types
-  animationStates: Float32Array;
-  timeOffsets: Float32Array;
-  private zeroScale = new THREE.Vector3(0, 0, 0);
-  private normalScale = new THREE.Vector3(0.3, 0.3, 0.3);
+  // Core properties
+  private readonly scene: THREE.Scene;
+  private readonly dummyObject: THREE.Object3D;
+  public readonly loadPromise: Promise<void>;
+
+  // Model and instance management
+  private readonly models: Map<ModelType, ModelData> = new Map();
+  private readonly entityModelMap: Map<number, ModelType> = new Map();
+  private readonly movingInstances: Map<number, MovementData> = new Map();
+  private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
+  private readonly labels: Map<number, LabelData> = new Map();
+
+  // Animation and state management
+  private readonly animationStates: Float32Array;
+  private readonly timeOffsets: Float32Array;
   private instanceCount = 0;
   private currentVisibleCount: number = 0;
-  private readonly SCALE_TRANSITION_SPEED = 5.0; // Adjust this value to control transition speed
+
+  // Configuration constants
+  private readonly SCALE_TRANSITION_SPEED = 5.0;
+  private readonly MOVEMENT_SPEED = 1.25;
+  private readonly FLOAT_HEIGHT = 0.5;
+  private readonly FLOAT_TRANSITION_SPEED = 3.0;
+  private readonly ROTATION_SPEED = 5.0;
+  private readonly zeroScale = new THREE.Vector3(0, 0, 0);
+  private readonly normalScale = new THREE.Vector3(1, 1, 1);
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.dummyObject = new THREE.Object3D();
     this.loadPromise = this.loadModels();
+
+    // Initialize animation arrays
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
+    this.animationStates = new Float32Array(MAX_INSTANCES);
+    this.initializeAnimationArrays();
+  }
+
+  // Initialization methods
+  private initializeAnimationArrays(): void {
     for (let i = 0; i < MAX_INSTANCES; i++) {
       this.timeOffsets[i] = Math.random() * 3;
-    }
-    this.animationStates = new Float32Array(MAX_INSTANCES);
-    for (let i = 0; i < MAX_INSTANCES; i++) {
       this.animationStates[i] = ANIMATION_STATE_IDLE;
     }
   }
 
   private async loadModels(): Promise<void> {
-    // Load all model variants
-    const modelTypes = ["knight", "boat"]; // Add more model types as needed
-    const loadPromises = modelTypes.map((type) => this.loadSingleModel(type));
+    const modelTypes = Object.entries(MODEL_TYPE_TO_FILE);
+    const loadPromises = modelTypes.map(([type, fileName]) => this.loadSingleModel(type as ModelType, fileName));
     await Promise.all(loadPromises);
   }
 
-  private async loadSingleModel(modelType: string): Promise<void> {
-    const loader = gltfLoader;
+  private async loadSingleModel(modelType: ModelType, fileName: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      loader.load(
-        `models/${modelType}.glb`,
+      gltfLoader.load(
+        `models/units/${fileName}.glb`,
         (gltf) => {
-          const baseMesh = gltf.scene.children[0];
-          const geometry = (baseMesh as THREE.Mesh).geometry.clone();
-          const material = (baseMesh as THREE.Mesh).material;
-          const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES);
-          instancedMesh.frustumCulled = true;
-          instancedMesh.castShadow = true;
-          instancedMesh.instanceMatrix.needsUpdate = true;
-          this.scene.add(instancedMesh);
-
-          for (let i = 0; i < MAX_INSTANCES; i++) {
-            instancedMesh.setMorphAt(i, baseMesh as any);
-          }
-          instancedMesh.count = 0; // Always keep max count
-
-          const mixer = new AnimationMixer(gltf.scene);
-
-          this.models.set(modelType, {
-            mesh: instancedMesh,
-            baseMesh,
-            mixer,
-            animations: {
-              idle: gltf.animations[0],
-              walk: gltf.animations[1] || gltf.animations[0].clone(),
-            },
-            animationActions: new Map(),
-            activeInstances: new Set(),
-            targetScales: new Map(),
-            currentScales: new Map(),
-          });
-
+          const modelData = this.createModelData(gltf);
+          this.models.set(modelType, modelData);
           resolve();
         },
         undefined,
@@ -106,184 +89,575 @@ export class ArmyModel {
     });
   }
 
-  assignModelToEntity(entityId: number, modelType: string) {
+  private createModelData(gltf: any): ModelData {
+    const group = new THREE.Group();
+    const instancedMeshes: AnimatedInstancedMesh[] = [];
+    const baseMeshes: THREE.Mesh[] = [];
+
+    this.processGLTFScene(gltf, group, instancedMeshes, baseMeshes);
+    this.scene.add(group);
+
+    const mixer = new AnimationMixer(gltf.scene);
+
+    return {
+      group,
+      instancedMeshes,
+      baseMeshes,
+      mixer,
+      animations: {
+        idle: gltf.animations[0],
+        moving: gltf.animations[1] || gltf.animations[0]?.clone(),
+      },
+      animationActions: new Map(),
+      activeInstances: new Set(),
+      targetScales: new Map(),
+      currentScales: new Map(),
+    };
+  }
+
+  private processGLTFScene(
+    gltf: any,
+    group: THREE.Group,
+    instancedMeshes: AnimatedInstancedMesh[],
+    baseMeshes: THREE.Mesh[],
+  ): void {
+    let meshIndex = 0;
+
+    gltf.scene.traverse((child: THREE.Object3D) => {
+      if (child instanceof THREE.Mesh) {
+        const instancedMesh = this.createInstancedMesh(child, gltf.animations, meshIndex);
+        group.add(instancedMesh);
+        instancedMeshes.push(instancedMesh);
+        baseMeshes.push(child);
+        meshIndex++;
+      }
+    });
+  }
+
+  private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
+    const geometry = mesh.geometry.clone();
+    const material = mesh.material;
+    const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
+
+    instancedMesh.frustumCulled = true;
+    instancedMesh.castShadow = true;
+    instancedMesh.instanceMatrix.needsUpdate = true;
+
+    if (meshIndex > 0) {
+      instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
+    }
+
+    if (animations.length > 0) {
+      this.setupMeshAnimation(instancedMesh, mesh, animations);
+    }
+
+    instancedMesh.count = 0;
+    return instancedMesh;
+  }
+
+  private setupMeshAnimation(instancedMesh: AnimatedInstancedMesh, mesh: THREE.Mesh, animations: any[]): void {
+    const hasAnimation = animations[0].tracks.find((track: any) => track.name.split(".")[0] === mesh.name);
+
+    if (hasAnimation) {
+      instancedMesh.animated = true;
+      for (let i = 0; i < MAX_INSTANCES; i++) {
+        instancedMesh.setMorphAt(i, mesh as any);
+      }
+      instancedMesh.morphTexture!.needsUpdate = true;
+    }
+  }
+
+  // Instance Management Methods
+  public assignModelToEntity(entityId: number, modelType: ModelType): void {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
-
     this.entityModelMap.set(entityId, modelType);
   }
 
-  getModelForEntity(entityId: number): ModelData | undefined {
+  public getModelForEntity(entityId: number): ModelData | undefined {
     const modelType = this.entityModelMap.get(entityId);
     if (!modelType) return undefined;
     return this.models.get(modelType);
   }
 
-  updateInstance(
+  public updateInstance(
     entityId: number,
     index: number,
     position: THREE.Vector3,
     scale: THREE.Vector3,
     rotation?: THREE.Euler,
     color?: THREE.Color,
-  ) {
+  ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
       const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
 
-      // modelData.targetScales.set(index, targetScale.clone());
-      // if (!modelData.currentScales.has(index)) {
-      //   modelData.currentScales.set(index, targetScale.clone());
-      // }
-
-      // const currentScale = modelData.currentScales.get(index)!;
-      this.dummyObject.position.copy(position);
-      this.dummyObject.position.y += 0.15;
-      this.dummyObject.scale.copy(targetScale);
-      if (rotation) {
-        this.dummyObject.rotation.copy(rotation);
-      }
-
-      if (color) {
-        modelData.mesh.setColorAt(index, color);
-        modelData.mesh.instanceColor!.needsUpdate = true;
-      }
-      this.dummyObject.updateMatrix();
-      modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-      modelData.mesh.instanceMatrix.needsUpdate = true;
-      modelData.mesh.userData.entityIdMap = modelData.mesh.userData.entityIdMap || new Map();
-      modelData.mesh.userData.entityIdMap.set(index, entityId);
+      this.updateInstanceTransform(position, targetScale, rotation);
+      this.updateInstanceMeshes(modelData, index, color);
     });
   }
 
-  updateAnimations(deltaTime: number) {
+  private updateInstanceTransform(position: THREE.Vector3, scale: THREE.Vector3, rotation?: THREE.Euler): void {
+    this.dummyObject.position.copy(position);
+    this.dummyObject.position.y += 0.15;
+    this.dummyObject.scale.copy(scale);
+    if (rotation) {
+      this.dummyObject.rotation.copy(rotation);
+    }
+    this.dummyObject.updateMatrix();
+  }
+
+  private updateInstanceMeshes(modelData: ModelData, index: number, color?: THREE.Color): void {
+    modelData.instancedMeshes.forEach((mesh) => {
+      mesh.setMatrixAt(index, this.dummyObject.matrix);
+      mesh.instanceMatrix.needsUpdate = true;
+
+      if (color && mesh.instanceColor) {
+        mesh.setColorAt(index, color);
+        mesh.instanceColor.needsUpdate = true;
+      }
+
+      mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map();
+      mesh.userData.entityIdMap.set(index, index);
+    });
+  }
+
+  // Animation Methods
+  public updateAnimations(deltaTime: number): void {
+    if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
+
     const time = performance.now() * 0.001;
 
-    // if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
-    //   return;
-    // }
-
     this.models.forEach((modelData) => {
-      let needsMatrixUpdate = false;
+      this.updateModelAnimations(modelData, time);
+    });
+  }
 
-      // modelData.targetScales.forEach((targetScale, index) => {
-      //   const currentScale = modelData.currentScales.get(index)!;
-      //   const matrix = new THREE.Matrix4();
-      //   modelData.mesh.getMatrixAt(index, matrix);
+  private updateModelAnimations(modelData: ModelData, time: number): void {
+    modelData.instancedMeshes.forEach((mesh, meshIndex) => {
+      if (!mesh.animated) return;
 
-      //   // Interpolate scale
-      //   currentScale.lerp(targetScale, deltaTime * this.SCALE_TRANSITION_SPEED);
-      //   if (!currentScale.equals(targetScale)) {
-      //     this.dummyObject.matrix.copy(matrix);
-      //     this.dummyObject.scale.copy(currentScale);
-      //     this.dummyObject.updateMatrix();
-      //     modelData.mesh.setMatrixAt(index, this.dummyObject.matrix);
-      //     needsMatrixUpdate = true;
-      //   }
-      // });
-
-      if (needsMatrixUpdate) {
-        modelData.mesh.instanceMatrix.needsUpdate = true;
+      for (let i = 0; i < mesh.count; i++) {
+        this.updateInstanceAnimation(modelData, mesh, meshIndex, i, time);
       }
 
-      for (let i = 0; i < modelData.mesh.count; i++) {
-        const animationState = this.animationStates[i];
-        if (
-          (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-          GRAPHICS_SETTING === GraphicsSettings.LOW
-        ) {
-          continue;
-        }
-
-        if (!modelData.animationActions.has(i)) {
-          const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
-          const walkAction = modelData.mixer.clipAction(modelData.animations.walk);
-          modelData.animationActions.set(i, { idle: idleAction, walk: walkAction });
-        }
-
-        const actions = modelData.animationActions.get(i)!;
-        if (animationState === ANIMATION_STATE_IDLE) {
-          actions.idle.setEffectiveTimeScale(1);
-          actions.walk.setEffectiveTimeScale(0);
-        } else if (animationState === ANIMATION_STATE_WALKING) {
-          actions.idle.setEffectiveTimeScale(0);
-          actions.walk.setEffectiveTimeScale(1);
-        }
-
-        actions.idle.play();
-        actions.walk.play();
-
-        modelData.mixer.setTime(time + this.timeOffsets[i]);
-
-        modelData.mesh.setMorphAt(i, modelData.baseMesh as any);
-      }
-      modelData.mesh.morphTexture!.needsUpdate = true;
-    });
-  }
-
-  updateInstanceMatrix() {
-    this.models.forEach((modelData) => {
-      modelData.mesh.instanceMatrix.needsUpdate = true;
-    });
-  }
-
-  computeBoundingSphere() {
-    this.models.forEach((modelData) => {
-      modelData.mesh.computeBoundingSphere();
-    });
-  }
-
-  setAnimationState(index: number, isWalking: boolean) {
-    this.animationStates[index] = isWalking ? ANIMATION_STATE_WALKING : ANIMATION_STATE_IDLE;
-  }
-
-  raycastAll(raycaster: THREE.Raycaster): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
-    const results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> = [];
-
-    this.models.forEach((modelData) => {
-      const intersects = raycaster.intersectObject(modelData.mesh);
-      if (intersects.length > 0) {
-        results.push({
-          instanceId: intersects[0].instanceId,
-          mesh: modelData.mesh,
-        });
+      if (mesh.morphTexture) {
+        mesh.morphTexture.needsUpdate = true;
       }
     });
-
-    // Sort by distance to get closest intersection first
-    results.sort((a, b) => {
-      const intersectsA = raycaster.intersectObject(a.mesh);
-      const intersectsB = raycaster.intersectObject(b.mesh);
-      return intersectsA[0].distance - intersectsB[0].distance;
-    });
-
-    return results;
   }
 
-  resetInstanceCounts() {
+  private updateInstanceAnimation(
+    modelData: ModelData,
+    mesh: AnimatedInstancedMesh,
+    meshIndex: number,
+    instanceIndex: number,
+    time: number,
+  ): void {
+    const animationState = this.animationStates[instanceIndex];
+
+    if (this.shouldSkipAnimation(animationState)) return;
+
+    const actions = this.getOrCreateAnimationActions(modelData, instanceIndex);
+    this.updateAnimationState(actions, animationState);
+
+    modelData.mixer.setTime(time + this.timeOffsets[instanceIndex]);
+    mesh.setMorphAt(instanceIndex, modelData.baseMeshes[meshIndex] as any);
+  }
+
+  private shouldSkipAnimation(animationState: number): boolean {
+    return (
+      (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
+      GRAPHICS_SETTING === GraphicsSettings.LOW
+    );
+  }
+
+  private getOrCreateAnimationActions(modelData: ModelData, instanceIndex: number) {
+    if (!modelData.animationActions.has(instanceIndex)) {
+      const idleAction = modelData.mixer.clipAction(modelData.animations.idle);
+      const movingAction = modelData.mixer.clipAction(modelData.animations.moving);
+      modelData.animationActions.set(instanceIndex, { idle: idleAction, moving: movingAction });
+    }
+    return modelData.animationActions.get(instanceIndex)!;
+  }
+
+  private updateAnimationState(
+    actions: { idle: THREE.AnimationAction; moving: THREE.AnimationAction },
+    state: number,
+  ): void {
+    if (state === ANIMATION_STATE_IDLE) {
+      actions.idle.setEffectiveTimeScale(1);
+      actions.moving.setEffectiveTimeScale(0);
+    } else if (state === ANIMATION_STATE_MOVING) {
+      actions.idle.setEffectiveTimeScale(0);
+      actions.moving.setEffectiveTimeScale(1);
+    }
+    actions.idle.play();
+    actions.moving.play();
+  }
+
+  // Movement Methods
+  public startMovement(
+    entityId: number,
+    path: THREE.Vector3[],
+    matrixIndex: number,
+    category: TroopType,
+    tier: TroopTier,
+  ): void {
+    if (path.length < 2) return;
+
+    this.stopMovement(entityId);
+    const [currentPos, nextPos] = [path[0], path[1]];
+
+    this.initializeMovement(entityId, currentPos, nextPos, path, matrixIndex, category, tier);
+    this.setAnimationState(matrixIndex, true);
+    this.updateInstanceDirection(entityId, currentPos, nextPos);
+  }
+
+  private initializeMovement(
+    entityId: number,
+    currentPos: THREE.Vector3,
+    nextPos: THREE.Vector3,
+    path: THREE.Vector3[],
+    matrixIndex: number,
+    category: TroopType,
+    tier: TroopTier,
+  ): void {
+    this.instanceData.set(entityId, {
+      entityId,
+      position: currentPos.clone(),
+      scale: this.normalScale.clone(),
+      isMoving: true,
+      path,
+      category,
+      tier,
+    });
+
+    this.movingInstances.set(entityId, {
+      startPos: currentPos.clone(),
+      endPos: nextPos.clone(),
+      progress: 0,
+      matrixIndex,
+      currentPathIndex: 0,
+      floatingHeight: 0,
+      currentRotation: 0,
+      targetRotation: 0,
+    });
+  }
+
+  public updateMovements(deltaTime: number): void {
+    this.movingInstances.forEach((movement, entityId) => {
+      const instanceData = this.instanceData.get(entityId);
+      if (!instanceData) {
+        this.stopMovement(entityId);
+        return;
+      }
+
+      if (movement.currentPathIndex === -1) {
+        this.handleDescent(movement, entityId, instanceData, deltaTime);
+        return;
+      }
+
+      this.updateMovingInstance(movement, entityId, instanceData, deltaTime);
+    });
+  }
+
+  private handleDescent(
+    movement: MovementData,
+    entityId: number,
+    instanceData: ArmyInstanceData,
+    deltaTime: number,
+  ): void {
+    const modelType = this.entityModelMap.get(entityId);
+    const isBoat = modelType === ModelType.Boat;
+
+    if (!isBoat) {
+      movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
+    }
+
+    const displayPosition = movement.startPos.clone();
+    if (!isBoat) {
+      displayPosition.y += movement.floatingHeight;
+    }
+
+    this.updateRotation(movement, deltaTime);
+    this.updateInstance(
+      entityId,
+      movement.matrixIndex,
+      displayPosition,
+      instanceData.scale,
+      this.dummyObject.rotation,
+      instanceData.color,
+    );
+
+    this.updateLabelPosition(entityId, displayPosition);
+
+    if (movement.floatingHeight <= 0 || isBoat) {
+      this.movingInstances.delete(entityId);
+    }
+  }
+
+  private updateMovingInstance(
+    movement: MovementData,
+    entityId: number,
+    instanceData: ArmyInstanceData,
+    deltaTime: number,
+  ): void {
+    const modelType = this.entityModelMap.get(entityId);
+    const isBoat = modelType === ModelType.Boat;
+
+    if (!isBoat) {
+      movement.floatingHeight = Math.min(
+        this.FLOAT_HEIGHT,
+        movement.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
+      );
+    }
+
+    this.updateRotation(movement, deltaTime);
+    this.updateMovementProgress(movement, instanceData, deltaTime);
+
+    if (instanceData.category && instanceData.tier) {
+      this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
+    }
+
+    const displayPosition = instanceData.position.clone();
+    if (!isBoat) {
+      displayPosition.y += movement.floatingHeight;
+    }
+
+    this.updateInstance(
+      entityId,
+      movement.matrixIndex,
+      displayPosition,
+      instanceData.scale,
+      this.dummyObject.rotation,
+      instanceData.color,
+    );
+
+    this.updateLabelPosition(entityId, displayPosition);
+  }
+
+  private updateRotation(movement: MovementData, deltaTime: number): void {
+    const rotationDiff = movement.targetRotation - movement.currentRotation;
+    const normalizedDiff = Math.atan2(Math.sin(rotationDiff), Math.cos(rotationDiff));
+    movement.currentRotation += normalizedDiff * this.ROTATION_SPEED * deltaTime;
+    this.dummyObject.rotation.set(0, movement.currentRotation, 0);
+  }
+
+  private updateMovementProgress(movement: MovementData, instanceData: ArmyInstanceData, deltaTime: number): void {
+    const distance = movement.startPos.distanceTo(movement.endPos);
+    const travelTime = distance / this.MOVEMENT_SPEED;
+    movement.progress += deltaTime / travelTime;
+
+    if (movement.progress >= 1) {
+      this.handlePathCompletion(movement, instanceData);
+    } else {
+      instanceData.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
+    }
+  }
+
+  private handlePathCompletion(movement: MovementData, instanceData: ArmyInstanceData): void {
+    instanceData.position.copy(movement.endPos);
+
+    if (instanceData.path && movement.currentPathIndex < instanceData.path.length - 2) {
+      this.moveToNextPathSegment(movement, instanceData);
+    } else {
+      this.stopMovement(instanceData.entityId);
+    }
+  }
+
+  private moveToNextPathSegment(movement: MovementData, instanceData: ArmyInstanceData): void {
+    movement.currentPathIndex++;
+    const nextPos = instanceData.path![movement.currentPathIndex + 1];
+
+    movement.startPos.copy(movement.endPos);
+    movement.endPos.copy(nextPos);
+    movement.progress = 0;
+
+    this.updateInstanceDirection(instanceData.entityId, movement.startPos, movement.endPos);
+  }
+
+  private updateInstanceDirection(entityId: number, fromPos: THREE.Vector3, toPos: THREE.Vector3): void {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+
+    const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
+    const targetAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
+
+    movement.targetRotation = targetAngle;
+    if (movement.currentRotation === 0) {
+      movement.currentRotation = targetAngle;
+    }
+  }
+
+  private updateModelTypeForPosition(
+    entityId: number,
+    position: THREE.Vector3,
+    category: TroopType,
+    tier: TroopTier,
+  ): void {
+    const { col, row } = getHexForWorldPosition(position);
+    const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
+
+    const modelType =
+      biome === BiomeType.Ocean || biome === BiomeType.DeepOcean ? ModelType.Boat : TROOP_TO_MODEL[category][tier];
+
+    if (this.entityModelMap.get(entityId) !== modelType) {
+      this.assignModelToEntity(entityId, modelType);
+    }
+  }
+
+  private stopMovement(entityId: number): void {
+    const movement = this.movingInstances.get(entityId);
+    if (!movement) return;
+
+    this.setAnimationState(movement.matrixIndex, false);
+
+    if (movement.floatingHeight > 0) {
+      this.initializeDescentAnimation(entityId, movement);
+    } else {
+      this.movingInstances.delete(entityId);
+    }
+
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+  }
+
+  private initializeDescentAnimation(entityId: number, movement: MovementData): void {
+    const instanceData = this.instanceData.get(entityId);
+    if (!instanceData) {
+      this.movingInstances.delete(entityId);
+      return;
+    }
+
+    this.movingInstances.set(entityId, {
+      startPos: instanceData.position.clone(),
+      endPos: instanceData.position.clone(),
+      progress: 0,
+      matrixIndex: movement.matrixIndex,
+      currentPathIndex: -1,
+      floatingHeight: movement.floatingHeight,
+      currentRotation: movement.currentRotation,
+      targetRotation: movement.currentRotation,
+    });
+  }
+
+  // Label Management Methods
+  public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3): void {
+    this.removeLabel(entityId);
+
+    const label = new CSS2DObject(labelElement);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    this.labels.set(entityId, { label, entityId });
+    this.scene.add(label);
+  }
+
+  public removeLabel(entityId: number): void {
+    const labelData = this.labels.get(entityId);
+    if (labelData) {
+      this.scene.remove(labelData.label);
+      this.labels.delete(entityId);
+    }
+  }
+
+  private updateLabelPosition(entityId: number, position: THREE.Vector3): void {
+    const labelData = this.labels.get(entityId);
+    if (labelData) {
+      labelData.label.position.copy(position);
+      labelData.label.position.y += 1.5;
+    }
+  }
+
+  public removeLabelsFromScene(): void {
+    this.labels.forEach((labelData) => {
+      this.scene.remove(labelData.label);
+    });
+  }
+
+  public addLabelsToScene(): void {
+    this.labels.forEach((labelData) => {
+      if (!this.scene.children.includes(labelData.label)) {
+        this.scene.add(labelData.label);
+      }
+    });
+  }
+
+  // Instance Count Management Methods
+  public resetInstanceCounts(): void {
     this.currentVisibleCount = 0;
     this.models.forEach((modelData) => {
-      modelData.mesh.count = 0;
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = 0;
+      });
       modelData.activeInstances.clear();
     });
   }
 
-  updateAllInstances() {
+  public updateAllInstances(): void {
     this.models.forEach((modelData) => {
-      modelData.mesh.instanceMatrix.needsUpdate = true;
-      if (modelData.mesh.instanceColor) {
-        modelData.mesh.instanceColor.needsUpdate = true;
-      }
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) {
+          mesh.instanceColor.needsUpdate = true;
+        }
+      });
     });
   }
 
-  setVisibleCount(count: number) {
-    if (count === this.currentVisibleCount) return; // Skip if count hasn't changed
+  public setVisibleCount(count: number): void {
+    if (count === this.currentVisibleCount) return;
 
     this.currentVisibleCount = count;
-    // Update all meshes to have the same count
     this.models.forEach((modelData) => {
-      modelData.mesh.count = count;
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.count = count;
+      });
+    });
+  }
+
+  public setAnimationState(index: number, isWalking: boolean): void {
+    this.animationStates[index] = isWalking ? ANIMATION_STATE_MOVING : ANIMATION_STATE_IDLE;
+  }
+
+  public computeBoundingSphere(): void {
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        mesh.computeBoundingSphere();
+      });
+    });
+  }
+
+  public raycastAll(raycaster: THREE.Raycaster): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
+    const results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> = [];
+
+    this.models.forEach((modelData) => {
+      modelData.instancedMeshes.forEach((mesh) => {
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length > 0) {
+          results.push({
+            instanceId: intersects[0].instanceId,
+            mesh: mesh,
+          });
+        }
+      });
+    });
+
+    return this.sortRaycastResults(results, raycaster);
+  }
+
+  private sortRaycastResults(
+    results: Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }>,
+    raycaster: THREE.Raycaster,
+  ): Array<{ instanceId: number | undefined; mesh: THREE.InstancedMesh }> {
+    return results.sort((a, b) => {
+      const intersectsA = raycaster.intersectObject(a.mesh);
+      const intersectsB = raycaster.intersectObject(b.mesh);
+      return intersectsA[0].distance - intersectsB[0].distance;
     });
   }
 }
