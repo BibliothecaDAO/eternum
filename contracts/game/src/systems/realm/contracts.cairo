@@ -23,7 +23,13 @@ pub struct RealmSettlement {
 
 #[starknet::interface]
 pub trait IRealmSystems<T> {
-    fn create(ref self: T, owner: starknet::ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID;
+    fn create(
+        ref self: T,
+        owner: starknet::ContractAddress,
+        realm_id: ID,
+        frontend: ContractAddress,
+        settlement: RealmSettlement,
+    ) -> ID;
 }
 
 #[dojo::contract]
@@ -37,8 +43,8 @@ pub mod realm_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids};
     use s1_eternum::models::config::{
-        SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl, StartingResourcesConfig,
-        WorldConfigUtilImpl,
+        RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
+        StartingResourcesConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl, TileOccupier};
@@ -60,6 +66,7 @@ pub mod realm_systems {
     };
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
+    use super::RealmSettlement;
     use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
 
@@ -75,7 +82,13 @@ pub mod realm_systems {
         /// and the season pass owner must approve this contract to
         /// spend their season pass NFT
         ///
-        fn create(ref self: ContractState, owner: ContractAddress, realm_id: ID, frontend: ContractAddress) -> ID {
+        fn create(
+            ref self: ContractState,
+            owner: ContractAddress,
+            realm_id: ID,
+            frontend: ContractAddress,
+            settlement: RealmSettlement,
+        ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
