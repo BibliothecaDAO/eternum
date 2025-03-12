@@ -163,12 +163,12 @@ export class TileManager {
 
     const quantityOverrideId = uuid();
 
-    const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts || 0n);
+    const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts_1 || 0n);
 
     // Ensure array has values at all indices up to buildingType
     const packedBuildingCount = setBuildingCount(
       buildingType,
-      structureBuildings?.packed_counts || 0n,
+      structureBuildings?.packed_counts_1 || 0n,
       buildingCount + 1,
     );
 
@@ -177,7 +177,7 @@ export class TileManager {
       entity: realmEntity,
       value: {
         ...structureBuildings,
-        packed_counts: BigInt(packedBuildingCount),
+        packed_counts_1: BigInt(packedBuildingCount),
         population: {
           current:
             (structureBuildings?.population.current || 0) +

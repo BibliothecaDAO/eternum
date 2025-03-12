@@ -43,6 +43,9 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    console.log("worldConfig", worldConfig);
+
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
@@ -504,8 +507,6 @@ export class ClientConfigManager {
 
       if (entityType === EntityType.DONKEY) {
         return Number(speedConfig?.donkey_sec_per_km ?? 0);
-      } else if (entityType === EntityType.TROOP) {
-        return Number(speedConfig?.army_sec_per_km ?? 0);
       } else {
         throw new Error("Undefined entity type in getSpeedConfig");
       }

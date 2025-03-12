@@ -44,23 +44,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          base_population: RecsType.Number,
-          base_cost_percent_increase: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "BuildingConfig",
-            types: ["u32", "u16"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     BuildingCategoryConfig: (() => {
       return defineComponent(
         world,
@@ -385,7 +368,9 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.Number,
-          packed_counts: RecsType.BigInt,
+          packed_counts_1: RecsType.BigInt,
+          packed_counts_2: RecsType.BigInt,
+          packed_counts_3: RecsType.BigInt,
           population: {
             current: RecsType.Number,
             max: RecsType.Number,
@@ -395,7 +380,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureBuildings",
-            types: ["u32", "u128", "u32", "u32"],
+            types: ["u32", "u128", "u128", "u128", "u32", "u32"],
             customTypes: ["Population"],
           },
         },
@@ -1154,7 +1139,6 @@ export function defineContractComponents(world: World) {
           },
           speed_config: {
             donkey_sec_per_km: RecsType.Number,
-            army_sec_per_km: RecsType.Number,
           },
           map_config: {
             reward_resource_amount: RecsType.Number,
@@ -1282,14 +1266,13 @@ export function defineContractComponents(world: World) {
               "u128", // HyperstructureConfig points_on_completion
               "u64", // HyperstructureConfig time_between_shares_change
               "u16", // SpeedConfig donkey_sec_per_km
-              "u16", // SpeedConfig army_sec_per_km
               "u16", // MapConfig reward_resource_amount
               "u32", // MapConfig shards_mines_win_probability
               "u32", // MapConfig shards_mines_fail_probability
               "u32", // MapConfig hyps_win_prob
               "u32", // MapConfig hyps_fail_prob
-              "u32", // MapConfig hyps_fail_prob_increase_p_hex
-              "u32", // MapConfig hyps_fail_prob_increase_p_fnd
+              "u16", // MapConfig hyps_fail_prob_increase_p_hex
+              "u16", // MapConfig hyps_fail_prob_increase_p_fnd
               "u32", // MapConfig mine_wheat_grant_amount
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center

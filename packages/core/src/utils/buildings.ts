@@ -6,7 +6,7 @@ import { ID, ResourceCost } from "../types/common";
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
   const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));
 
-  const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts || 0n);
+  const buildingCount = getBuildingCount(buildingType, structureBuildings?.packed_counts_1 || 0n);
   return buildingCount;
 };
 

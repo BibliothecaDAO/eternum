@@ -634,9 +634,10 @@ export class ResourceManager {
     if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
 
     const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
+    // TODO: check multiple packed counts
     const packedBuildingCount =
       getComponentValue(this.components.StructureBuildings, getEntityIdFromKeys([BigInt(this.entityId || 0)]))
-        ?.packed_counts || 0n;
+        ?.packed_counts_1 || 0n;
 
     const quantity = unpackValue(packedBuildingCount)[BuildingType.Storehouse] || 0;
 
