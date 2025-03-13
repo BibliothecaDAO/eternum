@@ -84,8 +84,6 @@ export const LocalStepOne = () => {
       e.stopPropagation(); // Prevent triggering the parent onClick
     }
 
-    console.log("toggle modal");
-
     toggleModal(
       <SettlementMinimapModal
         onSelectLocation={handleLocationSelect}
@@ -112,7 +110,7 @@ export const LocalStepOne = () => {
         <div className="w-full">
           <div className="mt-4 flex flex-col gap-2">
             <div className="text-center text-gold">
-              Coordinates: {selectedCoords?.x}, {selectedCoords?.y}
+              Selected Coordinates: {selectedCoords?.x}, {selectedCoords?.y}
             </div>
             <div className="flex gap-2">
               <Button

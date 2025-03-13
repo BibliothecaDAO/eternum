@@ -1,6 +1,5 @@
 import { Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
-import { generateSettlementLocations, SETTLEMENT_CENTER, SettlementLocation } from "@/utils/settlement";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 // Define the props for the SettlementMinimap component
@@ -8,6 +7,20 @@ interface SettlementMinimapProps {
   onSelectLocation: (location: SettlementLocation) => void;
   onConfirm: () => void;
   maxLayers: number;
+}
+
+// Settlement constants
+export const SETTLEMENT_CENTER = 2147483646;
+export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
+
+// Settlement location interface
+export interface SettlementLocation {
+  side: number;
+  layer: number;
+  point: number;
+  x: number;
+  y: number;
 }
 
 // Colors for different states
@@ -51,7 +64,6 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers = 5 }
       x: selectedLocation.x,
       y: selectedLocation.y,
     }).getNormalized();
-    console.log({ selectedLocation, normalizedCoords });
     return normalizedCoords;
   }, [selectedLocation]);
 
@@ -95,6 +107,76 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers = 5 }
       canvas.removeEventListener("wheel", handleWheelEvent);
     };
   }, [mapSize]);
+
+  // Helper functions for generating settlement locations
+  const layerDistanceFromCenter = (layer: number) => {
+    return SETTLEMENT_BASE_DISTANCE + (layer - 1) * SETTLEMENT_SUBSEQUENT_DISTANCE;
+  };
+
+  const maxSidePoints = (side: number, layer: number) => {
+    if (side > 0) {
+      return layer;
+    } else {
+      return layer - 1;
+    }
+  };
+
+  const getPosPercentage = (pointOnSide: number, maxPointsOnSide: number) => {
+    return (pointOnSide + 1) / (maxPointsOnSide + 1);
+  };
+
+  const sideCoordinate = (side: number, distanceFromCenter: number) => {
+    const angle = (side * Math.PI) / 3;
+
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const x = SETTLEMENT_CENTER + distanceFromCenter * cos;
+    const y = SETTLEMENT_CENTER + distanceFromCenter * sin;
+
+    return { x, y };
+  };
+
+  /**
+   * Generates all possible settlement locations based on the settlement config
+   * @param maxLayers Maximum number of layers to generate
+   * @returns Array of all possible settlement locations
+   */
+  function generateSettlementLocations(maxLayers: number): SettlementLocation[] {
+    const locations: SettlementLocation[] = [];
+
+    // Generate locations for each layer, side, and point
+    for (let layer = 1; layer <= maxLayers; layer++) {
+      const distanceFromCenter = layerDistanceFromCenter(layer);
+
+      for (let side = 0; side < 6; side++) {
+        // Calculate max points on this side
+        const maxPoints = maxSidePoints(side, layer);
+
+        for (let point = 0; point < maxPoints; point++) {
+          // Calculate the coordinates based on the settlement config algorithm
+          const startCoord = sideCoordinate(side, distanceFromCenter);
+          const nextSide = (side + 1) % 6;
+          const posPercentage = getPosPercentage(point, maxPoints);
+          const endCoord = sideCoordinate(nextSide, distanceFromCenter);
+
+          // Calculate position along the side based on point and ensure it's an integer
+          const x = Math.round(startCoord.x + (endCoord.x - startCoord.x) * posPercentage);
+          const y = Math.round(startCoord.y + (endCoord.y - startCoord.y) * posPercentage);
+
+          locations.push({
+            side,
+            layer,
+            point,
+            x,
+            y,
+          });
+        }
+      }
+    }
+
+    return locations;
+  }
 
   // Generate all possible settlement locations based on the settlement config
   useEffect(() => {
