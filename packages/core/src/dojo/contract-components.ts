@@ -1240,8 +1240,8 @@ export function defineContractComponents(world: World) {
             regular_immunity_ticks: RecsType.Number,
             hyperstructure_immunity_ticks: RecsType.Number,
           },
-          realm_count_config: {
-            realm_count: RecsType.Number,
+          realm_count: {
+            count: RecsType.Number,
           },
           season_config: {
             start_settling_at: RecsType.Number,
