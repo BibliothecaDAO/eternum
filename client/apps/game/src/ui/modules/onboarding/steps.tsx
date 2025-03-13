@@ -13,11 +13,12 @@ import {
   SeasonPassRealm,
 } from "@/ui/components/cityview/realm/settle-realm-component";
 import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
+import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getRandomRealmEntity } from "@/utils/realms";
-import { getMaxLayer, SettlementLocation } from "@/utils/settlement";
+import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
@@ -59,13 +60,6 @@ export const LocalStepOne = () => {
 
   const handleMintAndPrepare = async () => {
     setRealmId(random);
-
-    // Calculate max layers based on realm count
-    // For the minimap, we'll show a smaller number of layers for better visualization
-    const totalRealmCount = 8000; // This should ideally come from a config or API
-    const calculatedMaxLayers = Math.min(10, getMaxLayer(totalRealmCount) / 5);
-    setMaxLayers(Math.max(5, Math.floor(calculatedMaxLayers)));
-
     handleSelectLocationClick();
   };
 

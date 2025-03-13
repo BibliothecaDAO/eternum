@@ -1,18 +1,10 @@
 import { Position } from "@/types/position";
+import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 
 // Settlement constants
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 30;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
-
-// Settlement location interface
-export interface SettlementLocation {
-  side: number;
-  layer: number;
-  point: number;
-  x: number;
-  y: number;
-}
 
 /**
  * Generates all possible settlement locations based on the settlement config
