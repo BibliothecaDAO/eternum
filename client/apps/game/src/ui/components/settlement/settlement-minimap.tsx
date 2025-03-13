@@ -49,7 +49,7 @@ const LEGEND_ITEMS = [
   { color: COLORS.SELECTED, label: "Selected" },
   { color: COLORS.SETTLED, label: "Settled" },
   { color: COLORS.MINE, label: "Your Realm" },
-  { color: COLORS.EXTRA_PLAYER, label: "Other Player" },
+  { color: COLORS.EXTRA_PLAYER, label: "Your Pending Realms" },
   { color: COLORS.CENTER, label: "Center" },
 ];
 
