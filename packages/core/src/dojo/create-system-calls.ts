@@ -50,6 +50,10 @@ export function createSystemCalls({
     await provider.cancel_order(props);
   };
 
+  const mint_and_settle_test_realm = async (props: SystemProps.MintAndSettleTestRealmProps) => {
+    await provider.mint_and_settle_test_realm(props);
+  };
+
   const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
     await provider.mint_test_realm(props);
   };
@@ -350,6 +354,7 @@ export function createSystemCalls({
     attach_lords: withAuth(attach_lords),
     detach_lords: withAuth(detach_lords),
     mint_test_lords: withAuth(mint_test_lords),
+    mint_and_settle_test_realm: withAuth(mint_and_settle_test_realm),
     bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
     bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
     bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),

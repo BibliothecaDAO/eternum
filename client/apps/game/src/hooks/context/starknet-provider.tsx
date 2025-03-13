@@ -6,6 +6,7 @@ import { Connector, jsonRpcProvider, StarknetConfig, voyager } from "@starknet-r
 import React, { useCallback, useEffect, useState } from "react";
 import { constants } from "starknet";
 import { env } from "../../../env";
+import { policies } from "./policies";
 
 const resourceAddresses = getResourceAddresses();
 

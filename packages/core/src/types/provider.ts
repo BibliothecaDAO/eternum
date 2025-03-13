@@ -7,6 +7,17 @@ export interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface MintAndSettleTestRealmProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  realms_address: string;
+  season_pass_address: string;
+  realm_settlement: {
+    side: num.BigNumberish;
+    layer: num.BigNumberish;
+    point: num.BigNumberish;
+  };
+}
+
 export interface BridgeResourcesIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: num.BigNumberish;

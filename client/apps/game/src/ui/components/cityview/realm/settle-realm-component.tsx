@@ -1,9 +1,15 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
+import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
+import { useModalStore } from "@/hooks/store/use-modal-store";
+import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
+import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
+import { SettlementLocation } from "@/utils/settlement";
 import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
+import { useState } from "react";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
 
@@ -60,6 +66,7 @@ const querySeasonPasses = async (accountAddress: string) => {
 
 export type SeasonPassRealm = RealmInterface & {
   resourceTypesUnpacked: number[];
+  selectedLocation?: SettlementLocation;
 };
 
 export const SeasonPassRealm = ({
@@ -67,13 +74,40 @@ export const SeasonPassRealm = ({
   selected,
   setSelected,
   className,
+  onSelectLocation,
 }: {
   seasonPassRealm: SeasonPassRealm;
   selected: boolean;
   setSelected: (selected: boolean) => void;
   className?: string;
+  onSelectLocation?: (realmId: number, location: SettlementLocation) => void;
 }) => {
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
+  const [maxLayers] = useState(5); // Default to 5 layers
+  const { toggleModal } = useModalStore();
+
+  const handleLocationSelect = (location: SettlementLocation) => {
+    if (onSelectLocation) {
+      onSelectLocation(seasonPassRealm.realmId, location);
+    }
+  };
+
+  const handleConfirmLocation = () => {
+    toggleModal(null); // Close the modal
+  };
+
+  const handleSelectLocationClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the parent onClick
+    toggleModal(
+      <SettlementMinimapModal
+        onSelectLocation={handleLocationSelect}
+        onConfirm={handleConfirmLocation}
+        maxLayers={maxLayers}
+        realmId={seasonPassRealm.realmId}
+        realmName={seasonPassRealm.name}
+      />,
+    );
+  };
 
   return (
     <div
@@ -97,6 +131,36 @@ export const SeasonPassRealm = ({
         {resourcesProduced.map((resourceId) => (
           <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" key={resourceId} withTooltip={false} />
         ))}
+      </div>
+
+      <div className="mt-1">
+        {seasonPassRealm.selectedLocation ? (
+          <div className="flex flex-col">
+            <div className="text-xs text-gold/80 mb-1">Selected Location:</div>
+            <div className="flex justify-between items-center">
+              <div className="text-sm">
+                Side {seasonPassRealm.selectedLocation.side}, Layer {seasonPassRealm.selectedLocation.layer}, Point{" "}
+                {seasonPassRealm.selectedLocation.point}
+              </div>
+              <Button
+                onClick={handleSelectLocationClick}
+                className="!h-6 !w-6 !min-w-0 !p-0 !bg-gold/30 !text-gold rounded-md hover:!bg-gold/40"
+              >
+                <MapIcon className="w-4 h-4 fill-current" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={handleSelectLocationClick}
+            className="w-full !h-7 !bg-gold/30 !text-gold !normal-case rounded-md hover:!bg-gold/40 text-xs"
+          >
+            <div className="flex items-center justify-center">
+              <MapIcon className="w-4 h-4 mr-1 fill-current" />
+              <div className="!font-normal">Select Location</div>
+            </div>
+          </Button>
+        )}
       </div>
     </div>
   );

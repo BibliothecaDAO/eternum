@@ -165,7 +165,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           {IS_MOBILE && <OrientationOverlay />}
           <LoadingOroborus loading={isLoadingScreenEnabled} />
           <RealmTransferManager zIndex={100} />
-          <BlankOverlayContainer zIndex={90} open={showModal}>
+          <BlankOverlayContainer zIndex={120} open={showModal}>
             {modalContent}
           </BlankOverlayContainer>
           <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>

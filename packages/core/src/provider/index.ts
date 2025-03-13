@@ -596,6 +596,77 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Mint a test realm, mint season passes, and create a realm in one transaction
+   *
+   * @param props - Properties for creating a test realm
+   * @param props.token_id - Token ID for the realm
+   * @param props.realms_address - Address of the realms contract
+   * @param props.season_pass_address - Address of the season pass contract
+   * @param props.realm_settlement - Settlement location for the realm
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Mint and settle a test realm with ID 123
+   * {
+   *   token_id: 123,
+   *   realms_address: "0x123...",
+   *   season_pass_address: "0x456...",
+   *   realm_settlement: {
+   *     side: 1,
+   *     layer: 2,
+   *     point: 3
+   *   },
+   *   signer: account
+   * }
+   * ```
+   */
+  public async mint_and_settle_test_realm(props: SystemProps.MintAndSettleTestRealmProps) {
+    const { token_id, realms_address, season_pass_address, realm_settlement, signer } = props;
+
+    const mintRealmCall = {
+      contractAddress: realms_address.toString(),
+      entrypoint: "mint",
+      calldata: [uint256.bnToUint256(token_id)],
+    };
+
+    const mintSeasonPassCall = {
+      contractAddress: season_pass_address.toString(),
+      entrypoint: "mint",
+      calldata: [signer.address, uint256.bnToUint256(token_id)],
+    };
+
+    const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
+
+    const approvalForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, true],
+    };
+
+    const createRealmCall = {
+      contractAddress: realmSystemsContractAddress,
+      entrypoint: "create",
+      calldata: [signer.address, token_id, signer.address, realm_settlement],
+    };
+
+    const approvalCloseForAllCall = {
+      contractAddress: season_pass_address,
+      entrypoint: "set_approval_for_all",
+      calldata: [realmSystemsContractAddress, false],
+    };
+
+    return await this.executeAndCheckTransaction(signer, [
+      mintRealmCall,
+      mintSeasonPassCall,
+      approvalForAllCall,
+      createRealmCall,
+      approvalCloseForAllCall,
+    ]);
+  }
+
+  /**
    * Transfer resources between entities
    *
    * @param props - Properties for transferring resources
