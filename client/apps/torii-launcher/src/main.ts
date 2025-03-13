@@ -1,4 +1,5 @@
-import { ChildProcessWithoutNullStreams, spawn, spawnSync } from "child_process";
+import { ChildProcessWithoutNullStreams } from "child_process";
+import * as spawn from "cross-spawn";
 import { app, BrowserWindow, ipcMain } from "electron";
 import started from "electron-squirrel-startup";
 import * as fs from "fs";
@@ -9,6 +10,7 @@ import path from "path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { TORII_VERSION, WORLD_ADDRESS } from "./constants";
 import { CurrentRpc, IpcMethod, Notification, Rpc } from "./types";
+import { osUtils } from "./utils/os-utils";
 
 if (started) {
   app.quit();
@@ -138,7 +140,7 @@ ipcMain.on(IpcMethod.SetFirstBlock, async (event, arg) => {
 
 ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
   try {
-    spawnSync("rm", ["-rf", getDbPath()]);
+    await osUtils.removeDirectory(getDbPath());
     killTorii();
     await resetFirstBlock(null, true);
     sendNotification({ type: "Info", message: "Database successfully reset" });
@@ -159,7 +161,10 @@ ipcMain.on(IpcMethod.ChangeRpc, async (event, arg: CurrentRpc) => {
 });
 
 async function handleTorii() {
-  const hasTorii = hasbin.sync("torii");
+  const toriiExecutable = osUtils.getExecutableName("torii");
+  const toriiPath = path.join(DOJO_PATH, "bin", toriiExecutable);
+
+  const hasTorii = hasbin.sync(toriiExecutable) || fs.existsSync(toriiPath);
 
   if (!hasTorii) {
     normalLog("torii not found, installing");
@@ -167,7 +172,8 @@ async function handleTorii() {
     normalLog("torii installed");
   } else {
     // Check current torii version
-    const versionResult = spawnSync(path.join(DOJO_PATH, "bin", "torii"), ["--version"]);
+    const versionArgs = ["--version"];
+    const versionResult = spawn.sync(toriiPath, versionArgs);
     const currentVersion = versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "");
 
     if (currentVersion !== TORII_VERSION) {
@@ -183,13 +189,11 @@ async function handleTorii() {
     const dbPath = getDbPath();
     mkdirSync(dbPath, { recursive: true });
 
-    const escapedToriiTomlPath = toriiTomlPath.replace(/ /g, "\\ ");
-
     normalLog(
       `Launching torii with params:\n- network ${rpc.name}\n- rpc ${rpc.url}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
     );
 
-    child = spawn(path.join(DOJO_PATH, "bin", "torii"), [
+    child = spawn.spawn(toriiPath, [
       "--world",
       WORLD_ADDRESS,
       "--http.cors_origins",
@@ -242,7 +246,36 @@ function timeout(ms: number) {
 }
 
 async function installTorii() {
-  spawnSync("sh", ["-c", `curl -L https://install.dojoengine.org | bash && dojoup -v ${TORII_VERSION}`]);
+  if (osUtils.isWindows()) {
+    // Windows installation
+    normalLog("Installing Torii on Windows...");
+
+    // Create temp directory for installation files
+    const tempDir = path.join(app.getPath("temp"), "torii-install");
+    await osUtils.ensureDirectoryExists(tempDir);
+
+    // Download installer script
+    const installerPath = path.join(tempDir, "install.ps1");
+    await osUtils.downloadFile("https://install.dojoengine.org/install.ps1", installerPath);
+
+    // Run installer with version specification
+    normalLog(`Installing Torii version ${TORII_VERSION}`);
+    await osUtils.runInstaller(installerPath);
+
+    // Update to specific version
+    const dojoupPath = path.join(DOJO_PATH, "bin", osUtils.getExecutableName("dojoup"));
+    const dojoupProcess = osUtils.runCommand(dojoupPath, ["-v", TORII_VERSION]);
+
+    await new Promise<void>((resolve, reject) => {
+      dojoupProcess.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Version update failed with code ${code}`));
+      });
+    });
+  } else {
+    // Unix-based installation (macOS, Linux)
+    spawn.sync("sh", ["-c", `curl -L https://install.dojoengine.org | bash && dojoup -v ${TORII_VERSION}`]);
+  }
 }
 
 function killTorii() {
@@ -264,16 +297,15 @@ async function resetFirstBlock(firstBlock: number | null, force: boolean = false
 }
 
 async function readFirstBlock() {
-  const exists = await fsPromises
-    .access(getStateFilePath(), fs.constants.F_OK)
-    .then(() => true)
-    .catch(() => false);
+  const stateFilePath = getStateFilePath();
+  const exists = await osUtils.fileExists(stateFilePath);
+
   if (!exists) {
     warningLog("State file does not exist, creating...");
-    await fsPromises.writeFile(getStateFilePath(), JSON.stringify({ firstBlock: null }));
+    await fsPromises.writeFile(stateFilePath, JSON.stringify({ firstBlock: null }));
   }
 
-  const state = await fsPromises.readFile(getStateFilePath(), { encoding: "utf8", flag: "r" });
+  const state = await fsPromises.readFile(stateFilePath, { encoding: "utf8", flag: "r" });
   const stateJson = JSON.parse(state);
   return stateJson.firstBlock;
 }
@@ -285,25 +317,24 @@ async function getSavedRpc(): Promise<CurrentRpc> {
 }
 
 async function saveRpc(rpc: CurrentRpc) {
-  await fsPromises.mkdir(ETERNUM_PATH, { recursive: true });
+  await osUtils.ensureDirectoryExists(ETERNUM_PATH);
 
-  const exists = await fsPromises
-    .access(getSettingsFilePath(), fs.constants.F_OK)
-    .then(() => true)
-    .catch(() => false);
+  const settingsFilePath = getSettingsFilePath();
+  const exists = await osUtils.fileExists(settingsFilePath);
+
   if (!exists) {
     warningLog("Settings file does not exist, creating...");
-    await fsPromises.writeFile(getSettingsFilePath(), JSON.stringify({ name: null, url: null }));
+    await fsPromises.writeFile(settingsFilePath, JSON.stringify({ name: null, url: null }));
   }
 
-  const settings = await fsPromises.readFile(getSettingsFilePath(), "utf8");
+  const settings = await fsPromises.readFile(settingsFilePath, "utf8");
 
   const settingsJson: CurrentRpc = JSON.parse(settings);
   settingsJson.name = rpc.name;
   settingsJson.url = rpc.url;
   settingsJson.worldBlock = rpc.worldBlock;
 
-  await fsPromises.writeFile(getSettingsFilePath(), JSON.stringify(settingsJson));
+  await fsPromises.writeFile(settingsFilePath, JSON.stringify(settingsJson));
 }
 
 async function saveDefaultRpc() {
