@@ -2,11 +2,16 @@ import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
+import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
-import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
+import {
+  getUnusedSeasonPasses,
+  queryRealmCount,
+  SeasonPassRealm,
+} from "@/ui/components/cityview/realm/settle-realm-component";
 import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
@@ -16,7 +21,6 @@ import { getMaxLayer, SettlementLocation } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { Sword } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../env";
 
@@ -30,7 +34,25 @@ export const LocalStepOne = () => {
   const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
   const [realmId, setRealmId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [maxLayers, setMaxLayers] = useState(5); // Default to 5 layers
+  const [maxLayers, setMaxLayers] = useState<number | null>(null); // Default to 5 layers
+  const [realmCount, setRealmCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!realmCount) return;
+    const maxLayer = getMaxLayer(realmCount);
+    setMaxLayers(maxLayer);
+    setLoading(false);
+  }, [realmCount]);
+
+  useEffect(() => {
+    const fetchRealmCount = async () => {
+      setLoading(true);
+      const count = await queryRealmCount();
+      setRealmCount(count);
+    };
+    fetchRealmCount();
+  }, []);
+
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const random = Math.floor(Math.random() * 8000);
@@ -83,6 +105,7 @@ export const LocalStepOne = () => {
     if (e) {
       e.stopPropagation(); // Prevent triggering the parent onClick
     }
+    if (!maxLayers) return;
 
     toggleModal(
       <SettlementMinimapModal
@@ -115,6 +138,7 @@ export const LocalStepOne = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleSelectLocationClick}
+                isLoading={loading}
                 className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 !normal-case rounded-md"
               >
                 <div className="flex items-center">

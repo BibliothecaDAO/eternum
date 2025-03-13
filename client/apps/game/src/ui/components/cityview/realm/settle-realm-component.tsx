@@ -6,10 +6,10 @@ import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-mi
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
-import { SettlementLocation } from "@/utils/settlement";
+import { getMaxLayer, SettlementLocation } from "@/utils/settlement";
 import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { env } from "../../../../../env";
 
@@ -64,6 +64,34 @@ const querySeasonPasses = async (accountAddress: string) => {
   }
 };
 
+export const queryRealmCount = async () => {
+  const getRealmCount = gql`
+    query getRealmCount {
+      s1EternumStructureModels(where: { category: 1 }) {
+        totalCount
+      }
+    }
+  `;
+  try {
+    const fetchUrl = env.VITE_PUBLIC_TORII + "/graphql";
+    const response = await fetch(fetchUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/graphql-response+json",
+      },
+      body: JSON.stringify({
+        query: getRealmCount,
+      }),
+    });
+    const json = (await response.json()) as { data: { s1EternumStructureModels: { totalCount: number } } };
+    return json.data.s1EternumStructureModels.totalCount;
+  } catch (error) {
+    console.error("Error querying realm count:", error);
+    return null;
+  }
+};
+
 export type SeasonPassRealm = RealmInterface & {
   resourceTypesUnpacked: number[];
   selectedLocation?: SettlementLocation;
@@ -83,7 +111,24 @@ export const SeasonPassRealm = ({
   onSelectLocation?: (realmId: number, location: SettlementLocation) => void;
 }) => {
   const resourcesProduced = seasonPassRealm.resourceTypesUnpacked;
-  const [maxLayers] = useState(5); // Default to 5 layers
+  const [maxLayers, setMaxLayers] = useState<number | null>(null); // Default to null
+  const [realmCount, setRealmCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const maxLayer = getMaxLayer(realmCount);
+    setMaxLayers(maxLayer);
+  }, [realmCount]);
+
+  useEffect(() => {
+    const fetchRealmCount = async () => {
+      setIsLoading(true);
+      const count = await queryRealmCount();
+      setRealmCount(count ?? 0);
+      setIsLoading(false);
+    };
+    fetchRealmCount();
+  }, []);
   const { toggleModal } = useModalStore();
 
   const handleLocationSelect = (location: SettlementLocation) => {
@@ -98,6 +143,7 @@ export const SeasonPassRealm = ({
 
   const handleSelectLocationClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
+    if (!maxLayers) return;
     toggleModal(
       <SettlementMinimapModal
         onSelectLocation={handleLocationSelect}
@@ -144,6 +190,7 @@ export const SeasonPassRealm = ({
               </div>
               <Button
                 onClick={handleSelectLocationClick}
+                isLoading={isLoading}
                 className="!h-6 !w-6 !min-w-0 !p-0 !bg-gold/30 !text-gold rounded-md hover:!bg-gold/40"
               >
                 <MapIcon className="w-4 h-4 fill-current" />

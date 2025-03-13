@@ -44,7 +44,7 @@ const SETTLED_LOCATIONS = [
 ];
 
 // Settlement minimap component
-export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers = 5 }: SettlementMinimapProps) => {
+export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: SettlementMinimapProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
   const [availableLocations, setAvailableLocations] = useState<SettlementLocation[]>([]);
