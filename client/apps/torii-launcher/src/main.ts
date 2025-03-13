@@ -246,35 +246,105 @@ function timeout(ms: number) {
 }
 
 async function installTorii() {
-  if (osUtils.isWindows()) {
-    // Windows installation
-    normalLog("Installing Torii on Windows...");
+  try {
+    if (osUtils.isWindows()) {
+      // Windows installation
+      normalLog("Installing Torii on Windows...");
 
-    // Create temp directory for installation files
-    const tempDir = path.join(app.getPath("temp"), "torii-install");
-    await osUtils.ensureDirectoryExists(tempDir);
+      // Create temp directory for installation files
+      const tempDir = path.join(app.getPath("temp"), "torii-install");
+      await osUtils.ensureDirectoryExists(tempDir);
 
-    // Download installer script
-    const installerPath = path.join(tempDir, "install.ps1");
-    await osUtils.downloadFile("https://install.dojoengine.org/install.ps1", installerPath);
+      // Download installer script
+      const installerPath = path.join(tempDir, "install.ps1");
+      normalLog("Downloading installer script...");
+      try {
+        await osUtils.downloadFile("https://install.dojoengine.org/install.ps1", installerPath);
+      } catch (e) {
+        errorLog(`Failed to download installer: ${e.message}`);
+        sendNotification({ type: "Error", message: "Failed to download Torii installer" });
+        throw e;
+      }
 
-    // Run installer with version specification
-    normalLog(`Installing Torii version ${TORII_VERSION}`);
-    await osUtils.runInstaller(installerPath);
+      // Run installer with version specification
+      normalLog(`Installing Torii version ${TORII_VERSION}`);
+      try {
+        // Try with normal execution first
+        await osUtils.runWindowsInstaller(installerPath);
+      } catch (e) {
+        errorLog(`Standard installation failed: ${e.message}`);
+        warningLog("Attempting to install with administrator privileges...");
 
-    // Update to specific version
-    const dojoupPath = path.join(DOJO_PATH, "bin", osUtils.getExecutableName("dojoup"));
-    const dojoupProcess = osUtils.runCommand(dojoupPath, ["-v", TORII_VERSION]);
+        // If normal execution fails, try with admin privileges
+        try {
+          await osUtils.runAsAdmin("powershell", ["-ExecutionPolicy", "Bypass", "-File", installerPath]);
+        } catch (adminError) {
+          errorLog(`Admin installation failed: ${adminError.message}`);
+          sendNotification({
+            type: "Error",
+            message: "Torii installation failed. Try running the app as administrator.",
+          });
+          throw adminError;
+        }
+      }
 
-    await new Promise<void>((resolve, reject) => {
-      dojoupProcess.on("close", (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`Version update failed with code ${code}`));
-      });
-    });
-  } else {
-    // Unix-based installation (macOS, Linux)
-    spawn.sync("sh", ["-c", `curl -L https://install.dojoengine.org | bash && dojoup -v ${TORII_VERSION}`]);
+      // Update to specific version
+      normalLog(`Updating to Torii version ${TORII_VERSION}`);
+      const dojoupPath = path.join(DOJO_PATH, "bin", osUtils.getExecutableName("dojoup"));
+      try {
+        if (fs.existsSync(dojoupPath)) {
+          const dojoupProcess = osUtils.runCommand(dojoupPath, ["-v", TORII_VERSION]);
+
+          let outputData = "";
+          dojoupProcess.stdout.on("data", (data) => {
+            outputData += data.toString();
+            normalLog(`[dojoup] ${data.toString().trim()}`);
+          });
+
+          dojoupProcess.stderr.on("data", (data) => {
+            errorLog(`[dojoup error] ${data.toString().trim()}`);
+          });
+
+          await new Promise<void>((resolve, reject) => {
+            dojoupProcess.on("close", (code) => {
+              if (code === 0) resolve();
+              else reject(new Error(`Version update failed with code ${code}`));
+            });
+          });
+        } else {
+          errorLog(`dojoup executable not found at ${dojoupPath}`);
+          sendNotification({
+            type: "Error",
+            message: "Torii installation incomplete: dojoup not found",
+          });
+        }
+      } catch (e) {
+        errorLog(`Failed to update Torii version: ${e.message}`);
+        sendNotification({ type: "Error", message: "Failed to update Torii version" });
+        throw e;
+      }
+    } else {
+      // Unix-based installation (macOS, Linux)
+      normalLog("Installing Torii on Unix-based system...");
+      const result = spawn.sync("sh", [
+        "-c",
+        `curl -L https://install.dojoengine.org | bash && dojoup -v ${TORII_VERSION}`,
+      ]);
+
+      if (result.status !== 0) {
+        const errorMsg = result.stderr ? result.stderr.toString() : "Unknown error";
+        errorLog(`Unix installation failed: ${errorMsg}`);
+        sendNotification({ type: "Error", message: "Failed to install Torii" });
+        throw new Error(`Unix installation failed with code ${result.status}: ${errorMsg}`);
+      }
+    }
+
+    normalLog("Torii installation completed successfully");
+    sendNotification({ type: "Info", message: `Torii ${TORII_VERSION} installed successfully` });
+  } catch (error) {
+    errorLog(`Installation error: ${error.message}`);
+    sendNotification({ type: "Error", message: `Torii installation failed: ${error.message}` });
+    throw error; // Re-throw to allow handling in the caller
   }
 }
 

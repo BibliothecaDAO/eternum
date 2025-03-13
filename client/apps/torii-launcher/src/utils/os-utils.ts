@@ -109,4 +109,82 @@ export const osUtils = {
       .then(() => true)
       .catch(() => false);
   },
+
+  /**
+   * Enhanced Windows installer with better error handling and logging
+   */
+  async runWindowsInstaller(scriptPath: string, args: string[] = [], verbose: boolean = true): Promise<void> {
+    // First check PowerShell execution policy
+    const policyCheckChild = spawn.spawn("powershell", ["-Command", "Get-ExecutionPolicy"]);
+
+    let policy = "";
+    policyCheckChild.stdout.on("data", (data) => {
+      policy += data.toString().trim();
+    });
+
+    await new Promise<void>((resolve) => {
+      policyCheckChild.on("close", () => resolve());
+    });
+
+    if (policy === "Restricted" || policy === "AllSigned") {
+      console.warn("PowerShell execution policy is restrictive: " + policy);
+      // We'll try to run with bypass flag
+    }
+
+    // Create a more robust PowerShell command
+    const psArgs = ["-ExecutionPolicy", "Bypass", "-NoProfile", "-File", scriptPath, ...args];
+
+    const child = spawn.spawn("powershell", psArgs);
+
+    let stdoutData = "";
+    let stderrData = "";
+
+    child.stdout.on("data", (data) => {
+      const message = data.toString();
+      stdoutData += message;
+      if (verbose) console.log(`[Installer] ${message.trim()}`);
+    });
+
+    child.stderr.on("data", (data) => {
+      const message = data.toString();
+      stderrData += message;
+      console.error(`[Installer Error] ${message.trim()}`);
+    });
+
+    return new Promise<void>((resolve, reject) => {
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          // Provide detailed error information
+          const error = new Error(
+            `Installation failed with code ${code}.\nStdout: ${stdoutData}\nStderr: ${stderrData}`,
+          );
+          console.error(error.message);
+          reject(error);
+        }
+      });
+    });
+  },
+
+  /**
+   * Try to run a process with administrator privileges on Windows
+   * Note: This will prompt the user with a UAC dialog
+   */
+  async runAsAdmin(command: string, args: string[]): Promise<void> {
+    if (!this.isWindows()) {
+      return this.runCommand(command, args);
+    }
+
+    const psArgs = ["-Command", `Start-Process "${command}" -ArgumentList "${args.join(" ")}" -Verb RunAs -Wait`];
+
+    const child = spawn.spawn("powershell", psArgs);
+
+    return new Promise<void>((resolve, reject) => {
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Failed to run as admin with code ${code}`));
+      });
+    });
+  },
 };
