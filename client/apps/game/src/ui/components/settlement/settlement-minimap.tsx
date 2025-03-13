@@ -5,8 +5,12 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+// Constants for minimap dimensions and settlement configuration
 const MINIMAP_WIDTH = 900;
 const MINIMAP_HEIGHT = 400;
+export const SETTLEMENT_CENTER = 2147483646;
+export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 
 // Define the props for the SettlementMinimap component
 interface SettlementMinimapProps {
@@ -17,11 +21,6 @@ interface SettlementMinimapProps {
   extraPlayerOccupiedLocations?: SettlementLocation[];
 }
 
-// Settlement constants
-export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 30;
-export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
-
 // Settlement location interface
 export interface SettlementLocation {
   side: number;
@@ -29,7 +28,9 @@ export interface SettlementLocation {
   point: number;
   x: number;
   y: number;
+  isMine?: boolean;
 }
+
 // Colors for different states
 const COLORS = {
   AVAILABLE: "#776756", // gray-gold
@@ -52,6 +53,9 @@ const LEGEND_ITEMS = [
   { color: COLORS.CENTER, label: "Center" },
 ];
 
+/**
+ * Gets all occupied locations from the game state
+ */
 const getOccupiedLocations = (playerAddress: ContractAddress, components: ClientComponents) => {
   const realmEntities = runQuery([HasValue(components.Structure, { category: StructureType.Realm })]);
   const realmPositions = Array.from(realmEntities).map((entity) => {
@@ -107,14 +111,40 @@ export const SettlementMinimap = ({
   const [availableLocations, setAvailableLocations] = useState<SettlementLocation[]>([]);
   const [settledLocations, setSettledLocations] = useState<SettlementLocation[]>([]);
   const [hoveredLocation, setHoveredLocation] = useState<SettlementLocation | null>(null);
-
   const [occupiedLocations, setOccupiedLocations] = useState<SettlementLocation[]>([]);
+
+  // Map view state
+  const [mapCenter, setMapCenter] = useState({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
+  const [mapSize, setMapSize] = useState({ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [mouseStartPosition, setMouseStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [customNormalizedCoords, setCustomNormalizedCoords] = useState({ x: 0, y: 0 });
+  const [zoomLevel, setZoomLevel] = useState(1); // New state for tracking zoom level
+
+  useEffect(() => {
+    zoomToLevel(zoomLevel);
+  }, [zoomLevel]);
+
+  // Add a new state to track animation
+  const [animationTime, setAnimationTime] = useState(0);
 
   const {
     account: { account },
     setup: { components },
   } = useDojo();
 
+  // Get normalized coordinates for the selected location
+  const selectedCoords = useMemo(() => {
+    if (!selectedLocation) return null;
+    const normalizedCoords = new PositionInterface({
+      x: selectedLocation.x,
+      y: selectedLocation.y,
+    }).getNormalized();
+    return normalizedCoords;
+  }, [selectedLocation]);
+
+  // Fetch occupied locations when account or components change
   useEffect(() => {
     const fetchOccupiedLocations = async () => {
       if (!account?.address) return;
@@ -127,55 +157,43 @@ export const SettlementMinimap = ({
     fetchOccupiedLocations();
   }, [account?.address, components, extraPlayerOccupiedLocations]);
 
-  // Map view state
-  const [mapCenter, setMapCenter] = useState({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
-  const [mapSize, setMapSize] = useState({ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT });
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
-  const [mouseStartPosition, setMouseStartPosition] = useState<{ x: number; y: number } | null>(null);
-  const [customNormalizedCoords, setCustomNormalizedCoords] = useState({ x: 0, y: 0 });
+  // Function to set zoom level and update map size
+  const setZoom = (zoomOut: boolean, delta = 10) => {
+    // Min and max zoom ranges
+    const MIN_ZOOM_RANGE = 75;
+    const MAX_ZOOM_RANGE = 600;
 
-  const selectedCoords = useMemo(() => {
-    if (!selectedLocation) return null;
-    const normalizedCoords = new PositionInterface({
-      x: selectedLocation.x,
-      y: selectedLocation.y,
-    }).getNormalized();
-    return normalizedCoords;
-  }, [selectedLocation]);
+    // Current range
+    const currentRange = mapSize.width;
 
-  // Add non-passive wheel event listener
+    // Check zoom limits
+    if (!zoomOut && currentRange < MIN_ZOOM_RANGE) return;
+    if (zoomOut && currentRange > MAX_ZOOM_RANGE) return;
+
+    // Calculate new size
+    const ratio = MINIMAP_WIDTH / MINIMAP_HEIGHT;
+    const deltaX = Math.round(delta * ratio);
+    const deltaY = delta;
+
+    // Update zoom level for UI feedback
+    setZoomLevel((prev) => (zoomOut ? Math.max(0.5, prev - 0.05) : Math.min(2, prev + 0.05)));
+
+    setMapSize({
+      width: mapSize.width + (zoomOut ? 2 * deltaX : -2 * deltaX),
+      height: mapSize.height + (zoomOut ? 2 * deltaY : -2 * deltaY),
+    });
+  };
+
+  // Add non-passive wheel event listener for zooming
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleWheelEvent = (event: WheelEvent) => {
       event.preventDefault();
-
       // Determine zoom direction
       const zoomOut = event.deltaY > 0;
-
-      // Min and max zoom ranges
-      const MIN_ZOOM_RANGE = 75;
-      const MAX_ZOOM_RANGE = 600;
-
-      // Current range
-      const currentRange = mapSize.width;
-
-      // Check zoom limits
-      if (!zoomOut && currentRange < MIN_ZOOM_RANGE) return;
-      if (zoomOut && currentRange > MAX_ZOOM_RANGE) return;
-
-      // Calculate new size
-      const ratio = canvas.width / canvas.height;
-      const delta = zoomOut ? 10 : -10;
-      const deltaX = Math.round(delta * ratio);
-      const deltaY = delta;
-
-      setMapSize({
-        width: mapSize.width + 2 * deltaX,
-        height: mapSize.height + 2 * deltaY,
-      });
+      setZoom(zoomOut);
     };
 
     canvas.addEventListener("wheel", handleWheelEvent, { passive: false });
@@ -204,13 +222,10 @@ export const SettlementMinimap = ({
 
   const sideCoordinate = (side: number, distanceFromCenter: number) => {
     const angle = (side * Math.PI) / 3;
-
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-
     const x = SETTLEMENT_CENTER + distanceFromCenter * cos;
     const y = SETTLEMENT_CENTER + distanceFromCenter * sin;
-
     return { x, y };
   };
 
@@ -258,10 +273,35 @@ export const SettlementMinimap = ({
   // Generate all possible settlement locations based on the settlement config
   useEffect(() => {
     const locations = generateSettlementLocations(maxLayers);
-
     setSettledLocations(occupiedLocations);
     setAvailableLocations(locations);
   }, [maxLayers, occupiedLocations]);
+
+  // Set up a continuous animation loop
+  useEffect(() => {
+    let animationFrameId: number;
+    let lastTimestamp: number;
+
+    const animate = (timestamp: number) => {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      // Update animation time
+      setAnimationTime((prev) => prev + deltaTime);
+
+      // Continue the animation loop
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    // Start the animation loop
+    animationFrameId = requestAnimationFrame(animate);
+
+    // Clean up on unmount
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   // Draw the minimap
   useEffect(() => {
@@ -297,6 +337,34 @@ export const SettlementMinimap = ({
       return { x: canvasX, y: canvasY };
     };
 
+    // Draw hexagonal grid lines for better orientation
+    ctx.strokeStyle = "rgba(119, 103, 86, 0.2)"; // Subtle grid color
+    ctx.lineWidth = 0.5;
+
+    // Draw concentric hexagons for each layer
+    for (let layer = 1; layer <= maxLayers; layer++) {
+      const distanceFromCenter = layerDistanceFromCenter(layer);
+      ctx.beginPath();
+
+      for (let side = 0; side < 6; side++) {
+        const startCoord = sideCoordinate(side, distanceFromCenter);
+        const startPos = worldToCanvas(startCoord.x, startCoord.y);
+
+        if (side === 0) {
+          ctx.moveTo(startPos.x, startPos.y);
+        } else {
+          ctx.lineTo(startPos.x, startPos.y);
+        }
+      }
+
+      // Close the hexagon
+      const firstCoord = sideCoordinate(0, distanceFromCenter);
+      const firstPos = worldToCanvas(firstCoord.x, firstCoord.y);
+      ctx.lineTo(firstPos.x, firstPos.y);
+
+      ctx.stroke();
+    }
+
     // Draw center point
     const centerPos = worldToCanvas(SETTLEMENT_CENTER, SETTLEMENT_CENTER);
     ctx.fillStyle = COLORS.CENTER;
@@ -328,7 +396,8 @@ export const SettlementMinimap = ({
           settled.layer === location.layer &&
           settled.side === location.side &&
           settled.point === location.point &&
-          !isExtraPlayerLocation, // Make sure it's not an extra player location
+          !isExtraPlayerLocation && // Make sure it's not an extra player location
+          settled.isMine,
       );
 
       // Draw location point with appropriate color
@@ -341,9 +410,16 @@ export const SettlementMinimap = ({
         fillColor = COLORS.SETTLED;
       }
 
+      // Draw a slightly larger point for better visibility
       ctx.fillStyle = fillColor;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Add a subtle glow effect for better visibility
+      ctx.fillStyle = `${fillColor}33`; // 20% opacity
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
       ctx.fill();
 
       // Highlight selected location
@@ -353,10 +429,13 @@ export const SettlementMinimap = ({
         selectedLocation.layer === location.layer &&
         selectedLocation.point === location.point
       ) {
+        // Pulsing effect for selected location using animationTime instead of Date.now()
+        const pulseSize = 6 + Math.sin(animationTime / 200) * 2;
+
         ctx.strokeStyle = COLORS.SELECTED;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
         ctx.stroke();
 
         // Draw selection info
@@ -374,9 +453,9 @@ export const SettlementMinimap = ({
         !isSettled // Only highlight if not settled
       ) {
         ctx.strokeStyle = COLORS.HOVERED;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+        ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
         ctx.stroke();
       }
     });
@@ -388,9 +467,28 @@ export const SettlementMinimap = ({
     const legendItemHeight = 20;
     const legendWidth = 150;
 
-    // Draw legend background
+    // Draw legend background with rounded corners
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.fillRect(legendX, legendY, legendWidth, legendPadding * 2 + legendItemHeight * LEGEND_ITEMS.length);
+    const legendHeight = legendPadding * 2 + legendItemHeight * LEGEND_ITEMS.length;
+    const legendRadius = 5;
+
+    ctx.beginPath();
+    ctx.moveTo(legendX + legendRadius, legendY);
+    ctx.lineTo(legendX + legendWidth - legendRadius, legendY);
+    ctx.arcTo(legendX + legendWidth, legendY, legendX + legendWidth, legendY + legendRadius, legendRadius);
+    ctx.lineTo(legendX + legendWidth, legendY + legendHeight - legendRadius);
+    ctx.arcTo(
+      legendX + legendWidth,
+      legendY + legendHeight,
+      legendX + legendWidth - legendRadius,
+      legendY + legendHeight,
+      legendRadius,
+    );
+    ctx.lineTo(legendX + legendRadius, legendY + legendHeight);
+    ctx.arcTo(legendX, legendY + legendHeight, legendX, legendY + legendHeight - legendRadius, legendRadius);
+    ctx.lineTo(legendX, legendY + legendRadius);
+    ctx.arcTo(legendX, legendY, legendX + legendRadius, legendY, legendRadius);
+    ctx.fill();
 
     // Draw legend items
     ctx.font = "12px Arial";
@@ -407,7 +505,28 @@ export const SettlementMinimap = ({
       ctx.fillStyle = "#FFF5EA";
       ctx.fillText(item.label, legendX + 30, itemY + 14);
     });
-  }, [availableLocations, selectedLocation, settledLocations, hoveredLocation, mapCenter, mapSize]);
+
+    // Draw zoom level indicator
+    const zoomIndicatorX = canvas.width - 100;
+    const zoomIndicatorY = canvas.height - 30;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.beginPath();
+    ctx.roundRect(zoomIndicatorX, zoomIndicatorY, 90, 20, 5);
+    ctx.fill();
+
+    ctx.fillStyle = "#FFF5EA";
+    ctx.font = "12px Arial";
+    ctx.fillText(`Zoom: ${Math.round(zoomLevel * 100)}%`, zoomIndicatorX + 10, zoomIndicatorY + 14);
+  }, [
+    availableLocations,
+    selectedLocation,
+    settledLocations,
+    hoveredLocation,
+    mapCenter,
+    mapSize,
+    zoomLevel,
+    animationTime,
+  ]);
 
   // Handle canvas click to select a location
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -624,26 +743,34 @@ export const SettlementMinimap = ({
       y: contractCoords.y,
     });
 
-    // Zoom in by simulating multiple wheel events
-    // This uses the same zoom mechanism as scrolling
+    // Zoom in to the coordinates
+    setZoomLevel(2);
+  };
+
+  // Function to zoom to a specific level
+  const zoomToLevel = (targetZoomLevel: number) => {
     const MIN_ZOOM_RANGE = 75;
+    const MAX_ZOOM_RANGE = 600;
     const currentRange = mapSize.width;
+    const ratio = MINIMAP_WIDTH / MINIMAP_HEIGHT;
 
-    // Calculate how much to zoom in - aim for about 1/4 of the current view
-    const targetWidth = Math.max(currentRange / 4, MIN_ZOOM_RANGE);
-    const zoomSteps = Math.floor((currentRange - targetWidth) / 20); // 20 is 2 * deltaX from wheel event
+    // Calculate target width based on zoom level (0.5 to 2)
+    // 0.5 = zoomed out (MAX_ZOOM_RANGE)
+    // 2 = zoomed in (MIN_ZOOM_RANGE)
+    const targetWidth = MAX_ZOOM_RANGE - ((targetZoomLevel - 0.5) / 1.5) * (MAX_ZOOM_RANGE - MIN_ZOOM_RANGE);
 
-    // Apply zoom steps
-    if (zoomSteps > 0) {
-      const ratio = MINIMAP_WIDTH / MINIMAP_HEIGHT;
-      const newWidth = currentRange - zoomSteps * 20;
-      const newHeight = newWidth / ratio;
+    // Ensure we stay within bounds
+    const newWidth = Math.max(MIN_ZOOM_RANGE, Math.min(MAX_ZOOM_RANGE, targetWidth));
+    const newHeight = newWidth / ratio;
 
-      setMapSize({
-        width: newWidth,
-        height: newHeight,
-      });
-    }
+    // Update map size
+    setMapSize({
+      width: newWidth,
+      height: newHeight,
+    });
+
+    // Update zoom level
+    setZoomLevel(targetZoomLevel);
   };
 
   // Reset map to center
@@ -651,20 +778,21 @@ export const SettlementMinimap = ({
     setMapCenter({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
     setMapSize({ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT });
     setCustomNormalizedCoords({ x: 0, y: 0 });
+    setZoomLevel(1); // Reset zoom level
   };
 
   return (
     <div className="flex flex-col items-center h-full">
-      <div className="flex flex-col items-center justify-center h-[120px] bg-black/30 rounded-lg border border-gold/30 p-4 mb-4 w-full">
+      <div className="flex flex-col items-center justify-center h-[120px] bg-black/30 rounded-lg border border-gold/30 p-4 mb-4 w-full transition-all duration-300 hover:border-gold/50">
         {selectedLocation ? (
           <div className="text-center w-full">
             <div className="text-xl font-semibold text-gold mb-2 border-b border-gold/20 pb-2">Selected Location</div>
             <div className="grid grid-cols-2 gap-6 text-gold">
-              <div className="flex flex-col items-center bg-black/40 p-2 rounded-md">
+              <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
                 <div className="text-sm text-gold/70">X Coordinate</div>
                 <div className="text-2xl font-bold">{selectedCoords?.x}</div>
               </div>
-              <div className="flex flex-col items-center bg-black/40 p-2 rounded-md">
+              <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
                 <div className="text-sm text-gold/70">Y Coordinate</div>
                 <div className="text-2xl font-bold">{selectedCoords?.y}</div>
               </div>
@@ -674,7 +802,7 @@ export const SettlementMinimap = ({
           <div className="flex items-center justify-center h-full">
             <div className="text-xl font-semibold text-gold flex items-center">
               <svg
-                className="w-6 h-6 mr-2 text-gold/70"
+                className="w-6 h-6 mr-2 text-gold/70 animate-pulse"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -693,39 +821,69 @@ export const SettlementMinimap = ({
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              Select a location for your realm
+              Click on the map to select a location for your realm
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between w-full mb-2 bg-black/30 rounded-lg border border-gold/30 p-2">
-        <div className="flex items-center">
-          <div className="text-gold mr-2">Center on:</div>
-          <input
-            type="text"
-            value={customNormalizedCoords.x}
-            onChange={(e) => handleCoordinateChange(e, "x")}
-            className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold"
-            placeholder="X"
-          />
-          <input
-            type="text"
-            value={customNormalizedCoords.y}
-            onChange={(e) => handleCoordinateChange(e, "y")}
-            className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold"
-            placeholder="Y"
-          />
-          <Button variant="secondary" onClick={centerOnCoordinates} className="mr-2">
-            Go
-          </Button>
+      <div className="flex items-center justify-between w-full mb-2 bg-black/30 rounded-lg border border-gold/30 p-2 transition-all duration-300 hover:border-gold/50">
+        <div className="flex items-center flex-wrap gap-2">
+          <div className="text-gold">Center on:</div>
+          <div className="flex items-center">
+            <input
+              type="text"
+              value={customNormalizedCoords.x}
+              onChange={(e) => handleCoordinateChange(e, "x")}
+              className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold focus:border-gold focus:outline-none transition-colors duration-200"
+              placeholder="X"
+              aria-label="X coordinate"
+            />
+            <input
+              type="text"
+              value={customNormalizedCoords.y}
+              onChange={(e) => handleCoordinateChange(e, "y")}
+              className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold focus:border-gold focus:outline-none transition-colors duration-200"
+              placeholder="Y"
+              aria-label="Y coordinate"
+            />
+            <Button
+              variant="secondary"
+              onClick={centerOnCoordinates}
+              className="mr-2 hover:bg-gold/20 transition-colors duration-200"
+              aria-label="Go to coordinates"
+            >
+              Go
+            </Button>
+          </div>
         </div>
-        <Button variant="secondary" onClick={resetMapCenter}>
-          Reset View
+        <Button
+          variant="secondary"
+          onClick={resetMapCenter}
+          className="hover:bg-gold/20 transition-colors duration-200"
+          aria-label="Reset map view"
+        >
+          <span className="flex items-center">
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            Reset View
+          </span>
         </Button>
       </div>
 
-      <div className="relative">
+      <div className="relative group">
         <canvas
           ref={canvasRef}
           width={MINIMAP_WIDTH}
@@ -734,16 +892,36 @@ export const SettlementMinimap = ({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          className="border border-gold mb-4 cursor-grab rounded-md"
+          className="border border-gold/50 mb-4 cursor-grab rounded-md shadow-lg hover:border-gold transition-all duration-300"
+          aria-label="Settlement map"
         />
 
-        <div className="absolute bottom-2 right-2 text-xs text-gold bg-black/50 p-1 rounded">
+        <div className="absolute bottom-2 right-2 text-xs text-gold bg-black/70 p-2 rounded-md opacity-70 group-hover:opacity-100 transition-opacity duration-300 flex items-center">
+          <svg
+            className="w-4 h-4 mr-1"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+            />
+          </svg>
           Scroll to zoom, drag to move
         </div>
       </div>
 
-      <Button disabled={!selectedLocation} className="w-full" variant="primary" onClick={onConfirm}>
-        Confirm Location
+      <Button
+        disabled={!selectedLocation}
+        className={`w-full transition-all duration-300 ${selectedLocation ? "animate-pulse" : ""}`}
+        variant="primary"
+        onClick={onConfirm}
+      >
+        {selectedLocation ? "Confirm Location" : "Select a Location First"}
       </Button>
     </div>
   );
