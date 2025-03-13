@@ -1,12 +1,20 @@
-import { Position as PositionInterface } from "@/types/position";
+import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
+import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+const MINIMAP_WIDTH = 900;
+const MINIMAP_HEIGHT = 400;
 
 // Define the props for the SettlementMinimap component
 interface SettlementMinimapProps {
   onSelectLocation: (location: SettlementLocation) => void;
   onConfirm: () => void;
   maxLayers: number;
+  // potential player locations to display on the minimap
+  extraPlayerOccupiedLocations?: SettlementLocation[];
 }
 
 // Settlement constants
@@ -22,41 +30,110 @@ export interface SettlementLocation {
   x: number;
   y: number;
 }
-
 // Colors for different states
 const COLORS = {
-  AVAILABLE: "#AAAAAA",
-  SELECTED: "#FFFFFF",
-  HOVERED: "#FFFF00",
-  SETTLED: "#FF0000",
-  BACKGROUND: "#111111",
-  CENTER: "#FFFFFF",
+  AVAILABLE: "#776756", // gray-gold
+  SELECTED: "#FFF5EA", // lightest
+  HOVERED: "#FAFF00", // yellow
+  SETTLED: "#FC4C4C", // red
+  MINE: "#B5BD75", // green
+  EXTRA_PLAYER: "#6B7FD7", // blueish
+  BACKGROUND: "#1B1B1B", // gray
+  CENTER: "#FFF5EA", // lightest
 };
 
-// Dummy list of already settled locations
-const SETTLED_LOCATIONS = [
-  { layer: 1, side: 0, point: 0 },
-  { layer: 1, side: 1, point: 0 },
-  { layer: 2, side: 2, point: 1 },
-  { layer: 3, side: 3, point: 2 },
-  { layer: 2, side: 4, point: 1 },
-  { layer: 1, side: 5, point: 0 },
+// Legend items mapping
+const LEGEND_ITEMS = [
+  { color: COLORS.AVAILABLE, label: "Available" },
+  { color: COLORS.SELECTED, label: "Selected" },
+  { color: COLORS.SETTLED, label: "Settled" },
+  { color: COLORS.MINE, label: "Your Realm" },
+  { color: COLORS.EXTRA_PLAYER, label: "Other Player" },
+  { color: COLORS.CENTER, label: "Center" },
 ];
 
+const getOccupiedLocations = (playerAddress: ContractAddress, components: ClientComponents) => {
+  const realmEntities = runQuery([HasValue(components.Structure, { category: StructureType.Realm })]);
+  const realmPositions = Array.from(realmEntities).map((entity) => {
+    const structure = getComponentValue(components.Structure, entity);
+    if (structure) {
+      const x = structure?.base.coord_x;
+      const y = structure?.base.coord_y;
+
+      // Calculate distance from center
+      const dx = x - SETTLEMENT_CENTER;
+      const dy = y - SETTLEMENT_CENTER;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate layer based on distance
+      const layer = Math.round((distance - SETTLEMENT_BASE_DISTANCE) / SETTLEMENT_SUBSEQUENT_DISTANCE) + 1;
+
+      // Calculate angle in radians
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += 2 * Math.PI;
+
+      // Convert angle to side (6 sides, starting from right going counterclockwise)
+      const side = Math.floor((angle * 6) / (2 * Math.PI));
+
+      // Calculate point based on position between sides
+      const angleInSide = angle - (side * Math.PI) / 3;
+      const point = Math.floor((layer * angleInSide) / (Math.PI / 3));
+
+      const isMine = structure?.owner === playerAddress;
+
+      return {
+        isMine,
+        x,
+        y,
+        side,
+        layer,
+        point: Math.min(point, layer - 1), // Ensure point doesn't exceed layer-1
+      };
+    }
+    return null;
+  });
+  return realmPositions.filter((position) => position !== null);
+};
+
 // Settlement minimap component
-export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: SettlementMinimapProps) => {
+export const SettlementMinimap = ({
+  onSelectLocation,
+  onConfirm,
+  maxLayers,
+  extraPlayerOccupiedLocations = [],
+}: SettlementMinimapProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
   const [availableLocations, setAvailableLocations] = useState<SettlementLocation[]>([]);
   const [settledLocations, setSettledLocations] = useState<SettlementLocation[]>([]);
   const [hoveredLocation, setHoveredLocation] = useState<SettlementLocation | null>(null);
 
+  const [occupiedLocations, setOccupiedLocations] = useState<SettlementLocation[]>([]);
+
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+
+  useEffect(() => {
+    const fetchOccupiedLocations = async () => {
+      if (!account?.address) return;
+      const locations = [
+        ...getOccupiedLocations(ContractAddress(account.address), components),
+        ...extraPlayerOccupiedLocations,
+      ];
+      setOccupiedLocations(locations);
+    };
+    fetchOccupiedLocations();
+  }, [account?.address, components, extraPlayerOccupiedLocations]);
+
   // Map view state
   const [mapCenter, setMapCenter] = useState({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
-  const [mapSize, setMapSize] = useState({ width: 200, height: 150 });
+  const [mapSize, setMapSize] = useState({ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT });
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
   const [mouseStartPosition, setMouseStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [customNormalizedCoords, setCustomNormalizedCoords] = useState({ x: 0, y: 0 });
 
   const selectedCoords = useMemo(() => {
     if (!selectedLocation) return null;
@@ -182,14 +259,9 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: Se
   useEffect(() => {
     const locations = generateSettlementLocations(maxLayers);
 
-    // Filter out already settled locations
-    const settledCoords = SETTLED_LOCATIONS.map((loc) =>
-      locations.find((l) => l.layer === loc.layer && l.side === loc.side && l.point === loc.point),
-    ).filter(Boolean) as SettlementLocation[];
-
-    setSettledLocations(settledCoords);
+    setSettledLocations(occupiedLocations);
     setAvailableLocations(locations);
-  }, [maxLayers]);
+  }, [maxLayers, occupiedLocations]);
 
   // Draw the minimap
   useEffect(() => {
@@ -246,8 +318,30 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: Se
           settled.layer === location.layer && settled.side === location.side && settled.point === location.point,
       );
 
-      // Draw location point
-      ctx.fillStyle = isSettled ? COLORS.SETTLED : COLORS.AVAILABLE;
+      // Check if this is an extra player location
+      const isExtraPlayerLocation = extraPlayerOccupiedLocations.some(
+        (extra) => extra.layer === location.layer && extra.side === location.side && extra.point === location.point,
+      );
+
+      const isMine = occupiedLocations.some(
+        (settled) =>
+          settled.layer === location.layer &&
+          settled.side === location.side &&
+          settled.point === location.point &&
+          !isExtraPlayerLocation, // Make sure it's not an extra player location
+      );
+
+      // Draw location point with appropriate color
+      let fillColor = COLORS.AVAILABLE;
+      if (isExtraPlayerLocation) {
+        fillColor = COLORS.EXTRA_PLAYER;
+      } else if (isMine) {
+        fillColor = COLORS.MINE;
+      } else if (isSettled) {
+        fillColor = COLORS.SETTLED;
+      }
+
+      ctx.fillStyle = fillColor;
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
       ctx.fill();
@@ -287,25 +381,31 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: Se
       }
     });
 
-    // Draw settled locations with a different style
-    settledLocations.forEach((location) => {
-      // Skip if outside visible area
-      if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
+    // Draw legend
+    const legendX = 10;
+    const legendY = 10;
+    const legendPadding = 10;
+    const legendItemHeight = 20;
+    const legendWidth = 150;
 
-      const pos = worldToCanvas(location.x, location.y);
+    // Draw legend background
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(legendX, legendY, legendWidth, legendPadding * 2 + legendItemHeight * LEGEND_ITEMS.length);
 
-      // Draw a red X over settled locations
-      ctx.strokeStyle = COLORS.SETTLED;
-      ctx.lineWidth = 2;
+    // Draw legend items
+    ctx.font = "12px Arial";
+    LEGEND_ITEMS.forEach((item, index) => {
+      const itemY = legendY + legendPadding + index * legendItemHeight;
 
-      // Draw X
-      const size = 5;
+      // Draw color circle
+      ctx.fillStyle = item.color;
       ctx.beginPath();
-      ctx.moveTo(pos.x - size, pos.y - size);
-      ctx.lineTo(pos.x + size, pos.y + size);
-      ctx.moveTo(pos.x + size, pos.y - size);
-      ctx.lineTo(pos.x - size, pos.y + size);
-      ctx.stroke();
+      ctx.arc(legendX + 15, itemY + legendItemHeight / 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw label
+      ctx.fillStyle = "#FFF5EA";
+      ctx.fillText(item.label, legendX + 30, itemY + 14);
     });
   }, [availableLocations, selectedLocation, settledLocations, hoveredLocation, mapCenter, mapSize]);
 
@@ -490,6 +590,69 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: Se
     setMouseStartPosition(null);
   };
 
+  // Handle custom coordinate input changes
+  const handleCoordinateChange = (e: React.ChangeEvent<HTMLInputElement>, coord: "x" | "y") => {
+    // Allow empty string, negative sign, or valid numbers
+    if (e.target.value === "" || e.target.value === "-" || /^-?\d+$/.test(e.target.value)) {
+      const value = e.target.value === "" || e.target.value === "-" ? e.target.value : parseInt(e.target.value);
+      setCustomNormalizedCoords((prev) => ({
+        ...prev,
+        [coord]: value,
+      }));
+    }
+  };
+
+  // Center map on custom coordinates and zoom in
+  const centerOnCoordinates = () => {
+    // Convert string values to numbers, defaulting to 0 if empty or just a negative sign
+    const x =
+      typeof customNormalizedCoords.x === "string" &&
+      (customNormalizedCoords.x === "" || customNormalizedCoords.x === "-")
+        ? 0
+        : Number(customNormalizedCoords.x);
+    const y =
+      typeof customNormalizedCoords.y === "string" &&
+      (customNormalizedCoords.y === "" || customNormalizedCoords.y === "-")
+        ? 0
+        : Number(customNormalizedCoords.y);
+
+    const contractCoords = new Position({ x, y }).getContract();
+
+    // Set map center to the input coordinates
+    setMapCenter({
+      x: contractCoords.x,
+      y: contractCoords.y,
+    });
+
+    // Zoom in by simulating multiple wheel events
+    // This uses the same zoom mechanism as scrolling
+    const MIN_ZOOM_RANGE = 75;
+    const currentRange = mapSize.width;
+
+    // Calculate how much to zoom in - aim for about 1/4 of the current view
+    const targetWidth = Math.max(currentRange / 4, MIN_ZOOM_RANGE);
+    const zoomSteps = Math.floor((currentRange - targetWidth) / 20); // 20 is 2 * deltaX from wheel event
+
+    // Apply zoom steps
+    if (zoomSteps > 0) {
+      const ratio = MINIMAP_WIDTH / MINIMAP_HEIGHT;
+      const newWidth = currentRange - zoomSteps * 20;
+      const newHeight = newWidth / ratio;
+
+      setMapSize({
+        width: newWidth,
+        height: newHeight,
+      });
+    }
+  };
+
+  // Reset map to center
+  const resetMapCenter = () => {
+    setMapCenter({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
+    setMapSize({ width: MINIMAP_WIDTH, height: MINIMAP_HEIGHT });
+    setCustomNormalizedCoords({ x: 0, y: 0 });
+  };
+
   return (
     <div className="flex flex-col items-center h-full">
       <div className="flex flex-col items-center justify-center h-[120px] bg-black/30 rounded-lg border border-gold/30 p-4 mb-4 w-full">
@@ -536,11 +699,37 @@ export const SettlementMinimap = ({ onSelectLocation, onConfirm, maxLayers }: Se
         )}
       </div>
 
+      <div className="flex items-center justify-between w-full mb-2 bg-black/30 rounded-lg border border-gold/30 p-2">
+        <div className="flex items-center">
+          <div className="text-gold mr-2">Center on:</div>
+          <input
+            type="text"
+            value={customNormalizedCoords.x}
+            onChange={(e) => handleCoordinateChange(e, "x")}
+            className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold"
+            placeholder="X"
+          />
+          <input
+            type="text"
+            value={customNormalizedCoords.y}
+            onChange={(e) => handleCoordinateChange(e, "y")}
+            className="w-24 mr-2 bg-black/50 border border-gold/30 rounded px-2 py-1 text-gold"
+            placeholder="Y"
+          />
+          <Button variant="secondary" onClick={centerOnCoordinates} className="mr-2">
+            Go
+          </Button>
+        </div>
+        <Button variant="secondary" onClick={resetMapCenter}>
+          Reset View
+        </Button>
+      </div>
+
       <div className="relative">
         <canvas
           ref={canvasRef}
-          width={600}
-          height={400}
+          width={MINIMAP_WIDTH}
+          height={MINIMAP_HEIGHT}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

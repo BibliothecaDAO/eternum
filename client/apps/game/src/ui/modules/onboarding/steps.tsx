@@ -246,7 +246,6 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-  const [maxLayers, setMaxLayers] = useState<number>(5); // Default to 5 layers
 
   // Track which realms have locations selected
   const realmsWithLocations = useMemo(() => {
@@ -300,21 +299,22 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
         setSeasonPassRealms(unsettledSeasonPassRealms);
         setLoading(false);
-
-        // Calculate max layers based on realm count
-        // For the minimap, we'll show a smaller number of layers for better visualization
-        const totalRealmCount = 8000; // This should ideally come from a config or API
-        const calculatedMaxLayers = Math.min(10, getMaxLayer(totalRealmCount) / 5);
-        setMaxLayers(Math.max(5, Math.floor(calculatedMaxLayers)));
       }
     });
   }, [loading, realms]);
 
-  const handleSelectLocation = (realmId: number, location: SettlementLocation) => {
+  const handleSelectLocation = (realmId: number, location: SettlementLocation | null) => {
     setSeasonPassRealms((prevRealms) =>
       prevRealms.map((realm) => (realm.realmId === realmId ? { ...realm, selectedLocation: location } : realm)),
     );
   };
+
+  const occupiedLocations = useMemo(() => {
+    return seasonPassRealms
+      .filter((realm) => realm.selectedLocation !== undefined && realm.selectedLocation !== null)
+      .map((realm) => realm.selectedLocation!)
+      .filter((location): location is SettlementLocation => location !== null && location !== undefined);
+  }, [seasonPassRealms]);
 
   const seasonPassElements = useMemo(() => {
     const elements = [];
@@ -335,6 +335,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
               )
             }
             onSelectLocation={handleSelectLocation}
+            occupiedLocations={occupiedLocations}
           />
           {seasonPassElement2 && (
             <SeasonPassRealm
@@ -349,6 +350,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                 )
               }
               onSelectLocation={handleSelectLocation}
+              occupiedLocations={occupiedLocations}
             />
           )}
         </div>,
