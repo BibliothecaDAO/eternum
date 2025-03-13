@@ -1,6 +1,6 @@
 import { Position, Position as PositionInterface } from "@/types/position";
 import Button from "@/ui/elements/button";
-import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -11,6 +11,9 @@ const MINIMAP_HEIGHT = 400;
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 30;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
+
+// Add this near the top of the file with other constants
+const BANK_ICON_PATH = `images/resources/${ResourcesIds.Lords}.png`;
 
 // Define the props for the SettlementMinimap component
 interface SettlementMinimapProps {
@@ -41,6 +44,7 @@ const COLORS = {
   EXTRA_PLAYER: "#6B7FD7", // blueish
   BACKGROUND: "#1B1B1B", // gray
   CENTER: "#FFF5EA", // lightest
+  BANK: "#8B6914", // even darker gold color for banks
 };
 
 // Legend items mapping
@@ -51,6 +55,7 @@ const LEGEND_ITEMS = [
   { color: COLORS.MINE, label: "Your Realm" },
   { color: COLORS.EXTRA_PLAYER, label: "Your Pending Realms" },
   { color: COLORS.CENTER, label: "Center" },
+  { color: COLORS.BANK, label: "Bank" },
 ];
 
 /**
@@ -99,6 +104,49 @@ const getOccupiedLocations = (playerAddress: ContractAddress, components: Client
   return realmPositions.filter((position) => position !== null);
 };
 
+/**
+ * Gets all bank locations from the game state
+ */
+const getBanksLocations = (components: ClientComponents) => {
+  const bankEntities = runQuery([HasValue(components.Structure, { category: StructureType.Bank })]);
+  const bankPositions = Array.from(bankEntities).map((entity) => {
+    const structure = getComponentValue(components.Structure, entity);
+    if (structure) {
+      const x = structure?.base.coord_x;
+      const y = structure?.base.coord_y;
+
+      // Calculate distance from center
+      const dx = x - SETTLEMENT_CENTER;
+      const dy = y - SETTLEMENT_CENTER;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Calculate layer based on distance
+      const layer = Math.round((distance - SETTLEMENT_BASE_DISTANCE) / SETTLEMENT_SUBSEQUENT_DISTANCE) + 1;
+
+      // Calculate angle in radians
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += 2 * Math.PI;
+
+      // Convert angle to side (6 sides, starting from right going counterclockwise)
+      const side = Math.floor((angle * 6) / (2 * Math.PI));
+
+      // Calculate point based on position between sides
+      const angleInSide = angle - (side * Math.PI) / 3;
+      const point = Math.floor((layer * angleInSide) / (Math.PI / 3));
+
+      return {
+        x,
+        y,
+        side,
+        layer,
+        point: Math.min(point, layer - 1), // Ensure point doesn't exceed layer-1
+      };
+    }
+    return null;
+  });
+  return bankPositions.filter((position) => position !== null);
+};
+
 // Settlement minimap component
 export const SettlementMinimap = ({
   onSelectLocation,
@@ -112,6 +160,7 @@ export const SettlementMinimap = ({
   const [settledLocations, setSettledLocations] = useState<SettlementLocation[]>([]);
   const [hoveredLocation, setHoveredLocation] = useState<SettlementLocation | null>(null);
   const [occupiedLocations, setOccupiedLocations] = useState<SettlementLocation[]>([]);
+  const [bankLocations, setBankLocations] = useState<SettlementLocation[]>([]);
 
   // Map view state
   const [mapCenter, setMapCenter] = useState({ x: SETTLEMENT_CENTER, y: SETTLEMENT_CENTER });
@@ -121,6 +170,9 @@ export const SettlementMinimap = ({
   const [mouseStartPosition, setMouseStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [customNormalizedCoords, setCustomNormalizedCoords] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1); // New state for tracking zoom level
+
+  // Add this with your other state variables
+  const [bankIcon, setBankIcon] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
     zoomToLevel(zoomLevel);
@@ -133,6 +185,11 @@ export const SettlementMinimap = ({
     account: { account },
     setup: { components },
   } = useDojo();
+
+  useEffect(() => {
+    const bankLocations = getBanksLocations(components);
+    setBankLocations(bankLocations);
+  }, [components]);
 
   // Get normalized coordinates for the selected location
   const selectedCoords = useMemo(() => {
@@ -156,6 +213,14 @@ export const SettlementMinimap = ({
     };
     fetchOccupiedLocations();
   }, [account?.address, components, extraPlayerOccupiedLocations]);
+
+  // Add this with your other useEffect hooks
+  useEffect(() => {
+    // Load bank icon
+    const img = new Image();
+    img.src = BANK_ICON_PATH;
+    img.onload = () => setBankIcon(img);
+  }, []);
 
   // Function to set zoom level and update map size
   const setZoom = (zoomOut: boolean, delta = 10) => {
@@ -372,13 +437,22 @@ export const SettlementMinimap = ({
     ctx.arc(centerPos.x, centerPos.y, 5, 0, Math.PI * 2);
     ctx.fill();
 
+    // Draw bank locations
+    bankLocations.forEach((location) => {
+      // Skip if outside visible area
+      if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
+
+      const { x, y } = worldToCanvas(location.x, location.y);
+      // Draw bank icon instead of a simple circle - make it bigger
+      if (bankIcon) {
+        ctx.drawImage(bankIcon, x - 15, y - 15, 30, 30); // Increased from 20x20 to 30x30
+      }
+    });
+
     // Draw available locations
     availableLocations.forEach((location) => {
       // Skip if outside visible area
       if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
-
-      // Scale coordinates to canvas size
-      const pos = worldToCanvas(location.x, location.y);
 
       // Check if this location is already settled
       const isSettled = settledLocations.some(
@@ -413,13 +487,13 @@ export const SettlementMinimap = ({
       // Draw a slightly larger point for better visibility
       ctx.fillStyle = fillColor;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 4, 0, Math.PI * 2);
       ctx.fill();
 
       // Add a subtle glow effect for better visibility
       ctx.fillStyle = `${fillColor}33`; // 20% opacity
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 8, 0, Math.PI * 2);
       ctx.fill();
 
       // Highlight selected location
@@ -435,7 +509,13 @@ export const SettlementMinimap = ({
         ctx.strokeStyle = COLORS.SELECTED;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
+        ctx.arc(
+          worldToCanvas(location.x, location.y).x,
+          worldToCanvas(location.y, location.y).y,
+          pulseSize,
+          0,
+          Math.PI * 2,
+        );
         ctx.stroke();
 
         // Draw selection info
@@ -455,7 +535,7 @@ export const SettlementMinimap = ({
         ctx.strokeStyle = COLORS.HOVERED;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+        ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 7, 0, Math.PI * 2);
         ctx.stroke();
       }
     });
@@ -495,11 +575,23 @@ export const SettlementMinimap = ({
     LEGEND_ITEMS.forEach((item, index) => {
       const itemY = legendY + legendPadding + index * legendItemHeight;
 
-      // Draw color circle
-      ctx.fillStyle = item.color;
-      ctx.beginPath();
-      ctx.arc(legendX + 15, itemY + legendItemHeight / 2, 5, 0, Math.PI * 2);
-      ctx.fill();
+      // Draw color circle or icon
+      if (item.color === COLORS.BANK && bankIcon) {
+        // Use the bank icon in the legend instead of a diamond shape
+        ctx.drawImage(
+          bankIcon,
+          legendX + 8, // Adjust position as needed
+          itemY + legendItemHeight / 2 - 8, // Center vertically
+          16, // Width of icon in legend
+          16, // Height of icon in legend
+        );
+      } else {
+        // For other items, draw the regular circle
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(legendX + 15, itemY + legendItemHeight / 2, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Draw label
       ctx.fillStyle = "#FFF5EA";
@@ -526,6 +618,8 @@ export const SettlementMinimap = ({
     mapSize,
     zoomLevel,
     animationTime,
+    bankLocations,
+    bankIcon,
   ]);
 
   // Handle canvas click to select a location

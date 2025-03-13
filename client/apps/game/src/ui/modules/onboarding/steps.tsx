@@ -138,7 +138,7 @@ export const LocalStepOne = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleSelectLocationClick}
-                isLoading={loading}
+                disabled={loading}
                 className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 !normal-case rounded-md"
               >
                 <div className="flex items-center">
