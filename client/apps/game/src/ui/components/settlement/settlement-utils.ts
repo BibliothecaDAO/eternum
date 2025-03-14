@@ -1,7 +1,12 @@
 import { Position } from "@/types/position";
 import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_CENTER, SETTLEMENT_SUBSEQUENT_DISTANCE } from "./settlement-constants";
+import {
+  PI,
+  SETTLEMENT_BASE_DISTANCE,
+  SETTLEMENT_CENTER,
+  SETTLEMENT_SUBSEQUENT_DISTANCE,
+} from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
 
 /**
@@ -14,18 +19,14 @@ export const layerDistanceFromCenter = (layer: number): number => {
 /**
  * Calculate the maximum number of points on a side for a given layer
  */
-export const maxSidePoints = (side: number, layer: number): number => {
-  if (side > 0) {
-    return layer;
-  } else {
-    return layer - 1;
-  }
+export const maxSidePoints = (layer: number): number => {
+  return layer;
 };
 
 /**
  * Calculate the percentage position on a side
  */
-export const getPosPercentage = (pointOnSide: number, maxPointsOnSide: number): number => {
+const getPosPercentage = (pointOnSide: number, maxPointsOnSide: number): number => {
   return (pointOnSide + 1) / (maxPointsOnSide + 1);
 };
 
@@ -33,7 +34,7 @@ export const getPosPercentage = (pointOnSide: number, maxPointsOnSide: number): 
  * Calculate the coordinates for a point on a side
  */
 export const sideCoordinate = (side: number, distanceFromCenter: number): { x: number; y: number } => {
-  const angle = (side * Math.PI) / 3;
+  const angle = (side * PI) / 3;
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const x = SETTLEMENT_CENTER + distanceFromCenter * cos;
@@ -64,7 +65,7 @@ export function generateSettlementLocations(maxLayers: number): SettlementLocati
 
     for (let side = 0; side < 6; side++) {
       // Calculate max points on this side
-      const maxPoints = maxSidePoints(side, layer);
+      const maxPoints = maxSidePoints(layer);
 
       for (let point = 0; point < maxPoints; point++) {
         // Calculate the coordinates based on the settlement config algorithm
@@ -102,38 +103,18 @@ export const getOccupiedLocations = (playerAddress: ContractAddress, components:
       const x = structure?.base.coord_x;
       const y = structure?.base.coord_y;
 
-      // Calculate distance from center
-      const dx = x - SETTLEMENT_CENTER;
-      const dy = y - SETTLEMENT_CENTER;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Calculate layer based on distance
-      const layer = Math.round((distance - SETTLEMENT_BASE_DISTANCE) / SETTLEMENT_SUBSEQUENT_DISTANCE) + 1;
-
-      // Calculate angle in radians
-      let angle = Math.atan2(dy, dx);
-      if (angle < 0) angle += 2 * Math.PI;
-
-      // Convert angle to side (6 sides, starting from right going counterclockwise)
-      const side = Math.floor((angle * 6) / (2 * Math.PI));
-
-      // Calculate point based on position between sides
-      const angleInSide = angle - (side * Math.PI) / 3;
-      const point = Math.floor((layer * angleInSide) / (Math.PI / 3));
-
+      // Use the improved reverse calculation function
+      const location = coordinatesToSettlementLocation(x, y);
       const isMine = structure?.owner === playerAddress;
 
       return {
+        ...location,
         isMine,
-        x,
-        y,
-        side,
-        layer,
-        point: Math.min(point, layer - 1), // Ensure point doesn't exceed layer-1
       };
     }
     return null;
   });
+  console.log({ realmPositions });
   return realmPositions.filter((position) => position !== null) as SettlementLocation[];
 };
 
@@ -148,34 +129,44 @@ export const getBanksLocations = (components: ClientComponents) => {
       const x = structure?.base.coord_x;
       const y = structure?.base.coord_y;
 
-      // Calculate distance from center
-      const dx = x - SETTLEMENT_CENTER;
-      const dy = y - SETTLEMENT_CENTER;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Calculate layer based on distance
-      const layer = Math.round((distance - SETTLEMENT_BASE_DISTANCE) / SETTLEMENT_SUBSEQUENT_DISTANCE) + 1;
-
-      // Calculate angle in radians
-      let angle = Math.atan2(dy, dx);
-      if (angle < 0) angle += 2 * Math.PI;
-
-      // Convert angle to side (6 sides, starting from right going counterclockwise)
-      const side = Math.floor((angle * 6) / (2 * Math.PI));
-
-      // Calculate point based on position between sides
-      const angleInSide = angle - (side * Math.PI) / 3;
-      const point = Math.floor((layer * angleInSide) / (Math.PI / 3));
-
-      return {
-        x,
-        y,
-        side,
-        layer,
-        point: Math.min(point, layer - 1), // Ensure point doesn't exceed layer-1
-      };
+      // Use the improved reverse calculation function
+      return coordinatesToSettlementLocation(x, y);
     }
     return null;
   });
   return bankPositions.filter((position) => position !== null) as SettlementLocation[];
+};
+
+/**
+ * Converts coordinates to settlement location (layer, side, point)
+ * This is the reverse of the forward calculation in generateSettlementLocations
+ * and matches the backend implementation more closely
+ */
+export const coordinatesToSettlementLocation = (x: number, y: number): SettlementLocation => {
+  // Calculate distance from center
+  const dx = x - SETTLEMENT_CENTER;
+  const dy = y - SETTLEMENT_CENTER;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // Calculate layer based on distance
+  const layer = Math.round((distance - SETTLEMENT_BASE_DISTANCE) / SETTLEMENT_SUBSEQUENT_DISTANCE) + 1;
+
+  // Calculate angle in radians
+  let angle = Math.atan2(dy, dx);
+  if (angle < 0) angle += 2 * Math.PI;
+
+  // Convert angle to side (6 sides, starting from right going counterclockwise)
+  const side = Math.floor((angle * 6) / (2 * Math.PI));
+
+  // Calculate point based on position between sides
+  const angleInSide = angle - (side * Math.PI) / 3;
+  const point = Math.floor((layer * angleInSide) / (Math.PI / 3));
+
+  return {
+    side,
+    layer,
+    point,
+    x,
+    y,
+  };
 };

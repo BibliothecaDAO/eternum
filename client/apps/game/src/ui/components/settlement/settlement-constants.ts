@@ -39,3 +39,5 @@ export const MIN_ZOOM_RANGE = 75;
 export const MAX_ZOOM_RANGE = 600;
 export const MIN_ZOOM_LEVEL = 0.5;
 export const MAX_ZOOM_LEVEL = 2;
+
+export const PI = 3.14159265359;
