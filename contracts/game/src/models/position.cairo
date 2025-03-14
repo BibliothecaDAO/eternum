@@ -59,9 +59,29 @@ impl CubeImpl of CubeTrait {
         Cube { q: self.q - other.q, r: self.r - other.r, s: self.s - other.s }
     }
 
+    fn add(self: Cube, other: Cube) -> Cube {
+        Cube { q: self.q + other.q, r: self.r + other.r, s: self.s + other.s }
+    }
+
     fn abs(self: Cube) -> Cube {
         Cube { q: self.q.abs(), r: self.r.abs(), s: self.s.abs() }
     }
+
+    fn neighbor_after_distance(self: Cube, direction: Direction, tile_distance: u32) -> Cube {
+        let di: i128 = tile_distance.into();
+        let cube_direction_vectors = match direction {
+            Direction::East => Cube { q: di, r: 0, s: -di },
+            Direction::NorthEast => Cube { q: di, r: -di, s: 0 },
+            Direction::NorthWest => Cube { q: 0, r: -di, s: di },
+            Direction::West => Cube { q: -di, r: 0, s: di },
+            Direction::SouthWest => Cube { q: -di, r: di, s: 0 },
+            Direction::SouthEast => Cube { q: 0, r: di, s: -di },
+        };
+
+        let neighbor = self.add(cube_direction_vectors);
+        neighbor
+    }
+
 
     fn distance(self: Cube, other: Cube) -> u128 {
         // https://www.redblobgames.com/grids/hexagons/#distances
@@ -163,6 +183,12 @@ pub impl CoordImpl of CoordTrait {
             }
         }
     }
+
+    fn neighbor_after_distance(self: Coord, direction: Direction, tile_distance: u32) -> Coord {
+        let cube: Cube = self.into();
+        let neighbor = cube.neighbor_after_distance(direction, tile_distance);
+        neighbor.into()
+    }
 }
 
 
@@ -181,7 +207,26 @@ pub impl CoordZeroable of Zero<Coord> {
 }
 
 
+pub impl CubeIntoCoord of Into<Cube, Coord> {
+    // function cube_to_oddr(hex):
+    //     var col = hex.q + (hex.r - (hex.r&1)) / 2
+    //     var row = hex.r
+    //     return OffsetCoord(col, row)
+
+    fn into(self: Cube) -> Coord {
+        // https://www.redblobgames.com/grids/hexagons/#conversions-offset
+        // convert cube to odd-r coordinates
+        let col: i128 = self.q + ((self.r - (self.r % 2)) / 2);
+        let row: i128 = self.r;
+        Coord { x: col.try_into().unwrap(), y: row.try_into().unwrap() }
+    }
+}
+
 pub impl CoordIntoCube of Into<Coord, Cube> {
+    // function oddr_to_cube(hex):
+    //     var q = hex.col - (hex.row - (hex.row&1)) / 2
+    //     var r = hex.row
+    //     return Cube(q, r, -q-r)
     fn into(self: Coord) -> Cube {
         // https://www.redblobgames.com/grids/hexagons/#conversions-offset
         // convert odd-r to cube coordinates

@@ -5,9 +5,7 @@ use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
-
-use s1_eternum::models::position::Coord;
-
+use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
@@ -295,7 +293,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         self.base_distance + (layer - 1) * self.subsequent_distance
     }
 
-    fn max_side_points(side: u32, layer: u32) -> u32 {
+    fn max_points(layer: u32) -> u32 {
         layer
     }
 
@@ -319,18 +317,33 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         assert!(side < 6, "Side must be less than 6"); // 0 - 5
         assert!(layer > 0, "Layer must be greater than 0");
         assert!(layer <= max_layer, "Layer must be less than max layer");
-        assert!(point <= Self::max_side_points(side, layer), "Point must be less than max side points");
+        assert!(point <= Self::max_points(layer), "Point must be less than max side points");
 
-        let distance_from_center = Self::layer_distance_from_center(self, layer);
-        let (start_x_fixed, start_y_fixed) = Self::side_coordinate(self, side, distance_from_center);
-        let next_side = (side + 1) % 6;
-        let max_points_on_side = Self::max_side_points(side, layer);
-        let pos_percentage_fixed = FixedTrait::new_unscaled(point.into() + 1, false)
-            / FixedTrait::new_unscaled(max_points_on_side.into() + 1, false);
-        let (end_x_fixed, end_y_fixed) = Self::side_coordinate(self, next_side, distance_from_center);
-        let x_fixed = start_x_fixed + (end_x_fixed - start_x_fixed) * pos_percentage_fixed;
-        let y_fixed = start_y_fixed + (end_y_fixed - start_y_fixed) * pos_percentage_fixed;
-        Coord { x: x_fixed.try_into().unwrap(), y: y_fixed.try_into().unwrap() }
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<Direction> = array![
+            Direction::East,
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::West,
+            Direction::SouthWest,
+            Direction::SouthEast,
+        ];
+        let start_direction: Direction = *start_directions.at(side);
+        let first_structure_coord: Coord = start_coord.neighbor_after_distance(start_direction, self.base_distance);
+
+        let (_, left_side, last_side) = match start_direction {
+            Direction::East => { (Direction::East, Direction::NorthEast, Direction::SouthEast) },
+            Direction::NorthEast => { (Direction::NorthEast, Direction::NorthWest, Direction::East) },
+            Direction::NorthWest => { (Direction::NorthWest, Direction::West, Direction::SouthWest) },
+            Direction::West => { (Direction::West, Direction::SouthWest, Direction::SouthEast) },
+            Direction::SouthWest => { (Direction::SouthWest, Direction::SouthEast, Direction::East) },
+            Direction::SouthEast => { (Direction::SouthEast, Direction::East, Direction::NorthEast) },
+        };
+        let first_structure_after_distance = first_structure_coord
+            .neighbor_after_distance(left_side, self.subsequent_distance * (layer - 1));
+
+        let destination_coord: Coord = first_structure_after_distance.neighbor_after_distance(last_side, point);
+        return destination_coord;
     }
 }
 
