@@ -1,12 +1,9 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::utils::map::constants::fixed_constants as fc;
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
@@ -289,27 +286,8 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         return 52; // 8268 capacity
     }
 
-    fn layer_distance_from_center(self: SettlementConfig, layer: u32) -> u32 {
-        self.base_distance + (layer - 1) * self.subsequent_distance
-    }
-
     fn max_points(layer: u32) -> u32 {
         layer - 1
-    }
-
-    fn side_coordinate(self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
-        let side_fixed = FixedTrait::new_unscaled(side.into(), false);
-        let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
-
-        let cos = fixed_cos(angle_fixed);
-        let sin = fixed_sin(angle_fixed);
-
-        let centre_fixed = FixedTrait::new_unscaled(self.center.into(), false);
-        let distance_fixed = FixedTrait::new_unscaled(distance_from_center.into(), false);
-
-        let x_fixed = centre_fixed + distance_fixed * cos;
-        let y_fixed = centre_fixed + distance_fixed * sin;
-        (x_fixed, y_fixed)
     }
 
     // todo: test aggresively
@@ -320,30 +298,35 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         assert!(point <= Self::max_points(layer), "Point must be less than max side points");
 
         let mut start_coord: Coord = CoordImpl::center();
-        let start_directions: Array<Direction> = array![
-            Direction::East,
-            Direction::NorthEast,
-            Direction::NorthWest,
-            Direction::West,
-            Direction::SouthWest,
-            Direction::SouthEast,
-        ];
-        let start_direction: Direction = *start_directions.at(side);
-        let first_structure_coord: Coord = start_coord.neighbor_after_distance(start_direction, self.base_distance);
+        let start_directions: Array<(Direction, Direction)> = array![
+            // (Direction::East, Direction::SouthWest),
+            // (Direction::East, Direction::NorthWest),
+            // (Direction::West, Direction::SouthEast),
+            // (Direction::West, Direction::NorthEast),
+            // (Direction::NorthWest, Direction::East),
+            // (Direction::SouthEast, Direction::West),
 
-        let (_, left_side, last_side) = match start_direction {
-            Direction::East => { (Direction::East, Direction::NorthEast, Direction::SouthEast) },
-            Direction::NorthEast => { (Direction::NorthEast, Direction::NorthWest, Direction::East) },
-            Direction::NorthWest => { (Direction::NorthWest, Direction::West, Direction::SouthWest) },
-            Direction::West => { (Direction::West, Direction::SouthWest, Direction::SouthEast) },
-            Direction::SouthWest => { (Direction::SouthWest, Direction::SouthEast, Direction::East) },
-            Direction::SouthEast => { (Direction::SouthEast, Direction::East, Direction::NorthEast) },
-        };
+            // note: the values on top are actually correct but need to be inverted
+            // because ui is inverted. so northeast and southeast are swapped.
+            // as well as northwest and southwest
+            (Direction::East, Direction::NorthWest),
+            (Direction::East, Direction::SouthWest),
+            (Direction::West, Direction::NorthEast),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(side);
+        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+        let first_structure_coord: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+
         let first_structure_after_distance = first_structure_coord
-            .neighbor_after_distance(left_side, self.subsequent_distance * (layer - 1));
+            .neighbor_after_distance(start_direction, self.subsequent_distance * (layer - 1));
 
         let destination_coord: Coord = first_structure_after_distance
-            .neighbor_after_distance(last_side, self.subsequent_distance * point);
+            .neighbor_after_distance(triangle_direction, self.subsequent_distance * point);
         return destination_coord;
     }
 }
