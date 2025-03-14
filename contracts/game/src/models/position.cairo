@@ -68,14 +68,18 @@ impl CubeImpl of CubeTrait {
     }
 
     fn neighbor_after_distance(self: Cube, direction: Direction, tile_distance: u32) -> Cube {
+        // https://www.redblobgames.com/grids/hexagons/#neighbors-cube
+
+        // NOTE: NorthEast and SouthEast are swapped
+        //      Also, NorthWest and SouthWest
         let di: i128 = tile_distance.into();
         let cube_direction_vectors = match direction {
             Direction::East => Cube { q: di, r: 0, s: -di },
-            Direction::NorthEast => Cube { q: di, r: -di, s: 0 },
-            Direction::NorthWest => Cube { q: 0, r: -di, s: di },
+            Direction::NorthEast => Cube { q: 0, r: di, s: -di },
+            Direction::NorthWest => Cube { q: -di, r: di, s: 0 },
             Direction::West => Cube { q: -di, r: 0, s: di },
-            Direction::SouthWest => Cube { q: -di, r: di, s: 0 },
-            Direction::SouthEast => Cube { q: 0, r: di, s: -di },
+            Direction::SouthWest => Cube { q: 0, r: -di, s: di },
+            Direction::SouthEast => Cube { q: di, r: -di, s: 0 },
         };
 
         let neighbor = self.add(cube_direction_vectors);
@@ -160,7 +164,8 @@ pub impl CoordImpl of CoordTrait {
     }
     fn neighbor(self: Coord, direction: Direction) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
-
+        // NOTE: NorthEast and SouthEast are swapped
+        //      Also, NorthWest and SouthWest
         if self.y & 1 == 0 {
             // where self.y (row) is even
             match direction {
@@ -208,31 +213,30 @@ pub impl CoordZeroable of Zero<Coord> {
 
 
 pub impl CubeIntoCoord of Into<Cube, Coord> {
-    // function cube_to_oddr(hex):
-    //     var col = hex.q + (hex.r - (hex.r&1)) / 2
+    // function cube_to_evenr(hex):
+    //     var col = hex.q + (hex.r + (hex.r&1)) / 2
     //     var row = hex.r
     //     return OffsetCoord(col, row)
-
     fn into(self: Cube) -> Coord {
         // https://www.redblobgames.com/grids/hexagons/#conversions-offset
-        // convert cube to odd-r coordinates
-        let col: i128 = self.q + ((self.r - (self.r % 2)) / 2);
+        // convert cube to even-r coordinates
+        let col: i128 = self.q + ((self.r + (self.r % 2)) / 2);
         let row: i128 = self.r;
         Coord { x: col.try_into().unwrap(), y: row.try_into().unwrap() }
     }
 }
 
 pub impl CoordIntoCube of Into<Coord, Cube> {
-    // function oddr_to_cube(hex):
-    //     var q = hex.col - (hex.row - (hex.row&1)) / 2
+    // function evenr_to_cube(hex):
+    //     var q = hex.col - (hex.row + (hex.row&1)) / 2
     //     var r = hex.row
     //     return Cube(q, r, -q-r)
     fn into(self: Coord) -> Cube {
         // https://www.redblobgames.com/grids/hexagons/#conversions-offset
-        // convert odd-r to cube coordinates
+        // convert even-r to cube coordinates
         let col: i128 = self.x.try_into().unwrap();
         let row: i128 = self.y.try_into().unwrap();
-        let q = col - ((row - (self.y % 2).try_into().unwrap()) / 2);
+        let q = col - ((row + (self.y % 2).try_into().unwrap()) / 2);
         // (self.y % 2) and not (col % 2) because col is i128
         // and modulo for negative numbers is different if it
         // was col, it would be (col & 1) where `&` is bitwise AND
@@ -241,6 +245,7 @@ pub impl CoordIntoCube of Into<Coord, Cube> {
         Cube { q, r, s }
     }
 }
+
 
 pub trait TravelTrait<T> {
     fn is_adjacent(self: T, destination: T) -> bool;
