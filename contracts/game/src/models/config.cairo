@@ -265,30 +265,30 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         // above (fn log_layer_capacity)
 
         if realm_count <= 1500 {
-            return 26; // 2105 capacity
+            return 26; // 2106 capacity
         }
 
         if realm_count <= 2500 {
-            return 32; // 3167 capacity
+            return 32; // 3168 capacity
         }
 
         if realm_count <= 3500 {
-            return 37; // 4217 capacity
+            return 37; // 4218 capacity
         }
 
         if realm_count <= 4500 {
-            return 41; // 5165 capacity
+            return 41; // 5166 capacity
         }
 
         if realm_count <= 5500 {
-            return 45; // 6209 capacity
+            return 45; // 6210 capacity
         }
 
         if realm_count <= 6500 {
-            return 49; // 7349 capacity
+            return 49; // 7350 capacity
         }
 
-        return 52; // 8267 capacity
+        return 52; // 8268 capacity
     }
 
     fn layer_distance_from_center(self: SettlementConfig, layer: u32) -> u32 {
