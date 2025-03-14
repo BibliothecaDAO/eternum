@@ -342,7 +342,8 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         let first_structure_after_distance = first_structure_coord
             .neighbor_after_distance(left_side, self.subsequent_distance * (layer - 1));
 
-        let destination_coord: Coord = first_structure_after_distance.neighbor_after_distance(last_side, point);
+        let destination_coord: Coord = first_structure_after_distance
+            .neighbor_after_distance(last_side, self.subsequent_distance * point);
         return destination_coord;
     }
 }
