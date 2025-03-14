@@ -296,6 +296,9 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     fn max_side_points(side: u32, layer: u32) -> u32 {
+        if layer == 1 {
+            return 1;
+        }
         if side > 0 {
             layer
         } else {
