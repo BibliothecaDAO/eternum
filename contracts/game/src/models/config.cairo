@@ -294,7 +294,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     fn max_points(layer: u32) -> u32 {
-        layer
+        layer - 1
     }
 
     fn side_coordinate(self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
