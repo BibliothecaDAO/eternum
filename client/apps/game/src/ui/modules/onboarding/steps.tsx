@@ -36,21 +36,24 @@ export const LocalStepOne = () => {
   const [realmId, setRealmId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [maxLayers, setMaxLayers] = useState<number | null>(null); // Default to 5 layers
-  const [realmCount, setRealmCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!realmCount) return;
-    const maxLayer = getMaxLayer(realmCount);
-    setMaxLayers(maxLayer);
-    setLoading(false);
-  }, [realmCount]);
 
   useEffect(() => {
     const fetchRealmCount = async () => {
       setLoading(true);
-      const count = await queryRealmCount();
-      setRealmCount(count);
+      try {
+        const count = await queryRealmCount();
+
+        if (count !== null) {
+          const maxLayer = getMaxLayer(count);
+          setMaxLayers(maxLayer);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching realm count:", error);
+      }
     };
+
     fetchRealmCount();
   }, []);
 
