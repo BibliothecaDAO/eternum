@@ -296,11 +296,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
     }
 
     fn max_side_points(side: u32, layer: u32) -> u32 {
-        if side > 0 {
-            layer
-        } else {
-            layer - 1
-        }
+        layer
     }
 
     fn side_coordinate(self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
