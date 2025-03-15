@@ -26,12 +26,12 @@ export const maxPointsInLayer = (layer: number): number => {
 
 export const sideDirections = (side: number): HexDirection[] => {
   const start_directions = [
-    [HexDirection.East, HexDirection.SouthWest],
     [HexDirection.East, HexDirection.NorthWest],
-    [HexDirection.West, HexDirection.SouthEast],
+    [HexDirection.East, HexDirection.SouthWest],
     [HexDirection.West, HexDirection.NorthEast],
-    [HexDirection.NorthWest, HexDirection.East],
-    [HexDirection.SouthEast, HexDirection.West],
+    [HexDirection.West, HexDirection.SouthEast],
+    [HexDirection.SouthWest, HexDirection.East],
+    [HexDirection.NorthEast, HexDirection.West],
   ];
   return start_directions[side]
 };
