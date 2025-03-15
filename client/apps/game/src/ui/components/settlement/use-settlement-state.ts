@@ -73,18 +73,27 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
   useEffect(() => {
     const fetchOccupiedLocations = async () => {
       if (!account?.address) return;
+
+      // Generate all possible settlement locations
+      const [allLocations, allLocationsMap] = generateSettlementLocations(maxLayers);
+
+      console.log({allLocations})
+      setSettledLocations(occupiedLocations);
+      setAvailableLocations(allLocations);
+
+      // Fetch occupied locations
       const locations = [
-        ...getOccupiedLocations(ContractAddress(account.address), components),
+        ...getOccupiedLocations(ContractAddress(account.address), components, allLocationsMap),
         ...extraPlayerOccupiedLocations,
       ];
       setOccupiedLocations(locations);
     };
     fetchOccupiedLocations();
-  }, [account?.address, components, extraPlayerOccupiedLocations]);
+  }, [account?.address, components, extraPlayerOccupiedLocations, settledLocations, maxLayers]);
 
   // Generate all possible settlement locations
   useEffect(() => {
-    const locations = generateSettlementLocations(maxLayers);
+    const [locations, _] = generateSettlementLocations(maxLayers);
     setSettledLocations(occupiedLocations);
     setAvailableLocations(locations);
   }, [maxLayers, occupiedLocations]);

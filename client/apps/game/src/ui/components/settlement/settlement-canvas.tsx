@@ -9,7 +9,6 @@ import {
   SETTLEMENT_CENTER,
 } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
-import { layerDistanceFromCenter, sideCoordinate } from "./settlement-utils";
 
 interface SettlementCanvasProps {
   maxLayers: number;
@@ -132,29 +131,29 @@ export const SettlementCanvas = ({
     ctx.strokeStyle = "rgba(119, 103, 86, 0.2)"; // Subtle grid color
     ctx.lineWidth = 0.5;
 
-    // Draw concentric hexagons for each layer
-    for (let layer = 1; layer <= maxLayers; layer++) {
-      const distanceFromCenter = layerDistanceFromCenter(layer);
-      ctx.beginPath();
+    // // Draw concentric hexagons for each layer
+    // for (let layer = 1; layer <= maxLayers; layer++) {
+    //   const distanceFromCenter = layerDistanceFromCenter(layer);
+    //   ctx.beginPath();
 
-      for (let side = 0; side < 6; side++) {
-        const startCoord = sideCoordinate(side, distanceFromCenter);
-        const startPos = worldToCanvas(startCoord.x, startCoord.y);
+    //   for (let side = 0; side < 6; side++) {
+    //     const startCoord = sideCoordinate(side);
+    //     const startPos = worldToCanvas(startCoord.x, startCoord.y);
 
-        if (side === 0) {
-          ctx.moveTo(startPos.x, startPos.y);
-        } else {
-          ctx.lineTo(startPos.x, startPos.y);
-        }
-      }
+    //     if (side === 0) {
+    //       ctx.moveTo(startPos.x, startPos.y);
+    //     } else {
+    //       ctx.lineTo(startPos.x, startPos.y);
+    //     }
+    //   }
 
-      // Close the hexagon
-      const firstCoord = sideCoordinate(0, distanceFromCenter);
-      const firstPos = worldToCanvas(firstCoord.x, firstCoord.y);
-      ctx.lineTo(firstPos.x, firstPos.y);
+    //   // Close the hexagon
+    //   const firstCoord = sideCoordinate(0, distanceFromCenter);
+    //   const firstPos = worldToCanvas(firstCoord.x, firstCoord.y);
+    //   ctx.lineTo(firstPos.x, firstPos.y);
 
-      ctx.stroke();
-    }
+    //   ctx.stroke();
+    // }
 
     // Draw center point - Fix: Use SETTLEMENT_CENTER instead of mapCenter
     const centerPos = worldToCanvas(SETTLEMENT_CENTER, SETTLEMENT_CENTER);

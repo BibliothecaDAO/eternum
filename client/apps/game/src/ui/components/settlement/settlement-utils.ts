@@ -1,46 +1,42 @@
 import { Position } from "@/types/position";
-import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, Coord, HexDirection, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import {
-  PI,
   SETTLEMENT_BASE_DISTANCE,
   SETTLEMENT_CENTER,
-  SETTLEMENT_SUBSEQUENT_DISTANCE,
+  SETTLEMENT_SUBSEQUENT_DISTANCE
 } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
+
 
 /**
  * Calculate the distance from center for a given layer
  */
 export const layerDistanceFromCenter = (layer: number): number => {
-  return SETTLEMENT_BASE_DISTANCE + (layer - 1) * SETTLEMENT_SUBSEQUENT_DISTANCE;
+  return SETTLEMENT_BASE_DISTANCE + ((layer - 1) * SETTLEMENT_SUBSEQUENT_DISTANCE);
 };
 
 /**
  * Calculate the maximum number of points on a side for a given layer
  */
-export const maxSidePoints = (layer: number): number => {
-  return layer;
+export const maxPointsInLayer = (layer: number): number => {
+  return layer - 1;
 };
 
-/**
- * Calculate the percentage position on a side
- */
-const getPosPercentage = (pointOnSide: number, maxPointsOnSide: number): number => {
-  return (pointOnSide + 1) / (maxPointsOnSide + 1);
+
+export const sideDirections = (side: number): HexDirection[] => {
+  const start_directions = [
+    [HexDirection.East, HexDirection.SouthWest],
+    [HexDirection.East, HexDirection.NorthWest],
+    [HexDirection.West, HexDirection.SouthEast],
+    [HexDirection.West, HexDirection.NorthEast],
+    [HexDirection.NorthWest, HexDirection.East],
+    [HexDirection.SouthEast, HexDirection.West],
+  ];
+  return start_directions[side]
 };
 
-/**
- * Calculate the coordinates for a point on a side
- */
-export const sideCoordinate = (side: number, distanceFromCenter: number): { x: number; y: number } => {
-  const angle = (side * PI) / 3;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const x = SETTLEMENT_CENTER + distanceFromCenter * cos;
-  const y = SETTLEMENT_CENTER + distanceFromCenter * sin;
-  return { x, y };
-};
+
 
 /**
  * Convert normalized coordinates to contract coordinates
@@ -56,46 +52,60 @@ export const normalizedToContractCoords = (x: number | string, y: number | strin
 /**
  * Generates all possible settlement locations based on the settlement config
  */
-export function generateSettlementLocations(maxLayers: number): SettlementLocation[] {
+export function generateSettlementLocations(maxLayers: number): [SettlementLocation[], Map<string, {side: number, layer: number, point: number}>] {
   const locations: SettlementLocation[] = [];
+  const locations_map = new Map<string, {side: number, layer: number, point: number}>();
+  const center = new Coord (SETTLEMENT_CENTER, SETTLEMENT_CENTER);
 
   // Generate locations for each layer, side, and point
   for (let layer = 1; layer <= maxLayers; layer++) {
-    const distanceFromCenter = layerDistanceFromCenter(layer);
-
     for (let side = 0; side < 6; side++) {
-      // Calculate max points on this side
-      const maxPoints = maxSidePoints(layer);
+        const start_direction = sideDirections(side)[0];
+        const triangle_direction = sideDirections(side)[1];
+        // Calculate max points on this side
+        const maxPoints = maxPointsInLayer(layer);
+        for (let point = 0; point < maxPoints; point++) {
 
-      for (let point = 0; point < maxPoints; point++) {
-        // Calculate the coordinates based on the settlement config algorithm
-        const startCoord = sideCoordinate(side, distanceFromCenter);
-        const nextSide = (side + 1) % 6;
-        const posPercentage = getPosPercentage(point, maxPoints);
-        const endCoord = sideCoordinate(nextSide, distanceFromCenter);
+          let first_structure_coord = center;
+          for(let i = 0; i < SETTLEMENT_BASE_DISTANCE; i++) {
+            first_structure_coord = first_structure_coord.neighbor(start_direction);
+          }
+          for(let i = 0; i < SETTLEMENT_BASE_DISTANCE / 2; i++) {
+            first_structure_coord = first_structure_coord.neighbor(triangle_direction);
+          }
 
-        // Calculate position along the side based on point and ensure it's an integer
-        const x = Math.round(startCoord.x + (endCoord.x - startCoord.x) * posPercentage);
-        const y = Math.round(startCoord.y + (endCoord.y - startCoord.y) * posPercentage);
+          let first_structure_after_distance = first_structure_coord;
+          for(let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * (layer - 1) ; i++) {
+            first_structure_after_distance = first_structure_after_distance.neighbor(start_direction);
+          }
 
-        locations.push({
-          side,
-          layer,
-          point,
-          x,
-          y,
-        });
+          let destination_coord = first_structure_after_distance;
+          for(let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * point ; i++) {
+            destination_coord = destination_coord.neighbor(triangle_direction);
+          }
+
+
+          locations_map.set(`${destination_coord.x},${destination_coord.y}`, 
+            {side, layer, point}); 
+  
+          locations.push({
+            side,
+            layer,
+            point,
+            x: destination_coord.x,
+            y: destination_coord.y,
+          });
       }
     }
   }
 
-  return locations;
+  return [locations, locations_map];
 }
 
 /**
  * Gets all occupied locations from the game state
  */
-export const getOccupiedLocations = (playerAddress: ContractAddress, components: ClientComponents) => {
+export const getOccupiedLocations = (playerAddress: ContractAddress, components: ClientComponents, locations_map: Map<string, {side: number, layer: number, point: number}>) => {
   const realmEntities = runQuery([HasValue(components.Structure, { category: StructureType.Realm })]);
   const realmPositions = Array.from(realmEntities).map((entity) => {
     const structure = getComponentValue(components.Structure, entity);
@@ -104,9 +114,8 @@ export const getOccupiedLocations = (playerAddress: ContractAddress, components:
       const y = structure?.base.coord_y;
 
       // Use the improved reverse calculation function
-      const location = coordinatesToSettlementLocation(x, y);
+      const location = locations_map.get(`${x},${y}`);
       const isMine = structure?.owner === playerAddress;
-
       return {
         ...location,
         isMine,
