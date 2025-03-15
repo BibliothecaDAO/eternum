@@ -9,9 +9,9 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 world_block = 0
 contracts = [
-      "erc721:0x354fea8c8cdabc5907fba75cac918e7895724ef9a076ebdd0c5225bb13941a3",
-      "erc721:0x45164e57909419527ac65e2e9920e29fa29d2c99cce0817e81e72adbdb5a5a6",
-      "erc20:0x362f30c25ed168ae887c9a1ba010514a10e4845870d47efa0ee4117220e25da",
+      "erc721:0x56580cbbc7f4626d0d6c1b31282658caeba1a5bc67dccf38438c2367adc5336",
+      "erc721:0x5d0c99b96f37d4905703fbc8e7fa6c4cdafd85890ab094b869262a2e8d3fbaf",
+      "erc20:0x104770f758b9b081c2756ebfac803b0b008b5bb5c7855730d91bb8135f73805",
 ]
 
 [events]

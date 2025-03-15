@@ -6,12 +6,19 @@ import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
-import { getUnusedSeasonPasses, SeasonPassRealm } from "@/ui/components/cityview/realm/settle-realm-component";
+import { Position, Position as PositionInterface } from "@/types/position";
+import {
+  getUnusedSeasonPasses,
+  queryRealmCount,
+  SeasonPassRealm,
+} from "@/ui/components/cityview/realm/settle-realm-component";
+import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
+import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getRandomRealmEntity } from "@/utils/realms";
+import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
@@ -22,58 +29,154 @@ export const LocalStepOne = () => {
   const {
     account: { account },
     setup: {
-      systemCalls: { mint_test_realm, mint_season_passes, create_multiple_realms },
+      systemCalls: { mint_and_settle_test_realm },
     },
   } = useDojo();
-  console.log(getSeasonPassAddress());
+  const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
+  const [realmId, setRealmId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [maxLayers, setMaxLayers] = useState<number | null>(null); // Default to 5 layers
+
+  useEffect(() => {
+    const fetchRealmCount = async () => {
+      setLoading(true);
+      try {
+        const count = await queryRealmCount();
+
+        if (count !== null) {
+          const maxLayer = getMaxLayer(count);
+          setMaxLayers(maxLayer);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching realm count:", error);
+      }
+    };
+
+    fetchRealmCount();
+  }, []);
+
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const random = Math.floor(Math.random() * 8000);
+
+  const handleMintAndPrepare = async () => {
+    setRealmId(random);
+    handleSelectLocationClick();
+  };
+
+  const handleSettleRealm = async () => {
+    if (!realmId || !selectedLocation) return;
+
+    setLoading(true);
+    try {
+      await mint_and_settle_test_realm({
+        token_id: realmId,
+        signer: account,
+        realms_address: getRealmsAddress(),
+        season_pass_address: getSeasonPassAddress(),
+        realm_settlement: {
+          side: selectedLocation.side,
+          layer: selectedLocation.layer,
+          point: selectedLocation.point,
+        },
+      });
+      setSelectedLocation(null);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error creating realms:", error);
+      setLoading(false);
+    }
+  };
+
+  const handleLocationSelect = (location: SettlementLocation) => {
+    setSelectedLocation(location);
+  };
+
+  const handleConfirmLocation = () => {
+    toggleModal(null); // Close the modal
+  };
+
+  const handleSelectLocationClick = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Prevent triggering the parent onClick
+    }
+    if (!maxLayers) return;
+
+    toggleModal(
+      <SettlementMinimapModal
+        onSelectLocation={handleLocationSelect}
+        onConfirm={handleConfirmLocation}
+        maxLayers={maxLayers}
+        realmId={realmId || random}
+        realmName="Your New Realm"
+      />,
+    );
+  };
+
+  const selectedCoords = useMemo(() => {
+    if (!selectedLocation) return null;
+    const normalizedCoords = new PositionInterface({
+      x: selectedLocation.x,
+      y: selectedLocation.y,
+    }).getNormalized();
+    return normalizedCoords;
+  }, [selectedLocation]);
+
   return (
-    <Button
-      onClick={async () => {
-        try {
-          await mint_test_realm({
-            token_id: random,
-            signer: account,
-            realms_address: getRealmsAddress(),
-          });
-        } catch (error) {
-          console.error("Error minting test realm:", error);
-          return; // Exit early if first step fails
-        }
-
-        try {
-          await mint_season_passes({
-            recipient: account.address,
-            token_ids: [random],
-            signer: account,
-            season_pass_address: getSeasonPassAddress(),
-          });
-        } catch (error) {
-          console.error("Error minting season passes:", error);
-          return; // Exit early if second step fails
-        }
-
-        try {
-          await create_multiple_realms({
-            realm_ids: [random],
-            owner: account.address,
-            frontend: account.address,
-            signer: account,
-            season_pass_address: getSeasonPassAddress(),
-          });
-        } catch (error) {
-          console.error("Error creating realms:", error);
-          // TODO: Show error toast/notification to user
-        }
-      }}
-      className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 animate-pulse`}
-    >
-      <div className="flex items-center">
-        <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
-        Settle Realm
-      </div>
-    </Button>
+    <>
+      {selectedLocation ? (
+        <div className="w-full">
+          <div className="mt-4 flex flex-col gap-2">
+            <div className="text-center text-gold">
+              Selected Coordinates: {selectedCoords?.x}, {selectedCoords?.y}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSelectLocationClick}
+                disabled={loading}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-gold !bg-gold/20 !normal-case rounded-md"
+              >
+                <div className="flex items-center">
+                  <BackArrow className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold" />
+                  Change Location
+                </div>
+              </Button>
+              <Button
+                onClick={handleSettleRealm}
+                disabled={loading}
+                className="flex-1 h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md"
+              >
+                <div className="flex items-center justify-center">
+                  {loading ? (
+                    <img src="/images/logos/eternum-animated.png" className="w-5 h-5 mr-1 md:mr-2" />
+                  ) : (
+                    <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+                  )}
+                  {loading ? "Processing..." : "Confirm Settlement"}
+                </div>
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Button
+          onClick={handleMintAndPrepare}
+          disabled={loading}
+          className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${loading ? "" : "animate-pulse"}`}
+        >
+          <div className="flex items-center">
+            {loading ? (
+              <img src="/images/logos/eternum-animated.png" className="w-5 h-5 mr-1 md:mr-2" />
+            ) : (
+              <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+            )}
+            {loading ? "Processing..." : "Settle Realm"}
+          </div>
+        </Button>
+      )}
+    </>
   );
 };
 
@@ -139,21 +242,47 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedRealms, setSelectedRealms] = useState<number[]>([]);
-
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
 
+  // Track which realms have locations selected
+  const realmsWithLocations = useMemo(() => {
+    return seasonPassRealms.filter((realm) => realm.selectedLocation).map((realm) => realm.realmId);
+  }, [seasonPassRealms]);
+
+  // Only allow settling realms that have locations selected
+  const settleableRealms = useMemo(() => {
+    return selectedRealms.filter((realmId) => realmsWithLocations.includes(realmId));
+  }, [selectedRealms, realmsWithLocations]);
+
   const settleRealms = async (realmIds: number[]) => {
+    if (realmIds.length === 0) return;
+
     setLoading(true);
     try {
-      await create_multiple_realms({
-        realm_ids: realmIds,
-        owner: account.address,
-        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-        signer: account,
-        season_pass_address: getSeasonPassAddress(),
-      });
+      // For each realm, use its specific location
+      for (const realmId of realmIds) {
+        const realm = seasonPassRealms.find((r) => r.realmId === realmId);
+        if (!realm || !realm.selectedLocation) continue;
+
+        await create_multiple_realms({
+          realm_ids: [realmId],
+          owner: account.address,
+          frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
+          signer: account,
+          season_pass_address: getSeasonPassAddress(),
+          realm_settlement: {
+            side: realm.selectedLocation.side,
+            layer: realm.selectedLocation.layer,
+            point: realm.selectedLocation.point,
+          },
+        });
+      }
+
+      // Refresh the list of season passes after settling
+      const updatedSeasonPasses = await getUnusedSeasonPasses(account.address, realms);
+      setSeasonPassRealms(updatedSeasonPasses);
       setSelectedRealms([]);
-      onPrevious();
+      setLoading(false);
     } catch (error) {
       console.error("Error settling realms:", error);
       setLoading(false);
@@ -171,13 +300,26 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     });
   }, [loading, realms]);
 
+  const handleSelectLocation = (realmId: number, location: SettlementLocation | null) => {
+    setSeasonPassRealms((prevRealms) =>
+      prevRealms.map((realm) => (realm.realmId === realmId ? { ...realm, selectedLocation: location } : realm)),
+    );
+  };
+
+  const occupiedLocations = useMemo(() => {
+    return seasonPassRealms
+      .filter((realm) => realm.selectedLocation !== undefined && realm.selectedLocation !== null)
+      .map((realm) => realm.selectedLocation!)
+      .filter((location): location is SettlementLocation => location !== null && location !== undefined);
+  }, [seasonPassRealms]);
+
   const seasonPassElements = useMemo(() => {
     const elements = [];
     for (let i = 0; i < seasonPassRealms.length; i += 2) {
       const seasonPassElement = seasonPassRealms[i];
       const seasonPassElement2 = seasonPassRealms[i + 1];
       elements.push(
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3" key={`realm-row-${i}`}>
           <SeasonPassRealm
             key={seasonPassElement.realmId}
             seasonPassRealm={seasonPassElement}
@@ -189,6 +331,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                   : selectedRealms.filter((id) => id !== seasonPassElement.realmId),
               )
             }
+            onSelectLocation={handleSelectLocation}
+            occupiedLocations={occupiedLocations}
           />
           {seasonPassElement2 && (
             <SeasonPassRealm
@@ -202,6 +346,8 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                     : selectedRealms.filter((id) => id !== seasonPassElement2.realmId),
                 )
               }
+              onSelectLocation={handleSelectLocation}
+              occupiedLocations={occupiedLocations}
             />
           )}
         </div>,
@@ -246,27 +392,35 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                 </div>
               </div>
             )}
+
+            <div className="text-sm">
+              {realmsWithLocations.length} / {seasonPassRealms.length} With Locations
+            </div>
           </div>
+
           <div className="flex flex-col gap-3 lg:h-[22vh] lg:max-h-[22vh] lg:min-h-[22vh] min-h-[20vh] h-[20vh] max-h-[20vh] xl:h-[20vh] xl:max-h-[20vh] xl:min-h-[20vh] 2xl:h-[22vh] 2xl:max-h-[22vh] 2xl:min-h-[22vh] overflow-hidden overflow-y-auto no-scrollbar">
             {seasonPassElements}
           </div>
-          <Button
-            disabled={selectedRealms.length === 0 || loading}
-            onClick={() => settleRealms(selectedRealms)}
-            className={`absolute bottom-0 w-full lg:h-10 h-12 !text-black !normal-case rounded-md ${
-              selectedRealms.length <= 0 || loading
-                ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
-                : "!bg-gold hover:!bg-gold/80"
-            }`}
-          >
-            {loading ? (
-              <img src="/images/logos/eternum-animated.png" className="w-7" />
-            ) : (
-              <div className="text-lg !font-normal">{`Settle ${
-                selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""
-              }`}</div>
-            )}
-          </Button>
+
+          <div className="absolute bottom-0 w-full">
+            <Button
+              disabled={settleableRealms.length === 0 || loading}
+              onClick={() => settleRealms(settleableRealms)}
+              className={`w-full lg:h-10 h-12 !text-black !normal-case rounded-md ${
+                settleableRealms.length === 0 || loading
+                  ? "opacity-50 !bg-gold/50 hover:scale-100 hover:translate-y-0 cursor-not-allowed"
+                  : "!bg-gold hover:!bg-gold/80"
+              }`}
+            >
+              {loading ? (
+                <img src="/images/logos/eternum-animated.png" className="w-7" />
+              ) : (
+                <div className="text-lg !font-normal">
+                  {settleableRealms.length === 0 ? "Select Realms & Locations" : `Settle (${settleableRealms.length})`}
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>

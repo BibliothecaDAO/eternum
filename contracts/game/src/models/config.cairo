@@ -1,14 +1,9 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
-
-use s1_eternum::models::position::Coord;
-
-use s1_eternum::utils::map::constants::fixed_constants as fc;
+use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
@@ -40,6 +35,7 @@ pub struct WorldConfig {
     pub capacity_config: CapacityConfig,
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
+    pub realm_count: RealmCountConfig,
     pub season_config: SeasonConfig,
     pub agent_controller_config: AgentControllerConfig,
 }
@@ -223,80 +219,125 @@ pub struct MapConfig {
 pub struct SettlementConfig {
     pub center: u32,
     pub base_distance: u32,
-    pub min_first_layer_distance: u32,
-    pub points_placed: u32,
-    pub current_layer: u32,
-    pub current_side: u32,
-    pub current_point_on_side: u32,
+    pub subsequent_distance: u32,
 }
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct RealmCountConfig {
+    pub count: u16,
+}
+
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    fn get_distance_from_center(ref self: SettlementConfig) -> u32 {
-        self.min_first_layer_distance + (self.current_layer - 1) * self.base_distance
+    #[test]
+    fn log_layer_capacity() { // // Get the current realm count
+    // let realm_count: u16 =  8000;
+    // // Calculate the maximum layer based on realm count
+    // // We need to find n where 3n² - 3n + 1 >= realm_count
+    // // Solving the quadratic equation: 3n² - 3n - (realm_count - 1) >= 0
+
+    // // Start from layer 1 and find the first layer that can accommodate all realms
+    // let mut layer: u32 = 1;
+    // let mut capacity: u32 = 5; // Layer 1 capacity
+    // println!("Layer: 1, Capacity: 5, Added Capacity: 5");
+
+    // while capacity < realm_count.into() {
+    //     layer += 1;
+    //     // Each new layer adds 6 * layer realms
+    //     capacity += 6 * layer;
+    //     println!("Layer: {}, Capacity: {}, Added Capacity: {}", layer, capacity, 6 * layer);
+
+    // };
+
+    // println!("Max layer: {}", layer);
     }
 
-    fn get_points_on_side(ref self: SettlementConfig) -> u32 {
-        if self.current_side > 0 {
-            self.current_layer
-        } else {
-            self.current_layer - 1
-        }
-    }
+    // Calculate the maximum layer on the concentric hexagon
+    // that can be built on based on realm count
+    fn max_layer(realm_count: u32) -> u32 {
+        // each layer's capacity can be obtained by calling the function
+        // above (fn log_layer_capacity)
 
-    fn get_pos_percentage(ref self: SettlementConfig, points_on_side: u32) -> Fixed {
-        FixedTrait::new_unscaled(self.current_point_on_side.into() + 1, false)
-            / FixedTrait::new_unscaled(points_on_side.into() + 1, false)
-    }
-
-    fn get_side_coords(ref self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
-        let side_fixed = FixedTrait::new_unscaled(side.into(), false);
-        let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
-
-        let cos = fixed_cos(angle_fixed);
-        let sin = fixed_sin(angle_fixed);
-
-        let centre_fixed = FixedTrait::new_unscaled(self.center.into(), false);
-        let distance_fixed = FixedTrait::new_unscaled(distance_from_center.into(), false);
-
-        let x_fixed = centre_fixed + distance_fixed * cos;
-        let y_fixed = centre_fixed + distance_fixed * sin;
-        (x_fixed, y_fixed)
-    }
-
-    fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
-        let distance_from_center = Self::get_distance_from_center(ref self);
-
-        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(ref self, self.current_side, distance_from_center);
-
-        let next_side = (self.current_side + 1) % 6;
-
-        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(ref self, next_side, distance_from_center);
-
-        let points_on_side = Self::get_points_on_side(ref self);
-
-        let pos_percentage_fixed = Self::get_pos_percentage(ref self, points_on_side);
-
-        let x_fixed = start_x_fixed + (end_x_fixed - start_x_fixed) * pos_percentage_fixed;
-        let y_fixed = start_y_fixed + (end_y_fixed - start_y_fixed) * pos_percentage_fixed;
-
-        self.current_point_on_side += 1;
-        self.points_placed += 1;
-
-        if self.current_point_on_side >= points_on_side {
-            self.current_point_on_side = 0;
-            self.current_side += 1;
-
-            // If we've completed all sides, move to next layer
-            if self.current_side >= 6 {
-                self.current_side = 0;
-                self.current_layer += 1;
-            }
+        if realm_count <= 1500 {
+            return 26; // 2106 capacity
         }
 
-        Coord { x: x_fixed.try_into().unwrap(), y: y_fixed.try_into().unwrap() }
+        if realm_count <= 2500 {
+            return 32; // 3168 capacity
+        }
+
+        if realm_count <= 3500 {
+            return 37; // 4218 capacity
+        }
+
+        if realm_count <= 4500 {
+            return 41; // 5166 capacity
+        }
+
+        if realm_count <= 5500 {
+            return 45; // 6210 capacity
+        }
+
+        if realm_count <= 6500 {
+            return 49; // 7350 capacity
+        }
+
+        return 52; // 8268 capacity
+    }
+
+    fn max_points(layer: u32) -> u32 {
+        layer - 1
+    }
+
+    // todo: test aggresively
+    fn generate_coord(self: SettlementConfig, max_layer: u32, side: u32, layer: u32, point: u32) -> Coord {
+        assert!(side < 6, "Side must be less than 6"); // 0 - 5
+        assert!(layer > 0, "Layer must be greater than 0");
+        assert!(layer <= max_layer, "Layer must be less than max layer");
+        assert!(point <= Self::max_points(layer), "Point must be less than max side points");
+
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<(Direction, Direction)> = array![
+            // (Direction::East, Direction::SouthWest),
+            // (Direction::East, Direction::NorthWest),
+            // (Direction::West, Direction::SouthEast),
+            // (Direction::West, Direction::NorthEast),
+            // (Direction::NorthWest, Direction::East),
+            // (Direction::SouthEast, Direction::West),
+
+            // note: the values on top are actually correct but need to be inverted
+            // because ui is inverted. so northeast and southeast are swapped.
+            // as well as northwest and southwest
+            (Direction::East, Direction::NorthWest),
+            (Direction::East, Direction::SouthWest),
+            (Direction::West, Direction::NorthEast),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(side);
+        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+        assert!(
+            self.subsequent_distance % 2 == 0,
+            "subsequent distance must be exactly divisble by 2 so the map isnt skewed",
+        );
+
+        // get the coord of the first structure on layer 1 of the selected side
+        let side_first_structure__layer_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, (self.base_distance / 2) + (self.subsequent_distance / 2));
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__layer_x = side_first_structure__layer_one
+            .neighbor_after_distance(start_direction, self.subsequent_distance * (layer - 1));
+
+        let destination_coord: Coord = side_first_structure__layer_x
+            .neighbor_after_distance(triangle_direction, self.subsequent_distance * point);
+        return destination_coord;
     }
 }
+
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {

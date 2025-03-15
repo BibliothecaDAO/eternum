@@ -1156,11 +1156,7 @@ export function defineContractComponents(world: World) {
           settlement_config: {
             center: RecsType.Number,
             base_distance: RecsType.Number,
-            min_first_layer_distance: RecsType.Number,
-            points_placed: RecsType.Number,
-            current_layer: RecsType.Number,
-            current_side: RecsType.Number,
-            current_point_on_side: RecsType.Number,
+            subsequent_distance: RecsType.Number,
           },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
@@ -1244,6 +1240,9 @@ export function defineContractComponents(world: World) {
             regular_immunity_ticks: RecsType.Number,
             hyperstructure_immunity_ticks: RecsType.Number,
           },
+          realm_count: {
+            count: RecsType.Number,
+          },
           season_config: {
             start_settling_at: RecsType.Number,
             start_main_at: RecsType.Number,
@@ -1281,11 +1280,7 @@ export function defineContractComponents(world: World) {
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
-              "u32", // SettlementConfig min_first_layer_distance
-              "u32", // SettlementConfig points_placed
-              "u32", // SettlementConfig current_layer
-              "u32", // SettlementConfig current_side
-              "u32", // SettlementConfig current_point_on_side
+              "u32", // SettlementConfig subsequent_distance
               "u64", // TickConfig armies_tick_in_seconds
               "u32", // BankConfig lp_fee_num
               "u32", // BankConfig lp_fee_denom
@@ -1344,6 +1339,7 @@ export function defineContractComponents(world: World) {
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig hyperstructure_immunity_ticks
+              "u16", // RealmCountConfig realm_count
               "u64", // SeasonConfig start_settling_at
               "u64", // SeasonConfig start_main_at
               "u64", // SeasonConfig end_at

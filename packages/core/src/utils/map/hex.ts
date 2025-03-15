@@ -72,6 +72,7 @@ export class Coord {
 
   neighbor(direction: HexDirection): Coord {
     // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
+    // even-r
     if (this.y % 2 === 0) {
       // Where y (row) is even
       switch (direction) {

@@ -148,8 +148,8 @@ export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 10;
-export const SETTLEMENT_MIN_FIRST_LAYER_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
 export const SETTLEMENT_CURRENT_SIDE = 1;
@@ -292,11 +292,7 @@ export const EternumGlobalConfig: Config = {
   settlement: {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
-    min_first_layer_distance: SETTLEMENT_MIN_FIRST_LAYER_DISTANCE,
-    points_placed: SETTLEMENT_POINTS_PLACED,
-    current_layer: SETTLEMENT_CURRENT_LAYER,
-    current_side: SETTLEMENT_CURRENT_SIDE,
-    current_point_on_side: SETTLEMENT_CURRENT_POINT_ON_SIDE,
+    subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,

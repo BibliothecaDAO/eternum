@@ -1,14 +1,14 @@
 import { ComponentValue, Entity } from "@dojoengine/recs";
 import { Account, AccountInterface } from "starknet";
 import {
-  BiomeType,
-  BuildingType,
-  CapacityConfig,
-  QuestType,
-  RealmLevels,
-  ResourcesIds,
-  ResourceTier,
-  StructureType,
+    BiomeType,
+    BuildingType,
+    CapacityConfig,
+    QuestType,
+    RealmLevels,
+    ResourcesIds,
+    ResourceTier,
+    StructureType,
 } from "../constants";
 import { ClientComponents } from "../dojo";
 
@@ -393,11 +393,7 @@ export interface Config {
   settlement: {
     center: number;
     base_distance: number;
-    min_first_layer_distance: number;
-    points_placed: number;
-    current_layer: number;
-    current_side: number;
-    current_point_on_side: number;
+    subsequent_distance: number;
   };
   season: {
     startSettlingAfterSeconds: number;

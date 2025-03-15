@@ -7,6 +7,17 @@ export interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface MintAndSettleTestRealmProps extends SystemSigner {
+  token_id: num.BigNumberish;
+  realms_address: string;
+  season_pass_address: string;
+  realm_settlement: {
+    side: num.BigNumberish;
+    layer: num.BigNumberish;
+    point: num.BigNumberish;
+  };
+}
+
 export interface BridgeResourcesIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: num.BigNumberish;
@@ -108,6 +119,11 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
   realm_ids: num.BigNumberish[];
   frontend: num.BigNumberish;
   season_pass_address: string;
+  realm_settlement: {
+    side: num.BigNumberish;
+    layer: num.BigNumberish;
+    point: num.BigNumberish;
+  };
 }
 
 export interface CreateRealmDevProps extends SystemSigner {
@@ -574,11 +590,7 @@ export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 export interface SetSettlementConfigProps extends SystemSigner {
   center: num.BigNumberish;
   base_distance: num.BigNumberish;
-  min_first_layer_distance: num.BigNumberish;
-  points_placed: num.BigNumberish;
-  current_layer: num.BigNumberish;
-  current_side: num.BigNumberish;
-  current_point_on_side: num.BigNumberish;
+  subsequent_distance: num.BigNumberish;
 }
 
 export interface MintTestRealmProps extends SystemSigner {
