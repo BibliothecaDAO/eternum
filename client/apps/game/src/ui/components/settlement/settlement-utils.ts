@@ -23,6 +23,33 @@ export const maxPointsInLayer = (layer: number): number => {
   return layer - 1;
 };
 
+export const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
+  const start_direction = sideDirections(side)[0];
+  let side_first_coord_layer_0 = sideLayerOneFirstCoord(side);
+  let side_first_coord_layer_x = side_first_coord_layer_0;
+  for(let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * (layer - 1) ; i++) {
+    side_first_coord_layer_x = side_first_coord_layer_x.neighbor(start_direction);
+  }
+
+  return side_first_coord_layer_x;
+};
+
+export const sideLayerOneFirstCoord = (side: number): Coord => {
+  const center = new Coord (SETTLEMENT_CENTER, SETTLEMENT_CENTER);
+  const start_direction = sideDirections(side)[0];
+  const triangle_direction = sideDirections(side)[1];
+  let side_first_coord_layer_0 = center;
+  for(let i = 0; i < SETTLEMENT_BASE_DISTANCE; i++) {
+    side_first_coord_layer_0 = side_first_coord_layer_0.neighbor(start_direction);
+  }
+  
+  for(let i = 0; i <  (SETTLEMENT_BASE_DISTANCE / 2) + (SETTLEMENT_SUBSEQUENT_DISTANCE / 2); i++) {
+    side_first_coord_layer_0 = side_first_coord_layer_0.neighbor(triangle_direction);
+  }
+  return side_first_coord_layer_0;
+};
+
+
 
 export const sideDirections = (side: number): HexDirection[] => {
   const start_directions = [
@@ -55,35 +82,19 @@ export const normalizedToContractCoords = (x: number | string, y: number | strin
 export function generateSettlementLocations(maxLayers: number): [SettlementLocation[], Map<string, {side: number, layer: number, point: number}>] {
   const locations: SettlementLocation[] = [];
   const locations_map = new Map<string, {side: number, layer: number, point: number}>();
-  const center = new Coord (SETTLEMENT_CENTER, SETTLEMENT_CENTER);
 
   // Generate locations for each layer, side, and point
   for (let layer = 1; layer <= maxLayers; layer++) {
     for (let side = 0; side < 6; side++) {
-        const start_direction = sideDirections(side)[0];
-        const triangle_direction = sideDirections(side)[1];
         // Calculate max points on this side
         const maxPoints = maxPointsInLayer(layer);
+        const triangle_direction = sideDirections(side)[1];
         for (let point = 0; point < maxPoints; point++) {
-
-          let first_structure_coord = center;
-          for(let i = 0; i < SETTLEMENT_BASE_DISTANCE; i++) {
-            first_structure_coord = first_structure_coord.neighbor(start_direction);
-          }
-          for(let i = 0; i < SETTLEMENT_BASE_DISTANCE / 2; i++) {
-            first_structure_coord = first_structure_coord.neighbor(triangle_direction);
-          }
-
-          let first_structure_after_distance = first_structure_coord;
-          for(let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * (layer - 1) ; i++) {
-            first_structure_after_distance = first_structure_after_distance.neighbor(start_direction);
-          }
-
-          let destination_coord = first_structure_after_distance;
+          let side_first_coord_layer_x = sideLayerXFirstCoord(side, layer);
+          let destination_coord = side_first_coord_layer_x;
           for(let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * point ; i++) {
             destination_coord = destination_coord.neighbor(triangle_direction);
           }
-
 
           locations_map.set(`${destination_coord.x},${destination_coord.y}`, 
             {side, layer, point}); 

@@ -318,14 +318,21 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
-        let first_structure_coord: Coord = start_coord
-            .neighbor_after_distance(start_direction, self.base_distance)
-            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
+        assert!(
+            self.subsequent_distance % 2 == 0,
+            "subsequent distance must be exactly divisble by 2 so the map isnt skewed",
+        );
 
-        let first_structure_after_distance = first_structure_coord
+        // get the coord of the first structure on layer 1 of the selected side
+        let side_first_structure__layer_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, (self.base_distance / 2) + (self.subsequent_distance / 2));
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__layer_x = side_first_structure__layer_one
             .neighbor_after_distance(start_direction, self.subsequent_distance * (layer - 1));
 
-        let destination_coord: Coord = first_structure_after_distance
+        let destination_coord: Coord = side_first_structure__layer_x
             .neighbor_after_distance(triangle_direction, self.subsequent_distance * point);
         return destination_coord;
     }

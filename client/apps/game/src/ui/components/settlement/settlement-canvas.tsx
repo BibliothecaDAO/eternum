@@ -133,11 +133,10 @@ export const SettlementCanvas = ({
 
     // // Draw concentric hexagons for each layer
     // for (let layer = 1; layer <= maxLayers; layer++) {
-    //   const distanceFromCenter = layerDistanceFromCenter(layer);
     //   ctx.beginPath();
 
     //   for (let side = 0; side < 6; side++) {
-    //     const startCoord = sideCoordinate(side);
+    //     const startCoord = sideLayerXFirstCoord(side, layer);
     //     const startPos = worldToCanvas(startCoord.x, startCoord.y);
 
     //     if (side === 0) {
@@ -148,7 +147,7 @@ export const SettlementCanvas = ({
     //   }
 
     //   // Close the hexagon
-    //   const firstCoord = sideCoordinate(0, distanceFromCenter);
+    //   const firstCoord = sideLayerXFirstCoord(0, layer);
     //   const firstPos = worldToCanvas(firstCoord.x, firstCoord.y);
     //   ctx.lineTo(firstPos.x, firstPos.y);
 
