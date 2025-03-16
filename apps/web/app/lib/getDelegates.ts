@@ -75,7 +75,7 @@ export const getDelegatesQueryOptions = (
 /* -------------------------------------------------------------------------- */
 
 const GetDelegateByIDInput = z.object({
-  address: z.string(),
+  address: z.string().optional(),
 });
 
 export const getDelegateByID = createServerFn({ method: "GET" })
@@ -98,7 +98,7 @@ export const getDelegateByIDQueryOptions = (
 ) =>
   queryOptions({
     queryKey: ["getDelegateByID", input.address],
-    queryFn: () => getDelegateByID({ data: input }),
+    queryFn: () => (input.address ? getDelegateByID({ data: input }) : null),
     enabled: !!input.address,
   });
 

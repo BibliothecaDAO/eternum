@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@/router";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -30,7 +29,16 @@ type EditProfileValues = z.infer<typeof editProfileSchema>;
 
 interface EditProfileFormProps {
   // You can pass initial form values when editing an existing profile.
-  delegate?: RouterOutputs["delegates"]["byID"];
+  delegate?: {
+    delegateProfile: {
+      statement: string;
+      interests: string[];
+      twitter: string;
+      github: string;
+      telegram: string;
+      discord: string;
+    };
+  };
   // The onSubmit callback returns the values with interests converted to a string array.
   onSubmit: (data: EditProfileValues & { interests: string[] }) => void;
 }
@@ -126,62 +134,63 @@ export function DelegateProfileForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="twitter"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Twitter</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Twitter handle" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="twitter"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Twitter</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Twitter handle" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="github"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Github</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Github username" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="github"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Github</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Github username" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="telegram"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telegram</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Telegram handle" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="telegram"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telegram</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Telegram handle" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="discord"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Discord</FormLabel>
-              <FormControl>
-                <Input placeholder="Your Discord username" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+          <FormField
+            control={form.control}
+            name="discord"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Discord</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Discord username" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <Button type="submit" className="w-full">
           Save Profile
         </Button>

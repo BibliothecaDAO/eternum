@@ -1,11 +1,14 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  char,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
   primaryKey,
+  serial,
   text,
   timestamp,
   uuid,
@@ -239,3 +242,36 @@ export const CreateDelegateProfileSchema = createInsertSchema(
   createdAt: true,
   updatedAt: true,
 });
+
+export const reorgRollback = pgTable(
+  "__reorg_rollback",
+  {
+    n: serial().primaryKey().notNull(),
+    op: char({ length: 1 }).notNull(),
+    tableName: text("table_name").notNull(),
+    cursor: integer().notNull(),
+    rowId: text("row_id"),
+    rowValue: jsonb("row_value"),
+    indexerId: text("indexer_id").notNull(),
+  },
+  (table) => [
+    index("idx_reorg_rollback_indexer_id_cursor").using(
+      "btree",
+      table.indexerId.asc().nullsLast().op("int4_ops"),
+      table.cursor.asc().nullsLast().op("int4_ops"),
+    ),
+  ],
+);
+
+export const indexerSchemaVersion = pgTable("__indexer_schema_version", {
+  k: integer().primaryKey().notNull(),
+  version: integer().notNull(),
+});
+
+export const indexerCheckpoints = pgTable("__indexer_checkpoints", {
+  id: text().primaryKey().notNull(),
+  orderKey: integer("order_key").notNull(),
+  uniqueKey: text("unique_key").default("").notNull(),
+});
+
+export * from "./auth-schema";

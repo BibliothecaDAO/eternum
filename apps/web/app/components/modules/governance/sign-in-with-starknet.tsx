@@ -1,18 +1,18 @@
 import type { ISiwsDomain, ISiwsMessage } from "@realms-world/siws";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import StarknetIcon from "@/components/icons/starknet.svg?react";
+import { StarknetWalletButton } from "@/components/layout/starknet-wallet-button";
 import { Button } from "@/components/ui/button";
-//import authClient from "@/utils/auth-client";
-//import { useMutation } from "@/hooks/use-mutation";
-//import { loginFn } from "@/routes/_authed";
+import { authClient } from "@/utils/auth-client";
 import { formatAddress } from "@/utils/utils";
 import { useAccount, useSignTypedData } from "@starknet-react/core";
-import { useRouter } from "@tanstack/react-router";
 import { env } from "env";
+import { LogOut } from "lucide-react";
 
 import { SiwsTypedData } from "@realms-world/siws";
 
-function createSiwsData(statement: string, address: string) {
+async function createSiwsData(statement: string, address: string) {
+  const nonce = await authClient.siws.nonce({ address });
   const domain = window.location.host;
   const origin = window.location.origin;
   /*const res = await fetch(`/api/auth/nonce`, {
@@ -32,7 +32,7 @@ function createSiwsData(statement: string, address: string) {
     statement,
     uri: origin,
     version: "0.0.5", //message version and not the starknetdomain version
-    nonce: "0x0x9e9eew", //TODO add csrf token
+    nonce: nonce.data?.nonce ?? "", //TODO add csrf token
     issuedAt: new Date().toISOString(),
   };
 
@@ -41,68 +41,68 @@ function createSiwsData(statement: string, address: string) {
 }
 
 export function Login() {
-  const router = useRouter();
   const { address } = useAccount();
-  const [signInData, setSignInData] = useState<SiwsTypedData>();
-  //  const { data: session } = useSession();
+  const { data: session, refetch } = authClient.useSession();
+  const [isDataPending, setIsDataPending] = useState(false);
 
-  useEffect(() => {
-    const createSignInData = async () => {
-      if (address) {
-        const loginString = "Login to Realms.World with your Starknet Wallet";
-        const siwsData = createSiwsData(loginString, formatAddress(address));
-        setSignInData(siwsData);
-        return siwsData;
-      }
-    };
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    createSignInData();
-  }, [address]);
+  const createSignInData = async () => {
+    setIsDataPending(true);
+    if (address) {
+      const loginString = "Login to Realms.World with your Starknet Wallet";
+      const siwsData = await createSiwsData(
+        loginString,
+        formatAddress(address),
+      );
+      setIsDataPending(false);
+      return siwsData;
+    }
+    setIsDataPending(false);
+  };
 
-  const { signTypedDataAsync, error, isPending } = useSignTypedData({
-    params: signInData,
-  });
+  const { signTypedDataAsync, error, isPending } = useSignTypedData({});
 
-  /*const loginMutation = useMutation({
-    //fn: loginFn,
-    onSuccess: async (ctx) => {
-      /*if (!ctx.data?.error) {
-        await router.invalidate();
-        await router.navigate({ to: "/" });
-        return;
-      }
-    },
-  });*/
+  if (!address) {
+    return <StarknetWalletButton className="w-full" />;
+  }
 
-  return (
-    <form
-      //actionText="Login"
-      //status={loginMutation.status}
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const signature = await signTypedDataAsync(signInData);
-        /*const response = await authClient.signIn("starknet", {
-          credentials: {
+  if (!session) {
+    return (
+      <form
+        //actionText="Login"
+        //status={loginMutation.status}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const signInData = await createSignInData();
+          console.log(signInData);
+          const signature = await signTypedDataAsync(signInData);
+          await authClient.siws.verify({
             message: JSON.stringify(signInData),
             signature: signature,
-          },
-          redirectTo: "/", // Optional: specify where to redirect after successful login
-        });*/
-        /*await loginFn({
-          data: {
-            credentials: {
-              message: JSON.stringify(signInData),
-              redirect: false,
-              signature: signature,
-            },
-          },
-        });*/
-      }}
-    >
-      <Button /* disabled={isPending}*/>
-        <StarknetIcon className="mr-2 h-6 w-6" />
-        Sign in with Starknet
+            address: address,
+          });
+          refetch();
+        }}
+      >
+        <Button disabled={isPending || isDataPending}>
+          <StarknetIcon className="mr-2 h-6 w-6" />
+          Sign in to Edit Profile
+        </Button>
+      </form>
+    );
+  }
+
+  return (
+    <div>
+      <Button
+        className="w-full"
+        variant={"outline"}
+        onClick={async () => {
+          await authClient.signOut();
+        }}
+      >
+        <LogOut />
+        Logout
       </Button>
-    </form>
+    </div>
   );
 }
