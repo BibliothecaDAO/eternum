@@ -169,7 +169,7 @@ async function handleTorii() {
   if (!hasTorii) {
     normalLog("torii not found, installing");
     try {
-      await installTorii();
+      await installTorii(toriiPath);
       normalLog("torii installed");
 
       // Verify installation was successful
@@ -211,7 +211,7 @@ async function handleTorii() {
 
     if (currentVersion !== TORII_VERSION) {
       normalLog(`Updating torii from ${currentVersion} to ${TORII_VERSION}`);
-      await installTorii();
+      await installTorii(toriiPath);
       normalLog("torii updated");
     }
   }
@@ -278,184 +278,44 @@ function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function installTorii() {
+async function installTorii(toriiPath: string) {
   if (osUtils.isWindows()) {
     // Windows installation
     normalLog("Installing Torii on Windows...");
 
-    // Create temp directory for installation files
-    const tempDir = path.join(app.getPath("temp"), "torii-install");
-    await osUtils.ensureDirectoryExists(tempDir);
-    normalLog(`Created temp directory: ${tempDir}`);
+    // Create temporary directory for zip download
+    const tempDir = path.join(app.getPath("temp"), "torii-temp");
+    await fsPromises.mkdir(tempDir, { recursive: true });
+    const zipPath = path.join(tempDir, "dojo.zip");
 
-    // Download installer script
-    const installerUrl = "https://install.dojoengine.org/install.ps1";
-    const installerPath = path.join(tempDir, "install.ps1");
-    normalLog(`Downloading installer from ${installerUrl} to ${installerPath}`);
+    // Download zip file
+    const downloadUrl = `https://github.com/dojoengine/dojo/releases/download/v${TORII_VERSION}/dojo_v${TORII_VERSION}_win32_amd64.zip`;
+    const result = spawn.sync("powershell", ["-c", `Invoke-WebRequest -Uri "${downloadUrl}" -OutFile "${zipPath}"`]);
 
-    await osUtils.downloadFileWithFallback(installerUrl, installerPath);
-
-    // Verify the download
-    const fileExists = await osUtils.fileExists(installerPath);
-    if (!fileExists) {
-      throw new Error("Installer script was not created after download");
+    if (result.status !== 0) {
+      const errorMsg = result.stderr ? result.stderr.toString() : "Unknown error";
+      errorLog(`Windows download failed: ${errorMsg}`);
+      throw new Error(`Download failed with code ${result.status}: ${errorMsg}`);
     }
 
-    const fileStats = await fsPromises.stat(installerPath);
-    normalLog(`Installer downloaded successfully. File size: ${fileStats.size} bytes`);
+    // Create bin directory if it doesn't exist
+    await fsPromises.mkdir(path.join(DOJO_PATH, "bin"), { recursive: true });
 
-    // Execute the installer with enhanced logging
-    normalLog("Running installer script...");
+    // Extract torii.exe from zip to the bin directory
+    const extractResult = spawn.sync("powershell", [
+      "-c",
+      `Expand-Archive -Path "${zipPath}" -DestinationPath "${tempDir}" -Force; ` +
+        `Copy-Item -Path "${path.join(tempDir, "torii.exe")}" -Destination "${toriiPath}" -Force`,
+    ]);
 
-    // Create a custom install script that creates the .dojo directory if needed
-    const customInstallerPath = path.join(tempDir, "custom-install.ps1");
-    const customScript = `
-# Create .dojo directory if it doesn't exist
-$dojoPath = "$env:USERPROFILE\\.dojo"
-if (-not (Test-Path $dojoPath)) {
-    Write-Output "Creating .dojo directory at $dojoPath"
-    New-Item -ItemType Directory -Path $dojoPath -Force
-} else {
-    Write-Output ".dojo directory already exists at $dojoPath"
-}
-
-Write-Output "Running original installer..."
-# Run the original installer script
-& "${installerPath}"
-
-# Check if the installation was successful
-$toriiPath = "$dojoPath\\bin\\torii.exe"
-if (Test-Path $toriiPath) {
-    Write-Output "Torii executable found at $toriiPath"
-} else {
-    Write-Output "Torii executable NOT found at $toriiPath"
-    exit 1
-}
-
-Write-Output "Installation completed"
-`;
-
-    await fsPromises.writeFile(customInstallerPath, customScript);
-    normalLog("Created custom installer script");
-
-    try {
-      // Try to run with normal privileges first
-      const installProcess = spawn.spawn("powershell", [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-NoProfile",
-        "-File",
-        customInstallerPath,
-      ]);
-
-      let installOutput = "";
-      let installError = "";
-
-      installProcess.stdout.on("data", (data) => {
-        const message = data.toString();
-        installOutput += message;
-        normalLog(`[Installer] ${message.trim()}`);
-      });
-
-      installProcess.stderr.on("data", (data) => {
-        const message = data.toString();
-        installError += message;
-        errorLog(`[Installer Error] ${message.trim()}`);
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        installProcess.on("close", (code) => {
-          if (code === 0) {
-            normalLog("Installer script executed successfully");
-            resolve();
-          } else {
-            reject(new Error(`Installer failed with code ${code}. Output: ${installOutput}. Error: ${installError}`));
-          }
-        });
-      });
-
-      // Wait a moment for any filesystem operations to complete
-      await timeout(2000);
-
-      // Check if torii was installed
-      const toriiPath = path.join(DOJO_PATH, "bin", osUtils.getExecutableName("torii"));
-      if (!fs.existsSync(toriiPath)) {
-        // Try running the installer as admin
-        normalLog("Torii not found after installation, trying with admin privileges...");
-
-        // Create a script that will request admin privileges
-        const adminInstallerPath = path.join(tempDir, "admin-install.ps1");
-        const adminScript = `
-Start-Process PowerShell -ArgumentList "-ExecutionPolicy Bypass -NoProfile -File \\"${customInstallerPath}\\"" -Verb RunAs -Wait
-`;
-        await fsPromises.writeFile(adminInstallerPath, adminScript);
-
-        const adminProcess = spawn.spawn("powershell", [
-          "-ExecutionPolicy",
-          "Bypass",
-          "-NoProfile",
-          "-File",
-          adminInstallerPath,
-        ]);
-
-        await new Promise<void>((resolve, reject) => {
-          adminProcess.on("close", (code) => {
-            if (code === 0) {
-              normalLog("Admin installer completed");
-              resolve();
-            } else {
-              reject(new Error(`Admin installer failed with code ${code}`));
-            }
-          });
-        });
-
-        // Check again if torii was installed
-        if (!fs.existsSync(toriiPath)) {
-          throw new Error(`Torii executable still not found at ${toriiPath} after admin installation`);
-        }
-      }
-
-      // Run dojoup to update to the required version
-      normalLog(`Updating to Torii version ${TORII_VERSION}`);
-      const dojoupPath = path.join(DOJO_PATH, "bin", osUtils.getExecutableName("dojoup"));
-
-      if (!fs.existsSync(dojoupPath)) {
-        throw new Error(`dojoup executable not found at ${dojoupPath}`);
-      }
-
-      const dojoupProcess = spawn.spawn(dojoupPath, ["-v", TORII_VERSION]);
-
-      let dojoupOutput = "";
-      let dojoupError = "";
-
-      dojoupProcess.stdout.on("data", (data) => {
-        const message = data.toString();
-        dojoupOutput += message;
-        normalLog(`[dojoup] ${message.trim()}`);
-      });
-
-      dojoupProcess.stderr.on("data", (data) => {
-        const message = data.toString();
-        dojoupError += message;
-        errorLog(`[dojoup error] ${message.trim()}`);
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        dojoupProcess.on("close", (code) => {
-          if (code === 0) {
-            normalLog("Version update completed successfully");
-            resolve();
-          } else {
-            reject(
-              new Error(`Version update failed with code ${code}. Output: ${dojoupOutput}. Error: ${dojoupError}`),
-            );
-          }
-        });
-      });
-    } catch (e) {
-      errorLog(`Installation process failed: ${e.message}`);
-      throw e;
+    if (extractResult.status !== 0) {
+      const errorMsg = extractResult.stderr ? extractResult.stderr.toString() : "Unknown error";
+      errorLog(`Windows extraction failed: ${errorMsg}`);
+      throw new Error(`Extraction failed with code ${extractResult.status}: ${errorMsg}`);
     }
+
+    // Cleanup temp directory
+    await fsPromises.rm(tempDir, { recursive: true, force: true });
   } else {
     // Unix-based installation (macOS, Linux)
     normalLog("Installing Torii on Unix-based system...");
