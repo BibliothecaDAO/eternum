@@ -207,11 +207,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
                     resourceName={
-                      isFishingVillage
-                        ? ResourcesIds[ResourcesIds.Fish]
-                        : isFarm
-                          ? ResourcesIds[ResourcesIds.Wheat]
-                          : undefined
+                      configManager.getResourceBuildingProduced(building)
+                        ? (ResourcesIds[
+                            configManager.getResourceBuildingProduced(building)
+                          ] as keyof typeof ResourcesIds)
+                        : undefined
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
