@@ -2,7 +2,9 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
+import { formatStringNumber } from "@/ui/utils/utils";
 import { getLaborConfig } from "@/utils/labor";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   divideByPrecision,
   findResourceById,
@@ -10,7 +12,7 @@ import {
   RealmInfo,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
@@ -18,12 +20,13 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     setup: {
       account: { account },
       systemCalls: { burn_other_resources_for_labor_production },
-      components: { Resource },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
+
+  const resourceManager = useResourceManager(realm.entityId);
 
   const handleProduce = async () => {
     setIsLoading(true);
@@ -67,14 +70,15 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   }, [laborConfig, selectedResources]);
 
   const availableResources = useMemo(() => {
-    return Object.values(ResourcesIds)
-      .filter((id) => typeof id === "number")
-      .map((id) => ({
-        id: id as number,
-        // todo: fix this
-        balance: 0,
-      }));
-  }, [realm.entityId]);
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    return selectedResources.map((resource) => {
+      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+      return {
+        resourceId: resource.id,
+        amount: resourceBalance,
+      };
+    });
+  }, [selectedResources, resourceManager]);
 
   const addResource = () => {
     const availableResourceIds = Object.values(ResourcesIds).filter(
@@ -103,11 +107,22 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
 
   const handleMaxClick = (index: number) => {
     const resource = selectedResources[index];
-    const balance = divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0));
+    const balance = divideByPrecision(
+      Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+    );
     const newResources = [...selectedResources];
     newResources[index].amount = balance;
     setSelectedResources(newResources);
   };
+
+  const hasInsufficientResources = useMemo(() => {
+    return selectedResources.some((resource) => {
+      const availableAmount = divideByPrecision(
+        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+      );
+      return resource.amount > availableAmount;
+    });
+  }, [selectedResources, availableResources]);
 
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
@@ -146,7 +161,9 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
                       MAX
                     </button>
                     <span className="text-sm font-medium text-gold/60">
-                      {divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0))}
+                      {divideByPrecision(
+                        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+                      )}
                     </span>
                   </div>
                 </div>
@@ -171,7 +188,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
             <div className="flex items-center gap-2">
               <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="sm" />
               <span>Total Labor Generated:</span>
-              <span className="font-medium">{laborAmount}</span>
+              <span className="font-medium">{formatStringNumber(Number(laborAmount), 0)}</span>
             </div>
 
             <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
@@ -198,12 +215,14 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
         <div className="flex justify-center">
           <Button
             onClick={handleProduce}
-            disabled={selectedResources.length === 0 || selectedResources.some((r) => r.amount <= 0)}
+            disabled={
+              selectedResources.length === 0 || selectedResources.some((r) => r.amount <= 0) || hasInsufficientResources
+            }
             isLoading={isLoading}
             variant="primary"
             className="px-8 py-2"
           >
-            Start Labor Production
+            {hasInsufficientResources ? "Insufficient Resources" : "Start Labor Production"}
           </Button>
         </div>
       </>

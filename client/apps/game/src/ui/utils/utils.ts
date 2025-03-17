@@ -5,8 +5,11 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
 
-export const formatStringNumber = (str: string): string => {
-  return Number(str).toLocaleString();
+export const formatStringNumber = (number: number, decimals: number): string => {
+  return number.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 };
 
 export const formatNumber = (num: number, decimals: number): string => {

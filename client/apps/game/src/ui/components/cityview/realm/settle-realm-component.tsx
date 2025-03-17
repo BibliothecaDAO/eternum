@@ -232,6 +232,7 @@ export const SeasonPassRealm = ({
           </div>
         ) : (
           <Button
+            isPulsing={true}
             onClick={handleSelectLocationClick}
             className="w-full !h-[40px] !bg-gold/30 !text-gold !normal-case rounded-md hover:!bg-gold/40 text-sm"
           >

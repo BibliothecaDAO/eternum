@@ -44,7 +44,6 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
         resourceId={resourceId}
         resourceManager={resourceManager}
         maxStorehouseCapacityKg={maxStorehouseCapacityKg}
-        tick={tick}
       />
     ));
 

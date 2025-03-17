@@ -93,6 +93,8 @@ export const ResourceProductionControls = ({
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
 
+  console.log({ outputResource });
+
   const resourceManager = useResourceManager(realm.entityId);
 
   const resourceBalances = useMemo(() => {
