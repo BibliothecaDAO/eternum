@@ -15,6 +15,7 @@ import {
   getGuildFromPlayerAddress,
   getRealmNameById,
   getStructure,
+  isTileOccupierStructure,
   Structure,
   TileOccupier,
 } from "@bibliothecadao/eternum";
@@ -84,7 +85,7 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
 
   const playerGuild = getGuildFromPlayerAddress(ContractAddress(entityInfo.owner || 0n), dojo.setup.components);
 
-  if (tile.occupier_type === TileOccupier.RealmRegular) {
+  if (isTileOccupierStructure(tile.occupier_type)) {
     const structure = entityInfo as Structure;
     return (
       <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[350px]`}>
@@ -99,12 +100,7 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
               </div>
             )}
           </Headline>
-          <StructureListItem
-            structure={structure}
-            ownArmySelected={undefined}
-            setShowMergeTroopsPopup={() => {}}
-            maxInventory={3}
-          />
+          <StructureListItem structure={structure} maxInventory={3} />
           <ImmunityTimer structure={structure} />
         </div>
       </BaseThreeTooltip>
@@ -121,13 +117,13 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
       >
         <div className={clsx("gap-1")}>
           <Headline className="text-center text-lg">
-            <div>{army.name}</div>
+            <div>{army.ownerName}</div>
           </Headline>
           <ArmyWarning army={army} />
           <div id="army-info-label-content" className="self-center flex justify-between w-full">
-            <div className="flex flex-col items-start">
-              <div>{army.name}</div>
-              <div className="mt-1">{originRealmName}</div>
+            <div className="h4 flex font-semibold flex-col items-start">
+              <div className="text-base">{originRealmName}</div>
+              <div className="text-xs text-gold/80">{army.name}</div>
             </div>
             <div className="flex flex-col items-end">
               <StaminaResource entityId={army.entityId} />
