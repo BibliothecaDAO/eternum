@@ -2,7 +2,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
-import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
 import {
   Biome,
@@ -19,7 +18,7 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
-import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
+import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { ModelType } from "../types/army.types";
 import { getWorldPositionForHex } from "../utils";
 
@@ -31,24 +30,21 @@ export class ArmyManager {
   private armyModel: ArmyModel;
   private armies: Map<ID, ArmyData> = new Map();
   private scale: THREE.Vector3;
-  private movingArmies: Map<ID, MovingArmyData> = new Map();
-  private labelManager: LabelManager;
-  private labels: Map<number, THREE.Points> = new Map();
-  private movingLabels: Map<number, MovingLabelData> = new Map();
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelsGroup: THREE.Group;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
     this.scene = scene;
-    this.armyModel = new ArmyModel(scene);
+    this.armyModel = new ArmyModel(scene, labelsGroup);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
-    this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
+    this.labelsGroup = labelsGroup || new THREE.Group();
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -227,7 +223,6 @@ export class ArmyManager {
 
     // Update all model instances
     this.armyModel.updateAllInstances();
-    this.updateLabelsForChunk(chunkKey);
     this.armyModel.computeBoundingSphere();
   }
 
@@ -263,19 +258,6 @@ export class ArmyManager {
       }));
 
     return visibleArmies;
-  }
-
-  private updateLabelsForChunk(chunkKey: string) {
-    // Remove all existing labels
-    this.labels.forEach((label) => this.scene.remove(label));
-    this.labels.clear();
-
-    this.visibleArmies.forEach((army) => {
-      const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      const label = this.labelManager.createLabel(position, army.isMine ? myColor : neutralColor);
-      this.labels.set(army.entityId, label);
-      //this.scene.add(label);
-    });
   }
 
   public addArmy(
@@ -395,15 +377,14 @@ export class ArmyManager {
     const textContainer = document.createElement("div");
     textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
+    const line1 = document.createTextNode(
+      `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
+    );
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
-    const line3 = document.createElement("strong");
-    line3.textContent = `${army.category} ${army.tier}`;
+    line2.textContent = `${army.category} ${army.tier}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
-    textContainer.appendChild(line3);
 
     labelDiv.appendChild(textContainer);
 

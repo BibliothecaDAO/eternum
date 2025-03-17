@@ -11,14 +11,7 @@ import {
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants/army.constants";
-import {
-  AnimatedInstancedMesh,
-  ArmyInstanceData,
-  LabelData,
-  ModelData,
-  ModelType,
-  MovementData,
-} from "../types/army.types";
+import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army.types";
 import { getHexForWorldPosition } from "../utils";
 
 export class ArmyModel {
@@ -32,7 +25,8 @@ export class ArmyModel {
   private readonly entityModelMap: Map<number, ModelType> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
-  private readonly labels: Map<number, LabelData> = new Map();
+  private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
+  private readonly labelsGroup: THREE.Group;
 
   // Animation and state management
   private readonly animationStates: Float32Array;
@@ -48,11 +42,13 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
+  private readonly boatScale = new THREE.Vector3(0.3, 0.3, 0.3);
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
     this.dummyObject = new THREE.Object3D();
     this.loadPromise = this.loadModels();
+    this.labelsGroup = labelsGroup || new THREE.Group();
 
     // Initialize animation arrays
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
@@ -190,7 +186,11 @@ export class ArmyModel {
   ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
+      const targetScale = isActiveModel
+        ? modelType === ModelType.Boat
+          ? this.boatScale
+          : this.normalScale
+        : this.zeroScale;
 
       this.updateInstanceTransform(position, targetScale, rotation);
       this.updateInstanceMeshes(modelData, index, color);
@@ -482,7 +482,9 @@ export class ArmyModel {
     if (!movement) return;
 
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
-    const targetAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
+    const modelType = this.entityModelMap.get(entityId);
+    const baseAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
+    const targetAngle = baseAngle + (modelType === ModelType.Boat ? Math.PI / 3 : 0);
 
     movement.targetRotation = targetAngle;
     if (movement.currentRotation === 0) {
@@ -554,13 +556,13 @@ export class ArmyModel {
     label.position.y += 1.5;
 
     this.labels.set(entityId, { label, entityId });
-    this.scene.add(label);
+    this.labelsGroup.add(label);
   }
 
   public removeLabel(entityId: number): void {
     const labelData = this.labels.get(entityId);
     if (labelData) {
-      this.scene.remove(labelData.label);
+      this.labelsGroup.remove(labelData.label);
       this.labels.delete(entityId);
     }
   }
@@ -575,14 +577,14 @@ export class ArmyModel {
 
   public removeLabelsFromScene(): void {
     this.labels.forEach((labelData) => {
-      this.scene.remove(labelData.label);
+      this.labelsGroup.remove(labelData.label);
     });
   }
 
   public addLabelsToScene(): void {
     this.labels.forEach((labelData) => {
-      if (!this.scene.children.includes(labelData.label)) {
-        this.scene.add(labelData.label);
+      if (!this.labelsGroup.children.includes(labelData.label)) {
+        this.labelsGroup.add(labelData.label);
       }
     });
   }

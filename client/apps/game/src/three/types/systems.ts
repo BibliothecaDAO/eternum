@@ -17,7 +17,7 @@ export type StructureSystemUpdate = {
   structureType: StructureType;
   stage: StructureProgress;
   level: number;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
   hasWonder: boolean;
 };
 
