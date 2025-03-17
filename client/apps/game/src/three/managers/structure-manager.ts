@@ -1,11 +1,11 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
-import { LabelManager } from "@/three/managers/label-manager";
-import { StructureLabelPaths, StructureModelPaths } from "@/three/scenes/constants";
+import { StructureModelPaths } from "@/three/scenes/constants";
 import { FELT_CENTER } from "@/ui/config";
-import { ID, StructureType } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { RenderChunkSize, StructureInfo, StructureSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
@@ -14,12 +14,25 @@ const myColor = new THREE.Color("lime");
 
 const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
+
+const ICONS = {
+  ARMY: "/textures/army_label.png",
+  MY_ARMY: "/textures/my_army_label.png",
+  MY_REALM: "/textures/my_realm_label.png",
+  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
+  REALM_WONDER: "/textures/realm_wonder_label.png",
+  STRUCTURES: {
+    [StructureType.Realm]: "/textures/realm_label.png",
+    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
+    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+  } as Record<StructureType, string>,
+};
+
 export class StructureManager {
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
-  private labelManagers: Map<StructureType, LabelManager> = new Map();
-  //private labels: Map<number, THREE.Points> = new Map();
-  private labels: Map<number, THREE.Points> = new Map();
+  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
   structures: Structures = new Structures();
@@ -35,6 +48,8 @@ export class StructureManager {
 
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
+      // Update labels when ownership changes
+      this.updateVisibleStructures();
     });
   }
 
@@ -74,11 +89,6 @@ export class StructureManager {
         .then((instancedModels) => {
           this.structureModels.set(structureType, instancedModels);
           instancedModels.forEach((model) => this.scene.add(model.group));
-
-          const labelManager = new LabelManager(
-            StructureLabelPaths[StructureType[structureType] as unknown as StructureType],
-          );
-          this.labelManagers.set(structureType, labelManager);
         })
         .catch((error) => {
           console.error(`Failed to load models for ${StructureType[structureType]}:`, error);
@@ -117,6 +127,7 @@ export class StructureManager {
   updateChunk(chunkKey: string) {
     this.currentChunk = chunkKey;
     this.updateVisibleStructures();
+    this.showLabels();
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
@@ -135,27 +146,31 @@ export class StructureManager {
 
   private updateVisibleStructures() {
     const _structures = this.structures.getStructures();
+    const visibleStructureIds = new Set<ID>();
+
     for (const [structureType, structures] of _structures) {
       const visibleStructures = this.getVisibleStructures(structures);
       const models = this.structureModels.get(structureType);
 
       if (models && models.length > 0) {
-        // Reset all models for this structure type
         models.forEach((model) => {
           model.setCount(0);
         });
 
-        // Clear the entityIdMap for this structure type
         this.entityIdMaps.set(structureType, new Map());
 
         visibleStructures.forEach((structure) => {
+          visibleStructureIds.add(structure.entityId);
           const position = getWorldPositionForHex(structure.hexCoords);
-          if (!this.labels.has(structure.entityId)) {
-            const labelManager = this.labelManagers.get(structureType)!;
-            const label = labelManager.createLabel(position, structure.isMine ? myColor : neutralColor);
-            this.labels.set(structure.entityId, label);
-            this.scene.add(label);
+
+          if (this.entityIdLabels.has(structure.entityId)) {
+            const label = this.entityIdLabels.get(structure.entityId)!;
+            label.position.copy(position);
+            label.position.y += 1.5;
+          } else {
+            this.addEntityIdLabel(structure, position);
           }
+
           this.dummy.position.copy(position);
 
           if (structureType === StructureType.Bank) {
@@ -173,14 +188,23 @@ export class StructureManager {
           modelType.setMatrixAt(currentCount, this.dummy.matrix);
           modelType.setCount(currentCount + 1);
 
-          // Add the entityId to the map for this instance
           this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
         });
 
-        // Update all models
         models.forEach((model) => model.needsUpdate());
       }
     }
+
+    const labelsToRemove: ID[] = [];
+    this.entityIdLabels.forEach((label, entityId) => {
+      if (!visibleStructureIds.has(entityId)) {
+        labelsToRemove.push(entityId);
+      }
+    });
+
+    labelsToRemove.forEach((entityId) => {
+      this.removeEntityIdLabel(entityId);
+    });
   }
 
   private getVisibleStructures(structures: Map<ID, StructureInfo>): StructureInfo[] {
@@ -217,6 +241,96 @@ export class StructureManager {
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.updateAnimations(deltaTime));
     });
+  }
+
+  // Label Management Methods
+  private addEntityIdLabel(structure: StructureInfo, position: THREE.Vector3) {
+    const labelDiv = document.createElement("div");
+    labelDiv.classList.add(
+      "rounded-md",
+      "bg-brown/50",
+      "text-gold",
+      "p-1",
+      "-translate-x-1/2",
+      "text-xs",
+      "flex",
+      "items-center",
+      "gap-2",
+    );
+
+    // Create icon container
+    const iconContainer = document.createElement("div");
+    iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+
+    // Select appropriate icon
+    let iconPath = ICONS.STRUCTURES[structure.structureType];
+    if (structure.structureType === StructureType.Realm) {
+      if (structure.hasWonder) {
+        iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
+      } else {
+        iconPath = structure.isMine ? ICONS.MY_REALM : ICONS.STRUCTURES[StructureType.Realm];
+      }
+    }
+
+    // Create and set icon image
+    const iconImg = document.createElement("img");
+    iconImg.src = iconPath;
+    iconImg.classList.add("w-full", "h-full", "object-contain");
+    iconContainer.appendChild(iconImg);
+
+    // Create content container
+    const contentContainer = document.createElement("div");
+    contentContainer.classList.add("flex", "flex-col");
+
+    // Add owner address
+    const ownerText = document.createElement("span");
+    console.log("structure.owner.address", structure.owner);
+    ownerText.textContent = structure.owner.address
+      ? `0x${structure.owner.address.toString(16).slice(0, 6)}...`
+      : "Unknown";
+    ownerText.classList.add("text-xs", "opacity-80");
+
+    // Add structure type and level
+    const typeText = document.createElement("strong");
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.level > 0 ? `Lvl ${structure.level}` : ""}`;
+    typeText.classList.add("text-xs");
+
+    contentContainer.appendChild(ownerText);
+    contentContainer.appendChild(typeText);
+
+    labelDiv.appendChild(iconContainer);
+    labelDiv.appendChild(contentContainer);
+
+    const label = new CSS2DObject(labelDiv);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    this.entityIdLabels.set(structure.entityId, label);
+    this.scene.add(label);
+  }
+
+  private removeEntityIdLabel(entityId: ID) {
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      this.scene.remove(label);
+      this.entityIdLabels.delete(entityId);
+    }
+  }
+
+  public removeLabelsFromScene() {
+    this.entityIdLabels.forEach((label) => {
+      this.scene.remove(label);
+    });
+  }
+
+  public showLabels() {
+    this.removeLabelsFromScene();
+    this.entityIdLabels.forEach((label, entityId) => {
+      if (!this.scene.children.includes(label)) {
+        this.scene.add(label);
+      }
+    });
+    this.updateVisibleStructures();
   }
 }
 

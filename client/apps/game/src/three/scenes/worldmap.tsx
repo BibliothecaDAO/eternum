@@ -378,6 +378,7 @@ export default class WorldmapScene extends HexagonScene {
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
     this.armyManager.addLabelsToScene();
+    this.structureManager.showLabels();
     this.clearTileEntityCache();
   }
 
@@ -386,6 +387,7 @@ export default class WorldmapScene extends HexagonScene {
       this.minimap.hideMinimap();
     }
     this.armyManager.removeLabelsFromScene();
+    this.structureManager.removeLabelsFromScene();
   }
 
   // used to track the position of the armies on the map
