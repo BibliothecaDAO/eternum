@@ -21,12 +21,12 @@ type LoadingState = {
   [key in LoadingStateKey]: boolean;
 };
 
-export interface WorldStore {
+export interface WorldSlice {
   loadingStates: LoadingState;
   setLoading: (key: LoadingStateKey, value: boolean) => void;
 }
 
-export const createWorldStoreSlice = (set: any) => ({
+export const createWorldSlice = (set: any) => ({
   loadingStates: {
     [LoadingStateKey.SelectedStructure]: false,
     [LoadingStateKey.Market]: false,
@@ -43,7 +43,7 @@ export const createWorldStoreSlice = (set: any) => ({
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>
-    set((state: WorldStore) => ({
+    set((state: WorldSlice) => ({
       loadingStates: {
         ...state.loadingStates,
         [key]: value,

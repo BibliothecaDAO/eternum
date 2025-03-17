@@ -1,7 +1,7 @@
 import ControllerConnector from "@cartridge/connector/controller";
 import { Account, AccountInterface } from "starknet";
 
-export interface AccountStore {
+export interface AccountSlice {
   account: Account | AccountInterface | null;
   setAccount: (account: AccountInterface | null) => void;
   connector: ControllerConnector | null;
@@ -10,7 +10,7 @@ export interface AccountStore {
   setAddressName: (addressName: string | undefined) => void;
 }
 
-export const createAccountStoreSlice = (set: any) => ({
+export const createAccountSlice = (set: any) => ({
   account: null,
   setAccount: (account: AccountInterface | null) => set({ account }),
   connector: null,

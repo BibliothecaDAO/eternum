@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
-import { RealmLevels } from "@bibliothecadao/eternum";
+import { RealmLevels, Structure } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { ClaimTab, ManageTab, MilitaryTab, OverviewTab } from "./tabs";
@@ -21,7 +21,7 @@ export const useRealmTabs = () => {
 
 export const RealmPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const structures = usePlayerStructures();
+  const structures: Structure[] = usePlayerStructures();
   const {
     account: { account },
   } = useDojo();

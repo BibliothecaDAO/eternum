@@ -1,5 +1,5 @@
 import { displayAddress } from "@/shared/lib/utils";
-import { useStore } from "@/shared/store/use-store";
+import { useStore } from "@/shared/store";
 import { Loading } from "@/shared/ui/loading";
 import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";

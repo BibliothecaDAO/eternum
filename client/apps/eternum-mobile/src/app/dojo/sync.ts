@@ -1,4 +1,4 @@
-import { LoadingStateKey, WorldStore } from "@/shared/store/use-world-loading";
+import { LoadingStateKey, WorldSlice } from "@/shared/store/slices/world-loading-slice";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
@@ -136,7 +136,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 };
 
-export const initialSync = async (setup: SetupResult, state: WorldStore) => {
+export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   const setLoading = state.setLoading;
 
   await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
