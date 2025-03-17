@@ -117,6 +117,5 @@ const getToriiCurrentBlock = async () => {
     method: "GET",
   });
   const data = await response.json();
-
   return data[0].head;
 };

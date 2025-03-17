@@ -190,22 +190,6 @@ async function handleTorii() {
         message: `Torii installation failed: ${error.message}`,
       });
 
-      // Suggest manual installation steps
-      const manualInstructions =
-        "Please try manual installation:\n" +
-        "1. Open PowerShell as Administrator\n" +
-        "2. Run: Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process\n" +
-        "3. Run: Invoke-WebRequest -Uri https://install.dojoengine.org/install.ps1 -OutFile install.ps1\n" +
-        "4. Run: ./install.ps1\n" +
-        `5. Run: dojoup -v ${TORII_VERSION}\n` +
-        "6. Restart the app";
-
-      errorLog(manualInstructions);
-      sendNotification({
-        type: "Error",
-        message: "Manual installation may be required. See console for instructions.",
-      });
-
       // Wait before retrying
       await timeout(10000);
       return handleTorii(); // Retry after delay
@@ -226,66 +210,98 @@ async function handleTorii() {
   const toriiTomlPath = path.join(__dirname, "./torii/torii.toml");
 
   while (true) {
-    const dbPath = getDbPath();
-    mkdirSync(dbPath, { recursive: true });
+    try {
+      const dbPath = getDbPath();
+      mkdirSync(dbPath, { recursive: true });
 
-    normalLog(
-      `Launching torii with params:\n- network ${rpc.name}\n- rpc ${rpc.url}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
-    );
+      normalLog(
+        `Launching torii with params:\n- network ${rpc.name}\n- rpc ${rpc.url}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
+      );
 
-    // Create process with detached option
-    child = spawn.spawn(
-      toriiPath,
-      [
-        "--world",
-        WORLD_ADDRESS,
-        "--http.cors_origins",
-        "*",
-        "--config",
-        toriiTomlPath,
-        "--db-dir",
-        dbPath,
-        "--rpc",
-        rpc.url,
-        "--indexing.world_block",
-        rpc.worldBlock.toString(),
-      ],
-      {
-        detached: true, // Make process leader of a new process group
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-
-    child.stdout.on("data", (data: any) => {
-      //   console.log("data", data);
-      //   normalLog(`stdout: ${data}`);
-    });
-
-    child.stderr.on("error", (data: any) => {
-      //   console.log("data", data);
-      errorLog(`stderr: ${data}`);
-      sendNotification({ type: "Error", message: data });
-    });
-
-    let firstPass = true;
-    while (child.exitCode === null) {
-      if (firstPass) {
-        normalLog("Torii is running");
-        sendNotification({ type: "Info", message: "Torii on " + rpc.name });
-        firstPass = false;
+      // Verify files exist before launching
+      if (!fs.existsSync(toriiPath)) {
+        throw new Error(`Torii executable not found at: ${toriiPath}`);
       }
-      await timeout(2000);
+      if (!fs.existsSync(toriiTomlPath)) {
+        throw new Error(`Config file not found at: ${toriiTomlPath}`);
+      }
+      if (!fs.existsSync(dbPath)) {
+        throw new Error(`Database directory not found at: ${dbPath}`);
+      }
+
+      child = spawn.spawn(
+        toriiPath,
+        [
+          "--world",
+          WORLD_ADDRESS,
+          "--http.cors_origins",
+          "*",
+          "--config",
+          toriiTomlPath,
+          "--db-dir",
+          dbPath,
+          "--rpc",
+          rpc.url,
+          "--indexing.world_block",
+          rpc.worldBlock.toString(),
+        ],
+        {
+          detached: true,
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
+
+      // Capture both stdout and stderr for better debugging
+      child.stdout.on("data", (data: Buffer) => {
+        normalLog(`Torii stdout: ${data.toString()}`);
+      });
+
+      child.stderr.on("data", (data: Buffer) => {
+        errorLog(`Torii stderr: ${data.toString()}`);
+        sendNotification({ type: "Error", message: data.toString() });
+      });
+
+      let firstPass = true;
+
+      // Wait for process to exit or be killed
+      await new Promise<void>((resolve) => {
+        child?.on("exit", (code, signal) => {
+          errorLog(`Torii process exited with code ${code} and signal ${signal}`);
+          resolve();
+        });
+        child?.on("error", (err) => {
+          errorLog(`Torii process error: ${err}`);
+          resolve();
+        });
+      });
+
+      // Only proceed if child still exists
+      if (child) {
+        if (firstPass) {
+          normalLog("Torii is running");
+          sendNotification({ type: "Info", message: "Torii on " + rpc.name });
+          firstPass = false;
+        }
+
+        const exitCode = child.exitCode;
+        child.removeAllListeners();
+
+        if (exitCode !== 0 && exitCode !== 137) {
+          errorLog(`Torii exited with code ${exitCode}`);
+          sendNotification({
+            type: "Error",
+            message: `Torii exited with code ${exitCode}. Check console for details.`,
+          });
+        }
+      }
+
+      warningLog("Torii exited, waiting for 3s for ports to be released");
+      await timeout(3000);
+    } catch (error) {
+      errorLog(`Error in handleTorii: ${error}`);
+      sendNotification({ type: "Error", message: `Torii error: ${error}` });
+      await timeout(3000); // Wait before retrying
     }
-
-    warningLog("Torii exited, waiting for 3s for ports to be released");
-    await timeout(3000);
-
-    if (child.exitCode !== 0 && child.exitCode !== 137) {
-      errorLog(`Torii exited with code ${child.exitCode}`);
-      sendNotification({ type: "Error", message: `Torii exited with code ${child.exitCode}` });
-    }
-
-    child.removeAllListeners();
   }
 }
 
@@ -351,26 +367,35 @@ async function installTorii(toriiPath: string) {
 }
 
 function killTorii() {
-  if (child) {
-    warningLog("Killing torii");
-    try {
-      // On Windows, we need to kill the process tree
-      if (osUtils.isWindows()) {
-        // Kill process tree using taskkill
-        spawn.sync("taskkill", ["/pid", child.pid.toString(), "/f", "/t"]);
-      } else {
-        // On Unix systems, kill process group
-        process.kill(-child.pid);
+  warningLog("Killing all torii processes");
+  try {
+    if (osUtils.isWindows()) {
+      // On Windows, kill all torii.exe processes
+      try {
+        spawn.sync("taskkill", ["/f", "/im", "torii.exe"]);
+      } catch (e) {
+        // Ignore errors if no processes found
       }
-
-      child = null;
-
-      // Additional cleanup to ensure ports are released
-      spawn.sync("timeout", ["/t", "2", "/nobreak"]); // Wait 2 seconds on Windows
-    } catch (error) {
-      errorLog(`Error killing Torii: ${error}`);
-      sendNotification({ type: "Error", message: `Failed to kill Torii: ${error}` });
+    } else {
+      // On Unix systems (Linux/MacOS), use pkill or killall
+      try {
+        // Try pkill first (more commonly available)
+        spawn.sync("pkill", ["-9", "torii"]);
+      } catch (e) {
+        try {
+          // Fallback to killall if pkill not available
+          spawn.sync("killall", ["-9", "torii"]);
+        } catch (e) {
+          // Ignore errors if no processes found
+        }
+      }
     }
+  } catch (error) {
+    errorLog(`Error killing Torii processes: ${error}`);
+    sendNotification({ type: "Error", message: `Failed to kill Torii processes: ${error}` });
+  } finally {
+    child = null; // Clear our child reference
+    warningLog("Torii processes killed");
   }
 }
 
