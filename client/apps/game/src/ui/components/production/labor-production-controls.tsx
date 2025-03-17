@@ -10,7 +10,7 @@ import {
   RealmInfo,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
@@ -18,12 +18,13 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     setup: {
       account: { account },
       systemCalls: { burn_other_resources_for_labor_production },
-      components: { Resource },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
+
+  const resourceManager = useResourceManager(realm.entityId);
 
   const handleProduce = async () => {
     setIsLoading(true);
@@ -67,14 +68,8 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   }, [laborConfig, selectedResources]);
 
   const availableResources = useMemo(() => {
-    return Object.values(ResourcesIds)
-      .filter((id) => typeof id === "number")
-      .map((id) => ({
-        id: id as number,
-        // todo: fix this
-        balance: 0,
-      }));
-  }, [realm.entityId]);
+    return resourceManager.getResourceBalances();
+  }, [resourceManager]);
 
   const addResource = () => {
     const availableResourceIds = Object.values(ResourcesIds).filter(
@@ -103,7 +98,9 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
 
   const handleMaxClick = (index: number) => {
     const resource = selectedResources[index];
-    const balance = divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0));
+    const balance = divideByPrecision(
+      Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+    );
     const newResources = [...selectedResources];
     newResources[index].amount = balance;
     setSelectedResources(newResources);
@@ -146,7 +143,9 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
                       MAX
                     </button>
                     <span className="text-sm font-medium text-gold/60">
-                      {divideByPrecision(Number(availableResources.find((r) => r.id === resource.id)?.balance || 0))}
+                      {divideByPrecision(
+                        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+                      )}
                     </span>
                   </div>
                 </div>
