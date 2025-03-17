@@ -50,8 +50,7 @@ const getFlatMode = () => {
 export const GRAPHICS_SETTING = await checkGraphicsSettings();
 export const IS_FLAT_MODE = getFlatMode();
 
-// export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-export const IS_MOBILE = true;
+export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 
