@@ -3,35 +3,29 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { RealmLevelNames, Structure } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { FELT_CENTER, getLevelName, Structure } from "@bibliothecadao/eternum";
+import { usePlayerStructures } from "@bibliothecadao/react";
 import { ChevronDown, Copy } from "lucide-react";
+import { useMemo } from "react";
 
 export const RealmInfoHeader = () => {
   const structures: Structure[] = usePlayerStructures();
   const { structureEntityId, setStructureEntityId } = useStore();
-  const {
-    account: { account },
-  } = useDojo();
 
   const selectedStructure = structures.find((s) => s.entityId === structureEntityId);
 
-  const handleCopyCoords = () => {
-    if (selectedStructure) {
-      navigator.clipboard.writeText(
-        `${selectedStructure.structure.base.coord_x},${selectedStructure.structure.base.coord_y}`,
-      );
-    }
-  };
-
-  const getRealmLevelName = (level: number) => {
-    const levelMap: Record<number, keyof typeof RealmLevelNames> = {
-      0: "Settlement",
-      1: "City",
-      2: "Kingdom",
-      3: "Empire",
+  const adjustedCoords = useMemo(() => {
+    if (!selectedStructure) return null;
+    return {
+      x: selectedStructure.structure.base.coord_x - FELT_CENTER,
+      y: selectedStructure.structure.base.coord_y - FELT_CENTER,
     };
-    return RealmLevelNames[levelMap[level] || "Settlement"];
+  }, [selectedStructure]);
+
+  const handleCopyCoords = () => {
+    if (adjustedCoords) {
+      navigator.clipboard.writeText(`${adjustedCoords.x},${adjustedCoords.y}`);
+    }
   };
 
   return (
@@ -45,9 +39,7 @@ export const RealmInfoHeader = () => {
 
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono">
-            {selectedStructure
-              ? `${selectedStructure.structure.base.coord_x},${selectedStructure.structure.base.coord_y}`
-              : "No coordinates"}
+            {adjustedCoords ? `${adjustedCoords.x},${adjustedCoords.y}` : "No coordinates"}
             <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" onClick={handleCopyCoords}>
               <Copy className="h-4 w-4" />
             </Button>
@@ -74,7 +66,7 @@ export const RealmInfoHeader = () => {
               </div>
             </SelectStructureDrawer>
             <span className="text-xl font-normal text-muted-foreground">
-              {selectedStructure ? getRealmLevelName(selectedStructure.structure.base.level) : "No level"}
+              {selectedStructure ? getLevelName(selectedStructure.structure.base.level) : "No level"}
             </span>
           </h1>
         </div>
