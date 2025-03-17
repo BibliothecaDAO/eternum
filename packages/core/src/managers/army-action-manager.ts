@@ -296,7 +296,9 @@ export class ArmyActionManager {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
 
-    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const overrideId = getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]);
+
+    console.log({ title: "optimisticExplorerUpdate adding override", overrideId, newPosition });
 
     if (!stamina) return;
 
@@ -319,6 +321,10 @@ export class ArmyActionManager {
         },
       },
     });
+
+    return () => {
+      this.components.ExplorerTroops.removeOverride(overrideId);
+    };
   };
 
   private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
@@ -337,6 +343,10 @@ export class ArmyActionManager {
         },
       },
     });
+
+    return () => {
+      this.components.Resource.removeOverride(overrideId);
+    };
   };
 
   private readonly _optimisticTileUpdate = (newPosition: HexPosition, previousPosition: HexPosition) => {
@@ -366,6 +376,11 @@ export class ArmyActionManager {
         biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
       },
     });
+
+    return () => {
+      this.components.Tile.removeOverride(previousEntity);
+      this.components.Tile.removeOverride(newEntity);
+    };
   };
 
   private readonly _optimisticExplore = (col: number, row: number) => {
@@ -374,16 +389,25 @@ export class ArmyActionManager {
 
     let overrideId = uuid();
 
-    this._optimisticExplorerUpdate(configManager.getExploreStaminaCost(), newPosition);
-    this._optimisticTileUpdate(newPosition, previousPosition);
-    this._optimisticCapacityUpdate(
+    const removeExplorerOverride = this._optimisticExplorerUpdate(configManager.getExploreStaminaCost(), newPosition);
+    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
+    const removeCapacityOverride = this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
       configManager.getExploreReward() * configManager.getResourceWeightKg(ResourcesIds.Wood),
     );
-    this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
+    const removeFoodCostsOverride = this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
 
-    return overrideId;
+    return {
+      removeVisualOverrides: () => {
+        removeExplorerOverride?.();
+        removeTileOverride();
+      },
+      removeNonVisualOverrides: () => {
+        removeCapacityOverride?.();
+        removeFoodCostsOverride?.();
+      },
+    };
   };
 
   private readonly _findDirection = (path: HexPosition[]) => {
@@ -398,7 +422,7 @@ export class ArmyActionManager {
     const direction = this._findDirection(path);
     if (direction === undefined || direction === null) return;
 
-    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
+    const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticExplore(path[1].col, path[1].row);
 
     this.provider
       .explorer_move({
@@ -409,30 +433,36 @@ export class ArmyActionManager {
       })
       .catch((e) => {
         console.log({ e });
+        removeVisualOverrides();
       })
       .finally(() => {
         // remove all non visual overrides
-        this._removeOverride(overrideId);
+        removeNonVisualOverrides();
       });
   };
 
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
-    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const overrideId = uuid();
 
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
 
-    this._optimisticExplorerUpdate(configManager.getTravelStaminaCost() * pathLength, newPosition);
-    this._optimisticTileUpdate(newPosition, previousPosition);
-    this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
+    const removeExplorerOverride = this._optimisticExplorerUpdate(
+      configManager.getTravelStaminaCost() * pathLength,
+      newPosition,
+    );
+    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
+    const removeFoodCostsOverride = this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
 
-    return overrideId;
-  };
-
-  // you can remove all non visual overrides when the action fails or succeeds
-  private readonly _removeOverride = (overrideId: string) => {
-    this.components.Resource.removeOverride(overrideId);
-    this.components.ExplorerTroops.removeOverride(overrideId);
+    return {
+      removeVisualOverrides: () => {
+        removeExplorerOverride?.();
+        removeTileOverride();
+      },
+      removeNonVisualOverrides: () => {
+        removeFoodCostsOverride?.();
+      },
+    };
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
@@ -446,20 +476,29 @@ export class ArmyActionManager {
     }
 
     // need to add back precision for optimistic resource update
-    this.resourceManager.optimisticResourceUpdate(
+    const removeWheatResourceOverride = this.resourceManager.optimisticResourceUpdate(
       overrideId,
       ResourcesIds.Wheat,
       -BigInt(multiplyByPrecision(costs.wheatPayAmount)),
     );
-    this.resourceManager.optimisticResourceUpdate(
+    const removeFishResourceOverride = this.resourceManager.optimisticResourceUpdate(
       overrideId,
       ResourcesIds.Fish,
       -BigInt(multiplyByPrecision(costs.fishPayAmount)),
     );
+
+    return () => {
+      removeWheatResourceOverride?.();
+      removeFishResourceOverride?.();
+    };
   };
 
   private readonly _travelToHex = async (signer: Account | AccountInterface, path: HexPosition[]) => {
-    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
+    const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticTravelHex(
+      path[path.length - 1].col,
+      path[path.length - 1].row,
+      path.length - 1,
+    );
 
     const directions = path
       .map((_, i) => {
@@ -479,10 +518,11 @@ export class ArmyActionManager {
         explore: false,
       })
       .catch((e) => {
+        removeVisualOverrides();
         console.log({ e });
       })
       .finally(() => {
-        this._removeOverride(overrideId);
+        removeNonVisualOverrides();
       });
   };
 

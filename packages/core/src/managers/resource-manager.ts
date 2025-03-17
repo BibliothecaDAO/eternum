@@ -588,6 +588,10 @@ export class ResourceManager {
       console.error(error);
       this.components.Resource.removeOverride(overrideId);
     }
+
+    return () => {
+      this.components.Resource.removeOverride(overrideId);
+    };
   };
 
   public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {

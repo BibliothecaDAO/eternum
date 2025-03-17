@@ -4,6 +4,7 @@ import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientComponents,
+  getEntityIdFromKeys,
   HYPERSTRUCTURE_CONFIG_ID,
   PlayerStructure,
   SetupResult,
@@ -38,14 +39,16 @@ const handleVisualOverrides = (entityBatch: Record<string, any>, components: Cli
   });
 
   if (hasExplorerUpdate || hasTileUpdate) {
-    console.log({ title: "removing override", entity, hasExplorerUpdate, hasTileUpdate });
-
     if (hasExplorerUpdate) {
-      components.ExplorerTroops.removeOverride(entity);
+      const update = updates["s1_eternum-ExplorerTroops"]?.coord?.value;
+      if (!update) return;
+      const overrideId = getEntityIdFromKeys([BigInt(update.x.value), BigInt(update.y.value)]);
+      components.ExplorerTroops.removeOverride(overrideId);
     }
 
     if (hasTileUpdate) {
-      components.Tile.removeOverride(entity);
+      const overrideId = entity;
+      components.Tile.removeOverride(overrideId);
     }
   }
 };
