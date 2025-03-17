@@ -1,6 +1,5 @@
 import { displayAddress } from "@/shared/lib/utils";
-import { useAccountStore } from "@/shared/store/use-account-store";
-import { useAddressStore } from "@/shared/store/use-address-store";
+import { useStore } from "@/shared/store/use-store";
 import { Loading } from "@/shared/ui/loading";
 import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
@@ -54,13 +53,13 @@ const useControllerAccount = () => {
 
   useEffect(() => {
     if (account) {
-      useAccountStore.getState().setAccount(account);
+      useStore.getState().setAccount(account);
     }
   }, [account, isConnected]);
 
   useEffect(() => {
     if (connector) {
-      useAccountStore.getState().setConnector(connector as unknown as ControllerConnector);
+      useStore.getState().setConnector(connector as unknown as ControllerConnector);
     }
   }, [connector, isConnected]);
 
@@ -91,7 +90,7 @@ const DojoContextProvider = ({
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
 }) => {
-  const setAddressName = useAddressStore((state) => state.setAddressName);
+  const setAddressName = useStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
@@ -139,7 +138,7 @@ const DojoContextProvider = ({
     };
 
     if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
+      useStore.getState().setAccount(controllerAccount);
 
       // const addressName = runQuery([
       //   HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
