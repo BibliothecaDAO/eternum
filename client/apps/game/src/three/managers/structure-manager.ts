@@ -3,7 +3,7 @@ import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { StructureModelPaths } from "@/three/scenes/constants";
 import { FELT_CENTER } from "@/ui/config";
-import { ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { RenderChunkSize, StructureInfo, StructureSystemUpdate } from "../types";
@@ -115,8 +115,20 @@ export class StructureManager {
     }
 
     const key = structureType;
-    // Add the structure to the structures map
-    this.structures.addStructure(entityId, key, normalizedCoord, stage, level, owner, hasWonder);
+    // Add the structure to the structures map with the complete owner info
+    this.structures.addStructure(
+      entityId,
+      key,
+      normalizedCoord,
+      stage,
+      level,
+      {
+        address: owner.address,
+        ownerName: owner.ownerName || "",
+        guildName: owner.guildName || "",
+      },
+      hasWonder,
+    );
 
     // Update the visible structures if this structure is in the current chunk
     if (this.isInCurrentChunk(normalizedCoord)) {
@@ -282,17 +294,25 @@ export class StructureManager {
     const contentContainer = document.createElement("div");
     contentContainer.classList.add("flex", "flex-col");
 
-    // Add owner address
+    // Add owner name and address
     const ownerText = document.createElement("span");
-    console.log("structure.owner.address", structure.owner);
-    ownerText.textContent = structure.owner.address
-      ? `0x${structure.owner.address.toString(16).slice(0, 6)}...`
-      : "Unknown";
+    const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
+    ownerText.textContent = displayName;
     ownerText.classList.add("text-xs", "opacity-80");
 
+    // Add guild name if available
+    if (structure.owner.guildName) {
+      const guildText = document.createElement("span");
+      guildText.textContent = structure.owner.guildName;
+      guildText.classList.add("text-xs", "text-gold/70", "italic");
+      contentContainer.appendChild(guildText);
+    }
+    console.log(structure);
     // Add structure type and level
     const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.level > 0 ? `Lvl ${structure.level}` : ""}`;
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+      structure.structureType === StructureType.Hyperstructure ? `(Stage ${structure.stage + 1})` : ""
+    }`;
     typeText.classList.add("text-xs");
 
     contentContainer.appendChild(ownerText);
@@ -343,7 +363,7 @@ class Structures {
     hexCoords: { col: number; row: number },
     stage: number = 0,
     level: number = 0,
-    owner: { address: bigint },
+    owner: { address: bigint; ownerName: string; guildName: string },
     hasWonder: boolean,
   ) {
     if (!this.structures.has(structureType)) {

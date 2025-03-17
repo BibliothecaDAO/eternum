@@ -25,7 +25,7 @@ export interface StructureInfo {
   stage: number;
   level: number;
   isMine: boolean;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
 }
