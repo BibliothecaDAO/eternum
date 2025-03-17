@@ -6,4 +6,4 @@ export const MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
 export const SEPOLIA_WORLD_BLOCK = 456100;
 export const SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia";
 
-export const TORII_VERSION = "1.0.6";
+export const TORII_VERSION = "1.3.0";
