@@ -4,7 +4,7 @@ import { LeftView } from "@/types";
 import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
 import { AllResourceArrivals } from "@/ui/components/trading/resource-arrivals";
-import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
+import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
@@ -101,12 +101,10 @@ export const LeftNavigationModule = memo(() => {
               tooltipLocation="top"
               label="Details"
               active={view === LeftView.EntityView}
-              size={IS_MOBILE ? "lg" : "xl"}
+              size={"xl"}
               onClick={() => setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView)}
             />
-            {!IS_MOBILE && (
-              <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
-            )}
+            <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
           </div>
         ),
       },
@@ -120,7 +118,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={military}
             active={view === LeftView.MilitaryView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.MilitaryView ? LeftView.None : LeftView.MilitaryView)}
           />
         ),
@@ -135,7 +133,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={construction}
             active={view === LeftView.ConstructionView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.ConstructionView ? LeftView.None : LeftView.ConstructionView)}
           />
         ),
@@ -149,7 +147,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label="Resource Arrivals"
             active={view === LeftView.ResourceArrivals}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
           />
         ),
@@ -163,7 +161,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={worldStructures}
             active={view === LeftView.WorldStructuresView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() =>
               setView(view === LeftView.WorldStructuresView ? LeftView.None : LeftView.WorldStructuresView)
             }
@@ -180,7 +178,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={trade}
             active={isPopupOpen(trade)}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
           />
         ),
@@ -190,7 +188,7 @@ export const LeftNavigationModule = memo(() => {
         button: (
           <CircleButton
             image={BuildingThumbs.resources}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             tooltipLocation="top"
             label="Balance"
             active={view === LeftView.ResourceTable}
@@ -208,7 +206,6 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.trade,
-        ...(IS_MOBILE ? [MenuEnum.resourceTable] : []),
       ].includes(item.name as MenuEnum),
     );
 
@@ -225,7 +222,7 @@ export const LeftNavigationModule = memo(() => {
       <div className="flex-grow overflow-hidden">
         <div
           className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
-            isOffscreen(view) ? (IS_MOBILE ? "-translate-x-[92%]" : "-translate-x-[88%]") : ""
+            isOffscreen(view) ? "-translate-x-[88%]" : ""
           }`}
         >
           <BaseContainer
@@ -256,11 +253,9 @@ export const LeftNavigationModule = memo(() => {
           </motion.div>
         </div>
       </div>
-      {!IS_MOBILE && (
-        <div className="flex">
-          <Chat />
-        </div>
-      )}
+      <div className="flex">
+        <Chat />
+      </div>
     </div>
   );
 });

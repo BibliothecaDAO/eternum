@@ -25,7 +25,6 @@ import {
   hasEnoughPopulationForBuilding,
   ID,
   isEconomyBuilding,
-  isMilitaryBuilding,
   ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
@@ -34,7 +33,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
-import { InfoIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, InfoIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
@@ -69,6 +68,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
+
+  // Add this state for expanded sections
+  const [expandedTypes, setExpandedTypes] = useState<Record<string, boolean>>({});
+
+  const toggleArmyType = (armyType: string) => {
+    setExpandedTypes((prev) => ({
+      ...prev,
+      [armyType]: !prev[armyType],
+    }));
+  };
 
   const tabs = useMemo(
     () => [
@@ -137,6 +146,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           <div className="economy-selector grid grid-cols-2 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
+              .sort((a, b) => {
+                const buildingA = BuildingType[a as keyof typeof BuildingType];
+                const buildingB = BuildingType[b as keyof typeof BuildingType];
+
+                if (buildingA === BuildingType.ResourceWheat) return -1;
+                if (buildingB === BuildingType.ResourceWheat) return 1;
+                if (buildingA === BuildingType.ResourceFish) return -1;
+                if (buildingB === BuildingType.ResourceFish) return 1;
+                return 0;
+              })
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
@@ -188,11 +207,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
                     resourceName={
-                      isFishingVillage
-                        ? ResourcesIds[ResourcesIds.Fish]
-                        : isFarm
-                          ? ResourcesIds[ResourcesIds.Wheat]
-                          : undefined
+                      configManager.getResourceBuildingProduced(building)
+                        ? (ResourcesIds[
+                            configManager.getResourceBuildingProduced(building)
+                          ] as keyof typeof ResourcesIds)
+                        : undefined
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
                     hasFunds={hasBalance}
@@ -211,53 +230,103 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: (
-          <div className="grid grid-cols-2 gap-2 p-2">
-            {" "}
-            {buildingTypes
-              .filter((a) => isMilitaryBuilding(BuildingType[a as keyof typeof BuildingType]))
-              .map((buildingType, index) => {
-                const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const buildingCost = getBuildingCosts(entityId, dojo.setup.components, building);
+          <div className="p-2 space-y-2">
+            {["Archery", "Stable", "Barracks"].map((armyType) => {
+              const militaryBuildings = buildingTypes.filter((a) => {
+                const building = BuildingType[a as keyof typeof BuildingType];
+                const info = getMilitaryBuildingInfo(building);
+                return info && info.type === armyType;
+              });
 
-                const hasBalance = checkBalance(buildingCost);
+              if (militaryBuildings.length === 0) return null;
 
-                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+              return (
+                <div key={armyType} className="border border-gold/20 rounded-md">
+                  <button
+                    className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
+                    onClick={() => toggleArmyType(armyType)}
+                  >
+                    <div className="flex items-center">
+                      <h4 className="text-gold font-medium">{armyType}</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">
+                        {militaryBuildings.map((buildingType, idx) => {
+                          const building = BuildingType[buildingType as keyof typeof BuildingType];
+                          const info = getMilitaryBuildingInfo(building);
+                          if (info?.resourceId) {
+                            return (
+                              <ResourceIcon
+                                key={idx}
+                                resource={findResourceById(info.resourceId)?.trait || ""}
+                                size="xs"
+                                className="mr-1"
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                        {militaryBuildings.length} buildings
+                      </div>
+                      <div className="text-gold ml-2">
+                        {expandedTypes[armyType] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </div>
+                    </div>
+                  </button>
 
-                const isBarracks = building === BuildingType.ResourceKnightT1;
-                const isArcheryRange = building === BuildingType.ResourceCrossbowmanT1;
-                const isStable = building === BuildingType.ResourcePaladinT1;
+                  {expandedTypes[armyType] && (
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                      {militaryBuildings
+                        .sort((a, b) => {
+                          const buildingA = BuildingType[a as keyof typeof BuildingType];
+                          const buildingB = BuildingType[b as keyof typeof BuildingType];
+                          const infoA = getMilitaryBuildingInfo(buildingA);
+                          const infoB = getMilitaryBuildingInfo(buildingB);
+                          return (infoA?.tier || 0) - (infoB?.tier || 0);
+                        })
+                        .map((buildingType, index) => {
+                          const building = BuildingType[buildingType as keyof typeof BuildingType];
+                          const buildingCost = getBuildingCosts(entityId, dojo.setup.components, building);
+                          const info = getMilitaryBuildingInfo(building);
 
-                return (
-                  <BuildingCard
-                    className={clsx({
-                      "barracks-card-selector": isBarracks,
-                      "archery-card-selector": isArcheryRange,
-                      "stable-card-selector": isStable,
-                    })}
-                    key={index}
-                    buildingId={building}
-                    onClick={() => {
-                      if (!canBuild) {
-                        return;
-                      }
-                      if (previewBuilding?.type === building) {
-                        setPreviewBuilding(null);
-                      } else {
-                        setPreviewBuilding({ type: building });
-                      }
-                    }}
-                    active={previewBuilding?.type === building}
-                    buildingName={BuildingTypeToString[building]}
-                    resourceName={
-                      ResourcesIds[configManager.getResourceBuildingProduced(building)] as keyof typeof ResourcesIds
-                    }
-                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
-                    hasFunds={hasBalance}
-                    hasPopulation={hasEnoughPopulation}
-                  />
-                );
-              })}
+                          const hasBalance = checkBalance(buildingCost);
+                          const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
+                          const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+
+                          return (
+                            <BuildingCard
+                              className={clsx("border border-gold/10", {
+                                "bg-emerald-900/20": canBuild,
+                                "border-emerald-700/50": canBuild,
+                              })}
+                              key={index}
+                              buildingId={building}
+                              onClick={() => {
+                                if (!canBuild) return;
+                                if (previewBuilding?.type === building) {
+                                  setPreviewBuilding(null);
+                                } else {
+                                  setPreviewBuilding({ type: building });
+                                }
+                              }}
+                              active={previewBuilding?.type === building}
+                              buildingName={`${BuildingTypeToString[building]} (T${info?.tier})`}
+                              resourceName={
+                                ResourcesIds[
+                                  configManager.getResourceBuildingProduced(building)
+                                ] as keyof typeof ResourcesIds
+                              }
+                              toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
+                              hasFunds={hasBalance}
+                              hasPopulation={hasEnoughPopulation}
+                            />
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ),
       },
@@ -664,4 +733,31 @@ export const BuildingInfo = ({
       )}
     </div>
   );
+};
+
+// Helper function to determine military building type and tier
+const getMilitaryBuildingInfo = (building: BuildingType) => {
+  // Check for Crossbowman buildings
+  if (building === BuildingType.ResourceCrossbowmanT1)
+    return { type: "Archery", tier: 1, resourceId: ResourcesIds.Crossbowman };
+  if (building === BuildingType.ResourceCrossbowmanT2)
+    return { type: "Archery", tier: 2, resourceId: ResourcesIds.CrossbowmanT2 };
+  if (building === BuildingType.ResourceCrossbowmanT3)
+    return { type: "Archery", tier: 3, resourceId: ResourcesIds.CrossbowmanT3 };
+
+  // Check for Paladin buildings
+  if (building === BuildingType.ResourcePaladinT1) return { type: "Stable", tier: 1, resourceId: ResourcesIds.Paladin };
+  if (building === BuildingType.ResourcePaladinT2)
+    return { type: "Stable", tier: 2, resourceId: ResourcesIds.PaladinT2 };
+  if (building === BuildingType.ResourcePaladinT3)
+    return { type: "Stable", tier: 3, resourceId: ResourcesIds.PaladinT3 };
+
+  // Check for Knight buildings
+  if (building === BuildingType.ResourceKnightT1) return { type: "Barracks", tier: 1, resourceId: ResourcesIds.Knight };
+  if (building === BuildingType.ResourceKnightT2)
+    return { type: "Barracks", tier: 2, resourceId: ResourcesIds.KnightT2 };
+  if (building === BuildingType.ResourceKnightT3)
+    return { type: "Barracks", tier: 3, resourceId: ResourcesIds.KnightT3 };
+
+  return null;
 };

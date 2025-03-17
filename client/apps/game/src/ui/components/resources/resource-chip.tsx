@@ -18,20 +18,20 @@ export const ResourceChip = ({
   resourceId,
   resourceManager,
   maxStorehouseCapacityKg,
-  tick,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   maxStorehouseCapacityKg: number;
-  tick: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
 
+  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+
   const getBalance = useCallback(() => {
-    return resourceManager.balanceWithProduction(tick, resourceId);
-  }, [resourceManager, tick]);
+    return resourceManager.balanceWithProduction(currentTick, resourceId);
+  }, [resourceManager, currentTick]);
 
   const production = useMemo(() => {
     const balance = getBalance();
@@ -42,8 +42,6 @@ export const ResourceChip = ({
   const maxAmountStorable = useMemo(() => {
     return maxStorehouseCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1000);
   }, [maxStorehouseCapacityKg, resourceId]);
-
-  const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);

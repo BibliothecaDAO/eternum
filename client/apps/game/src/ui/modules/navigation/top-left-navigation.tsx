@@ -4,7 +4,6 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
@@ -161,10 +160,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                         key={index}
                         value={structure.structure.entity_id?.toString() || ""}
                       >
-                        <div className="self-center flex gap-4 text-xl">
-                          {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
-                        </div>
+                        <div className="self-center flex gap-4 text-xl">{structure.name}</div>
                       </SelectItem>
                     </div>
                   ))}

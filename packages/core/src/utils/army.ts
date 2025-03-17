@@ -8,6 +8,7 @@ import {
   divideByPrecision,
   getArmyTotalCapacityInKg,
   getNeighborHexes,
+  getRealmAddressName,
   gramToKg,
   ResourcesIds,
 } from "..";
@@ -51,6 +52,7 @@ export const formatArmies = (
         entity_owner_id: explorerTroops.owner,
         stamina,
         owner: structure?.owner,
+        ownerName: getRealmAddressName(explorerTroops.owner, components),
         structure,
         isMine,
         isMercenary,

@@ -139,6 +139,52 @@ export const TransferResourcesContainer = ({
     );
   };
 
+  // Handle selecting all resources
+  const handleSelectAllResources = () => {
+    if (availableResources.length === 0) return;
+
+    const newSelectedResources: ResourceTransfer[] = [];
+    const newResourceAmounts: Record<number, number> = {};
+
+    // If transferring to explorer, we need to calculate how much of each resource we can add
+    // based on weight constraints
+    if (transferDirection === TransferDirection.StructureToExplorer) {
+      let remainingCapacity = explorerCapacity.remainingCapacity;
+
+      // Sort resources by weight (lightest first) to maximize the number of resources we can transfer
+      const sortedResources = [...availableResources].sort((a, b) => {
+        const weightA = configManager.resourceWeightsKg[a.resourceId] || 0;
+        const weightB = configManager.resourceWeightsKg[b.resourceId] || 0;
+        return weightA - weightB;
+      });
+
+      for (const resource of sortedResources) {
+        const resourceWeight = configManager.resourceWeightsKg[resource.resourceId] || 0;
+        if (resourceWeight <= 0) continue; // Skip resources with no weight
+
+        const displayAmount = divideByPrecision(resource.amount);
+        const maxPossibleAmount = Math.floor(remainingCapacity / resourceWeight);
+        const amountToAdd = Math.min(displayAmount, maxPossibleAmount);
+
+        if (amountToAdd > 0) {
+          newSelectedResources.push({ ...resource, amount: amountToAdd });
+          newResourceAmounts[resource.resourceId] = amountToAdd;
+          remainingCapacity -= amountToAdd * resourceWeight;
+        }
+      }
+    } else {
+      // For structure transfers, we can add all resources at max amount
+      for (const resource of availableResources) {
+        const displayAmount = divideByPrecision(resource.amount);
+        newSelectedResources.push({ ...resource, amount: displayAmount });
+        newResourceAmounts[resource.resourceId] = displayAmount;
+      }
+    }
+
+    setSelectedResources(newSelectedResources);
+    setResourceAmounts(newResourceAmounts);
+  };
+
   // Handle transfer
   const handleTransfer = async () => {
     if (!targetEntityId) return;
@@ -231,7 +277,13 @@ export const TransferResourcesContainer = ({
         {transferDirection === TransferDirection.StructureToExplorer && renderExplorerCapacity()}
       </div>
 
-      <label className="text-gold font-semibold">Select Resources to Transfer:</label>
+      <div className="flex justify-between items-center">
+        <label className="text-gold font-semibold">Select Resources to Transfer:</label>
+        <Button onClick={handleSelectAllResources} variant="secondary" className="text-sm px-3 py-1">
+          Select All Resources
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {availableResources.map((resource) => {
           const isSelected = selectedResources.some((r) => r.resourceId === resource.resourceId);

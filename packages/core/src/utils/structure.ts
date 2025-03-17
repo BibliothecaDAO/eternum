@@ -85,3 +85,20 @@ export const getStructureImmunityTimer = (structure: Structure | undefined, curr
   if (!currentBlockTimestamp) return 0;
   return immunityEndTimestamp - currentBlockTimestamp!;
 };
+
+export const getStructureTypeName = (structureType: StructureType) => {
+  switch (structureType) {
+    case StructureType.Bank:
+      return "Bank";
+    case StructureType.Hyperstructure:
+      return "Hyperstructure";
+    case StructureType.FragmentMine:
+      return "Fragment Mine";
+    case StructureType.Village:
+      return "Village";
+    case StructureType.Realm:
+      return "Realm";
+    default:
+      return "Unknown";
+  }
+};

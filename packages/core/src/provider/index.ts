@@ -76,7 +76,7 @@ class PromiseQueue {
   }> = [];
   private processing = false;
   private batchTimeout: NodeJS.Timeout | null = null;
-  //   private readonly BATCH_DELAY = 2000; // ms to wait for batching
+  private readonly BATCH_DELAY = 2000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 3; // Maximum number of calls to batch together
 
   constructor(private provider: EternumProvider) {}
@@ -91,9 +91,9 @@ class PromiseQueue {
           clearTimeout(this.batchTimeout);
         }
 
-        // this.batchTimeout = setTimeout(() => {
-        this.processQueue();
-        // }, this.BATCH_DELAY);
+        this.batchTimeout = setTimeout(() => {
+          this.processQueue();
+        }, this.BATCH_DELAY);
       }
     });
   }
