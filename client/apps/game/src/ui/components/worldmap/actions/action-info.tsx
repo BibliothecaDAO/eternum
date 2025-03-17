@@ -78,7 +78,7 @@ const TooltipContent = memo(
             />
           </div>
         ) : null}
-        {actionType !== ActionType.Attack ? (
+        {actionType === ActionType.Explore || actionType === ActionType.Move ? (
           <StaminaResourceCost
             selectedEntityId={Number(selectedEntityId)}
             isExplored={isExplored}
