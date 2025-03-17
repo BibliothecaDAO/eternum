@@ -3,8 +3,6 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-  ClientComponents,
-  getEntityIdFromKeys,
   HYPERSTRUCTURE_CONFIG_ID,
   PlayerStructure,
   SetupResult,
@@ -19,39 +17,6 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetMarketFromTorii,
 } from "./debounced-queries";
-
-const handleVisualOverrides = (entityBatch: Record<string, any>, components: ClientComponents, entity: string) => {
-  const updates = entityBatch[entity];
-  if (!updates || Object.keys(updates).length === 0) return;
-
-  const componentNames = Object.keys(updates);
-
-  // Check for explorer troops updates
-  const hasExplorerUpdate = componentNames.some((component) => {
-    const componentName = component.split("-")[1];
-    return componentName === components.ExplorerTroops.metadata.name;
-  });
-
-  // Check for tile updates
-  const hasTileUpdate = componentNames.some((component) => {
-    const componentName = component.split("-")[1];
-    return componentName === components.Tile.metadata.name;
-  });
-
-  if (hasExplorerUpdate || hasTileUpdate) {
-    if (hasExplorerUpdate) {
-      const update = updates["s1_eternum-ExplorerTroops"]?.coord?.value;
-      if (!update) return;
-      const overrideId = getEntityIdFromKeys([BigInt(update.x.value), BigInt(update.y.value)]);
-      components.ExplorerTroops.removeOverride(overrideId);
-    }
-
-    if (hasTileUpdate) {
-      const overrideId = entity;
-      components.Tile.removeOverride(overrideId);
-    }
-  }
-};
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
@@ -75,9 +40,6 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
       setEntities(entityBatch, components as any, logging);
 
-      for (const entity of Object.keys(entityBatch)) {
-        handleVisualOverrides(entityBatch, clientComponents, entity);
-      }
       entityBatch = {}; // Clear the batch after applying
     }
   }, 200); // Increased debounce time to 1 second for larger batches

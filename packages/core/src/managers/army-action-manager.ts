@@ -296,9 +296,7 @@ export class ArmyActionManager {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
 
-    const overrideId = getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]);
-
-    console.log({ title: "optimisticExplorerUpdate adding override", overrideId, newPosition });
+    const overrideId = uuid();
 
     if (!stamina) return;
 
@@ -350,9 +348,11 @@ export class ArmyActionManager {
   };
 
   private readonly _optimisticTileUpdate = (newPosition: HexPosition, previousPosition: HexPosition) => {
+    let overrideId = uuid();
+
     const previousEntity = getEntityIdFromKeys([BigInt(previousPosition.col), BigInt(previousPosition.row)]);
 
-    this.components.Tile.addOverride(previousEntity, {
+    this.components.Tile.addOverride(overrideId, {
       entity: previousEntity,
       value: {
         col: previousPosition.col,
@@ -366,7 +366,7 @@ export class ArmyActionManager {
       id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
     });
 
-    this.components.Tile.addOverride(newEntity, {
+    this.components.Tile.addOverride(overrideId, {
       entity: newEntity,
       value: {
         col: newPosition.col,
@@ -378,8 +378,7 @@ export class ArmyActionManager {
     });
 
     return () => {
-      this.components.Tile.removeOverride(previousEntity);
-      this.components.Tile.removeOverride(newEntity);
+      this.components.Tile.removeOverride(overrideId);
     };
   };
 
@@ -424,21 +423,23 @@ export class ArmyActionManager {
 
     const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticExplore(path[1].col, path[1].row);
 
-    this.provider
-      .explorer_move({
+    try {
+      await this.provider.explorer_move({
         explorer_id: this.entityId,
         directions: [direction],
         explore: true,
         signer,
-      })
-      .catch((e) => {
-        console.log({ e });
-        removeVisualOverrides();
-      })
-      .finally(() => {
-        // remove all non visual overrides
-        removeNonVisualOverrides();
       });
+
+    } catch (e) {
+      console.log({ e });
+      removeVisualOverrides();
+      removeNonVisualOverrides();
+    } finally {
+      // remove all non visual overrides
+      removeNonVisualOverrides();
+      removeVisualOverrides();
+    }
   };
 
   private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
@@ -510,20 +511,23 @@ export class ArmyActionManager {
       })
       .filter((d) => d !== undefined) as number[];
 
-    this.provider
-      .explorer_move({
+    try {
+      await this.provider.explorer_move({
         signer,
         explorer_id: this.entityId,
         directions,
         explore: false,
-      })
-      .catch((e) => {
-        removeVisualOverrides();
-        console.log({ e });
-      })
-      .finally(() => {
-        removeNonVisualOverrides();
       });
+
+    } catch (e) {
+      console.log({ e });
+      removeVisualOverrides();
+      removeNonVisualOverrides();
+    } finally {
+      // remove all non visual overrides
+      removeNonVisualOverrides();
+      removeVisualOverrides();
+    }
   };
 
   public moveArmy = (signer: Account | AccountInterface, path: HexPosition[], isExplored: boolean) => {
