@@ -48,6 +48,7 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
+  private readonly boatScale = new THREE.Vector3(0.3, 0.3, 0.3);
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -190,7 +191,11 @@ export class ArmyModel {
   ): void {
     this.models.forEach((modelData, modelType) => {
       const isActiveModel = modelType === this.entityModelMap.get(entityId);
-      const targetScale = isActiveModel ? this.normalScale : this.zeroScale;
+      const targetScale = isActiveModel
+        ? modelType === ModelType.Boat
+          ? this.boatScale
+          : this.normalScale
+        : this.zeroScale;
 
       this.updateInstanceTransform(position, targetScale, rotation);
       this.updateInstanceMeshes(modelData, index, color);
