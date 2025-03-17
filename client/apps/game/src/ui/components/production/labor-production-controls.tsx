@@ -4,6 +4,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getLaborConfig } from "@/utils/labor";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   divideByPrecision,
   findResourceById,
@@ -69,8 +70,15 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   }, [laborConfig, selectedResources]);
 
   const availableResources = useMemo(() => {
-    return resourceManager.getResourceBalances();
-  }, [resourceManager]);
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    return selectedResources.map((resource) => {
+      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+      return {
+        resourceId: resource.id,
+        amount: resourceBalance,
+      };
+    });
+  }, [selectedResources, resourceManager]);
 
   const addResource = () => {
     const availableResourceIds = Object.values(ResourcesIds).filter(
