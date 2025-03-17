@@ -2,6 +2,7 @@ import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
+import { formatStringNumber } from "@/ui/utils/utils";
 import { getLaborConfig } from "@/utils/labor";
 import {
   divideByPrecision,
@@ -106,6 +107,15 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     setSelectedResources(newResources);
   };
 
+  const hasInsufficientResources = useMemo(() => {
+    return selectedResources.some((resource) => {
+      const availableAmount = divideByPrecision(
+        Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+      );
+      return resource.amount > availableAmount;
+    });
+  }, [selectedResources, availableResources]);
+
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Labor Production</h3>
@@ -170,7 +180,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
             <div className="flex items-center gap-2">
               <ResourceIcon resource={findResourceById(ResourcesIds.Labor)?.trait || ""} size="sm" />
               <span>Total Labor Generated:</span>
-              <span className="font-medium">{laborAmount}</span>
+              <span className="font-medium">{formatStringNumber(Number(laborAmount), 0)}</span>
             </div>
 
             <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
@@ -197,12 +207,14 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
         <div className="flex justify-center">
           <Button
             onClick={handleProduce}
-            disabled={selectedResources.length === 0 || selectedResources.some((r) => r.amount <= 0)}
+            disabled={
+              selectedResources.length === 0 || selectedResources.some((r) => r.amount <= 0) || hasInsufficientResources
+            }
             isLoading={isLoading}
             variant="primary"
             className="px-8 py-2"
           >
-            Start Labor Production
+            {hasInsufficientResources ? "Insufficient Resources" : "Start Labor Production"}
           </Button>
         </div>
       </>

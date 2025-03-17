@@ -119,9 +119,9 @@ export class ResourceManager {
   }
 
   public balanceWithProduction(currentTick: number, resourceId: ResourcesIds): number {
-    const resource = this._getResource();
+    const production = this.getProduction(resourceId);
     const balance = this.balance(resourceId);
-    const amountProduced = this._amountProduced(resource, currentTick, resourceId);
+    const amountProduced = this._amountProduced(production!, currentTick, resourceId);
     const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
     return Number(finalBalance);
   }
@@ -664,14 +664,20 @@ export class ResourceManager {
     return balance;
   }
 
-  private _amountProduced(resource: any, currentTick: number, resourceId: ResourcesIds): bigint {
-    if (!resource) return 0n;
-    const production = resource.production!;
-
+  private _amountProduced(
+    production: {
+      building_count: number;
+      production_rate: bigint;
+      output_amount_left: bigint;
+      last_updated_at: number;
+    },
+    currentTick: number,
+    resourceId: ResourcesIds,
+  ): bigint {
     if (!production || production.building_count === 0) return 0n;
     if (production.production_rate === 0n || production.output_amount_left === 0n) return 0n;
 
-    const ticksSinceLastUpdate = currentTick - production.last_updated_tick;
+    const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;
 
     if (!this.isFood(resourceId) && totalAmountProduced > production.output_amount_left) {

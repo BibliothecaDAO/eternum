@@ -59,7 +59,6 @@ export const BuildingsList = ({
       .filter((production) => production !== null);
   }, [producedResources]);
 
-
   return (
     <div className="bg-dark-brown/90 backdrop-blur-sm p-6 rounded-xl border border-gold/20 shadow-lg h-[400px] overflow-y-auto">
       <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Production Buildings</h3>
@@ -105,7 +104,6 @@ export const BuildingsList = ({
                     resourceId={production.resource}
                     resourceManager={resourceManager}
                     maxStorehouseCapacityKg={realm.capacity || 0}
-                    tick={0}
                   />
                 </div>
               </div>
