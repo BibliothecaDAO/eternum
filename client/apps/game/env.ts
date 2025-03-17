@@ -36,6 +36,8 @@ const envSchema = z.object({
 
   // Social
   VITE_SOCIAL_LINK: z.string().url().optional().default(""),
+
+  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("eternum-mobile.realms.world"),
 });
 
 let env: z.infer<typeof envSchema>;

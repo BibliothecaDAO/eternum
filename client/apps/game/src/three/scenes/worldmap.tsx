@@ -12,7 +12,7 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
+import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -164,9 +164,7 @@ export default class WorldmapScene extends HexagonScene {
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
 
-    if (!IS_MOBILE) {
-      this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
-    }
+    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -200,7 +198,6 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
-    this.state.setHoveredHex(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
@@ -369,10 +366,8 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
-    if (!IS_MOBILE) {
-      this.minimap.moveMinimapCenterToUrlLocation();
-      this.minimap.showMinimap();
-    }
+    this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
 
     // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
@@ -382,9 +377,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   onSwitchOff() {
-    if (!IS_MOBILE) {
-      this.minimap.hideMinimap();
-    }
+    this.minimap.hideMinimap();
     this.armyManager.removeLabelsFromScene();
   }
 
@@ -559,16 +552,7 @@ export default class WorldmapScene extends HexagonScene {
     return chunks;
   }
 
-  removeCachedMatricesAroundColRow(col: number, row: number) {
-    for (let i = -this.renderChunkSize.width / 2; i <= this.renderChunkSize.width / 2; i += 10) {
-      for (let j = -this.renderChunkSize.width / 2; j <= this.renderChunkSize.height / 2; j += 10) {
-        if (i === 0 && j === 0) {
-          continue;
-        }
-        this.removeCachedMatricesForChunk(row + i, col + j);
-      }
-    }
-  }
+  removeCachedMatricesAroundColRow(col: number, row: number) {}
 
   clearCache() {
     this.cachedMatrices.clear();
@@ -927,9 +911,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
-    if (!IS_MOBILE) {
-      this.minimap.update();
-    }
+    this.minimap.update();
   }
 
   public clearTileEntityCache() {
