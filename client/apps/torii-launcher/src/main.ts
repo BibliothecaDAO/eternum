@@ -140,9 +140,16 @@ ipcMain.on(IpcMethod.SetFirstBlock, async (event, arg) => {
 
 ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
   try {
-    await osUtils.removeDirectory(getDbPath());
+    // Kill Torii first
     killTorii();
+
+    // Wait a moment for process to fully terminate
+    await timeout(2000);
+
+    // Then remove directory
+    await osUtils.removeDirectory(getDbPath());
     await resetFirstBlock(null, true);
+
     sendNotification({ type: "Info", message: "Database successfully reset" });
   } catch (e) {
     sendNotification({ type: "Error", message: "Failed to reset database: " + e });
@@ -226,20 +233,28 @@ async function handleTorii() {
       `Launching torii with params:\n- network ${rpc.name}\n- rpc ${rpc.url}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
     );
 
-    child = spawn.spawn(toriiPath, [
-      "--world",
-      WORLD_ADDRESS,
-      "--http.cors_origins",
-      "*",
-      "--config",
-      toriiTomlPath,
-      "--db-dir",
-      dbPath,
-      "--rpc",
-      rpc.url,
-      "--indexing.world_block",
-      rpc.worldBlock.toString(),
-    ]);
+    // Create process with detached option
+    child = spawn.spawn(
+      toriiPath,
+      [
+        "--world",
+        WORLD_ADDRESS,
+        "--http.cors_origins",
+        "*",
+        "--config",
+        toriiTomlPath,
+        "--db-dir",
+        dbPath,
+        "--rpc",
+        rpc.url,
+        "--indexing.world_block",
+        rpc.worldBlock.toString(),
+      ],
+      {
+        detached: true, // Make process leader of a new process group
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
 
     child.stdout.on("data", (data: any) => {
       //   console.log("data", data);
@@ -338,9 +353,24 @@ async function installTorii(toriiPath: string) {
 function killTorii() {
   if (child) {
     warningLog("Killing torii");
-    child.kill();
-  } else {
-    sendNotification({ type: "Error", message: "Couldn't kill Torii" });
+    try {
+      // On Windows, we need to kill the process tree
+      if (osUtils.isWindows()) {
+        // Kill process tree using taskkill
+        spawn.sync("taskkill", ["/pid", child.pid.toString(), "/f", "/t"]);
+      } else {
+        // On Unix systems, kill process group
+        process.kill(-child.pid);
+      }
+
+      child = null;
+
+      // Additional cleanup to ensure ports are released
+      spawn.sync("timeout", ["/t", "2", "/nobreak"]); // Wait 2 seconds on Windows
+    } catch (error) {
+      errorLog(`Error killing Torii: ${error}`);
+      sendNotification({ type: "Error", message: `Failed to kill Torii: ${error}` });
+    }
   }
 }
 
