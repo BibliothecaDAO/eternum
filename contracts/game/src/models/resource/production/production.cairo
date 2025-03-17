@@ -304,8 +304,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         let mut produced_resource_production: Production = produced_resource.production;
         // produceable amount should be same for realm and village. village output is just slower
         let produceable_amount = production_seconds
-            * produced_resource_production_config.realm_output_per_tick.into()
-            * RESOURCE_PRECISION;
+            * produced_resource_production_config.realm_output_per_tick.into();
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
