@@ -1,7 +1,9 @@
+import { useAuthSync } from "@/shared/hooks/use-auth";
 import { RouterProvider } from "@tanstack/react-router";
 import { router } from "./config/router";
 
 function App() {
+  useAuthSync();
   const showBgImage = localStorage.getItem("showBackgroundImage") === "true";
   const randomCover = String(Math.floor(Math.random() * 7 + 1)).padStart(2, "0");
   const bgImage = `/images/covers/${randomCover}.png`;

@@ -1,16 +1,20 @@
 import { ROUTES } from "@/shared/consts/routes";
-import { useAuth } from "@/shared/hooks/use-auth";
+import { useWallet } from "@/shared/hooks/use-wallet";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { useNavigate } from "@tanstack/react-router";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { connectWallet, isConnecting, isConnected, displayAddress } = useWallet();
 
-  const handleConnect = () => {
-    login();
-    navigate({ to: ROUTES.REALM });
+  const handleConnect = async () => {
+    try {
+      await connectWallet();
+      navigate({ to: ROUTES.REALM });
+    } catch (error) {
+      console.error("Failed to connect:", error);
+    }
   };
 
   return (
@@ -18,12 +22,13 @@ export function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Welcome to Eternum</CardTitle>
-          <CardDescription>Please login to continue</CardDescription>
+          <CardDescription>
+            {isConnected ? `Connected with wallet: ${displayAddress}` : "Connect your wallet to start playing"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <p className="text-center text-muted-foreground">Login functionality coming soon</p>
-          <Button onClick={handleConnect} className="w-full">
-            Connect
+          <Button onClick={handleConnect} disabled={isConnecting} className="w-full">
+            {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect Wallet"}
           </Button>
         </CardContent>
       </Card>

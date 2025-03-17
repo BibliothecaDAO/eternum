@@ -1,11 +1,10 @@
 import { displayAddress } from "@/shared/lib/utils";
 import { useAccountStore } from "@/shared/store/use-account-store";
 import { useAddressStore } from "@/shared/store/use-address-store";
-import { Button } from "@/shared/ui/button";
-import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
+import { Loading } from "@/shared/ui/loading";
+import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
@@ -142,13 +141,13 @@ const DojoContextProvider = ({
     if (controllerAccount) {
       useAccountStore.getState().setAccount(controllerAccount);
 
-      const addressName = runQuery([
-        HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-      ]);
+      // const addressName = runQuery([
+      //   HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
+      // ]);
 
-      if (addressName.size === 0) {
-        setUserName();
-      }
+      // if (addressName.size === 0) {
+      //   setUserName();
+      // }
 
       setAccountsInitialized(true);
     } else {
@@ -165,38 +164,24 @@ const DojoContextProvider = ({
     }
   }, [controllerAccount, retries]);
 
-  if (!accountsInitialized) {
-    return <div>Loading...</div>;
-  }
-
-  if (isConnecting) {
+  if (!accountsInitialized || isConnecting) {
     return (
-      <>
-        <div>Countdown...</div>
-        <div>Loading...</div>
-      </>
+      <div className="h-screen flex justify-center items-center">
+        <Loading />
+      </div>
     );
   }
 
   if (!isConnected && !isConnecting) {
-    return (
-      <>
-        <div className="flex justify-center space-x-8 mt-2 md:mt-4">
-          {!isConnected && (
-            <>
-              <Button onClick={connectWallet} className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80">
-                Log In
-              </Button>
-            </>
-          )}
-        </div>
-      </>
-    );
+    return children;
   }
 
   if (!controllerAccount && isConnected) {
-    // Connected but controllerAccount is not set yet
-    return <div>Loading...</div>;
+    return (
+      <div className="h-screen flex justify-center items-center">
+        <Loading text="Initializing..." />
+      </div>
+    );
   }
 
   // Once account is set, render the children
