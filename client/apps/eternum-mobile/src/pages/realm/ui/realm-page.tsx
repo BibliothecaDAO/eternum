@@ -1,7 +1,7 @@
+import { useStore } from "@/shared/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
-import { RealmLevels, Structure } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { usePlayerStructures } from "@bibliothecadao/react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { ClaimTab, ManageTab, MilitaryTab, OverviewTab } from "./tabs";
 
@@ -21,18 +21,15 @@ export const useRealmTabs = () => {
 
 export const RealmPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const structures: Structure[] = usePlayerStructures();
-  const {
-    account: { account },
-  } = useDojo();
+  const structures = usePlayerStructures();
+  const { structureEntityId, setStructureEntityId } = useStore();
 
+  // Set initial structure on load
   useEffect(() => {
-    console.log(account);
-  }, [account]);
-
-  useEffect(() => {
-    console.log(structures);
-  }, [structures]);
+    if (structures.length > 0 && !structureEntityId) {
+      setStructureEntityId(structures[0].entityId);
+    }
+  }, [structures, structureEntityId, setStructureEntityId]);
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
@@ -41,14 +38,7 @@ export const RealmPage = () => {
   return (
     <RealmTabsContext.Provider value={{ switchTab }}>
       <div className="container p-4 space-y-4">
-        <RealmInfoHeader
-          realmName="Uw Rohi"
-          realmLevel={RealmLevels.Kingdom}
-          realmProgress={33}
-          balance={1000}
-          coordinates={{ x: 10, y: 10 }}
-          realmNumber={6132}
-        />
+        <RealmInfoHeader />
 
         <Tabs value={activeTab} onValueChange={switchTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
