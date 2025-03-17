@@ -66,6 +66,10 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
+  // Label groups
+  private armyLabelsGroup: THREE.Group;
+  private structureLabelsGroup: THREE.Group;
+
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
@@ -117,8 +121,14 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
-    this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
+    // Initialize label groups
+    this.armyLabelsGroup = new THREE.Group();
+    this.armyLabelsGroup.name = "ArmyLabelsGroup";
+    this.structureLabelsGroup = new THREE.Group();
+    this.structureLabelsGroup.name = "StructureLabelsGroup";
+
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -377,6 +387,11 @@ export default class WorldmapScene extends HexagonScene {
     // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
+    // Add label groups to scene
+    this.scene.add(this.armyLabelsGroup);
+    this.scene.add(this.structureLabelsGroup);
+
+    // Update army and structure managers
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.clearTileEntityCache();
@@ -386,8 +401,16 @@ export default class WorldmapScene extends HexagonScene {
     if (!IS_MOBILE) {
       this.minimap.hideMinimap();
     }
+
+    // Remove label groups from scene
+    this.scene.remove(this.armyLabelsGroup);
+    this.scene.remove(this.structureLabelsGroup);
+
+    // Clean up labels
     this.armyManager.removeLabelsFromScene();
+    console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
+    console.debug("[WorldMap] Removing structure labels from scene");
   }
 
   // used to track the position of the armies on the map

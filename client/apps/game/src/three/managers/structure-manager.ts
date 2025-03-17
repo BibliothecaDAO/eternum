@@ -6,7 +6,8 @@ import { FELT_CENTER } from "@/ui/config";
 import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
-import { RenderChunkSize, StructureInfo, StructureSystemUpdate } from "../types";
+import { StructureInfo, StructureSystemUpdate } from "../types";
+import { RenderChunkSize } from "../types/common";
 import { getWorldPositionForHex } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
@@ -32,6 +33,7 @@ const ICONS = {
 export class StructureManager {
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
+  private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
@@ -39,11 +41,12 @@ export class StructureManager {
   structureHexCoords: Map<number, Set<number>> = new Map();
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
-  private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
+  private labelsGroup: THREE.Group;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
+    this.labelsGroup = labelsGroup || new THREE.Group();
     this.loadModels();
 
     useAccountStore.subscribe(() => {
@@ -224,7 +227,7 @@ export class StructureManager {
   }
 
   private isInCurrentChunk(hexCoords: { col: number; row: number }): boolean {
-    const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
+    const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
     return (
       hexCoords.col >= chunkCol - this.renderChunkSize.width / 2 &&
       hexCoords.col < chunkCol + this.renderChunkSize.width / 2 &&
@@ -307,7 +310,7 @@ export class StructureManager {
       guildText.classList.add("text-xs", "text-gold/70", "italic");
       contentContainer.appendChild(guildText);
     }
-    console.log(structure);
+
     // Add structure type and level
     const typeText = document.createElement("strong");
     typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
@@ -326,30 +329,46 @@ export class StructureManager {
     label.position.y += 1.5;
 
     this.entityIdLabels.set(structure.entityId, label);
-    this.scene.add(label);
+    this.labelsGroup.add(label);
   }
 
   private removeEntityIdLabel(entityId: ID) {
     const label = this.entityIdLabels.get(entityId);
     if (label) {
-      this.scene.remove(label);
+      this.labelsGroup.remove(label);
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
       this.entityIdLabels.delete(entityId);
     }
   }
 
   public removeLabelsFromScene() {
-    this.entityIdLabels.forEach((label) => {
-      this.scene.remove(label);
+    this.entityIdLabels.forEach((label, entityId) => {
+      this.labelsGroup.remove(label);
+      // Dispose of the label's DOM element
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
     });
+    // Clear the labels map after removing all labels
+    this.entityIdLabels.clear();
+
+    // Additional verification
+    const remainingLabels = this.labelsGroup.children.filter((child) => child instanceof CSS2DObject);
+    if (remainingLabels.length > 0) {
+      console.warn(`[StructureManager] Found ${remainingLabels.length} remaining labels in group after cleanup!`);
+      remainingLabels.forEach((label) => {
+        console.warn("[StructureManager] Forcefully removing remaining label");
+        this.labelsGroup.remove(label);
+      });
+    }
   }
 
   public showLabels() {
+    // First ensure all old labels are properly cleaned up
     this.removeLabelsFromScene();
-    this.entityIdLabels.forEach((label, entityId) => {
-      if (!this.scene.children.includes(label)) {
-        this.scene.add(label);
-      }
-    });
+    // Update visible structures which will create new labels as needed
     this.updateVisibleStructures();
   }
 }

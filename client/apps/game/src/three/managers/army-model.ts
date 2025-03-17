@@ -11,14 +11,7 @@ import {
   MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants/army.constants";
-import {
-  AnimatedInstancedMesh,
-  ArmyInstanceData,
-  LabelData,
-  ModelData,
-  ModelType,
-  MovementData,
-} from "../types/army.types";
+import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army.types";
 import { getHexForWorldPosition } from "../utils";
 
 export class ArmyModel {
@@ -32,7 +25,8 @@ export class ArmyModel {
   private readonly entityModelMap: Map<number, ModelType> = new Map();
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
-  private readonly labels: Map<number, LabelData> = new Map();
+  private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
+  private readonly labelsGroup: THREE.Group;
 
   // Animation and state management
   private readonly animationStates: Float32Array;
@@ -50,10 +44,11 @@ export class ArmyModel {
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
   private readonly boatScale = new THREE.Vector3(0.3, 0.3, 0.3);
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
     this.dummyObject = new THREE.Object3D();
     this.loadPromise = this.loadModels();
+    this.labelsGroup = labelsGroup || new THREE.Group();
 
     // Initialize animation arrays
     this.timeOffsets = new Float32Array(MAX_INSTANCES);
@@ -561,13 +556,13 @@ export class ArmyModel {
     label.position.y += 1.5;
 
     this.labels.set(entityId, { label, entityId });
-    this.scene.add(label);
+    this.labelsGroup.add(label);
   }
 
   public removeLabel(entityId: number): void {
     const labelData = this.labels.get(entityId);
     if (labelData) {
-      this.scene.remove(labelData.label);
+      this.labelsGroup.remove(labelData.label);
       this.labels.delete(entityId);
     }
   }
@@ -582,14 +577,14 @@ export class ArmyModel {
 
   public removeLabelsFromScene(): void {
     this.labels.forEach((labelData) => {
-      this.scene.remove(labelData.label);
+      this.labelsGroup.remove(labelData.label);
     });
   }
 
   public addLabelsToScene(): void {
     this.labels.forEach((labelData) => {
-      if (!this.scene.children.includes(labelData.label)) {
-        this.scene.add(labelData.label);
+      if (!this.labelsGroup.children.includes(labelData.label)) {
+        this.labelsGroup.add(labelData.label);
       }
     });
   }
