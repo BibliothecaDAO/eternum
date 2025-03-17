@@ -1,3 +1,4 @@
+import { useStore } from "@/shared/store";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
 import { LaborWidget } from "@/widgets/labor-widget";
 import { NearbyEnemies } from "@/widgets/nearby-enemies";
@@ -73,6 +74,7 @@ const dummyResourceBalances = [
 
 export function OverviewTab() {
   const { switchTab } = useRealmTabs();
+  const structureEntityId = useStore((state) => state.structureEntityId);
 
   const handleUpgrade = async () => {
     // Simulate network delay
@@ -101,7 +103,7 @@ export function OverviewTab() {
 
   return (
     <div className="space-y-4">
-      <ResourcesCard />
+      <ResourcesCard entityId={structureEntityId} />
 
       <div className="overflow-x-auto">
         <div className="grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4">

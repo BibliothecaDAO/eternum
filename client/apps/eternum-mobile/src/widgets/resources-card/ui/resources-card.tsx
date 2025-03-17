@@ -1,12 +1,14 @@
-import { cn } from "@/shared/lib/utils";
+import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { cn, currencyFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { resources } from "@bibliothecadao/eternum";
+import { ID, resources } from "@bibliothecadao/eternum";
+import { useResourceManager } from "@bibliothecadao/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface ResourceAmount {
   id: number;
@@ -15,18 +17,39 @@ interface ResourceAmount {
 
 interface ResourcesCardProps {
   className?: string;
+  entityId: ID;
 }
 
-export const ResourcesCard = ({ className }: ResourcesCardProps) => {
+export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [resourceAmounts, setResourceAmounts] = useState<ResourceAmount[]>([]);
+  const { currentDefaultTick: tick } = useBlockTimestamp();
+  const resourceManager = useResourceManager(entityId);
 
-  // Simulating random resource amounts
-  const resourceAmounts: ResourceAmount[] = resources
-    .filter((resource) => resource.id < 23)
-    .map((resource) => ({
-      id: resource.id,
-      amount: Math.floor(Math.random() * 1000),
-    }));
+  const updateResourceAmounts = useCallback(() => {
+    if (!entityId) return;
+
+    const amounts = resources
+      .filter((resource) => resource.id < 23)
+      .map((resource) => ({
+        id: resource.id,
+        amount: resourceManager.balanceWithProduction(tick, resource.id),
+      }));
+
+    setResourceAmounts(amounts);
+  }, [entityId, resourceManager, tick]);
+
+  useEffect(() => {
+    updateResourceAmounts();
+
+    // Update resources periodically
+    const interval = setInterval(updateResourceAmounts, 1000);
+    return () => clearInterval(interval);
+  }, [updateResourceAmounts]);
+
+  if (!entityId) {
+    return null;
+  }
 
   return (
     <Card className={cn("w-full p-4", className)}>
@@ -47,7 +70,7 @@ export const ResourcesCard = ({ className }: ResourcesCardProps) => {
             return (
               <div key={resource.id} className="flex flex-col items-center space-y-1 min-w-[32px]">
                 <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
-                <span className="text-xs font-medium">{amount}</span>
+                <span className="text-xs font-medium">{currencyFormat(amount)}</span>
               </div>
             );
           })}
@@ -67,7 +90,7 @@ export const ResourcesCard = ({ className }: ResourcesCardProps) => {
                       <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
                       <div className="flex flex-col">
                         <span className="font-medium">{resource.trait}</span>
-                        <span className="text-sm text-muted-foreground">{amount}</span>
+                        <span className="text-sm text-muted-foreground">{currencyFormat(amount)}</span>
                       </div>
                     </div>
                     <Button variant="secondary" size="sm">
