@@ -395,15 +395,14 @@ export class ArmyManager {
     const textContainer = document.createElement("div");
     textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
+    const line1 = document.createTextNode(
+      `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
+    );
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
-    const line3 = document.createElement("strong");
-    line3.textContent = `${army.category} ${army.tier}`;
+    line2.textContent = `${army.category} ${army.tier}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
-    textContainer.appendChild(line3);
 
     labelDiv.appendChild(textContainer);
 
