@@ -117,7 +117,7 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
       >
         <div className={clsx("gap-1")}>
           <Headline className="text-center text-lg">
-            <div>{army.ownerName}</div>
+            <div>{army.ownerName || army.name}</div>
           </Headline>
           <ArmyWarning army={army} />
           <div id="army-info-label-content" className="self-center flex justify-between w-full">
