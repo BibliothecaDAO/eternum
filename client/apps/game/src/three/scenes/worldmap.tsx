@@ -198,6 +198,7 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
     const { hexCoords } = hex;
+    this.state.setHoveredHex(hexCoords);
     const { selectedEntityId, actionPaths } = this.state.entityActions;
     if (selectedEntityId && actionPaths.size > 0) {
       if (this.previouslyHoveredHex?.col !== hexCoords.col || this.previouslyHoveredHex?.row !== hexCoords.row) {
