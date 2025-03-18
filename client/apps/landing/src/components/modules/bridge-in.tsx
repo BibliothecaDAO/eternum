@@ -12,8 +12,7 @@ import {
   ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
-  getTotalResourceWeightGrams,
-  multiplyByPrecision,
+  getTotalResourceWeightKg,
   resources,
 } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";
@@ -100,13 +99,13 @@ export const BridgeIn = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const orderWeight = useMemo(() => {
+  const orderWeightKg = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeightGrams(
+      const totalWeight = getTotalResourceWeightKg(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
-          amount: multiplyByPrecision(amount),
+          amount: amount,
         })),
       );
       return totalWeight;
@@ -116,12 +115,12 @@ export const BridgeIn = () => {
   }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
-    if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+    if (orderWeightKg) {
+      return calculateDonkeysNeeded(orderWeightKg);
     } else {
       return 0;
     }
-  }, [orderWeight, donkeyConfig.capacity]);
+  }, [orderWeightKg, donkeyConfig.capacity]);
 
   const donkeyBalance = getBalance(ResourcesIds.Donkey);
   const { bridgeIntoRealm } = useBridgeAsset();

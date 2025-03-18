@@ -111,7 +111,6 @@ TooltipContent.displayName = "TooltipContent";
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));
   const selectedEntityId = useUIStore(useCallback((state) => state.entityActions.selectedEntityId, []));
-  const structureEntityId = useUIStore(useCallback((state) => state.structureEntityId, []));
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const {
     setup: { components },
@@ -154,7 +153,7 @@ export const ActionInfo = memo(() => {
         actionPath={actionPath}
         costsPerStep={costs}
         selectedEntityId={selectedEntityId}
-        structureEntityId={structureEntityId}
+        structureEntityId={selectedEntityTroops?.owner || 0}
         getBalance={(entityId: ID, resourceId: ResourcesIds) =>
           getBalance(entityId, resourceId, currentDefaultTick, components)
         }

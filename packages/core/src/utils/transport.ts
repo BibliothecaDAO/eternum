@@ -1,22 +1,19 @@
-import { divideByPrecision, kgToGram } from ".";
-import { ClientConfigManager } from "..";
+import { configManager } from "..";
 import { CapacityConfig } from "../constants";
 import { Resource } from "../types";
 
-export const calculateDonkeysNeeded = (orderWeight: number): number => {
-  const configManager = ClientConfigManager.instance();
-  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfig.Donkey);
+export const calculateDonkeysNeeded = (orderWeightKg: number): number => {
+  const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey);
 
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
+  return Math.ceil(orderWeightKg / donkeyCapacityKg);
 };
 
-// grams
-export const getTotalResourceWeightGrams = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
+// kg
+// without resource precision
+export const getTotalResourceWeightKg = (resources: Array<Resource | undefined>) => {
   return resources.reduce(
     (total, resource) =>
-      total + (resource ? resource.amount * kgToGram(configManager.getResourceWeightKg(resource.resourceId) || 0) : 0),
+      total + (resource ? resource.amount * configManager.getResourceWeightKg(resource.resourceId) : 0),
     0,
   );
 };

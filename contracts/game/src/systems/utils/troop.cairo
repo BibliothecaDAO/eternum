@@ -195,39 +195,38 @@ pub impl iExplorerImpl of iExplorerTrait {
         mut biomes: Array<Biome>,
         current_tick: u64,
     ) {
-        let mut stamina_cost: u128 = match explore {
-            true => { troop_stamina_config.stamina_explore_stamina_cost.into() * biomes.len().into() },
-            false => troop_stamina_config.stamina_travel_stamina_cost.into() * biomes.len().into(),
-        };
-
-        let mut total_additional_stamina_cost: u128 = 0;
-        let mut total_deducted_stamina_cost: u128 = 0;
         loop {
             match biomes.pop_front() {
                 Option::Some(biome) => {
-                    let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, troop_stamina_config);
-                    if add {
-                        total_additional_stamina_cost += stamina_bonus.into();
-                    } else {
-                        total_deducted_stamina_cost += stamina_bonus.into();
-                    }
+                    let stamina_cost: u64 = match explore {
+                        true => { troop_stamina_config.stamina_explore_stamina_cost.into() },
+                        false => {
+                            let mut stamina_cost: u64 = troop_stamina_config.stamina_travel_stamina_cost.into();
+                            let (add, stamina_bonus) = explorer
+                                .troops
+                                .stamina_travel_bonus(biome, troop_stamina_config);
+                            if add {
+                                stamina_cost += stamina_bonus.into();
+                            } else {
+                                stamina_cost -= stamina_bonus.into();
+                            }
+                            stamina_cost
+                        },
+                    };
+                    explorer
+                        .troops
+                        .stamina
+                        .spend(
+                            explorer.troops.category,
+                            troop_stamina_config,
+                            stamina_cost.try_into().unwrap(),
+                            current_tick,
+                            true,
+                        );
                 },
                 Option::None => { break; },
             }
         };
-
-        stamina_cost += total_additional_stamina_cost;
-        if total_deducted_stamina_cost > stamina_cost {
-            stamina_cost = 0;
-        } else {
-            stamina_cost -= total_deducted_stamina_cost;
-        }
-        explorer
-            .troops
-            .stamina
-            .spend(
-                explorer.troops.category, troop_stamina_config, stamina_cost.try_into().unwrap(), current_tick, true,
-            );
     }
 
     fn burn_food_cost(

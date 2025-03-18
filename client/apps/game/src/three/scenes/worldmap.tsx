@@ -1,4 +1,5 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -32,6 +33,7 @@ import {
   SetupResult,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
@@ -285,17 +287,16 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
-    if (selectedPath.length > 0) {
+    if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(
         this.dojo.components,
         this.dojo.network.provider,
         selectedEntityId,
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-      armyActionManager.moveArmy(account!, selectedPath, isExplored);
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
@@ -772,45 +773,12 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLoading(LoadingStateKey.Map, true);
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
+          MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
+          MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
+          MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
         ["s1_eternum-Tile"],
@@ -818,54 +786,37 @@ export default class WorldmapScene extends HexagonScene {
         false,
       );
       // todo: verify that this works with nested struct
-      const promisePositions = getEntities(
+      const promiseExplorers = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
-        ["s1_eternum-ExplorerTroops"],
+        ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
         1000,
         false,
       );
-      Promise.all([promiseTiles, promisePositions]).then(() => {
+
+      const promiseStructures = getEntities(
+        this.dojo.network.toriiClient,
+        AndComposeClause([
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
+        ]).build(),
+        this.dojo.network.contractComponents as any,
+        [],
+        ["s1_eternum-Structure", "s1_eternum-Resource"],
+        1000,
+        false,
+      );
+
+      Promise.all([promiseTiles, promiseExplorers, promiseStructures]).then(() => {
         this.state.setLoading(LoadingStateKey.Map, false);
       });
     } catch (error) {

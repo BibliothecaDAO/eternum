@@ -123,6 +123,7 @@ export class StructureManager {
       entityId,
       key,
       normalizedCoord,
+      update.initialized,
       stage,
       level,
       {
@@ -314,7 +315,11 @@ export class StructureManager {
     // Add structure type and level
     const typeText = document.createElement("strong");
     typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure ? `(Stage ${structure.stage + 1})` : ""
+      structure.structureType === StructureType.Hyperstructure
+        ? structure.initialized
+          ? `(Stage ${structure.stage + 1})`
+          : "(Uninitialized)"
+        : ""
     }`;
     typeText.classList.add("text-xs");
 
@@ -380,6 +385,7 @@ class Structures {
     entityId: ID,
     structureType: StructureType,
     hexCoords: { col: number; row: number },
+    initialized: boolean,
     stage: number = 0,
     level: number = 0,
     owner: { address: bigint; ownerName: string; guildName: string },
@@ -392,6 +398,7 @@ class Structures {
       entityId,
       hexCoords,
       stage,
+      initialized,
       level,
       isMine: isAddressEqualToAccount(owner.address),
       owner,

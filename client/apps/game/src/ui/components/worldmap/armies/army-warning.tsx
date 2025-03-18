@@ -1,11 +1,14 @@
-import { currencyFormat } from "@/ui/utils/utils";
+import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyActionManager,
   ArmyInfo,
+  Biome,
   computeExploreFoodCosts,
   configManager,
+  getNeighborHexes,
   StaminaManager,
+  TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
@@ -39,9 +42,24 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
     return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
   }, [army]);
 
+  const minStaminaNeeded = useMemo(() => {
+    const neighbors = getNeighborHexes(army.position.x, army.position.y);
+    return neighbors.reduce((min, neighbor) => {
+      const staminaCost = configManager.getTravelStaminaCost(
+        Biome.getBiome(neighbor.col, neighbor.row),
+        army.troops.category as TroopType,
+      );
+      return min === 0 ? staminaCost : Math.min(min, staminaCost);
+    }, 0);
+  }, [army.position.x, army.position.y, army.troops.category]);
+
+  const minStaminaNeededExplore = useMemo(() => {
+    return configManager.getExploreStaminaCost();
+  }, []);
+
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
-      {stamina.amount < configManager.getTravelStaminaCost() && (
+      {stamina.amount < minStaminaNeeded && (
         <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
@@ -49,15 +67,14 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
           </div>
         </div>
       )}
-      {stamina.amount < configManager.getExploreStaminaCost() &&
-        stamina.amount >= configManager.getTravelStaminaCost() && (
-          <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
-            <div className="flex">
-              <span className="w-5">⚠️</span>
-              <span>Not enough stamina to explore</span>
-            </div>
+      {stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded && (
+        <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
+          <div className="flex">
+            <span className="w-5">⚠️</span>
+            <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
           </div>
-        )}
+        </div>
+      )}
       {remainingCapacity < configManager.getExploreReward() && (
         <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
           <div className="flex">
@@ -71,9 +88,9 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>
-              Missing {missingWheat > 0 && `${currencyFormat(Number(missingWheat), 0)} wheat`}
+              Missing {missingWheat > 0 && `${formatNumber(Number(missingWheat), 0)} wheat`}
               {missingWheat > 0 && missingFish > 0 && " and "}
-              {missingFish > 0 && `${currencyFormat(Number(missingFish), 0)} fish`}
+              {missingFish > 0 && `${formatNumber(Number(missingFish), 0)} fish`}
             </span>
           </div>
         </div>

@@ -5,18 +5,18 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  calculateDonkeysNeeded,
+  findResourceById,
+  getTotalResourceWeightKg,
   ID,
   PlayerStructure,
   RESOURCE_PRECISION,
+  ResourceManager,
   ResourcesIds,
-  calculateDonkeysNeeded,
-  findResourceById,
-  getTotalResourceWeightGrams,
-  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
-import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
 type transferCall = {
@@ -52,9 +52,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const [type, setType] = useState<"send" | "receive">("send");
 
-  const [resourceWeight, setResourceWeight] = useState(0);
+  const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
 
   useEffect(() => {
     const resources = calls.map((call) => {
@@ -63,10 +63,9 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         amount: Number(call.resources[1]),
       };
     });
-    const totalWeight = getTotalResourceWeightGrams(resources);
-    const multipliedWeight = multiplyByPrecision(totalWeight);
+    const totalWeightKg = getTotalResourceWeightKg(resources);
 
-    setResourceWeight(multipliedWeight);
+    setResourceWeightKg(totalWeightKg);
   }, [calls]);
 
   const handleTransfer = useCallback(async () => {
@@ -95,12 +94,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     <>
       <div className="p-1">
         <Button
-          variant={type === "send" ? "outline" : "secondary"}
+          variant={type === "receive" ? "outline" : "secondary"}
           onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
         >
-          {type === "receive" && <ArrowLeftIcon className="w-4 h-4" />}
-          {type === "send" ? "Send Resources" : "Receive Resources"}
-          {type === "send" && <ArrowRightIcon className="w-4 h-4" />}
+          {type === "send" && <ArrowLeftIcon className="w-4 h-4" />}
+          {type === "receive" ? "Send Resources" : "Receive Resources"}
+          {type === "receive" && <ArrowRightIcon className="w-4 h-4" />}
         </Button>
       </div>
       <div className="p-4">
@@ -184,8 +183,15 @@ const RealmTransferBalance = memo(
     type: "send" | "receive";
   }) => {
     const [input, setInput] = useState(0);
+    const {
+      setup: { components },
+    } = useDojo();
 
-    const resourceManager = useResourceManager(structure.structure.entity_id);
+    const resourceManager = useMemo(
+      () =>
+        new ResourceManager(components, type === "receive" ? structure.structure.entity_id : selectedStructureEntityId),
+      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    );
 
     const getBalance = useCallback(() => {
       return resourceManager.balanceWithProduction(tick, resource);
@@ -195,21 +201,16 @@ const RealmTransferBalance = memo(
       return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey);
     }, [resourceManager, tick]);
 
-    const [resourceWeight, setResourceWeight] = useState(0);
+    const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
     useEffect(() => {
-      const totalWeight = getTotalResourceWeightGrams([{ resourceId: resource, amount: input }]);
-      const multipliedWeight = multiplyByPrecision(totalWeight);
-
-      setResourceWeight(multipliedWeight);
+      const totalWeight = getTotalResourceWeightKg([{ resourceId: resource, amount: input }]);
+      setResourceWeightKg(totalWeight);
     }, [input]);
 
     const neededDonkeys = useMemo(() => {
-      if (type === "receive") {
-        return calculateDonkeysNeeded(resourceWeight);
-      }
-      return 0;
-    }, [resourceWeight]);
+      return calculateDonkeysNeeded(resourceWeightKg);
+    }, [resourceWeightKg]);
 
     const canCarry = useMemo(() => {
       return getDonkeyBalance() >= neededDonkeys;
@@ -218,6 +219,8 @@ const RealmTransferBalance = memo(
     if (structure.structure.entity_id === selectedStructureEntityId) {
       return;
     }
+
+    const balance = useMemo(() => getBalance(), [getBalance]);
 
     return (
       <div className="flex flex-col gap-2 border-b-2 mt-2 border-gold/20">
@@ -265,7 +268,7 @@ const RealmTransferBalance = memo(
                 neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
               }`}
             >
-              {neededDonkeys.toLocaleString()} 🔥🫏 [{getDonkeyBalance().toLocaleString()}]
+              {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { configManager, ID, StaminaManager } from "@bibliothecadao/eternum";
+import { BiomeType, configManager, ID, StaminaManager, TroopType } from "@bibliothecadao/eternum";
 import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -28,7 +28,11 @@ export const StaminaResource = ({ entityId, className }: { entityId: ID | undefi
   const staminaPercentage = useMemo(() => (staminaAmount / maxStamina) * 100, [staminaAmount, maxStamina]);
 
   const staminaColor = useMemo(
-    () => (staminaAmount < configManager.getTravelStaminaCost() ? "bg-red" : "bg-yellow"),
+    () =>
+      // smallest possible stamina cost
+      staminaAmount < configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman)
+        ? "bg-red"
+        : "bg-yellow",
     [staminaAmount],
   );
 

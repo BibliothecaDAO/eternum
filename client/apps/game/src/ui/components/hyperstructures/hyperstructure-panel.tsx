@@ -7,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { currencyIntlFormat, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
+import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
   Access,
   calculateCompletionPoints,
@@ -63,14 +63,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   } = dojo;
 
   // Add initialize function manually since it's not in the type definition
-  const { contribute_to_construction, set_access } = systemCalls;
-  const initialize = async (props: { signer: any; hyperstructure_id: number }) => {
-    return await provider.executeAndCheckTransaction(props.signer, {
-      contractAddress: "0x" + provider.manifest.world.address, // Use the world address as fallback
-      entrypoint: "initialize",
-      calldata: [props.hyperstructure_id],
-    });
-  };
+  const { contribute_to_construction, set_access, initialize_hyperstructure } = systemCalls;
 
   const updateLeaderboard = useHyperstructureData();
 
@@ -112,24 +105,26 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [resourceManager, updates]);
 
   // Calculate the progress percentage for AncientFragment
-  const ancientFragmentProgress = useMemo(() => {
-    const ancientFragmentProgress = progresses.progresses.find(
+  const { ancientFragmentProgress, costNeeded } = useMemo(() => {
+    const costNeeded = progresses.progresses.find(
       (progress) => progress.resource_type === ResourcesIds.AncientFragment,
-    );
-    return ancientFragmentProgress?.percentage || 0;
-  }, [progresses]);
+    )?.costNeeded;
+
+    return {
+      ancientFragmentProgress: Math.min(100, costNeeded ? (ancientFragmentBalance / costNeeded) * 100 : 0),
+      costNeeded: costNeeded || 0,
+    };
+  }, [progresses, ancientFragmentBalance]);
 
   const canInitialize = useMemo(() => {
     return entity.isOwner && ancientFragmentProgress === 100 && hyperstructure && !hyperstructure.initialized;
   }, [entity.isOwner, ancientFragmentProgress, hyperstructure]);
 
-  const initializeHyperstructure = async () => {
-    if (!canInitialize) return;
-
+  const initialize = async () => {
     setIsLoading(Loading.Initialize);
 
     try {
-      await initialize({
+      await initialize_hyperstructure({
         signer: account,
         hyperstructure_id: entity.entity_id,
       });
@@ -333,41 +328,46 @@ export const HyperstructurePanel = ({ entity }: any) => {
       </div>
 
       {/* Ancient Fragment Progress Bar */}
-      <div className="mt-2 mb-2 p-2 bg-gold/10 rounded">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center">
-            <ResourceIcon resource="Ancient Fragment" size="sm" className="mr-1" />
-            <span className="text-sm font-medium">Ancient Fragment</span>
+      {!hyperstructure?.initialized && (
+        <div className="mt-2 mb-2 p-2 bg-gold/10 rounded">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center">
+              <ResourceIcon resource="Ancient Fragment" size="sm" className="mr-1" />
+              <span className="text-sm font-medium">Ancient Fragment</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
+              <span className="text-xs text-gold/70">/ {formatStringNumber(costNeeded, 0)} needed</span>
+            </div>
           </div>
-          <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
+          <div
+            className="relative w-full h-8 flex items-center px-2 text-xs"
+            style={{
+              backgroundImage:
+                ancientFragmentProgress > 0
+                  ? `linear-gradient(to right, #06D6A03c ${String(ancientFragmentProgress)}%, rgba(0,0,0,0) ${String(
+                      ancientFragmentProgress,
+                    )}%)`
+                  : "",
+            }}
+          >
+            <span>{currencyIntlFormat(ancientFragmentProgress)}%</span>
+          </div>
+          <div className="flex justify-end items-center mt-1">
+            {canInitialize && (
+              <Button
+                size="xs"
+                variant="primary"
+                isLoading={isLoading === Loading.Initialize}
+                disabled={isLoading !== Loading.None}
+                onClick={initialize}
+              >
+                Initialize
+              </Button>
+            )}
+          </div>
         </div>
-        <div
-          className="relative w-full h-8 flex items-center px-2 text-xs"
-          style={{
-            backgroundImage:
-              ancientFragmentProgress > 0
-                ? `linear-gradient(to right, #06D6A03c ${String(ancientFragmentProgress)}%, rgba(0,0,0,0) ${String(
-                    ancientFragmentProgress,
-                  )}%)`
-                : "",
-          }}
-        >
-          <span>{currencyIntlFormat(ancientFragmentProgress)}%</span>
-        </div>
-        <div className="flex justify-end items-center mt-1">
-          {canInitialize && (
-            <Button
-              size="xs"
-              variant="primary"
-              isLoading={isLoading === Loading.Initialize}
-              disabled={isLoading !== Loading.None}
-              onClick={initializeHyperstructure}
-            >
-              Initialize
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-4 gap-1 w-full mb-1">
         <div className="flex flex-col justify-center items-center p-1 text-center bg-gold/10 hover:bg-crimson/40 hover:animate-pulse">
