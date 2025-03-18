@@ -32,7 +32,7 @@ interface EditProfileFormProps {
   delegate?: {
     delegateProfile: {
       statement: string;
-      interests: string[];
+      interests?: string[];
       twitter: string;
       github: string;
       telegram: string;
@@ -68,26 +68,24 @@ export function DelegateProfileForm({
   const form = useForm<EditProfileValues>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
-      statement: delegate?.delegateProfile?.statement ?? "",
-      interests: delegate?.delegateProfile?.interests ?? [],
-      twitter: delegate?.delegateProfile?.twitter ?? "",
-      github: delegate?.delegateProfile?.github ?? "",
-      telegram: delegate?.delegateProfile?.telegram ?? "",
-      discord: delegate?.delegateProfile?.discord ?? "",
+      statement: delegate?.delegateProfile.statement ?? "",
+      interests: delegate?.delegateProfile.interests ?? [],
+      twitter: delegate?.delegateProfile.twitter ?? "",
+      github: delegate?.delegateProfile.github ?? "",
+      telegram: delegate?.delegateProfile.telegram ?? "",
+      discord: delegate?.delegateProfile.discord ?? "",
     },
   });
 
   function handleFormSubmit(data: EditProfileValues) {
-    // Convert the interests string to an array. Users should separate interests by commas.
-
-    onSubmit({ ...data });
+    onSubmit({ ...data, interests: data.interests ?? [] });
   }
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleFormSubmit)}
-        className="space-y-4"
+        className="space-y-8"
       >
         <FormField
           control={form.control}
