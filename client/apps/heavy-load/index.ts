@@ -5,9 +5,16 @@ import fs from "fs";
 import logUpdate from "log-update";
 import { Account, RpcProvider } from "starknet";
 import { isMainThread, parentPort, Worker, workerData } from "worker_threads";
-import { CONFIG, summary, SYSTEM_ADDRESSES, workerStatus } from "./src/config";
+import { CONFIG, summary, workerStatus } from "./src/config";
 import { getExplorerEntityIds, getRealmEntityIds } from "./src/queries";
-import { createBuildings, createExplorerArmy, createRealm, mintLords, moveExplorer } from "./src/system-calls";
+import {
+  createBuildings,
+  createExplorerArmy,
+  createRealm,
+  levelUpRealms,
+  mintLords,
+  moveExplorer,
+} from "./src/system-calls";
 import {
   createProgressBar,
   determineRealmCounts,
@@ -16,12 +23,7 @@ import {
   updateStatusDisplay,
 } from "./src/utils";
 
-const provider = new RpcProvider({ nodeUrl: CONFIG.nodeUrl });
-
-// reach 1m entities
-// torii toml config (auto indexing for models)
-// Create manual indexes for specific entries of models (ex x and y of position (we use > x greater than))
-// cache size toml config
+export const provider = new RpcProvider({ nodeUrl: CONFIG.nodeUrl });
 
 if (!isMainThread) {
   const { account, addresses, startRealmId, realmCount } = workerData;
@@ -35,7 +37,6 @@ if (!isMainThread) {
         message: `Worker for account ${account.address.substring(0, 8)}... started`,
       });
 
-      let realmsCreated = 0;
       let armiesCreated = 0;
       let explorersMoved = 0;
 
@@ -47,28 +48,18 @@ if (!isMainThread) {
           message: `Creating ${realmCount} realms for account ${account.address.substring(0, 8)}...`,
         });
 
-        realmsCreated = await createRealmsForAccount(
-          account,
-          addresses,
-          SYSTEM_ADDRESSES.realmSystems,
-          startRealmId,
-          realmCount,
-          (progress) => {
-            // Send progress updates to main thread
-            parentPort?.postMessage({
-              type: "progress",
-              address: account.address,
-              stage: "creating_realms",
-              progress,
-              message: `Created ${progress.completed}/${progress.total} realms for account ${account.address.substring(0, 8)}...`,
-            });
-          },
-        );
-        // Wait for realm spawn to complete
-        await new Promise((resolve) => setTimeout(resolve, 30000));
+        await createRealmsForAccount(account, addresses, startRealmId, realmCount, (progress) => {
+          // Send progress updates to main thread
+          parentPort?.postMessage({
+            type: "progress",
+            address: account.address,
+            stage: "creating_realms",
+            progress,
+            message: `Created ${progress.completed}/${progress.total} realms for account ${account.address.substring(0, 8)}...`,
+          });
+        });
+        // await new Promise((resolve) => setTimeout(resolve, 30000));
       } else {
-        // Skip realm creation
-        realmsCreated = realmCount;
         parentPort?.postMessage({
           type: "progress",
           address: account.address,
@@ -79,6 +70,47 @@ if (!isMainThread) {
 
       const accountObject = new Account(provider, account.address, account.privateKey);
       const realmEntityIds = await getRealmEntityIds(accountObject);
+
+      if (CONFIG.levelUpRealms) {
+        parentPort?.postMessage({
+          type: "progress",
+          address: account.address,
+          stage: "leveling_up_realms",
+          message: `Leveling up realms for account ${account.address.substring(0, 8)}...`,
+        });
+        for (let j = 0; j < realmEntityIds.length; j++) {
+          const realmEntityId = realmEntityIds[j];
+
+          try {
+            await levelUpRealms(accountObject, realmEntityId);
+            
+            parentPort?.postMessage({
+              type: "progress",
+              address: account.address,
+              stage: "leveling_up_realms",
+              progress: { completed: j + 1, total: realmEntityIds.length },
+              message: `Leveled up ${j + 1}/${realmEntityIds.length} realms for account ${account.address.substring(0, 8)}...`,
+            });
+          } catch (error) {
+            parentPort?.postMessage({
+              type: "error",
+              success: false,
+              address: account.address,
+              error: `Error leveling up realm ${realmEntityId}: ${error}`,
+              message: `Error leveling up realm ${realmEntityId} for account ${account.address.substring(0, 8)}...: ${error}`,
+            });
+          }
+        }
+
+        // await new Promise((resolve) => setTimeout(resolve, 30000));
+      } else {
+        parentPort?.postMessage({
+          type: "progress",
+          address: account.address,
+          stage: "skipped_leveling_realms",
+          message: `Skipped leveling up realms for account ${account.address.substring(0, 8)}...`,
+        });
+      }
 
       if (CONFIG.createBuildings) {
         parentPort?.postMessage({
@@ -94,7 +126,6 @@ if (!isMainThread) {
           try {
             await createBuildings(accountObject, realmEntityId);
 
-            // Send progress updates to main thread
             parentPort?.postMessage({
               type: "progress",
               address: account.address,
@@ -103,7 +134,6 @@ if (!isMainThread) {
               message: `Created buildings for ${j + 1}/${realmEntityIds.length} realms for account ${account.address.substring(0, 8)}...`,
             });
           } catch (error) {
-            // Continue with the next realm even if this one fails
             parentPort?.postMessage({
               type: "error",
               success: false,
@@ -114,7 +144,6 @@ if (!isMainThread) {
           }
         }
       } else {
-        // Skip building creation
         parentPort?.postMessage({
           type: "progress",
           address: account.address,
@@ -124,7 +153,6 @@ if (!isMainThread) {
       }
 
       if (CONFIG.spawnExplorers) {
-        // Create explorer armies for this account
         parentPort?.postMessage({
           type: "progress",
           address: account.address,
@@ -139,7 +167,6 @@ if (!isMainThread) {
             await createExplorerArmy(accountObject, realmEntityId);
             armiesCreated++;
 
-            // Send progress updates to main thread
             parentPort?.postMessage({
               type: "progress",
               address: account.address,
@@ -147,15 +174,11 @@ if (!isMainThread) {
               progress: { completed: j + 1, total: realmEntityIds.length },
               message: `Created ${j + 1}/${realmEntityIds.length} armies for account ${account.address.substring(0, 8)}...`,
             });
-          } catch (error) {
-            // Continue with the next realm even if this one fails
-          }
+          } catch (error) {}
         }
 
-        // Wait for explorer spawn to complete
-        await new Promise((resolve) => setTimeout(resolve, 30000));
+        // await new Promise((resolve) => setTimeout(resolve, 30000));
       } else {
-        // Skip army creation
         armiesCreated = realmEntityIds.length;
         parentPort?.postMessage({
           type: "progress",
@@ -166,7 +189,6 @@ if (!isMainThread) {
       }
 
       if (CONFIG.moveExplorers) {
-        // Move explorers for this account
         parentPort?.postMessage({
           type: "progress",
           address: account.address,
@@ -191,7 +213,6 @@ if (!isMainThread) {
                 await moveExplorer(accountObject, explorerEntityId);
                 explorersMoved++;
 
-                // Send progress updates to main thread
                 parentPort?.postMessage({
                   type: "progress",
                   address: account.address,
@@ -199,20 +220,10 @@ if (!isMainThread) {
                   progress: { completed: j + 1, total: explorerEntityIds.length },
                   message: `Moved ${j + 1}/${explorerEntityIds.length} explorers for account ${account.address.substring(0, 8)}...`,
                 });
-              } catch (error) {
-                // Log the specific explorer error but continue with the next one
-                // parentPort?.postMessage({
-                //   type: "error",
-                //   success: false,
-                //   address: account.address,
-                //   error: `Error moving explorer ${explorerEntityIds[j]}: ${error}`,
-                //   message: `Error moving explorer ${explorerEntityIds[j]} for account ${account.address.substring(0, 8)}...: ${error}`,
-                // });
-              }
+              } catch (error) {}
             }
           }
         } catch (error) {
-          // Handle errors in the explorer entity ID fetching
           parentPort?.postMessage({
             type: "error",
             success: false,
@@ -222,7 +233,6 @@ if (!isMainThread) {
           });
         }
       } else {
-        // Skip explorer movement
         parentPort?.postMessage({
           type: "progress",
           address: account.address,
@@ -231,18 +241,15 @@ if (!isMainThread) {
         });
       }
 
-      // Send success message back to main thread
       parentPort?.postMessage({
         type: "complete",
         success: true,
         address: account.address,
-        realmsCreated: realmsCreated,
         armiesCreated: armiesCreated,
         explorersMoved: explorersMoved,
         message: `Completed processing for account ${account.address.substring(0, 8)}...`,
       });
     } catch (error) {
-      // Send error message back to main thread
       parentPort?.postMessage({
         type: "error",
         success: false,
@@ -305,7 +312,6 @@ async function runWorldPopulation() {
   const workers: Worker[] = [];
   const workerPromises: Promise<void>[] = [];
 
-  // Create a worker for each account
   for (let i = 0; i < accountsData.length; i++) {
     const { account, realmCount, startRealmId } = accountsData[i];
     const shortAddress = account.address.substring(0, 8) + "...";
@@ -351,6 +357,12 @@ async function runWorldPopulation() {
                   stageColor = chalk.yellow;
                   break;
                 case "skipped_realms":
+                  stageColor = chalk.yellow;
+                  break;
+                case "leveling_up_realms":
+                  stageColor = chalk.yellow;
+                  break;
+                case "skipped_leveling_realms":
                   stageColor = chalk.yellow;
                   break;
                 case "creating_buildings":
@@ -564,6 +576,7 @@ async function runWorldPopulation() {
   const totalRealms = summary.totalRealmsCreated;
   const totalSteps =
     (CONFIG.spawnRealms ? 1 : 0) +
+    (CONFIG.levelUpRealms ? 1 : 0) +
     (CONFIG.createBuildings ? 1 : 0) +
     (CONFIG.spawnExplorers ? 1 : 0) +
     (CONFIG.moveExplorers ? 1 : 0) +
@@ -574,16 +587,6 @@ async function runWorldPopulation() {
   finalStatusLines.push(
     chalk.cyan.bold(`Overall Progress: ${overallProgressBar} 100% (${totalTasks}/${totalTasks} tasks)`),
   );
-
-  // Add a description of what the progress represents
-  let progressDescription = "Progress includes:";
-  if (CONFIG.spawnRealms) progressDescription += " 1) Realm creation,";
-  if (CONFIG.createBuildings) progressDescription += " 2) Building creation,";
-  if (CONFIG.spawnExplorers) progressDescription += " 3) Army creation,";
-  if (CONFIG.moveExplorers) progressDescription += " 4) Explorer movement,";
-  if (CONFIG.mintLords) progressDescription += " 5) Lords minting";
-
-  finalStatusLines.push(chalk.cyan(progressDescription));
   finalStatusLines.push("");
 
   // Individual progress bars - all at 100%
@@ -593,9 +596,17 @@ async function runWorldPopulation() {
     );
   }
 
+  if (CONFIG.levelUpRealms) {
+    finalStatusLines.push(
+      chalk.yellow(`Realm Level Up: ${createProgressBar(100)} 100% (${totalRealms}/${totalRealms} realms)`),
+    );
+  }
+
   if (CONFIG.createBuildings) {
     finalStatusLines.push(
-      chalk.yellow(`Building Creation: ${createProgressBar(100)} 100% (${totalRealms}/${totalRealms} realms with buildings)`),
+      chalk.yellow(
+        `Building Creation: ${createProgressBar(100)} 100% (${totalRealms}/${totalRealms} realms with buildings)`,
+      ),
     );
   }
 
@@ -694,7 +705,6 @@ async function runWorldPopulation() {
 async function createRealmsForAccount(
   account: { address: string; privateKey: string },
   addresses: any,
-  realmSystemsContractAddress: string,
   startRealmId: number,
   realmCount: number,
   progressCallback?: (progress: { completed: number; total: number }) => void,
@@ -724,7 +734,7 @@ async function createRealmsForAccount(
       for (let j = 0; j < batchSize; j++) {
         const currentRealmId = batchStartId + j;
 
-        await createRealm(accountObject, addresses, realmSystemsContractAddress, currentRealmId);
+        await createRealm(accountObject, addresses, currentRealmId);
         completedRealms++;
       }
 

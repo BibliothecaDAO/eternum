@@ -52,9 +52,6 @@ export function generateStatusDisplay(
 ): string {
   const lines: string[] = [];
 
-  // Update the header to include both worker and Lords minting status
-  lines.push(chalk.cyan.bold(`=== WORLD POPULATION STATUS ===`));
-  lines.push(chalk.cyan(`Time: ${new Date().toLocaleTimeString()}`));
   lines.push("");
 
   let totalCompleted = 0;
@@ -79,8 +76,8 @@ export function generateStatusDisplay(
     const status = workerStatus[account.address];
 
     totalRealms += realmCount;
-    totalArmiesToCreate += realmCount; // Each realm gets one army
-    totalExplorersToMove += realmCount; // Each realm gets one explorer to move
+    totalArmiesToCreate += realmCount;
+    totalExplorersToMove += realmCount;
 
     if (!status) {
       lines.push(chalk.gray(`[Account ${index + 1}] ${shortAddress}: No status available`));
@@ -111,12 +108,29 @@ export function generateStatusDisplay(
         statusText = "REALMS SKIPPED";
         totalCompleted += realmCount; // Count all realms as completed if skipped
         break;
+      case "leveling_up_realms":
+        statusColor = chalk.yellow;
+        if (status.completed !== undefined && status.total !== undefined) {
+          const percent = Math.round((status.completed / status.total) * 100);
+          progressText = ` ${createProgressBar(percent)} ${percent}% (${status.completed}/${status.total})`;
+        }
+        // Count realms as created too when they're being leveled up
+        totalCompleted += status.completed || 0;
+        break;
+      case "skipped_leveling_realms":
+        statusColor = chalk.yellow;
+        statusText = "LEVELING SKIPPED";
+        // If we skipped leveling, the realms were created
+        totalCompleted += realmCount;
+        break;
       case "creating_buildings":
         statusColor = chalk.yellow;
         if (status.completed !== undefined && status.total !== undefined) {
           const percent = Math.round((status.completed / status.total) * 100);
           progressText = ` ${createProgressBar(percent)} ${percent}% (${status.completed}/${status.total})`;
         }
+        // Count realms as created too when buildings are being created
+        totalCompleted += realmCount;
         break;
       case "creating_armies":
         statusColor = chalk.blue;
@@ -126,11 +140,14 @@ export function generateStatusDisplay(
           progressText = ` ${createProgressBar(percent)} ${percent}% (${status.completed}/${status.total})`;
           totalArmiesCreated += status.completed;
         }
+        // Count realms as created when armies are being created
+        totalCompleted += realmCount;
         break;
       case "skipped_armies":
         statusColor = chalk.blue;
         statusText = "ARMIES SKIPPED";
         totalArmiesCreated += realmCount; // Count all armies as completed if skipped
+        totalCompleted += realmCount; // Count all realms as created too
         break;
       case "moving_explorers":
         statusColor = chalk.green;
@@ -140,14 +157,23 @@ export function generateStatusDisplay(
           progressText = ` ${createProgressBar(percent)} ${percent}% (${status.completed}/${status.total})`;
           totalExplorersMoved += status.completed;
         }
+        // Count armies as created and realms too when explorers are being moved
+        totalCompleted += realmCount;
+        totalArmiesCreated += realmCount;
         break;
       case "skipped_movement":
         statusColor = chalk.green;
         statusText = "MOVEMENT SKIPPED";
         totalExplorersMoved += realmCount; // Count all explorers as moved if skipped
+        totalArmiesCreated += realmCount; // Count all armies as created too
+        totalCompleted += realmCount; // Count all realms as created too
         break;
       case "waiting":
         statusColor = chalk.blue;
+        // Count previous steps as completed
+        totalCompleted += realmCount;
+        totalArmiesCreated += realmCount;
+        totalExplorersMoved += realmCount;
         break;
       case "waiting_for_lords":
         statusColor = chalk.magenta;
@@ -156,6 +182,7 @@ export function generateStatusDisplay(
         // If we're waiting for lords, armies and explorers are completed
         totalArmiesCreated += realmCount;
         totalExplorersMoved += realmCount;
+        totalCompleted += realmCount;
         break;
       case "processing_lords":
         statusColor = chalk.magenta;
@@ -164,6 +191,7 @@ export function generateStatusDisplay(
         // If we're processing lords, armies and explorers are completed
         totalArmiesCreated += realmCount;
         totalExplorersMoved += realmCount;
+        totalCompleted += realmCount;
         if (status.completed !== undefined && status.total !== undefined) {
           const percent = Math.round((status.completed / status.total) * 100);
           progressText = ` ${createProgressBar(percent)} ${percent}% (${status.completed}/${status.total})`;
@@ -178,6 +206,7 @@ export function generateStatusDisplay(
         totalLordsCompleted += realmCount; // Count all realms as having Lords completed
         totalArmiesCreated += realmCount; // Count all armies as completed
         totalExplorersMoved += realmCount; // Count all explorers as moved
+        totalCompleted += realmCount; // Count all realms as created
         if (summary.lordsAttachedByAccount && summary.lordsAttachedByAccount[account.address]) {
           progressText = ` (${summary.lordsAttachedByAccount[account.address]} Lords)`;
         }
@@ -200,18 +229,7 @@ export function generateStatusDisplay(
         break;
     }
 
-    // Calculate time since last update
-    const timeSinceUpdate = Math.round((new Date().getTime() - status.lastUpdate.getTime()) / 1000);
-    const timeText =
-      timeSinceUpdate < 60
-        ? `${timeSinceUpdate}s ago`
-        : `${Math.floor(timeSinceUpdate / 60)}m ${timeSinceUpdate % 60}s ago`;
-
-    lines.push(
-      statusColor(
-        `[Account ${index + 1}] ${shortAddress}: ${statusText.toUpperCase()}${progressText} (updated ${timeText})`,
-      ),
-    );
+    lines.push(statusColor(`[Account ${index + 1}] ${shortAddress}: ${statusText.toUpperCase()}${progressText}`));
   });
 
   lines.push("");
@@ -277,6 +295,73 @@ export function generateStatusDisplay(
     }
   }
 
+  // Realm level up progress
+  if (CONFIG.levelUpRealms) {
+    if (completedWorkers === accountsData.length) {
+      // Level up is complete
+      lines.push(chalk.yellow(`Realm Level Up: ${createProgressBar(100)} 100% (${totalRealms}/${totalRealms} realms)`));
+    } else {
+      // Count realms that have been leveled up
+      let leveledUpRealms = 0;
+      accountsData.forEach(data => {
+        const { account } = data;
+        const status = workerStatus[account.address];
+        if (status && (status.stage === "creating_buildings" || status.stage === "creating_armies" || 
+                       status.stage === "moving_explorers" || status.stage === "completed" || 
+                       status.stage === "lords_completed" || status.stage === "skipped_buildings" ||
+                       status.stage === "skipped_armies" || status.stage === "skipped_movement" || 
+                       status.stage === "waiting_for_lords" || status.stage === "processing_lords" ||
+                       status.stage === "skipped_leveling_realms" || status.stage === "waiting")) {
+          leveledUpRealms += data.realmCount;
+        } else if (status && status.stage === "leveling_up_realms" && status.completed) {
+          leveledUpRealms += status.completed;
+        }
+      });
+      
+      const levelUpPercent = Math.round((leveledUpRealms / totalRealms) * 100) || 0;
+      lines.push(
+        chalk.yellow(
+          `Realm Level Up: ${createProgressBar(levelUpPercent)} ${levelUpPercent}% (${leveledUpRealms}/${totalRealms} realms)`,
+        ),
+      );
+    }
+  }
+
+  // Building creation progress
+  if (CONFIG.createBuildings) {
+    if (completedWorkers === accountsData.length) {
+      // Building creation is complete
+      lines.push(
+        chalk.yellow(
+          `Building Creation: ${createProgressBar(100)} 100% (${totalRealms}/${totalRealms} realms with buildings)`,
+        ),
+      );
+    } else {
+      // Count realms that have buildings created
+      let buildingRealms = 0;
+      accountsData.forEach(data => {
+        const { account } = data;
+        const status = workerStatus[account.address];
+        if (status && (status.stage === "creating_armies" || status.stage === "moving_explorers" || 
+                      status.stage === "completed" || status.stage === "lords_completed" || 
+                      status.stage === "skipped_armies" || status.stage === "skipped_movement" || 
+                      status.stage === "waiting_for_lords" || status.stage === "processing_lords" ||
+                      status.stage === "waiting" || status.stage === "skipped_buildings")) {
+          buildingRealms += data.realmCount;
+        } else if (status && status.stage === "creating_buildings" && status.completed) {
+          buildingRealms += status.completed;
+        }
+      });
+      
+      const buildingPercent = Math.round((buildingRealms / totalRealms) * 100) || 0;
+      lines.push(
+        chalk.yellow(
+          `Building Creation: ${createProgressBar(buildingPercent)} ${buildingPercent}% (${buildingRealms}/${totalRealms} realms with buildings)`,
+        ),
+      );
+    }
+  }
+
   // Army creation progress
   if (CONFIG.spawnExplorers) {
     const armyPercent = Math.round((totalArmiesCreated / totalArmiesToCreate) * 100) || 0;
@@ -299,8 +384,13 @@ export function generateStatusDisplay(
 
   // Lords minting progress
   if (CONFIG.mintLords) {
+    // Count all realms that have completed the Lords minting process
+    // or are at a later stage
+    
+    // For Lords, we need to specifically count realms that have completed the Lords process
     const lordsTotal = totalRealms; // Total realms that need Lords
     const lordsPercent = Math.round((totalLordsCompleted / lordsTotal) * 100) || 0;
+    
     lines.push(
       chalk.magenta(
         `Lords Minting: ${createProgressBar(lordsPercent)} ${lordsPercent}% (${totalLordsCompleted}/${lordsTotal} realms)`,

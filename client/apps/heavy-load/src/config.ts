@@ -39,12 +39,12 @@ export const workerStatus: Record<
 export const CONFIG = {
   nodeUrl: normalizeUrl(process.env.VITE_PUBLIC_NODE_URL, "http://localhost:5050"),
   graphqlUrl: normalizeUrl(process.env.VITE_PUBLIC_TORII, "http://localhost:8080") + "/graphql",
-  startRealmId: 500,
+  startRealmId: 100,
   realmDistribution: {
-    firstAccount: 2, // First account gets exactly this many realms
-    middleAccountsMin: 2, // Middle accounts get between min and max
-    middleAccountsMax: 2,
-    lastAccount: 2, // Last account gets exactly this many realms
+    firstAccount: 50, // First account gets exactly this many realms
+    middleAccountsMin: 100, // Middle accounts get between min and max
+    middleAccountsMax: 100,
+    lastAccount: 100, // Last account gets exactly this many realms
   },
   lordsPerRealm: 1000,
   logSummary: true,
@@ -54,6 +54,7 @@ export const CONFIG = {
   mintLords: true,
   moveExplorers: true,
   createBuildings: true,
+  levelUpRealms: true,
 };
 
 export const SYSTEM_ADDRESSES = {
@@ -62,4 +63,6 @@ export const SYSTEM_ADDRESSES = {
   troopManagementSystems: getContractByName(manifest, `${NAMESPACE}-troop_management_systems`),
   troopMovementSystems: getContractByName(manifest, `${NAMESPACE}-troop_movement_systems`),
   productionSystems: getContractByName(manifest, `${NAMESPACE}-production_systems`),
+  structureSystems: getContractByName(manifest, `${NAMESPACE}-structure_systems`),
+  tradeSystems: getContractByName(manifest, `${NAMESPACE}-trade_systems`),
 };

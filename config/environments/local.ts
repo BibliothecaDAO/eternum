@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { multiplyStartingResources } from "./utils/resource";
 
@@ -68,6 +68,46 @@ export const LocalEternumGlobalConfig: Config = {
   season: {
     ...CommonEternumGlobalConfig.season,
     startAfterSeconds: 60, // 1 minute
+  },
+  realmUpgradeCosts: {
+    ...CommonEternumGlobalConfig.realmUpgradeCosts,
+    [RealmLevels.Settlement]: [],
+    [RealmLevels.City]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Kingdom]: [
+      { resource: ResourcesIds.ColdIron, amount: 1 },
+      { resource: ResourcesIds.Hartwood, amount: 1 },
+      { resource: ResourcesIds.Diamonds, amount: 1 },
+      { resource: ResourcesIds.Sapphire, amount: 1 },
+      { resource: ResourcesIds.DeepCrystal, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Empire]: [
+      { resource: ResourcesIds.AlchemicalSilver, amount: 1 },
+      { resource: ResourcesIds.Adamantine, amount: 1 },
+      { resource: ResourcesIds.Mithral, amount: 1 },
+      { resource: ResourcesIds.Dragonhide, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+  },
+  buildings: {
+    ...CommonEternumGlobalConfig.buildings,
+    otherBuildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.otherBuildingCosts,
+      [BuildingType.Farm]: [
+        { resource: ResourcesIds.Wood, amount: 1 },
+        { resource: ResourcesIds.Stone, amount: 1 },
+        { resource: ResourcesIds.Coal, amount: 1 },
+      ],
+    },
+    buildingCapacity: {
+      ...CommonEternumGlobalConfig.buildings.buildingCapacity,
+      [BuildingType.Castle]: 1000,
+    },
   },
 };
 
