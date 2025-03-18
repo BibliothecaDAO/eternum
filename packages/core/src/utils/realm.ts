@@ -1,12 +1,12 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager } from "..";
-import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureType } from "../constants";
+import { configManager, ResourceManager } from "..";
+import { findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { getBuildingCount, packValues, unpackValue } from "./packed-data";
+import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
   const { Structure } = components;
@@ -62,23 +62,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
-  const buildingCounts = [
-    structureBuildings?.packed_counts_1 || 0n,
-    structureBuildings?.packed_counts_2 || 0n,
-    structureBuildings?.packed_counts_3 || 0n,
-  ];
-
-  const storehouseQuantity = getBuildingCount(BuildingType.Storehouse, buildingCounts) || 0;
-
-  const storehouses = (() => {
-    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
-    const structureCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Structure);
-    return {
-      capacityKg: storehouseQuantity * storehouseCapacityKg + structureCapacityKg,
-      quantity: storehouseQuantity,
-    };
-  })();
-
   if (structure) {
     const realm_id = structure.metadata.realm_id;
     const order = structure.metadata.order;
@@ -90,14 +73,16 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
 
     const resources = unpackValue(BigInt(produced_resources));
 
+    const resourceManager = new ResourceManager(components, entity_id);
+
     return {
       realmId: realm_id,
       entityId: entity_id,
-      storehouses,
       name,
       level,
       resources,
       order,
+      storehouses: resourceManager.getStoreCapacityKg(),
       position: { x: structure.base.coord_x, y: structure.base.coord_y },
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
@@ -159,8 +144,6 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
   const buildingPopulation = configManager.getBuildingCategoryConfig(building).population_cost;
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
-
-  console.log({ buildingPopulation, basePopulationCapacity, realm, building });
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
 };

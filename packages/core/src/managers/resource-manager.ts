@@ -118,12 +118,15 @@ export class ResourceManager {
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
-  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds): number {
+  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
     const production = this.getProduction(resourceId);
     const balance = this.balance(resourceId);
     const amountProduced = this._amountProduced(production!, currentTick, resourceId);
-    const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
-    return Number(finalBalance);
+    if (hasMaxCapacity) {
+      const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
+      return Number(finalBalance);
+    }
+    return Number(balance + amountProduced);
   }
 
   public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, actualResourceChange: bigint) => {
@@ -633,9 +636,9 @@ export class ResourceManager {
     return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
-  public getStoreCapacityKg(): number {
+  public getStoreCapacityKg(): { capacityKg: number; quantity: number } {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
-    if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
+    if (structure?.base?.category === StructureType.FragmentMine) return { capacityKg: Infinity, quantity: 0 };
 
     const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
     const structureBuildings = getComponentValue(
@@ -652,11 +655,14 @@ export class ResourceManager {
     ];
     const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
-    return Number(quantity) * storehouseCapacityKg + structureCapacityKg;
+    return {
+      capacityKg: Number(quantity) * storehouseCapacityKg + structureCapacityKg,
+      quantity,
+    };
   }
 
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
-    const storeCapacityKg = this.getStoreCapacityKg();
+    const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
 
     const maxAmountStorable = multiplyByPrecision(
       storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),

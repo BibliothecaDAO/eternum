@@ -1,15 +1,8 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  BuildingType,
-  getEntityIdFromKeys,
-  getProducedResource,
-  RealmInfo,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
-import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
 
@@ -26,21 +19,17 @@ export const BuildingsList = ({
 
   const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
 
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
   const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
   const resourceManager = useResourceManager(realm.entityId);
 
+  const storeCapacityKg = useMemo(() => {
+    return resourceManager.getStoreCapacityKg();
+  }, [resourceManager]);
+
   const productions = useMemo(() => {
     return producedResources
       .map((resourceId) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId), BigInt(resourceId)]));
-
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
         );
@@ -103,7 +92,7 @@ export const BuildingsList = ({
                   <ResourceChip
                     resourceId={production.resource}
                     resourceManager={resourceManager}
-                    maxStorehouseCapacityKg={realm.capacity || 0}
+                    maxCapacityKg={storeCapacityKg.capacityKg}
                   />
                 </div>
               </div>

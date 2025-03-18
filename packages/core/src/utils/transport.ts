@@ -1,5 +1,4 @@
-import { kgToGram } from ".";
-import { ClientConfigManager, configManager } from "..";
+import { configManager } from "..";
 import { CapacityConfig } from "../constants";
 import { Resource } from "../types";
 
@@ -9,13 +8,12 @@ export const calculateDonkeysNeeded = (orderWeightKg: number): number => {
   return Math.ceil(orderWeightKg / donkeyCapacityKg);
 };
 
-// grams
-export const getTotalResourceWeightGrams = (resources: Array<Resource | undefined>) => {
-  const configManager = ClientConfigManager.instance();
-
+// kg
+// without resource precision
+export const getTotalResourceWeightKg = (resources: Array<Resource | undefined>) => {
   return resources.reduce(
     (total, resource) =>
-      total + (resource ? resource.amount * kgToGram(configManager.getResourceWeightKg(resource.resourceId) || 0) : 0),
+      total + (resource ? resource.amount * configManager.getResourceWeightKg(resource.resourceId) : 0),
     0,
   );
 };

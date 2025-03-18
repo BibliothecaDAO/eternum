@@ -13,8 +13,7 @@ import {
   EntityType,
   findResourceById,
   getRealmAddressName,
-  getTotalResourceWeightGrams,
-  gramToKg,
+  getTotalResourceWeightKg,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
@@ -307,13 +306,13 @@ const OrderRow = memo(
     }, [inputValue, getsDisplay, getTotalLords]);
 
     const orderWeightKg = useMemo(() => {
-      const totalWeight = getTotalResourceWeightGrams([
+      const totalWeightKg = getTotalResourceWeightKg([
         {
           resourceId: offer.takerGets[0].resourceId,
           amount: isBuy ? calculatedLords : calculatedResourceAmount,
         },
       ]);
-      return gramToKg(totalWeight);
+      return totalWeightKg;
     }, [entityId, calculatedResourceAmount, calculatedLords]);
 
     const donkeysNeeded = useMemo(() => {
@@ -327,9 +326,6 @@ const OrderRow = memo(
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
-
-    //console.log the disable conditions
-    console.log({ isBuy, donkeysNeeded, donkeyBalance, inputValue });
 
     const accountName = useMemo(() => {
       return getRealmAddressName(offer.makerId, dojo.setup.components);
@@ -539,13 +535,13 @@ const OrderCreation = memo(
     };
 
     const orderWeightKg = useMemo(() => {
-      const totalWeight = getTotalResourceWeightGrams([
+      const totalWeight = getTotalResourceWeightKg([
         {
           resourceId: isBuy ? resourceId : ResourcesIds.Lords,
-          amount: isBuy ? multiplyByPrecision(resource) : multiplyByPrecision(lords),
+          amount: isBuy ? resource : lords,
         },
       ]);
-      return gramToKg(totalWeight);
+      return totalWeight;
     }, [resource, lords]);
 
     const donkeysNeeded = useMemo(() => {
@@ -663,7 +659,7 @@ const OrderCreation = memo(
             <div className="flex justify-between">
               <div>Weight</div>
               <div className="flex gap-2">
-                <div>{divideByPrecision(orderWeight).toLocaleString()} kgs</div>
+                <div>{orderWeightKg.toLocaleString()} kgs</div>
               </div>
             </div>
           </div>

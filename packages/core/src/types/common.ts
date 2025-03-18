@@ -453,6 +453,10 @@ export interface RealmInfo {
   resources: ResourcesIds[];
   order: number;
   position: Position;
+  storehouses: {
+    capacityKg: number;
+    quantity: number;
+  };
   population?: number | undefined;
   capacity?: number;
   hasCapacity: boolean;
@@ -460,10 +464,6 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
-  storehouses: {
-    capacityKg: number;
-    quantity: number;
-  };
 }
 
 export interface PlayerInfo {

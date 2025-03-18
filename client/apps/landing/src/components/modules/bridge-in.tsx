@@ -12,9 +12,7 @@ import {
   ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
-  getTotalResourceWeightGrams,
-  gramToKg,
-  multiplyByPrecision,
+  getTotalResourceWeightKg,
   resources,
 } from "@bibliothecadao/eternum";
 import { useAccount, useBalance } from "@starknet-react/core";
@@ -104,13 +102,13 @@ export const BridgeIn = () => {
   const orderWeightKg = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeightGrams(
+      const totalWeight = getTotalResourceWeightKg(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
-          amount: multiplyByPrecision(amount),
+          amount: amount,
         })),
       );
-      return gramToKg(totalWeight);
+      return totalWeight;
     } else {
       return 0;
     }

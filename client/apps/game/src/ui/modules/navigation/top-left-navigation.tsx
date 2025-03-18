@@ -55,8 +55,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
     return saved ? JSON.parse(saved) : [];
@@ -119,7 +117,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
 
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+  const { progress } = useMemo(() => {
     const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
     const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };

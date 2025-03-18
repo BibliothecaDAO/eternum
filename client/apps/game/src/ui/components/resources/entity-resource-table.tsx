@@ -2,11 +2,9 @@ import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   BuildingType,
-  CapacityConfig,
-  configManager,
   getBuildingQuantity,
+  getRealmInfo,
   ID,
-  multiplyByPrecision,
   RESOURCE_TIERS,
   StructureType,
 } from "@bibliothecadao/eternum";
@@ -23,8 +21,10 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
 
   const maxStorehouseCapacityKg = useMemo(() => {
     if (structure?.base.category !== StructureType.Realm) return Infinity;
-    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
-    return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
+    if (!entityId) return 0;
+    const capacity = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components)?.storehouses
+      .capacityKg;
+    return capacity || 0;
   }, [quantity, entityId]);
 
   if (!entityId || entityId === 0) {
@@ -39,7 +39,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
         key={resourceId}
         resourceId={resourceId}
         resourceManager={resourceManager}
-        maxStorehouseCapacityKg={maxStorehouseCapacityKg}
+        maxCapacityKg={maxStorehouseCapacityKg}
       />
     ));
 

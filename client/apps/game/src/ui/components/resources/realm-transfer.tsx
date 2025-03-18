@@ -5,19 +5,17 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
+  calculateDonkeysNeeded,
+  findResourceById,
+  getTotalResourceWeightKg,
   ID,
   PlayerStructure,
   RESOURCE_PRECISION,
   ResourcesIds,
-  calculateDonkeysNeeded,
-  findResourceById,
-  getTotalResourceWeightGrams,
-  gramToKg,
-  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
-import { Dispatch, SetStateAction, memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
 
 type transferCall = {
@@ -61,12 +59,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     const resources = calls.map((call) => {
       return {
         resourceId: Number(call.resources[0]),
-        amount: multiplyByPrecision(Number(call.resources[1])),
+        amount: Number(call.resources[1]),
       };
     });
-    const totalWeight = getTotalResourceWeightGrams(resources);
+    const totalWeightKg = getTotalResourceWeightKg(resources);
 
-    setResourceWeightKg(gramToKg(totalWeight));
+    setResourceWeightKg(totalWeightKg);
   }, [calls]);
 
   const handleTransfer = useCallback(async () => {
@@ -198,9 +196,8 @@ const RealmTransferBalance = memo(
     const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
     useEffect(() => {
-      const totalWeight = getTotalResourceWeightGrams([{ resourceId: resource, amount: multiplyByPrecision(input) }]);
-
-      setResourceWeightKg(gramToKg(totalWeight));
+      const totalWeight = getTotalResourceWeightKg([{ resourceId: resource, amount: input }]);
+      setResourceWeightKg(totalWeight);
     }, [input]);
 
     const neededDonkeys = useMemo(() => {
@@ -264,7 +261,7 @@ const RealmTransferBalance = memo(
                 neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
               }`}
             >
-              {neededDonkeys.toLocaleString()} 🔥🫏 [{getDonkeyBalance().toLocaleString()}]
+              {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
             </div>
           </div>
         </div>

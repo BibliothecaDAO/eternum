@@ -601,7 +601,7 @@ export const BuildingInfo = ({
   const population = buildingPopCapacityConfig.population_cost;
   const capacity = buildingPopCapacityConfig.capacity_grant;
 
-  const carryCapacityKg =
+  const extraStorehouseCapacityKg =
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
 
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
@@ -645,10 +645,10 @@ export const BuildingInfo = ({
             </div>
           )}
         </div>
-        {carryCapacityKg !== 0 && (
+        {extraStorehouseCapacityKg !== 0 && (
           <div>
             <span className="w-full font-bold uppercase">Max resource capacity</span>
-            <br />+{carryCapacityKg.toLocaleString()} kg
+            <br />+{extraStorehouseCapacityKg.toLocaleString()} kg
           </div>
         )}
         {resourceProduced !== 0 && (
