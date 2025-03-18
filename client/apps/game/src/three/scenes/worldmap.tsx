@@ -817,7 +817,7 @@ export default class WorldmapScene extends HexagonScene {
         false,
       );
       // todo: verify that this works with nested struct
-      const promisePositions = getEntities(
+      const promiseExplorers = getEntities(
         this.dojo.network.toriiClient,
         {
           Composite: {
@@ -860,11 +860,60 @@ export default class WorldmapScene extends HexagonScene {
         },
         this.dojo.network.contractComponents as any,
         [],
-        ["s1_eternum-ExplorerTroops"],
+        ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
         1000,
         false,
       );
-      Promise.all([promiseTiles, promisePositions]).then(() => {
+
+      const promiseStructures = getEntities(
+        this.dojo.network.toriiClient,
+        {
+          Composite: {
+            operator: "And",
+            clauses: [
+              {
+                Member: {
+                  model: "s1_eternum-Structure",
+                  member: "base.coord_x",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startCol - range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s1_eternum-Structure",
+                  member: "base.coord_x",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startCol + range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s1_eternum-Structure",
+                  member: "base.coord_y",
+                  operator: "Gte",
+                  value: { Primitive: { U32: startRow - range } },
+                },
+              },
+              {
+                Member: {
+                  model: "s1_eternum-Structure",
+                  member: "base.coord_y",
+                  operator: "Lte",
+                  value: { Primitive: { U32: startRow + range } },
+                },
+              },
+            ],
+          },
+        },
+        this.dojo.network.contractComponents as any,
+        [],
+        ["s1_eternum-Structure", "s1_eternum-Resource"],
+        1000,
+        false,
+      );
+
+      Promise.all([promiseTiles, promiseExplorers, promiseStructures]).then(() => {
         this.state.setLoading(LoadingStateKey.Map, false);
       });
     } catch (error) {
