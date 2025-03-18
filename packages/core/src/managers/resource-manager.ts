@@ -633,7 +633,7 @@ export class ResourceManager {
     return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
-  public getStoreCapacity(): number {
+  public getStoreCapacityKg(): number {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
     if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
 
@@ -643,6 +643,8 @@ export class ResourceManager {
       getEntityIdFromKeys([BigInt(this.entityId || 0)]),
     );
 
+    const structureCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Structure);
+
     const packBuildingCounts = [
       structureBuildings?.packed_counts_1 || 0n,
       structureBuildings?.packed_counts_2 || 0n,
@@ -650,14 +652,16 @@ export class ResourceManager {
     ];
     const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
-    return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
+    return Number(quantity) * storehouseCapacityKg + structureCapacityKg;
   }
 
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
-    const storeCapacity = this.getStoreCapacity();
+    const storeCapacityKg = this.getStoreCapacityKg();
+
     const maxAmountStorable = multiplyByPrecision(
-      storeCapacity / (configManager.getResourceWeightKg(resourceId) || 1000),
+      storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),
     );
+
     if (balance > maxAmountStorable) {
       return BigInt(maxAmountStorable);
     }
@@ -675,7 +679,7 @@ export class ResourceManager {
     resourceId: ResourcesIds,
   ): bigint {
     if (!production || production.building_count === 0) return 0n;
-    if (production.production_rate === 0n || production.output_amount_left === 0n) return 0n;
+    if (production.production_rate === 0n) return 0n;
 
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;

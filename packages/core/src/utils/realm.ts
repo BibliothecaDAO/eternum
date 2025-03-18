@@ -72,7 +72,11 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
 
   const storehouses = (() => {
     const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
-    return { capacityKg: (storehouseQuantity + 1) * storehouseCapacityKg, quantity: storehouseQuantity };
+    const structureCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Structure);
+    return {
+      capacityKg: storehouseQuantity * storehouseCapacityKg + structureCapacityKg,
+      quantity: storehouseQuantity,
+    };
   })();
 
   if (structure) {

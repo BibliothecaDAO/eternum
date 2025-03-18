@@ -1,4 +1,3 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
@@ -6,7 +5,6 @@ import {
   CapacityConfig,
   configManager,
   getBuildingQuantity,
-  gramToKg,
   ID,
   multiplyByPrecision,
   RESOURCE_TIERS,
@@ -19,15 +17,13 @@ import { useMemo } from "react";
 export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
 
-  const { currentDefaultTick: tick } = useBlockTimestamp();
-
   const quantity = entityId ? getBuildingQuantity(entityId, BuildingType.Storehouse, dojo.setup.components) : 0;
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
   const maxStorehouseCapacityKg = useMemo(() => {
     if (structure?.base.category !== StructureType.Realm) return Infinity;
-    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
+    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
     return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
   }, [quantity, entityId]);
 
