@@ -421,7 +421,7 @@ export class ClientConfigManager {
       )?.troop_stamina_config;
       const baseTravelCost = staminaConfig?.stamina_travel_stamina_cost ?? 0;
       const biomeBonus = staminaConfig?.stamina_bonus_value ?? 0;
-      return baseTravelCost - biomeBonus || 10;
+      return Math.max(baseTravelCost - biomeBonus, 10);
     }, 10);
   }
 

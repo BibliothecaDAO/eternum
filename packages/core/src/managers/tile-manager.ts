@@ -1,11 +1,10 @@
-import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, type DojoAccount } from "..";
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   Direction,
   FELT_CENTER,
   RealmLevels,
@@ -16,7 +15,7 @@ import {
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { SystemCalls } from "../dojo/create-system-calls";
-import { HexPosition, ID, Position } from "../types";
+import { HexPosition, ID } from "../types";
 import { configManager } from "./config-manager";
 
 export class TileManager {
@@ -301,30 +300,6 @@ export class TileManager {
     return overrideId;
   };
 
-  private _optimisticStructure = (coords: Position, structureType: StructureType) => {
-    const overrideId = DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString();
-    const entity: Entity = getEntityIdFromKeys([BigInt(DUMMY_HYPERSTRUCTURE_ENTITY_ID)]);
-    const structure = getComponentValue(this.components.Structure, entity);
-
-    if (structure) {
-      this.components.Structure.addOverride(overrideId, {
-        entity,
-        value: {
-          ...structure,
-          base: {
-            ...structure?.base,
-            category: Number(structureType),
-            coord_x: coords.x,
-            coord_y: coords.y,
-          },
-          entity_id: Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
-        },
-      });
-    }
-
-    return { overrideId };
-  };
-
   placeBuilding = async (
     signer: DojoAccount,
     structureEntityId: ID,
@@ -421,23 +396,6 @@ export class TileManager {
       });
     } catch (error) {
       this.components.Building.removeOverride(overrideId);
-      console.error(error);
-      throw error;
-    }
-  };
-
-  placeStructure = async (signer: DojoAccount, entityId: ID, structureType: StructureType, coords: Position) => {
-    const { overrideId } = this._optimisticStructure(coords, structureType);
-    try {
-      if (structureType == StructureType.Hyperstructure) {
-        return await this.systemCalls.create_hyperstructure({
-          signer,
-          creator_entity_id: entityId,
-          coords,
-        });
-      }
-    } catch (error) {
-      this.components.Structure.removeOverride(overrideId);
       console.error(error);
       throw error;
     }

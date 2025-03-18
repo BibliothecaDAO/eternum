@@ -535,9 +535,8 @@ export interface SetHyperstructureConfig extends SystemSigner {
   points_on_completion: num.BigNumberish;
 }
 
-export interface CreateHyperstructureProps extends SystemSigner {
-  creator_entity_id: num.BigNumberish;
-  coords: { x: num.BigNumberish; y: num.BigNumberish };
+export interface InitializeHyperstructureProps extends SystemSigner {
+  hyperstructure_id: num.BigNumberish;
 }
 
 export interface ContributeToConstructionProps extends SystemSigner {

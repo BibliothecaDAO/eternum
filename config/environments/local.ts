@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { multiplyStartingResources } from "./utils/resource";
 
@@ -29,11 +29,11 @@ export const LocalEternumGlobalConfig: Config = {
       mercenariesTroopLowerBound: 100,
       mercenariesTroopUpperBound: 200,
     },
-    // stamina: {
-    //   ...CommonEternumGlobalConfig.troop.stamina,
-    //   staminaTravelStaminaCost: 0,
-    //   staminaExploreStaminaCost: 0,
-    // },
+    stamina: {
+      ...CommonEternumGlobalConfig.troop.stamina,
+      staminaTravelStaminaCost: 0,
+      staminaExploreStaminaCost: 0,
+    },
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
@@ -57,8 +57,11 @@ export const LocalEternumGlobalConfig: Config = {
   },
   // starting resources x1000
   startingResources: {
-    ...CommonEternumGlobalConfig.startingResources,
-    ...multiplyStartingResources(1000),
+    ...CommonEternumGlobalConfig.startingResources.filter(
+      (resource) => resource.resource !== ResourcesIds.AncientFragment,
+    ),
+    ...multiplyStartingResources(1000).filter((resource) => resource.resource !== ResourcesIds.AncientFragment),
+    ...[{ resource: ResourcesIds.AncientFragment, amount: 1_000_000_000 }],
   },
   speed: {
     ...CommonEternumGlobalConfig.speed,

@@ -2153,21 +2153,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
-    const { creator_entity_id, coords, signer } = props;
+  public async initialize(props: SystemProps.InitializeHyperstructureProps) {
+    const { hyperstructure_id, signer } = props;
 
-    const vrfCalls = await buildVrfCalls({
-      account: signer,
-      call: {
-        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-        entrypoint: "create",
-        calldata: [creator_entity_id, coords.x, coords.y],
-      },
-      vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
-      addressToCall: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "initialize",
+      calldata: [hyperstructure_id],
     });
-
-    const call = this.createProviderCall(signer, vrfCalls);
 
     return await this.promiseQueue.enqueue(call);
   }
