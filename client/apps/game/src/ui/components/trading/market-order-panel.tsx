@@ -14,10 +14,11 @@ import {
   findResourceById,
   getRealmAddressName,
   getTotalResourceWeightGrams,
+  gramToKg,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
-  type MarketInterface
+  type MarketInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -222,7 +223,6 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
     const { currentDefaultTick } = useBlockTimestamp();
@@ -306,24 +306,23 @@ const OrderRow = memo(
       return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
     }, [inputValue, getsDisplay, getTotalLords]);
 
-    const orderWeight = useMemo(() => {
+    const orderWeightKg = useMemo(() => {
       const totalWeight = getTotalResourceWeightGrams([
         {
           resourceId: offer.takerGets[0].resourceId,
           amount: isBuy ? calculatedLords : calculatedResourceAmount,
         },
       ]);
-      return totalWeight;
+      return gramToKg(totalWeight);
     }, [entityId, calculatedResourceAmount, calculatedLords]);
 
     const donkeysNeeded = useMemo(() => {
-      return calculateDonkeysNeeded(orderWeight);
-    }, [orderWeight]);
+      return calculateDonkeysNeeded(orderWeightKg);
+    }, [orderWeightKg]);
 
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
-    
 
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
@@ -539,16 +538,19 @@ const OrderCreation = memo(
       }
     };
 
-    const orderWeight = useMemo(() => {
+    const orderWeightKg = useMemo(() => {
       const totalWeight = getTotalResourceWeightGrams([
-        { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
+        {
+          resourceId: isBuy ? resourceId : ResourcesIds.Lords,
+          amount: isBuy ? multiplyByPrecision(resource) : multiplyByPrecision(lords),
+        },
       ]);
-      return totalWeight;
+      return gramToKg(totalWeight);
     }, [resource, lords]);
 
     const donkeysNeeded = useMemo(() => {
-      return calculateDonkeysNeeded(multiplyByPrecision(orderWeight));
-    }, [orderWeight]);
+      return calculateDonkeysNeeded(orderWeightKg);
+    }, [orderWeightKg]);
 
     const { currentDefaultTick } = useBlockTimestamp();
 

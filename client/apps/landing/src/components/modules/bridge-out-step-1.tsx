@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
+import { gramToKg } from "../ui/utils/utils";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeOutStep1 = () => {
@@ -101,7 +102,7 @@ export const BridgeOutStep1 = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const orderWeight = useMemo(() => {
+  const orderWeightKg = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
       const totalWeight = getTotalResourceWeightGrams(
@@ -110,19 +111,19 @@ export const BridgeOutStep1 = () => {
           amount: multiplyByPrecision(amount),
         })),
       );
-      return totalWeight;
+      return gramToKg(totalWeight);
     } else {
       return 0;
     }
   }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
-    if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+    if (orderWeightKg) {
+      return calculateDonkeysNeeded(orderWeightKg);
     } else {
       return 0;
     }
-  }, [orderWeight]);
+  }, [orderWeightKg]);
 
   const onSendToBank = async () => {
     if (realmEntityId) {

@@ -12,6 +12,7 @@ import {
   calculateDonkeysNeeded,
   findResourceById,
   getTotalResourceWeightGrams,
+  gramToKg,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
@@ -52,21 +53,20 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
 
   const [type, setType] = useState<"send" | "receive">("send");
 
-  const [resourceWeight, setResourceWeight] = useState(0);
+  const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
 
   useEffect(() => {
     const resources = calls.map((call) => {
       return {
         resourceId: Number(call.resources[0]),
-        amount: Number(call.resources[1]),
+        amount: multiplyByPrecision(Number(call.resources[1])),
       };
     });
     const totalWeight = getTotalResourceWeightGrams(resources);
-    const multipliedWeight = multiplyByPrecision(totalWeight);
 
-    setResourceWeight(multipliedWeight);
+    setResourceWeightKg(gramToKg(totalWeight));
   }, [calls]);
 
   const handleTransfer = useCallback(async () => {
@@ -195,21 +195,20 @@ const RealmTransferBalance = memo(
       return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey);
     }, [resourceManager, tick]);
 
-    const [resourceWeight, setResourceWeight] = useState(0);
+    const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
     useEffect(() => {
-      const totalWeight = getTotalResourceWeightGrams([{ resourceId: resource, amount: input }]);
-      const multipliedWeight = multiplyByPrecision(totalWeight);
+      const totalWeight = getTotalResourceWeightGrams([{ resourceId: resource, amount: multiplyByPrecision(input) }]);
 
-      setResourceWeight(multipliedWeight);
+      setResourceWeightKg(gramToKg(totalWeight));
     }, [input]);
 
     const neededDonkeys = useMemo(() => {
       if (type === "receive") {
-        return calculateDonkeysNeeded(resourceWeight);
+        return calculateDonkeysNeeded(resourceWeightKg);
       }
       return 0;
-    }, [resourceWeight]);
+    }, [resourceWeightKg]);
 
     const canCarry = useMemo(() => {
       return getDonkeyBalance() >= neededDonkeys;

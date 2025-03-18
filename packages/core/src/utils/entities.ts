@@ -1,7 +1,6 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { divideByPrecision } from ".";
 import { CapacityConfig, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { configManager } from "../managers/config-manager";
@@ -41,13 +40,13 @@ export const getEntityInfo = (
       : structure
         ? CapacityConfig.Structure
         : CapacityConfig.None;
-  const capacity = configManager.getCapacityConfig(capacityCategoryId);
+  const capacityKg = configManager.getCapacityConfigKg(capacityCategoryId);
 
   const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
 
   return {
     entityId,
-    capacity: divideByPrecision(Number(capacity) || 0),
+    capacityKg: Number(capacityKg) || 0,
     position: explorer
       ? { x: explorer.coord.x, y: explorer.coord.y }
       : structure

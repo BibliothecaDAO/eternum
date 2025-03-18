@@ -1,13 +1,12 @@
-import { divideByPrecision, kgToGram } from ".";
-import { ClientConfigManager } from "..";
+import { kgToGram } from ".";
+import { ClientConfigManager, configManager } from "..";
 import { CapacityConfig } from "../constants";
 import { Resource } from "../types";
 
-export const calculateDonkeysNeeded = (orderWeight: number): number => {
-  const configManager = ClientConfigManager.instance();
-  const donkeyCapacityGrams = configManager.getCapacityConfig(CapacityConfig.Donkey);
+export const calculateDonkeysNeeded = (orderWeightKg: number): number => {
+  const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey);
 
-  return Math.ceil(divideByPrecision(orderWeight) / donkeyCapacityGrams);
+  return Math.ceil(orderWeightKg / donkeyCapacityKg);
 };
 
 // grams

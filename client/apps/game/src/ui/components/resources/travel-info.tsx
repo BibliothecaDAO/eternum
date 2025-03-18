@@ -8,6 +8,7 @@ import {
   divideByPrecision,
   getBalance,
   getTotalResourceWeightGrams,
+  gramToKg,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
@@ -31,18 +32,16 @@ export const TravelInfo = ({
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [resourceWeight, setResourceWeight] = useState(0);
+  const [resourceWeightKg, setResourceWeightKg] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
 
   const arrivalTime = calculateArrivalTime(travelTime);
   const formattedArrivalTime = formatArrivalTime(arrivalTime);
 
   useEffect(() => {
-    const totalWeight = getTotalResourceWeightGrams(resources);
-
-    const multipliedWeight = multiplyByPrecision(totalWeight);
-    setResourceWeight(multipliedWeight);
+    const totalWeight = multiplyByPrecision(getTotalResourceWeightGrams(resources));
+    setResourceWeightKg(gramToKg(totalWeight));
 
     const { balance } = getBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
 
@@ -60,7 +59,7 @@ export const TravelInfo = ({
       // TODO: hacky way to set can carry to true if only donkeys and lords
       onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
     }
-  }, [resources, entityId, resourceWeight, donkeyBalance, setCanCarry]);
+  }, [resources, entityId, resourceWeightKg, donkeyBalance, setCanCarry]);
 
   return (
     <>
@@ -77,7 +76,7 @@ export const TravelInfo = ({
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Total Transfer Weight</td>
             <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${currencyFormat(
-              resourceWeight / GRAMS_PER_KG,
+              resourceWeightKg / GRAMS_PER_KG,
               0,
             )} kg`}</td>
           </tr>

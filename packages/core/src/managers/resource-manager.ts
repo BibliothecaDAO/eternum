@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, CapacityConfig, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID, Resource } from "../types";
-import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { getBuildingCount, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -637,7 +637,7 @@ export class ResourceManager {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
     if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
 
-    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
+    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
       getEntityIdFromKeys([BigInt(this.entityId || 0)]),
