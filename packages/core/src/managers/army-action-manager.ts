@@ -128,7 +128,6 @@ export class ArmyActionManager {
     playerAddress: ContractAddress,
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
-    if (armyStamina === 0n) return new ActionPaths();
 
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
@@ -155,15 +154,9 @@ export class ArmyActionManager {
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
-
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
-      const staminaCost = biome
-        ? configManager.getTravelStaminaCost(biome, troopType)
-        : configManager.getExploreStaminaCost();
-
-      if (staminaCost > armyStamina) continue;
-
+      // Determine action type first
       let actionType;
       if (isMine) {
         actionType = ActionType.Help;
@@ -174,6 +167,16 @@ export class ArmyActionManager {
       } else {
         actionType = ActionType.Explore;
       }
+
+      // For travel/explore actions, check stamina cost
+      let staminaCost = 0;
+      if (actionType === ActionType.Move) {
+        staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
+      } else if (actionType === ActionType.Explore) {
+        staminaCost = configManager.getExploreStaminaCost();
+      }
+
+      if (staminaCost > armyStamina) continue;
 
       priorityQueue.push({
         position: { col, row },
