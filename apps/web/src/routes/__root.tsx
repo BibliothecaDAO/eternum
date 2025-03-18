@@ -12,7 +12,7 @@ import {
   ScriptOnce,
   Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import "@rainbow-me/rainbowkit/styles.css";
 
