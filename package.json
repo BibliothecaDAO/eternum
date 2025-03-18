@@ -93,6 +93,7 @@
     "@dojoengine/react": "1.2.4",
     "@dojoengine/recs": "^2.0.13",
     "@dojoengine/state": "1.2.4",
+    "@dojoengine/sdk": "1.2.4",
     "@dojoengine/torii-client": "1.2.4",
     "@dojoengine/torii-wasm": "1.2.4",
     "@dojoengine/utils": "1.2.4"
