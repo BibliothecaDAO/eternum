@@ -464,14 +464,14 @@ pub impl TroopsImpl of TroopsTrait {
         return BETA_EFF;
     }
 
-    fn attack(
+    fn damage(
         ref self: Troops,
         ref bravo: Troops,
         biome: Biome,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
-    ) {
+    ) -> (u128, u128) {
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
         assert!(biome != Biome::None, "biome is not set");
@@ -537,9 +537,31 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
+        self = alpha;
+
+        (
+            ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
+            BRAVO_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
+        )
+    }
+
+
+    fn attack(
+        ref self: Troops,
+        ref bravo: Troops,
+        biome: Biome,
+        troop_stamina_config: TroopStaminaConfig,
+        troop_damage_config: TroopDamageConfig,
+        current_tick: u64,
+    ) {
+        let (alpha_damage_dealt, bravo_damage_dealt) = self
+            .damage(ref bravo, biome, troop_stamina_config, troop_damage_config, current_tick);
+
+        let mut alpha = self;
+
         // deduct dead troops from each side
-        alpha.count -= core::cmp::min(alpha.count, BRAVO_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION);
-        bravo.count -= core::cmp::min(bravo.count, ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION);
+        alpha.count -= core::cmp::min(alpha.count, bravo_damage_dealt);
+        bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
 
         // deduct stamina spent
         alpha
@@ -643,9 +665,7 @@ mod tests {
             explorer_guard_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-            mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
-            agents_troop_lower_bound: 100_000, // min of troops per agent
-            agents_troop_upper_bound: 100_000 // max of troops per agent
+            mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
         }
     }
 
