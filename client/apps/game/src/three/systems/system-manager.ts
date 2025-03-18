@@ -201,10 +201,18 @@ export class SystemManager {
             guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
           }
 
+          const hyperstructure = getComponentValue(
+            this.setup.components.Hyperstructure,
+            getEntityIdFromKeys([BigInt(structure.entity_id)]),
+          );
+
+          const initialized = hyperstructure?.initialized || false;
+
           return {
             entityId: structure.entity_id,
             hexCoords: { col: structure.base.coord_x, row: structure.base.coord_y },
             structureType: structure.base.category as StructureType,
+            initialized,
             stage,
             level,
             owner: { address: structure.owner, ownerName, guildName },
