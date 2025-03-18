@@ -1007,7 +1007,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 20,
+      "staminaBonusValue": 10,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -6564,7 +6564,7 @@
         },
         {
           "address": "0x560bc99937e0d22f469d2fe86b47c50d77da29aa5b61ac645df0c06d72e3462",
-          "class_hash": "0x4c3aa0689febdf9f254f0e272e15e6e21c3b934cfc2264a7d37e1165997ef6c",
+          "class_hash": "0x5538372183a96c2f44456ab858cd67b9e41026e053e555fa93ddb8a13c43475",
           "abi": [
             {
               "type": "impl",
@@ -9917,7 +9917,7 @@
         },
         {
           "address": "0x6929ab51427f510e630d78c0764751ecc23686bc2ace0b0a7e17c596f8d453b",
-          "class_hash": "0xca83666ba82ecdf01539d20fa36e60e198fd9430b23ee526e37b88e21cc265",
+          "class_hash": "0x1f4f7572f8a0e3c8fe19696564d9711438af6015b99a8720577cb8cc5fc4955",
           "abi": [
             {
               "type": "impl",

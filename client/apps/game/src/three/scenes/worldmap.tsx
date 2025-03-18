@@ -285,17 +285,16 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
-    if (selectedPath.length > 0) {
+    if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(
         this.dojo.components,
         this.dojo.network.provider,
         selectedEntityId,
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-      armyActionManager.moveArmy(account!, selectedPath, isExplored);
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement

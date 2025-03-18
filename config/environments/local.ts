@@ -29,11 +29,11 @@ export const LocalEternumGlobalConfig: Config = {
       mercenariesTroopLowerBound: 100,
       mercenariesTroopUpperBound: 200,
     },
-    stamina: {
-      ...CommonEternumGlobalConfig.troop.stamina,
-      staminaTravelStaminaCost: 0,
-      staminaExploreStaminaCost: 0,
-    },
+    // stamina: {
+    //   ...CommonEternumGlobalConfig.troop.stamina,
+    //   staminaTravelStaminaCost: 0,
+    //   staminaExploreStaminaCost: 0,
+    // },
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,

@@ -28,11 +28,27 @@ export const StaminaResourceCost = ({
 
     const balanceColor = stamina.amount < totalCost ? "text-order-giants" : "text-order-brilliance";
 
+    // Group consecutive tiles with the same biome type
+    const groupedBiomes = path.reduce(
+      (acc, tile) => {
+        const lastGroup = acc[acc.length - 1];
+        if (lastGroup && lastGroup.biomeType === tile.biomeType) {
+          lastGroup.staminaCost += tile.staminaCost ?? 0;
+          lastGroup.count += 1;
+        } else {
+          acc.push({ biomeType: tile.biomeType ?? "", staminaCost: tile.staminaCost ?? 0, count: 1 });
+        }
+        return acc;
+      },
+      [] as { biomeType: string; staminaCost: number; count: number }[],
+    );
+
     return {
       isExplored,
       totalCost,
       balanceColor,
       balance: stamina.amount,
+      groupedBiomes,
     };
   }, [stamina, path, isExplored]);
 
@@ -47,9 +63,9 @@ export const StaminaResourceCost = ({
           </div>
           <div className="text-xs opacity-75">
             {pathInfo.isExplored ? (
-              path.map((tile) => (
-                <div key={`${tile.hex.col}-${tile.hex.row}`}>
-                  {tile.biomeType}: {tile.staminaCost}
+              pathInfo.groupedBiomes.map((group, index) => (
+                <div key={index}>
+                  {group.biomeType}: {group.staminaCost} ({group.count} Tiles)
                 </div>
               ))
             ) : (
