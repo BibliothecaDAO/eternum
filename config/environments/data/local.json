@@ -1007,7 +1007,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 20,
+      "staminaBonusValue": 10,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -1015,10 +1015,10 @@
       "staminaAttackMax": 60,
       "staminaExploreWheatCost": 6,
       "staminaExploreFishCost": 6,
-      "staminaExploreStaminaCost": 30,
+      "staminaExploreStaminaCost": 0,
       "staminaTravelWheatCost": 3,
       "staminaTravelFishCost": 3,
-      "staminaTravelStaminaCost": 20
+      "staminaTravelStaminaCost": 0
     },
     "limit": {
       "explorerMaxPartyCount": 10,
@@ -1742,8 +1742,8 @@
   },
   "startingResources": {
     "0": {
-      "resource": 35,
-      "amount": 1200000000
+      "resource": 24,
+      "amount": 1000000000
     },
     "1": {
       "resource": 36,
@@ -1852,10 +1852,6 @@
     "27": {
       "resource": 32,
       "amount": 1200000
-    },
-    "28": {
-      "resource": 24,
-      "amount": 200000
     }
   },
   "realmUpgradeCosts": {

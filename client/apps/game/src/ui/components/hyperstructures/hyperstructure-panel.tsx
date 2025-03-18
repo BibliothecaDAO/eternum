@@ -7,7 +7,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
-import { currencyIntlFormat, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
+import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
   Access,
   calculateCompletionPoints,
@@ -112,11 +112,14 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [resourceManager, updates]);
 
   // Calculate the progress percentage for AncientFragment
-  const ancientFragmentProgress = useMemo(() => {
+  const { ancientFragmentProgress, costNeeded } = useMemo(() => {
     const ancientFragmentProgress = progresses.progresses.find(
       (progress) => progress.resource_type === ResourcesIds.AncientFragment,
     );
-    return ancientFragmentProgress?.percentage || 0;
+    return {
+      ancientFragmentProgress: ancientFragmentProgress?.percentage || 0,
+      costNeeded: ancientFragmentProgress?.costNeeded || 0,
+    };
   }, [progresses]);
 
   const canInitialize = useMemo(() => {
@@ -339,7 +342,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
             <ResourceIcon resource="Ancient Fragment" size="sm" className="mr-1" />
             <span className="text-sm font-medium">Ancient Fragment</span>
           </div>
-          <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
+            <span className="text-xs text-gold/70">/ {formatStringNumber(costNeeded, 0)} needed</span>
+          </div>
         </div>
         <div
           className="relative w-full h-8 flex items-center px-2 text-xs"

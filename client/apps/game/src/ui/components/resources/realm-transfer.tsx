@@ -11,6 +11,7 @@ import {
   ID,
   PlayerStructure,
   RESOURCE_PRECISION,
+  ResourceManager,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
@@ -93,12 +94,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     <>
       <div className="p-1">
         <Button
-          variant={type === "send" ? "outline" : "secondary"}
+          variant={type === "receive" ? "outline" : "secondary"}
           onClick={() => setType((prev) => (prev === "send" ? "receive" : "send"))}
         >
-          {type === "receive" && <ArrowLeftIcon className="w-4 h-4" />}
-          {type === "send" ? "Send Resources" : "Receive Resources"}
-          {type === "send" && <ArrowRightIcon className="w-4 h-4" />}
+          {type === "send" && <ArrowLeftIcon className="w-4 h-4" />}
+          {type === "receive" ? "Send Resources" : "Receive Resources"}
+          {type === "receive" && <ArrowRightIcon className="w-4 h-4" />}
         </Button>
       </div>
       <div className="p-4">
@@ -182,8 +183,15 @@ const RealmTransferBalance = memo(
     type: "send" | "receive";
   }) => {
     const [input, setInput] = useState(0);
+    const {
+      setup: { components },
+    } = useDojo();
 
-    const resourceManager = useResourceManager(structure.structure.entity_id);
+    const resourceManager = useMemo(
+      () =>
+        new ResourceManager(components, type === "receive" ? structure.structure.entity_id : selectedStructureEntityId),
+      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    );
 
     const getBalance = useCallback(() => {
       return resourceManager.balanceWithProduction(tick, resource);
@@ -201,10 +209,7 @@ const RealmTransferBalance = memo(
     }, [input]);
 
     const neededDonkeys = useMemo(() => {
-      if (type === "receive") {
-        return calculateDonkeysNeeded(resourceWeightKg);
-      }
-      return 0;
+      return calculateDonkeysNeeded(resourceWeightKg);
     }, [resourceWeightKg]);
 
     const canCarry = useMemo(() => {
@@ -214,6 +219,8 @@ const RealmTransferBalance = memo(
     if (structure.structure.entity_id === selectedStructureEntityId) {
       return;
     }
+
+    const balance = useMemo(() => getBalance(), [getBalance]);
 
     return (
       <div className="flex flex-col gap-2 border-b-2 mt-2 border-gold/20">
