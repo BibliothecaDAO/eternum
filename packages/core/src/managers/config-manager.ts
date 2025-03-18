@@ -513,27 +513,35 @@ export class ClientConfigManager {
     return bankConfig.lpFeesNumerator / bankConfig.lpFeesDenominator;
   }
 
-  getCapacityConfig(category: CapacityConfig) {
+  getCapacityConfigKg(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
       const capacityConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.capacity_config;
 
+      let capacityInGrams = 0;
       switch (category) {
         case CapacityConfig.Structure:
-          return Number(capacityConfig?.structure_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.structure_capacity ?? 0);
+          break;
         case CapacityConfig.Donkey:
-          return Number(capacityConfig?.donkey_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.donkey_capacity ?? 0);
+          break;
         case CapacityConfig.Army:
-          return Number(capacityConfig?.troop_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.troop_capacity ?? 0);
+          break;
         case CapacityConfig.Storehouse:
-          return Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+          break;
         case CapacityConfig.None:
           return 0;
         default:
           throw new Error("Invalid capacity config category");
       }
+
+      // Convert from grams to kg by dividing by 1000
+      return gramToKg(capacityInGrams);
     }, 0);
   }
 

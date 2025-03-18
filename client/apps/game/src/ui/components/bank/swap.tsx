@@ -20,7 +20,7 @@ import {
   RESOURCE_TIERS,
   Resources,
   resources,
-  ResourcesIds
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -92,8 +92,6 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     const closestBank = getClosestBank(entityId, setup.components);
 
     if (!closestBank) return;
-
-    console.log({ closestBank });
 
     const performSwap = () => {
       return operation({

@@ -21,7 +21,6 @@ import {
   getBuildingFromResource,
   getConsumedBy,
   getRealmInfo,
-  gramToKg,
   hasEnoughPopulationForBuilding,
   ID,
   isEconomyBuilding,
@@ -602,8 +601,8 @@ export const BuildingInfo = ({
   const population = buildingPopCapacityConfig.population_cost;
   const capacity = buildingPopCapacityConfig.capacity_grant;
 
-  const carryCapacity =
-    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfig(CapacityConfig.Storehouse) : 0;
+  const extraStorehouseCapacityKg =
+    buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
 
   let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
 
@@ -646,10 +645,10 @@ export const BuildingInfo = ({
             </div>
           )}
         </div>
-        {carryCapacity !== 0 && (
+        {extraStorehouseCapacityKg !== 0 && (
           <div>
             <span className="w-full font-bold uppercase">Max resource capacity</span>
-            <br />+{gramToKg(carryCapacity).toLocaleString()} kg
+            <br />+{extraStorehouseCapacityKg.toLocaleString()} kg
           </div>
         )}
         {resourceProduced !== 0 && (

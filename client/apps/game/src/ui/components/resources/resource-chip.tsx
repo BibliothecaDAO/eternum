@@ -8,6 +8,7 @@ import {
   findResourceById,
   formatTime,
   ID,
+  multiplyByPrecision,
   ResourceManager,
   TickIds,
   TimeFormat,
@@ -17,11 +18,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const ResourceChip = ({
   resourceId,
   resourceManager,
-  maxStorehouseCapacityKg,
+  maxCapacityKg,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
-  maxStorehouseCapacityKg: number;
+  maxCapacityKg: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -30,7 +31,7 @@ export const ResourceChip = ({
   const { currentDefaultTick: currentTick } = useBlockTimestamp();
 
   const getBalance = useCallback(() => {
-    return resourceManager.balanceWithProduction(currentTick, resourceId);
+    return resourceManager.balanceWithProduction(currentTick, resourceId, false);
   }, [resourceManager, currentTick]);
 
   const production = useMemo(() => {
@@ -40,8 +41,8 @@ export const ResourceChip = ({
   }, [getBalance, resourceManager]);
 
   const maxAmountStorable = useMemo(() => {
-    return maxStorehouseCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1000);
-  }, [maxStorehouseCapacityKg, resourceId]);
+    return multiplyByPrecision(maxCapacityKg / configManager.getResourceWeightKg(resourceId));
+  }, [maxCapacityKg, resourceId]);
 
   const timeUntilValueReached = useMemo(() => {
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
@@ -88,8 +89,8 @@ export const ResourceChip = ({
   }, [resourceId]);
 
   const reachedMaxCap = useMemo(() => {
-    return maxAmountStorable === balance && isActive;
-  }, [maxAmountStorable, balance, isActive]);
+    return maxAmountStorable <= balance;
+  }, [maxAmountStorable, balance]);
 
   const handleMouseEnter = useCallback(() => {
     setTooltip({
