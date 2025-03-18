@@ -22,37 +22,31 @@ const config: ForgeConfig = {
     },
   ],
   makers: [
-    new MakerSquirrel({}),
     {
-      name: "@electron-forge/maker-zip",
-      config: (arch: string) => ({
-        // Note that we must provide this S3 URL here
-        // in order to support smooth version transitions
-        // especially when using a CDN to front your updates
-        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
-      }),
+      name: "@electron-forge/maker-squirrel",
+      config: {},
     },
-    {
-      name: "@electron-forge/maker-zip",
-      config: (arch: string) => ({
-        // Note that we must provide this S3 URL here
-        // in order to support smooth version transitions
-        // especially when using a CDN to front your updates
-        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
-      }),
-    },
+    // {
+    //   name: "@electron-forge/maker-zip",
+    //   config: (arch: string) => ({
+    //     // Note that we must provide this S3 URL here
+    //     // in order to support smooth version transitions
+    //     // especially when using a CDN to front your updates
+    //     macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
+    //   }),
+    // },
 
-    new MakerRpm({}),
-    new MakerDeb({}),
-    {
-      name: "@electron-forge/maker-dmg",
-      config: {
-        background: "./public/icon.png",
-        format: "ULFO",
-        icon: "./public/icon.png",
-        name: "Eternum Launcher",
-      },
-    },
+    // new MakerRpm({}),
+    // new MakerDeb({}),
+    // {
+    //   name: "@electron-forge/maker-dmg",
+    //   config: {
+    //     background: "./public/icon.png",
+    //     format: "ULFO",
+    //     icon: "./public/icon.png",
+    //     name: "Eternum Launcher",
+    //   },
+    // },
   ],
   plugins: [
     new VitePlugin({
