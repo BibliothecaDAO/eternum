@@ -19,10 +19,13 @@ importers:
         version: 1.2.4(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
       '@dojoengine/react':
         specifier: 1.2.4
-        version: 1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
+        version: 1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(immer@10.1.1)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/recs':
         specifier: ^2.0.13
         version: 2.0.13(typescript@5.8.2)(zod@3.24.2)
+      '@dojoengine/sdk':
+        specifier: 1.2.4
+        version: 1.2.4(@tanstack/react-query@5.67.2(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(encoding@0.1.13)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/state':
         specifier: 1.2.4
         version: 1.2.4(@types/node@20.17.24)(lightningcss@1.29.2)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
@@ -277,7 +280,7 @@ importers:
         version: 2.12.1(react@18.3.1)
       zustand:
         specifier: ^4.5.2
-        version: 4.5.6(@types/react@18.3.18)(react@18.3.1)
+        version: 4.5.6(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0
@@ -389,7 +392,7 @@ importers:
         version: 2.12.1(react@18.3.1)
       zustand:
         specifier: ^4.5.2
-        version: 4.5.6(@types/react@18.3.18)(react@18.3.1)
+        version: 4.5.6(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@types/lodash':
         specifier: ^4.14.202
@@ -605,7 +608,7 @@ importers:
         version: link:../core
       '@dojoengine/react':
         specifier: '*'
-        version: 1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
+        version: 1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(immer@10.1.1)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)
       '@starknet-react/core':
         specifier: '*'
         version: 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
@@ -1383,6 +1386,17 @@ packages:
 
   '@dojoengine/recs@2.0.13':
     resolution: {integrity: sha512-Cgz4Unlnk2FSDoFTYKrJexX/KiSYPMFMxftxQkC+9LUKS5yNGkgFQM7xu4/L1HvpDAenL7NjUmH6ynRAS7Iifw==}
+
+  '@dojoengine/sdk@1.2.4':
+    resolution: {integrity: sha512-V+hb7jy90szyCFQ+1D8H+PJhA+5sMIKe9sTMkAujZbtHvY0SmesziGUFNL3o8F0Xy0DD+zZWRjvVSyax0133ng==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      '@tanstack/react-query': ^5.62.16
+      '@types/react': ^18.3.1
+      '@types/react-dom': ^18.3.1
+      react: ^18.3.1
+      react-dom: ^18.3.1
+      starknet: 6.23.1
 
   '@dojoengine/state@1.2.4':
     resolution: {integrity: sha512-Kn8sTBVuZkWiWmp+b9ejjzw59pRR3kZsg8WFWvaa0RburK9d+tsE/7VfmpnX6MwbQGNopHTHk3KEZKJUzBsueA==}
@@ -6125,6 +6139,9 @@ packages:
     resolution: {integrity: sha512-bAH5jbK/F3T3Jls4I0SO1hmPR0dKU0a7+SY6n1yzRtG54FLO8d6w/nxLFX2Nb7dBu6cCWXPaAME6cYqFUMmuCA==}
     engines: {node: '>= 4'}
 
+  immer@10.1.1:
+    resolution: {integrity: sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==}
+
   immutable@3.7.6:
     resolution: {integrity: sha512-AizQPcaofEtO11RZhPPHBOJRdo/20MKQF9mBLnVkBoyHi1/zXK8fzVdnEpSV9gxqtnh6Qomfp3F0xT5qP/vThw==}
     engines: {node: '>=0.8.0'}
@@ -10134,7 +10151,7 @@ snapshots:
       '@starknet-react/core': 3.7.2(get-starknet-core@4.0.0)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)
       starknet: 6.23.1(encoding@0.1.13)
 
-  '@dojoengine/react@1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)':
+  '@dojoengine/react@1.2.4(@types/node@20.17.24)(@types/react@18.3.18)(immer@10.1.1)(lightningcss@1.29.2)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(typescript@5.8.2)(zod@3.24.2)
       '@dojoengine/state': 1.2.4(@types/node@20.17.24)(lightningcss@1.29.2)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(zod@3.24.2)
@@ -10149,7 +10166,7 @@ snapshots:
       rxjs: 7.5.5
       starknet: 6.23.1(encoding@0.1.13)
       type-fest: 0.21.3
-      zustand: 4.5.6(@types/react@18.3.18)(react@18.3.1)
+      zustand: 4.5.6(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -10180,6 +10197,25 @@ snapshots:
       rxjs: 7.5.5
     transitivePeerDependencies:
       - bufferutil
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@dojoengine/sdk@1.2.4(@tanstack/react-query@5.67.2(react@18.3.1))(@types/react-dom@18.3.5(@types/react@18.3.18))(@types/react@18.3.18)(encoding@0.1.13)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)':
+    dependencies:
+      '@dojoengine/core': 1.2.4(encoding@0.1.13)(typescript@5.8.2)
+      '@dojoengine/torii-client': 1.2.4
+      '@dojoengine/utils': 1.2.4(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(zod@3.24.2)
+      '@tanstack/react-query': 5.67.2(react@18.3.1)
+      '@types/react': 18.3.18
+      '@types/react-dom': 18.3.5(@types/react@18.3.18)
+      immer: 10.1.1
+      react: 18.3.1
+      starknet: 6.23.1(encoding@0.1.13)
+      zustand: 4.5.6(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
       - typescript
       - utf-8-validate
       - zod
@@ -15688,6 +15724,8 @@ snapshots:
 
   ignore@7.0.3: {}
 
+  immer@10.1.1: {}
+
   immutable@3.7.6: {}
 
   immutable@4.3.7: {}
@@ -19350,11 +19388,12 @@ snapshots:
     optionalDependencies:
       react: 18.3.1
 
-  zustand@4.5.6(@types/react@18.3.18)(react@18.3.1):
+  zustand@4.5.6(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1):
     dependencies:
       use-sync-external-store: 1.4.0(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.18
+      immer: 10.1.1
       react: 18.3.1
 
   zwitch@2.0.4: {}

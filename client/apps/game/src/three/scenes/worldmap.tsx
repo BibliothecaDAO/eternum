@@ -1,4 +1,5 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -32,6 +33,7 @@ import {
   SetupResult,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
@@ -771,45 +773,12 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLoading(LoadingStateKey.Map, true);
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
+          MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
+          MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
+          MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
         ["s1_eternum-Tile"],
@@ -819,45 +788,12 @@ export default class WorldmapScene extends HexagonScene {
       // todo: verify that this works with nested struct
       const promiseExplorers = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
         ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
@@ -867,45 +803,12 @@ export default class WorldmapScene extends HexagonScene {
 
       const promiseStructures = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-Structure",
-                  member: "base.coord_x",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Structure",
-                  member: "base.coord_x",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Structure",
-                  member: "base.coord_y",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Structure",
-                  member: "base.coord_y",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
         ["s1_eternum-Structure", "s1_eternum-Resource"],
