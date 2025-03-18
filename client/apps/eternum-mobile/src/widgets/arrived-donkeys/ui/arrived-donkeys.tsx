@@ -6,18 +6,16 @@ import { PackageCheck } from "lucide-react";
 interface ArrivedDonkeysProps {
   entityId: number;
   onClaim: () => void;
+  readyCount?: number;
+  pendingCount?: number;
 }
 
-// Dummy data generator for demo purposes
-const generateDummyData = () => {
-  return {
-    donkeysCount: Math.floor(Math.random() * 5) + 1,
-  };
-};
+export const ArrivedDonkeys = ({ entityId, onClaim, readyCount = 0, pendingCount = 0 }: ArrivedDonkeysProps) => {
+  const totalCount = readyCount + pendingCount;
 
-// @ts-ignore
-export const ArrivedDonkeys = ({ entityId, onClaim }: ArrivedDonkeysProps) => {
-  const { donkeysCount } = generateDummyData();
+  if (totalCount === 0) {
+    return null;
+  }
 
   return (
     <Card>
@@ -28,14 +26,23 @@ export const ArrivedDonkeys = ({ entityId, onClaim }: ArrivedDonkeysProps) => {
         </CardTitle>
         <div className="text-xs space-y-1">
           <div>
-            <span className="font-bold">{donkeysCount}</span> Donkeys have arrived
+            <span className="font-bold">{readyCount}</span> ready to claim
+            {pendingCount > 0 && <span className="text-muted-foreground"> • {pendingCount} pending</span>}
           </div>
-          <div>
-            <span className="font-bold">Claim your resources.</span>
-          </div>
+          {readyCount > 0 && (
+            <div>
+              <span className="font-bold">Claim your resources.</span>
+            </div>
+          )}
         </div>
-        <Button variant="secondary" size="sm" className="w-full font-semibold" onClick={onClaim}>
-          Show Arrivals
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full font-semibold"
+          onClick={onClaim}
+          disabled={readyCount === 0}
+        >
+          {readyCount > 0 ? "Claim Resources" : "View Arrivals"}
           <PackageCheck className="w-4 h-4 ml-2" />
         </Button>
       </CardContent>

@@ -1,3 +1,4 @@
+import { useResourceArrivals } from "@/features/resource-arrivals";
 import { useStore } from "@/shared/store";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
 import { LaborWidget } from "@/widgets/labor-widget";
@@ -75,6 +76,7 @@ const dummyResourceBalances = [
 export function OverviewTab() {
   const { switchTab } = useRealmTabs();
   const structureEntityId = useStore((state) => state.structureEntityId);
+  const { summary } = useResourceArrivals(structureEntityId);
 
   const handleUpgrade = async () => {
     // Simulate network delay
@@ -86,8 +88,10 @@ export function OverviewTab() {
   }, [switchTab]);
 
   const handleClaimDonkeys = useCallback(() => {
-    switchTab("claim");
-  }, [switchTab]);
+    if (summary.readyArrivals > 0) {
+      switchTab("claim");
+    }
+  }, [switchTab, summary.readyArrivals]);
 
   const handleStartProduction = useCallback((buildingId: string, mode: "raw" | "labor") => {
     console.log("Start production", { buildingId, mode });
@@ -124,7 +128,12 @@ export function OverviewTab() {
 
       <div className="grid grid-cols-2 gap-4">
         <NearbyEnemies entityId={1} onView={handleViewEnemies} />
-        <ArrivedDonkeys entityId={2} onClaim={handleClaimDonkeys} />
+        <ArrivedDonkeys
+          entityId={structureEntityId}
+          onClaim={handleClaimDonkeys}
+          readyCount={summary.readyArrivals}
+          pendingCount={summary.pendingArrivals}
+        />
       </div>
     </div>
   );
