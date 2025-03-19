@@ -134,16 +134,19 @@ pub mod troop_raid_systems {
             for i in 0..structure_functional_guard_slots.len() {
                 let (mut guard_defender_troops, mut guard_defender_troops_destroyed_tick) = guard_defender
                     .from_slot(*structure_functional_guard_slots.at(i));
-                let damage_dealt_to_guard = *structure_functional_guard_slots_damage_received.at(i);
-                // deduct dead troops from guard
-                // note: precision is being removed before mul to prevent u128 mul overflow
-                let damage_dealt_to_guard_less_precision = damage_dealt_to_guard / RESOURCE_PRECISION;
-                let sum_damage_to_guards_less_precision = sum_damage_to_guards / RESOURCE_PRECISION;
-                // precision gets added back after multiplication with guard_defender_troops.count
-                let actual_damage_dealt = ((damage_dealt_to_guard_less_precision * guard_defender_troops.count)
-                    / sum_damage_to_guards_less_precision);
-                guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, actual_damage_dealt);
-                guard_defender_troops.count -= guard_defender_troops.count % RESOURCE_PRECISION;
+                if sum_damage_to_explorer.is_non_zero() {
+                    let damage_dealt_to_guard = *structure_functional_guard_slots_damage_received.at(i);
+                    let damage_dealt_to_explorer = *structure_functional_guard_slots_damage_dealt.at(i);
+                    // note: precision is being removed before mul to prevent u128 mul overflow
+                    let damage_dealt_to_explorer_less_precision = damage_dealt_to_explorer / RESOURCE_PRECISION;
+                    let sum_damage_to_explorer_less_precision = sum_damage_to_explorer / RESOURCE_PRECISION;
+                    // precision gets added back after multiplication with damage_dealt_to_guard
+                    // todo: see if this can be exploited to make realm unraidable
+                    let mut actual_damage_dealt = (damage_dealt_to_explorer_less_precision * damage_dealt_to_guard)
+                        / sum_damage_to_explorer_less_precision;
+                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, actual_damage_dealt);
+                    guard_defender_troops.count -= guard_defender_troops.count % RESOURCE_PRECISION;
+                }
 
                 // deduct stamina spent
                 guard_defender_troops
