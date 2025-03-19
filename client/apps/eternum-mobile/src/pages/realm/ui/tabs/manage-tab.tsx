@@ -1,4 +1,3 @@
-import { ProductionWidget } from "@/widgets/production-widget";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback } from "react";
 
@@ -77,7 +76,7 @@ export function ManageTab() {
 
   return (
     <div className="space-y-4">
-      {dummyLaborBuildings.map((building) => (
+      {/* {dummyLaborBuildings.map((building) => (
         <ProductionWidget
           key={building.id}
           building={building}
@@ -86,7 +85,7 @@ export function ManageTab() {
           onPauseProduction={handlePauseProduction}
           onExtendProduction={handleExtendProduction}
         />
-      ))}
+      ))} */}
     </div>
   );
 }

@@ -1,9 +1,7 @@
 import { useResourceArrivals } from "@/features/resource-arrivals";
 import { useStore } from "@/shared/store";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
-import { NearbyEnemies } from "@/widgets/nearby-enemies";
 import { ResourcesCard } from "@/widgets/resources-card";
-import { UpgradeCastle } from "@/widgets/upgrade-castle";
 import { useCallback } from "react";
 import { ProductionWidgetsSection } from "../components/labor-widgets-section";
 import { useRealmTabs } from "../realm-page";
@@ -35,10 +33,10 @@ export function OverviewTab() {
 
       {selectedRealm && <ProductionWidgetsSection selectedRealm={selectedRealm} />}
 
-      <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} />
+      {/* <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} /> */}
 
       <div className="grid grid-cols-2 gap-4">
-        <NearbyEnemies entityId={1} onView={handleViewEnemies} />
+        {/* <NearbyEnemies entityId={1} onView={handleViewEnemies} /> */}
         <ArrivedDonkeys
           entityId={structureEntityId}
           onClaim={handleClaimDonkeys}
