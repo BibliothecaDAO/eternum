@@ -7,6 +7,11 @@ export interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface CreateVillageProps extends SystemSigner {
+  connected_realm: num.BigNumberish;
+  direction: num.BigNumberish;
+}
+
 export interface MintAndSettleTestRealmProps extends SystemSigner {
   token_id: num.BigNumberish;
   realms_address: string;

@@ -305,6 +305,10 @@ export function createSystemCalls({
     await provider.structure_troop_adjacent_transfer(props);
   };
 
+  const create_village = async (props: SystemProps.CreateVillageProps) => {
+    await provider.create_village(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -323,6 +327,7 @@ export function createSystemCalls({
     cancel_order: withAuth(cancel_order),
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
+    create_village: withAuth(create_village),
     transfer_resources: withAuth(transfer_resources),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),

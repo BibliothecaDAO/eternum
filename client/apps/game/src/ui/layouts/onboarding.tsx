@@ -13,6 +13,7 @@ import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
+import MintVillagePassModal from "../components/settlement/mint-village-pass-modal";
 
 interface OnboardingOverlayProps {
   controller?: boolean;
@@ -188,7 +189,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   } = useDojo();
 
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
-
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
   const realms = usePlayerOwnedRealms();
 
@@ -199,6 +200,11 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
     };
     fetchSeasonPasses();
   }, [realms, account.address]);
+
+  const handleVillagePassClick = () => {
+    console.log("Village pass clicked");
+    toggleModal(<MintVillagePassModal onClose={() => toggleModal(null)} />);
+  };
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
   return (
@@ -218,38 +224,53 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         </div>
       </Button>
     ) : (
-      <div className="flex gap-2 justify-between w-full">
-        <a
-          className="text-brown cursor-pointer text-lg w-full"
-          href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button
-            onClick={handleClick}
-            className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-              realms.length === 0 ? "animate-pulse" : ""
-            }`}
+      <div className="flex flex-col gap-2 w-full">
+        <div className="flex gap-2 w-full">
+          <a
+            className="text-brown cursor-pointer text-lg w-1/2"
+            href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            <div className="flex items-center">
-              <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
-              Get Season Pass
-            </div>
-          </Button>
-        </a>
+            <Button
+              onClick={handleClick}
+              className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+                realms.length === 0 ? "animate-pulse" : ""
+              }`}
+            >
+              <div className="flex items-center">
+                <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
+                Get Realm Pass
+              </div>
+            </Button>
+          </a>
+          <a className="text-brown cursor-pointer text-lg w-1/2" target="_blank" rel="noopener noreferrer">
+            <Button
+              onClick={handleVillagePassClick}
+              className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+                realms.length === 0 ? "animate-pulse" : ""
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
+                Mint Village Pass
+              </div>
+            </Button>
+          </a>
+        </div>
         <a
-          className="text-brown cursor-pointer text-lg w-full"
+          className="text-white cursor-pointer text-lg w-full"
           href={`https://empire.realms.world/trade`}
           target="_blank"
           rel="noopener noreferrer"
         >
           <Button
-            className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+            className={`w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-white !bg-black/70 !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
               realms.length === 0 ? "animate-pulse" : ""
             }`}
           >
             <div className="flex items-center gap-2">
-              <LordsIcon className="!w-4 !h-4 fill-brown text-brown mb-1" />
+              <LordsIcon className="!w-4 !h-4 fill-white text-white mb-1" />
               Bridge in Lords
             </div>
           </Button>

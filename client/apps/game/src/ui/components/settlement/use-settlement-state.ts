@@ -77,7 +77,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
       // Generate all possible settlement locations
       const [allLocations, allLocationsMap] = generateSettlementLocations(maxLayers);
 
-      console.log({allLocations})
       setSettledLocations(occupiedLocations);
       setAvailableLocations(allLocations);
 
