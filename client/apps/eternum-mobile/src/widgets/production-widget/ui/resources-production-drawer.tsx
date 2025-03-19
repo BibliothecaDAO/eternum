@@ -235,7 +235,8 @@ export const ResourcesProductionDrawer = ({
             onChange={(value) => handleInputChange(resourceId, value, isLabor)}
             className="w-32"
             label={`Enter Amount`}
-            description={resource.trait}
+            description={`Max: ${Math.round(availableAmount)}`}
+            max={availableAmount}
           />
         </div>
       </div>
