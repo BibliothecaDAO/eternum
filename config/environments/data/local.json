@@ -1622,8 +1622,8 @@
     "hyperstructureCreationCosts": [
       {
         "resource_tier": 1,
-        "min_amount": 3000,
-        "max_amount": 3000
+        "min_amount": 3000000,
+        "max_amount": 3000000
       }
     ],
     "hyperstructureConstructionCosts": [
@@ -1670,49 +1670,14 @@
     ],
     "hyperstructureTotalCosts": [
       {
-        "resource_tier": 2,
-        "min_amount": 0,
-        "max_amount": 0
-      },
-      {
-        "resource_tier": 3,
-        "min_amount": 0,
-        "max_amount": 0
-      },
-      {
-        "resource_tier": 4,
-        "min_amount": 0,
-        "max_amount": 0
+        "resource_tier": 1,
+        "min_amount": 500,
+        "max_amount": 500
       },
       {
         "resource_tier": 5,
-        "min_amount": 120000000,
-        "max_amount": 240000000
-      },
-      {
-        "resource_tier": 6,
-        "min_amount": 90000000,
-        "max_amount": 180000000
-      },
-      {
-        "resource_tier": 7,
-        "min_amount": 40000000,
-        "max_amount": 80000000
-      },
-      {
-        "resource_tier": 8,
-        "min_amount": 20000000,
-        "max_amount": 40000000
-      },
-      {
-        "resource_tier": 9,
-        "min_amount": 7000000,
-        "max_amount": 14000000
-      },
-      {
-        "resource_tier": 1,
-        "min_amount": 3000000,
-        "max_amount": 3000000
+        "min_amount": 120000,
+        "max_amount": 120000
       }
     ],
     "hyperstructurePointsPerCycle": 7,
@@ -1740,120 +1705,124 @@
   "vrf": {
     "vrfProviderAddress": "0x0"
   },
-  "startingResources": {
-    "0": {
-      "resource": 24,
-      "amount": 1000000000
+  "startingResources": [
+    {
+      "resource": 35,
+      "amount": 1200000000
     },
-    "1": {
+    {
       "resource": 36,
       "amount": 1200000000
     },
-    "2": {
+    {
       "resource": 3,
       "amount": 5000000
     },
-    "3": {
+    {
       "resource": 1,
       "amount": 5000000
     },
-    "4": {
+    {
       "resource": 2,
       "amount": 5000000
     },
-    "5": {
+    {
       "resource": 4,
       "amount": 5000000
     },
-    "6": {
+    {
       "resource": 6,
       "amount": 5000000
     },
-    "7": {
+    {
       "resource": 8,
       "amount": 5000000
     },
-    "8": {
+    {
       "resource": 5,
       "amount": 5000000
     },
-    "9": {
+    {
       "resource": 11,
       "amount": 5000000
     },
-    "10": {
+    {
       "resource": 7,
       "amount": 5000000
     },
-    "11": {
+    {
       "resource": 15,
       "amount": 5000000
     },
-    "12": {
+    {
       "resource": 14,
       "amount": 5000000
     },
-    "13": {
+    {
       "resource": 20,
       "amount": 5000000
     },
-    "14": {
+    {
       "resource": 13,
       "amount": 5000000
     },
-    "15": {
+    {
       "resource": 12,
       "amount": 5000000
     },
-    "16": {
+    {
       "resource": 16,
       "amount": 5000000
     },
-    "17": {
+    {
       "resource": 21,
       "amount": 5000000
     },
-    "18": {
+    {
       "resource": 18,
       "amount": 5000000
     },
-    "19": {
+    {
       "resource": 17,
       "amount": 5000000
     },
-    "20": {
+    {
       "resource": 10,
       "amount": 5000000
     },
-    "21": {
+    {
       "resource": 19,
       "amount": 5000000
     },
-    "22": {
+    {
       "resource": 9,
       "amount": 5000000
     },
-    "23": {
+    {
       "resource": 22,
       "amount": 5000000
     },
-    "24": {
+    {
       "resource": 25,
       "amount": 800000
     },
-    "25": {
+    {
       "resource": 26,
       "amount": 1200000
     },
-    "26": {
+    {
       "resource": 29,
       "amount": 1200000
     },
-    "27": {
+    {
       "resource": 32,
       "amount": 1200000
+    },
+    {
+      "resource": 24,
+      "amount": 1000000000
     }
-  },
+  ],
   "realmUpgradeCosts": {
     "0": [],
     "1": [
