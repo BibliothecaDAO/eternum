@@ -667,9 +667,9 @@ export default class HexceptionScene extends HexagonScene {
           withBuilding = true;
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
-          buildingObj.rotation.y = rotation * 4;
+          buildingObj.rotation.y = rotation * 3;
           if (building.category === BuildingType.ResourceLabor) {
-            buildingObj.rotation.y = rotation * 2;
+            buildingObj.rotation.y = rotation * 3;
           }
           if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill) {
             buildingObj.rotation.y = rotation * 2;
