@@ -135,7 +135,7 @@ export const LaborWidget = ({ building, resourceManager, realm }: LaborBuildingP
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                className="h-8 w-8 ml-auto text-white/70 hover:text-white hover:bg-white/10"
                 onClick={() => setIsDrawerOpen(true)}
               >
                 <Settings2 className="h-4 w-4" />
