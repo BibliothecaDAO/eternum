@@ -16,6 +16,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 
 interface ResourcesProductionDrawerProps {
@@ -207,19 +208,23 @@ export const ResourcesProductionDrawer = ({
     if (!resource) return null;
 
     return (
-      <div key={resourceId} className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 items-center">
-        <div className="flex items-center gap-2">
-          <ResourceIcon resourceId={resource.id} size={24} showTooltip />
-          <span>{resource.trait}</span>
+      <div key={resourceId} className="grid grid-cols-2 gap-4 py-2 items-center">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <ResourceIcon resourceId={resource.id} size={24} showTooltip />
+            <span>{resource.trait}</span>
+          </div>
+          <span className="text-xs text-muted-foreground ml-8">Balance: {Math.round(availableAmount)}</span>
         </div>
-        <NumericInput
-          value={isLabor ? (laborInputAmounts[resourceId] ?? amount) : (inputAmounts[resourceId] ?? amount)}
-          onChange={(value) => handleInputChange(resourceId, value, isLabor)}
-          className="w-24"
-          label={`Enter Amount`}
-          description={resource.trait}
-        />
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Balance: {Math.round(availableAmount)}</span>
+        <div className="flex justify-end">
+          <NumericInput
+            value={isLabor ? (laborInputAmounts[resourceId] ?? amount) : (inputAmounts[resourceId] ?? amount)}
+            onChange={(value) => handleInputChange(resourceId, value, isLabor)}
+            className="w-32"
+            label={`Enter Amount`}
+            description={resource.trait}
+          />
+        </div>
       </div>
     );
   };
@@ -306,14 +311,23 @@ export const ResourcesProductionDrawer = ({
                 <span className="font-medium">{formatProductionTime(ticks)}</span>
               </div>
 
-              {isActive && <div>Production time left: {formatTime(timeLeft * 60)}</div>}
+              {isActive && timeLeft > 0 && (
+                <div className="flex items-center gap-2 justify-center p-2 bg-primary/5 rounded-md">
+                  <span className="text-primary/80">Time Left:</span>
+                  <span className="font-medium">{formatTime(timeLeft)}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="mt-6 flex gap-2">
-            {isActive ? (
+            {isActive && timeLeft > 0 ? (
               <>
-                <Button className="flex-1" onClick={() => console.log("Extend production")} disabled={isLoading}>
+                <Button
+                  className="flex-1"
+                  onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
+                  disabled={isLoading}
+                >
                   Extend
                 </Button>
                 <Button variant="destructive" onClick={() => console.log("Pause production")} disabled={isLoading}>
@@ -326,7 +340,14 @@ export const ResourcesProductionDrawer = ({
                 onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
                 disabled={isLoading || outputAmount <= 0}
               >
-                Start Production
+                {isLoading ? (
+                  <>
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                    Starting Production...
+                  </>
+                ) : (
+                  "Start Production"
+                )}
               </Button>
             )}
           </div>
