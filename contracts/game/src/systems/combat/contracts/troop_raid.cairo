@@ -96,135 +96,147 @@ pub mod troop_raid_systems {
             let mut sum_damage_to_guards = 0;
             let structure_functional_guard_slots = guard_defender
                 .functional_slots(guarded_structure.troop_max_guard_count.into());
-            let mut structure_functional_guard_slots_damage_dealt = array![];
-            let mut structure_functional_guard_slots_damage_received = array![];
+            let mut structure_non_zero_guard_slots = array![];
             for i in 0..structure_functional_guard_slots.len() {
                 let structure_functional_guard_slot = *structure_functional_guard_slots.at(i);
                 let (mut guard_defender_troops, _) = guard_defender.from_slot(structure_functional_guard_slot);
-                let (damage_dealt_to_guard, damage_dealt_to_explorer) = explorer_aggressor_troops
-                    .damage(
-                        ref guard_defender_troops,
-                        defender_biome,
-                        troop_stamina_config,
-                        troop_damage_config,
-                        current_tick,
-                    );
-                sum_damage_to_explorer += damage_dealt_to_explorer;
-                sum_damage_to_guards += damage_dealt_to_guard;
-
-                structure_functional_guard_slots_damage_dealt.append(damage_dealt_to_explorer);
-                structure_functional_guard_slots_damage_received.append(damage_dealt_to_guard);
+                if guard_defender_troops.count.is_non_zero() {
+                    structure_non_zero_guard_slots.append(structure_functional_guard_slot);
+                }
             };
 
-            let mut raid_success = false;
-            let raid_outcome = iTroopImpl::raid_outcome(sum_damage_to_guards, sum_damage_to_explorer);
-            match raid_outcome {
-                TroopRaidOutcome::Success => { raid_success = true },
-                TroopRaidOutcome::Failure => { raid_success = false },
-                TroopRaidOutcome::Chance => {
-                    let vrf_provider: starknet::ContractAddress = WorldConfigUtilImpl::get_member(
-                        world, selector!("vrf_provider_address"),
-                    );
-                    let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
-                    raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed);
-                },
-            }
+            if structure_non_zero_guard_slots.len().is_non_zero() {
+                let mut structure_non_zero_guard_slots_damage_dealt = array![];
+                let mut individual_explorer_aggressor_troops = explorer_aggressor_troops;
+                individual_explorer_aggressor_troops.count = explorer_aggressor_troops.count
+                    / structure_non_zero_guard_slots.len().into();
+                individual_explorer_aggressor_troops
+                    .count -= individual_explorer_aggressor_troops
+                    .count % RESOURCE_PRECISION;
+                assert!(
+                    individual_explorer_aggressor_troops.count >= RESOURCE_PRECISION, "not enough troops to pillage",
+                );
 
-            // apply proportional damage to guard troops
-            for i in 0..structure_functional_guard_slots.len() {
-                let (mut guard_defender_troops, mut guard_defender_troops_destroyed_tick) = guard_defender
-                    .from_slot(*structure_functional_guard_slots.at(i));
-                if sum_damage_to_explorer.is_non_zero() {
-                    let damage_dealt_to_guard = *structure_functional_guard_slots_damage_received.at(i);
-                    let damage_dealt_to_explorer = *structure_functional_guard_slots_damage_dealt.at(i);
-                    // note: precision is being removed before mul to prevent u128 mul overflow
-                    let damage_dealt_to_explorer_less_precision = damage_dealt_to_explorer / RESOURCE_PRECISION;
-                    let sum_damage_to_explorer_less_precision = sum_damage_to_explorer / RESOURCE_PRECISION;
-                    // precision gets added back after multiplication with damage_dealt_to_guard
-                    // todo: see if this can be exploited to make realm unraidable
-                    let mut actual_damage_dealt = (damage_dealt_to_explorer_less_precision * damage_dealt_to_guard)
-                        / sum_damage_to_explorer_less_precision;
-                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, actual_damage_dealt);
-                    guard_defender_troops.count -= guard_defender_troops.count % RESOURCE_PRECISION;
-                }
+                for i in 0..structure_non_zero_guard_slots.len() {
+                    let structure_non_zero_guard_slot = *structure_non_zero_guard_slots.at(i);
+                    let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
+                        .from_slot(structure_non_zero_guard_slot);
+                    let (damage_dealt_to_guard, damage_dealt_to_explorer) = individual_explorer_aggressor_troops
+                        .damage(
+                            ref guard_defender_troops,
+                            defender_biome,
+                            troop_stamina_config,
+                            troop_damage_config,
+                            current_tick,
+                        );
 
-                // deduct stamina spent
-                guard_defender_troops
+                    // apply damage to guard slot
+                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, damage_dealt_to_guard);
+
+                    // deduct stamina spent
+                    guard_defender_troops
+                        .stamina
+                        .spend(
+                            guard_defender_troops.category,
+                            troop_stamina_config,
+                            troop_stamina_config.stamina_attack_req.into(),
+                            current_tick,
+                            false,
+                        );
+
+                    // update structure guard
+                    if guard_defender_troops.count.is_zero() {
+                        // delete guard
+                        iGuardImpl::delete(
+                            ref world,
+                            structure_id,
+                            ref guarded_structure,
+                            ref guard_defender,
+                            ref guard_defender_troops,
+                            current_tick.try_into().unwrap(),
+                            *structure_non_zero_guard_slots.at(i),
+                            current_tick,
+                        );
+                    } else {
+                        // update structure guard
+                        guard_defender
+                            .to_slot(
+                                *structure_non_zero_guard_slots.at(i),
+                                guard_defender_troops,
+                                guard_defender_troops_destroyed_tick.into(),
+                            );
+                        StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+                    }
+
+                    sum_damage_to_explorer += damage_dealt_to_explorer;
+                    sum_damage_to_guards += damage_dealt_to_guard;
+
+                    structure_non_zero_guard_slots_damage_dealt.append(damage_dealt_to_explorer);
+                };
+
+                // apply damage to explorer troops
+                let mut explorer_damage_received = 0;
+                for damage in structure_non_zero_guard_slots_damage_dealt {
+                    // note: damage received by explorer is limited by number of troops
+                    //       used to enter each battle
+                    explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
+                };
+
+                explorer_aggressor_troops
+                    .count -= core::cmp::min(explorer_aggressor_troops.count, explorer_damage_received);
+
+                // deduct stamina spent by explorer
+                explorer_aggressor_troops
                     .stamina
                     .spend(
-                        guard_defender_troops.category,
+                        explorer_aggressor_troops.category,
                         troop_stamina_config,
                         troop_stamina_config.stamina_attack_req.into(),
                         current_tick,
-                        false,
+                        true,
                     );
 
-                // update structure guard
-                if guard_defender_troops.count.is_zero() {
-                    // delete guard
-                    iGuardImpl::delete(
-                        ref world,
-                        structure_id,
-                        ref guarded_structure,
-                        ref guard_defender,
-                        ref guard_defender_troops,
-                        current_tick.try_into().unwrap(),
-                        *structure_functional_guard_slots.at(i),
-                        current_tick,
-                    );
-                } else {
-                    // update structure guard
-                    guard_defender
-                        .to_slot(
-                            *structure_functional_guard_slots.at(i),
-                            guard_defender_troops,
-                            guard_defender_troops_destroyed_tick.into(),
+                // update explorer
+                explorer_aggressor.troops = explorer_aggressor_troops;
+                if explorer_aggressor_troops.count.is_zero() {
+                    if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
+                        iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
+                    } else {
+                        let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                            ref world, explorer_aggressor.owner,
                         );
-                    StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
-                }
-            };
-
-            // apply proportional damage to explorer troops
-            // by averaging out total combined damage
-            let damage_to_explorer = sum_damage_to_explorer / structure_functional_guard_slots.len().into();
-            explorer_aggressor_troops.count -= core::cmp::min(explorer_aggressor_troops.count, damage_to_explorer);
-            explorer_aggressor_troops.count -= explorer_aggressor_troops.count % RESOURCE_PRECISION;
-
-            // deduct stamina spent by explorer
-            explorer_aggressor_troops
-                .stamina
-                .spend(
-                    explorer_aggressor_troops.category,
-                    troop_stamina_config,
-                    troop_stamina_config.stamina_attack_req.into(),
-                    current_tick,
-                    true,
-                );
-
-            // update explorer
-            explorer_aggressor.troops = explorer_aggressor_troops;
-            if explorer_aggressor_troops.count.is_zero() {
-                if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
-                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
+                        let mut explorer_aggressor_structure_explorers_list: Array<ID> =
+                            StructureTroopExplorerStoreImpl::retrieve(
+                            ref world, explorer_aggressor.owner,
+                        )
+                            .into();
+                        iExplorerImpl::explorer_from_structure_delete(
+                            ref world,
+                            ref explorer_aggressor,
+                            explorer_aggressor_structure_explorers_list,
+                            ref explorer_aggressor_owner_structure,
+                            explorer_aggressor.owner,
+                        );
+                    }
                 } else {
-                    let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
-                    );
-                    let mut explorer_aggressor_structure_explorers_list: Array<ID> =
-                        StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer_aggressor.owner,
-                    )
-                        .into();
-                    iExplorerImpl::explorer_from_structure_delete(
-                        ref world,
-                        ref explorer_aggressor,
-                        explorer_aggressor_structure_explorers_list,
-                        ref explorer_aggressor_owner_structure,
-                        explorer_aggressor.owner,
-                    );
+                    world.write_model(@explorer_aggressor);
                 }
-            } else {
-                world.write_model(@explorer_aggressor);
+            }
+
+            let mut raid_success = true;
+            if structure_non_zero_guard_slots.len().is_non_zero() {
+                let raid_outcome = iTroopImpl::raid_outcome(sum_damage_to_guards, sum_damage_to_explorer);
+                match raid_outcome {
+                    TroopRaidOutcome::Success => { raid_success = true },
+                    TroopRaidOutcome::Failure => { raid_success = false },
+                    TroopRaidOutcome::Chance => {
+                        let vrf_provider: starknet::ContractAddress = WorldConfigUtilImpl::get_member(
+                            world, selector!("vrf_provider_address"),
+                        );
+                        let vrf_seed: u256 = VRFImpl::seed(starknet::get_caller_address(), vrf_provider);
+                        raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed);
+                    },
+                }
             }
 
             // steal resources
