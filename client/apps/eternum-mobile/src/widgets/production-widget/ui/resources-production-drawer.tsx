@@ -43,6 +43,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
   const [isLoading, setIsLoading] = useState(false);
+  const [isPauseLoading, setIsPauseLoading] = useState(false);
+  const [isExtendLoading, setIsExtendLoading] = useState(false);
   const [outputAmount, setOutputAmount] = useState(0);
   const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>({});
   const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>({});
@@ -56,7 +58,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const handleRawResourcesProduce = async () => {
     if (!ticks) return;
-    setIsLoading(true);
+    const loadingState = isActive ? setIsExtendLoading : setIsLoading;
+    loadingState(true);
 
     try {
       await systemCalls.burn_other_predefined_resources_for_resources({
@@ -68,7 +71,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     } catch (error) {
       console.error(error);
     } finally {
-      setIsLoading(false);
+      loadingState(false);
     }
   };
 
@@ -77,7 +80,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     const laborNeeded = Math.round(laborConfig.laborBurnPerResource * outputAmount);
 
     if (outputAmount > 0 && laborNeeded > 0) {
-      setIsLoading(true);
+      const loadingState = isActive ? setIsExtendLoading : setIsLoading;
+      loadingState(true);
 
       try {
         await systemCalls.burn_labor_resources_for_other_production({
@@ -89,20 +93,20 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       } catch (error) {
         console.error(error);
       } finally {
-        setIsLoading(false);
+        loadingState(false);
       }
     }
   };
 
   const handlePauseResumeProduction = async () => {
-    setIsLoading(true);
+    setIsPauseLoading(true);
     const tileManager = new TileManager(components, systemCalls, {
       col: realm.position?.x || 0,
       row: realm.position?.y || 0,
     });
 
     try {
-      if (isActive) {
+      if (isActive && !building.paused) {
         await tileManager.pauseProduction(account, realm.entityId, building.innerCol, building.innerRow);
       } else {
         await tileManager.resumeProduction(account, realm.entityId, building.innerCol, building.innerRow);
@@ -110,7 +114,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     } catch (error) {
       console.error(error);
     } finally {
-      setIsLoading(false);
+      setIsPauseLoading(false);
     }
   };
 
@@ -122,20 +126,20 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       const resourceConfig = laborConfig.inputResources.find((r) => r.resource === resourceId);
       if (!resourceConfig) return;
 
-      // Set the direct input amount for the changed resource
+      // Set the direct input amount for the changed resource with rounding
       setLaborInputAmounts((prev) => ({
         ...prev,
-        [resourceId]: value,
+        [resourceId]: Math.round(value),
       }));
 
       // Calculate new output based on this input
       const newOutputAmount = Math.round(value / resourceConfig.amount);
       setOutputAmount(newOutputAmount);
 
-      // Update other inputs proportionally
+      // Update other inputs proportionally with rounding
       const newInputs = laborConfig.inputResources.reduce((acc, input) => {
         if (input.resource === resourceId) {
-          return { ...acc, [input.resource]: value };
+          return { ...acc, [input.resource]: Math.round(value) };
         }
         const inputAmount = Math.round(input.amount * newOutputAmount);
         return { ...acc, [input.resource]: inputAmount };
@@ -176,7 +180,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       const newOutputAmount = Math.max(1, Math.min(...maxOutputs));
       setOutputAmount(newOutputAmount);
 
-      // Update all labor input amounts based on the new output amount
+      // Update all labor input amounts based on the new output amount with rounding
       const newInputs = laborConfig.inputResources.reduce((acc, input) => {
         const inputAmount = Math.round(input.amount * newOutputAmount);
         return { ...acc, [input.resource]: inputAmount };
@@ -378,21 +382,47 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
                   <span className="font-medium">{formatTime(timeLeft)}</span>
                 </div>
               )}
+
+              {building.paused && (
+                <div className="flex items-center gap-2 justify-center p-2 bg-destructive/50 rounded-md">
+                  <span className="text-white/50">Production Paused</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="mt-6 flex gap-2">
-            {isActive && timeLeft > 0 ? (
+            {(isActive && timeLeft > 0) || building.paused || isPauseLoading ? (
               <>
                 <Button
                   className="flex-1"
                   onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
-                  disabled={isLoading}
+                  disabled={isExtendLoading || isPauseLoading}
                 >
-                  Extend
+                  {isExtendLoading ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      Extending...
+                    </>
+                  ) : (
+                    "Extend"
+                  )}
                 </Button>
-                <Button variant="destructive" onClick={handlePauseResumeProduction} disabled={isLoading}>
-                  {isActive ? "Pause" : "Resume"}
+                <Button
+                  variant="destructive"
+                  onClick={handlePauseResumeProduction}
+                  disabled={isExtendLoading || isPauseLoading}
+                >
+                  {isPauseLoading ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                      {"Loading..."}
+                    </>
+                  ) : isActive && !building.paused ? (
+                    "Pause"
+                  ) : (
+                    "Resume"
+                  )}
                 </Button>
               </>
             ) : (
