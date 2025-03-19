@@ -103,9 +103,9 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
     try {
       if (isActive) {
-        await tileManager.pauseProduction(account, realm.entityId, 0, 0);
+        await tileManager.pauseProduction(account, realm.entityId, building.innerCol, building.innerRow);
       } else {
-        await tileManager.resumeProduction(account, realm.entityId, 0, 0);
+        await tileManager.resumeProduction(account, realm.entityId, building.innerCol, building.innerRow);
       }
     } catch (error) {
       console.error(error);
