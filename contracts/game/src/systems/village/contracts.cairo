@@ -18,6 +18,7 @@ pub mod village_systems {
     use s1_eternum::models::map::{TileOccupier};
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::position::{Direction, NUM_DIRECTIONS};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl,
@@ -80,6 +81,16 @@ pub mod village_systems {
                 village_resources,
                 villiage_metadata,
                 TileOccupier::Village,
+            );
+
+            // place castle building
+            BuildingImpl::create(
+                ref world,
+                village_id,
+                StructureCategory::Village.into(),
+                village_coord,
+                BuildingCategory::ResourceLabor,
+                BuildingImpl::center(),
             );
 
             village_id.into()
