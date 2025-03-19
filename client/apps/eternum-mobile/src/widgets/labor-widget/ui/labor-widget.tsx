@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
-import { currencyFormat } from "@/shared/lib/utils";
+import { currencyFormat, currencyIntlFormat } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
@@ -82,8 +82,8 @@ export const LaborWidget = ({ building, resourceManager, realm }: LaborBuildingP
   }, [resourceManager, currentTick, isActive, building.produced.resource]);
 
   const productionRate = Number(divideByPrecision(Number(production?.production_rate || 0), false));
-  const productionPerHour = (productionRate * 60 * 60).toLocaleString(undefined, { maximumFractionDigits: 4 });
-  const productionPerSec = productionRate.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  const productionPerHour = currencyIntlFormat(productionRate * 60 * 60);
+  const productionPerSec = currencyIntlFormat(productionRate);
 
   return (
     <>
@@ -104,7 +104,7 @@ export const LaborWidget = ({ building, resourceManager, realm }: LaborBuildingP
               {isActive ? (
                 <div className="flex items-center gap-1">
                   <span className={`text-xs ${productionRate > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    +{showPerHour ? `${productionPerHour}/h` : `${productionPerSec}/s`}
+                    +{showPerHour ? `${productionPerHour}` : `${productionPerSec}`}
                   </span>
                   <Button
                     variant="ghost"
