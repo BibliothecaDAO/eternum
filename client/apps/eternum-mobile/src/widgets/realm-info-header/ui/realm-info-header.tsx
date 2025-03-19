@@ -1,4 +1,3 @@
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/shared/consts";
 import { useStore } from "@/shared/store";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -7,17 +6,11 @@ import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
 import { FELT_CENTER, getLevelName } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { ChevronDown, Copy } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 export const RealmInfoHeader = () => {
   const playerRealms = usePlayerOwnedRealms();
   const { structureEntityId, selectedRealm, setSelectedStructure } = useStore();
-
-  useEffect(() => {
-    if (structureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID && playerRealms.length > 0) {
-      setSelectedStructure(playerRealms[0]);
-    }
-  }, [playerRealms, structureEntityId, setSelectedStructure]);
 
   const adjustedCoords = useMemo(() => {
     if (!selectedRealm) return null;

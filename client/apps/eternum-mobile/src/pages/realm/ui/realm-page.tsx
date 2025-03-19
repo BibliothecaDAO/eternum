@@ -1,7 +1,7 @@
 import { useStore } from "@/shared/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
-import { usePlayerStructures } from "@bibliothecadao/react";
+import { usePlayerOwnedRealms } from "@bibliothecadao/react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { ClaimTab, ManageTab, MilitaryTab, OverviewTab } from "./tabs";
 
@@ -21,15 +21,15 @@ export const useRealmTabs = () => {
 
 export const RealmPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const structures = usePlayerStructures();
-  const { structureEntityId, setStructureEntityId } = useStore();
+  const playerRealms = usePlayerOwnedRealms();
+  const { selectedRealm, setSelectedStructure } = useStore();
 
   // Set initial structure on load
   useEffect(() => {
-    if (structures.length > 0 && !structureEntityId) {
-      setStructureEntityId(structures[0].entityId);
+    if (playerRealms.length > 0 && !selectedRealm) {
+      setSelectedStructure(playerRealms[0]);
     }
-  }, [structures, structureEntityId, setStructureEntityId]);
+  }, [playerRealms, selectedRealm, setSelectedStructure]);
 
   const switchTab = (tab: string) => {
     setActiveTab(tab);
