@@ -363,10 +363,10 @@ pub enum TroopRaidOutcome {
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
     fn raid_outcome(success_weight: u128, failure_weight: u128) -> TroopRaidOutcome {
-        if success_weight >= failure_weight * 2 {
+        if success_weight > failure_weight * 2 {
             return TroopRaidOutcome::Success;
         }
-        if failure_weight >= success_weight * 2 {
+        if failure_weight > success_weight * 2 {
             return TroopRaidOutcome::Failure;
         }
         return TroopRaidOutcome::Chance;

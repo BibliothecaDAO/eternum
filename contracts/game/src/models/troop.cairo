@@ -571,7 +571,7 @@ pub impl TroopsImpl of TroopsTrait {
                 troop_stamina_config,
                 troop_stamina_config.stamina_attack_req.into(),
                 current_tick,
-                false,
+                true,
             );
         bravo
             .stamina
@@ -596,6 +596,7 @@ pub impl TroopsImpl of TroopsTrait {
                     );
             }
             if bravo.count.is_non_zero() {
+                // todo: do we grant stamina here when they originally had none
                 bravo
                     .stamina
                     .add(
