@@ -1,4 +1,4 @@
-import { LaborWidget } from "@/widgets/labor-widget";
+import { ProductionWidget } from "@/widgets/production-widget";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback } from "react";
 
@@ -78,7 +78,7 @@ export function ManageTab() {
   return (
     <div className="space-y-4">
       {dummyLaborBuildings.map((building) => (
-        <LaborWidget
+        <ProductionWidget
           key={building.id}
           building={building}
           resourceBalances={dummyResourceBalances}

@@ -5,7 +5,7 @@ import { NearbyEnemies } from "@/widgets/nearby-enemies";
 import { ResourcesCard } from "@/widgets/resources-card";
 import { UpgradeCastle } from "@/widgets/upgrade-castle";
 import { useCallback } from "react";
-import { LaborWidgetsSection } from "../components/labor-widgets-section";
+import { ProductionWidgetsSection } from "../components/labor-widgets-section";
 import { useRealmTabs } from "../realm-page";
 
 export function OverviewTab() {
@@ -33,7 +33,7 @@ export function OverviewTab() {
     <div className="space-y-4">
       <ResourcesCard entityId={structureEntityId} />
 
-      {selectedRealm && <LaborWidgetsSection selectedRealm={selectedRealm} />}
+      {selectedRealm && <ProductionWidgetsSection selectedRealm={selectedRealm} />}
 
       <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} />
 

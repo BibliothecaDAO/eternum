@@ -1,11 +1,11 @@
 import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
-import { LaborWidget } from "@/widgets/labor-widget";
-import { LaborBuilding } from "@/widgets/labor-widget/model/types";
+import { ProductionWidget } from "@/widgets/production-widget";
+import { LaborBuilding } from "@/widgets/production-widget/model/types";
 import { Building, getProducedResource, RealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
-export function LaborWidgetsSection({ selectedRealm }: { selectedRealm: RealmInfo }) {
+export function ProductionWidgetsSection({ selectedRealm }: { selectedRealm: RealmInfo }) {
   const buildings: Building[] = useBuildings(selectedRealm.position.x, selectedRealm.position.y);
   const resourceManager = useResourceManager(selectedRealm.entityId);
   const { currentBlockTimestamp } = getBlockTimestamp();
@@ -43,7 +43,7 @@ export function LaborWidgetsSection({ selectedRealm }: { selectedRealm: RealmInf
     <div className="overflow-x-auto">
       <div className="grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4">
         {buildingsWithProduction.map((building) => (
-          <LaborWidget
+          <ProductionWidget
             key={`${building.innerCol}-${building.innerRow}`}
             building={building}
             resourceManager={resourceManager}

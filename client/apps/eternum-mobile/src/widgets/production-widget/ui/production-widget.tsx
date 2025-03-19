@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuildingProps } from "../model/types";
 import { LaborDrawer } from "./labor-drawer";
 
-export const LaborWidget = ({ building, resourceManager, realm }: LaborBuildingProps) => {
+export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuildingProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
