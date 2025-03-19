@@ -3,13 +3,13 @@ import { ResourceArrivalInfo, ResourceArrivalManager } from "@bibliothecadao/ete
 import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";
 import { ResourceArrivalSummary } from "../model/types";
 
-export const useResourceArrivals = (structureId: number | null) => {
+export const useResourceArrivals = (structureId: number) => {
   const {
     account: { account },
     setup: { components, systemCalls },
   } = useDojo();
 
-  const arrivals = structureId ? useArrivalsByStructure(structureId) : [];
+  const arrivals = useArrivalsByStructure(structureId);
   const { currentBlockTimestamp } = getBlockTimestamp();
 
   const calculateSummary = (arrivals: ResourceArrivalInfo[]): ResourceArrivalSummary => {
