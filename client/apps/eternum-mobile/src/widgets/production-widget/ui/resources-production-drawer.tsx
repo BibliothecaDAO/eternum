@@ -4,12 +4,12 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/dr
 import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { RealmInfo, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
-import { LaborBuildingProps } from "../model/types";
 
 interface LaborDrawerProps {
-  building: LaborBuildingProps["building"];
+  selectedResource: number;
+  realm: RealmInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -35,7 +35,7 @@ const DUMMY_DATA = {
   hasLaborMode: true,
 };
 
-export const ResourcesProductionDrawer = ({ building, open, onOpenChange }: LaborDrawerProps) => {
+export const ResourcesProductionDrawer = ({ selectedResource, realm, open, onOpenChange }: LaborDrawerProps) => {
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
   const [outputAmount, setOutputAmount] = useState(DUMMY_DATA.outputAmount);
   const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>(
