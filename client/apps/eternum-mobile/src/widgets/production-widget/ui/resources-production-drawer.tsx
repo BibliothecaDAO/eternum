@@ -35,7 +35,7 @@ const DUMMY_DATA = {
   hasLaborMode: true,
 };
 
-export const LaborDrawer = ({ building, open, onOpenChange }: LaborDrawerProps) => {
+export const ResourcesProductionDrawer = ({ building, open, onOpenChange }: LaborDrawerProps) => {
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
   const [outputAmount, setOutputAmount] = useState(DUMMY_DATA.outputAmount);
   const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>(
