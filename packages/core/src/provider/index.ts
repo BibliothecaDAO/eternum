@@ -574,11 +574,25 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_village(props: SystemProps.CreateVillageProps) {
     const { connected_realm, direction, signer } = props;
 
-    const call = this.createProviderCall(signer, {
+    let callData: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-village_systems`), 0, signer.address],
+      };
+
+      callData = [requestRandomCall];
+    }
+
+    const createCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
       entrypoint: "create",
       calldata: [connected_realm, direction],
-    });
+    };
+
+    const call = this.createProviderCall(signer, [...callData, createCall]);
 
     return await this.promiseQueue.enqueue(call);
   }

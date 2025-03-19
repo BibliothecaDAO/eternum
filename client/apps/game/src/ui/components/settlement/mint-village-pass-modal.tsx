@@ -1,10 +1,8 @@
 import Button from "@/ui/elements/button";
-import { getFreeVillagePositions, getRealmNameById, HexDirection } from "@bibliothecadao/eternum";
+import { Direction, getFreeVillagePositions, getRealmNameById, ID } from "@bibliothecadao/eternum";
 import { useDojo, useRealms } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 import { ModalContainer } from "../modal-container";
-import SettlementMinimap from "./settlement-minimap";
-import { SettlementLocation } from "./settlement-types";
 
 interface MintVillagePassModalProps {
   onClose: () => void;
@@ -12,71 +10,53 @@ interface MintVillagePassModalProps {
 
 export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => {
   const {
-    setup: { components },
+    setup: {
+      account: { account },
+      components,
+      systemCalls: { create_village },
+    },
   } = useDojo();
   const realms = useRealms();
-  const [selectedRealm, setSelectedRealm] = useState<number | null>(null);
-  const [selectedDirection, setSelectedDirection] = useState<HexDirection | null>(HexDirection.NorthEast);
-  const [showMinimap, setShowMinimap] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
+  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID } | null>(null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSelectLocation = (location: SettlementLocation) => {
-    setSelectedLocation(location);
-  };
-
-  const handleConfirmLocation = () => {
-    setShowMinimap(false);
-  };
-
-  const handleSettleVillage = () => {
-    if ((selectedRealm !== null && selectedDirection !== null) || selectedLocation !== null) {
-      if (selectedLocation) {
-        console.log(
-          `Settling village at location: Layer ${selectedLocation.layer}, Side ${selectedLocation.side}, Point ${selectedLocation.point}`,
-        );
-      } else {
-        console.log(`Settling village in realm ${selectedRealm} towards ${HexDirection[selectedDirection!]}`);
-      }
-      onClose();
-    } else {
-      console.log("Please select a realm and a direction or choose a location on the map.");
+  const handleSettleVillage = async () => {
+    if (selectedRealm !== null && selectedDirection !== null) {
+      setIsLoading(true);
+      await create_village({
+        connected_realm: selectedRealm.entityId,
+        direction: selectedDirection,
+        signer: account,
+      }).finally(() => setIsLoading(false));
     }
+    onClose();
   };
 
   const selectRandomRealm = () => {
     if (realms.length > 0) {
       const randomIndex = Math.floor(Math.random() * realms.length);
-      setSelectedRealm(randomIndex);
+      setSelectedRealm({ realmId: realms[randomIndex].metadata.realm_id, entityId: realms[randomIndex].entity_id });
+      setSelectedDirection(null);
     }
   };
 
   const directionOptions = useMemo(() => {
     if (!selectedRealm) return [];
 
-    const freePositions = getFreeVillagePositions(selectedRealm, components);
+    const freePositions = getFreeVillagePositions(selectedRealm.entityId, components);
 
-    return Object.keys(HexDirection)
+    return Object.keys(Direction)
       .filter((key) => isNaN(Number(key)))
       .filter((dir) => {
-        const direction = HexDirection[dir as keyof typeof HexDirection];
+        const direction = Direction[dir as keyof typeof Direction];
         return freePositions.some((pos) => pos.direction === direction);
       })
       .map((dir) => ({
-        value: HexDirection[dir as keyof typeof HexDirection],
-        label: dir.replace(/([A-Z])/g, " $1").trim(),
+        value: Direction[dir as keyof typeof Direction],
+        label: dir.replace(/_/g, " "),
       }));
   }, [selectedRealm, components]);
-
-  if (showMinimap) {
-    return (
-      <SettlementMinimap
-        onSelectLocation={handleSelectLocation}
-        onConfirm={handleConfirmLocation}
-        maxLayers={3}
-        extraPlayerOccupiedLocations={[]}
-      />
-    );
-  }
 
   return (
     <ModalContainer size="medium" title="Mint Village Pass">
@@ -116,8 +96,14 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                 </Button>
               </div>
               <select
-                onChange={(e) => setSelectedRealm(Number(e.target.value))}
-                value={selectedRealm ?? ""}
+                onChange={(e) =>
+                  setSelectedRealm({
+                    realmId: Number(e.target.value),
+                    entityId:
+                      realms.find((realm) => realm.metadata.realm_id === Number(e.target.value))?.entity_id || 0,
+                  })
+                }
+                value={selectedRealm?.realmId ?? ""}
                 className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold"
                 style={{ backgroundPosition: "right 0.75rem center" }}
               >
@@ -125,8 +111,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   Select a Realm
                 </option>
                 {realms.map((realm, index) => (
-                  <option key={index} value={index}>
-                    {`Realm #${realm.entity_id} - ${getRealmNameById(realm.metadata.realm_id) || "Unnamed"}`}
+                  <option key={index} value={realm.metadata.realm_id}>
+                    {`Realm #${realm.metadata.realm_id} - ${getRealmNameById(realm.metadata.realm_id) || "Unnamed"}`}
                   </option>
                 ))}
               </select>
@@ -135,7 +121,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
             <div className="w-full space-y-2">
               <label className="text-gold font-semibold">Select Direction</label>
               <select
-                onChange={(e) => setSelectedDirection(e.target.value as unknown as HexDirection)}
+                onChange={(e) => setSelectedDirection(e.target.value as unknown as Direction)}
                 value={selectedDirection ?? ""}
                 className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold"
                 style={{ backgroundPosition: "right 0.75rem center" }}
@@ -151,26 +137,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
               </select>
             </div>
           </div>
-
-          {/* <div className="flex justify-center">
-            <span className="text-sm text-gray-400">- or -</span>
-          </div> */}
-
-          {/* <Button
-            onClick={() => setShowMinimap(true)}
-            className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-md"
-          >
-            Choose Location on Map
-          </Button> */}
-
-          {selectedLocation && (
-            <div className="mt-4 p-3 bg-gray-800 rounded-md border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-200 mb-1">Selected Location:</h3>
-              <p className="text-xs text-gray-400">
-                Layer: {selectedLocation.layer}, Side: {selectedLocation.side}, Point: {selectedLocation.point}
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="flex space-x-3">
@@ -181,8 +147,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
             variant="primary"
             onClick={handleSettleVillage}
             className="flex-1"
-            isPulsing={(selectedRealm !== null && selectedDirection !== null) || selectedLocation !== null}
-            disabled={!((selectedRealm !== null && selectedDirection !== null) || selectedLocation !== null)}
+            isPulsing={selectedRealm !== null && selectedDirection !== null}
+            disabled={!(selectedRealm !== null && selectedDirection !== null)}
+            isLoading={isLoading}
           >
             Mint Village Pass
           </Button>

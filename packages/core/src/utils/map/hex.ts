@@ -3,27 +3,17 @@
  * Based on https://www.redblobgames.com/grids/hexagons/
  */
 
-import { TileOccupier } from "../..";
-
-// HexDirection enum for hex grid navigation
-export enum HexDirection {
-  East = "East",
-  NorthEast = "NorthEast",
-  NorthWest = "NorthWest",
-  West = "West",
-  SouthWest = "SouthWest",
-  SouthEast = "SouthEast",
-}
+import { Direction, TileOccupier } from "../..";
 
 // Helper function to get all directions
-export function getAllHexDirections(): HexDirection[] {
+export function getAllHexDirections(): Direction[] {
   return [
-    HexDirection.East,
-    HexDirection.NorthEast,
-    HexDirection.NorthWest,
-    HexDirection.West,
-    HexDirection.SouthWest,
-    HexDirection.SouthEast,
+    Direction.EAST,
+    Direction.NORTH_EAST,
+    Direction.NORTH_WEST,
+    Direction.WEST,
+    Direction.SOUTH_WEST,
+    Direction.SOUTH_EAST,
   ];
 }
 
@@ -72,39 +62,39 @@ export class Coord {
     return `Coord (x:${this.x}, y:${this.y})`;
   }
 
-  neighbor(direction: HexDirection): Coord {
+  neighbor(direction: Direction): Coord {
     // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
     // even-r
     if (this.y % 2 === 0) {
       // Where y (row) is even
       switch (direction) {
-        case HexDirection.East:
+        case Direction.EAST:
           return new Coord(this.x + 1, this.y);
-        case HexDirection.NorthEast:
+        case Direction.NORTH_EAST:
           return new Coord(this.x + 1, this.y + 1);
-        case HexDirection.NorthWest:
+        case Direction.NORTH_WEST:
           return new Coord(this.x, this.y + 1);
-        case HexDirection.West:
+        case Direction.WEST:
           return new Coord(this.x - 1, this.y);
-        case HexDirection.SouthWest:
+        case Direction.SOUTH_WEST:
           return new Coord(this.x, this.y - 1);
-        case HexDirection.SouthEast:
+        case Direction.SOUTH_EAST:
           return new Coord(this.x + 1, this.y - 1);
       }
     } else {
       // Where y (row) is odd
       switch (direction) {
-        case HexDirection.East:
+        case Direction.EAST:
           return new Coord(this.x + 1, this.y);
-        case HexDirection.NorthEast:
+        case Direction.NORTH_EAST:
           return new Coord(this.x, this.y + 1);
-        case HexDirection.NorthWest:
+        case Direction.NORTH_WEST:
           return new Coord(this.x - 1, this.y + 1);
-        case HexDirection.West:
+        case Direction.WEST:
           return new Coord(this.x - 1, this.y);
-        case HexDirection.SouthWest:
+        case Direction.SOUTH_WEST:
           return new Coord(this.x - 1, this.y - 1);
-        case HexDirection.SouthEast:
+        case Direction.SOUTH_EAST:
           return new Coord(this.x, this.y - 1);
       }
     }
@@ -132,7 +122,7 @@ export class Coord {
    * @param steps - Number of steps to take
    * @returns New coordinate after traveling
    */
-  travel(direction: HexDirection, steps: number): Coord {
+  travel(direction: Direction, steps: number): Coord {
     let current: Coord = this;
     for (let i = 0; i < steps; i++) {
       current = current.neighbor(direction) as Coord;
@@ -170,15 +160,15 @@ export class HexGrid {
    * @param steps - Number of steps from center
    * @returns Map of directions to their coordinates
    */
-  static findHexCoordsfromCenter(steps: number): Record<HexDirection, Coord> {
+  static findHexCoordsfromCenter(steps: number): Record<Direction, Coord> {
     const center = new Coord(HexGrid.CENTER, HexGrid.CENTER);
-    const result: Partial<Record<HexDirection, Coord>> = {};
+    const result: Partial<Record<Direction, Coord>> = {};
 
     getAllHexDirections().forEach((direction) => {
       result[direction] = center.travel(direction, steps);
     });
 
-    return result as Record<HexDirection, Coord>;
+    return result as Record<Direction, Coord>;
   }
 }
 

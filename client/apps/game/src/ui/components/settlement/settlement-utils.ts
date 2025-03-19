@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { ClientComponents, ContractAddress, Coord, HexDirection, StructureType } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, Coord, Direction, StructureType } from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_CENTER, SETTLEMENT_SUBSEQUENT_DISTANCE } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
@@ -44,14 +44,14 @@ export const sideLayerOneFirstCoord = (side: number): Coord => {
   return side_first_coord_layer_0;
 };
 
-export const sideDirections = (side: number): HexDirection[] => {
+export const sideDirections = (side: number): Direction[] => {
   const start_directions = [
-    [HexDirection.East, HexDirection.NorthWest],
-    [HexDirection.East, HexDirection.SouthWest],
-    [HexDirection.West, HexDirection.NorthEast],
-    [HexDirection.West, HexDirection.SouthEast],
-    [HexDirection.SouthWest, HexDirection.East],
-    [HexDirection.NorthEast, HexDirection.West],
+    [Direction.EAST, Direction.NORTH_WEST],
+    [Direction.EAST, Direction.SOUTH_WEST],
+    [Direction.WEST, Direction.NORTH_EAST],
+    [Direction.WEST, Direction.SOUTH_EAST],
+    [Direction.SOUTH_WEST, Direction.EAST],
+    [Direction.NORTH_EAST, Direction.WEST],
   ];
   return start_directions[side];
 };
