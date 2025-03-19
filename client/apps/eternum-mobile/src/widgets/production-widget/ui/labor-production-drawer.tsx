@@ -15,7 +15,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { ChevronDownIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface LaborDrawerProps {
@@ -66,20 +66,26 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
 
   const { laborAmount, ticks } = useMemo(() => {
     if (!laborConfig.length) return { laborAmount: 0, ticks: 0 };
+
+    // Calculate total labor amount based on resource amounts and their labor production rates
     const totalLaborAmount = selectedResources.reduce((acc, resource, index) => {
-      return acc + resource.amount * (laborConfig[index]?.laborProductionPerResource ?? 0);
+      const config = laborConfig[index];
+      if (!config) return acc;
+      const laborForResource = resource.amount * config.laborProductionPerResource;
+      return acc + laborForResource;
     }, 0);
 
-    const maxTicks = Math.max(
-      ...laborConfig.map((config, index) => {
-        return Math.ceil(
-          (selectedResources[index].amount * (config?.laborProductionPerResource || 0)) /
-            (config?.laborRatePerTick || 0),
-        );
-      }),
-    );
+    // Calculate ticks based on labor rate per tick
+    const ticksPerResource = laborConfig.map((config, index) => {
+      if (!config) return 0;
+      const resourceAmount = selectedResources[index].amount;
+      const laborAmount = resourceAmount * config.laborProductionPerResource;
+      return Math.ceil(laborAmount / config.laborRatePerTick);
+    });
 
-    return { laborAmount: totalLaborAmount, ticks: maxTicks };
+    const maxTicks = Math.max(...ticksPerResource);
+
+    return { laborAmount: Math.floor(totalLaborAmount), ticks: maxTicks };
   }, [laborConfig, selectedResources]);
 
   const availableResources = useMemo(() => {
@@ -220,7 +226,16 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
                 isLoading
               }
             >
-              {hasInsufficientResources ? "Insufficient Resources" : "Start Production"}
+              {isLoading ? (
+                <>
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                  Starting Production...
+                </>
+              ) : hasInsufficientResources ? (
+                "Insufficient Resources"
+              ) : (
+                "Start Production"
+              )}
             </Button>
           </div>
         </div>

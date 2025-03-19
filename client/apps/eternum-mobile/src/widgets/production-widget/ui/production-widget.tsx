@@ -101,7 +101,7 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
                   {currencyFormat(balance, 2)}
                 </span>
               </div>
-              {isActive ? (
+              {isActive && (productionEndsAt > currentTick || resourceManager.isFood(building.produced.resource)) ? (
                 <div className="flex items-center gap-1">
                   <span className={`text-xs ${productionRate > 0 ? "text-emerald-400" : "text-red-400"}`}>
                     +{showPerHour ? `${productionPerHour}` : `${productionPerSec}`}

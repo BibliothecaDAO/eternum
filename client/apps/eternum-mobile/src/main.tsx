@@ -31,10 +31,11 @@ async function main() {
     },
   );
 
-  const eternumConfig = ETERNUM_CONFIG();
-  configManager.setDojo(setupResult.components, eternumConfig);
   const state: WorldSlice = useStore.getState();
   await initialSync(setupResult, state);
+
+  const eternumConfig = ETERNUM_CONFIG();
+  configManager.setDojo(setupResult.components, eternumConfig);
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
