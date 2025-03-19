@@ -18,7 +18,7 @@ import {
 import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuildingProps } from "../model/types";
-import { LaborProductionDrawer } from "./labor-production-drawer";
+import { ProductionDrawer } from "./production-drawer";
 
 export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuildingProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -140,7 +140,12 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
         </CardContent>
       </Card>
 
-      <LaborProductionDrawer building={building} open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
+      <ProductionDrawer
+        selectedResource={building.produced.resource}
+        realm={realm}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+      />
     </>
   );
 };
