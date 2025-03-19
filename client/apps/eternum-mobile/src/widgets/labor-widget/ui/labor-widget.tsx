@@ -89,58 +89,53 @@ export const LaborWidget = ({ building, resourceManager, realm }: LaborBuildingP
     <>
       <Card className="w-full">
         <CardContent className="p-4">
-          <div className="flex flex-col gap-2">
-            {/* Main info row */}
-            <div className="flex items-start justify-between">
-              {/* Left column with resource info */}
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">{resource.trait}</span>
-                  <span className="text-xs text-white/90 px-1.5 py-0.5 rounded-md bg-white/10">
-                    {currencyFormat(balance, 2)}
-                  </span>
-                </div>
-                {isActive ? (
-                  <div className="flex items-center gap-1">
-                    <span className={`text-xs ${productionRate > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                      +{showPerHour ? `${productionPerHour}/h` : `${productionPerSec}/s`}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 px-1.5 text-[10px] text-white/70 hover:text-white hover:bg-white/10"
-                      onClick={() => setShowPerHour(!showPerHour)}
-                    >
-                      {showPerHour ? "per hour" : "per sec"}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-xs text-white/50">
-                    {reachedMaxCap ? "Production stopped (Max Cap)" : "Production stopped (No Labor)"}
-                  </div>
-                )}
+          <div className="flex items-center justify-between gap-4">
+            {/* Resource icon - First column */}
+            <ResourceIcon resourceId={resource.id} size={40} showTooltip />
+
+            {/* Main info - Middle column */}
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">{resource.trait}</span>
+                <span className="text-xs text-white/90 px-1.5 py-0.5 rounded-md bg-white/10">
+                  {currencyFormat(balance, 2)}
+                </span>
               </div>
-
-              {/* Resource icon */}
-              <ResourceIcon resourceId={resource.id} size={40} showTooltip />
-            </div>
-
-            {/* Bottom row with time and settings */}
-            <div className="flex items-center justify-between">
-              {timeUntilValueReached !== 0 && (
-                <Badge variant="secondary" className="h-6 text-xs bg-white/10 text-white/90">
-                  {formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)}
-                </Badge>
+              {isActive ? (
+                <div className="flex items-center gap-1">
+                  <span className={`text-xs ${productionRate > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    +{showPerHour ? `${productionPerHour}/h` : `${productionPerSec}/s`}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 px-1.5 text-[10px] text-white/70 hover:text-white hover:bg-white/10"
+                    onClick={() => setShowPerHour(!showPerHour)}
+                  >
+                    {showPerHour ? "per hour" : "per sec"}
+                  </Button>
+                  {timeUntilValueReached !== 0 && (
+                    <Badge variant="secondary" className="h-6 text-xs bg-white/10 text-white/90">
+                      {formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="text-xs text-white/50">
+                  {reachedMaxCap ? "Production stopped (Max Cap)" : "Production stopped (No Labor)"}
+                </div>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 ml-auto text-white/70 hover:text-white hover:bg-white/10"
-                onClick={() => setIsDrawerOpen(true)}
-              >
-                <Settings2 className="h-4 w-4" />
-              </Button>
             </div>
+
+            {/* Settings button - Last column */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+              onClick={() => setIsDrawerOpen(true)}
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>

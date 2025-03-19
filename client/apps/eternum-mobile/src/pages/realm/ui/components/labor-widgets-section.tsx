@@ -1,18 +1,11 @@
 import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
-import useStore from "@/shared/store";
 import { LaborWidget } from "@/widgets/labor-widget";
 import { LaborBuilding } from "@/widgets/labor-widget/model/types";
-import { Building, getProducedResource } from "@bibliothecadao/eternum";
+import { Building, getProducedResource, RealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
-export function LaborWidgetsSection() {
-  const selectedRealm = useStore((state) => state.selectedRealm);
-
-  if (!selectedRealm) {
-    return null;
-  }
-
+export function LaborWidgetsSection({ selectedRealm }: { selectedRealm: RealmInfo }) {
   const buildings: Building[] = useBuildings(selectedRealm.position.x, selectedRealm.position.y);
   const resourceManager = useResourceManager(selectedRealm.entityId);
   const { currentBlockTimestamp } = getBlockTimestamp();

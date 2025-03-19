@@ -11,6 +11,7 @@ import { useRealmTabs } from "../realm-page";
 export function OverviewTab() {
   const { switchTab } = useRealmTabs();
   const structureEntityId = useStore((state) => state.structureEntityId);
+  const selectedRealm = useStore((state) => state.selectedRealm);
   const { summary } = useResourceArrivals(structureEntityId);
 
   const handleUpgrade = async () => {
@@ -32,7 +33,7 @@ export function OverviewTab() {
     <div className="space-y-4">
       <ResourcesCard entityId={structureEntityId} />
 
-      <LaborWidgetsSection />
+      {selectedRealm && <LaborWidgetsSection selectedRealm={selectedRealm} />}
 
       <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} />
 
