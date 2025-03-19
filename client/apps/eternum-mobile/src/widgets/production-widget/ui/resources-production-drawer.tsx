@@ -1,13 +1,24 @@
+import { getLaborConfig } from "@/features/resources-production/lib/labor";
+import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { RealmInfo, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  divideByPrecision,
+  formatTime,
+  multiplyByPrecision,
+  RealmInfo,
+  resources,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useState } from "react";
 
-interface LaborDrawerProps {
+interface ResourcesProductionDrawerProps {
   selectedResource: number;
   realm: RealmInfo;
   open: boolean;
@@ -18,91 +29,185 @@ type ResourceAmounts = {
   [key in ResourcesIds]?: number;
 };
 
-// Dummy data for development
-const DUMMY_DATA = {
-  inputs: [
-    { resourceId: ResourcesIds.Wood, amount: 100 },
-    { resourceId: ResourcesIds.Stone, amount: 50 },
-  ],
-  laborInputs: [{ resourceId: ResourcesIds.Labor, amount: 200 }],
-  consumptionRates: [
-    { resourceId: ResourcesIds.Wood, amount: 1 },
-    { resourceId: ResourcesIds.Stone, amount: 0.5 },
-  ],
-  laborConsumptionRates: [{ resourceId: ResourcesIds.Labor, amount: 2 }],
-  outputAmount: 10,
-  population: 5,
-  hasLaborMode: true,
-};
+export const ResourcesProductionDrawer = ({
+  selectedResource,
+  realm,
+  open,
+  onOpenChange,
+}: ResourcesProductionDrawerProps) => {
+  const {
+    setup: {
+      account: { account },
+      systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
+    },
+  } = useDojo();
 
-export const ResourcesProductionDrawer = ({ selectedResource, realm, open, onOpenChange }: LaborDrawerProps) => {
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
-  const [outputAmount, setOutputAmount] = useState(DUMMY_DATA.outputAmount);
-  const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>(
-    DUMMY_DATA.inputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
-  );
-  const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>(
-    DUMMY_DATA.laborInputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
-  );
-  const outputResource = resources.find((r) => r.id === building.produced.resource);
+  const [isLoading, setIsLoading] = useState(false);
+  const [outputAmount, setOutputAmount] = useState(0);
+  const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>({});
+  const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>({});
+
+  const resourceManager = useResourceManager(realm.entityId);
+  const outputResource = resources.find((r) => r.id === selectedResource);
+  const laborConfig = getLaborConfig(selectedResource);
 
   if (!outputResource) return null;
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
+  const handleRawResourcesProduce = async () => {
+    if (!ticks) return;
+    setIsLoading(true);
+
+    try {
+      await burn_other_predefined_resources_for_resources({
+        from_entity_id: realm.entityId,
+        produced_resource_types: [selectedResource],
+        production_tick_counts: [ticks],
+        signer: account,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLaborResourcesProduce = async () => {
+    if (!laborConfig) return;
+    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * outputAmount);
+
+    if (outputAmount > 0 && laborNeeded > 0) {
+      setIsLoading(true);
+
+      try {
+        await burn_labor_resources_for_other_production({
+          from_entity_id: realm.entityId,
+          labor_amounts: [multiplyByPrecision(laborNeeded)],
+          produced_resource_types: [selectedResource],
+          signer: account,
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleInputChange = (resourceId: ResourcesIds, value: number, isLabor: boolean = false) => {
     if (isLabor) {
-      setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: value }));
+      if (!laborConfig) return;
+      const resourceConfig = laborConfig.inputResources.find((r) => r.resource === resourceId);
+      if (!resourceConfig) return;
+      const newOutputAmount = Math.round(value / resourceConfig.amount);
+      setOutputAmount(newOutputAmount);
+
+      // Update all labor input amounts based on the new output amount
+      const newInputs = laborConfig.inputResources.reduce((acc, input) => {
+        const inputAmount = Math.round(input.amount * newOutputAmount);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setLaborInputAmounts(newInputs);
     } else {
-      setInputAmounts((prev) => ({ ...prev, [resourceId]: value }));
+      const inputs = configManager.resourceInputs[selectedResource];
+      const outputConfig = configManager.resourceOutput[selectedResource];
+      const resourceConfig = inputs.find((r) => r.resource === resourceId);
+      if (!resourceConfig) return;
+
+      // Calculate new output amount based on the changed input
+      const newOutputAmount = Math.round((value * outputConfig.amount) / resourceConfig.amount);
+      setOutputAmount(newOutputAmount);
+
+      // Update all raw input amounts based on the new output amount
+      const newInputs = inputs.reduce((acc, input) => {
+        const inputAmount = Math.round((input.amount * newOutputAmount) / outputConfig.amount);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setInputAmounts(newInputs);
     }
   };
 
-  const handleMaxInput = (resourceId: ResourcesIds, isLabor: boolean = false) => {
-    // Using dummy balance of 1000 for development
-    const balance = 1000;
+  const handleMaxInput = (isLabor: boolean = false) => {
     if (isLabor) {
-      setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: balance }));
+      if (!laborConfig) return;
+
+      // Calculate max possible output based on available resources
+      const maxOutputs = laborConfig.inputResources.map((input) => {
+        const { currentBlockTimestamp } = getBlockTimestamp();
+        const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, input.resource);
+        const availableAmount = Math.round(divideByPrecision(balance));
+        return Math.floor(availableAmount / input.amount);
+      });
+
+      // Use the minimum possible output to ensure we don't exceed any resource
+      const newOutputAmount = Math.max(1, Math.min(...maxOutputs));
+      setOutputAmount(newOutputAmount);
+
+      // Update all labor input amounts based on the new output amount
+      const newInputs = laborConfig.inputResources.reduce((acc, input) => {
+        const inputAmount = Math.round(input.amount * newOutputAmount);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setLaborInputAmounts(newInputs);
     } else {
-      setInputAmounts((prev) => ({ ...prev, [resourceId]: balance }));
+      const inputs = configManager.resourceInputs[selectedResource];
+      const outputConfig = configManager.resourceOutput[selectedResource];
+
+      // Calculate max possible output based on available resources
+      const maxOutputs = inputs.map((input) => {
+        const { currentBlockTimestamp } = getBlockTimestamp();
+        const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, input.resource);
+        const availableAmount = Math.round(divideByPrecision(balance));
+        return Math.floor((availableAmount * outputConfig.amount) / input.amount);
+      });
+
+      // Use the minimum possible output to ensure we don't exceed any resource
+      const newOutputAmount = Math.max(1, Math.min(...maxOutputs));
+      setOutputAmount(newOutputAmount);
+
+      // Update all raw input amounts based on the new output amount
+      const newInputs = inputs.reduce((acc, input) => {
+        const inputAmount = Math.round((input.amount * newOutputAmount) / outputConfig.amount);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setInputAmounts(newInputs);
     }
   };
 
   const handleOutputChange = (value: number) => {
-    setOutputAmount(value);
-    // Here you would typically recalculate input amounts based on the new output
-    // For now, we'll just scale them proportionally
-    const scale = value / DUMMY_DATA.outputAmount;
+    const roundedValue = Math.round(value);
+    setOutputAmount(roundedValue);
+
+    // Update input amounts based on the new output value
     if (activeTab === "raw") {
-      setInputAmounts(
-        (prev) =>
-          Object.fromEntries(
-            Object.entries(prev).map(([key, value]) => [key, Math.ceil(Number(value) * scale)]),
-          ) as ResourceAmounts,
-      );
-    } else {
-      setLaborInputAmounts(
-        (prev) =>
-          Object.fromEntries(
-            Object.entries(prev).map(([key, value]) => [key, Math.ceil(Number(value) * scale)]),
-          ) as ResourceAmounts,
-      );
+      const inputs = configManager.resourceInputs[selectedResource];
+      const outputConfig = configManager.resourceOutput[selectedResource];
+      const newInputs = inputs.reduce((acc, input) => {
+        const inputAmount = Math.round((input.amount * roundedValue) / outputConfig.amount);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setInputAmounts(newInputs);
+    } else if (laborConfig) {
+      const newInputs = laborConfig.inputResources.reduce((acc, input) => {
+        const inputAmount = Math.round(input.amount * roundedValue);
+        return { ...acc, [input.resource]: inputAmount };
+      }, {});
+      setLaborInputAmounts(newInputs);
     }
   };
 
+  const ticks = Math.floor(outputAmount / configManager.resourceOutput[selectedResource].amount);
+
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
-    // Using dummy balance of 1000 for development
-    const balance = 1000;
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, resourceId);
+    const availableAmount = divideByPrecision(balance);
 
     if (!resource) return null;
 
     return (
-      <div key={resourceId} className="grid grid-cols-[1fr_auto_auto_auto] gap-4 py-2 items-center">
+      <div key={resourceId} className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 items-center">
         <div className="flex items-center gap-2">
           <ResourceIcon resourceId={resource.id} size={24} showTooltip />
           <span>{resource.trait}</span>
@@ -114,30 +219,60 @@ export const ResourcesProductionDrawer = ({ selectedResource, realm, open, onOpe
           label={`Enter Amount`}
           description={resource.trait}
         />
-        <Button variant="outline" size="sm" onClick={() => handleMaxInput(resourceId, isLabor)} className="px-2 h-8">
-          Max
-        </Button>
-        <span className="text-sm text-muted-foreground whitespace-nowrap">Balance: {balance}</span>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Balance: {Math.round(availableAmount)}</span>
       </div>
     );
   };
 
   const renderContent = () => {
+    const rawInputs = configManager.resourceInputs[selectedResource];
+    const laborInputs = laborConfig?.inputResources || [];
+
     return (
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "raw" | "labor")}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="raw">Raw Mode</TabsTrigger>
-          <TabsTrigger value="labor">Labor Mode</TabsTrigger>
+          <TabsTrigger value="labor" disabled={!laborConfig}>
+            Labor Mode
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="raw" className="mt-4 space-y-4">
-          {DUMMY_DATA.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
+        <TabsContent value="raw" className="mt-4">
+          <div className="space-y-4">
+            {rawInputs.map((input) => renderResourceRow(input.resource, input.amount))}
+            <Button variant="outline" size="sm" onClick={() => handleMaxInput(false)} className="w-full">
+              Max
+            </Button>
+          </div>
         </TabsContent>
-        <TabsContent value="labor" className="mt-4 space-y-4">
-          {DUMMY_DATA.laborInputs.map((input) => renderResourceRow(input.resourceId, input.amount, true))}
+        <TabsContent value="labor" className="mt-4">
+          <div className="space-y-4">
+            {laborInputs.map((input) => renderResourceRow(input.resource, input.amount, true))}
+            <Button variant="outline" size="sm" onClick={() => handleMaxInput(true)} className="w-full">
+              Max
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     );
   };
+
+  const formatProductionTime = (ticks: number) => {
+    const days = Math.floor(ticks / (24 * 60 * 60));
+    const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((ticks % (60 * 60)) / 60);
+    const seconds = ticks % 60;
+
+    return [
+      days > 0 ? `${days}d ` : "",
+      hours > 0 ? `${hours}h ` : "",
+      minutes > 0 ? `${minutes}m ` : "",
+      `${seconds}s`,
+    ].join("");
+  };
+
+  const isActive = resourceManager.isActive(selectedResource);
+  const { currentBlockTimestamp } = getBlockTimestamp();
+  const timeLeft = resourceManager.timeUntilValueReached(currentBlockTimestamp, selectedResource);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -156,7 +291,6 @@ export const ResourcesProductionDrawer = ({ selectedResource, realm, open, onOpe
                     <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
                     <span>{outputResource.trait}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Population: {DUMMY_DATA.population}</span>
                 </div>
                 <NumericInput
                   value={outputAmount}
@@ -167,47 +301,31 @@ export const ResourcesProductionDrawer = ({ selectedResource, realm, open, onOpe
                 />
               </div>
 
-              <div className="text-sm">
-                <div>Consumed per second:</div>
-                <div className="flex gap-2 mt-1">
-                  {activeTab === "raw"
-                    ? DUMMY_DATA.consumptionRates.map((rate) => {
-                        const resource = resources.find((r) => r.id === rate.resourceId);
-                        return resource ? (
-                          <div key={rate.resourceId} className="flex items-center gap-1">
-                            <ResourceIcon resourceId={resource.id} size={16} />
-                            <span>{rate.amount}</span>
-                          </div>
-                        ) : null;
-                      })
-                    : DUMMY_DATA.laborConsumptionRates.map((rate) => {
-                        const resource = resources.find((r) => r.id === rate.resourceId);
-                        return resource ? (
-                          <div key={rate.resourceId} className="flex items-center gap-1">
-                            <ResourceIcon resourceId={resource.id} size={16} />
-                            <span>{rate.amount}</span>
-                          </div>
-                        ) : null;
-                      })}
-                </div>
+              <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
+                <span className="text-gold/80">Production Time:</span>
+                <span className="font-medium">{formatProductionTime(ticks)}</span>
               </div>
 
-              {building.isActive && <div>Production time left: {formatTime(building.productionTimeLeft)}</div>}
+              {isActive && <div>Production time left: {formatTime(timeLeft * 60)}</div>}
             </CardContent>
           </Card>
 
           <div className="mt-6 flex gap-2">
-            {building.isActive ? (
+            {isActive ? (
               <>
-                <Button className="flex-1" onClick={() => console.log("Extend production")}>
+                <Button className="flex-1" onClick={() => console.log("Extend production")} disabled={isLoading}>
                   Extend
                 </Button>
-                <Button variant="destructive" onClick={() => console.log("Pause production")}>
+                <Button variant="destructive" onClick={() => console.log("Pause production")} disabled={isLoading}>
                   Pause
                 </Button>
               </>
             ) : (
-              <Button className="w-full" onClick={() => console.log("Start production")}>
+              <Button
+                className="w-full"
+                onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
+                disabled={isLoading || outputAmount <= 0}
+              >
                 Start Production
               </Button>
             )}

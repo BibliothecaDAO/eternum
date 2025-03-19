@@ -1,5 +1,6 @@
 import { RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborProductionDrawer } from "./labor-production-drawer";
+import { ResourcesProductionDrawer } from "./resources-production-drawer";
 
 type ProductionDrawerProps = {
   selectedResource: number;
@@ -16,13 +17,12 @@ export const ProductionDrawer = ({ selectedResource, realm, open, onOpenChange }
     console.log("realm labor", realm);
     return <LaborProductionDrawer realm={realm} open={open} onOpenChange={onOpenChange} />;
   }
-  return null;
-  // return (
-  //   <ResourcesProductionDrawer
-  //     selectedResource={selectedResource}
-  //     realm={realm}
-  //     open={open}
-  //     onOpenChange={onOpenChange}
-  //   />
-  // );
+  return (
+    <ResourcesProductionDrawer
+      selectedResource={selectedResource}
+      realm={realm}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  );
 };
