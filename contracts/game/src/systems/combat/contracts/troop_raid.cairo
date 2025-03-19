@@ -39,6 +39,8 @@ pub mod troop_raid_systems {
     };
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
     use s1_eternum::utils::random::{VRFImpl};
+    use s1_eternum::utils::math::{PercentageValueImpl};
+
     use super::super::super::super::super::models::troop::GuardTrait;
 
 
@@ -131,7 +133,10 @@ pub mod troop_raid_systems {
                         );
 
                     // apply damage to guard slot
-                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, damage_dealt_to_guard);
+                    let mut guard_damage_applied = troop_damage_config.damage_raid_percent_num.into() * damage_dealt_to_guard / PercentageValueImpl::_100().into();
+                    // add one and make sure it is precise
+                    guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
+                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
 
                     // deduct stamina spent
                     guard_defender_troops
@@ -182,8 +187,11 @@ pub mod troop_raid_systems {
                     explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
                 };
 
+                let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into() * explorer_damage_received / PercentageValueImpl::_100().into();
+                // add one and make sure it is precise
+                explorer_damage_applied += RESOURCE_PRECISION - (explorer_damage_applied % RESOURCE_PRECISION);
                 explorer_aggressor_troops
-                    .count -= core::cmp::min(explorer_aggressor_troops.count, explorer_damage_received);
+                    .count -= core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
 
                 // deduct stamina spent by explorer
                 explorer_aggressor_troops
