@@ -98,13 +98,26 @@ export const ResourcesProductionDrawer = ({
   const handleInputChange = (resourceId: ResourcesIds, value: number, isLabor: boolean = false) => {
     if (isLabor) {
       if (!laborConfig) return;
+
+      // Find the specific resource configuration in labor inputs
       const resourceConfig = laborConfig.inputResources.find((r) => r.resource === resourceId);
       if (!resourceConfig) return;
+
+      // Set the direct input amount for the changed resource
+      setLaborInputAmounts((prev) => ({
+        ...prev,
+        [resourceId]: value,
+      }));
+
+      // Calculate new output based on this input
       const newOutputAmount = Math.round(value / resourceConfig.amount);
       setOutputAmount(newOutputAmount);
 
-      // Update all labor input amounts based on the new output amount
+      // Update other inputs proportionally
       const newInputs = laborConfig.inputResources.reduce((acc, input) => {
+        if (input.resource === resourceId) {
+          return { ...acc, [input.resource]: value };
+        }
         const inputAmount = Math.round(input.amount * newOutputAmount);
         return { ...acc, [input.resource]: inputAmount };
       }, {});
@@ -234,7 +247,36 @@ export const ResourcesProductionDrawer = ({
     const laborInputs = laborConfig?.inputResources || [];
 
     return (
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "raw" | "labor")}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          const newTab = v as "raw" | "labor";
+          setActiveTab(newTab);
+
+          // Recalculate output amount based on the new tab's inputs
+          if (newTab === "raw") {
+            const inputs = configManager.resourceInputs[selectedResource];
+            const outputConfig = configManager.resourceOutput[selectedResource];
+            // Find first non-zero input or use first input
+            const firstInput = inputs.find((input) => (inputAmounts[input.resource] ?? 0) > 0) || inputs[0];
+            if (firstInput) {
+              const inputAmount = inputAmounts[firstInput.resource] ?? 0;
+              const newOutputAmount = Math.round((inputAmount * outputConfig.amount) / firstInput.amount);
+              setOutputAmount(newOutputAmount);
+            }
+          } else if (newTab === "labor" && laborConfig) {
+            // Find first non-zero labor input or use first input
+            const firstInput =
+              laborConfig.inputResources.find((input) => (laborInputAmounts[input.resource] ?? 0) > 0) ||
+              laborConfig.inputResources[0];
+            if (firstInput) {
+              const inputAmount = laborInputAmounts[firstInput.resource] ?? 0;
+              const newOutputAmount = Math.round(inputAmount / firstInput.amount);
+              setOutputAmount(newOutputAmount);
+            }
+          }
+        }}
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="raw">Raw Mode</TabsTrigger>
           <TabsTrigger value="labor" disabled={!laborConfig}>
