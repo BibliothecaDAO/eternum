@@ -20,7 +20,7 @@ import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
 import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
 import { ModelType } from "../types/army.types";
-import { getWorldPositionForHex } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -188,13 +188,16 @@ export class ArmyManager {
       const modelType = this.getModelTypeForBiome(biome, army.category, army.tier);
       this.armyModel.assignModelToEntity(army.entityId, modelType);
 
+      const rotationSeed = hashCoordinates(x, y);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      const randomRotation = (rotationIndex * Math.PI) / 3;
       // Update the specific model instance for this entity
       this.armyModel.updateInstance(
         army.entityId,
         currentCount,
         position,
         this.scale,
-        undefined,
+        new THREE.Euler(0, randomRotation, 0),
         new THREE.Color(army.color),
       );
 

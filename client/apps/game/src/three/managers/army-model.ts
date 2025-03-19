@@ -28,6 +28,10 @@ export class ArmyModel {
   private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
   private readonly labelsGroup: THREE.Group;
 
+  // Reusable objects for matrix operations
+  private readonly dummyMatrix: THREE.Matrix4 = new THREE.Matrix4();
+  private readonly dummyEuler: THREE.Euler = new THREE.Euler();
+
   // Animation and state management
   private readonly animationStates: Float32Array;
   private readonly timeOffsets: Float32Array;
@@ -333,16 +337,34 @@ export class ArmyModel {
       tier,
     });
 
-    this.movingInstances.set(entityId, {
-      startPos: currentPos.clone(),
-      endPos: nextPos.clone(),
-      progress: 0,
-      matrixIndex,
-      currentPathIndex: 0,
-      floatingHeight: 0,
-      currentRotation: 0,
-      targetRotation: 0,
-    });
+    // Get current instance rotation using the reusable matrix
+    const model = this.getModelForEntity(entityId);
+    if (model && model.instancedMeshes.length > 0) {
+      model.instancedMeshes[0].getMatrixAt(matrixIndex, this.dummyMatrix);
+      this.dummyEuler.setFromRotationMatrix(this.dummyMatrix);
+
+      this.movingInstances.set(entityId, {
+        startPos: currentPos.clone(),
+        endPos: nextPos.clone(),
+        progress: 0,
+        matrixIndex,
+        currentPathIndex: 0,
+        floatingHeight: 0,
+        currentRotation: this.dummyEuler.y,
+        targetRotation: this.dummyEuler.y,
+      });
+    } else {
+      this.movingInstances.set(entityId, {
+        startPos: currentPos.clone(),
+        endPos: nextPos.clone(),
+        progress: 0,
+        matrixIndex,
+        currentPathIndex: 0,
+        floatingHeight: 0,
+        currentRotation: 0,
+        targetRotation: 0,
+      });
+    }
   }
 
   public updateMovements(deltaTime: number): void {
