@@ -140,12 +140,7 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
         </CardContent>
       </Card>
 
-      <ProductionDrawer
-        selectedResource={building.produced.resource}
-        realm={realm}
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-      />
+      <ProductionDrawer building={building} realm={realm} open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
     </>
   );
 };

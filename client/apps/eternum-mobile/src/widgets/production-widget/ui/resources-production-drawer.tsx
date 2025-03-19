@@ -14,13 +14,15 @@ import {
   RealmInfo,
   resources,
   ResourcesIds,
+  TileManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { LaborBuilding } from "../model/types";
 
 interface ResourcesProductionDrawerProps {
-  selectedResource: number;
+  building: LaborBuilding;
   realm: RealmInfo;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,16 +32,12 @@ type ResourceAmounts = {
   [key in ResourcesIds]?: number;
 };
 
-export const ResourcesProductionDrawer = ({
-  selectedResource,
-  realm,
-  open,
-  onOpenChange,
-}: ResourcesProductionDrawerProps) => {
+export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange }: ResourcesProductionDrawerProps) => {
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
+      systemCalls,
+      components,
     },
   } = useDojo();
 
@@ -50,8 +48,9 @@ export const ResourcesProductionDrawer = ({
   const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>({});
 
   const resourceManager = useResourceManager(realm.entityId);
-  const outputResource = resources.find((r) => r.id === selectedResource);
-  const laborConfig = getLaborConfig(selectedResource);
+  const outputResource = resources.find((r) => r.id === building.produced.resource);
+  const laborConfig = getLaborConfig(building.produced.resource);
+  const isActive = resourceManager.isActive(building.produced.resource);
 
   if (!outputResource) return null;
 
@@ -60,9 +59,9 @@ export const ResourcesProductionDrawer = ({
     setIsLoading(true);
 
     try {
-      await burn_other_predefined_resources_for_resources({
+      await systemCalls.burn_other_predefined_resources_for_resources({
         from_entity_id: realm.entityId,
-        produced_resource_types: [selectedResource],
+        produced_resource_types: [building.produced.resource],
         production_tick_counts: [ticks],
         signer: account,
       });
@@ -81,10 +80,10 @@ export const ResourcesProductionDrawer = ({
       setIsLoading(true);
 
       try {
-        await burn_labor_resources_for_other_production({
+        await systemCalls.burn_labor_resources_for_other_production({
           from_entity_id: realm.entityId,
           labor_amounts: [multiplyByPrecision(laborNeeded)],
-          produced_resource_types: [selectedResource],
+          produced_resource_types: [building.produced.resource],
           signer: account,
         });
       } catch (error) {
@@ -92,6 +91,26 @@ export const ResourcesProductionDrawer = ({
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handlePauseResumeProduction = async () => {
+    setIsLoading(true);
+    const tileManager = new TileManager(components, systemCalls, {
+      col: realm.position?.x || 0,
+      row: realm.position?.y || 0,
+    });
+
+    try {
+      if (isActive) {
+        await tileManager.pauseProduction(account, realm.entityId, 0, 0);
+      } else {
+        await tileManager.resumeProduction(account, realm.entityId, 0, 0);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -123,8 +142,8 @@ export const ResourcesProductionDrawer = ({
       }, {});
       setLaborInputAmounts(newInputs);
     } else {
-      const inputs = configManager.resourceInputs[selectedResource];
-      const outputConfig = configManager.resourceOutput[selectedResource];
+      const inputs = configManager.resourceInputs[building.produced.resource];
+      const outputConfig = configManager.resourceOutput[building.produced.resource];
       const resourceConfig = inputs.find((r) => r.resource === resourceId);
       if (!resourceConfig) return;
 
@@ -164,8 +183,8 @@ export const ResourcesProductionDrawer = ({
       }, {});
       setLaborInputAmounts(newInputs);
     } else {
-      const inputs = configManager.resourceInputs[selectedResource];
-      const outputConfig = configManager.resourceOutput[selectedResource];
+      const inputs = configManager.resourceInputs[building.produced.resource];
+      const outputConfig = configManager.resourceOutput[building.produced.resource];
 
       // Calculate max possible output based on available resources
       const maxOutputs = inputs.map((input) => {
@@ -194,8 +213,8 @@ export const ResourcesProductionDrawer = ({
 
     // Update input amounts based on the new output value
     if (activeTab === "raw") {
-      const inputs = configManager.resourceInputs[selectedResource];
-      const outputConfig = configManager.resourceOutput[selectedResource];
+      const inputs = configManager.resourceInputs[building.produced.resource];
+      const outputConfig = configManager.resourceOutput[building.produced.resource];
       const newInputs = inputs.reduce((acc, input) => {
         const inputAmount = Math.round((input.amount * roundedValue) / outputConfig.amount);
         return { ...acc, [input.resource]: inputAmount };
@@ -210,7 +229,7 @@ export const ResourcesProductionDrawer = ({
     }
   };
 
-  const ticks = Math.floor(outputAmount / configManager.resourceOutput[selectedResource].amount);
+  const ticks = Math.floor(outputAmount / configManager.resourceOutput[building.produced.resource].amount);
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
@@ -244,7 +263,7 @@ export const ResourcesProductionDrawer = ({
   };
 
   const renderContent = () => {
-    const rawInputs = configManager.resourceInputs[selectedResource];
+    const rawInputs = configManager.resourceInputs[building.produced.resource];
     const laborInputs = laborConfig?.inputResources || [];
 
     return (
@@ -256,8 +275,8 @@ export const ResourcesProductionDrawer = ({
 
           // Recalculate output amount based on the new tab's inputs
           if (newTab === "raw") {
-            const inputs = configManager.resourceInputs[selectedResource];
-            const outputConfig = configManager.resourceOutput[selectedResource];
+            const inputs = configManager.resourceInputs[building.produced.resource];
+            const outputConfig = configManager.resourceOutput[building.produced.resource];
             // Find first non-zero input or use first input
             const firstInput = inputs.find((input) => (inputAmounts[input.resource] ?? 0) > 0) || inputs[0];
             if (firstInput) {
@@ -318,9 +337,8 @@ export const ResourcesProductionDrawer = ({
     ].join("");
   };
 
-  const isActive = resourceManager.isActive(selectedResource);
   const { currentBlockTimestamp } = getBlockTimestamp();
-  const timeLeft = resourceManager.timeUntilValueReached(currentBlockTimestamp, selectedResource);
+  const timeLeft = resourceManager.timeUntilValueReached(currentBlockTimestamp, building.produced.resource);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -373,8 +391,8 @@ export const ResourcesProductionDrawer = ({
                 >
                   Extend
                 </Button>
-                <Button variant="destructive" onClick={() => console.log("Pause production")} disabled={isLoading}>
-                  Pause
+                <Button variant="destructive" onClick={handlePauseResumeProduction} disabled={isLoading}>
+                  {isActive ? "Pause" : "Resume"}
                 </Button>
               </>
             ) : (
