@@ -27,8 +27,8 @@ export default class InstancedModel {
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
         if (!child.material.depthWrite) {
-          child.material.depthWrite = true;
-          renderOrder = 4;
+          child.material.depthWrite = false;
+          renderOrder = 3;
         } else {
           renderOrder = 2;
         }
@@ -47,7 +47,7 @@ export default class InstancedModel {
           tmp.renderOrder = renderOrder;
         }
         if (name === "Outline") {
-          tmp.renderOrder = 5;
+          tmp.renderOrder = 4;
         }
         if (name.toLowerCase().includes("ocean")) {
           tmp.renderOrder = 1;
