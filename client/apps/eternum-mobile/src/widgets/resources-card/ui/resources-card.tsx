@@ -1,11 +1,11 @@
 import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
-import { cn, currencyFormat } from "@/shared/lib/utils";
+import { cn, currencyFormat, currencyIntlFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -46,12 +46,10 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const updateResourceAmounts = useCallback(() => {
     if (!entityId) return;
 
-    const amounts = resources
-      .filter((resource) => resource.id < 23)
-      .map((resource) => ({
-        id: resource.id,
-        amount: resourceManager.balanceWithProduction(tick, resource.id),
-      }));
+    const amounts = resources.map((resource) => ({
+      id: resource.id,
+      amount: resourceManager.balanceWithProduction(tick, resource.id),
+    }));
 
     setResourceAmounts(amounts);
   }, [entityId, resourceManager, tick]);
@@ -90,7 +88,7 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
       return (
         <div key={resource.id} className="flex flex-col items-center space-y-1 min-w-[32px]">
           <ResourceIcon resourceId={resource.id} className="h-8 w-8" />
-          <span className="text-xs font-medium">{currencyFormat(amount)}</span>
+          <span className="text-xs font-medium">{currencyIntlFormat(divideByPrecision(amount))}</span>
         </div>
       );
     },
