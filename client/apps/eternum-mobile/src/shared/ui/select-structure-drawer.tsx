@@ -1,10 +1,10 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
-import { Structure } from "@bibliothecadao/eternum";
+import { RealmInfo } from "@bibliothecadao/eternum";
 import { ReactNode, useState } from "react";
 
 interface SelectStructureDrawerProps {
-  structures: Structure[];
+  structures: RealmInfo[];
   selectedStructureId: number;
   onSelectStructure: (structureId: number) => void;
   children: ReactNode;
