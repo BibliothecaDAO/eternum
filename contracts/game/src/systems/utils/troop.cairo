@@ -5,6 +5,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::map::{Tile, TileOccupier};
@@ -162,26 +163,18 @@ pub impl iExplorerImpl of iExplorerTrait {
 
     fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("agent_controller_config"),
-            );
-            assert!(
-                agent_controller_config.address == starknet::get_caller_address(), "caller is not the agent controller",
-            );
+            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            assert!(agent_owner.address == starknet::get_caller_address(), "caller is not the agent owner");
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_owner();
         }
     }
+
     fn assert_caller_not_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("agent_controller_config"),
-            );
-            assert!(agent_controller_config.address.is_non_zero(), "agent controller config is not set");
-            assert!(
-                agent_controller_config.address != starknet::get_caller_address(),
-                "caller owns the agent but should not",
-            );
+            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            assert!(agent_owner.address.is_non_zero(), "agent owner is not set");
+            assert!(agent_owner.address != starknet::get_caller_address(), "caller owns the agent but should not");
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
         }
@@ -296,6 +289,14 @@ pub impl iExplorerImpl of iExplorerTrait {
 
 
     fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        // decrease agent count
+        AgentCountImpl::decrease(ref world);
+
+        // delete agent owner
+        let agent_owner = AgentOwner{explorer_id: explorer.explorer_id, address: Zero::zero()};
+        world.erase_model(@agent_owner);
+
+        // explorer delete
         Self::_explorer_delete(ref world, ref explorer);
     }
 
@@ -521,9 +522,22 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         );
 
         // set name based on id
-        let name: felt252 = 'Daydreams Agent Bread';
+        let names: Array<felt252> = Self::names();
+        let names_index: u128 = random::random(seed, salt, names.len().into());
+        let name: felt252 = *names.at(names_index.try_into().unwrap());
         let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
         world.write_model(@name);
+
+        // todo: limit agent count during increase. check max
+
+        // increase agent count
+        AgentCountImpl::increase(ref world);
+
+        // set agent ownership
+        let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("agent_controller_config"),
+        );
+        world.write_model(@AgentOwner { explorer_id, address: agent_controller_config.address });
 
         // todo: give agent resources
 
@@ -535,5 +549,56 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
                 },
             );
         return explorer;
+    }
+
+    fn names() -> Array<felt252> {
+        array![
+            'Daydreams Agent Bread',
+            'Daydreams Agent Doughnut',
+            'Daydreams Agent Chaos',
+            'Daydreams Agent Giggles',
+            'Daydreams Agent Noodle',
+            'Daydreams Agent Pickle',
+            'Daydreams Agent Wobble',
+            'Daydreams Agent Sprinkles',
+            'Daydreams Agent Kazoo',
+            'Daydreams Agent Waffle',
+            'Daydreams Agent Mischief',
+            'Daydreams Agent Whiskers',
+            'Daydreams Agent Poptart',
+            'Daydreams Agent Bubbles',
+            'Daydreams Agent Snooze',
+            'Daydreams Agent Pink',
+            'Daydreams Agent Biscuit',
+            'Daydreams Agent Sparkle',
+            'Daydreams Agent Whimsy',
+            'Daydreams Agent Pancake',
+            'Daydreams Agent Mario',
+            'Daydreams Agent Scramble',
+            'Daydreams Agent Jitters',
+            'Daydreams Agent Fizzle',
+            'Daydreams Agent Waffles',
+            'Daydreams Agent Doodle',
+            'Daydreams Agent Floof',
+            'Daydreams Agent Bumblebee',
+            'Daydreams Agent Quibble',
+            'Daydreams Agent Marshmallow',
+            'Daydreams Agent Zigzag',
+            'Daydreams Agent Pebble',
+            'Daydreams Agent Wiggles',
+            'Daydreams Agent Cinnamon',
+            'Daydreams Agent Noodles',
+            'Daydreams Agent Popsicle',
+            'Daydreams Agent Twizzle',
+            'Daydreams Agent Mumble',
+            'Daydreams Agent Squiggle',
+            'Daydreams Agent Blinky',
+            'Daydreams Agent Razzle',
+            'Daydreams Agent Pretzel',
+            'Daydreams Agent Bubblegum',
+            'Daydreams Agent Sizzle',
+            'Daydreams Agent Pickle',
+            'Daydreams Agent Frizzle',
+        ]
     }
 }
