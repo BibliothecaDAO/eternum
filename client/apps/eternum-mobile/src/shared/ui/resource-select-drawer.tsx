@@ -1,11 +1,14 @@
+import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { currencyFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
 import { Input } from "@/shared/ui/input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { resources } from "@bibliothecadao/eternum";
+import { ID, resources } from "@bibliothecadao/eternum";
+import { useResourceManager } from "@bibliothecadao/react";
 import { Search } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 interface Resource {
   id: number;
@@ -18,6 +21,7 @@ interface ResourceSelectDrawerProps {
   onResourceSelect: (resourceId: number) => void;
   showBalance?: boolean;
   children: ReactNode;
+  entityId: ID;
 }
 
 export const ResourceSelectDrawer = ({
@@ -25,18 +29,30 @@ export const ResourceSelectDrawer = ({
   onResourceSelect,
   showBalance = true,
   children,
+  entityId,
 }: ResourceSelectDrawerProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [resourceAmounts, setResourceAmounts] = useState<{ id: number; amount: number }[]>([]);
+  const { currentDefaultTick: tick } = useBlockTimestamp();
+  const resourceManager = useResourceManager(entityId);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Dummy balance for demonstration - this should be replaced with actual balance data
-  const getBalance = () => Math.floor(Math.random() * 1000);
+  useEffect(() => {
+    if (isOpen && entityId) {
+      const amounts = resources.map((resource) => ({
+        id: resource.id,
+        amount: resourceManager.balanceWithProduction(tick, resource.id),
+      }));
+      setResourceAmounts(amounts);
+    }
+  }, [isOpen, entityId, resourceManager, tick]);
 
   const filteredResources = resources.filter((resource) =>
     resource.trait.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <Drawer>
+    <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerTrigger asChild>{children}</DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
@@ -60,7 +76,11 @@ export const ResourceSelectDrawer = ({
                     <ResourceIcon resourceId={resource.id} size={24} />
                     <div className="flex flex-col items-start">
                       <span className="font-medium">{resource.trait}</span>
-                      {showBalance && <span className="text-xs text-muted-foreground">Balance: {getBalance()}</span>}
+                      {showBalance && (
+                        <span className="text-xs text-muted-foreground">
+                          Balance: {currencyFormat(resourceAmounts.find((r) => r.id === resource.id)?.amount || 0)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Button>

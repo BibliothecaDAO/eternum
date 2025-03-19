@@ -153,6 +153,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
     return (
       <div key={resource.id} className="grid grid-cols-[1.5fr_1fr_auto_auto] items-center gap-2 py-1.5">
         <ResourceSelectDrawer
+          entityId={realm.entityId}
           selectedResource={{ id: resource.id, trait: resourceInfo.trait }}
           onResourceSelect={(resourceId) => handleResourceChange(index, resourceId)}
         >
