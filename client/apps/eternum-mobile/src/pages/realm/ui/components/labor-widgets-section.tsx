@@ -50,7 +50,12 @@ export function LaborWidgetsSection() {
     <div className="overflow-x-auto">
       <div className="grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4">
         {buildingsWithProduction.map((building) => (
-          <LaborWidget key={`${building.innerCol}-${building.innerRow}`} building={building} />
+          <LaborWidget
+            key={`${building.innerCol}-${building.innerRow}`}
+            building={building}
+            resourceManager={resourceManager}
+            realm={selectedRealm}
+          />
         ))}
       </div>
     </div>

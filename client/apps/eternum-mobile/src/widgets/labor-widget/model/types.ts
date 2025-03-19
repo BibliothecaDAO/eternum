@@ -1,4 +1,4 @@
-import { Building, ResourcesIds } from "@bibliothecadao/eternum";
+import { Building, RealmInfo, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
 
 export interface ResourceAmount {
   resourceId: ResourcesIds;
@@ -8,6 +8,7 @@ export interface ResourceAmount {
 export interface LaborBuilding extends Building {
   isActive: boolean;
   productionTimeLeft: number;
+  balance?: number;
 }
 
 export interface ResourceBalance {
@@ -17,4 +18,6 @@ export interface ResourceBalance {
 
 export interface LaborBuildingProps {
   building: LaborBuilding;
+  resourceManager: ResourceManager;
+  realm: RealmInfo;
 }
