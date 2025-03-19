@@ -8,7 +8,7 @@ import { ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { LaborBuildingProps } from "../model/types";
 
-interface LaborDrawerProps extends Omit<LaborBuildingProps, "building"> {
+interface LaborDrawerProps {
   building: LaborBuildingProps["building"];
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -18,24 +18,33 @@ type ResourceAmounts = {
   [key in ResourcesIds]?: number;
 };
 
-export const LaborDrawer = ({
-  building,
-  resourceBalances,
-  onStartProduction,
-  onPauseProduction,
-  onExtendProduction,
-  open,
-  onOpenChange,
-}: LaborDrawerProps) => {
+// Dummy data for development
+const DUMMY_DATA = {
+  inputs: [
+    { resourceId: ResourcesIds.Wood, amount: 100 },
+    { resourceId: ResourcesIds.Stone, amount: 50 },
+  ],
+  laborInputs: [{ resourceId: ResourcesIds.Labor, amount: 200 }],
+  consumptionRates: [
+    { resourceId: ResourcesIds.Wood, amount: 1 },
+    { resourceId: ResourcesIds.Stone, amount: 0.5 },
+  ],
+  laborConsumptionRates: [{ resourceId: ResourcesIds.Labor, amount: 2 }],
+  outputAmount: 10,
+  population: 5,
+  hasLaborMode: true,
+};
+
+export const LaborDrawer = ({ building, open, onOpenChange }: LaborDrawerProps) => {
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
-  const [outputAmount, setOutputAmount] = useState(building.outputAmount);
+  const [outputAmount, setOutputAmount] = useState(DUMMY_DATA.outputAmount);
   const [inputAmounts, setInputAmounts] = useState<ResourceAmounts>(
-    building.inputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
+    DUMMY_DATA.inputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
   );
   const [laborInputAmounts, setLaborInputAmounts] = useState<ResourceAmounts>(
-    building.laborInputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
+    DUMMY_DATA.laborInputs.reduce((acc, input) => ({ ...acc, [input.resourceId]: input.amount }), {}),
   );
-  const outputResource = resources.find((r) => r.id === building.resourceId);
+  const outputResource = resources.find((r) => r.id === building.produced.resource);
 
   if (!outputResource) return null;
 
@@ -54,7 +63,8 @@ export const LaborDrawer = ({
   };
 
   const handleMaxInput = (resourceId: ResourcesIds, isLabor: boolean = false) => {
-    const balance = resourceBalances.find((b) => b.resourceId === resourceId)?.balance || 0;
+    // Using dummy balance of 1000 for development
+    const balance = 1000;
     if (isLabor) {
       setLaborInputAmounts((prev) => ({ ...prev, [resourceId]: balance }));
     } else {
@@ -66,7 +76,7 @@ export const LaborDrawer = ({
     setOutputAmount(value);
     // Here you would typically recalculate input amounts based on the new output
     // For now, we'll just scale them proportionally
-    const scale = value / building.outputAmount;
+    const scale = value / DUMMY_DATA.outputAmount;
     if (activeTab === "raw") {
       setInputAmounts(
         (prev) =>
@@ -86,7 +96,8 @@ export const LaborDrawer = ({
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
-    const balance = resourceBalances.find((b) => b.resourceId === resourceId)?.balance || 0;
+    // Using dummy balance of 1000 for development
+    const balance = 1000;
 
     if (!resource) return null;
 
@@ -112,14 +123,6 @@ export const LaborDrawer = ({
   };
 
   const renderContent = () => {
-    if (!building.hasLaborMode) {
-      return (
-        <div className="mt-4 space-y-4">
-          {building.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
-        </div>
-      );
-    }
-
     return (
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "raw" | "labor")}>
         <TabsList className="grid w-full grid-cols-2">
@@ -127,10 +130,10 @@ export const LaborDrawer = ({
           <TabsTrigger value="labor">Labor Mode</TabsTrigger>
         </TabsList>
         <TabsContent value="raw" className="mt-4 space-y-4">
-          {building.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
+          {DUMMY_DATA.inputs.map((input) => renderResourceRow(input.resourceId, input.amount))}
         </TabsContent>
         <TabsContent value="labor" className="mt-4 space-y-4">
-          {building.laborInputs.map((input) => renderResourceRow(input.resourceId, input.amount, true))}
+          {DUMMY_DATA.laborInputs.map((input) => renderResourceRow(input.resourceId, input.amount, true))}
         </TabsContent>
       </Tabs>
     );
@@ -153,7 +156,7 @@ export const LaborDrawer = ({
                     <ResourceIcon resourceId={outputResource.id} size={24} showTooltip />
                     <span>{outputResource.trait}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">Population: {building.population}</span>
+                  <span className="text-sm text-muted-foreground">Population: {DUMMY_DATA.population}</span>
                 </div>
                 <NumericInput
                   value={outputAmount}
@@ -167,8 +170,8 @@ export const LaborDrawer = ({
               <div className="text-sm">
                 <div>Consumed per second:</div>
                 <div className="flex gap-2 mt-1">
-                  {activeTab === "raw" || !building.hasLaborMode
-                    ? building.consumptionRates.map((rate) => {
+                  {activeTab === "raw"
+                    ? DUMMY_DATA.consumptionRates.map((rate) => {
                         const resource = resources.find((r) => r.id === rate.resourceId);
                         return resource ? (
                           <div key={rate.resourceId} className="flex items-center gap-1">
@@ -177,7 +180,7 @@ export const LaborDrawer = ({
                           </div>
                         ) : null;
                       })
-                    : building.laborConsumptionRates.map((rate) => {
+                    : DUMMY_DATA.laborConsumptionRates.map((rate) => {
                         const resource = resources.find((r) => r.id === rate.resourceId);
                         return resource ? (
                           <div key={rate.resourceId} className="flex items-center gap-1">
@@ -196,32 +199,15 @@ export const LaborDrawer = ({
           <div className="mt-6 flex gap-2">
             {building.isActive ? (
               <>
-                <Button className="flex-1" onClick={() => onExtendProduction(building.id, activeTab)}>
+                <Button className="flex-1" onClick={() => console.log("Extend production")}>
                   Extend
                 </Button>
-                <Button variant="destructive" onClick={() => onPauseProduction(building.id)}>
+                <Button variant="destructive" onClick={() => console.log("Pause production")}>
                   Pause
                 </Button>
               </>
             ) : (
-              <Button
-                className="w-full"
-                onClick={() => {
-                  const updatedBuilding = {
-                    ...building,
-                    outputAmount,
-                    inputs: building.inputs.map((input) => ({
-                      ...input,
-                      amount: inputAmounts[input.resourceId] ?? input.amount,
-                    })),
-                    laborInputs: building.laborInputs.map((input) => ({
-                      ...input,
-                      amount: laborInputAmounts[input.resourceId] ?? input.amount,
-                    })),
-                  };
-                  onStartProduction(updatedBuilding.id, activeTab);
-                }}
-              >
+              <Button className="w-full" onClick={() => console.log("Start production")}>
                 Start Production
               </Button>
             )}

@@ -8,15 +8,9 @@ import { useState } from "react";
 import { LaborBuildingProps } from "../model/types";
 import { LaborDrawer } from "./labor-drawer";
 
-export const LaborWidget = ({
-  building,
-  resourceBalances,
-  onStartProduction,
-  onPauseProduction,
-  onExtendProduction,
-}: LaborBuildingProps) => {
+export const LaborWidget = ({ building }: LaborBuildingProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const resource = resources.find((r) => r.id === building.resourceId);
+  const resource = resources.find((r) => r.id === building.produced.resource);
 
   if (!resource) return null;
 
@@ -35,7 +29,7 @@ export const LaborWidget = ({
               <ResourceIcon resourceId={resource.id} size={32} showTooltip />
               <div className="flex flex-col">
                 <span className="font-semibold">{resource.trait}</span>
-                <span className="text-sm text-muted-foreground">Output: {building.outputAmount}</span>
+                <span className="text-sm text-muted-foreground">Output: {building.produced.amount}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -48,15 +42,7 @@ export const LaborWidget = ({
         </CardContent>
       </Card>
 
-      <LaborDrawer
-        building={building}
-        resourceBalances={resourceBalances}
-        onStartProduction={onStartProduction}
-        onPauseProduction={onPauseProduction}
-        onExtendProduction={onExtendProduction}
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-      />
+      <LaborDrawer building={building} open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
     </>
   );
 };
