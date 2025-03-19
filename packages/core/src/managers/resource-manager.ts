@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BuildingType, CapacityConfig, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID, Resource } from "../types";
-import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
+import { getBuildingCount, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -118,12 +118,15 @@ export class ResourceManager {
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
-  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds): number {
+  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
     const production = this.getProduction(resourceId);
     const balance = this.balance(resourceId);
     const amountProduced = this._amountProduced(production!, currentTick, resourceId);
-    const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
-    return Number(finalBalance);
+    if (hasMaxCapacity) {
+      const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
+      return Number(finalBalance);
+    }
+    return Number(balance + amountProduced);
   }
 
   public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, actualResourceChange: bigint) => {
@@ -633,15 +636,17 @@ export class ResourceManager {
     return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
-  public getStoreCapacity(): number {
+  public getStoreCapacityKg(): { capacityKg: number; quantity: number } {
     const structure = getComponentValue(this.components.Structure, getEntityIdFromKeys([BigInt(this.entityId || 0)]));
-    if (structure?.base?.category === StructureType.FragmentMine) return Infinity;
+    if (structure?.base?.category === StructureType.FragmentMine) return { capacityKg: Infinity, quantity: 0 };
 
-    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
+    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
       getEntityIdFromKeys([BigInt(this.entityId || 0)]),
     );
+
+    const structureCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Structure);
 
     const packBuildingCounts = [
       structureBuildings?.packed_counts_1 || 0n,
@@ -650,14 +655,19 @@ export class ResourceManager {
     ];
     const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
-    return multiplyByPrecision(Number(quantity) * storehouseCapacityKg + storehouseCapacityKg);
+    return {
+      capacityKg: Number(quantity) * storehouseCapacityKg + structureCapacityKg,
+      quantity,
+    };
   }
 
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
-    const storeCapacity = this.getStoreCapacity();
+    const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
+
     const maxAmountStorable = multiplyByPrecision(
-      storeCapacity / (configManager.getResourceWeightKg(resourceId) || 1000),
+      storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),
     );
+
     if (balance > maxAmountStorable) {
       return BigInt(maxAmountStorable);
     }
@@ -675,7 +685,7 @@ export class ResourceManager {
     resourceId: ResourcesIds,
   ): bigint {
     if (!production || production.building_count === 0) return 0n;
-    if (production.production_rate === 0n || production.output_amount_left === 0n) return 0n;
+    if (production.production_rate === 0n) return 0n;
 
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
     let totalAmountProduced = BigInt(ticksSinceLastUpdate) * production.production_rate;

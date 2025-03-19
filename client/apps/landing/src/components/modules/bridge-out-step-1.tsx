@@ -11,20 +11,17 @@ import {
   ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
-  getTotalResourceWeightGrams,
-  multiplyByPrecision,
-  resources,
+  getTotalResourceWeightKg,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
-import { InfoIcon, Loader, Plus } from "lucide-react";
+import { InfoIcon, Loader } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
 import { getResourceAddresses } from "../ui/utils/addresses";
 import { BridgeFees } from "./bridge-fees";
@@ -101,13 +98,13 @@ export const BridgeOutStep1 = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const orderWeight = useMemo(() => {
+  const orderWeightKg = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeightGrams(
+      const totalWeight = getTotalResourceWeightKg(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
-          amount: multiplyByPrecision(amount),
+          amount: amount,
         })),
       );
       return totalWeight;
@@ -117,12 +114,12 @@ export const BridgeOutStep1 = () => {
   }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
-    if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+    if (orderWeightKg) {
+      return calculateDonkeysNeeded(orderWeightKg);
     } else {
       return 0;
     }
-  }, [orderWeight]);
+  }, [orderWeightKg]);
 
   const onSendToBank = async () => {
     if (realmEntityId) {
@@ -311,48 +308,5 @@ export const BridgeOutStep1 = () => {
         </Button>
       </div>
     </>
-  );
-};
-
-const SelectResourceRow = ({
-  realmEntityId,
-  selectedResourceIds,
-  setSelectedResourceIds,
-  selectedResourceAmounts,
-  setSelectedResourceAmounts,
-}: {
-  realmEntityId: number;
-  selectedResourceIds: number[];
-  setSelectedResourceIds: (value: number[]) => void;
-  selectedResourceAmounts: { [key: string]: number };
-  setSelectedResourceAmounts: (value: { [key: string]: number }) => void;
-}) => {
-  const unselectedResources = useMemo(
-    () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
-    [selectedResourceIds],
-  );
-  const addResourceGive = () => {
-    setSelectedResourceIds([...selectedResourceIds, unselectedResources[0].id]);
-    setSelectedResourceAmounts({
-      ...selectedResourceAmounts,
-      [unselectedResources[0].id]: 1,
-    });
-  };
-
-  return (
-    <div className="grid grid-cols-0 gap-8 h-full">
-      <div className=" bg-gold/10  h-auto border border-gold/40 flex flex-col items-center">
-        <SelectSingleResource
-          selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={setSelectedResourceIds}
-          selectedResourceAmounts={selectedResourceAmounts}
-          setSelectedResourceAmounts={setSelectedResourceAmounts}
-          entity_id={realmEntityId}
-        />
-        <Button variant="default" className="mb-4" size="default" onClick={addResourceGive}>
-          <Plus />
-        </Button>
-      </div>
-    </div>
   );
 };

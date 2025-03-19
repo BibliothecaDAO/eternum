@@ -57,7 +57,7 @@ export const formatArmies = (
         isMine,
         isMercenary,
         isHome,
-        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${explorerTroops.explorer_id}`,
+        name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);

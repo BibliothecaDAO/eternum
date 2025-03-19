@@ -1,7 +1,7 @@
 import { configManager } from "..";
 import { CapacityConfig, ResourcesIds } from "../../constants";
 import { Troops, TroopType } from "../../types";
-import { divideByPrecision, gramToKg } from "../../utils";
+import { divideByPrecision } from "../../utils";
 
 // troop count without precision
 export const getRemainingCapacityInKg = (actualTroopsCount: number, weightInKg: number) => {
@@ -12,7 +12,7 @@ export const getRemainingCapacityInKg = (actualTroopsCount: number, weightInKg: 
 // number of troops needs to be divided by precision
 export const getArmyTotalCapacityInKg = (actualTroopsCount: number) => {
   // Convert weight_gram to kg and multiply by number of troops
-  const capacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Army));
+  const capacityKg = configManager.getCapacityConfigKg(CapacityConfig.Army);
   return BigInt(capacityKg) * BigInt(actualTroopsCount); // in kg
 };
 

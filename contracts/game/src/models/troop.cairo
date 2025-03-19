@@ -325,7 +325,7 @@ pub impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn stamina_movement_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
+    fn stamina_travel_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
         let ZERO: u16 = 0;
         let VALUE: u16 = troop_stamina_config.stamina_bonus_value;
         let ADD: bool = true;
