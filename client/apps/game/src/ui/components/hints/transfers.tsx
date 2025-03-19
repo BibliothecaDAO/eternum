@@ -19,7 +19,7 @@ export const Transfers = () => {
             possess a finite carrying capacity, with each resource type assigned a specific weight.
           </p>
           <p>
-            Donkey carry capacity: <strong>{configManager.getCapacityConfig(CapacityConfig.Donkey)} kg</strong>
+            Donkey carry capacity: <strong>{configManager.getCapacityConfigKg(CapacityConfig.Donkey)} kg</strong>
           </p>
           <div className="flex mt-4 justify-center w-full gap-8 font-bold border p-2">
             <div className="ml-2">Lords: {`${configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit`}</div>
@@ -33,7 +33,7 @@ export const Transfers = () => {
       title: "Producing Donkeys",
       content: (
         <div className="flex gap-3 items-center">
-          <img className="h-36 min-w-20" src={BUILDING_IMAGES_PATH[BuildingType.Market]} alt="" />
+          <img className="h-36 min-w-20" src={BUILDING_IMAGES_PATH[BuildingType.ResourceDonkey]} alt="" />
           <div className="flex flex-col">
             <p className="font-bold">Donkeys can be acquired through:</p>
             <p>

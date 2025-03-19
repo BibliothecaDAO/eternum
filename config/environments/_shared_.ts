@@ -9,13 +9,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
-import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  OTHER_BUILDING_COSTS,
-  RESOURCE_BUILDING_COSTS,
-} from "./utils/building";
+import { BUILDING_CAPACITY, BUILDING_COSTS, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED } from "./utils/building";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -30,6 +24,8 @@ import {
   STARTING_RESOURCES,
 } from "./utils/resource";
 import {
+  TROOP_AGENTS_TROOP_LOWER_BOUND,
+  TROOP_AGENTS_TROOP_UPPER_BOUND,
   TROOP_BASE_DAMAGE,
   TROOP_DAMAGE_BETA_LARGE,
   TROOP_DAMAGE_BETA_SMALL,
@@ -94,10 +90,13 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 1000; // 1000 / 100_000 = 1%
-export const SHARDS_MINES_FAIL_PROBABILITY = 99000; // 99000 / 100_000 = 99%
+export const SHARDS_MINES_WIN_PROBABILITY = 100; // 100 / 10_000 = 1%
+export const SHARDS_MINES_FAIL_PROBABILITY = 9900; // 9900 / 10_000 = 99%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
+
+export const AGENT_FIND_PROBABILITY = 100; // 100/600 = 16.66%
+export const AGENT_FIND_FAIL_PROBABILITY = 500; // 500/600 = 83.33%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
@@ -149,8 +148,8 @@ export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 10;
-export const SETTLEMENT_MIN_FIRST_LAYER_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
 export const SETTLEMENT_CURRENT_SIDE = 1;
@@ -169,16 +168,26 @@ export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
 export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
 export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
 export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
-export const MAX_BANK_FEE_ON_DEPOSIT = 0; // 10%
-export const MAX_BANK_FEE_ON_WITHDRAWAL = 0; // 10%
+export const REALM_FEE_ON_DEPOSIT = 5; // 5%
+export const REALM_FEE_ON_WITHDRAWAL = 5; // 5%
 export const MAX_NUM_BANKS = 6;
 
-export const SEASON_START_AFTER_SECONDS = 60 * 60 * 26; // 1 day
-export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = 48 * 60 * 60; // 2 days
+const ONE_MINUTE_IN_SECONDS = 60;
+const ONE_HOUR_IN_SECONDS = 60 * ONE_MINUTE_IN_SECONDS;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+
+export const SEASON_SETTLING_AFTER_SECONDS = ONE_DAY_IN_SECONDS; // 1 day
+export const SEASON_START_AFTER_SECONDS = ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS * 12; // 1 and half day
+export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 2 days
 
 export const TRADE_MAX_COUNT = 5;
 
+export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+
 export const EternumGlobalConfig: Config = {
+  agent: {
+    controller_address: AGENT_CONTROLLER_ADDRESS,
+  },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     resourceMultiplier: RESOURCE_PRECISION,
@@ -212,6 +221,8 @@ export const EternumGlobalConfig: Config = {
     reward: EXPLORATION_REWARD,
     shardsMinesFailProbability: SHARDS_MINES_FAIL_PROBABILITY,
     shardsMinesWinProbability: SHARDS_MINES_WIN_PROBABILITY,
+    agentFindProbability: AGENT_FIND_PROBABILITY,
+    agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
     hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
@@ -274,23 +285,20 @@ export const EternumGlobalConfig: Config = {
       guardResurrectionDelay: TROOP_GUARD_RESURRECTION_DELAY,
       mercenariesTroopLowerBound: TROOP_MERCENARIES_TROOP_LOWER_BOUND,
       mercenariesTroopUpperBound: TROOP_MERCENARIES_TROOP_UPPER_BOUND,
+      agentTroopLowerBound: TROOP_AGENTS_TROOP_LOWER_BOUND,
+      agentTroopUpperBound: TROOP_AGENTS_TROOP_UPPER_BOUND,
     },
   },
   settlement: {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
-    min_first_layer_distance: SETTLEMENT_MIN_FIRST_LAYER_DISTANCE,
-    points_placed: SETTLEMENT_POINTS_PLACED,
-    current_layer: SETTLEMENT_CURRENT_LAYER,
-    current_side: SETTLEMENT_CURRENT_SIDE,
-    current_point_on_side: SETTLEMENT_CURRENT_POINT_ON_SIDE,
+    subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    otherBuildingCosts: OTHER_BUILDING_COSTS,
-    resourceBuildingCosts: RESOURCE_BUILDING_COSTS,
+    buildingCosts: BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
@@ -303,7 +311,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
   },
   season: {
-    startAfterSeconds: SEASON_START_AFTER_SECONDS,
+    startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,
+    startMainAfterSeconds: SEASON_START_AFTER_SECONDS,
     bridgeCloseAfterEndSeconds: SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS,
   },
   bridge: {
@@ -315,8 +324,8 @@ export const EternumGlobalConfig: Config = {
     client_fee_on_wtdr_percent: CLIENT_FEE_ON_WITHDRAWAL,
     velords_fee_recipient: VELORDS_FEE_RECIPIENT,
     season_pool_fee_recipient: SEASON_POOL_FEE_RECIPIENT,
-    max_bank_fee_dpt_percent: MAX_BANK_FEE_ON_DEPOSIT,
-    max_bank_fee_wtdr_percent: MAX_BANK_FEE_ON_WITHDRAWAL,
+    realm_fee_dpt_percent: REALM_FEE_ON_DEPOSIT,
+    realm_fee_wtdr_percent: REALM_FEE_ON_WITHDRAWAL,
   },
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,

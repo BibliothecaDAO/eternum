@@ -23,9 +23,10 @@ export interface StructureInfo {
   entityId: ID;
   hexCoords: { col: number; row: number };
   stage: number;
+  initialized: boolean;
   level: number;
   isMine: boolean;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
 }

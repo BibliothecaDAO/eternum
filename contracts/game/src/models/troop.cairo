@@ -325,7 +325,7 @@ pub impl TroopsImpl of TroopsTrait {
         }
     }
 
-    fn stamina_movement_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
+    fn stamina_travel_bonus(ref self: Troops, biome: Biome, troop_stamina_config: TroopStaminaConfig) -> (bool, u16) {
         let ZERO: u16 = 0;
         let VALUE: u16 = troop_stamina_config.stamina_bonus_value;
         let ADD: bool = true;
@@ -643,7 +643,9 @@ mod tests {
             explorer_guard_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-            mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
+            mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
+            agents_troop_lower_bound: 100_000, // min of troops per agent
+            agents_troop_upper_bound: 100_000 // max of troops per agent
         }
     }
 

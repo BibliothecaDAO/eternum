@@ -2,14 +2,12 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
-import { LabelManager } from "@/three/managers/label-manager";
 import { Position } from "@/types/position";
 import {
   Biome,
   BiomeType,
   configManager,
   ContractAddress,
-  FELT_CENTER,
   HexEntityInfo,
   ID,
   orders,
@@ -18,37 +16,35 @@ import {
 } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { TROOP_TO_MODEL } from "../constants/army.constants";
 import { findShortestPath } from "../helpers/pathfinding";
-import { ArmyData, ArmySystemUpdate, MovingArmyData, MovingLabelData, RenderChunkSize } from "../types";
-import { calculateOffset, getHexForWorldPosition, getWorldPositionForHex } from "../utils";
+import { ArmyData, ArmySystemUpdate, RenderChunkSize } from "../types";
+import { ModelType } from "../types/army.types";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
-const RADIUS_OFFSET = 0.09;
 
 export class ArmyManager {
   private scene: THREE.Scene;
   private armyModel: ArmyModel;
   private armies: Map<ID, ArmyData> = new Map();
   private scale: THREE.Vector3;
-  private movingArmies: Map<ID, MovingArmyData> = new Map();
-  private labelManager: LabelManager;
-  private labels: Map<number, THREE.Points> = new Map();
-  private movingLabels: Map<number, MovingLabelData> = new Map();
   private currentChunkKey: string | null = "190,170";
   private renderChunkSize: RenderChunkSize;
   private visibleArmies: ArmyData[] = [];
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelsGroup: THREE.Group;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }) {
+  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
     this.scene = scene;
-    this.armyModel = new ArmyModel(scene);
+    this.armyModel = new ArmyModel(scene, labelsGroup);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
-    this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.renderChunkSize = renderChunkSize;
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
+    this.labelsGroup = labelsGroup || new THREE.Group();
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -73,7 +69,7 @@ export class ArmyManager {
                 guildName: "None",
               },
               1,
-              TroopType.Knight,
+              TroopType.Paladin,
               TroopTier.T1,
             );
           },
@@ -167,6 +163,16 @@ export class ArmyManager {
     this.renderVisibleArmies(chunkKey);
   }
 
+  private getModelTypeForBiome(biome: BiomeType, troopType: TroopType, troopTier: TroopTier): ModelType {
+    // For water biomes, always return boat model regardless of troop type
+    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
+      return ModelType.Boat;
+    }
+
+    // For land biomes, return the appropriate model based on troop type and tier
+    return TROOP_TO_MODEL[troopType][troopTier];
+  }
+
   private renderVisibleArmies(chunkKey: string) {
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     this.visibleArmies = this.getVisibleArmiesForChunk(startRow, startCol);
@@ -177,25 +183,21 @@ export class ArmyManager {
     let currentCount = 0;
     this.visibleArmies.forEach((army) => {
       const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      // this.armyModel.dummyObject.position.copy(position);
-      // this.armyModel.dummyObject.scale.copy(this.scale);
-      // this.armyModel.dummyObject.updateMatrix();
-      // Determine model type based on order or other criteria
       const { x, y } = army.hexCoords.getContract();
       const biome = Biome.getBiome(x, y);
-      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(army.entityId, "boat");
-      } else {
-        this.armyModel.assignModelToEntity(army.entityId, "knight");
-      }
+      const modelType = this.getModelTypeForBiome(biome, army.category, army.tier);
+      this.armyModel.assignModelToEntity(army.entityId, modelType);
 
+      const rotationSeed = hashCoordinates(x, y);
+      const rotationIndex = Math.floor(rotationSeed * 6);
+      const randomRotation = (rotationIndex * Math.PI) / 3;
       // Update the specific model instance for this entity
       this.armyModel.updateInstance(
         army.entityId,
         currentCount,
         position,
         this.scale,
-        undefined,
+        new THREE.Euler(0, randomRotation, 0),
         new THREE.Color(army.color),
       );
 
@@ -224,7 +226,6 @@ export class ArmyManager {
 
     // Update all model instances
     this.armyModel.updateAllInstances();
-    this.updateLabelsForChunk(chunkKey);
     this.armyModel.computeBoundingSphere();
   }
 
@@ -262,19 +263,6 @@ export class ArmyManager {
     return visibleArmies;
   }
 
-  private updateLabelsForChunk(chunkKey: string) {
-    // Remove all existing labels
-    this.labels.forEach((label) => this.scene.remove(label));
-    this.labels.clear();
-
-    this.visibleArmies.forEach((army) => {
-      const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      const label = this.labelManager.createLabel(position, army.isMine ? myColor : neutralColor);
-      this.labels.set(army.entityId, label);
-      //this.scene.add(label);
-    });
-  }
-
   public addArmy(
     entityId: ID,
     hexCoords: Position,
@@ -285,14 +273,10 @@ export class ArmyManager {
   ) {
     if (this.armies.has(entityId)) return;
 
-    // Determine model type based on order or other criteria
     const { x, y } = hexCoords.getContract();
     const biome = Biome.getBiome(x, y);
-    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      this.armyModel.assignModelToEntity(entityId, "boat");
-    } else {
-      this.armyModel.assignModelToEntity(entityId, "knight");
-    }
+    const modelType = this.getModelTypeForBiome(biome, category, tier);
+    this.armyModel.assignModelToEntity(entityId, modelType);
 
     const orderData = orders.find((_order) => _order.orderId === order);
     this.armies.set(entityId, {
@@ -332,54 +316,22 @@ export class ArmyManager {
 
     if (!path || path.length === 0) return;
 
-    // Set initial direction before movement starts
-    const firstHex = path[0];
-    const currentPosition = this.getArmyWorldPosition(entityId, armyData.hexCoords);
-    const newPosition = this.getArmyWorldPosition(entityId, firstHex);
-
-    const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
-    const angle = Math.atan2(direction.x, direction.z);
-    this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
+    // Convert path to world positions
+    const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
 
     // Update army position immediately to avoid starting from a "back" position
     this.armies.set(entityId, { ...armyData, hexCoords });
     this.armyPaths.set(entityId, path);
 
-    const modelData = this.armyModel.getModelForEntity(entityId);
-    if (modelData) {
-      this.armyModel.setAnimationState(armyData.matrixIndex, true);
-
-      this.movingArmies.set(entityId, {
-        startPos: currentPosition,
-        endPos: newPosition,
-        progress: 0,
-        matrixIndex: armyData.matrixIndex,
-        currentPathIndex: 0,
-      });
-
-      // Sync label movement with army movement
-      const label = this.labels.get(entityId);
-      if (label) {
-        this.movingLabels.set(entityId, {
-          startPos: currentPosition.clone(),
-          endPos: newPosition.clone(),
-          progress: 0,
-        });
-      }
-    }
+    // Start movement in ArmyModel with troop information
+    this.armyModel.startMovement(entityId, worldPath, armyData.matrixIndex, armyData.category, armyData.tier);
   }
 
   public removeArmy(entityId: ID) {
     if (!this.armies.delete(entityId)) return;
 
-    this.removeEntityIdLabel(entityId);
+    this.armyModel.removeLabel(entityId);
     this.renderVisibleArmies(this.currentChunkKey!);
-
-    const label = this.labels.get(entityId);
-    if (label) {
-      this.labelManager.removeLabel(label, this.scene);
-      this.labels.delete(entityId);
-    }
   }
 
   public getArmies() {
@@ -387,94 +339,8 @@ export class ArmyManager {
   }
 
   update(deltaTime: number) {
-    let needsBoundingUpdate = false;
-    const movementSpeed = 1.25;
-
-    this.movingArmies.forEach((movement, entityId) => {
-      const armyData = this.visibleArmies.find((army) => army.entityId === entityId);
-      if (!armyData) {
-        this.armyModel.setAnimationState(movement.matrixIndex, false);
-        this.movingArmies.delete(entityId);
-        return;
-      }
-
-      const { matrixIndex } = armyData;
-      let position: THREE.Vector3;
-
-      const distance = movement.startPos.distanceTo(movement.endPos);
-      const travelTime = distance / movementSpeed;
-      movement.progress += deltaTime / travelTime;
-
-      if (movement.progress >= 1) {
-        position = movement.endPos;
-
-        // Check if there are more hexes in the path
-        const path = this.armyPaths.get(entityId);
-        if (path && movement.currentPathIndex < path.length - 1) {
-          movement.currentPathIndex++;
-          const nextHex = path[movement.currentPathIndex];
-          const isLastPosition = movement.currentPathIndex === path.length - 1;
-          const nextPosition = this.getArmyWorldPosition(entityId, nextHex, !isLastPosition);
-
-          movement.startPos = movement.endPos;
-          movement.endPos = nextPosition;
-          movement.progress = 0;
-        } else {
-          // Path complete
-          this.movingArmies.delete(entityId);
-          this.armyPaths.delete(entityId);
-          this.armyModel.setAnimationState(matrixIndex, false);
-        }
-      } else {
-        position = new THREE.Vector3().copy(movement.startPos).lerp(movement.endPos, movement.progress);
-      }
-
-      const { col, row } = getHexForWorldPosition({ x: position.x, y: position.y, z: position.z });
-      const biome = Biome.getBiome(col + FELT_CENTER, row + FELT_CENTER);
-      if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-        this.armyModel.assignModelToEntity(entityId, "boat");
-      } else {
-        this.armyModel.assignModelToEntity(entityId, "knight");
-      }
-
-      const direction = new THREE.Vector3().subVectors(movement.endPos, movement.startPos).normalize();
-      const angle = Math.atan2(direction.x, direction.z);
-      this.armyModel.dummyObject.rotation.set(0, angle + (Math.PI * 3) / 6, 0);
-
-      this.armyModel.updateInstance(entityId, matrixIndex, position, this.scale);
-
-      // Update label position
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        label.position.copy(position);
-        label.position.y += 1.5;
-      }
-    });
-
-    if (this.movingArmies.size > 0) {
-      this.armyModel.updateInstanceMatrix();
-    }
-
-    this.movingLabels.forEach((movement, entityId) => {
-      const label = this.labels.get(entityId);
-      if (label) {
-        // Get the current army position from moving armies
-        const armyMovement = this.movingArmies.get(entityId);
-        if (armyMovement) {
-          const currentPos = new THREE.Vector3()
-            .copy(armyMovement.startPos)
-            .lerp(armyMovement.endPos, armyMovement.progress);
-          this.labelManager.updateLabelPosition(label, currentPos);
-        } else {
-          this.movingLabels.delete(entityId);
-        }
-      }
-    });
-
-    if (needsBoundingUpdate) {
-      this.armyModel.computeBoundingSphere();
-    }
-
+    // Update movements in ArmyModel
+    this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime);
   }
 
@@ -484,17 +350,7 @@ export class ArmyManager {
 
     if (isIntermediatePosition) return basePosition;
 
-    const totalOnSameHex = Array.from(this.armies.values()).filter((army) => {
-      const { x, y } = army.hexCoords.getNormalized();
-      return x === hexCoordsX && y === hexCoordsY;
-    }).length;
-
-    if (totalOnSameHex === 1) return basePosition;
-
-    const { x, z } = calculateOffset(armyEntityId, totalOnSameHex, RADIUS_OFFSET);
-    const offset = new THREE.Vector3(x, 0, z);
-
-    return basePosition.add(offset);
+    return basePosition;
   };
 
   recheckOwnership() {
@@ -524,43 +380,29 @@ export class ArmyManager {
     const textContainer = document.createElement("div");
     textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createTextNode(`${army.owner.ownerName} ${army.owner.guildName ? `(${army.order})` : ""}`);
+    const line1 = document.createTextNode(
+      `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
+    );
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.owner.guildName ? army.owner.guildName : army.order}`;
-    const line3 = document.createElement("strong");
-    line3.textContent = `${army.category} ${army.tier}`;
+    line2.textContent = `${army.category} ${army.tier}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
-    textContainer.appendChild(line3);
 
     labelDiv.appendChild(textContainer);
 
-    const label = new CSS2DObject(labelDiv);
-    label.position.copy(position);
-    label.position.y += 1.5; // Position above the army
-
-    this.scene.add(label);
-    this.entityIdLabels.set(army.entityId, label);
+    this.armyModel.addLabel(army.entityId, labelDiv, position);
   }
 
   removeLabelsFromScene() {
-    this.entityIdLabels.forEach((label) => this.scene.remove(label));
+    this.armyModel.removeLabelsFromScene();
   }
 
   addLabelsToScene() {
-    this.entityIdLabels.forEach((label) => {
-      if (!this.scene.children.includes(label)) {
-        this.scene.add(label);
-      }
-    });
+    this.armyModel.addLabelsToScene();
   }
 
   private removeEntityIdLabel(entityId: ID) {
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.scene.remove(label);
-      this.entityIdLabels.delete(entityId);
-    }
+    this.armyModel.removeLabel(entityId);
   }
 }

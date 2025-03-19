@@ -21,14 +21,13 @@ export const DepositResourceArrival = ({ arrival }: { arrival: ResourceArrivalIn
     const resourceArrivalManager = new ResourceArrivalManager(components, systemCalls, arrival);
 
     if (arrival.resources.length > 0) {
-      playDeposit();
       setIsLoading(true);
-
       try {
         // todo: issue with entities updates
         await resourceArrivalManager.offload(account, arrival.resources.length);
       } finally {
         setIsLoading(false);
+        playDeposit();
       }
     }
   };

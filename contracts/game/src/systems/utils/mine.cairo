@@ -21,7 +21,7 @@ use s1_eternum::utils::random;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
-    fn lottery(ref world: WorldStorage, map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
         let success: bool = *random::choices(
             array![true, false].span(),
             array![map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into()]
@@ -103,9 +103,9 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         BuildingImpl::create(
             ref world,
             structure_id,
+            StructureCategory::FragmentMine.into(),
             coord,
-            BuildingCategory::Resource,
-            Option::Some(ResourceTypes::EARTHEN_SHARD),
+            BuildingCategory::ResourceEarthenShard,
             BuildingImpl::center(),
         );
 
@@ -113,14 +113,9 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     }
 
     fn _reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
-        let random_multiplier: u128 = *random::choices(
-            array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].span(),
-            array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span(),
-            array![].span(),
-            1,
-            true,
-            randomness,
-        )[0];
+        let multipliers: Array<u128> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        let random_index: u128 = random::random(randomness, 124, multipliers.len().into());
+        let random_multiplier: u128 = *multipliers.at(random_index.try_into().unwrap());
         let minimum_amount: u128 = 100_000 * RESOURCE_PRECISION;
         let actual_amount: u128 = minimum_amount * random_multiplier;
         return actual_amount;

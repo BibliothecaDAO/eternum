@@ -84,12 +84,15 @@ pub mod season {
 }
 
 pub mod utils {
+    pub mod bridge;
     pub mod distance;
     pub mod donkey;
+    pub mod erc20;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
     pub mod resource;
     pub mod structure;
     pub mod troop;
+    pub mod village;
 }

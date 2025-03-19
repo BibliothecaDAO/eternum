@@ -192,8 +192,8 @@
 //                     velords_fee_on_wtdr_percent: 200, // 2% i.e 200/10_000
 //                     season_pool_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
 //                     client_fee_on_wtdr_percent: 100, // 1% i.e 100/10_000
-//                     max_bank_fee_dpt_percent: 500, // 5% i.e 500/10_000
-//                     max_bank_fee_wtdr_percent: 600 // 6% i.e 600/10_000
+//                     realm_fee_dpt_percent: 500, // 5% i.e 500/10_000
+//                     realm_fee_wtdr_percent: 600 // 6% i.e 600/10_000
 //                 },
 //             );
 //         }

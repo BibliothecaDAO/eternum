@@ -7,11 +7,7 @@ use s1_eternum::models::resource::production::production::{ProductionStrategyImp
 trait IProductionContract<TContractState> {
     /// Create and Destroy Buildings
     fn create_building(
-        ref self: TContractState,
-        structure_id: ID,
-        directions: Span<Direction>,
-        building_category: BuildingCategory,
-        requested_resource_type: Option<u8>,
+        ref self: TContractState, structure_id: ID, directions: Span<Direction>, building_category: BuildingCategory,
     );
     fn destroy_building(ref self: TContractState, structure_id: ID, building_coord: Coord);
 
@@ -40,18 +36,19 @@ mod production_systems {
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::season::SeasonImpl;
+    use s1_eternum::models::config::{SeasonConfigImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait},
-        resource::production::building::{BuildingCategory, BuildingImpl},
+        resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
         resource::production::production::{ProductionStrategyImpl},
     };
-    use starknet::ContractAddress;
 
+    use starknet::ContractAddress;
+    use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
 
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
@@ -60,11 +57,10 @@ mod production_systems {
             structure_id: ID,
             mut directions: Span<s1_eternum::models::position::Direction>,
             building_category: BuildingCategory,
-            requested_resource_type: Option<u8>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure season is not over
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure caller owns the structure
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
@@ -87,19 +83,6 @@ mod production_systems {
                 directions_count <= structure_base.level.into() + 1, "building outside of what structure level allows",
             );
 
-            // ensure that the structure produces the resource
-            if requested_resource_type.is_some() {
-                let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
-                    ref world, structure_id,
-                );
-                assert!(
-                    StructureResourcesImpl::produces_resource(
-                        structure_resources_packed, requested_resource_type.unwrap(),
-                    ),
-                    "structure does not produce specified resource",
-                );
-            }
-
             let mut building_coord: Coord = BuildingImpl::center();
             loop {
                 match directions.pop_front() {
@@ -111,11 +94,23 @@ mod production_systems {
             let (building, building_count) = BuildingImpl::create(
                 ref world,
                 structure_id,
+                structure_base.category,
                 structure_base.coord(),
                 building_category,
-                requested_resource_type,
                 building_coord,
             );
+
+            // ensure that the structure produces the resource
+            if !building.allowed_for_all_realms_and_villages() {
+                let building_produces_resource: u8 = building.produced_resource();
+                let structure_resources_packed: u128 = StructureResourcesPackedStoreImpl::retrieve(
+                    ref world, structure_id,
+                );
+                assert!(
+                    StructureResourcesImpl::produces_resource(structure_resources_packed, building_produces_resource),
+                    "You can't erect the requested building on this structure",
+                );
+            }
 
             // pay one time cost of the building
             building.make_payment(building_count, ref world);
@@ -124,7 +119,7 @@ mod production_systems {
 
         fn destroy_building(ref self: ContractState, structure_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -138,12 +133,14 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::destroy(ref world, structure_id, structure_base.coord(), building_coord);
+            BuildingImpl::destroy(
+                ref world, structure_id, structure_base.category, structure_base.coord(), building_coord,
+            );
         }
 
         fn pause_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            // SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -157,12 +154,12 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::pause_production(ref world, structure_base.coord(), building_coord);
+            BuildingImpl::pause_production(ref world, structure_base.category, structure_base.coord(), building_coord);
         }
 
         fn resume_building_production(ref self: ContractState, structure_id: ID, building_coord: Coord) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -176,7 +173,7 @@ mod production_systems {
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
             structure_owner.assert_caller_owner();
 
-            BuildingImpl::resume_production(ref world, structure_base.coord(), building_coord);
+            BuildingImpl::resume_production(ref world, structure_base.category, structure_base.coord(), building_coord);
         }
 
         /// Burn other resource for production of labor
@@ -184,7 +181,7 @@ mod production_systems {
             ref self: ContractState, structure_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
@@ -218,7 +215,7 @@ mod production_systems {
             produced_resource_types: Span<u8>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
@@ -254,7 +251,7 @@ mod production_systems {
             production_tick_counts: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);

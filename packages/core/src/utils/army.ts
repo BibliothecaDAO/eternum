@@ -8,6 +8,7 @@ import {
   divideByPrecision,
   getArmyTotalCapacityInKg,
   getNeighborHexes,
+  getRealmAddressName,
   gramToKg,
   ResourcesIds,
 } from "..";
@@ -40,7 +41,7 @@ export const formatArmies = (
 
       const isMercenary = structure?.owner === 0n;
 
-      const isHome = structure && position.x === structure.base.coord_x && position.y === structure.base.coord_y;
+      const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
 
       return {
         entityId: explorerTroops.explorer_id,
@@ -51,11 +52,12 @@ export const formatArmies = (
         entity_owner_id: explorerTroops.owner,
         stamina,
         owner: structure?.owner,
+        ownerName: getRealmAddressName(explorerTroops.owner, components),
         structure,
         isMine,
         isMercenary,
         isHome,
-        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${explorerTroops.explorer_id}`,
+        name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);
@@ -150,6 +152,15 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
 
   // Filter out guards with no troops
   return guards;
+};
+
+export const isArmyAdjacentToStructure = (
+  armyPosition: { x: number; y: number },
+  structureX: number,
+  structureY: number,
+): boolean => {
+  const adjacentHexes = getNeighborHexes(structureX, structureY);
+  return adjacentHexes.some((hex) => hex.col === armyPosition.x && hex.row === armyPosition.y);
 };
 
 export const getFreeDirectionsAroundStructure = (structureEntityId: ID, components: ClientComponents) => {

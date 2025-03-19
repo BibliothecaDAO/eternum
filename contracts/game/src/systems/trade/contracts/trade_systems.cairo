@@ -29,20 +29,21 @@ pub mod trade_systems {
     use s1_eternum::alias::ID;
 
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SpeedImpl, TradeConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
-        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
+    use s1_eternum::systems::utils::village::{iVillageImpl};
     use starknet::ContractAddress;
 
 
@@ -96,7 +97,7 @@ pub mod trade_systems {
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure maker structure is owned by caller
             let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
@@ -184,7 +185,7 @@ pub mod trade_systems {
 
         fn accept_order(ref self: ContractState, taker_id: ID, trade_id: ID, taker_buys_count: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure trade exists
             let mut trade: Trade = world.read_model(trade_id);
@@ -212,6 +213,16 @@ pub mod trade_systems {
             // ensure buy amount is valid
             assert!(taker_buys_count.is_non_zero(), "taker buys resource amount is 0");
             assert!(taker_buys_count <= trade.maker_gives_max_count, "attempting to buy more than available");
+
+            // ensure taker can't receive troops from an unconnected realm
+            if taker_structure.category == StructureCategory::Village.into() {
+                if TroopResourceImpl::is_troop(trade.maker_gives_resource_type) {
+                    let taker_village_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                        ref world, taker_id,
+                    );
+                    iVillageImpl::ensure_village_realm(ref world, taker_village_structure_metadata, trade.maker_id);
+                }
+            }
 
             // compute resource arrival time
             let maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, trade.maker_id);
@@ -317,7 +328,7 @@ pub mod trade_systems {
 
         fn cancel_order(ref self: ContractState, trade_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonImpl::assert_season_is_not_over(world);
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure trade exists
             let mut trade: Trade = world.read_model(trade_id);

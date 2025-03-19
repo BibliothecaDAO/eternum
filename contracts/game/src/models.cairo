@@ -14,7 +14,6 @@ pub mod stamina;
 pub mod structure;
 pub mod trade;
 pub mod troop;
-pub mod village;
 pub mod weight;
 pub mod bank {
     pub mod liquidity;

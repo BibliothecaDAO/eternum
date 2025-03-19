@@ -5,6 +5,7 @@ packages:
   - "client/apps/balancing"
   - "client/apps/game-docs"
   - "client/apps/heavy-load"
+  - "client/apps/eternum-mobile"
   - "config"
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"

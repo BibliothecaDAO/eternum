@@ -1,16 +1,9 @@
 use core::num::traits::zero::Zero;
-use cubit::f128::math::trig::{cos as fixed_cos, sin as fixed_sin};
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
-
-use s1_eternum::models::position::Coord;
-
-use s1_eternum::models::resource::production::building::BuildingCategory;
-use s1_eternum::models::season::{Season, SeasonImpl, SeasonTrait};
-use s1_eternum::utils::map::constants::fixed_constants as fc;
+use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
 
@@ -26,24 +19,117 @@ pub struct WorldConfig {
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub season_addresses_config: SeasonAddressesConfig,
-    pub season_bridge_config: SeasonBridgeConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
     pub tick_config: TickConfig,
     pub bank_config: BankConfig,
-    pub population_config: PopulationConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub structure_max_level_config: StructureMaxLevelConfig,
-    pub building_general_config: BuildingGeneralConfig,
+    pub building_config: BuildingConfig,
     pub troop_damage_config: TroopDamageConfig,
     pub troop_stamina_config: TroopStaminaConfig,
     pub troop_limit_config: TroopLimitConfig,
     pub capacity_config: CapacityConfig,
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
+    pub realm_count: RealmCountConfig,
+    pub season_config: SeasonConfig,
+    pub agent_controller_config: AgentControllerConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct AgentControllerConfig {
+    pub address: ContractAddress,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct SeasonConfig {
+    pub start_settling_at: u64,
+    pub start_main_at: u64,
+    pub end_at: u64,
+    pub end_grace_seconds: u32,
+}
+
+#[generate_trait]
+pub impl SeasonConfigImpl of SeasonConfigTrait {
+    fn get(world: WorldStorage) -> SeasonConfig {
+        WorldConfigUtilImpl::get_member(world, selector!("season_config"))
+    }
+
+    fn has_ended(self: SeasonConfig) -> bool {
+        self.end_at.is_non_zero()
+    }
+
+    fn has_settling_started(self: SeasonConfig) -> bool {
+        let now = starknet::get_block_timestamp();
+        now >= self.start_settling_at
+    }
+
+    fn has_main_started(self: SeasonConfig) -> bool {
+        let now = starknet::get_block_timestamp();
+        now >= self.start_main_at
+    }
+
+
+    fn assert_started_settling(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_settling_started(),
+            "You will be able to settle your realm or village in {} hours {} minutes, {} seconds",
+            (self.start_settling_at - now) / 60 / 60,
+            ((self.start_settling_at - now) / 60) % 60,
+            (self.start_settling_at - now) % 60,
+        );
+    }
+
+
+    fn assert_started_main(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_main_started() && self.has_settling_started(),
+            "The game starts in {} hours {} minutes, {} seconds",
+            (self.start_main_at - now) / 60 / 60,
+            ((self.start_main_at - now) / 60) % 60,
+            (self.start_main_at - now) % 60,
+        );
+    }
+    fn assert_settling_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_settling();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_settling_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_settling();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+    fn assert_main_game_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+
+    fn end_season(ref world: WorldStorage) {
+        let season_config_selector = selector!("season_config");
+        let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
+        // ensure season is not over
+        assert!(season_config.has_ended() == false, "Season is over");
+        // set season as over
+        season_config.end_at = starknet::get_block_timestamp();
+        WorldConfigUtilImpl::set_member(ref world, season_config_selector, season_config);
+    }
 }
 
 #[generate_trait]
@@ -70,26 +156,6 @@ pub struct SeasonAddressesConfig {
     pub lords_address: ContractAddress,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct SeasonBridgeConfig {
-    pub close_after_end_seconds: u64,
-}
-
-#[generate_trait]
-pub impl SeasonBridgeConfigImpl of SeasonBridgeConfigTrait {
-    fn assert_bridge_is_open(self: SeasonBridgeConfig, world: WorldStorage) {
-        // ensure season has started
-        let season: Season = world.read_model(WORLD_CONFIG_ID);
-        season.assert_has_started();
-
-        // check if season is over
-        if season.ended_at.is_non_zero() {
-            // close bridge after grace period has elapsed
-            let now = starknet::get_block_timestamp();
-            assert!(now <= season.ended_at + self.close_after_end_seconds, "Bridge is closed");
-        }
-    }
-}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
@@ -134,8 +200,10 @@ pub impl SpeedImpl of SpeedTrait {
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct MapConfig {
     pub reward_resource_amount: u16,
-    pub shards_mines_win_probability: u32,
-    pub shards_mines_fail_probability: u32,
+    pub shards_mines_win_probability: u16,
+    pub shards_mines_fail_probability: u16,
+    pub agent_discovery_prob: u16,
+    pub agent_discovery_fail_prob: u16,
     pub hyps_win_prob: u32,
     pub hyps_fail_prob: u32,
     // fail probability increase per hex distance from center
@@ -151,80 +219,125 @@ pub struct MapConfig {
 pub struct SettlementConfig {
     pub center: u32,
     pub base_distance: u32,
-    pub min_first_layer_distance: u32,
-    pub points_placed: u32,
-    pub current_layer: u32,
-    pub current_side: u32,
-    pub current_point_on_side: u32,
+    pub subsequent_distance: u32,
 }
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct RealmCountConfig {
+    pub count: u16,
+}
+
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    fn get_distance_from_center(ref self: SettlementConfig) -> u32 {
-        self.min_first_layer_distance + (self.current_layer - 1) * self.base_distance
+    #[test]
+    fn log_layer_capacity() { // // Get the current realm count
+    // let realm_count: u16 =  8000;
+    // // Calculate the maximum layer based on realm count
+    // // We need to find n where 3n² - 3n + 1 >= realm_count
+    // // Solving the quadratic equation: 3n² - 3n - (realm_count - 1) >= 0
+
+    // // Start from layer 1 and find the first layer that can accommodate all realms
+    // let mut layer: u32 = 1;
+    // let mut capacity: u32 = 5; // Layer 1 capacity
+    // println!("Layer: 1, Capacity: 5, Added Capacity: 5");
+
+    // while capacity < realm_count.into() {
+    //     layer += 1;
+    //     // Each new layer adds 6 * layer realms
+    //     capacity += 6 * layer;
+    //     println!("Layer: {}, Capacity: {}, Added Capacity: {}", layer, capacity, 6 * layer);
+
+    // };
+
+    // println!("Max layer: {}", layer);
     }
 
-    fn get_points_on_side(ref self: SettlementConfig) -> u32 {
-        if self.current_side > 0 {
-            self.current_layer
-        } else {
-            self.current_layer - 1
-        }
-    }
+    // Calculate the maximum layer on the concentric hexagon
+    // that can be built on based on realm count
+    fn max_layer(realm_count: u32) -> u32 {
+        // each layer's capacity can be obtained by calling the function
+        // above (fn log_layer_capacity)
 
-    fn get_pos_percentage(ref self: SettlementConfig, points_on_side: u32) -> Fixed {
-        FixedTrait::new_unscaled(self.current_point_on_side.into() + 1, false)
-            / FixedTrait::new_unscaled(points_on_side.into() + 1, false)
-    }
-
-    fn get_side_coords(ref self: SettlementConfig, side: u32, distance_from_center: u32) -> (Fixed, Fixed) {
-        let side_fixed = FixedTrait::new_unscaled(side.into(), false);
-        let angle_fixed = side_fixed * fc::PI() / FixedTrait::new_unscaled(3, false);
-
-        let cos = fixed_cos(angle_fixed);
-        let sin = fixed_sin(angle_fixed);
-
-        let centre_fixed = FixedTrait::new_unscaled(self.center.into(), false);
-        let distance_fixed = FixedTrait::new_unscaled(distance_from_center.into(), false);
-
-        let x_fixed = centre_fixed + distance_fixed * cos;
-        let y_fixed = centre_fixed + distance_fixed * sin;
-        (x_fixed, y_fixed)
-    }
-
-    fn get_next_settlement_coord(ref self: SettlementConfig) -> Coord {
-        let distance_from_center = Self::get_distance_from_center(ref self);
-
-        let (start_x_fixed, start_y_fixed) = Self::get_side_coords(ref self, self.current_side, distance_from_center);
-
-        let next_side = (self.current_side + 1) % 6;
-
-        let (end_x_fixed, end_y_fixed) = Self::get_side_coords(ref self, next_side, distance_from_center);
-
-        let points_on_side = Self::get_points_on_side(ref self);
-
-        let pos_percentage_fixed = Self::get_pos_percentage(ref self, points_on_side);
-
-        let x_fixed = start_x_fixed + (end_x_fixed - start_x_fixed) * pos_percentage_fixed;
-        let y_fixed = start_y_fixed + (end_y_fixed - start_y_fixed) * pos_percentage_fixed;
-
-        self.current_point_on_side += 1;
-        self.points_placed += 1;
-
-        if self.current_point_on_side >= points_on_side {
-            self.current_point_on_side = 0;
-            self.current_side += 1;
-
-            // If we've completed all sides, move to next layer
-            if self.current_side >= 6 {
-                self.current_side = 0;
-                self.current_layer += 1;
-            }
+        if realm_count <= 1500 {
+            return 26; // 2106 capacity
         }
 
-        Coord { x: x_fixed.try_into().unwrap(), y: y_fixed.try_into().unwrap() }
+        if realm_count <= 2500 {
+            return 32; // 3168 capacity
+        }
+
+        if realm_count <= 3500 {
+            return 37; // 4218 capacity
+        }
+
+        if realm_count <= 4500 {
+            return 41; // 5166 capacity
+        }
+
+        if realm_count <= 5500 {
+            return 45; // 6210 capacity
+        }
+
+        if realm_count <= 6500 {
+            return 49; // 7350 capacity
+        }
+
+        return 52; // 8268 capacity
+    }
+
+    fn max_points(layer: u32) -> u32 {
+        layer - 1
+    }
+
+    // todo: test aggresively
+    fn generate_coord(self: SettlementConfig, max_layer: u32, side: u32, layer: u32, point: u32) -> Coord {
+        assert!(side < 6, "Side must be less than 6"); // 0 - 5
+        assert!(layer > 0, "Layer must be greater than 0");
+        assert!(layer <= max_layer, "Layer must be less than max layer");
+        assert!(point <= Self::max_points(layer), "Point must be less than max side points");
+
+        let mut start_coord: Coord = CoordImpl::center();
+        let start_directions: Array<(Direction, Direction)> = array![
+            // (Direction::East, Direction::SouthWest),
+            // (Direction::East, Direction::NorthWest),
+            // (Direction::West, Direction::SouthEast),
+            // (Direction::West, Direction::NorthEast),
+            // (Direction::NorthWest, Direction::East),
+            // (Direction::SouthEast, Direction::West),
+
+            // note: the values on top are actually correct but need to be inverted
+            // because ui is inverted. so northeast and southeast are swapped.
+            // as well as northwest and southwest
+            (Direction::East, Direction::NorthWest),
+            (Direction::East, Direction::SouthWest),
+            (Direction::West, Direction::NorthEast),
+            (Direction::West, Direction::SouthEast),
+            (Direction::SouthWest, Direction::East),
+            (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(side);
+        assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+        assert!(
+            self.subsequent_distance % 2 == 0,
+            "subsequent distance must be exactly divisble by 2 so the map isnt skewed",
+        );
+
+        // get the coord of the first structure on layer 1 of the selected side
+        let side_first_structure__layer_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, self.base_distance)
+            .neighbor_after_distance(triangle_direction, (self.base_distance / 2) + (self.subsequent_distance / 2));
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__layer_x = side_first_structure__layer_one
+            .neighbor_after_distance(start_direction, self.subsequent_distance * (layer - 1));
+
+        let destination_coord: Coord = side_first_structure__layer_x
+            .neighbor_after_distance(triangle_direction, self.subsequent_distance * point);
+        return destination_coord;
     }
 }
+
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct TickConfig {
@@ -277,13 +390,18 @@ pub struct TroopLimitConfig {
     // Maximum number of explorers allowed per structure
     pub explorer_max_party_count: u8,
     // Troop count per army limits without precision
+    // Applies to both explorers and guards
     pub explorer_guard_max_troop_count: u32,
     // Guard specific settings
     pub guard_resurrection_delay: u32,
     // Mercenary bounds without precision
-    pub mercenaries_troop_lower_bound: u64,
+    pub mercenaries_troop_lower_bound: u32,
     // without precision
-    pub mercenaries_troop_upper_bound: u64,
+    pub mercenaries_troop_upper_bound: u32,
+    // Agents bounds without precision
+    pub agents_troop_lower_bound: u32,
+    // without precision
+    pub agents_troop_upper_bound: u32,
 }
 
 
@@ -357,8 +475,10 @@ pub struct WeightConfig {
 pub struct ProductionConfig {
     #[key]
     pub resource_type: u8,
-    // production amount per building, per tick
-    pub amount_per_building_per_tick: u128,
+    // production amount per building, per tick for realm
+    pub realm_output_per_tick: u64,
+    // production amount per building, per tick for village
+    pub village_output_per_tick: u64,
     // values needed for converting resources to labor and vice versa
     pub labor_burn_strategy: LaborBurnPrStrategy,
     // values needed for converting multiple resources to a single resource
@@ -457,36 +577,21 @@ pub struct BankConfig {
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct BuildingGeneralConfig {
+pub struct BuildingConfig {
+    pub base_population: u32,
     pub base_cost_percent_increase: u16,
 }
 
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct BuildingConfig {
+pub struct BuildingCategoryConfig {
     #[key]
-    pub config_id: ID,
-    #[key]
-    pub category: BuildingCategory,
-    #[key]
-    pub resource_type: u8,
-    pub resource_cost_id: ID,
-    pub resource_cost_count: u32,
-}
-
-#[generate_trait]
-pub impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(ref world: WorldStorage, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
-        return world
-            .read_model(
-                (
-                    WORLD_CONFIG_ID,
-                    Into::<BuildingCategory, felt252>::into(category),
-                    Into::<u8, felt252>::into(resource_type),
-                ),
-            );
-    }
+    pub category: u8,
+    pub erection_cost_id: ID,
+    pub erection_cost_count: u32,
+    pub population_cost: u32,
+    pub capacity_grant: u32,
 }
 
 
@@ -500,28 +605,6 @@ pub struct BattleConfig {
 pub impl BattleConfigImpl of BattleConfigTrait {
     fn get(ref world: WorldStorage) -> BattleConfig {
         WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
-    }
-}
-
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct BuildingCategoryPopConfig {
-    #[key]
-    pub building_category: BuildingCategory,
-    pub population: u32,
-    pub capacity: u32,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct PopulationConfig {
-    pub base_population: u32,
-}
-
-#[generate_trait]
-pub impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
-    fn get(ref world: WorldStorage, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        world.read_model(building_id)
     }
 }
 
@@ -578,8 +661,8 @@ pub struct ResourceBridgeFeeSplitConfig {
     pub client_fee_on_dpt_percent: u16,
     pub client_fee_on_wtdr_percent: u16,
     // max bank fee amount
-    pub max_bank_fee_dpt_percent: u16,
-    pub max_bank_fee_wtdr_percent: u16,
+    pub realm_fee_dpt_percent: u16,
+    pub realm_fee_wtdr_percent: u16,
     // the address that will receive the velords fee percentage
     pub velords_fee_recipient: ContractAddress,
     // the address that will receive the season pool fee

@@ -1,8 +1,8 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager, gramToKg } from "..";
-import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureType } from "../constants";
+import { configManager, ResourceManager } from "..";
+import { findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
@@ -62,15 +62,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
-  const buildingCounts = unpackValue(structureBuildings?.packed_counts || 0n);
-
-  const storehouseQuantity = buildingCounts[BuildingType.Storehouse] || 0;
-
-  const storehouses = (() => {
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
-    return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
-  })();
-
   if (structure) {
     const realm_id = structure.metadata.realm_id;
     const order = structure.metadata.order;
@@ -82,14 +73,16 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
 
     const resources = unpackValue(BigInt(produced_resources));
 
+    const resourceManager = new ResourceManager(components, entity_id);
+
     return {
       realmId: realm_id,
       entityId: entity_id,
-      storehouses,
       name,
       level,
       resources,
       order,
+      storehouses: resourceManager.getStoreCapacityKg(),
       position: { x: structure.base.coord_x, y: structure.base.coord_y },
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
@@ -149,8 +142,39 @@ export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  const buildingPopulation = configManager.getBuildingPopConfig(building).population;
+  const buildingPopulation = configManager.getBuildingCategoryConfig(building).population_cost;
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
 
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
+};
+
+export const maxLayer = (realmCount: number): number => {
+  // Calculate the maximum layer on the concentric hexagon
+  // that can be built on based on realm count
+
+  if (realmCount <= 1500) {
+    return 26; // 2105 capacity
+  }
+
+  if (realmCount <= 2500) {
+    return 32; // 3167 capacity
+  }
+
+  if (realmCount <= 3500) {
+    return 37; // 4217 capacity
+  }
+
+  if (realmCount <= 4500) {
+    return 41; // 5165 capacity
+  }
+
+  if (realmCount <= 5500) {
+    return 45; // 6209 capacity
+  }
+
+  if (realmCount <= 6500) {
+    return 49; // 7349 capacity
+  }
+
+  return 52; // 8267 capacity
 };

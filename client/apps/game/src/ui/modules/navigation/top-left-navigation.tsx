@@ -4,11 +4,10 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { ViewOnMapIcon } from "@/ui/components/military/army-management-card";
-import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
+import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
@@ -55,8 +54,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { currentBlockTimestamp } = useBlockTimestamp();
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -120,7 +117,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
 
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+  const { progress } = useMemo(() => {
     const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
     const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
@@ -161,10 +158,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                         key={index}
                         value={structure.structure.entity_id?.toString() || ""}
                       >
-                        <div className="self-center flex gap-4 text-xl">
-                          {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
-                        </div>
+                        <div className="self-center flex gap-4 text-xl">{structure.name}</div>
                       </SelectItem>
                     </div>
                   ))}
@@ -228,7 +222,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
       </motion.div>
       <div className="relative">
         <SecondaryMenuItems />
-        {/* <QuestsMenu /> */}
       </div>
     </div>
   );

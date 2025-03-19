@@ -101,10 +101,23 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
     }
 }
 
+#[generate_trait]
+pub impl TroopResourceImpl of TroopResourceTrait {
+    fn is_troop(resource_type: u8) -> bool {
+        resource_type == ResourceTypes::KNIGHT_T1
+            || resource_type == ResourceTypes::KNIGHT_T2
+            || resource_type == ResourceTypes::KNIGHT_T3
+            || resource_type == ResourceTypes::CROSSBOWMAN_T1
+            || resource_type == ResourceTypes::CROSSBOWMAN_T2
+            || resource_type == ResourceTypes::CROSSBOWMAN_T3
+            || resource_type == ResourceTypes::PALADIN_T1
+            || resource_type == ResourceTypes::PALADIN_T2
+            || resource_type == ResourceTypes::PALADIN_T3
+    }
+}
 
 #[generate_trait]
 pub impl SingleResourceImpl of SingleResourceTrait {
-    #[inline(always)]
     fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
         self.balance -= amount;
@@ -113,7 +126,6 @@ pub impl SingleResourceImpl of SingleResourceTrait {
     }
 
 
-    #[inline(always)]
     fn add(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) -> u128 {
         // todo: increase capacity with storehouse buildings
 
@@ -126,7 +138,6 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         max_storable
     }
 
-    #[inline(always)]
     fn storable_amount(amount: u128, storage_left: u128, unit_weight: u128) -> (u128, u128) {
         let mut max_storable: u128 = amount;
         let mut total_weight: u128 = unit_weight * amount;

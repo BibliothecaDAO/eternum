@@ -59,7 +59,7 @@ export const BridgeFees = ({
         amount.toString(),
       );
       const bankFee = calculateBridgeFee(
-        type === "deposit" ? bridgeConfig.max_bank_fee_dpt_percent : bridgeConfig.max_bank_fee_wtdr_percent,
+        type === "deposit" ? bridgeConfig.realm_fee_dpt_percent : bridgeConfig.realm_fee_wtdr_percent,
         amount.toString(),
       );
 
@@ -102,7 +102,7 @@ export const BridgeFees = ({
                 </div>
               </div>
               <div className="flex justify-between text-xs">
-                <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.max_bank_fee_dpt_percent)}%)</div>
+                <div>Bank Fees ({calculateBridgeFeeDisplayPercent(bridgeConfig.realm_fee_dpt_percent)}%)</div>
                 <div>{fees.bankFee}</div>
               </div>
               <div className="flex justify-between text-xs">

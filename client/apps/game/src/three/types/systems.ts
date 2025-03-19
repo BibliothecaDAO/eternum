@@ -1,4 +1,4 @@
-import { BiomeType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, BuildingType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
 import { StructureProgress } from "./common";
 
 export type ArmySystemUpdate = {
@@ -16,8 +16,9 @@ export type StructureSystemUpdate = {
   hexCoords: HexPosition;
   structureType: StructureType;
   stage: StructureProgress;
+  initialized: boolean;
   level: number;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
   hasWonder: boolean;
 };
 
@@ -28,7 +29,7 @@ export type TileSystemUpdate = {
 };
 
 export type BuildingSystemUpdate = {
-  buildingType: string;
+  buildingType: BuildingType;
   innerCol: number;
   innerRow: number;
   paused: boolean;

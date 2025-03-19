@@ -8,7 +8,7 @@ import {
   SetupResult,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
@@ -20,7 +20,7 @@ import {
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
+  setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
   logging: boolean = true,
   historical: boolean = false,
@@ -29,11 +29,17 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
   let entityBatch: Record<string, any> = {};
 
+  const {
+    network: { contractComponents: components },
+    components: clientComponents,
+  } = setupResult;
+
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
-      if (logging) console.log("Applying batch update", entityBatch);
+      if (logging) console.log("Applying batch update override check", entityBatch);
 
-      setEntities(entityBatch, components, logging);
+      setEntities(entityBatch, components as any, logging);
+
       entityBatch = {}; // Clear the batch after applying
     }
   }, 200); // Increased debounce time to 1 second for larger batches
@@ -99,7 +105,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup.network.contractComponents as any, [], false);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
@@ -290,8 +296,7 @@ const configModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ProductionConfig",
-  "s1_eternum-BuildingConfig",
-  "s1_eternum-BuildingCategoryPopConfig",
+  "s1_eternum-BuildingCategoryConfig",
   "s1_eternum-StartingResourcesConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
@@ -307,11 +312,11 @@ const singleKeyModels = [
   "s1_eternum-Hyperstructure",
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
-  "s1_eternum-Season",
   "s1_eternum-Leaderboard",
   "s1_eternum-LeaderboardRegistered",
   "s1_eternum-LeaderboardRewardClaimed",
   "s1_eternum-LeaderboardEntry",
+  "s1_eternum-BuildingCategoryConfig",
 ];
 
 const eventModels = [
@@ -327,8 +332,6 @@ const hyperstructureModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ProductionConfig",
-  "s1_eternum-BuildingConfig",
-  "s1_eternum-BuildingCategoryPopConfig",
 ];
 
 export const syncStructureData = async (

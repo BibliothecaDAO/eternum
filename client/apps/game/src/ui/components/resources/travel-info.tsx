@@ -1,14 +1,12 @@
-import { GRAMS_PER_KG } from "@/ui/constants";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { calculateArrivalTime, currencyFormat, formatArrivalTime } from "@/ui/utils/utils";
+import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   calculateDonkeysNeeded,
   configManager,
   divideByPrecision,
   getBalance,
-  getTotalResourceWeightGrams,
-  multiplyByPrecision,
+  getTotalResourceWeightKg,
   ResourcesIds,
   type ID,
   type Resource,
@@ -31,18 +29,16 @@ export const TravelInfo = ({
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [resourceWeight, setResourceWeight] = useState(0);
+  const [resourceWeightKg, setResourceWeightKg] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
-  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeight), [resourceWeight]);
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
 
   const arrivalTime = calculateArrivalTime(travelTime);
   const formattedArrivalTime = formatArrivalTime(arrivalTime);
 
   useEffect(() => {
-    const totalWeight = getTotalResourceWeightGrams(resources);
-
-    const multipliedWeight = multiplyByPrecision(totalWeight);
-    setResourceWeight(multipliedWeight);
+    const totalWeight = getTotalResourceWeightKg(resources);
+    setResourceWeightKg(totalWeight);
 
     const { balance } = getBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
 
@@ -60,7 +56,7 @@ export const TravelInfo = ({
       // TODO: hacky way to set can carry to true if only donkeys and lords
       onlyDonkeysAndLords ? setCanCarry(true) : setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
     }
-  }, [resources, entityId, resourceWeight, donkeyBalance, setCanCarry]);
+  }, [resources, entityId, resourceWeightKg, donkeyBalance, setCanCarry]);
 
   return (
     <>
@@ -76,10 +72,7 @@ export const TravelInfo = ({
           )}
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Total Transfer Weight</td>
-            <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${currencyFormat(
-              resourceWeight / GRAMS_PER_KG,
-              0,
-            )} kg`}</td>
+            <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${resourceWeightKg} kg`}</td>
           </tr>
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Donkeys Burnt for Transfer</td>

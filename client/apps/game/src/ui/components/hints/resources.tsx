@@ -6,7 +6,6 @@ import {
   CapacityConfig,
   configManager,
   findResourceById,
-  gramToKg,
   multiplyByPrecision,
   RESOURCE_PRECISION,
   ResourcesIds,
@@ -40,10 +39,7 @@ export const Resources = () => {
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
           <span className="font-bold">
-            {` ${
-              gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse)) /
-              multiplyByPrecision(RESOURCE_PRECISION)
-            }M capacity per resource type`}
+            {` ${configManager.getCapacityConfigKg(CapacityConfig.Storehouse)}Kg capacity`}
           </span>
           . Build more of them to increase storage.
         </p>

@@ -1,4 +1,5 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -12,7 +13,7 @@ import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
-import { FELT_CENTER, IS_FLAT_MODE, IS_MOBILE } from "@/ui/config";
+import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
@@ -32,6 +33,7 @@ import {
   SetupResult,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
@@ -51,6 +53,9 @@ export default class WorldmapScene extends HexagonScene {
 
   private currentChunk: string = "null";
 
+  // Add tracking for rendered hexes
+  private renderedHexes: Map<BiomeType, Set<string>> = new Map();
+
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
@@ -66,9 +71,15 @@ export default class WorldmapScene extends HexagonScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
+  // Label groups
+  private armyLabelsGroup: THREE.Group;
+  private structureLabelsGroup: THREE.Group;
+
   dojo: SetupResult;
 
   private fetchedChunks: Set<string> = new Set();
+
+  private processingChunk: string | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -117,8 +128,14 @@ export default class WorldmapScene extends HexagonScene {
       },
     );
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize);
-    this.structureManager = new StructureManager(this.scene, this.renderChunkSize);
+    // Initialize label groups
+    this.armyLabelsGroup = new THREE.Group();
+    this.armyLabelsGroup.name = "ArmyLabelsGroup";
+    this.structureLabelsGroup = new THREE.Group();
+    this.structureLabelsGroup.name = "StructureLabelsGroup";
+
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -164,9 +181,7 @@ export default class WorldmapScene extends HexagonScene {
     // add particles
     this.selectedHexManager = new SelectedHexManager(this.scene);
 
-    if (!IS_MOBILE) {
-      this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
-    }
+    this.minimap = new Minimap(this, this.exploredTiles, this.camera, this.structureManager, this.armyManager);
 
     // Add event listener for Escape key
     document.addEventListener("keydown", (event) => {
@@ -277,18 +292,16 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
-    const { currentBlockTimestamp, currentArmiesTick } = getBlockTimestamp();
-    const selectedPath = actionPath.map((path) => path.hex);
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
-    if (selectedPath.length > 0) {
+    if (actionPath.length > 0) {
       const armyActionManager = new ArmyActionManager(
         this.dojo.components,
         this.dojo.network.provider,
         selectedEntityId,
       );
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
-      armyActionManager.moveArmy(account!, selectedPath, isExplored, currentBlockTimestamp, currentArmiesTick);
+      armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
@@ -370,23 +383,33 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.moveCameraToURLLocation();
-    if (!IS_MOBILE) {
-      this.minimap.moveMinimapCenterToUrlLocation();
-      this.minimap.showMinimap();
-    }
+    this.minimap.moveMinimapCenterToUrlLocation();
+    this.minimap.showMinimap();
 
     // Close left navigation on world map load
     useUIStore.getState().setLeftNavigationView(LeftView.None);
 
+    // Add label groups to scene
+    this.scene.add(this.armyLabelsGroup);
+    this.scene.add(this.structureLabelsGroup);
+
+    // Update army and structure managers
     this.armyManager.addLabelsToScene();
+    this.structureManager.showLabels();
     this.clearTileEntityCache();
   }
 
   onSwitchOff() {
-    if (!IS_MOBILE) {
-      this.minimap.hideMinimap();
-    }
+    // Remove label groups from scene
+    this.scene.remove(this.armyLabelsGroup);
+    this.scene.remove(this.structureLabelsGroup);
+
+    // Clean up labels
+    this.minimap.hideMinimap();
     this.armyManager.removeLabelsFromScene();
+    console.debug("[WorldMap] Removing army labels from scene");
+    this.structureManager.removeLabelsFromScene();
+    console.debug("[WorldMap] Removing structure labels from scene");
   }
 
   // used to track the position of the armies on the map
@@ -448,6 +471,26 @@ export default class WorldmapScene extends HexagonScene {
     this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
   }
 
+  private getHexKey(col: number, row: number): string {
+    return `${col},${row}`;
+  }
+
+  private isHexRendered(biome: BiomeType, col: number, row: number): boolean {
+    const hexSet = this.renderedHexes.get(biome);
+    return hexSet?.has(this.getHexKey(col, row)) || false;
+  }
+
+  private markHexRendered(biome: BiomeType, col: number, row: number) {
+    if (!this.renderedHexes.has(biome)) {
+      this.renderedHexes.set(biome, new Set());
+    }
+    this.renderedHexes.get(biome)!.add(this.getHexKey(col, row));
+  }
+
+  private clearRenderedHexes() {
+    this.renderedHexes.clear();
+  }
+
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
 
@@ -461,8 +504,14 @@ export default class WorldmapScene extends HexagonScene {
       const chunkCol = parseInt(this.currentChunk.split(",")[1]);
       this.exploredTiles.get(col)?.delete(row);
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+      this.removeCachedMatricesAroundColRow(chunkRow, chunkCol);
       this.currentChunk = "null"; // reset the current chunk to force a recomputation
       this.updateVisibleChunks();
+      return;
+    }
+
+    // Check if hex is already rendered
+    if (this.isHexRendered(biome as BiomeType, col, row)) {
       return;
     }
 
@@ -491,6 +540,7 @@ export default class WorldmapScene extends HexagonScene {
       const rotationIndex = Math.floor(rotationSeed * 6);
       const randomRotation = (rotationIndex * Math.PI) / 3;
       dummy.rotation.y = randomRotation;
+      dummy.position.y += 0.05;
     } else {
       dummy.position.y += 0.1;
       dummy.rotation.y = 0;
@@ -533,14 +583,21 @@ export default class WorldmapScene extends HexagonScene {
       hexMesh.setCount(currentCount + 1);
       hexMesh.needsUpdate();
 
-      // Cache the updated matrices for the chunk
+      // Mark hex as rendered
+      this.markHexRendered(biome as BiomeType, col, row);
 
-      this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
+      // Only cache matrices if we're still processing the same chunk
+      const currentProcessingChunk = `${renderedChunkCenterRow},${renderedChunkCenterCol}`;
+      if (this.processingChunk === currentProcessingChunk) {
+        // Cache the updated matrices for the chunk
+        this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+        this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
+      }
 
       this.interactiveHexManager.renderHexes();
+    } else {
+      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
     }
-
-    this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
   }
 
   getChunksAround(chunkKey: string) {
@@ -623,11 +680,24 @@ export default class WorldmapScene extends HexagonScene {
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
+    const targetChunk = `${startRow},${startCol}`;
+
+    // If chunk is already being processed with these coordinates, no need to restart
+    if (this.processingChunk === targetChunk) {
+      return;
+    }
+
+    this.processingChunk = targetChunk;
+
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       console.log("cache applied");
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
+      this.processingChunk = null;
       return;
     }
+
+    // Clear rendered hexes when starting a new chunk
+    this.clearRenderedHexes();
 
     this.interactiveHexManager.clearHexes();
     const dummy = new THREE.Object3D();
@@ -660,6 +730,18 @@ export default class WorldmapScene extends HexagonScene {
     this.computeTileEntities(this.currentChunk);
 
     const processBatch = async () => {
+      // Check if chunk changed during processing
+      if (this.processingChunk !== targetChunk) {
+        console.log("Chunk changed during processing, restarting with new chunk");
+        // Get the current chunk coordinates from this.currentChunk
+        const [newRow, newCol] = this.currentChunk.split(",").map(Number);
+        // Only restart if the current chunk is different from "null"
+        if (this.currentChunk !== "null") {
+          this.updateHexagonGrid(newRow, newCol, rows, cols);
+        }
+        return;
+      }
+
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
       for (let i = currentIndex; i < endIndex; i++) {
@@ -712,12 +794,19 @@ export default class WorldmapScene extends HexagonScene {
 
         dummy.updateMatrix();
 
+        // Skip if hex is already rendered
+        if (this.isHexRendered(biome, globalCol, globalRow)) {
+          continue;
+        }
+
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
+          this.markHexRendered(biome, globalCol, globalRow);
         } else {
           dummy.position.y = 0.01;
           dummy.updateMatrix();
           biomeHexes["Outline"].push(dummy.matrix.clone());
+          this.markHexRendered(BiomeType.None, globalCol, globalRow); // Use None for outline
         }
       }
 
@@ -725,15 +814,19 @@ export default class WorldmapScene extends HexagonScene {
       if (currentIndex < rows * cols) {
         requestAnimationFrame(processBatch);
       } else {
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-          });
-          hexMesh.setCount(matrices.length);
+        // Final check if chunk changed before applying and caching
+        if (this.processingChunk === targetChunk) {
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+            matrices.forEach((matrix, index) => {
+              hexMesh.setMatrixAt(index, matrix);
+            });
+            hexMesh.setCount(matrices.length);
+          }
+          this.cacheMatricesForChunk(startRow, startCol);
+          this.interactiveHexManager.renderHexes();
         }
-        this.cacheMatricesForChunk(startRow, startCol);
-        this.interactiveHexManager.renderHexes();
+        this.processingChunk = null;
       }
     };
 
@@ -764,45 +857,12 @@ export default class WorldmapScene extends HexagonScene {
       this.state.setLoading(LoadingStateKey.Map, true);
       const promiseTiles = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "col",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-Tile",
-                  member: "row",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
+          MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
+          MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
+          MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
         ["s1_eternum-Tile"],
@@ -810,54 +870,37 @@ export default class WorldmapScene extends HexagonScene {
         false,
       );
       // todo: verify that this works with nested struct
-      const promisePositions = getEntities(
+      const promiseExplorers = getEntities(
         this.dojo.network.toriiClient,
-        {
-          Composite: {
-            operator: "And",
-            clauses: [
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startCol - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.x",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startCol + range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Gte",
-                  value: { Primitive: { U32: startRow - range } },
-                },
-              },
-              {
-                Member: {
-                  model: "s1_eternum-ExplorerTroops",
-                  member: "coord.y",
-                  operator: "Lte",
-                  value: { Primitive: { U32: startRow + range } },
-                },
-              },
-            ],
-          },
-        },
+        AndComposeClause([
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
+          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
+        ]).build(),
         this.dojo.network.contractComponents as any,
         [],
-        ["s1_eternum-ExplorerTroops"],
+        ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
         1000,
         false,
       );
-      Promise.all([promiseTiles, promisePositions]).then(() => {
+
+      const promiseStructures = getEntities(
+        this.dojo.network.toriiClient,
+        AndComposeClause([
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
+          MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
+          MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
+        ]).build(),
+        this.dojo.network.contractComponents as any,
+        [],
+        ["s1_eternum-Structure", "s1_eternum-Resource"],
+        1000,
+        false,
+      );
+
+      Promise.all([promiseTiles, promiseExplorers, promiseStructures]).then(() => {
         this.state.setLoading(LoadingStateKey.Map, false);
       });
     } catch (error) {
@@ -928,9 +971,7 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
-    if (!IS_MOBILE) {
-      this.minimap.update();
-    }
+    this.minimap.update();
   }
 
   public clearTileEntityCache() {

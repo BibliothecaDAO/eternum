@@ -52,7 +52,7 @@ export const ResourceProductionControls = ({
     const calldata = {
       from_entity_id: realm.entityId,
       produced_resource_types: [selectedResource],
-      production_tick_counts: [ticks * outputResource.amount],
+      production_tick_counts: [ticks],
       signer: account,
     };
 
@@ -92,6 +92,8 @@ export const ResourceProductionControls = ({
   const outputResource = useMemo(() => {
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
+
+  console.log({ outputResource });
 
   const resourceManager = useResourceManager(realm.entityId);
 

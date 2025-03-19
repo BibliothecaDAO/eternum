@@ -1,9 +1,8 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { BuildingType, getEntityIdFromKeys, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo, useResourceManager } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
+import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";
 
@@ -18,37 +17,19 @@ export const BuildingsList = ({
 }) => {
   const buildings = useBuildings(realm.position.x, realm.position.y);
 
-  const productionBuildings = buildings.filter(
-    (building) =>
-      building.category === BuildingType[BuildingType.Resource] ||
-      building.category === BuildingType[BuildingType.Farm] ||
-      building.category === BuildingType[BuildingType.FishingVillage] ||
-      building.category === BuildingType[BuildingType.Barracks1] ||
-      building.category === BuildingType[BuildingType.ArcheryRange1] ||
-      building.category === BuildingType[BuildingType.Castle] ||
-      building.category === BuildingType[BuildingType.Market] ||
-      building.category === BuildingType[BuildingType.Stable1] ||
-      building.category === BuildingType[BuildingType.Stable2] ||
-      building.category === BuildingType[BuildingType.Stable3] ||
-      building.category === BuildingType[BuildingType.ArcheryRange2] ||
-      building.category === BuildingType[BuildingType.ArcheryRange3],
-  );
-
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
+  const productionBuildings = buildings.filter((building) => getProducedResource(building.category));
 
   const producedResources = Array.from(new Set(productionBuildings.map((building) => building.produced.resource)));
 
   const resourceManager = useResourceManager(realm.entityId);
 
+  const storeCapacityKg = useMemo(() => {
+    return resourceManager.getStoreCapacityKg();
+  }, [resourceManager]);
+
   const productions = useMemo(() => {
     return producedResources
       .map((resourceId) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realm.entityId), BigInt(resourceId)]));
-
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
         );
@@ -74,14 +55,10 @@ export const BuildingsList = ({
         {productions.map((production) => {
           let bgImage = "";
           if (production.isLabor) {
-            bgImage = BUILDING_IMAGES_PATH[BuildingType.Castle as keyof typeof BUILDING_IMAGES_PATH];
+            bgImage = BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH];
           } else {
             bgImage = production.buildings[0]?.category
-              ? BUILDING_IMAGES_PATH[
-                  BuildingType[
-                    production.buildings[0].category as keyof typeof BuildingType
-                  ] as keyof typeof BUILDING_IMAGES_PATH
-                ]
+              ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
               : "";
           }
 
@@ -115,8 +92,7 @@ export const BuildingsList = ({
                   <ResourceChip
                     resourceId={production.resource}
                     resourceManager={resourceManager}
-                    maxStorehouseCapacityKg={realm.capacity || 0}
-                    tick={0}
+                    maxCapacityKg={storeCapacityKg.capacityKg}
                   />
                 </div>
               </div>

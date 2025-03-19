@@ -37,8 +37,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 20_000,
-    shardsMinesFailProbability: 100_000,
+    shardsMinesWinProbability: 2_000,
+    shardsMinesFailProbability: 10_000,
     hyperstructureWinProbAtCenter: 20_000,
     hyperstructureFailProbAtCenter: 100_000,
     hyperstructureFailProbIncreasePerHexDistance: 20,
@@ -57,8 +57,11 @@ export const LocalEternumGlobalConfig: Config = {
   },
   // starting resources x1000
   startingResources: {
-    ...CommonEternumGlobalConfig.startingResources,
-    ...multiplyStartingResources(1000),
+    ...CommonEternumGlobalConfig.startingResources.filter(
+      (resource) => resource.resource !== ResourcesIds.AncientFragment,
+    ),
+    ...multiplyStartingResources(1000).filter((resource) => resource.resource !== ResourcesIds.AncientFragment),
+    ...[{ resource: ResourcesIds.AncientFragment, amount: 1_000_000_000 }],
   },
   speed: {
     ...CommonEternumGlobalConfig.speed,
@@ -67,7 +70,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startAfterSeconds: 60, // 1 minute
+    startSettlingAfterSeconds: 59, // 1 minute
+    startMainAfterSeconds: 60,
   },
   realmUpgradeCosts: {
     ...CommonEternumGlobalConfig.realmUpgradeCosts,

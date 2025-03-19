@@ -2,6 +2,12 @@ import { calculateDistance, HexPosition, Position } from "@bibliothecadao/eternu
 import * as THREE from "three";
 import { HEX_SIZE } from "./scenes/constants";
 
+export const hashCoordinates = (x: number, y: number): number => {
+  // Simple hash function to generate a deterministic value between 0 and 1
+  const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return hash - Math.floor(hash);
+};
+
 export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,
@@ -56,25 +62,6 @@ export const calculateDistanceInHexes = (start: Position, destination: Position)
     return Math.round(distance / HEX_SIZE / 2);
   }
   return undefined;
-};
-
-export const calculateOffset = (index: number, total: number, radius: number) => {
-  if (total === 1) return { x: 0, y: 0 };
-
-  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
-  let angle = angleIncrement * (index % 6);
-  let offsetRadius = radius;
-
-  if (index >= 6) {
-    // Adjustments for more than 6 armies, placing them in another layer
-    offsetRadius += 0.5; // Increase radius for each new layer
-    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
-  }
-
-  return {
-    x: offsetRadius * Math.cos(angle),
-    z: offsetRadius * Math.sin(angle),
-  };
 };
 
 const pseudoRandom = (x: number, y: number) => {

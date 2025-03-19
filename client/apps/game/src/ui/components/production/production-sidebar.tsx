@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { ID, RealmInfo, resources } from "@bibliothecadao/eternum";
@@ -22,10 +23,12 @@ const SidebarRealm = ({
 }) => {
   const {
     setup: {
-      components,
-      components: { Resource, Building },
+      components: { Building },
     },
   } = useDojo();
+
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const isCurrentStructure = realm.entityId === structureEntityId;
 
   const buildings = useMemo(() => {
     const buildings = runQuery([
@@ -44,7 +47,10 @@ const SidebarRealm = ({
       onClick={onSelect}
       className={`p-4 rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-gold/20" : "hover:bg-gold/10"}`}
     >
-      <h3 className="text-xl font-bold mb-2">{realm.name}</h3>
+      <div className="flex justify-between items-start">
+        <h3 className="text-xl font-bold mb-2">{realm.name}</h3>
+        {isCurrentStructure && <span className="text-xs bg-gold/30 text-white px-2 py-1 rounded">Current</span>}
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-2">
         {Object.values(realm.resources).map((resource) => {

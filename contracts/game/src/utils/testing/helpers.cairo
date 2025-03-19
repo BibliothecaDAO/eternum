@@ -108,17 +108,14 @@ pub fn MOCK_PRODUCTION_CONFIG(
     multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy,
 ) -> ProductionConfig {
     ProductionConfig {
-        resource_type,
-        amount_per_building_per_tick: produced_amount,
-        labor_burn_strategy,
-        multiple_resource_burn_strategy,
+        resource_type, realm_output_per_tick: produced_amount, labor_burn_strategy, multiple_resource_burn_strategy,
     }
 }
 
 pub fn MOCK_DEFAULT_PRODUCTION_CONFIG(resource_type: u8) -> ProductionConfig {
     ProductionConfig {
         resource_type,
-        amount_per_building_per_tick: 100,
+        realm_output_per_tick: 100,
         labor_burn_strategy: LaborBurnPrStrategy {
             resource_rarity: 0,
             wheat_burn_per_labor: 0,

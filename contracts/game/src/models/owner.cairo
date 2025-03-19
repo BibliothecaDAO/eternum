@@ -8,8 +8,10 @@ pub impl OwnerAddressImpl of OwnerAddressTrait {
         assert(self == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
     fn assert_caller_not_owner(self: ContractAddress) {
-        assert!(self != Zero::zero(), "owner is zero");
-        assert(self != starknet::get_caller_address(), 'caller is owner');
+        let caller = starknet::get_caller_address();
+        let zero: ContractAddress = Zero::zero();
+        assert!(self != zero || caller != zero, "one of the addresses is zero");
+        assert(self != caller, 'caller is owner');
     }
 
     fn assert_non_zero(self: ContractAddress) {

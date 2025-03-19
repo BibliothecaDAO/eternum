@@ -8,6 +8,10 @@ use s1_eternum::models::resource::production::building::BuildingCategory;
 pub trait IWorldConfig<T> {
     fn set_world_config(ref self: T, admin_address: starknet::ContractAddress);
 }
+#[starknet::interface]
+pub trait IAgentControllerConfig<T> {
+    fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
+}
 
 
 #[starknet::interface]
@@ -17,10 +21,10 @@ pub trait ISeasonConfig<T> {
         season_pass_address: starknet::ContractAddress,
         realms_address: starknet::ContractAddress,
         lords_address: starknet::ContractAddress,
-        start_at: u64,
+        start_settling_at: u64,
+        start_main_at: u64,
+        end_grace_seconds: u32,
     );
-
-    fn set_season_bridge_config(ref self: T, close_after_end_seconds: u64);
 }
 
 
@@ -102,7 +106,8 @@ pub trait IProductionConfig<T> {
     fn set_production_config(
         ref self: T,
         resource_type: u8,
-        amount_per_building_per_tick: u128,
+        realm_output_per_tick: u64,
+        village_output_per_tick: u64,
         labor_burn_strategy: LaborBurnPrStrategy,
         predefined_resource_burn_cost: Span<(u8, u128)>,
     );
@@ -111,25 +116,14 @@ pub trait IProductionConfig<T> {
 
 #[starknet::interface]
 pub trait IBuildingConfig<T> {
-    fn set_building_general_config(ref self: T, base_cost_percent_increase: u16);
-    fn set_building_config(
+    fn set_building_config(ref self: T, base_population: u32, base_cost_percent_increase: u16);
+    fn set_building_category_config(
         ref self: T,
         building_category: BuildingCategory,
-        building_resource_type: u8,
         cost_of_building: Span<(u8, u128)>,
+        population_cost: u32,
+        capacity_grant: u32,
     );
-}
-
-#[starknet::interface]
-pub trait IBuildingCategoryPopConfig<T> {
-    fn set_building_category_pop_config(
-        ref self: T, building_category: BuildingCategory, population: u32, capacity: u32,
-    );
-}
-
-#[starknet::interface]
-pub trait IPopulationConfig<T> {
-    fn set_population_config(ref self: T, base_population: u32);
 }
 
 
@@ -144,16 +138,7 @@ pub trait IResourceBridgeConfig<T> {
 
 #[starknet::interface]
 pub trait ISettlementConfig<T> {
-    fn set_settlement_config(
-        ref self: T,
-        center: u32,
-        base_distance: u32,
-        min_first_layer_distance: u32,
-        points_placed: u32,
-        current_layer: u32,
-        current_side: u32,
-        current_point_on_side: u32,
-    );
+    fn set_settlement_config(ref self: T, center: u32, base_distance: u32, subsequent_distance: u32);
 }
 
 #[starknet::interface]
@@ -185,18 +170,16 @@ pub mod config_systems {
     use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
-        BankConfig, BattleConfig, BuildingCategoryPopConfig, BuildingConfig, BuildingGeneralConfig, CapacityConfig,
+        AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
         HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
-        MultipleResourceBurnPrStrategy, PopulationConfig, ProductionConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonBridgeConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig,
-        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig,
-        WorldConfigUtilImpl,
+        MultipleResourceBurnPrStrategy, ProductionConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+        ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
 
     use s1_eternum::models::resource::production::building::{BuildingCategory};
     use s1_eternum::models::resource::resource::{ResourceList};
-    use s1_eternum::models::season::{Season};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
 
 
@@ -250,17 +233,32 @@ pub mod config_systems {
             trophy_id -= 1;
         }
     }
-
-
-    pub fn assert_caller_is_admin(world: WorldStorage) {
-        let mut world_config: WorldConfig = world.read_model(WORLD_CONFIG_ID);
-
+    pub fn check_caller_is_admin(world: WorldStorage) -> bool {
         // ENSURE
         // 1. ADMIN ADDRESS IS SET (IT MUST NEVER BE THE ZERO ADDRESS)
         // 2. CALLER IS ADMIN
-        let admin_address = world_config.admin_address;
-        assert!(starknet::get_caller_address() == admin_address, "caller not admin");
+        let mut admin_address = WorldConfigUtilImpl::get_member(world, selector!("admin_address"));
+        return starknet::get_caller_address() == admin_address;
     }
+
+    pub fn assert_caller_is_admin(world: WorldStorage) {
+        assert!(check_caller_is_admin(world), "caller not admin");
+    }
+
+    #[abi(embed_v0)]
+    impl AgentControllerConfigImpl of super::IAgentControllerConfig<ContractState> {
+        fn set_agent_controller(ref self: ContractState, agent_controller_address: starknet::ContractAddress) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            agent_controller_config.address = agent_controller_address;
+            WorldConfigUtilImpl::set_member(ref world, selector!("agent_controller_config"), agent_controller_config);
+        }
+    }
+
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {
@@ -288,7 +286,9 @@ pub mod config_systems {
             season_pass_address: starknet::ContractAddress,
             realms_address: starknet::ContractAddress,
             lords_address: starknet::ContractAddress,
-            start_at: u64,
+            start_settling_at: u64,
+            start_main_at: u64,
+            end_grace_seconds: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -299,21 +299,14 @@ pub mod config_systems {
                 SeasonAddressesConfig { season_pass_address, realms_address, lords_address },
             );
 
-            let mut season: Season = world.read_model(WORLD_CONFIG_ID);
-            if !season.is_over {
-                season.start_at = start_at;
-                world.write_model(@season);
+            let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, selector!("season_config"));
+            if season_config.end_at.is_zero() {
+                assert!(start_settling_at < start_main_at, "start_settling_at must be before start_main_at");
+                season_config.start_settling_at = start_settling_at;
+                season_config.start_main_at = start_main_at;
+                season_config.end_grace_seconds = end_grace_seconds;
+                WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), season_config);
             }
-        }
-
-
-        fn set_season_bridge_config(ref self: ContractState, close_after_end_seconds: u64) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("season_bridge_config"), SeasonBridgeConfig { close_after_end_seconds },
-            );
         }
     }
 
@@ -403,7 +396,8 @@ pub mod config_systems {
         fn set_production_config(
             ref self: ContractState,
             resource_type: u8,
-            amount_per_building_per_tick: u128,
+            realm_output_per_tick: u64,
+            village_output_per_tick: u64,
             labor_burn_strategy: LaborBurnPrStrategy,
             predefined_resource_burn_cost: Span<(u8, u128)>,
         ) {
@@ -427,7 +421,8 @@ pub mod config_systems {
 
             // save production config
             let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            resource_production_config.amount_per_building_per_tick = amount_per_building_per_tick;
+            resource_production_config.realm_output_per_tick = realm_output_per_tick;
+            resource_production_config.village_output_per_tick = village_output_per_tick;
             resource_production_config.labor_burn_strategy = labor_burn_strategy;
             resource_production_config
                 .multiple_resource_burn_strategy =
@@ -506,18 +501,6 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
-        fn set_building_category_pop_config(
-            ref self: ContractState, building_category: BuildingCategory, population: u32, capacity: u32,
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            world.write_model(@BuildingCategoryPopConfig { building_category, population, capacity })
-        }
-    }
-
-    #[abi(embed_v0)]
     impl TroopConfigImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(
             ref self: ContractState,
@@ -536,33 +519,22 @@ pub mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
-        fn set_population_config(ref self: ContractState, base_population: u32) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("population_config"), PopulationConfig { base_population },
-            );
-        }
-    }
-
-    #[abi(embed_v0)]
     impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
-        fn set_building_general_config(ref self: ContractState, base_cost_percent_increase: u16) {
+        fn set_building_config(ref self: ContractState, base_population: u32, base_cost_percent_increase: u16) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(
-                ref world, selector!("building_general_config"), BuildingGeneralConfig { base_cost_percent_increase },
+                ref world, selector!("building_config"), BuildingConfig { base_population, base_cost_percent_increase },
             );
         }
 
-        fn set_building_config(
+        fn set_building_category_config(
             ref self: ContractState,
             building_category: BuildingCategory,
-            building_resource_type: u8,
             cost_of_building: Span<(u8, u128)>,
+            population_cost: u32,
+            capacity_grant: u32,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -583,12 +555,12 @@ pub mod config_systems {
             };
             world
                 .write_model(
-                    @BuildingConfig {
-                        config_id: WORLD_CONFIG_ID,
-                        category: building_category,
-                        resource_type: building_resource_type,
-                        resource_cost_id,
-                        resource_cost_count: cost_of_building.len(),
+                    @BuildingCategoryConfig {
+                        category: building_category.into(),
+                        erection_cost_id: resource_cost_id,
+                        erection_cost_count: cost_of_building.len(),
+                        population_cost,
+                        capacity_grant,
                     },
                 );
         }
@@ -678,31 +650,14 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl ISettlementConfig of super::ISettlementConfig<ContractState> {
-        fn set_settlement_config(
-            ref self: ContractState,
-            center: u32,
-            base_distance: u32,
-            min_first_layer_distance: u32,
-            points_placed: u32,
-            current_layer: u32,
-            current_side: u32,
-            current_point_on_side: u32,
-        ) {
+        fn set_settlement_config(ref self: ContractState, center: u32, base_distance: u32, subsequent_distance: u32) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(
                 ref world,
                 selector!("settlement_config"),
-                SettlementConfig {
-                    center,
-                    base_distance,
-                    min_first_layer_distance,
-                    points_placed,
-                    current_layer,
-                    current_side,
-                    current_point_on_side,
-                },
+                SettlementConfig { center, base_distance, subsequent_distance },
             );
         }
     }

@@ -30,12 +30,10 @@ pub impl TileImpl of TileTrait {
         self.biome != 0
     }
 
-    #[inline(always)]
     fn occupied(self: Tile) -> bool {
         self.occupier_type != 0 && self.occupier_id != 0
     }
 
-    #[inline(always)]
     fn not_occupied(self: Tile) -> bool {
         self.occupier_type == 0 || self.occupier_id == 0
     }

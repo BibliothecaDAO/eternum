@@ -3,6 +3,8 @@
  * Based on https://www.redblobgames.com/grids/hexagons/
  */
 
+import { TileOccupier } from "../..";
+
 // HexDirection enum for hex grid navigation
 export enum HexDirection {
   East = "East",
@@ -72,6 +74,7 @@ export class Coord {
 
   neighbor(direction: HexDirection): Coord {
     // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
+    // even-r
     if (this.y % 2 === 0) {
       // Where y (row) is even
       switch (direction) {
@@ -179,19 +182,13 @@ export class HexGrid {
   }
 }
 
-// Example usage 1:
-// const coord1 = new Coord(10, 5);
-// const coord2 = new Coord(15, 8);
-// const distance = coord1.distance(coord2) * HexGrid.HEX_DISTANCE_TO_KM;
-// console.log(`Distance: ${distance} km`);
-// console.log(`Travel time: ${HexGrid.travelTime(coord1, coord2, 30)} seconds`);
-
-// Example usage 2:
-// Find coordinates 50 steps from center in each direction
-//   const stepsFromCenter = 50;
-//   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
-
-//   console.log(`Coordinates ${stepsFromCenter} steps from center:`);
-//   for (const [direction, coord] of Object.entries(distantCoordinates)) {
-//     console.log(`${direction}: ${coord.toString()}`);
-//   }
+export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
+  return (
+    tileOccupier === TileOccupier.RealmRegular ||
+    tileOccupier === TileOccupier.Hyperstructure ||
+    tileOccupier === TileOccupier.RealmWonder ||
+    tileOccupier === TileOccupier.FragmentMine ||
+    tileOccupier === TileOccupier.Village ||
+    tileOccupier === TileOccupier.Bank
+  );
+};

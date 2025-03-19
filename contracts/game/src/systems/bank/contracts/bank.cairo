@@ -33,10 +33,8 @@ pub mod bank_systems {
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
-    use s1_eternum::models::season::SeasonImpl;
     use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
-    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use s1_eternum::systems::utils::structure::{iStructureImpl};
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
 

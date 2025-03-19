@@ -13,7 +13,7 @@ import {
   EntityType,
   findResourceById,
   getRealmAddressName,
-  getTotalResourceWeightGrams,
+  getTotalResourceWeightKg,
   multiplyByPrecision,
   ResourcesIds,
   type ID,
@@ -305,19 +305,19 @@ const OrderRow = memo(
       return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
     }, [inputValue, getsDisplay, getTotalLords]);
 
-    const orderWeight = useMemo(() => {
-      const totalWeight = getTotalResourceWeightGrams([
+    const orderWeightKg = useMemo(() => {
+      const totalWeightKg = getTotalResourceWeightKg([
         {
           resourceId: offer.takerGets[0].resourceId,
           amount: isBuy ? calculatedLords : calculatedResourceAmount,
         },
       ]);
-      return totalWeight;
+      return totalWeightKg;
     }, [entityId, calculatedResourceAmount, calculatedLords]);
 
     const donkeysNeeded = useMemo(() => {
-      return calculateDonkeysNeeded(orderWeight);
-    }, [orderWeight]);
+      return calculateDonkeysNeeded(orderWeightKg);
+    }, [orderWeightKg]);
 
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
@@ -326,9 +326,6 @@ const OrderRow = memo(
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
-
-    //console.log the disable conditions
-    console.log({ isBuy, donkeysNeeded, donkeyBalance, inputValue });
 
     const accountName = useMemo(() => {
       return getRealmAddressName(offer.makerId, dojo.setup.components);
@@ -537,16 +534,19 @@ const OrderCreation = memo(
       }
     };
 
-    const orderWeight = useMemo(() => {
-      const totalWeight = getTotalResourceWeightGrams([
-        { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: isBuy ? resource : lords },
+    const orderWeightKg = useMemo(() => {
+      const totalWeight = getTotalResourceWeightKg([
+        {
+          resourceId: isBuy ? resourceId : ResourcesIds.Lords,
+          amount: isBuy ? resource : lords,
+        },
       ]);
       return totalWeight;
     }, [resource, lords]);
 
     const donkeysNeeded = useMemo(() => {
-      return calculateDonkeysNeeded(multiplyByPrecision(orderWeight));
-    }, [orderWeight]);
+      return calculateDonkeysNeeded(orderWeightKg);
+    }, [orderWeightKg]);
 
     const { currentDefaultTick } = useBlockTimestamp();
 
@@ -659,7 +659,7 @@ const OrderCreation = memo(
             <div className="flex justify-between">
               <div>Weight</div>
               <div className="flex gap-2">
-                <div>{divideByPrecision(orderWeight).toLocaleString()} kgs</div>
+                <div>{orderWeightKg.toLocaleString()} kgs</div>
               </div>
             </div>
           </div>

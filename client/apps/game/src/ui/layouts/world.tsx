@@ -11,7 +11,6 @@ import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
-import { IS_MOBILE } from "../config";
 
 // Lazy load components
 const SelectedArmy = lazy(() =>
@@ -162,22 +161,17 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <div className="vignette" />
 
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-          {IS_MOBILE && <OrientationOverlay />}
           <LoadingOroborus loading={isLoadingScreenEnabled} />
           <RealmTransferManager zIndex={100} />
-          <BlankOverlayContainer zIndex={90} open={showModal}>
+          <BlankOverlayContainer zIndex={120} open={showModal}>
             {modalContent}
           </BlankOverlayContainer>
           <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
             <Onboarding backgroundImage={backgroundImage} />
           </BlankOverlayContainer>
           <ActionInstructions />
-          {!IS_MOBILE && (
-            <>
-              <ActionInfo />
-              <EntitiesInfoLabel />
-            </>
-          )}
+          <ActionInfo />
+          <EntitiesInfoLabel />
 
           <div>
             <LeftMiddleContainer>
@@ -192,16 +186,12 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
               <SelectedArmy />
             </BottomMiddleContainer>
 
-            {!IS_MOBILE && (
-              <>
-                <BottomRightContainer>
-                  <MiniMapNavigation />
-                </BottomRightContainer>
-                <RightMiddleContainer>
-                  <RightNavigationModule />
-                </RightMiddleContainer>
-              </>
-            )}
+            <BottomRightContainer>
+              <MiniMapNavigation />
+            </BottomRightContainer>
+            <RightMiddleContainer>
+              <RightNavigationModule />
+            </RightMiddleContainer>
 
             <TopLeftContainer>
               <TopLeftNavigation structures={playerStructures} />
