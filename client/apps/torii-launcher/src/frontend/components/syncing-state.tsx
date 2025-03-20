@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
-import { IpcMethod } from "../../types";
+import { IpcMethod, ToriiConfig } from "../../types";
 
 const SYNC_INTERVAL = 4000;
 
-export const SyncingState = React.memo(({ reset }: { reset: boolean }) => {
+export const SyncingState = React.memo(({ reset, currentConfig }: { reset: boolean; currentConfig: ToriiConfig }) => {
   const [gameSynced, setGameSynced] = useState(false);
   const [initialToriiBlock, setInitialToriiBlock] = useState<number | null>(null);
   const [receivedFirstBlock, setReceivedFirstBlock] = useState<number | null>(null);
@@ -56,12 +56,15 @@ export const SyncingState = React.memo(({ reset }: { reset: boolean }) => {
   }, [currentToriiBlock, currentChainBlock, initialToriiBlock, reset]);
 
   useEffect(() => {
+    if (!currentConfig) return;
+
     const interval = setInterval(async () => {
-      let currentBlock = await getChainCurrentBlock();
+      let currentBlock = await getChainCurrentBlock(currentConfig);
       setCurrentChainBlock(currentBlock);
     }, SYNC_INTERVAL);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [currentConfig]);
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -99,9 +102,9 @@ export const SyncingState = React.memo(({ reset }: { reset: boolean }) => {
   );
 });
 
-const getChainCurrentBlock = async () => {
+const getChainCurrentBlock = async (currentConfig: ToriiConfig) => {
   const provider = new RpcProvider({
-    nodeUrl: "https://api.cartridge.gg/x/starknet/mainnet",
+    nodeUrl: currentConfig.rpc,
   });
   const block = await provider.getBlockNumber();
   return block;
@@ -109,11 +112,10 @@ const getChainCurrentBlock = async () => {
 
 const getToriiCurrentBlock = async () => {
   const sqlQuery = "SELECT head FROM contracts WHERE contract_type = 'WORLD' LIMIT 1;";
-  const params = new URLSearchParams([["query", sqlQuery]]).toString();
+  const url = new URL("sql", "http://localhost:8080");
+  url.searchParams.set("query", sqlQuery);
 
-  const toriiUrl = `http://localhost:8080/sql?${params}`;
-
-  const response = await fetch(toriiUrl, {
+  const response = await fetch(url, {
     method: "GET",
   });
   const data = await response.json();

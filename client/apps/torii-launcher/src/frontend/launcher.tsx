@@ -45,7 +45,6 @@ export const Launcher = () => {
   useEffect(() => {
     if (newConfig) {
       window.electronAPI.sendMessage(IpcMethod.ChangeConfigType, newConfig);
-      //   setCurrentConfig(newConfig);
     }
   }, [newConfig]);
 
@@ -82,7 +81,7 @@ export const Launcher = () => {
           ) : (
             <>
               <EternumLogo className="w-16 h-16 fill-gold mb-4" />
-              <SyncingState reset={reset} />
+              <SyncingState reset={reset} currentConfig={currentConfig} />
               <div className="flex flex-row items-center gap-4 mt-4">
                 <Refresh
                   className="hover:bg-brown/10 w-3 h-3 fill-gold transition-all duration-300 ease-in-out hover:scale-125"

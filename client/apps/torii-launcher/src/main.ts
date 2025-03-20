@@ -234,14 +234,14 @@ async function handleTorii(toriiVersion: string) {
         stdio: ["ignore", "pipe", "pipe"],
       });
 
-        child.stdout.on("data", (data: Buffer) => {
-          normalLog(`Torii stdout: ${data.toString()}`);
-        });
+      child.stdout.on("data", (data: Buffer) => {
+        normalLog(`Torii stdout: ${data.toString()}`);
+      });
 
-        child.stderr.on("data", (data: Buffer) => {
-          errorLog(`Torii stderr: ${data.toString()}`);
-          sendNotification({ type: "Error", message: data.toString() });
-        });
+      child.stderr.on("data", (data: Buffer) => {
+        errorLog(`Torii stderr: ${data.toString()}`);
+        sendNotification({ type: "Error", message: data.toString() });
+      });
 
       let firstPass = true;
 
