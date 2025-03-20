@@ -37,9 +37,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
   });
 
   // Interaction state
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number } | null>(null);
-  const [mouseStartPosition, setMouseStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [customNormalizedCoords, setCustomNormalizedCoords] = useState({ x: 0, y: 0 });
 
   // Resources state
@@ -147,9 +144,9 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
   }, []);
 
   // Apply zoom level when it changes
-  // useEffect(() => {
-  //   zoomToLevel(mapViewState.zoomLevel);
-  // }, [mapViewState.zoomLevel, zoomToLevel]);
+  useEffect(() => {
+    zoomToLevel(mapViewState.zoomLevel);
+  }, [mapViewState.zoomLevel, zoomToLevel]);
 
   // Center map on custom coordinates and zoom in
   const centerOnCoordinates = useCallback(() => {
@@ -199,12 +196,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     setMapViewState,
 
     // Interaction state
-    isDragging,
-    setIsDragging,
-    lastMousePosition,
-    setLastMousePosition,
-    mouseStartPosition,
-    setMouseStartPosition,
     customNormalizedCoords,
 
     // Resources state

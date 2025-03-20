@@ -38,8 +38,6 @@ export const SettlementMinimap = ({
     setMapViewState,
 
     // Interaction state
-    isDragging,
-    setIsDragging,
     lastMousePosition,
     setLastMousePosition,
     mouseStartPosition,
@@ -70,10 +68,8 @@ export const SettlementMinimap = ({
     settledLocations,
     mapCenter: mapViewState.mapCenter,
     mapSize: mapViewState.mapSize,
-    isDragging,
     lastMousePosition,
     mouseStartPosition,
-    setIsDragging,
     setLastMousePosition,
     setMouseStartPosition,
     setMapCenter: (center) => setMapViewState((prev) => ({ ...prev, mapCenter: center })),

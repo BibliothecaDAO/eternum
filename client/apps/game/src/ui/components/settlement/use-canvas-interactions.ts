@@ -6,10 +6,8 @@ interface CanvasInteractionsProps {
   settledLocations: SettlementLocation[];
   mapCenter: { x: number; y: number };
   mapSize: { width: number; height: number };
-  isDragging: boolean;
   lastMousePosition: { x: number; y: number } | null;
   mouseStartPosition: { x: number; y: number } | null;
-  setIsDragging: (isDragging: boolean) => void;
   setLastMousePosition: (position: { x: number; y: number } | null) => void;
   setMouseStartPosition: (position: { x: number; y: number } | null) => void;
   setMapCenter: (center: { x: number; y: number }) => void;
@@ -25,18 +23,19 @@ export const useCanvasInteractions = ({
   settledLocations,
   mapCenter,
   mapSize,
-  isDragging,
   lastMousePosition,
   mouseStartPosition,
-  setIsDragging,
   setLastMousePosition,
   setMouseStartPosition,
   setMapCenter,
   setSelectedLocation,
   onSelectLocation,
 }: CanvasInteractionsProps) => {
-  // Use a ref instead of state for hover information
+  // Use refs instead of state for hover information and dragging state
   const hoveredLocationRef = useRef<SettlementLocation | null>(null);
+  const isDraggingRef = useRef(false);
+  const lastMousePositionRef = useRef<{ x: number; y: number } | null>(lastMousePosition);
+  const mouseStartPositionRef = useRef<{ x: number; y: number } | null>(mouseStartPosition);
 
   // Function to get current hovered location (for external access if needed)
   const getHoveredLocation = useCallback(() => {
@@ -47,9 +46,9 @@ export const useCanvasInteractions = ({
   const handleCanvasClick = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       // Check if this was a drag or a click
-      if (mouseStartPosition) {
-        const startX = mouseStartPosition.x;
-        const startY = mouseStartPosition.y;
+      if (mouseStartPositionRef.current) {
+        const startX = mouseStartPositionRef.current.x;
+        const startY = mouseStartPositionRef.current.y;
         const endX = event.clientX;
         const endY = event.clientY;
 
@@ -114,15 +113,7 @@ export const useCanvasInteractions = ({
         onSelectLocation(closestLocation);
       }
     },
-    [
-      availableLocations,
-      mapCenter,
-      mapSize,
-      mouseStartPosition,
-      onSelectLocation,
-      setSelectedLocation,
-      settledLocations,
-    ],
+    [availableLocations, mapCenter, mapSize, onSelectLocation, setSelectedLocation, settledLocations],
   );
 
   // Handle mouse move to show hover effect
@@ -136,25 +127,25 @@ export const useCanvasInteractions = ({
       const y = event.clientY - rect.top;
 
       // Handle dragging
-      if (isDragging && lastMousePosition) {
+      if (isDraggingRef.current && lastMousePositionRef.current) {
         // Calculate scale to fit visible area on canvas
         const padding = 20;
         const scaleX = (canvas.width - padding * 2) / mapSize.width;
         const scaleY = (canvas.height - padding * 2) / mapSize.height;
         const scale = Math.min(scaleX, scaleY);
 
-        const deltaX = (event.clientX - lastMousePosition.x) / scale;
-        const deltaY = (event.clientY - lastMousePosition.y) / scale;
+        const deltaX = (event.clientX - lastMousePositionRef.current.x) / scale;
+        const deltaY = (event.clientY - lastMousePositionRef.current.y) / scale;
 
         setMapCenter({
           x: mapCenter.x - deltaX,
           y: mapCenter.y - deltaY,
         });
 
-        setLastMousePosition({
+        lastMousePositionRef.current = {
           x: event.clientX,
           y: event.clientY,
-        });
+        };
 
         return;
       }
@@ -211,47 +202,47 @@ export const useCanvasInteractions = ({
           canvas.dispatchEvent(new CustomEvent("needsRedraw"));
         } else {
           hoveredLocationRef.current = null;
-          canvas.style.cursor = isDragging ? "grabbing" : "grab";
+          canvas.style.cursor = isDraggingRef.current ? "grabbing" : "grab";
         }
       } else {
         if (hoveredLocationRef.current !== null) {
           hoveredLocationRef.current = null;
-          canvas.style.cursor = isDragging ? "grabbing" : "grab";
+          canvas.style.cursor = isDraggingRef.current ? "grabbing" : "grab";
 
           // Force a redraw of the canvas
           canvas.dispatchEvent(new CustomEvent("needsRedraw"));
         }
       }
     },
-    [availableLocations, isDragging, lastMousePosition, mapCenter, mapSize, settledLocations],
+    [availableLocations, isDraggingRef, mapCenter, mapSize, settledLocations],
   );
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
-      setIsDragging(true);
-      setLastMousePosition({
+      isDraggingRef.current = true;
+      lastMousePositionRef.current = {
         x: event.clientX,
         y: event.clientY,
-      });
-      setMouseStartPosition({
+      };
+      mouseStartPositionRef.current = {
         x: event.clientX,
         y: event.clientY,
-      });
+      };
 
       const canvas = event.currentTarget;
       if (canvas) {
         canvas.style.cursor = "grabbing";
       }
     },
-    [setIsDragging, setLastMousePosition, setMouseStartPosition],
+    [isDraggingRef],
   );
 
   // Handle mouse up to end dragging
   const handleMouseUp = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
-      setIsDragging(false);
-      setLastMousePosition(null);
+      isDraggingRef.current = false;
+      lastMousePositionRef.current = null;
 
       const canvas = event.currentTarget;
       if (canvas) {
@@ -259,13 +250,13 @@ export const useCanvasInteractions = ({
       }
 
       // Keep track of the end position for click detection
-      if (mouseStartPosition) {
+      if (mouseStartPositionRef.current) {
         handleCanvasClick(event);
       }
 
-      setMouseStartPosition(null);
+      mouseStartPositionRef.current = null;
     },
-    [handleCanvasClick, mouseStartPosition, setIsDragging, setLastMousePosition, setMouseStartPosition],
+    [handleCanvasClick],
   );
 
   return {
