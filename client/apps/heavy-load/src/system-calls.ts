@@ -1,9 +1,18 @@
 import { BuildingType, Direction, multiplyByPrecision, ResourcesIds } from "@bibliothecadao/eternum";
-import { Account, CairoOption, CairoOptionVariant, uint256 } from "starknet";
+import { Account, uint256 } from "starknet";
 import { provider } from "..";
 import { summary, SYSTEM_ADDRESSES } from "./config";
 
-export async function createRealm(accountObject: Account, addresses: any, realmId: number) {
+export async function createRealm(
+  accountObject: Account,
+  addresses: any,
+  realmId: number,
+  realmSettlement: {
+    side: number;
+    layer: number;
+    point: number;
+  },
+) {
   try {
     let tx = await accountObject.execute(
       [
@@ -30,7 +39,7 @@ export async function createRealm(accountObject: Account, addresses: any, realmI
         {
           contractAddress: SYSTEM_ADDRESSES.realmSystems,
           entrypoint: "create",
-          calldata: [accountObject.address, realmId, accountObject.address, 0],
+          calldata: [accountObject.address, realmId, accountObject.address, realmSettlement],
         },
       ],
       { version: 3 },
@@ -46,7 +55,7 @@ export async function createRealm(accountObject: Account, addresses: any, realmI
 
 export async function mintLords(adminAccount: Account, realmEntityId: number) {
   try {
-    let tx = await adminAccount.execute(
+    await adminAccount.execute(
       [
         {
           contractAddress: SYSTEM_ADDRESSES.devResourceSystems,
@@ -56,8 +65,6 @@ export async function mintLords(adminAccount: Account, realmEntityId: number) {
       ],
       { version: 3 },
     );
-
-    await provider.waitForTransaction(tx.transaction_hash);
   } catch (error) {
     const errorMsg = `Failed to mint lords for realm ${realmEntityId}: ${error}`;
     summary.errors.push(errorMsg);
@@ -103,9 +110,7 @@ export async function moveExplorer(account: Account, explorer_id: number) {
   }
 
   try {
-    let tx = await account.execute(calls, { version: 3 });
-
-    await provider.waitForTransaction(tx.transaction_hash);
+    await account.execute(calls, { version: 3 });
   } catch (error) {
     const errorMsg = `Failed to move explorer ${explorer_id}: ${error}`;
     summary.errors.push(errorMsg);
@@ -114,8 +119,6 @@ export async function moveExplorer(account: Account, explorer_id: number) {
 }
 
 export async function createBuildings(account: Account, entity_id: number) {
-  const produceResourceType = new CairoOption<Number>(CairoOptionVariant.None, 0);
-
   function generateBuildingLayouts() {
     const primaryDirections = [
       Direction.EAST,
@@ -176,36 +179,43 @@ export async function createBuildings(account: Account, entity_id: number) {
   const buildingLayouts = generateBuildingLayouts();
 
   try {
-    const buildingCalldata = [
-      // Layer 1 buildings
-      ...buildingLayouts.layer1.map((direction) => ({
-        contractAddress: SYSTEM_ADDRESSES.productionSystems,
-        entrypoint: "create_building",
-        calldata: [entity_id, [direction], BuildingType.Farm, produceResourceType],
-      })),
-      // Layer 2 buildings
-      ...buildingLayouts.layer2.map((directions) => ({
-        contractAddress: SYSTEM_ADDRESSES.productionSystems,
-        entrypoint: "create_building",
-        calldata: [entity_id, directions, BuildingType.Farm, produceResourceType],
-      })),
-      // Layer 3 buildings
-      ...buildingLayouts.layer3.map((directions) => ({
-        contractAddress: SYSTEM_ADDRESSES.productionSystems,
-        entrypoint: "create_building",
-        calldata: [entity_id, directions, BuildingType.Farm, produceResourceType],
-      })),
-      // Layer 4 buildings
-      ...buildingLayouts.layer4.map((directions) => ({
-        contractAddress: SYSTEM_ADDRESSES.productionSystems,
-        entrypoint: "create_building",
-        calldata: [entity_id, directions, BuildingType.Farm, produceResourceType],
-      })),
-    ];
+    // Create separate calldata arrays for each layer
+    const layer1CallData = buildingLayouts.layer1.map((direction) => ({
+      contractAddress: SYSTEM_ADDRESSES.productionSystems,
+      entrypoint: "create_building",
+      calldata: [entity_id, direction, BuildingType.WorkersHut],
+    }));
 
-    let tx = await account.execute(buildingCalldata, { version: 3 });
+    const layer2CallData = buildingLayouts.layer2.map((directions) => ({
+      contractAddress: SYSTEM_ADDRESSES.productionSystems,
+      entrypoint: "create_building",
+      calldata: [entity_id, directions, BuildingType.WorkersHut],
+    }));
 
-    await provider.waitForTransaction(tx.transaction_hash);
+    const layer3CallData = buildingLayouts.layer3.map((directions) => ({
+      contractAddress: SYSTEM_ADDRESSES.productionSystems,
+      entrypoint: "create_building",
+      calldata: [entity_id, directions, BuildingType.WorkersHut],
+    }));
+
+    const layer4CallData = buildingLayouts.layer4.map((directions) => ({
+      contractAddress: SYSTEM_ADDRESSES.productionSystems,
+      entrypoint: "create_building",
+      calldata: [entity_id, directions, BuildingType.WorkersHut],
+    }));
+
+    // Execute a separate transaction for each layer
+    // Layer 1
+    await account.execute(layer1CallData, { version: 3 });
+
+    // Layer 2
+    await account.execute(layer2CallData, { version: 3 });
+
+    // Layer 3
+    await account.execute(layer3CallData, { version: 3 });
+
+    // Layer 4
+    await account.execute(layer4CallData, { version: 3 });
   } catch (error) {
     const errorMsg = `Failed to create building ${entity_id}: ${error}`;
     summary.errors.push(errorMsg);

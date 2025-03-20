@@ -2,6 +2,7 @@ import chalk from "chalk";
 import cliCursor from "cli-cursor";
 import fs from "fs";
 import logUpdate from "log-update";
+import { Worker } from "worker_threads";
 import { CONFIG, summary, workerStatus } from "./config";
 
 // Determine how many realms each account should create

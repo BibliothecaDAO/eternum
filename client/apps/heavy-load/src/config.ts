@@ -39,22 +39,22 @@ export const workerStatus: Record<
 export const CONFIG = {
   nodeUrl: normalizeUrl(process.env.VITE_PUBLIC_NODE_URL, "http://localhost:5050"),
   graphqlUrl: normalizeUrl(process.env.VITE_PUBLIC_TORII, "http://localhost:8080") + "/graphql",
-  startRealmId: 100,
+  startRealmId: 500,
   realmDistribution: {
-    firstAccount: 50, // First account gets exactly this many realms
-    middleAccountsMin: 100, // Middle accounts get between min and max
-    middleAccountsMax: 100,
-    lastAccount: 100, // Last account gets exactly this many realms
+    firstAccount: 10, // First account gets exactly this many realms
+    middleAccountsMin: 10, // Middle accounts get between min and max
+    middleAccountsMax: 10,
+    lastAccount: 10, // Last account gets exactly this many realms
   },
   lordsPerRealm: 1000,
   logSummary: true,
   summaryFile: "./metrics.json",
-  spawnExplorers: true,
   spawnRealms: true,
   mintLords: true,
+  spawnExplorers: true,
   moveExplorers: true,
-  createBuildings: true,
   levelUpRealms: true,
+  createBuildings: true,
 };
 
 export const SYSTEM_ADDRESSES = {

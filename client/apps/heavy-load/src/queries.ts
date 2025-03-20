@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/eternum";
 import chalk from "chalk";
 import type { Account } from "starknet";
 import { CONFIG } from "./config";
@@ -44,7 +45,7 @@ async function executeGraphQLQuery(query: string, variables?: Record<string, any
 export async function getRealmEntityIds(account: Account): Promise<number[]> {
   const query = `
       query {
-        s1EternumStructureModels(where: {owner: "${account.address}"}, limit: 100000) {
+        s1EternumStructureModels(where: {owner: "${account.address}", category: ${StructureType.Realm}}, limit: 100000) {
           edges {
             node {
               entity_id
