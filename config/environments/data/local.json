@@ -1698,7 +1698,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x736b50c9c9cd012be2615d854804b5cbe97228bad292b69aaee0f840d281356",
+    "season_pool_fee_recipient": "0x1f3ca9449b5f29656149a0753da0f106557563142474b6c770f5598cdd2ff3b",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1897,129 +1897,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x29e311b43858bfaf4ae13c09d555a9016af8ab5fbc02e285d8986621542bd35",
-      "realms": "0x58ba3120afb92df5d02b5225e93970a599054f08b484a0e1d3a635db2d126f8",
-      "lords": "0x1c1b7019381e40d707607c2f95c127882103e96e3746d49e102598f615b5f19",
+      "seasonPass": "0x280e064d55e12c95dbefd8ed305196431aa7541d6538ce36c79c6dbe32a4d8e",
+      "realms": "0x751159da3fe468a91ead546238b444e59b2a53f33445eaab1684ed735e9cc0d",
+      "lords": "0x42203a4c332e3ed2328fadc06085b93a7f92c882e1d67a0ea8a3b6ce722dc51",
       "resources": {
         "STONE": [
           1,
-          "0x4dabfb54960a5af43ae7dcecf310e5932accbad269a04189368273f26638a4f"
+          "0x2eb5b467c3fdc38461c2dba2c3b5160d9d999bab5a80f358a36f55d9af8afeb"
         ],
         "COAL": [
           2,
-          "0x115c88bf2372af66fe68b0b4284063259d777b3f84a828b331b98a1e038e7d"
+          "0x49fd816d401624e3b5469d3a8ed05873ae6ab99859f3358c6737902c2f69702"
         ],
         "WOOD": [
           3,
-          "0x7c0b0810dfc9249b7e20fd630978edb0441d57fd064567dcaefc56a87da977a"
+          "0x6eb8da02445d98027df67f941ec188e97de3ba6f15de23502ded27e889a380c"
         ],
         "COPPER": [
           4,
-          "0x65d5df22775f67fedb81fb089379dfed330b60745af4ce844efb98054e772c6"
+          "0xe29917d6f08e1a27b1383beb6fb2b1ae2c18b316c9e194f11eacedaf6da214"
         ],
         "IRONWOOD": [
           5,
-          "0x27af3173e9a931d587e92a759c47bb5f635cdacd2f8354b26099a74168df55b"
+          "0x31a0bb5653a700e13e612a71e90983d23a0f51a4caafdfc6f7301806d771f4c"
         ],
         "OBSIDIAN": [
           6,
-          "0x3232a4f52793c585141952ff61dcbc5daa335a3867bea638c4472e9755f791f"
+          "0x5439e5e8c3e9977d3f5c277552122014773b545819fb6f933fb5dcc8c076471"
         ],
         "GOLD": [
           7,
-          "0x115401471fa8d2ee5e3afba3985fedee34973aa45221577b46abdc528afd64c"
+          "0x29a79fb18876f9fbfa108501c26bb55b70428c730934a1ab4a2387d202694da"
         ],
         "SILVER": [
           8,
-          "0x562ab30f88263336318b20457aaea3112c72caee654587b183e4a8bdacaea98"
+          "0x226a2928c65bb6ed391768f0a79163e8bd3a29d12848603ce6dec1ee513649a"
         ],
         "MITHRAL": [
           9,
-          "0x2104f8c38f0f674cef387f9cb19852c0e9f1d5c12ba3fc796143ab8bbb6270c"
+          "0x3bed8a594f7928aa2f24d351c14cc6fa097943ed64572ab406103b3c6563d7e"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x25892454031d53c07e2a2bd6dde3c5808ab3318461187f143cbc9e193dc9761"
+          "0x6378abda321db49f1340cb6b90720843ee3ba9c54b5853e9189effa70524932"
         ],
         "COLDIRON": [
           11,
-          "0x6e23969ed1c828d8192c08c5c139945b16348547fe7d3e5e464cc96c7fc320c"
+          "0x48d6f7bbe2aa928fd40f8ee467b55c1f4741d0f7b53f5b90b0b8725ae4e46"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x1332d410e98709f52fa0a3f3b7d3038b8827bd59e4ddb43fafcca542fbbc0dd"
+          "0x4316039c3adbc77792916bac837aa39fa16a8c51490c68ef1661f0d0f51511"
         ],
         "RUBY": [
           13,
-          "0x25344ba336e81f0ed0a206272a626a978034cb8f7f0c21a405ee0c570fe5ca7"
+          "0x40f954bb2c3babb39b638c7c1cf13e234b56bd5c727f003d53727e61abe2b7b"
         ],
         "DIAMONDS": [
           14,
-          "0x12ad1f5248c6f5136bda76aebc4c346ed31f9efe757fb25936fa31df0f1067a"
+          "0x23fbdce7e98bfe796ecba75bf872d58d5cfef40990d98aaef0cc2f8f1a8dc37"
         ],
         "HARTWOOD": [
           15,
-          "0x43f73f23fbec9b185cf06d2cddab625a898ad7f1ee5167efab5659ce0ec8152"
+          "0x66276c735d609086f0eed6ba515f7eb45de0e3e8881aad626354ad862bdb8a0"
         ],
         "IGNIUM": [
           16,
-          "0x6354985adafa76c678d7c4e5dec8a9f0d931de8079e25782a53c7326b7ee232"
+          "0x5edde01bc3f05776813a0c58ec7e42942df15e98d25a3acfd04335c6dc04798"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x68e4949af28118dba64762420004195be6e86a5aeb93852b1c41dfdd6eb40ac"
+          "0x66c6566f3a231757c924351af0baf7899fc64fd087fc97f21a7fbef2cbf253d"
         ],
         "TRUEICE": [
           18,
-          "0x3203734c2e187b730eb2d3563498785771fca0e35bff8d39a07a38a8f37f5a7"
+          "0x3e56f6d814137277446a352af8b8d5541019ce115e49f3edfef5d21972fba6b"
         ],
         "ADAMANTINE": [
           19,
-          "0x4e74e4ca26bb9059d7abfc86b4fef318a943c180b9db98d3219c2077ee9b6a"
+          "0x25ef1fae45eac7ebf559d759ba624b0a11259d6c20acb3d4c168c8fde5c032d"
         ],
         "SAPPHIRE": [
           20,
-          "0x38d41574977d861ee4d397a6420f7ac3cf02aa61ce8a9650afdcb371325f64d"
+          "0x535949bef3532e86fcdfcc033c47478796a35eb1d28132b5081a713332c15b2"
         ],
         "ETHEREALSILICA": [
           21,
-          "0xc66c82a9aae6beebebdf5278d5b9efcc30b2e2d653168565063cb4da29c0fe"
+          "0x3ceb14e2e13552b3a563a1a24a31bea66226677d24b0c236ff1b63e519a4ce7"
         ],
         "DRAGONHIDE": [
           22,
-          "0x6f9eb049d67da1ecaf07839d34c60d021689e6bd006ed0436afd03477226b14"
+          "0x606e8a861b48984bc0f7624660ec701e900d8ef8cde952598aae15e5c7988c6"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x3a48e56acc062b977d43462c5445c43fc828c0285ce7991517485318b4d7f18"
+          "0x6b75aebd6b1d66404c9407500149dd2946c1bde537bc77b009e3f8c0c311b09"
         ],
         "DONKEY": [
           25,
-          "0x7ee73ed810f8ff06ea45c7137cade175037db28e858939373c39d035aedc7fb"
+          "0x2eaa190124f2b3f2169ce3af4a0ea81363446e61c6d364ad0d64031de58b89f"
         ],
         "KNIGHT": [
           26,
-          "0x787901472484c781276bf6cb70e9d9c6c1bd479ba2f9c8d512847ec0614d6c"
+          "0x701b8df6b90700f8f7928910dd24f6899f8f03729049fe9bc5157c7464d6d46"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x4ddd6a9e37ad3795669d71fbc41db2cf04d9b9d1a862bb63f791f0cfd4ffc7"
+          "0x1f7c69651383cb9b7ca0721fc70a4ee196d29564d30a4c297ecf17ef22583a2"
         ],
         "PALADIN": [
           32,
-          "0x9ee06daca012ce4d296dec453feaee0a97ff83849928df9705ede8b488b029"
+          "0x2fb33f9cc560069db0dca6f0a05c831ad959a259ec41c3c2dc96b00395084af"
         ],
         "WHEAT": [
           35,
-          "0x51d6c7efa588e1e5e3dc4abda6f00f9b07619b220aaa88bb0d301e7ae987bb5"
+          "0x2e96cce4952203f72241ef34514e6bfbe8ba81e49e10300e460a5185af019bd"
         ],
         "FISH": [
           36,
-          "0x6b6bf08be54ece60a19cf0bd7fceb6d3998054cb2fdb5a302660dcdc2474b5a"
+          "0x48f18f61dff21d2ef2409da20034d5425163fad25af03d033b79c047a39341e"
         ],
         "LORDS": [
           37,
-          "0x1c1b7019381e40d707607c2f95c127882103e96e3746d49e102598f615b5f19"
+          "0x42203a4c332e3ed2328fadc06085b93a7f92c882e1d67a0ea8a3b6ce722dc51"
         ]
       }
     },
@@ -3337,8 +3337,8 @@
       },
       "contracts": [
         {
-          "address": "0x386bbb5e5b0663111b52244b3234012351f6113d3185a6e59383ac51fce9586",
-          "class_hash": "0x4f3721b0ce05e24cd7baf3bca28e5de7770309031e23752e9543d3e1fc1fb5f",
+          "address": "0x325d3b2aadf829b54b2e46daa3454d9af7c8632b2b4462d7fd3eac4818591b7",
+          "class_hash": "0xd02577a9d7de43e13c2ed2f0174344110181dd4f94455ce53e69b1a3fd0a57",
           "abi": [
             {
               "type": "impl",
@@ -5016,8 +5016,8 @@
           ]
         },
         {
-          "address": "0x2b9446160031e4787afb97c51c1c5c6bf9f3403874970a31d465cd179dea78",
-          "class_hash": "0x461a6c4f0399617365fbfb6f372fde20f1d30bb6bdeb041d0b2a4ac59195fb2",
+          "address": "0x7d52a4076062ac7bf1bf019569fa4242d83f5a2fa6c56286696a89f03ea9286",
+          "class_hash": "0x173ca5aee9bbc9aaa934b2da62e588f21cff6aa9a17e7e3670508d4b7c71014",
           "abi": [
             {
               "type": "impl",
@@ -5529,8 +5529,8 @@
           ]
         },
         {
-          "address": "0xe8ed2cd81de27225c07ca812d32be730afc725c493dbd12aaa5b683c5bd53c",
-          "class_hash": "0x46d1b87ac65fe987ce8bbc87184f40ff1e7f9e93d38da8ce3d0a78a064cdb34",
+          "address": "0x4b150152764b07d147748fdadcbe39559bf066adfbcd6a0fe45515a4233c911",
+          "class_hash": "0x66845f29adab313df58d633e0b61e0c559f844b3ec284303f9ef2b16c208e85",
           "abi": [
             {
               "type": "impl",
@@ -5883,8 +5883,8 @@
           ]
         },
         {
-          "address": "0x3f69828fea27193bb121bcfb0c84df9c10832a7eba91152f37ab9928cf9a8e2",
-          "class_hash": "0x5e5c17b8805aa4ac91222ecb15a5efad9c188c0a529a5a9c87d40f28e3143cb",
+          "address": "0x5c672eab55ea38e0353e77bff1bd3be3d667ae569df6729ff1e9d69f759e7dd",
+          "class_hash": "0x4ae7cf643af5b5ff56f5acd752f317cba55ec733482f248e2afbeeffc4c8185",
           "abi": [
             {
               "type": "impl",
@@ -6528,8 +6528,8 @@
           ]
         },
         {
-          "address": "0x6f70a80564fcdffd6b54c4d1a0f88c349b503275f3466af4c692b29b9a2b15a",
-          "class_hash": "0x5538372183a96c2f44456ab858cd67b9e41026e053e555fa93ddb8a13c43475",
+          "address": "0x63d5aa2ac08fe4bc7f7ed14fc8b933a89841951621ee7c0e030da9021c4c339",
+          "class_hash": "0x3b7305dc7a4cf6f0ca9cd53b38bde710eee8e4486d7b54c17dca05217207ae6",
           "abi": [
             {
               "type": "impl",
@@ -7086,8 +7086,8 @@
           ]
         },
         {
-          "address": "0x43a3abc3218a60a53cf12412dc7d7ae0101ba5783260a86b0d46aa4dbe79d7c",
-          "class_hash": "0x13ff3f3649c7d2114283ad9a2307f45646dd2251b228d6f8755a71ff44d13fb",
+          "address": "0x47125945a91136f28baf17bd1926ca8be37ff364ee4b16ddd3f56c4f9edee63",
+          "class_hash": "0x667ce4af14f0a5d07828d29e1e7ac07367881b24c4acff5459f72907f76f6a8",
           "abi": [
             {
               "type": "impl",
@@ -7320,8 +7320,8 @@
           ]
         },
         {
-          "address": "0x75176781e616eb2b15e1e108466fd2aebbf7198bd50214a3a614beeb4dc0a19",
-          "class_hash": "0x1ecee446bf59105cd6f9d8621849c04a05a947bac749137aeec3e5522dad3ed",
+          "address": "0x68d5d2a6c6aedb56ea91039ca38df67393a99269b336009ebdcd527f9323d59",
+          "class_hash": "0x58ffa0feed5c738fc49e26051eb50d34d08a1ed146a627bdf7b52c04384c8c2",
           "abi": [
             {
               "type": "impl",
@@ -7575,8 +7575,8 @@
           ]
         },
         {
-          "address": "0x7dcd8348cc88e52f9597f9812333cdb2593ffce52284aa34d4f120b0cf521d5",
-          "class_hash": "0x21f3c91ba85f7fe06282ebc63a3580431f25e190ac1efefdf06711472832a16",
+          "address": "0x2967ab6310a9b965e03c108e8ff3457bc7985ae8348df081ecfe27a8834f74f",
+          "class_hash": "0x3529c93ee6560c32d22d71a75679d826660b7970069f69d88e046279cc9e7c8",
           "abi": [
             {
               "type": "impl",
@@ -7902,8 +7902,8 @@
           ]
         },
         {
-          "address": "0x736b50c9c9cd012be2615d854804b5cbe97228bad292b69aaee0f840d281356",
-          "class_hash": "0x5bfa4084ff27849615287eaa9989b3c8e8c7cbfff39bd98bc0efbf21d9b31b8",
+          "address": "0x1f3ca9449b5f29656149a0753da0f106557563142474b6c770f5598cdd2ff3b",
+          "class_hash": "0x39afb9b55dbe6560c469c3e7cde84ba558726b0c1a33f4dc321dd864c0de581",
           "abi": [
             {
               "type": "impl",
@@ -8139,8 +8139,8 @@
           ]
         },
         {
-          "address": "0x471215bdd0818b4ef44b5ea1899cdf00b8daebdc9580e646994ffd8130643cc",
-          "class_hash": "0x54a3c4f2033ddf18ba1d5a4e7c49d9001f0c623cb766f0e83a42edcd4651337",
+          "address": "0x70a315a532012f80bab85c7e208624e51dc1a055b7540353c6f4f88da88a969",
+          "class_hash": "0x25487b4b37285e9a3c7d1992a561a93e37a67111e4425f3856ca04b1d11a97a",
           "abi": [
             {
               "type": "impl",
@@ -8339,8 +8339,8 @@
           ]
         },
         {
-          "address": "0x5fc4ea11c151c8d021e18bdfab08fe4cd9363b9c6931ec0eb8e54c3255f4e1a",
-          "class_hash": "0x6560d205a9e1d3f8782a82e567523bdb06f807f22975d2e63ebbc6eb8603833",
+          "address": "0x2aa700371472c4e6ab09e323d6a5aabb1cc9e18d148fe3dbedac19414860270",
+          "class_hash": "0x1a363159d3443d4a241f3bad92f515f6b7b8e492d2d9307ea8a81a73fce746b",
           "abi": [
             {
               "type": "impl",
@@ -8576,8 +8576,8 @@
           ]
         },
         {
-          "address": "0x7678e29044ac5888f2fe38c584cee12bcc850eb52096aa2afcd32b0e2609808",
-          "class_hash": "0x30d6d8a3ece5cb6ae2e98e29b5fa177d934b77d82c55b586058699a65b3b870",
+          "address": "0x37245ad77ade11c10a5f444ec23902eab4da45d7f098138c99c4269e5944a61",
+          "class_hash": "0x44352158fd9abe0c8cfacf9060905830c2056b191015cafda102103ba7dbe25",
           "abi": [
             {
               "type": "impl",
@@ -8842,8 +8842,8 @@
           ]
         },
         {
-          "address": "0x630e7fb47c38ec85d605bc1e56d31095fbe4f206f9ac4985ed610faa32f04d9",
-          "class_hash": "0x7dbc45dc5678ecee888e667126b313572b2cc67131b6a9ef7a9226be1aa8cdc",
+          "address": "0x71a11c7a69c43ad4dce5c1af17afded939d9be95a5538e649f80e71f78c50c4",
+          "class_hash": "0x6ea1716ccf2df14a46f57ead3a1901ee48ad2016c1757389f5a819cf12724fd",
           "abi": [
             {
               "type": "impl",
@@ -9148,8 +9148,8 @@
           ]
         },
         {
-          "address": "0x46abaae97fa8a794b6e94b15e2039a39d4542a4c0151900b61034ca0ba3903",
-          "class_hash": "0x39ed7c0875eee851f87eb5ec17fcb86e31e60ecad58b61287701f3940fc7890",
+          "address": "0x1078e265ca35b1145d217f33abff79ef6ba0631b9f8e87042bd65cf56d9c928",
+          "class_hash": "0x2ae47ed6811d5a4fab613408a517e8211adbfda3c24b738ff4a00c85ebf0414",
           "abi": [
             {
               "type": "impl",
@@ -9619,8 +9619,8 @@
           ]
         },
         {
-          "address": "0xb2f0ed59fe61b6cc7fdec43493e9964833393ff613e6751f0f0358d95c380",
-          "class_hash": "0x686b4ff06a40463b45873634bd052e7487a4a64a789f6bd58c275dd9f3098aa",
+          "address": "0x32a589f4ff69ae48efbec4092e61d65968160de801bfb87fb5943c359af0548",
+          "class_hash": "0x2a0806cdade1a1240db33a57cf7fcf01d07a61e6a9a95a850cbcb1bf044784c",
           "abi": [
             {
               "type": "impl",
@@ -9881,8 +9881,8 @@
           ]
         },
         {
-          "address": "0x52c7d6c4f1e339612d7d13d679d628e6f43cc883455dcffe5e4bfc45a8bc95c",
-          "class_hash": "0x1f4f7572f8a0e3c8fe19696564d9711438af6015b99a8720577cb8cc5fc4955",
+          "address": "0x57b3914bb2f8eb63cb8847e1cd84fac565e92824f7c74f5c2dc3fbeb608b9eb",
+          "class_hash": "0x37a4bcd44930c2cec8e25e882b3659b9d3e170f0608dadff0a10a42018502a8",
           "abi": [
             {
               "type": "impl",
@@ -10312,8 +10312,8 @@
           ]
         },
         {
-          "address": "0x67b7607639d7365105efa049534582c0ca215c4344fa2f511bf6019d65c77b4",
-          "class_hash": "0x43587ef450d28c988cc489917d5a16b777960285e849f7afcb49ca4b861ebda",
+          "address": "0x18632dc49759cdb0e95ec33fcbd605a077b8f0504e90f73badfaa9cfb44d0fc",
+          "class_hash": "0x28bf34010d990af357959657cae0b30689b86e4f5d7f313be5a89443069c33",
           "abi": [
             {
               "type": "impl",
@@ -10740,7 +10740,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x4630583ca87626591629a6ab91f8cde202dd29d0946b847c6eadeb893cb5c12",
+          "class_hash": "0x225c82c9d68eda6ad28b4bd6140c38d510f6f21d18b7f62f008a78840303375",
           "tag": "s1_eternum-Structure",
           "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
         },
