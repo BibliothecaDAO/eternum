@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { SettlementLocation } from "./settlement-types";
 
 interface CanvasInteractionsProps {
@@ -13,7 +13,6 @@ interface CanvasInteractionsProps {
   setLastMousePosition: (position: { x: number; y: number } | null) => void;
   setMouseStartPosition: (position: { x: number; y: number } | null) => void;
   setMapCenter: (center: { x: number; y: number }) => void;
-  setHoveredLocation: (location: SettlementLocation | null) => void;
   setSelectedLocation: (location: SettlementLocation | null) => void;
   onSelectLocation: (location: SettlementLocation) => void;
 }
@@ -33,10 +32,17 @@ export const useCanvasInteractions = ({
   setLastMousePosition,
   setMouseStartPosition,
   setMapCenter,
-  setHoveredLocation,
   setSelectedLocation,
   onSelectLocation,
 }: CanvasInteractionsProps) => {
+  // Use a ref instead of state for hover information
+  const hoveredLocationRef = useRef<SettlementLocation | null>(null);
+
+  // Function to get current hovered location (for external access if needed)
+  const getHoveredLocation = useCallback(() => {
+    return hoveredLocationRef.current;
+  }, []);
+
   // Handle canvas click to select a location
   const handleCanvasClick = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -169,10 +175,12 @@ export const useCanvasInteractions = ({
       let closestLocation: SettlementLocation | null = null;
       let minDistance = Infinity;
 
-      availableLocations.forEach((location) => {
-        // Skip if outside visible area
-        if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
+      // Filter to only visible locations for better performance
+      const visibleLocations = availableLocations.filter(
+        (location) => location.x >= minX && location.x <= maxX && location.y >= minY && location.y <= maxY,
+      );
 
+      for (const location of visibleLocations) {
         const canvasX = padding + (location.x - minX) * scale;
         const canvasY = padding + (location.y - minY) * scale;
 
@@ -182,27 +190,40 @@ export const useCanvasInteractions = ({
           minDistance = distance;
           closestLocation = location;
         }
-      });
+      }
 
       // If we found a close location and it's within a reasonable distance
       if (closestLocation && minDistance < 20) {
-        setHoveredLocation(closestLocation);
-        canvas.style.cursor = "pointer";
+        // Check if this location is already settled
+        const isSettled = settledLocations.some(
+          (settled) =>
+            settled.layer === closestLocation!.layer &&
+            settled.side === closestLocation!.side &&
+            settled.point === closestLocation!.point,
+        );
+
+        // Only hover on unsettled locations
+        if (!isSettled) {
+          hoveredLocationRef.current = closestLocation;
+          canvas.style.cursor = "pointer";
+
+          // Force a redraw of the canvas
+          canvas.dispatchEvent(new CustomEvent("needsRedraw"));
+        } else {
+          hoveredLocationRef.current = null;
+          canvas.style.cursor = isDragging ? "grabbing" : "grab";
+        }
       } else {
-        setHoveredLocation(null);
-        canvas.style.cursor = isDragging ? "grabbing" : "grab";
+        if (hoveredLocationRef.current !== null) {
+          hoveredLocationRef.current = null;
+          canvas.style.cursor = isDragging ? "grabbing" : "grab";
+
+          // Force a redraw of the canvas
+          canvas.dispatchEvent(new CustomEvent("needsRedraw"));
+        }
       }
     },
-    [
-      availableLocations,
-      isDragging,
-      lastMousePosition,
-      mapCenter,
-      mapSize,
-      setHoveredLocation,
-      setLastMousePosition,
-      setMapCenter,
-    ],
+    [availableLocations, isDragging, lastMousePosition, mapCenter, mapSize, settledLocations],
   );
 
   // Handle mouse down for dragging
@@ -252,5 +273,6 @@ export const useCanvasInteractions = ({
     handleMouseMove,
     handleMouseDown,
     handleMouseUp,
+    getHoveredLocation,
   };
 };

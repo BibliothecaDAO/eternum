@@ -30,9 +30,6 @@ export const SettlementMinimap = ({
     setSelectedLocation,
     availableLocations,
     settledLocations,
-    hoveredLocation,
-    setHoveredLocation,
-    occupiedLocations,
     bankLocations,
     selectedCoords,
 
@@ -52,7 +49,6 @@ export const SettlementMinimap = ({
     // Resources state
     bankIcon,
     setBankIcon,
-    animationTime,
 
     // Functions
     handleCoordinateChange,
@@ -81,7 +77,6 @@ export const SettlementMinimap = ({
     setLastMousePosition,
     setMouseStartPosition,
     setMapCenter: (center) => setMapViewState((prev) => ({ ...prev, mapCenter: center })),
-    setHoveredLocation,
     setSelectedLocation,
     onSelectLocation,
   });
@@ -106,13 +101,11 @@ export const SettlementMinimap = ({
         settledLocations={settledLocations}
         bankLocations={bankLocations}
         selectedLocation={selectedLocation}
-        hoveredLocation={hoveredLocation}
-        occupiedLocations={occupiedLocations}
+        getHoveredLocation={canvasInteractions.getHoveredLocation}
         extraPlayerOccupiedLocations={extraPlayerOccupiedLocations}
         mapCenter={mapViewState.mapCenter}
         mapSize={mapViewState.mapSize}
         zoomLevel={mapViewState.zoomLevel}
-        animationTime={animationTime}
         bankIcon={bankIcon}
         onMouseDown={canvasInteractions.handleMouseDown}
         onMouseMove={canvasInteractions.handleMouseMove}

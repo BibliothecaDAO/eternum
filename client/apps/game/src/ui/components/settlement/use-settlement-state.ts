@@ -27,8 +27,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
   const [selectedLocation, setSelectedLocation] = useState<SettlementLocation | null>(null);
   const [availableLocations, setAvailableLocations] = useState<SettlementLocation[]>([]);
   const [settledLocations, setSettledLocations] = useState<SettlementLocation[]>([]);
-  const [hoveredLocation, setHoveredLocation] = useState<SettlementLocation | null>(null);
-  const [occupiedLocations, setOccupiedLocations] = useState<SettlementLocation[]>([]);
   const [bankLocations, setBankLocations] = useState<SettlementLocation[]>([]);
 
   // Map view state
@@ -46,7 +44,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
 
   // Resources state
   const [bankIcon, setBankIcon] = useState<HTMLImageElement | null>(null);
-  const [animationTime, setAnimationTime] = useState(0);
 
   const {
     account: { account },
@@ -69,15 +66,17 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     setBankLocations(bankLocations);
   }, [components]);
 
+  console.log("render check");
+
   // Fetch occupied locations
   useEffect(() => {
     const fetchOccupiedLocations = async () => {
+      console.log("fetching occupied locations");
       if (!account?.address) return;
 
       // Generate all possible settlement locations
       const [allLocations, allLocationsMap] = generateSettlementLocations(maxLayers);
 
-      setSettledLocations(occupiedLocations);
       setAvailableLocations(allLocations);
 
       // Fetch occupied locations
@@ -85,43 +84,11 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
         ...getOccupiedLocations(ContractAddress(account.address), components, allLocationsMap),
         ...extraPlayerOccupiedLocations,
       ];
-      setOccupiedLocations(locations);
+      // Move this here, so it only happens once after fetching
+      setSettledLocations(locations);
     };
     fetchOccupiedLocations();
-  }, [account?.address, components, extraPlayerOccupiedLocations, settledLocations, maxLayers]);
-
-  // Generate all possible settlement locations
-  useEffect(() => {
-    const [locations, _] = generateSettlementLocations(maxLayers);
-    setSettledLocations(occupiedLocations);
-    setAvailableLocations(locations);
-  }, [maxLayers, occupiedLocations]);
-
-  // Set up animation loop
-  useEffect(() => {
-    let animationFrameId: number;
-    let lastTimestamp: number;
-
-    const animate = (timestamp: number) => {
-      if (!lastTimestamp) lastTimestamp = timestamp;
-      const deltaTime = timestamp - lastTimestamp;
-      lastTimestamp = timestamp;
-
-      // Update animation time
-      setAnimationTime((prev) => prev + deltaTime);
-
-      // Continue the animation loop
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    // Start the animation loop
-    animationFrameId = requestAnimationFrame(animate);
-
-    // Clean up on unmount
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
+  }, [account?.address, components, extraPlayerOccupiedLocations, maxLayers]);
 
   // Function to set zoom level and update map size
   const setZoom = useCallback((zoomOut: boolean, delta = 10) => {
@@ -180,9 +147,9 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
   }, []);
 
   // Apply zoom level when it changes
-  useEffect(() => {
-    zoomToLevel(mapViewState.zoomLevel);
-  }, [mapViewState.zoomLevel, zoomToLevel]);
+  // useEffect(() => {
+  //   zoomToLevel(mapViewState.zoomLevel);
+  // }, [mapViewState.zoomLevel, zoomToLevel]);
 
   // Center map on custom coordinates and zoom in
   const centerOnCoordinates = useCallback(() => {
@@ -224,9 +191,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     setSelectedLocation,
     availableLocations,
     settledLocations,
-    hoveredLocation,
-    setHoveredLocation,
-    occupiedLocations,
     bankLocations,
     selectedCoords,
 
@@ -246,7 +210,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     // Resources state
     bankIcon,
     setBankIcon,
-    animationTime,
 
     // Functions
     setZoom,
