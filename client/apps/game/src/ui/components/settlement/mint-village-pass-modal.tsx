@@ -200,7 +200,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           selectedCoords && (
             <VillageResourceReveal
               villageCoords={selectedCoords}
-              onClose={() => setShowResourceReveal(false)}
+              onClose={onClose}
               onRestart={() => {
                 setShowResourceReveal(false);
                 setSelectedCoords(null);
