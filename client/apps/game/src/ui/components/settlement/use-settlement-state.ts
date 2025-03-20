@@ -39,8 +39,6 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
     setBankLocations(bankLocations);
   }, [components]);
 
-  console.log("render check");
-
   // Fetch occupied locations
   useEffect(() => {
     const fetchOccupiedLocations = async () => {
