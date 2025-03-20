@@ -38,6 +38,8 @@ pub impl WeightImpl of WeightTrait {
 
     fn deduct(ref self: Weight, amount: u128) {
         if self.capacity != Bounded::MAX {
+            // this should never happen. check is a contract sanity check
+            assert!(self.weight >= amount, "Weight Error: {} < {}", self.weight, amount);
             self.weight -= amount;
         }
     }

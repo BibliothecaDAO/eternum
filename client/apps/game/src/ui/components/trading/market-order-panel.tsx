@@ -12,7 +12,7 @@ import {
   divideByPrecision,
   EntityType,
   findResourceById,
-  getRealmAddressName,
+  getAddressNameFromEntity,
   getTotalResourceWeightKg,
   multiplyByPrecision,
   ResourcesIds,
@@ -159,7 +159,7 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-scroll h-auto rounded-xl ${
+          className={`p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
             isBuy ? "order-buy-selector" : "order-sell-selector"
           }`}
         >
@@ -328,7 +328,7 @@ const OrderRow = memo(
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
-      return getRealmAddressName(offer.makerId, dojo.setup.components);
+      return getAddressNameFromEntity(offer.makerId, dojo.setup.components);
     }, [offer.originName]);
 
     const onAccept = async () => {

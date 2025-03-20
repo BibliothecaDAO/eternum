@@ -348,6 +348,7 @@ pub struct TickConfig {
 // todo: regroup meaningfully to avoid retrieving too many fields
 #[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default)]
 pub struct TroopDamageConfig {
+    pub damage_raid_percent_num: u16,
     // Combat modifiers. Used for biome damage calculations
     pub damage_biome_bonus_num: u16,
     // Used in damage calculations for troop scaling

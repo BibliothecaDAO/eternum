@@ -113,6 +113,9 @@ impl CubeImpl of CubeTrait {
     }
 }
 
+
+pub const NUM_DIRECTIONS: u8 = 6;
+
 #[derive(Drop, Copy, Serde)]
 pub enum Direction {
     East,

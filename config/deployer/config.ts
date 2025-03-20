@@ -517,6 +517,7 @@ export const setTroopConfig = async (config: Config) => {
       t1DamageValue: t1_damage_value,
       t2DamageMultiplier: t2_damage_multiplier,
       t3DamageMultiplier: t3_damage_multiplier,
+      damageRaidPercentNum: damage_raid_percent_num,
       damageBiomeBonusNum: damage_biome_bonus_num,
       damageScalingFactor: damage_scaling_factor,
       damageBetaSmall: damage_beta_small,
@@ -557,6 +558,7 @@ export const setTroopConfig = async (config: Config) => {
       t1_damage_value: t1_damage_value,
       t2_damage_multiplier: t2_damage_multiplier,
       t3_damage_multiplier: t3_damage_multiplier,
+      damage_raid_percent_num: damage_raid_percent_num,
       damage_biome_bonus_num: damage_biome_bonus_num,
       damage_scaling_factor: damage_scaling_factor,
       damage_beta_small: damage_beta_small,
@@ -597,6 +599,7 @@ export const setTroopConfig = async (config: Config) => {
     │  ${chalk.gray("T1 Damage Value:")}      ${chalk.white(calldata.damage_config.t1_damage_value)}
     │  ${chalk.gray("T2 Damage Multiplier:")}     ${chalk.white(calldata.damage_config.t2_damage_multiplier)}
     │  ${chalk.gray("T3 Damage Multiplier:")}    ${chalk.white(calldata.damage_config.t3_damage_multiplier)}
+    │  ${chalk.gray("Damage Raid Percent:")}         ${chalk.white(calldata.damage_config.damage_raid_percent_num / 10_000)}%
     │  ${chalk.gray("Damage Biome Bonus:")}         ${chalk.white(calldata.damage_config.damage_biome_bonus_num)}
     │  ${chalk.gray("Damage Scaling Factor:")}         ${chalk.white(calldata.damage_config.damage_scaling_factor)}
     │  ${chalk.gray("Damage Beta Small:")}             ${chalk.white(calldata.damage_config.damage_beta_small)}

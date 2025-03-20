@@ -553,6 +553,51 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Create a village connected to a realm
+   *
+   * @param props - Properties for creating a village
+   * @param props.connected_realm - ID of the realm to connect the village to
+   * @param props.direction - Direction from the realm to place the village
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   *
+   * @example
+   * ```typescript
+   * // Create a village connected to realm 123 in the north direction
+   * {
+   *   connected_realm: 123,
+   *   direction: Direction.North,
+   *   signer: account
+   * }
+   * ```
+   */
+  public async create_village(props: SystemProps.CreateVillageProps) {
+    const { connected_realm, direction, signer } = props;
+
+    let callData: Call[] = [];
+
+    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
+      const requestRandomCall: Call = {
+        contractAddress: this.VRF_PROVIDER_ADDRESS!,
+        entrypoint: "request_random",
+        calldata: [getContractByName(this.manifest, `${NAMESPACE}-village_systems`), 0, signer.address],
+      };
+
+      callData = [requestRandomCall];
+    }
+
+    const createCall: Call = {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
+      entrypoint: "create",
+      calldata: [connected_realm, direction],
+    };
+
+    const call = this.createProviderCall(signer, [...callData, createCall]);
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
    * Create multiple realms at once
    *
    * @param props - Properties for creating realms
@@ -950,10 +995,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, signer } = props;
 
+    // TOOODO: FIX
+    let use_labor = false;
+
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category]),
+      calldata: CallData.compile([entity_id, directions, building_category, use_labor]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -2018,6 +2066,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_troop_config",
       calldata: [
         // damage config
+        damage_config.damage_raid_percent_num,
         damage_config.damage_biome_bonus_num,
         damage_config.damage_beta_small,
         damage_config.damage_beta_large,

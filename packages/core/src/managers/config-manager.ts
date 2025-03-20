@@ -44,9 +44,6 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    console.log("worldConfig", worldConfig);
-
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
@@ -204,6 +201,16 @@ export class ClientConfigManager {
 
   private initializeStructureCosts() {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
+  }
+
+  public getMaxLevel(category: StructureType) {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (category === StructureType.Realm) {
+      return Number(worldConfig?.structure_max_level_config?.realm_max ?? 0);
+    } else if (category === StructureType.Village) {
+      return Number(worldConfig?.structure_max_level_config?.village_max ?? 0);
+    }
+    return 0;
   }
 
   private getHyperstructureConstructionCosts() {
@@ -370,6 +377,7 @@ export class ClientConfigManager {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
+          damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
           damage_beta_large: combatConfig?.damage_beta_large ?? 0n,
           damage_scaling_factor: combatConfig?.damage_scaling_factor ?? 0n,
@@ -384,6 +392,7 @@ export class ClientConfigManager {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
         damage_biome_bonus_num: 0,
+        damage_raid_percent_num: 0,
         damage_beta_small: 0n,
         damage_beta_large: 0n,
         damage_scaling_factor: 0n,

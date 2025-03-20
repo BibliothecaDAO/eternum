@@ -15,6 +15,23 @@ const keys = [
 ];
 
 export function NumericKeyboard({ onKeyPress, className }: NumericKeyboardProps) {
+  // Add keyboard event listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle numbers and decimal point
+      if (/^[0-9.]$/.test(e.key)) {
+        onKeyPress(e.key);
+      }
+      // Handle backspace
+      else if (e.key === "Backspace") {
+        onKeyPress("⌫");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onKeyPress]);
+
   return (
     <div className={cn("grid grid-cols-3 gap-2 p-2 bg-background rounded-lg", className)}>
       {keys.map((row, rowIndex) => (

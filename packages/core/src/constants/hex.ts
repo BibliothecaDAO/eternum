@@ -96,13 +96,53 @@ export const NEIGHBOR_OFFSETS_ODD = [
   { i: 0, j: -1, direction: Direction.SOUTH_EAST },
 ];
 
-export const getNeighborHexes = (col: number, row: number) => {
-  const offsets = getNeighborOffsets(row);
-  return offsets.map((offset) => ({
-    col: col + offset.i,
-    row: row + offset.j,
-    direction: offset.direction,
-  }));
+export enum Steps {
+  One = 1,
+  Two = 2,
+}
+
+export type NeighborHex = {
+  col: number;
+  row: number;
+  direction: Direction;
+};
+
+export const getNeighborHexes = (col: number, row: number, steps: Steps = Steps.One): NeighborHex[] => {
+  if (steps === Steps.One) {
+    const offsets = getNeighborOffsets(row);
+    return offsets.map((offset) => ({
+      col: col + offset.i,
+      row: row + offset.j,
+      direction: offset.direction,
+    }));
+  } else if (steps === 2) {
+    const offsets = getNeighborOffsets(row);
+    return offsets.map((offset) => {
+      // Get first step coordinates
+      const firstStepCol = col + offset.i;
+      const firstStepRow = row + offset.j;
+
+      // Get offsets for the second step based on the first step's row
+      const secondStepOffsets = getNeighborOffsets(firstStepRow);
+      const secondStepOffset = secondStepOffsets[offset.direction];
+
+      return {
+        col: firstStepCol + secondStepOffset.i,
+        row: firstStepRow + secondStepOffset.j,
+        direction: offset.direction,
+      };
+    });
+  } else {
+    // For steps > 2, recursively apply the function
+    let result = getNeighborHexes(col, row, Steps.One);
+    for (let i = 1; i < steps; i++) {
+      result = result.map((hex) => {
+        const nextStep = getNeighborHexes(hex.col, hex.row, Steps.One).find((n) => n.direction === hex.direction);
+        return nextStep ? nextStep : hex;
+      });
+    }
+    return result;
+  }
 };
 
 export const getNeighborOffsets = (row: number) => {
@@ -113,6 +153,6 @@ export const getDirectionBetweenAdjacentHexes = (
   from: { col: number; row: number },
   to: { col: number; row: number },
 ): Direction | null => {
-  const neighbors = getNeighborHexes(from.col, from.row);
+  const neighbors = getNeighborHexes(from.col, from.row, Steps.One);
   return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };
