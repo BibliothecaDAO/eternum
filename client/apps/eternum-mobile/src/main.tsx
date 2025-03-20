@@ -8,7 +8,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
+import { initialSync } from "./app/dojo/sync";
 import { ETERNUM_CONFIG } from "./shared/config/config";
+import { useStore } from "./shared/store";
+import { WorldSlice } from "./shared/store/slices/world-loading-slice";
 
 async function main() {
   const setupResult = await setup(
@@ -27,6 +30,9 @@ async function main() {
       },
     },
   );
+
+  const state: WorldSlice = useStore.getState();
+  await initialSync(setupResult, state);
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);

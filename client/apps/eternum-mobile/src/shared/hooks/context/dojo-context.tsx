@@ -1,13 +1,10 @@
 import { displayAddress } from "@/shared/lib/utils";
-import { useAccountStore } from "@/shared/store/use-account-store";
-import { useAddressStore } from "@/shared/store/use-address-store";
-import { Button } from "@/shared/ui/button";
-import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
+import { useStore } from "@/shared/store";
+import { Loading } from "@/shared/ui/loading";
+import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HasValue, runQuery } from "@dojoengine/recs";
-import { cairoShortStringToFelt } from "@dojoengine/torii-client";
-import { useAccount, useConnect } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../../env";
@@ -55,13 +52,13 @@ const useControllerAccount = () => {
 
   useEffect(() => {
     if (account) {
-      useAccountStore.getState().setAccount(account);
+      useStore.getState().setAccount(account);
     }
   }, [account, isConnected]);
 
   useEffect(() => {
     if (connector) {
-      useAccountStore.getState().setConnector(connector as unknown as ControllerConnector);
+      useStore.getState().setConnector(connector as unknown as ControllerConnector);
     }
   }, [connector, isConnected]);
 
@@ -92,27 +89,27 @@ const DojoContextProvider = ({
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
 }) => {
-  const setAddressName = useAddressStore((state) => state.setAddressName);
+  // const setAddressName = useStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const { connect, connectors } = useConnect();
-  const { isConnected, isConnecting, connector } = useAccount();
+  // const { connect, connectors } = useConnect();
+  const { isConnected, isConnecting } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
 
   const [retries, setRetries] = useState(0);
 
-  const connectWallet = async () => {
-    try {
-      console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
-      console.log("Wallet connected successfully.");
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  };
+  // const connectWallet = async () => {
+  //   try {
+  //     console.log("Attempting to connect wallet...");
+  //     await connect({ connector: connectors[0] });
+  //     console.log("Wallet connected successfully.");
+  //   } catch (error) {
+  //     console.error("Failed to connect wallet:", error);
+  //   }
+  // };
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
@@ -127,28 +124,20 @@ const DojoContextProvider = ({
   }, [controllerAccount]);
 
   useEffect(() => {
-    const setUserName = async () => {
-      const username = await (connector as ControllerConnector)?.username();
-      if (!username) return;
+    // const setUserName = async () => {
+    //   const username = await (connector as ControllerConnector)?.username();
+    //   if (!username) return;
 
-      const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-      value.systemCalls.set_address_name({
-        signer: controllerAccount!,
-        name: usernameFelt,
-      });
-      setAddressName(username);
-    };
+    //   const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
+    //   value.systemCalls.set_address_name({
+    //     signer: controllerAccount!,
+    //     name: usernameFelt,
+    //   });
+    //   setAddressName(username);
+    // };
 
     if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
-
-      const addressName = runQuery([
-        HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-      ]);
-
-      if (addressName.size === 0) {
-        setUserName();
-      }
+      useStore.getState().setAccount(controllerAccount);
 
       setAccountsInitialized(true);
     } else {
@@ -165,38 +154,24 @@ const DojoContextProvider = ({
     }
   }, [controllerAccount, retries]);
 
-  if (!accountsInitialized) {
-    return <div>Loading...</div>;
-  }
-
-  if (isConnecting) {
+  if (!accountsInitialized || isConnecting) {
     return (
-      <>
-        <div>Countdown...</div>
-        <div>Loading...</div>
-      </>
+      <div className="h-screen flex justify-center items-center">
+        <Loading />
+      </div>
     );
   }
 
   if (!isConnected && !isConnecting) {
-    return (
-      <>
-        <div className="flex justify-center space-x-8 mt-2 md:mt-4">
-          {!isConnected && (
-            <>
-              <Button onClick={connectWallet} className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80">
-                Log In
-              </Button>
-            </>
-          )}
-        </div>
-      </>
-    );
+    return children;
   }
 
   if (!controllerAccount && isConnected) {
-    // Connected but controllerAccount is not set yet
-    return <div>Loading...</div>;
+    return (
+      <div className="h-screen flex justify-center items-center">
+        <Loading text="Initializing..." />
+      </div>
+    );
   }
 
   // Once account is set, render the children
