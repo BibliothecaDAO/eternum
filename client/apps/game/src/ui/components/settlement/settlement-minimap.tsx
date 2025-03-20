@@ -33,22 +33,9 @@ export const SettlementMinimap = ({
     bankLocations,
     selectedCoords,
 
-    // Map view state
-    mapViewState,
-    setMapViewState,
-
-    // Interaction state
-    customNormalizedCoords,
-
     // Resources state
     bankIcon,
     setBankIcon,
-
-    // Functions
-    handleCoordinateChange,
-    centerOnCoordinates,
-    resetMapCenter,
-    setZoom,
   } = settlementState;
 
   // Load bank icon
@@ -62,9 +49,6 @@ export const SettlementMinimap = ({
   const canvasInteractions = useCanvasInteractions({
     availableLocations,
     settledLocations,
-    mapCenter: mapViewState.mapCenter,
-    mapSize: mapViewState.mapSize,
-    setMapCenter: (center) => setMapViewState((prev) => ({ ...prev, mapCenter: center })),
     setSelectedLocation,
     onSelectLocation,
   });
@@ -76,10 +60,10 @@ export const SettlementMinimap = ({
 
       {/* Controls */}
       <SettlementControls
-        customNormalizedCoords={customNormalizedCoords}
-        onCoordinateChange={handleCoordinateChange}
-        onCenterCoordinates={centerOnCoordinates}
-        onResetMapCenter={resetMapCenter}
+        customNormalizedCoords={canvasInteractions.customNormalizedCoords}
+        onCoordinateChange={canvasInteractions.handleCoordinateChange}
+        onCenterCoordinates={canvasInteractions.centerOnCoordinates}
+        onResetMapCenter={canvasInteractions.resetMapCenter}
       />
 
       {/* Canvas */}
@@ -91,15 +75,15 @@ export const SettlementMinimap = ({
         selectedLocation={selectedLocation}
         getHoveredLocation={canvasInteractions.getHoveredLocation}
         extraPlayerOccupiedLocations={extraPlayerOccupiedLocations}
-        mapCenter={mapViewState.mapCenter}
-        mapSize={mapViewState.mapSize}
-        zoomLevel={mapViewState.zoomLevel}
+        mapCenter={canvasInteractions.mapCenter}
+        mapSize={canvasInteractions.mapSize}
+        zoomLevel={canvasInteractions.zoomLevel}
         bankIcon={bankIcon}
         onMouseDown={canvasInteractions.handleMouseDown}
         onMouseMove={canvasInteractions.handleMouseMove}
         onMouseUp={canvasInteractions.handleMouseUp}
         onMouseLeave={canvasInteractions.handleMouseUp}
-        onZoom={setZoom}
+        onZoom={canvasInteractions.setZoom}
       />
 
       {/* Confirm Button */}
