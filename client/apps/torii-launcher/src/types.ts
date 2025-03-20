@@ -17,7 +17,7 @@ export type ConfigType = "local" | "mainnet" | "sepolia" | "slot";
 
 export type ToriiConfig = {
   configType: ConfigType;
-  worldAddress: string;
+  world_address: string;
   rpc: string;
-  worldBlock: number;
+  world_block: number;
 };

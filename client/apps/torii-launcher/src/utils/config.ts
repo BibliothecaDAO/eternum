@@ -22,12 +22,13 @@ export const loadConfig = async (): Promise<ToriiConfig> => {
   await osUtils.ensureDirectoryExists(getNetworkPath(configType));
   await fsPromises.writeFile(configPath, config);
 
+  console.log("saving config at", configPath);
   const configJson = tomlJson({ data: config });
   return {
     configType,
-    rpc: configJson.rpc,
-    worldAddress: configJson.indexing.world_address,
-    worldBlock: configJson.indexing.world_block,
+    rpc: (configJson as any).rpc,
+    world_address: (configJson as any).world_address,
+    world_block: (configJson as any).indexing.world_block,
   };
 };
 

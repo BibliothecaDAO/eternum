@@ -162,6 +162,7 @@ ipcMain.on(IpcMethod.ChangeConfigType, async (event, arg: ConfigType) => {
     await saveConfigType(arg);
     config = await loadConfig();
     killTorii();
+    window?.webContents.send(IpcMethod.ConfigWasChanged, config);
     sendNotification({ type: "Info", message: "Config type successfully changed" });
   } catch (e) {
     sendNotification({ type: "Error", message: "Failed to change config type: " + e });
@@ -207,15 +208,15 @@ async function handleTorii(toriiVersion: string) {
     }
   }
 
-  const toriiTomlPath = getToriiTomlConfigPath(config.configType);
-
   while (true) {
     try {
+      const toriiTomlPath = getToriiTomlConfigPath(config.configType);
+
       const dbPath = getDbPath(config.configType);
       mkdirSync(dbPath, { recursive: true });
 
       normalLog(
-        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.worldAddress}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
+        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.world_address}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
       );
 
       // Verify files exist before launching
@@ -235,12 +236,12 @@ async function handleTorii(toriiVersion: string) {
       });
 
       child.stdout.on("data", (data: Buffer) => {
-        normalLog(`Torii stdout: ${data.toString()}`);
+        // normalLog(`Torii stdout: ${data.toString()}`);
       });
 
       child.stderr.on("data", (data: Buffer) => {
-        errorLog(`Torii stderr: ${data.toString()}`);
-        sendNotification({ type: "Error", message: data.toString() });
+        // errorLog(`Torii stderr: ${data.toString()}`);
+        // sendNotification({ type: "Error", message: data.toString() });
       });
 
       let firstPass = true;
@@ -278,7 +279,7 @@ async function handleTorii(toriiVersion: string) {
       }
 
       warningLog("Torii exited, waiting for 3s for ports to be released");
-      await timeout(3000);
+      await timeout(5000);
     } catch (error) {
       errorLog(`Error in handleTorii: ${error}`);
       sendNotification({ type: "Error", message: `Torii error: ${error}` });

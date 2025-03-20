@@ -11,22 +11,17 @@ import Refresh from "@public/icons/refresh.svg?react";
 import SettingsIcon from "@public/icons/settings.svg?react";
 import TrashCan from "@public/icons/trashcan.svg?react";
 import XMark from "@public/icons/x-mark.svg?react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import styled from "styled-components";
-import { ConfigType, IpcMethod, ToriiConfig } from "../types";
+import { IpcMethod, ToriiConfig } from "../types";
 import { Settings } from "./components/settings";
 import { SyncingState } from "./components/syncing-state";
 import { Warning } from "./components/warning";
+import { useAppContext } from "./context";
 
 export const Launcher = () => {
-  const [reset, setReset] = useState(false);
-  const [showWarning, setShowWarning] = useState<{
-    method: IpcMethod;
-    alertMessage: string;
-  } | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [currentConfig, setCurrentConfig] = useState<ToriiConfig | null>(null);
-  const [newConfig, setNewConfig] = useState<ConfigType | null>(null);
+  const { currentConfig, setCurrentConfig, newConfig, showSettings, setShowSettings, showWarning, setShowWarning } =
+    useAppContext();
 
   const backgroundImage = useMemo(() => {
     const img = getRandomBackgroundImage();
@@ -35,6 +30,7 @@ export const Launcher = () => {
 
   useEffect(() => {
     const sub = window.electronAPI.onMessage(IpcMethod.ConfigWasChanged, (config: ToriiConfig) => {
+      console.log("Current config changed to ", JSON.stringify(config, null, 2));
       setCurrentConfig(config);
     });
     return () => {
@@ -45,6 +41,7 @@ export const Launcher = () => {
   useEffect(() => {
     if (newConfig) {
       window.electronAPI.sendMessage(IpcMethod.ChangeConfigType, newConfig);
+      console.log("New config set to ", newConfig);
     }
   }, [newConfig]);
 
@@ -77,11 +74,11 @@ export const Launcher = () => {
 
         <div className="flex flex-col justify-center items-center max-w-[50vw] bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-4 text-gold w-full overflow-hidden relative z-0 backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] transition-all duration-300 ease-in-out">
           {showWarning ? (
-            <Warning setReset={setReset} showWarning={showWarning} setShowWarning={setShowWarning} />
+            <Warning />
           ) : (
             <>
               <EternumLogo className="w-16 h-16 fill-gold mb-4" />
-              <SyncingState reset={reset} currentConfig={currentConfig} />
+              <SyncingState />
               <div className="flex flex-row items-center gap-4 mt-4">
                 <Refresh
                   className="hover:bg-brown/10 w-3 h-3 fill-gold transition-all duration-300 ease-in-out hover:scale-125"
@@ -118,7 +115,7 @@ export const Launcher = () => {
               />
             </div>
             <div className="relative z-10 flex flex-col justify-center items-center max-w-[50vw] bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-4 text-gold w-full backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]">
-              <Settings showSettings={showSettings} currentConfig={currentConfig} setNewConfig={setNewConfig} />
+              <Settings />
             </div>
           </div>
         )}

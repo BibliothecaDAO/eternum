@@ -1,24 +1,11 @@
 import { useEffect, useState } from "react";
 import { IpcMethod } from "../../types";
+import { useAppContext } from "../context";
 import Button from "../utils/button";
 
-export const Warning = ({
-  showWarning,
-  setShowWarning,
-  setReset,
-}: {
-  showWarning: {
-    method: IpcMethod;
-    alertMessage: string;
-  } | null;
-  setShowWarning: (
-    showWarning: {
-      method: IpcMethod;
-      alertMessage: string;
-    } | null,
-  ) => void;
-  setReset: (reset: boolean) => void;
-}) => {
+export const Warning = () => {
+  const { showWarning, setShowWarning, setReset } = useAppContext();
+
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -59,9 +46,8 @@ export const Warning = ({
           variant="default"
           size="sm"
           onClick={() => {
-            window.electronAPI.sendMessage(showWarning.method);
+            window.electronAPI.sendMessage(showWarning.method, null);
             if (showWarning.method === IpcMethod.ResetDatabase) {
-              console.log("setting reset to true");
               setReset(true);
             }
             handleClose();

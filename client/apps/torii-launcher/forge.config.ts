@@ -1,6 +1,3 @@
-import { MakerDeb } from "@electron-forge/maker-deb";
-import { MakerRpm } from "@electron-forge/maker-rpm";
-import { MakerSquirrel } from "@electron-forge/maker-squirrel";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 import type { ForgeConfig } from "@electron-forge/shared-types";
@@ -26,15 +23,12 @@ const config: ForgeConfig = {
       name: "@electron-forge/maker-squirrel",
       config: {},
     },
-    // {
-    //   name: "@electron-forge/maker-zip",
-    //   config: (arch: string) => ({
-    //     // Note that we must provide this S3 URL here
-    //     // in order to support smooth version transitions
-    //     // especially when using a CDN to front your updates
-    //     macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
-    //   }),
-    // },
+    {
+      name: "@electron-forge/maker-zip",
+      config: (arch: string) => ({
+        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
+      }),
+    },
 
     // new MakerRpm({}),
     // new MakerDeb({}),

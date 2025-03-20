@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
-import { ConfigType, ToriiConfig } from "../../types";
+import { ConfigType } from "../../types";
+import { useAppContext } from "../context";
 import Button from "../utils/button";
 
-export const Settings = ({
-  showSettings,
-  currentConfig,
-  setNewConfig,
-}: {
-  showSettings: boolean;
-  currentConfig: ToriiConfig | null;
-  setNewConfig: (config: ConfigType) => void;
-}) => {
+export const Settings = () => {
+  const { showSettings, currentConfig, setNewConfig, setReset, setShowSettings } = useAppContext();
+
   const [isVisible, setIsVisible] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<ConfigType | null>(currentConfig?.configType);
 
+  console.log("currentConfig", currentConfig);
   useEffect(() => {
     if (showSettings) {
       // Trigger reflow to ensure transition works
@@ -24,7 +20,6 @@ export const Settings = ({
       setIsVisible(false);
     }
   }, [showSettings]);
-
 
   return (
     <div
@@ -45,6 +40,8 @@ export const Settings = ({
         className="mt-3 !h-6 !bg-gold hover:!bg-gold/70 text-brown transition-all duration-300 ease-in-out hover:!scale-102 !text-xs"
         onClick={() => {
           setNewConfig(selectedConfig);
+          setShowSettings(false);
+          setReset(true);
         }}
       >
         Confirm

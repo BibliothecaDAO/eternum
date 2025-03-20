@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
 import { IpcMethod, ToriiConfig } from "../../types";
+import { useAppContext } from "../context";
 
 const SYNC_INTERVAL = 4000;
 
-export const SyncingState = React.memo(({ reset, currentConfig }: { reset: boolean; currentConfig: ToriiConfig }) => {
+export const SyncingState = React.memo(() => {
+  const { reset, currentConfig } = useAppContext();
+
   const [gameSynced, setGameSynced] = useState(false);
   const [initialToriiBlock, setInitialToriiBlock] = useState<number | null>(null);
   const [receivedFirstBlock, setReceivedFirstBlock] = useState<number | null>(null);
@@ -14,7 +17,8 @@ export const SyncingState = React.memo(({ reset, currentConfig }: { reset: boole
 
   useEffect(() => {
     const requestStoredStateFirstBlock = async (receivedFirstBlock: number) => {
-      const firstBlock = await window.electronAPI.invoke(IpcMethod.RequestFirstBlock, null);
+      console.log("requesting stored state first block");
+      const firstBlock = await window.electronAPI.invoke<number>(IpcMethod.RequestFirstBlock, null);
       if (!firstBlock) {
         setInitialToriiBlock(receivedFirstBlock);
         await window.electronAPI.sendMessage(IpcMethod.SetFirstBlock, receivedFirstBlock);
@@ -23,6 +27,7 @@ export const SyncingState = React.memo(({ reset, currentConfig }: { reset: boole
       }
     };
 
+    console.log("receivedFirstBlock", receivedFirstBlock);
     if (receivedFirstBlock) {
       requestStoredStateFirstBlock(receivedFirstBlock);
     }
@@ -70,6 +75,7 @@ export const SyncingState = React.memo(({ reset, currentConfig }: { reset: boole
     const interval = setInterval(async () => {
       try {
         let currentBlock = await getToriiCurrentBlock();
+        console.log("currentBlock", currentBlock);
         setReceivedFirstBlock((prev) => (prev === null ? currentBlock : prev));
         setCurrentToriiBlock(currentBlock);
       } catch (error) {

@@ -1,8 +1,8 @@
 {
-  "name": "eternum",
+  "name": "torii-launcher",
   "type": "commonjs",
-  "productName": "Eternum",
-  "version": "1.0.0",
+  "productName": "Torii Launcher",
+  "version": "0.0.1",
   "description": "Launcher for Eternum's Torii",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -62,6 +62,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/credential-providers": "^3.768.0",
     "@electron-forge/shared-types": "^7.6.0",
     "cross-spawn": "^7.0.6",
     "electron-squirrel-startup": "^1.0.1",
