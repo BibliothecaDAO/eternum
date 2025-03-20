@@ -1,5 +1,7 @@
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
 
+world_address = "0x42f4d634a4c3806188b0c7555c122b5634ece788118be8858906bceee17793b"
+
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
@@ -13,7 +15,6 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 index_transactions = true
 
 world_block = 0
-world_address = "0x42f4d634a4c3806188b0c7555c122b5634ece788118be8858906bceee17793b"
 
 contracts = [
 	"erc721:0x20d4d0697dccc6aaeb99f44e3484456311fd71e49be6ed55575374baa0c6e3e",

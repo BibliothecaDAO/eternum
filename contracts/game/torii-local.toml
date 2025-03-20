@@ -1,5 +1,7 @@
 rpc = "http://127.0.0.1:8080"
 
+world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
+
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
@@ -11,7 +13,6 @@ polling_interval = 500 # Polling interval in milliseconds
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 
 world_block = 0
-world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
 
 contracts = [
 	"erc721:0x354fea8c8cdabc5907fba75cac918e7895724ef9a076ebdd0c5225bb13941a3",
