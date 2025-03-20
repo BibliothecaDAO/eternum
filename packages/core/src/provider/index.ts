@@ -950,10 +950,13 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, directions, building_category, signer } = props;
 
+    // TOOODO: FIX
+    let use_labor = false;
+
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category]),
+      calldata: CallData.compile([entity_id, directions, building_category, use_labor]),
     });
 
     return await this.promiseQueue.enqueue(call);
