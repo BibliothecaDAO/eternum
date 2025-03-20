@@ -8,25 +8,30 @@ import * as fsPromises from "fs/promises";
 import hasbin from "hasbin";
 import path from "path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
-import { TORII_VERSION, WORLD_ADDRESS } from "./constants";
-import { CurrentRpc, IpcMethod, Notification, Rpc } from "./types";
-import { osUtils } from "./utils/os-utils";
+import { DOJO_PATH } from "./constants";
+import { ConfigType, IpcMethod, Notification, ToriiConfig } from "./types";
+import { loadConfig, saveConfigType } from "./utils/config";
+import {
+  errorLog,
+  getDbPath,
+  getStateFilePath,
+  getToriiTomlConfigPath,
+  normalLog,
+  osUtils,
+  warningLog,
+} from "./utils/os-utils";
+import { getToriiVersion } from "./utils/torii";
+
+// Declare Vite environment variables
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
 
 if (started) {
   app.quit();
 }
 
 let child: ChildProcessWithoutNullStreams | null = null;
-let rpc: CurrentRpc | null = null;
-
-const HOME = app.getPath("home");
-const DOJO_PATH = path.join(HOME, ".dojo");
-const ETERNUM_PATH = path.join(app.getPath("userData"), "eternum");
-
-const fontYellow = "\x1b[33m";
-const fontReset = "\x1b[0m";
-const fontRed = "\x1b[31m";
-const fontNormal = "\x1b[34m";
+let config: ToriiConfig | null = null;
 
 updateElectronApp({
   updateSource: {
@@ -62,18 +67,12 @@ const createWindow = () => {
 };
 
 const runApp = async () => {
-  createWindow();
+  const toriiVersion = await getToriiVersion();
+  config = await loadConfig();
 
-  try {
-    rpc = await getSavedRpc();
-  } catch (e) {
-    // if the settings file doesn't exist, we need to create the file and set the default rpc
-    rpc = getDefaultRpc();
-    await saveDefaultRpc();
-  }
   await timeout(2000);
-  window?.webContents.send(IpcMethod.RpcWasChanged, rpc);
-  handleTorii();
+  window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+  handleTorii(toriiVersion);
 };
 
 app.on("quit", () => {
@@ -84,6 +83,8 @@ app.on("quit", () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
+  createWindow();
+
   runApp();
 });
 
@@ -147,7 +148,7 @@ ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
     await timeout(2000);
 
     // Then remove directory
-    await osUtils.removeDirectory(getDbPath());
+    await osUtils.removeDirectory(getDbPath(config.configType));
     await resetFirstBlock(null, true);
 
     sendNotification({ type: "Info", message: "Database successfully reset" });
@@ -156,18 +157,18 @@ ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
   }
 });
 
-ipcMain.on(IpcMethod.ChangeRpc, async (event, arg: CurrentRpc) => {
+ipcMain.on(IpcMethod.ChangeConfigType, async (event, arg: ConfigType) => {
   try {
-    await saveRpc(arg);
-    rpc = arg;
+    await saveConfigType(arg);
+    config = await loadConfig();
     killTorii();
-    sendNotification({ type: "Info", message: "RPC successfully changed" });
+    sendNotification({ type: "Info", message: "Config type successfully changed" });
   } catch (e) {
-    sendNotification({ type: "Error", message: "Failed to change RPC: " + e });
+    sendNotification({ type: "Error", message: "Failed to change config type: " + e });
   }
 });
 
-async function handleTorii() {
+async function handleTorii(toriiVersion: string) {
   const toriiExecutable = osUtils.getExecutableName("torii");
   const toriiPath = path.join(DOJO_PATH, "bin", toriiExecutable);
 
@@ -176,7 +177,7 @@ async function handleTorii() {
   if (!hasTorii) {
     normalLog("torii not found, installing");
     try {
-      await installTorii(toriiPath);
+      await installTorii(toriiPath, toriiVersion);
       normalLog("torii installed");
 
       // Verify installation was successful
@@ -190,32 +191,31 @@ async function handleTorii() {
         message: `Torii installation failed: ${error.message}`,
       });
 
-      // Wait before retrying
       await timeout(10000);
-      return handleTorii(); // Retry after delay
+      return handleTorii(toriiVersion);
     }
   } else {
     // Check current torii version
     const versionArgs = ["--version"];
     const versionResult = spawn.sync(toriiPath, versionArgs);
-    const currentVersion = versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "");
+    const currentVersion = `v${versionResult.stdout.toString().replace(/torii/g, "").replace(/\s+/g, "")}`;
 
-    if (currentVersion !== TORII_VERSION) {
-      normalLog(`Updating torii from ${currentVersion} to ${TORII_VERSION}`);
-      await installTorii(toriiPath);
+    if (currentVersion !== toriiVersion) {
+      normalLog(`Updating torii from ${currentVersion} to ${toriiVersion}`);
+      await installTorii(toriiPath, toriiVersion);
       normalLog("torii updated");
     }
   }
 
-  const toriiTomlPath = path.join(__dirname, "./torii/torii.toml");
+  const toriiTomlPath = getToriiTomlConfigPath(config.configType);
 
   while (true) {
     try {
-      const dbPath = getDbPath();
+      const dbPath = getDbPath(config.configType);
       mkdirSync(dbPath, { recursive: true });
 
       normalLog(
-        `Launching torii with params:\n- network ${rpc.name}\n- rpc ${rpc.url}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
+        `Launching torii with params:\n- network ${config.configType}\n- rpc ${config.rpc}\n- world address ${config.worldAddress}\n- db ${dbPath}\n- config ${toriiTomlPath}`,
       );
 
       // Verify files exist before launching
@@ -229,37 +229,19 @@ async function handleTorii() {
         throw new Error(`Database directory not found at: ${dbPath}`);
       }
 
-      child = spawn.spawn(
-        toriiPath,
-        [
-          "--world",
-          WORLD_ADDRESS,
-          "--http.cors_origins",
-          "*",
-          "--config",
-          toriiTomlPath,
-          "--db-dir",
-          dbPath,
-          "--rpc",
-          rpc.url,
-          "--indexing.world_block",
-          rpc.worldBlock.toString(),
-        ],
-        {
-          detached: true,
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
-
-      // Capture both stdout and stderr for better debugging
-      child.stdout.on("data", (data: Buffer) => {
-        normalLog(`Torii stdout: ${data.toString()}`);
+      child = spawn.spawn(toriiPath, ["--http.cors_origins", "*", "--config", toriiTomlPath, "--db-dir", dbPath], {
+        detached: true,
+        stdio: ["ignore", "pipe", "pipe"],
       });
 
-      child.stderr.on("data", (data: Buffer) => {
-        errorLog(`Torii stderr: ${data.toString()}`);
-        sendNotification({ type: "Error", message: data.toString() });
-      });
+        child.stdout.on("data", (data: Buffer) => {
+          normalLog(`Torii stdout: ${data.toString()}`);
+        });
+
+        child.stderr.on("data", (data: Buffer) => {
+          errorLog(`Torii stderr: ${data.toString()}`);
+          sendNotification({ type: "Error", message: data.toString() });
+        });
 
       let firstPass = true;
 
@@ -279,7 +261,7 @@ async function handleTorii() {
       if (child) {
         if (firstPass) {
           normalLog("Torii is running");
-          sendNotification({ type: "Info", message: "Torii on " + rpc.name });
+          sendNotification({ type: "Info", message: "Torii on " + config.configType });
           firstPass = false;
         }
 
@@ -309,7 +291,7 @@ function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function installTorii(toriiPath: string) {
+async function installTorii(toriiPath: string, toriiVersion: string) {
   if (osUtils.isWindows()) {
     // Windows installation
     normalLog("Installing Torii on Windows...");
@@ -320,7 +302,7 @@ async function installTorii(toriiPath: string) {
     const zipPath = path.join(tempDir, "dojo.zip");
 
     // Download zip file
-    const downloadUrl = `https://github.com/dojoengine/dojo/releases/download/v${TORII_VERSION}/dojo_v${TORII_VERSION}_win32_amd64.zip`;
+    const downloadUrl = `https://github.com/dojoengine/dojo/releases/download/${toriiVersion}/dojo_${toriiVersion}_win32_amd64.zip`;
     const result = spawn.sync("powershell", ["-c", `Invoke-WebRequest -Uri "${downloadUrl}" -OutFile "${zipPath}"`]);
 
     if (result.status !== 0) {
@@ -352,7 +334,7 @@ async function installTorii(toriiPath: string) {
     normalLog("Installing Torii on Unix-based system...");
     const result = spawn.sync("sh", [
       "-c",
-      `curl -L https://install.dojoengine.org | bash && dojoup -v ${TORII_VERSION}`,
+      `curl -L https://install.dojoengine.org | bash && dojoup -v ${toriiVersion}`,
     ]);
 
     if (result.status !== 0) {
@@ -363,7 +345,7 @@ async function installTorii(toriiPath: string) {
   }
 
   normalLog("Torii installation completed successfully");
-  sendNotification({ type: "Info", message: `Torii ${TORII_VERSION} installed successfully` });
+  sendNotification({ type: "Info", message: `Torii ${toriiVersion} installed successfully` });
 }
 
 function killTorii() {
@@ -394,22 +376,22 @@ function killTorii() {
     errorLog(`Error killing Torii processes: ${error}`);
     sendNotification({ type: "Error", message: `Failed to kill Torii processes: ${error}` });
   } finally {
-    child = null; // Clear our child reference
+    child = null;
     warningLog("Torii processes killed");
   }
 }
 
 async function resetFirstBlock(firstBlock: number | null, force: boolean = false) {
-  const state = await fsPromises.readFile(getStateFilePath(), "utf8");
+  const state = await fsPromises.readFile(getStateFilePath(config.configType), "utf8");
   const stateJson = JSON.parse(state);
   if (force || !stateJson.firstBlock) {
     stateJson.firstBlock = firstBlock;
-    fs.writeFileSync(getStateFilePath(), JSON.stringify(stateJson));
+    fs.writeFileSync(getStateFilePath(config.configType), JSON.stringify(stateJson));
   }
 }
 
 async function readFirstBlock() {
-  const stateFilePath = getStateFilePath();
+  const stateFilePath = getStateFilePath(config.configType);
   const exists = await osUtils.fileExists(stateFilePath);
 
   if (!exists) {
@@ -422,70 +404,6 @@ async function readFirstBlock() {
   return stateJson.firstBlock;
 }
 
-async function getSavedRpc(): Promise<CurrentRpc> {
-  const settings = await fsPromises.readFile(getSettingsFilePath(), "utf8");
-  const settingsJson: CurrentRpc = JSON.parse(settings);
-  return settingsJson;
-}
-
-async function saveRpc(rpc: CurrentRpc) {
-  await osUtils.ensureDirectoryExists(ETERNUM_PATH);
-
-  const settingsFilePath = getSettingsFilePath();
-  const exists = await osUtils.fileExists(settingsFilePath);
-
-  if (!exists) {
-    warningLog("Settings file does not exist, creating...");
-    await fsPromises.writeFile(settingsFilePath, JSON.stringify({ name: null, url: null }));
-  }
-
-  const settings = await fsPromises.readFile(settingsFilePath, "utf8");
-
-  const settingsJson: CurrentRpc = JSON.parse(settings);
-  settingsJson.name = rpc.name;
-  settingsJson.url = rpc.url;
-  settingsJson.worldBlock = rpc.worldBlock;
-
-  await fsPromises.writeFile(settingsFilePath, JSON.stringify(settingsJson));
-}
-
-async function saveDefaultRpc() {
-  await saveRpc(getDefaultRpc());
-}
-
-function getDefaultRpc(): CurrentRpc {
-  return { name: "Mainnet", url: Rpc.Mainnet.url, worldBlock: Rpc.Mainnet.worldBlock };
-}
-
 async function sendNotification(notification: Notification) {
   window?.webContents.send(IpcMethod.Notification, notification);
-}
-
-function getNetworkPath() {
-  return path.join(ETERNUM_PATH, rpc.name.toLowerCase());
-}
-
-function getDbPath() {
-  const dbPath = path.join(getNetworkPath(), "torii-db");
-  return dbPath;
-}
-
-function getSettingsFilePath() {
-  return path.join(ETERNUM_PATH, "settings.json");
-}
-
-function getStateFilePath() {
-  return path.join(getNetworkPath(), "state.json");
-}
-
-function warningLog(message: string) {
-  console.warn(`${fontYellow}${message}${fontReset}`);
-}
-
-function errorLog(message: string) {
-  console.error(`${fontRed}${message}${fontReset}`);
-}
-
-function normalLog(message: string) {
-  console.log(`${fontNormal}${message}${fontReset}`);
 }

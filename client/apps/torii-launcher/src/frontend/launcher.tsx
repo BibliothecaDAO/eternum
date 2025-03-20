@@ -13,7 +13,7 @@ import TrashCan from "@public/icons/trashcan.svg?react";
 import XMark from "@public/icons/x-mark.svg?react";
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { CurrentRpc, IpcMethod } from "../types";
+import { ConfigType, IpcMethod, ToriiConfig } from "../types";
 import { Settings } from "./components/settings";
 import { SyncingState } from "./components/syncing-state";
 import { Warning } from "./components/warning";
@@ -25,8 +25,8 @@ export const Launcher = () => {
     alertMessage: string;
   } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [currentRpc, setCurrentRpc] = useState<CurrentRpc | null>(null);
-  const [newRpc, setNewRpc] = useState<CurrentRpc | null>(null);
+  const [currentConfig, setCurrentConfig] = useState<ToriiConfig | null>(null);
+  const [newConfig, setNewConfig] = useState<ConfigType | null>(null);
 
   const backgroundImage = useMemo(() => {
     const img = getRandomBackgroundImage();
@@ -34,8 +34,8 @@ export const Launcher = () => {
   }, []);
 
   useEffect(() => {
-    const sub = window.electronAPI.onMessage(IpcMethod.RpcWasChanged, (rpc: CurrentRpc) => {
-      setCurrentRpc(rpc);
+    const sub = window.electronAPI.onMessage(IpcMethod.ConfigWasChanged, (config: ToriiConfig) => {
+      setCurrentConfig(config);
     });
     return () => {
       sub.remove();
@@ -43,11 +43,11 @@ export const Launcher = () => {
   }, []);
 
   useEffect(() => {
-    if (newRpc) {
-      window.electronAPI.sendMessage(IpcMethod.ChangeRpc, newRpc);
-      setCurrentRpc(newRpc);
+    if (newConfig) {
+      window.electronAPI.sendMessage(IpcMethod.ChangeConfigType, newConfig);
+      //   setCurrentConfig(newConfig);
     }
-  }, [newRpc]);
+  }, [newConfig]);
 
   const DraggableArea = styled.div`
     -webkit-app-region: drag;
@@ -65,7 +65,7 @@ export const Launcher = () => {
       <img className="z-1 absolute h-screen w-screen object-cover" src={`${backgroundImage}`} alt="Cover" />
       <div className="relative top-0 left-0 right-0 bottom-0 w-[100vw] h-[100vh] overflow-hidden flex flex-col justify-center items-center z-100">
         <DraggableArea />
-        {!showSettings && currentRpc && (
+        {!showSettings && currentConfig && (
           <div className="flex flex-row justify-center items-center gap-4 w-6 h-6 z-1000 fixed top-6 left-6">
             <SettingsIcon
               onClick={() => {
@@ -119,7 +119,7 @@ export const Launcher = () => {
               />
             </div>
             <div className="relative z-10 flex flex-col justify-center items-center max-w-[50vw] bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-4 text-gold w-full backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]">
-              <Settings showSettings={showSettings} currentRpc={currentRpc} setNewRpc={setNewRpc} />
+              <Settings showSettings={showSettings} currentConfig={currentConfig} setNewConfig={setNewConfig} />
             </div>
           </div>
         )}

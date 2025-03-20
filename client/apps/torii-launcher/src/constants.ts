@@ -1,9 +1,6 @@
-export const WORLD_ADDRESS = "0x6a9e4c6f0799160ea8ddc43ff982a5f83d7f633e9732ce42701de1288ff705f";
+import { app } from "electron";
+import path from "path";
 
-export const MAINNET_WORLD_BLOCK = 940000;
-export const MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
-
-export const SEPOLIA_WORLD_BLOCK = 456100;
-export const SEPOLIA_RPC_URL = "https://api.cartridge.gg/x/starknet/sepolia";
-
-export const TORII_VERSION = "1.3.0";
+export const HOME = app.getPath("home");
+export const DOJO_PATH = path.join(HOME, ".dojo");
+export const ETERNUM_PATH = path.join(app.getPath("userData"), "eternum");

@@ -1,15 +1,11 @@
-import { MAINNET_RPC_URL, SEPOLIA_RPC_URL, SEPOLIA_WORLD_BLOCK } from "./constants";
-
-import { MAINNET_WORLD_BLOCK } from "./constants";
-
 export enum IpcMethod {
   ResetDatabase = "resetDatabase",
   KillTorii = "killTorii",
   RequestFirstBlock = "requestFirstBlock",
   SetFirstBlock = "setFirstBlock",
-  ChangeRpc = "changeRpc",
+  ChangeConfigType = "changeConfigType",
   Notification = "notification",
-  RpcWasChanged = "rpcSet",
+  ConfigWasChanged = "configWasChanged",
 }
 
 export type Notification = {
@@ -17,26 +13,11 @@ export type Notification = {
   message: string;
 };
 
-export const Rpc: { [key: string]: CurrentRpc } = {
-  Sepolia: {
-    name: "Sepolia",
-    url: SEPOLIA_RPC_URL,
-    worldBlock: SEPOLIA_WORLD_BLOCK,
-  },
-  Mainnet: {
-    name: "Mainnet",
-    url: MAINNET_RPC_URL,
-    worldBlock: MAINNET_WORLD_BLOCK,
-  },
-  Localhost: {
-    name: "Localhost",
-    url: "http://localhost:5050",
-    worldBlock: 0,
-  },
-};
+export type ConfigType = "local" | "mainnet" | "sepolia" | "slot";
 
-export type CurrentRpc = {
-  name: string;
-  url: string;
+export type ToriiConfig = {
+  configType: ConfigType;
+  worldAddress: string;
+  rpc: string;
   worldBlock: number;
 };

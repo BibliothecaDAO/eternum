@@ -27,6 +27,7 @@
     "@electron-forge/plugin-webpack": "^7.4.0",
     "@electron-forge/publisher-s3": "^7.6.1",
     "@electron/fuses": "^1.8.0",
+    "@types/cross-spawn": "^6.0.6",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/hasbin": "^1.2.2",
     "@types/react": "^19.0.7",
