@@ -24,7 +24,6 @@ const config: ForgeConfig = {
       config: {
         name: "EternumToriiLauncher",
         setupExe: "EternumToriiLauncher.exe",
-        iconUrl: "./public/icon",
       },
     },
     {
