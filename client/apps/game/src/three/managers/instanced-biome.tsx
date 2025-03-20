@@ -27,7 +27,8 @@ export default class InstancedModel {
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
         if (!child.material.depthWrite) {
-          child.material.depthWrite = false;
+          child.material.depthWrite = true;
+          child.material.alphaTest = 0.05;
           renderOrder = 3;
         } else {
           renderOrder = 2;
