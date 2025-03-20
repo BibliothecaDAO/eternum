@@ -77,7 +77,6 @@ export type Structure = {
   name: string;
   category: StructureType;
   ownerName?: string;
-  protectors: ArmyInfo[];
   owner: ContractAddress;
   position: Position;
 };
