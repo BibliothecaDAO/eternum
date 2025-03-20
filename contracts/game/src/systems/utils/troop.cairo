@@ -569,6 +569,16 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
         // todo: give agent resources
 
+        // hack to grant agents lords
+        // todo: remove
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
+        let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+        let mut lords_resource = SingleResourceStoreImpl::retrieve(
+            ref world, explorer.explorer_id, ResourceTypes::LORDS, ref explorer_weight, lords_weight_grams, false,
+        );
+        lords_resource.add(5000 * RESOURCE_PRECISION, ref explorer_weight, lords_weight_grams);
+        lords_resource.store(ref world);
+
         // emit event
         world
             .emit_event(

@@ -1027,8 +1027,8 @@
       "guardResurrectionDelay": 86400,
       "mercenariesTroopLowerBound": 3000,
       "mercenariesTroopUpperBound": 6000,
-      "agentTroopLowerBound": 400000,
-      "agentTroopUpperBound": 500000
+      "agentTroopLowerBound": 1000,
+      "agentTroopUpperBound": 3000
     }
   },
   "settlement": {

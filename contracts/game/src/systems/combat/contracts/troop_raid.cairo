@@ -38,8 +38,8 @@ pub mod troop_raid_systems {
         troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl},
     };
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
-    use s1_eternum::utils::random::{VRFImpl};
     use s1_eternum::utils::math::{PercentageValueImpl};
+    use s1_eternum::utils::random::{VRFImpl};
 
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -133,7 +133,9 @@ pub mod troop_raid_systems {
                         );
 
                     // apply damage to guard slot
-                    let mut guard_damage_applied = troop_damage_config.damage_raid_percent_num.into() * damage_dealt_to_guard / PercentageValueImpl::_100().into();
+                    let mut guard_damage_applied = troop_damage_config.damage_raid_percent_num.into()
+                        * damage_dealt_to_guard
+                        / PercentageValueImpl::_100().into();
                     // add one and make sure it is precise
                     guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
                     guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
@@ -187,7 +189,9 @@ pub mod troop_raid_systems {
                     explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
                 };
 
-                let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into() * explorer_damage_received / PercentageValueImpl::_100().into();
+                let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into()
+                    * explorer_damage_received
+                    / PercentageValueImpl::_100().into();
                 // add one and make sure it is precise
                 explorer_damage_applied += RESOURCE_PRECISION - (explorer_damage_applied % RESOURCE_PRECISION);
                 explorer_aggressor_troops
