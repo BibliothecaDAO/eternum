@@ -13,7 +13,7 @@ mod ownership_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::agent::AgentOwner;
-    use s1_eternum::models::config::{SeasonConfigImpl};
+    use s1_eternum::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use s1_eternum::models::owner::OwnerAddressTrait;
     use s1_eternum::models::structure::{StructureOwnerStoreImpl};
     use starknet::ContractAddress;
@@ -35,11 +35,14 @@ mod ownership_systems {
             // ensure season is open
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // ensure caller owns agent
-            let mut agent_owner: AgentOwner = world.read_model(explorer_id);
-            agent_owner.address.assert_caller_owner();
+            // ensure caller is agent controller
+            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("agent_controller_config"),
+            );
+            agent_controller_config.address.assert_caller_owner();
 
             // update agent owner
+            let mut agent_owner: AgentOwner = world.read_model(explorer_id);
             agent_owner.address = new_owner;
             world.write_model(@agent_owner);
         }

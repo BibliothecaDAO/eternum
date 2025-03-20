@@ -293,7 +293,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         AgentCountImpl::decrease(ref world);
 
         // delete agent owner
-        let agent_owner = AgentOwner{explorer_id: explorer.explorer_id, address: Zero::zero()};
+        let agent_owner = AgentOwner { explorer_id: explorer.explorer_id, address: Zero::zero() };
         world.erase_model(@agent_owner);
 
         // explorer delete
