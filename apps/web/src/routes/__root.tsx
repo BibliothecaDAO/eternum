@@ -26,9 +26,11 @@ import { WagmiProvider } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 
 export interface RouterAppContext {
-  /*session: {
+  session: {
     address: string;
-  };*/
+    chain: string;
+    provider: string;
+  };
   queryClient: QueryClient;
 }
 

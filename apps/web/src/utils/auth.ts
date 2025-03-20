@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { env } from "env";
 
 import { db } from "@realms-world/db/client";
 
@@ -8,7 +9,7 @@ import { siws } from "./auth/auth-siws-plugin";
 // Create Starknet auth plug
 
 export const auth = betterAuth({
-  baseURL: "http://localhost:3000", //env.VITE_BASE_URL,
+  baseURL: env.VITE_BASE_URL ?? "http://localhost:3000",
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
@@ -21,5 +22,5 @@ export const auth = betterAuth({
     },
   },
 
-  plugins: [siws({ domain: /*env.VITE_BASE_URL*/ "http://localhost:3000" })],
+  plugins: [siws({ domain: env.VITE_BASE_URL ?? "http://localhost:3000" })],
 });

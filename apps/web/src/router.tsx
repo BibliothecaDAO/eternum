@@ -14,11 +14,11 @@ export function createRouter() {
       routeTree,
       context: {
         queryClient,
-        /*session: {
+        session: {
           address: "0x123",
           chain: "mainnet",
           provider: "starknet",
-        },*/
+        },
       },
       defaultPreload: "intent",
       defaultErrorComponent: DefaultCatchBoundary,

@@ -10,9 +10,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { authClient } from "@/utils/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+
+import { Login } from "./sign-in-with-starknet";
 
 // Define a Zod schema for editing the profile.
 // Note: We use a simple string for interests which will be split into an array in the submit handler.
@@ -80,6 +83,7 @@ export function DelegateProfileForm({
   function handleFormSubmit(data: EditProfileValues) {
     onSubmit({ ...data, interests: data.interests ?? [] });
   }
+  const { data: session, refetch } = authClient.useSession();
 
   return (
     <Form {...form}>
@@ -88,6 +92,7 @@ export function DelegateProfileForm({
         className="space-y-8"
       >
         <FormField
+          disabled={!session}
           control={form.control}
           name="statement"
           render={({ field }) => (
@@ -102,6 +107,7 @@ export function DelegateProfileForm({
         />
 
         <FormField
+          disabled={!session}
           control={form.control}
           name="interests"
           render={({ field }) => (
@@ -134,6 +140,7 @@ export function DelegateProfileForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
+            disabled={!session}
             control={form.control}
             name="twitter"
             render={({ field }) => (
@@ -148,6 +155,7 @@ export function DelegateProfileForm({
           />
 
           <FormField
+            disabled={!session}
             control={form.control}
             name="github"
             render={({ field }) => (
@@ -162,6 +170,7 @@ export function DelegateProfileForm({
           />
 
           <FormField
+            disabled={!session}
             control={form.control}
             name="telegram"
             render={({ field }) => (
@@ -176,6 +185,7 @@ export function DelegateProfileForm({
           />
 
           <FormField
+            disabled={!session}
             control={form.control}
             name="discord"
             render={({ field }) => (
@@ -189,9 +199,13 @@ export function DelegateProfileForm({
             )}
           />
         </div>
-        <Button type="submit" className="w-full">
-          Save Profile
-        </Button>
+        {!session ? (
+          <Login />
+        ) : (
+          <Button type="submit" className="w-full">
+            Save Profile
+          </Button>
+        )}
       </form>
     </Form>
   );

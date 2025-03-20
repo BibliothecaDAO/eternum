@@ -62,7 +62,6 @@ export const siws = (options: SIWSPluginOptions) =>
         },
         async (ctx) => {
           const nonce = uid(64);
-          console.log(nonce);
           // Store nonce with 15-minute expiration
           await ctx.context.internalAdapter.createVerificationValue({
             id: generateId(),
@@ -86,16 +85,14 @@ export const siws = (options: SIWSPluginOptions) =>
           }),
         },
         async (ctx) => {
-          const { message, signature } = ctx.body;
-          // Parse and validate SIWS message
-          console.log(ctx.body);
+          const { message, signature, address } = ctx.body;
+
           const siwsMessage = SiwsTypedData.fromJson(message);
-          console.log(siwsMessage);
           try {
             // Find stored nonce to check it's validity
             const verification =
               await ctx.context.internalAdapter.findVerificationValue(
-                `siws_${ctx.body.address.toLowerCase()}`,
+                `siws_${address.toLowerCase()}`,
               );
             console.log(verification);
             // Ensure nonce is valid and not expired
@@ -141,11 +138,11 @@ export const siws = (options: SIWSPluginOptions) =>
             // );
 
             let user = await db.query.user.findFirst({
-              where: eq(userTable.address, ctx.body.address),
+              where: eq(userTable.id, address),
             });
 
             if (!user) {
-              const tempEmail = `${ctx.body.address}@${process.env.NEXT_PUBLIC_BASE_URL}`;
+              const tempEmail = `${address}@${process.env.VITE_PUBLIC_BASE_URL}`;
               /*const ens = await getEnsName(wagmiConfig, {
                 address: ctx.body.address as `0x${string}`,
                 chainId: options.chainId ?? 1,
@@ -159,7 +156,7 @@ export const siws = (options: SIWSPluginOptions) =>
               user = await ctx.context.internalAdapter.createUser({
                 name: /*ens ??*/ ctx.body.address,
                 email: tempEmail,
-                address: ctx.body.address,
+                id: ctx.body.address,
                 //avatar: avatar ?? "",
               });
             }

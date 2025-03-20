@@ -1,6 +1,9 @@
 //import { formatAddress } from "@/utils/utils";
+import { auth } from "@/utils/auth";
+import { formatAddress } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
+import { getHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { and, desc, eq, like, sql } from "@realms-world/db";
@@ -109,10 +112,25 @@ export const getDelegateByIDQueryOptions = (
 export const createDelegateProfile = createServerFn({ method: "POST" })
   .validator((input: unknown) => CreateDelegateProfileSchema.parse(input))
   .handler(async (ctx) => {
-    //const delegateId = formatAddress(ctx.session.user.name);
+    console.log(ctx);
+
+    const session = await auth.api.getSession({
+      headers: getHeaders(),
+      query: {
+        // ensure session is fresh
+        // https://www.better-auth.com/docs/concepts/session-management#session-caching
+        disableCookieCache: true,
+      },
+    });
+    console.log(session);
+    if (!session) {
+      return;
+    }
+    const delegateId = formatAddress(session.user.name ?? "");
+    console.log(delegateId);
     return db
       .insert(delegateProfiles)
-      .values({ ...ctx.data /*delegateId */ })
+      .values({ ...ctx.data, delegateId })
       .onConflictDoUpdate({
         target: delegateProfiles.delegateId,
         set: { ...ctx.data },

@@ -13,15 +13,36 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { useStarkDisplayName } from "@/hooks/use-stark-name";
-import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
+import {
+  createDelegateProfile,
+  getDelegateByIDQueryOptions,
+} from "@/lib/getDelegates";
+import { auth } from "@/utils/auth";
+import { authClient } from "@/utils/auth-client";
 import { formatNumber } from "@/utils/utils";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getWebRequest } from "@tanstack/react-start/server";
 import { Users, Vote } from "lucide-react";
+
+const getUser = createServerFn({ method: "GET" }).handler(async () => {
+  const { headers } = getWebRequest()!;
+  const session = await auth.api.getSession({ headers });
+
+  return session?.address || null;
+});
 
 export const Route = createFileRoute("/delegate/profile")({
   component: RouteComponent,
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.fetchQuery({
+      queryKey: ["user"],
+      queryFn: ({ signal }) => getUser({ signal }),
+    }); // we're using react-query for caching, see router.tsx
+    return { session };
+  },
 });
 
 function RouteComponent() {
@@ -30,6 +51,8 @@ function RouteComponent() {
     getDelegateByIDQueryOptions({ address: address }),
   );
   const name = useStarkDisplayName(address as `0x${string}`);
+
+  const { data: session } = authClient.useSession();
 
   if (!address) {
     return <LoginCard />;
@@ -46,13 +69,32 @@ function RouteComponent() {
     >
       <SidebarInset>
         <div className="container mx-auto p-8">
-          <h1 className="mb-4 text-2xl font-semibold">Your Profile</h1>
+          <h1 className="mb-4 text-2xl font-semibold">
+            Your Profile {session?.user.id}
+          </h1>
           {!isLoading && (
             <Card className="mb-8">
               <CardContent className="p-6">
                 <DelegateProfileForm
-                  delegate={delegate}
-                  onSubmit={() => void 0}
+                  delegate={
+                    delegate?.delegateProfile
+                      ? {
+                          delegateProfile: {
+                            statement: delegate.delegateProfile.statement,
+                            interests:
+                              delegate.delegateProfile.interests ?? undefined,
+                            twitter: delegate.delegateProfile.twitter ?? "",
+                            github: delegate.delegateProfile.github ?? "",
+                            telegram: delegate.delegateProfile.telegram ?? "",
+                            discord: delegate.delegateProfile.discord ?? "",
+                          },
+                        }
+                      : undefined
+                  }
+                  onSubmit={async (data) => {
+                    console.log(data);
+                    await createDelegateProfile({ data });
+                  }}
                 />
               </CardContent>
             </Card>

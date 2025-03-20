@@ -67,10 +67,8 @@ export function Login() {
 
   if (!session) {
     return (
-      <form
-        //actionText="Login"
-        //status={loginMutation.status}
-        onSubmit={async (e) => {
+      <Button
+        onClick={async (e) => {
           e.preventDefault();
           const signInData = await createSignInData();
           console.log(signInData);
@@ -82,12 +80,11 @@ export function Login() {
           });
           refetch();
         }}
+        disabled={isPending || isDataPending}
       >
-        <Button disabled={isPending || isDataPending}>
-          <StarknetIcon className="mr-2 h-6 w-6" />
-          Sign in to Edit Profile
-        </Button>
-      </form>
+        <StarknetIcon className="mr-2 h-6 w-6" />
+        Sign in to Edit Profile
+      </Button>
     );
   }
 
