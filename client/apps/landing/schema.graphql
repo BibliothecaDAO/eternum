@@ -8738,6 +8738,17 @@ input s1_eternum_WorldConfig_troop_damage_configWhereInput {
   damage_biome_bonus_numNEQ: u16
   damage_biome_bonus_numNOTIN: [u16]
   damage_biome_bonus_numNOTLIKE: u16
+  damage_raid_percent_num: u16
+  damage_raid_percent_numEQ: u16
+  damage_raid_percent_numGT: u16
+  damage_raid_percent_numGTE: u16
+  damage_raid_percent_numIN: [u16]
+  damage_raid_percent_numLIKE: u16
+  damage_raid_percent_numLT: u16
+  damage_raid_percent_numLTE: u16
+  damage_raid_percent_numNEQ: u16
+  damage_raid_percent_numNOTIN: [u16]
+  damage_raid_percent_numNOTLIKE: u16
   damage_c0: u128
   damage_c0EQ: u128
   damage_c0GT: u128

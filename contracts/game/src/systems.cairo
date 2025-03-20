@@ -59,6 +59,7 @@ pub mod combat {
         pub mod troop_battle;
         pub mod troop_management;
         pub mod troop_movement;
+        pub mod troop_raid;
     }
 }
 pub mod bank {

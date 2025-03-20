@@ -20,6 +20,7 @@ export interface Army {
 }
 
 export interface CombatParameters {
+  damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
   damage_beta_small: bigint;
   damage_beta_large: bigint;
@@ -221,6 +222,7 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
+      damage_raid_percent_num: 1000, //10%
       damage_biome_bonus_num: 3000,
       damage_beta_small: 4611686018427387904n, // 0.25
       damage_beta_large: 2213609288845146193n, // 0.12
