@@ -24,10 +24,6 @@ interface LaborDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ResourceAmounts = {
-  [key in ResourcesIds]?: number;
-};
-
 export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawerProps) => {
   const {
     setup: {
@@ -154,7 +150,6 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
       <div key={resource.id} className="grid grid-cols-[1.5fr_1fr_auto_auto] items-center gap-2 py-1.5">
         <ResourceSelectDrawer
           entityId={realm.entityId}
-          selectedResource={{ id: resource.id, trait: resourceInfo.trait }}
           onResourceSelect={(resourceId) => handleResourceChange(index, resourceId)}
         >
           <Button variant="outline" className="w-full justify-between px-2">

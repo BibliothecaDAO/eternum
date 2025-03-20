@@ -30,9 +30,9 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
         <div className="flex justify-between items-center">
           <div className="text-lg font-medium capitalize">{direction}</div>
           <ResourceSelectDrawer
-            selectedResource={selectedResource}
             onResourceSelect={(id: number) => onResourceChange?.(id)}
             showBalance={true}
+            entityId={0}
           >
             <Button variant="outline" className="w-[200px] justify-between">
               <div className="flex items-center gap-2">

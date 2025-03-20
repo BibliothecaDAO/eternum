@@ -1,8 +1,7 @@
 import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { getEntityIdFromKeys, getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
+import { getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo, usePlayerOwnedRealms, useResourceManager } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useMemo } from "react";
 import { getLaborConfig } from "../lib/labor";
 import { LaborProductionCalldata, ResourceProductionCalldata } from "./types";
@@ -39,11 +38,6 @@ export const useProduction = () => {
     if (!selectedRealm) return [];
     return producedResources
       .map((resourceId) => {
-        const resource = getComponentValue(
-          Resource,
-          getEntityIdFromKeys([BigInt(structureEntityId), BigInt(resourceId)]),
-        );
-
         const buildingsForResource = productionBuildings.filter(
           (building) => building.produced.resource === resourceId,
         );
@@ -98,47 +92,38 @@ export const useProduction = () => {
     [burn_other_predefined_resources_for_resources, account],
   );
 
-  const pauseProduction = useCallback(
-    async (resourceType: number) => {
-      try {
-        // TODO: Implement pause functionality when available in the contract
-        console.warn("Pause production not implemented yet");
-        return false;
-      } catch (error) {
-        console.error("Failed to pause production:", error);
-        return false;
-      }
-    },
-    [structureEntityId, account],
-  );
+  const pauseProduction = useCallback(async () => {
+    try {
+      // TODO: Implement pause functionality when available in the contract
+      console.warn("Pause production not implemented yet");
+      return false;
+    } catch (error) {
+      console.error("Failed to pause production:", error);
+      return false;
+    }
+  }, [structureEntityId, account]);
 
-  const resumeProduction = useCallback(
-    async (resourceType: number) => {
-      try {
-        // TODO: Implement resume functionality when available in the contract
-        console.warn("Resume production not implemented yet");
-        return false;
-      } catch (error) {
-        console.error("Failed to resume production:", error);
-        return false;
-      }
-    },
-    [structureEntityId, account],
-  );
+  const resumeProduction = useCallback(async () => {
+    try {
+      // TODO: Implement resume functionality when available in the contract
+      console.warn("Resume production not implemented yet");
+      return false;
+    } catch (error) {
+      console.error("Failed to resume production:", error);
+      return false;
+    }
+  }, [structureEntityId, account]);
 
-  const destroyProduction = useCallback(
-    async (resourceType: number) => {
-      try {
-        // TODO: Implement destroy functionality when available in the contract
-        console.warn("Destroy production not implemented yet");
-        return false;
-      } catch (error) {
-        console.error("Failed to destroy production:", error);
-        return false;
-      }
-    },
-    [structureEntityId, account],
-  );
+  const destroyProduction = useCallback(async () => {
+    try {
+      // TODO: Implement destroy functionality when available in the contract
+      console.warn("Destroy production not implemented yet");
+      return false;
+    } catch (error) {
+      console.error("Failed to destroy production:", error);
+      return false;
+    }
+  }, [structureEntityId, account]);
 
   return {
     productions,

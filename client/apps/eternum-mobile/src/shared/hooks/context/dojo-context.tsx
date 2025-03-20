@@ -4,8 +4,7 @@ import { Loading } from "@/shared/ui/loading";
 import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { cairoShortStringToFelt } from "@dojoengine/torii-client";
-import { useAccount, useConnect } from "@starknet-react/core";
+import { useAccount } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../../env";
@@ -90,27 +89,27 @@ const DojoContextProvider = ({
   masterAccount: Account;
   controllerAccount: AccountInterface | null;
 }) => {
-  const setAddressName = useStore((state) => state.setAddressName);
+  // const setAddressName = useStore((state) => state.setAddressName);
 
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const { connect, connectors } = useConnect();
-  const { isConnected, isConnecting, connector } = useAccount();
+  // const { connect, connectors } = useConnect();
+  const { isConnected, isConnecting } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
 
   const [retries, setRetries] = useState(0);
 
-  const connectWallet = async () => {
-    try {
-      console.log("Attempting to connect wallet...");
-      await connect({ connector: connectors[0] });
-      console.log("Wallet connected successfully.");
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  };
+  // const connectWallet = async () => {
+  //   try {
+  //     console.log("Attempting to connect wallet...");
+  //     await connect({ connector: connectors[0] });
+  //     console.log("Wallet connected successfully.");
+  //   } catch (error) {
+  //     console.error("Failed to connect wallet:", error);
+  //   }
+  // };
 
   const [accountToUse, setAccountToUse] = useState<Account | AccountInterface>(
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
@@ -125,28 +124,20 @@ const DojoContextProvider = ({
   }, [controllerAccount]);
 
   useEffect(() => {
-    const setUserName = async () => {
-      const username = await (connector as ControllerConnector)?.username();
-      if (!username) return;
+    // const setUserName = async () => {
+    //   const username = await (connector as ControllerConnector)?.username();
+    //   if (!username) return;
 
-      const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
-      value.systemCalls.set_address_name({
-        signer: controllerAccount!,
-        name: usernameFelt,
-      });
-      setAddressName(username);
-    };
+    //   const usernameFelt = cairoShortStringToFelt(username.slice(0, 31));
+    //   value.systemCalls.set_address_name({
+    //     signer: controllerAccount!,
+    //     name: usernameFelt,
+    //   });
+    //   setAddressName(username);
+    // };
 
     if (controllerAccount) {
       useStore.getState().setAccount(controllerAccount);
-
-      // const addressName = runQuery([
-      //   HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-      // ]);
-
-      // if (addressName.size === 0) {
-      //   setUserName();
-      // }
 
       setAccountsInitialized(true);
     } else {

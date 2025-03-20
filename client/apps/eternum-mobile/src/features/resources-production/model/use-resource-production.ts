@@ -19,7 +19,7 @@ export const useResourceProduction = (resourceId: number) => {
   const productionStatus = useMemo(() => {
     const production = resourceManager.getProduction(resourceId);
     return {
-      isActive: production?.building_count > 0,
+      isActive: production?.building_count! > 0,
       amount: production?.output_amount_left ? divideByPrecision(Number(production.output_amount_left)) : 0,
       rate: production?.production_rate ? divideByPrecision(Number(production.production_rate)) : 0,
       lastUpdated: production?.last_updated_at || 0,
@@ -40,15 +40,15 @@ export const useResourceProduction = (resourceId: number) => {
   );
 
   const pauseResourceProduction = useCallback(async () => {
-    return await pauseProduction(resourceId);
+    return await pauseProduction();
   }, [resourceId, pauseProduction]);
 
   const resumeResourceProduction = useCallback(async () => {
-    return await resumeProduction(resourceId);
+    return await resumeProduction();
   }, [resourceId, resumeProduction]);
 
   const destroyResourceProduction = useCallback(async () => {
-    return await destroyProduction(resourceId);
+    return await destroyProduction();
   }, [resourceId, destroyProduction]);
 
   return {

@@ -1,10 +1,8 @@
 import { configManager, TickIds } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
 export const useBlockTimestamp = () => {
   const [currentDefaultTick, setCurrentDefaultTick] = useState(0);
-  const dojo = useDojo();
 
   useEffect(() => {
     const updateTick = () => {

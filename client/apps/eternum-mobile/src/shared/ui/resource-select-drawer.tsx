@@ -10,14 +10,7 @@ import { useResourceManager } from "@bibliothecadao/react";
 import { Search } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 
-interface Resource {
-  id: number;
-  trait: string;
-  balance?: number;
-}
-
 interface ResourceSelectDrawerProps {
-  selectedResource: Resource | undefined;
   onResourceSelect: (resourceId: number) => void;
   showBalance?: boolean;
   children: ReactNode;
@@ -25,7 +18,6 @@ interface ResourceSelectDrawerProps {
 }
 
 export const ResourceSelectDrawer = ({
-  selectedResource,
   onResourceSelect,
   showBalance = true,
   children,

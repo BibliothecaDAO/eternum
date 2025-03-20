@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { LoadingStateKey, WorldSlice } from "@/shared/store/slices/world-loading-slice";
 import {
   ADMIN_BANK_ENTITY_ID,

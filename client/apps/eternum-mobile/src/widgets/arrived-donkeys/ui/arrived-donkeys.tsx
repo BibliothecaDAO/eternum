@@ -4,13 +4,12 @@ import { Card, CardContent, CardTitle } from "@/shared/ui/card";
 import { PackageCheck } from "lucide-react";
 
 interface ArrivedDonkeysProps {
-  entityId: number;
   onClaim: () => void;
   readyCount?: number;
   pendingCount?: number;
 }
 
-export const ArrivedDonkeys = ({ entityId, onClaim, readyCount = 0, pendingCount = 0 }: ArrivedDonkeysProps) => {
+export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: ArrivedDonkeysProps) => {
   const totalCount = readyCount + pendingCount;
 
   if (totalCount === 0) {
