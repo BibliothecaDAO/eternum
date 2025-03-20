@@ -19,7 +19,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
-export const RealmDetails = () => {
+export const RealmVillageDetails = () => {
   const dojo = useDojo();
 
   const { currentBlockTimestamp } = useBlockTimestamp();
@@ -34,6 +34,10 @@ export const RealmDetails = () => {
 
   const isRealm = useMemo(() => {
     return structure?.structure.base.category === StructureType.Realm;
+  }, [structure]);
+
+  const isVillage = useMemo(() => {
+    return structure?.structure.base.category === StructureType.Village;
   }, [structure]);
 
   const address = useMemo(() => {
@@ -110,25 +114,26 @@ export const RealmDetails = () => {
           </div>
         </div>
 
-        {isRealm && (
-          <Tabs
-            selectedIndex={selectedTab}
-            onChange={(index: number) => setSelectedTab(index)}
-            variant="default"
-            className="h-full"
-          >
-            <Tabs.List className="border border-gold/20 rounded-lg p-1">
-              {tabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-              ))}
-            </Tabs.List>
-            <Tabs.Panels>
-              {tabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </Tabs>
-        )}
+        {isRealm ||
+          (isVillage && (
+            <Tabs
+              selectedIndex={selectedTab}
+              onChange={(index: number) => setSelectedTab(index)}
+              variant="default"
+              className="h-full"
+            >
+              <Tabs.List className="border border-gold/20 rounded-lg p-1">
+                {tabs.map((tab, index) => (
+                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+                ))}
+              </Tabs.List>
+              <Tabs.Panels>
+                {tabs.map((tab, index) => (
+                  <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+                ))}
+              </Tabs.Panels>
+            </Tabs>
+          ))}
       </div>
     )
   );
