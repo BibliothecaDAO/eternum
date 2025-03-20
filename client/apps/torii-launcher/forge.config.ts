@@ -21,7 +21,11 @@ const config: ForgeConfig = {
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: {},
+      config: {
+        name: "Eternum Torii Launcher",
+        setupExe: "Eternum Torii Launcher.exe",
+        setupIcon: "./public/icon.png",
+      },
     },
     {
       name: "@electron-forge/maker-zip",
