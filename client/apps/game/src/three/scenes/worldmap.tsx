@@ -79,8 +79,6 @@ export default class WorldmapScene extends HexagonScene {
 
   private fetchedChunks: Set<string> = new Set();
 
-  private processingChunk: string | null = null;
-
   constructor(
     dojoContext: SetupResult,
     raycaster: Raycaster,
@@ -586,13 +584,9 @@ export default class WorldmapScene extends HexagonScene {
       // Mark hex as rendered
       this.markHexRendered(biome as BiomeType, col, row);
 
-      // Only cache matrices if we're still processing the same chunk
-      const currentProcessingChunk = `${renderedChunkCenterRow},${renderedChunkCenterCol}`;
-      if (this.processingChunk === currentProcessingChunk) {
-        // Cache the updated matrices for the chunk
-        this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
-        this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
-      }
+      // Cache the updated matrices for the chunk
+      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+      this.cacheMatricesForChunk(renderedChunkCenterRow, renderedChunkCenterCol);
 
       this.interactiveHexManager.renderHexes();
     } else {
@@ -680,19 +674,9 @@ export default class WorldmapScene extends HexagonScene {
 
   async updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     await Promise.all(this.modelLoadPromises);
-    const targetChunk = `${startRow},${startCol}`;
-
-    // If chunk is already being processed with these coordinates, no need to restart
-    if (this.processingChunk === targetChunk) {
-      return;
-    }
-
-    this.processingChunk = targetChunk;
-
     if (this.applyCachedMatricesForChunk(startRow, startCol)) {
       console.log("cache applied");
       this.computeInteractiveHexes(startRow, startCol, rows, cols);
-      this.processingChunk = null;
       return;
     }
 
@@ -730,18 +714,6 @@ export default class WorldmapScene extends HexagonScene {
     this.computeTileEntities(this.currentChunk);
 
     const processBatch = async () => {
-      // Check if chunk changed during processing
-      if (this.processingChunk !== targetChunk) {
-        console.log("Chunk changed during processing, restarting with new chunk");
-        // Get the current chunk coordinates from this.currentChunk
-        const [newRow, newCol] = this.currentChunk.split(",").map(Number);
-        // Only restart if the current chunk is different from "null"
-        if (this.currentChunk !== "null") {
-          this.updateHexagonGrid(newRow, newCol, rows, cols);
-        }
-        return;
-      }
-
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
       for (let i = currentIndex; i < endIndex; i++) {
@@ -814,19 +786,15 @@ export default class WorldmapScene extends HexagonScene {
       if (currentIndex < rows * cols) {
         requestAnimationFrame(processBatch);
       } else {
-        // Final check if chunk changed before applying and caching
-        if (this.processingChunk === targetChunk) {
-          for (const [biome, matrices] of Object.entries(biomeHexes)) {
-            const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-            matrices.forEach((matrix, index) => {
-              hexMesh.setMatrixAt(index, matrix);
-            });
-            hexMesh.setCount(matrices.length);
-          }
-          this.cacheMatricesForChunk(startRow, startCol);
-          this.interactiveHexManager.renderHexes();
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+          matrices.forEach((matrix, index) => {
+            hexMesh.setMatrixAt(index, matrix);
+          });
+          hexMesh.setCount(matrices.length);
         }
-        this.processingChunk = null;
+        this.cacheMatricesForChunk(startRow, startCol);
+        this.interactiveHexManager.renderHexes();
       }
     };
 
