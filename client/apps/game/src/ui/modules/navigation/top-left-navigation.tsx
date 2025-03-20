@@ -50,6 +50,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
+  console.log("structures", structures);
+
   const { isMapView, hexPosition } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -61,7 +63,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   });
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address],
   );
 

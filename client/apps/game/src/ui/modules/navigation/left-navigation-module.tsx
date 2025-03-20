@@ -9,7 +9,6 @@ import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
@@ -54,13 +53,7 @@ export const LeftNavigationModule = memo(() => {
   const { isMapView } = useQuery();
 
   const structureInfo = useMemo(
-    () =>
-      getEntityInfo(
-        structureEntityId,
-        ContractAddress(account.address),
-        getBlockTimestamp().currentDefaultTick,
-        components,
-      ),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
     [structureEntityId, account.address, components],
   );
 

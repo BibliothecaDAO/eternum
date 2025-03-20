@@ -6,7 +6,6 @@ import { ProductionModal } from "@/ui/components/production/production-modal";
 import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -29,7 +28,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{
@@ -58,7 +56,6 @@ export const BuildingEntityDetails = () => {
   const selectedStructureInfo = getEntityInfo(
     structureEntityId,
     ContractAddress(dojo.account.account.address),
-    currentDefaultTick,
     dojo.setup.components,
   );
 
