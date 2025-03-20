@@ -36,14 +36,14 @@ export class HighlightHexManager {
     this.highlightedHexes = [];
 
     // Create new highlight meshes
-    const bigHexagonShape = createHexagonShape(HEX_SIZE);
+    const bigHexagonShape = createHexagonShape(HEX_SIZE * 0.975);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 
     actionPaths.forEach((hex) => {
       const position = getWorldPositionForHex(hex.hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
-      highlightMesh.position.set(position.x, 0.3, position.z);
+      highlightMesh.position.set(position.x, 0.2, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
       highlightMesh.renderOrder = 5;
 

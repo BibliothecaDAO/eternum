@@ -1,5 +1,5 @@
-import * as THREE from "three";
 import { HEX_SIZE } from "@/three/scenes/constants";
+import * as THREE from "three";
 
 export const createHexagonShape = (radius: number) => {
   const shape = new THREE.Shape();
