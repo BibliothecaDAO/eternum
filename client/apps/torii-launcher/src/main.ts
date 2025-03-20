@@ -71,6 +71,7 @@ const runApp = async () => {
   config = await loadConfig();
 
   await timeout(2000);
+  sendNotification({ type: "Info", message: "Starting Torii" });
   window?.webContents.send(IpcMethod.ConfigWasChanged, config);
   handleTorii(toriiVersion);
 };
@@ -406,5 +407,6 @@ async function readFirstBlock() {
 }
 
 async function sendNotification(notification: Notification) {
+  console.log("Sending notification:", notification);
   window?.webContents.send(IpcMethod.Notification, notification);
 }

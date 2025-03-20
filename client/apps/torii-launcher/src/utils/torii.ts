@@ -1,6 +1,6 @@
 export const getToriiVersion = async () => {
   const response = await fetch(
-    "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/Scarb.toml",
+    "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/feat/torii-launcher-windows/contracts/game/Scarb.toml",
   );
   const data = await response.text();
 

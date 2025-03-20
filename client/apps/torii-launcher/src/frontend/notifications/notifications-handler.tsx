@@ -7,7 +7,7 @@ export const NotificationsHandler = (): null => {
     const sub = window.electronAPI.onMessage(IpcMethod.Notification, (notification: Notification) => {
       console.log("Notification received: " + JSON.stringify(notification));
       toast(
-        <div className="text-xs text-gold m-auto text-center">
+        <div className="text-xs text-gold m-auto text-center w-full p-4">
           <span className="font-bold ">{notification.type} </span>
           <span className="">{notification.message}</span>
         </div>,

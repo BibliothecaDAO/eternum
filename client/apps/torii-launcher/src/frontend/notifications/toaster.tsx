@@ -10,7 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         unstyled: true,
         classNames: {
           toast:
-            "flex flex-col justify-center items-center self-center rounded-md group font-sans text-gold bg-brown !w-[30vw] !h-6 p-1 toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+            "flex flex-col justify-center items-center self-center rounded-md group font-sans text-gold bg-brown !max-w-[35vw] !max-h-12 py-2 px-1 toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
           description: "group-[.toast]:text-muted-foreground",
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
