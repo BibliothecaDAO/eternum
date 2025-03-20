@@ -535,7 +535,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();
-        let troop_tier: TroopTier = TroopTier::T3;
+        let troop_tier: TroopTier = TroopTier::T1;
         let explorer: ExplorerTroops = iExplorerImpl::create(
             ref world,
             ref tile,
