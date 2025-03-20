@@ -1195,6 +1195,7 @@ export function defineContractComponents(world: World) {
             base_cost_percent_increase: RecsType.Number,
           },
           troop_damage_config: {
+            damage_raid_percent_num: RecsType.Number,
             damage_biome_bonus_num: RecsType.Number,
             damage_beta_small: RecsType.BigInt,
             damage_beta_large: RecsType.BigInt,
@@ -1305,6 +1306,7 @@ export function defineContractComponents(world: World) {
               "u8", // StructureMaxLevelConfig village_max
               "u32", // BuildingConfig base_population
               "u16", // BuildingConfig base_cost_percent_increase
+              "u16", // TroopDamageConfig damage_raid_percent_num
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small
               "u64", // TroopDamageConfig damage_beta_large

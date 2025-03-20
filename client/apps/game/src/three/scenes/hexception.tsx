@@ -653,7 +653,7 @@ export default class HexceptionScene extends HexagonScene {
       buildablePositions.forEach((position) => {
         dummy.position.x = position.x;
         dummy.position.z = position.z;
-        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
+        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0.15 : 0.15 + position.y / 2;
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
 
@@ -700,7 +700,7 @@ export default class HexceptionScene extends HexagonScene {
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
-      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0 : position.y / 2;
+      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0.15 : 0.15 + position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       const rotationSeed = this.hashCoordinates(position.col, position.row);
       const rotationIndex = Math.floor(rotationSeed * 6);

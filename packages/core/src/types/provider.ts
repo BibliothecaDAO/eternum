@@ -451,6 +451,7 @@ export interface TroopLimitConfigProps {
 }
 
 export interface TroopDamageConfigProps {
+  damage_raid_percent_num: num.BigNumberish;
   damage_biome_bonus_num: num.BigNumberish;
   damage_beta_small: num.BigNumberish;
   damage_beta_large: num.BigNumberish;

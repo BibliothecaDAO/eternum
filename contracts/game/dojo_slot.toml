@@ -33,6 +33,7 @@ website = "https://alpha-eternum.realms.world/"
     "s1_eternum-trade_systems",
     "s1_eternum-troop_management_systems",
 	"s1_eternum-troop_battle_systems",
+	"s1_eternum-troop_raid_systems",
     "s1_eternum-troop_movement_systems",
     "s1_eternum-troop_movement_util_systems",
 	"s1_eternum-season_systems",

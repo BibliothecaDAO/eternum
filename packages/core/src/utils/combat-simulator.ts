@@ -20,6 +20,7 @@ export interface Army {
 }
 
 export interface CombatParameters {
+  damage_raid_percent_num: number;
   damage_biome_bonus_num: number;
   damage_beta_small: bigint;
   damage_beta_large: bigint;
@@ -43,13 +44,6 @@ export class CombatSimulator {
   private readonly c0: number;
   private readonly delta: number;
   private readonly biomeBonusNum: number;
-
-  // private static readonly STAMINA_ATTACK_THRESHOLD = 30;
-  // private static readonly BASE_DAMAGE_FACTOR = 3.5;
-  // private static readonly BETA_SMALL = 0.25;
-  // private static readonly BETA_LARGE = 0.12;
-  // private static readonly C0 = 100_000; // Transition point
-  // private static readonly DELTA = 50_000; // T
 
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
@@ -221,6 +215,7 @@ export class CombatSimulator {
 
   public static getDefaultParameters(): CombatParameters {
     return {
+      damage_raid_percent_num: 1000, //10%
       damage_biome_bonus_num: 3000,
       damage_beta_small: 4611686018427387904n, // 0.25
       damage_beta_large: 2213609288845146193n, // 0.12

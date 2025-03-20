@@ -23,7 +23,7 @@ export const SelectEntityFromList = memo(
     } = useDojo();
 
     return (
-      <div className="overflow-y-scroll max-h-72 border border-gold/10 gap-2 flex-col">
+      <div className="overflow-y-auto max-h-72 border border-gold/10 gap-2 flex-col">
         {entities.map((entity) => {
           const isSelected = selectedEntityId === entity.entityId;
           const isDisabled = isSelected || selectedCounterpartyId === entity.entityId;

@@ -20,6 +20,7 @@ export interface NumericInputProps extends Omit<React.ComponentProps<typeof Inpu
   description?: string;
   className?: string;
   inputClassName?: string;
+  max?: number;
 }
 
 export function NumericInput({
@@ -29,9 +30,15 @@ export function NumericInput({
   description,
   className,
   inputClassName,
+  max,
   ...props
 }: NumericInputProps) {
   const [showKeyboard, setShowKeyboard] = React.useState(false);
+
+  // Format number with spaces every 3 digits
+  const formatNumber = (num: number): string => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
 
   const handleKeyPress = (key: string) => {
     if (!onChange) return;
@@ -42,8 +49,10 @@ export function NumericInput({
     } else {
       // Handle number or decimal point
       const newValue = value.toString() + key;
-      if (!isNaN(parseFloat(newValue))) {
-        onChange(parseFloat(newValue));
+      const parsedValue = parseFloat(newValue);
+
+      if (!isNaN(parsedValue) && (!max || parsedValue <= max)) {
+        onChange(parsedValue);
       }
     }
   };
@@ -70,7 +79,10 @@ export function NumericInput({
           <DrawerHeader>
             <DrawerTitle className="text-3xl font-bokor text-center">{label}</DrawerTitle>
             <DrawerDescription className="text-xl">
-              {value} {description || ""}
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold">{formatNumber(value)}</span>
+                <span className="text-sm text-muted-foreground">{description || ""}</span>
+              </div>
             </DrawerDescription>
           </DrawerHeader>
           <div className="p-4">

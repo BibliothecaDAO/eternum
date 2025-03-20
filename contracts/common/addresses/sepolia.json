@@ -1,37 +1,127 @@
 {
-  "seasonPass": "0x20d4d0697dccc6aaeb99f44e3484456311fd71e49be6ed55575374baa0c6e3e",
-  "realms": "0x55cb1e8fca521f789585b1ace898d52c5cd77d5148415a619bebb21853bda7e",
-  "lords": "0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a",
+  "seasonPass": "0x2a2ffe995e32781d2489fb48a4f55cdd01128c4c2e56cd9e6ee1e9364267af8",
+  "realms": "0x2d63a10c2128dff42f5b47f4bd278c0b44d1eb79aefc641e329bbafe50e0512",
+  "lords": "0x65a11d0562a1ea769a21d30f0bf59c69c5a95a786ba9df0d8d0872e2da13cd1",
   "resources": {
-    "STONE": [1,"0x1cd8b0274c2e4a9ec7d0ca437867dfb297e5148cf77a55f93a7547997cf8d57"],
-    "COAL": [2,"0x53e5c85d1cf63764fcdfa912c4ab02635a335628f39c55462eef2785c2e6ae"],
-    "WOOD": [3,"0x600c80c4e25dcfe76ab0806af4c1d3a611be6741f00d26f9771c9c725d0979c"],
-    "COPPER": [4,"0x10f40bf3a34fd1cf858e9eb6348539eb7504b42dd6671a91bac2209878c5e82"],
-    "IRONWOOD": [5,"0x5f8154ffb1c2c4e1864d8790bbafb689df7690c745e84694c108da77e0babeb"],
-    "OBSIDIAN": [6,"0x6343ca3316ff3a70f40ed33ea4cfa156bd5291c11d39bf60ddbac73e73b0c11"],
-    "GOLD": [7,"0x2e888375052ebca07a0b996b0687d5865d8ae099c6902be532c278c59ddb7b5"],
-    "SILVER": [8,"0x13c2ee64bc4aadda8a49cad47a9d3cf2a6faede8dbb79db513d2adf93c5de1b"],
-    "MITHRAL": [9,"0x4ad58e5a5eb9cd019f034c7c5bd5875458236c4feaeb32da6403131590c99de"],
-    "ALCHEMICALSILVER": [10,"0x470d822e0c420805a5e4de0dc07d5f5a5df793ea9c3ba9ec10960a18a086797"],
-    "COLDIRON": [11,"0x2bd8298b257085f8e9177438620a3daab427f839c3a4dacbff8259b543616fa"],
-    "DEEPCRYSTAL": [12,"0x6c0bf97638be3c4ef8365ddd02f8ea6e0f9444e3aa598d3ad2c2d4436085df9"],
-    "RUBY": [13,"0x16694cc0510ba3f9986439d8b7a09df2f3a98d2568658d9e498e5155cc8c5df"],
-    "DIAMONDS": [14,"0x3006061fa8088418cdda787cb0808a352e66a47c1e3c843b0340cbd6234ce88"],
-    "HARTWOOD": [15,"0x11810dcfb0fc4bbfe65ad868d36302b9483b42b45d61208ca441f16979b22e4"],
-    "IGNIUM": [16,"0x5249c67718a9197e4f4278d0739dfad36fc43a8903a26d18496e10814fc5222"],
-    "TWILIGHTQUARTZ": [17,"0x327abb2bc5995449df3ee47abbd8cdb4308915287a5338ac65c923aad7627e7"],
-    "TRUEICE": [18,"0x3f32f069954ce53b3dc9e28af50a96e734271149f589d943c318629c8ac361a"],
-    "ADAMANTINE": [19,"0x4ef805feadc473cc8deeba51de1c85ce147772828e5a2c182b36bce57cbcbfa"],
-    "SAPPHIRE": [20,"0x6a14d102e6f4fd7553fe5294dd46a038f081f355c42a509e5b8c5e0d4bd016e"],
-    "ETHEREALSILICA": [21,"0x18ce3ccaa004fa892865e2d8f8deab188423ba90139dfe8afeac83e50359147"],
-    "DRAGONHIDE": [22,"0xe744be935fb0584851992e68bfde0c88673f82faac1b0484071e12d59a4a54"],
-    "ANCIENTFRAGMENT": [24,"0x4e2d4f1c2958ba389df2baa02c29e3db971ecaf9ab7b8c5c42990d0773181a1"],
-    "DONKEY": [25,"0x54fde73f835b0f1711130e54f7f32fd1ba4a0882f789f1af9aedb35a70ecf59"],
-    "KNIGHT": [26,"0xbb693379169b053e44a3d380faa1cf4cd9c09ac064cc54a82443882a368d83"],
-    "CROSSBOWMAN": [29,"0x78961255ddde436b2a3cf8406231ffcd95173fd3a5737b0e9016520c3da6d39"],
-    "PALADIN": [32,"0x7b6c08e357dd65d292f31630fd67a8e78bf213e03ca0042176c714bf426d5a2"],
-    "WHEAT": [35,"0x47ee6e3543ac4192922eaf589ef115392116774acc3c07044a91caf8e1677b5"],
-    "FISH": [36,"0x33b366d0b952fed62836924387c2b43259d66efdc7b3c13ed2b563d6dc38af9"],
-    "LORDS": [37,"0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a"]
+    "STONE": [
+      1,
+      "0x1cd8b0274c2e4a9ec7d0ca437867dfb297e5148cf77a55f93a7547997cf8d57"
+    ],
+    "COAL": [
+      2,
+      "0x53e5c85d1cf63764fcdfa912c4ab02635a335628f39c55462eef2785c2e6ae"
+    ],
+    "WOOD": [
+      3,
+      "0x600c80c4e25dcfe76ab0806af4c1d3a611be6741f00d26f9771c9c725d0979c"
+    ],
+    "COPPER": [
+      4,
+      "0x10f40bf3a34fd1cf858e9eb6348539eb7504b42dd6671a91bac2209878c5e82"
+    ],
+    "IRONWOOD": [
+      5,
+      "0x5f8154ffb1c2c4e1864d8790bbafb689df7690c745e84694c108da77e0babeb"
+    ],
+    "OBSIDIAN": [
+      6,
+      "0x6343ca3316ff3a70f40ed33ea4cfa156bd5291c11d39bf60ddbac73e73b0c11"
+    ],
+    "GOLD": [
+      7,
+      "0x2e888375052ebca07a0b996b0687d5865d8ae099c6902be532c278c59ddb7b5"
+    ],
+    "SILVER": [
+      8,
+      "0x13c2ee64bc4aadda8a49cad47a9d3cf2a6faede8dbb79db513d2adf93c5de1b"
+    ],
+    "MITHRAL": [
+      9,
+      "0x4ad58e5a5eb9cd019f034c7c5bd5875458236c4feaeb32da6403131590c99de"
+    ],
+    "ALCHEMICALSILVER": [
+      10,
+      "0x470d822e0c420805a5e4de0dc07d5f5a5df793ea9c3ba9ec10960a18a086797"
+    ],
+    "COLDIRON": [
+      11,
+      "0x2bd8298b257085f8e9177438620a3daab427f839c3a4dacbff8259b543616fa"
+    ],
+    "DEEPCRYSTAL": [
+      12,
+      "0x6c0bf97638be3c4ef8365ddd02f8ea6e0f9444e3aa598d3ad2c2d4436085df9"
+    ],
+    "RUBY": [
+      13,
+      "0x16694cc0510ba3f9986439d8b7a09df2f3a98d2568658d9e498e5155cc8c5df"
+    ],
+    "DIAMONDS": [
+      14,
+      "0x3006061fa8088418cdda787cb0808a352e66a47c1e3c843b0340cbd6234ce88"
+    ],
+    "HARTWOOD": [
+      15,
+      "0x11810dcfb0fc4bbfe65ad868d36302b9483b42b45d61208ca441f16979b22e4"
+    ],
+    "IGNIUM": [
+      16,
+      "0x5249c67718a9197e4f4278d0739dfad36fc43a8903a26d18496e10814fc5222"
+    ],
+    "TWILIGHTQUARTZ": [
+      17,
+      "0x327abb2bc5995449df3ee47abbd8cdb4308915287a5338ac65c923aad7627e7"
+    ],
+    "TRUEICE": [
+      18,
+      "0x3f32f069954ce53b3dc9e28af50a96e734271149f589d943c318629c8ac361a"
+    ],
+    "ADAMANTINE": [
+      19,
+      "0x4ef805feadc473cc8deeba51de1c85ce147772828e5a2c182b36bce57cbcbfa"
+    ],
+    "SAPPHIRE": [
+      20,
+      "0x6a14d102e6f4fd7553fe5294dd46a038f081f355c42a509e5b8c5e0d4bd016e"
+    ],
+    "ETHEREALSILICA": [
+      21,
+      "0x18ce3ccaa004fa892865e2d8f8deab188423ba90139dfe8afeac83e50359147"
+    ],
+    "DRAGONHIDE": [
+      22,
+      "0xe744be935fb0584851992e68bfde0c88673f82faac1b0484071e12d59a4a54"
+    ],
+    "ANCIENTFRAGMENT": [
+      24,
+      "0x4e2d4f1c2958ba389df2baa02c29e3db971ecaf9ab7b8c5c42990d0773181a1"
+    ],
+    "DONKEY": [
+      25,
+      "0x54fde73f835b0f1711130e54f7f32fd1ba4a0882f789f1af9aedb35a70ecf59"
+    ],
+    "KNIGHT": [
+      26,
+      "0xbb693379169b053e44a3d380faa1cf4cd9c09ac064cc54a82443882a368d83"
+    ],
+    "CROSSBOWMAN": [
+      29,
+      "0x78961255ddde436b2a3cf8406231ffcd95173fd3a5737b0e9016520c3da6d39"
+    ],
+    "PALADIN": [
+      32,
+      "0x7b6c08e357dd65d292f31630fd67a8e78bf213e03ca0042176c714bf426d5a2"
+    ],
+    "WHEAT": [
+      35,
+      "0x47ee6e3543ac4192922eaf589ef115392116774acc3c07044a91caf8e1677b5"
+    ],
+    "FISH": [
+      36,
+      "0x33b366d0b952fed62836924387c2b43259d66efdc7b3c13ed2b563d6dc38af9"
+    ],
+    "LORDS": [
+      37,
+      "0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a"
+    ]
   }
 }

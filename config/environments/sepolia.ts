@@ -26,14 +26,14 @@ export const SepoliaEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.hyperstructures,
     hyperstructureCreationCosts: CommonEternumGlobalConfig.hyperstructures.hyperstructureCreationCosts.map((cost) => ({
       ...cost,
-      min_amount: cost.min_amount / 100,
-      max_amount: cost.max_amount / 100,
+      min_amount: cost.min_amount / 1000,
+      max_amount: cost.max_amount / 1000,
     })),
     hyperstructureConstructionCosts: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCosts.map(
       (cost) => ({
         ...cost,
-        min_amount: cost.min_amount / 100,
-        max_amount: cost.max_amount / 100,
+        min_amount: cost.min_amount / 1000,
+        max_amount: cost.max_amount / 1000,
       }),
     ),
   },
