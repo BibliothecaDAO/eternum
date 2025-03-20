@@ -6,14 +6,8 @@ import { ClientComponents } from "../dojo";
 import { configManager } from "../managers/config-manager";
 import { ContractAddress, EntityType, ID } from "../types";
 import { getRealmNameById } from "./realm";
-import { getResourcesFromBalance } from "./resources";
 
-export const getEntityInfo = (
-  entityId: ID,
-  playerAccount: ContractAddress,
-  currentDefaultTick: number,
-  components: ClientComponents,
-) => {
+export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
   const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
@@ -42,8 +36,6 @@ export const getEntityInfo = (
         : CapacityConfig.None;
   const capacityKg = configManager.getCapacityConfigKg(capacityCategoryId);
 
-  const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
-
   return {
     entityId,
     capacityKg: Number(capacityKg) || 0,
@@ -54,7 +46,6 @@ export const getEntityInfo = (
         : undefined,
     owner,
     isMine: ContractAddress(owner || 0n) === playerAccount,
-    resources,
     entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
     structureCategory: structure?.base.category,
     structure,

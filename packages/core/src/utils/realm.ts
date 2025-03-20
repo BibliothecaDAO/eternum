@@ -1,7 +1,5 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { configManager, ResourceManager } from "..";
+import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
 import { findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
@@ -20,19 +18,6 @@ export const getRealmWithPosition = (entity: Entity, components: ClientComponent
     name: getRealmNameById(structure.metadata.realm_id),
     owner: structure?.owner,
   } as RealmWithPosition;
-};
-
-export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
-  // use value strict because we know the structure exists
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  if (!structure) return "";
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
-
-  if (addressName) {
-    return shortString.decodeShortString(String(addressName.name));
-  } else {
-    return "";
-  }
 };
 
 interface Attribute {
@@ -78,6 +63,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     return {
       realmId: realm_id,
       entityId: entity_id,
+      category: structure.category,
       name,
       level,
       resources,
@@ -91,7 +77,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
           structureBuildings.population.current,
       owner: structure?.owner,
-      ownerName: getRealmAddressName(entity_id, components),
+      ownerName: getAddressNameFromEntity(entity_id, components) || "",
       hasWonder: structure.metadata.has_wonder,
     };
   }

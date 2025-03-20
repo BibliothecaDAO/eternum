@@ -9,7 +9,6 @@ import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
@@ -54,13 +53,7 @@ export const LeftNavigationModule = memo(() => {
   const { isMapView } = useQuery();
 
   const structureInfo = useMemo(
-    () =>
-      getEntityInfo(
-        structureEntityId,
-        ContractAddress(account.address),
-        getBlockTimestamp().currentDefaultTick,
-        components,
-      ),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
     [structureEntityId, account.address, components],
   );
 
@@ -68,8 +61,11 @@ export const LeftNavigationModule = memo(() => {
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
 
-  const isRealm = useMemo(
-    () => Boolean(structureInfo) && structureInfo?.structureCategory === StructureType.Realm,
+  const isRealmOrVillage = useMemo(
+    () =>
+      Boolean(structureInfo) &&
+      (structureInfo?.structureCategory === StructureType.Realm ||
+        structureInfo?.structureCategory === StructureType.Village),
     [structureInfo],
   );
 
@@ -127,7 +123,7 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
-            disabled={disableButtons || !isRealm || isMapView}
+            disabled={disableButtons || !isRealmOrVillage || isMapView}
             className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -210,7 +206,7 @@ export const LeftNavigationModule = memo(() => {
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealm]);
+  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealmOrVillage]);
 
   const slideLeft = {
     hidden: { x: "-100%" },

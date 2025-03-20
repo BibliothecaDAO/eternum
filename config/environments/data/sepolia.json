@@ -997,6 +997,7 @@
       "t1DamageValue": "1844674407370955161600",
       "t2DamageMultiplier": "46116860184273879040",
       "t3DamageMultiplier": "129127208515966861312",
+      "damageRaidPercentNum": 1000,
       "damageBiomeBonusNum": 3000,
       "damageScalingFactor": "64563604257983430656",
       "damageBetaSmall": "4611686018427387904",
@@ -1026,8 +1027,8 @@
       "guardResurrectionDelay": 86400,
       "mercenariesTroopLowerBound": 3000,
       "mercenariesTroopUpperBound": 6000,
-      "agentTroopLowerBound": 400000,
-      "agentTroopUpperBound": 500000
+      "agentTroopLowerBound": 1000,
+      "agentTroopUpperBound": 3000
     }
   },
   "settlement": {
@@ -1163,10 +1164,6 @@
       "0": [],
       "1": [
         {
-          "resource": 23,
-          "amount": 250
-        },
-        {
           "resource": 3,
           "amount": 7500
         },
@@ -1184,10 +1181,6 @@
         }
       ],
       "2": [
-        {
-          "resource": 23,
-          "amount": 500
-        },
         {
           "resource": 6,
           "amount": 5000
@@ -1341,10 +1334,6 @@
       "26": [],
       "27": [
         {
-          "resource": 23,
-          "amount": 1000
-        },
-        {
           "resource": 8,
           "amount": 5000
         },
@@ -1362,10 +1351,6 @@
         }
       ],
       "28": [
-        {
-          "resource": 23,
-          "amount": 500
-        },
         {
           "resource": 1,
           "amount": 7500
@@ -1389,10 +1374,6 @@
       ],
       "29": [
         {
-          "resource": 23,
-          "amount": 5000
-        },
-        {
           "resource": 1,
           "amount": 25000
         },
@@ -1414,10 +1395,6 @@
         }
       ],
       "30": [
-        {
-          "resource": 23,
-          "amount": 25000
-        },
         {
           "resource": 1,
           "amount": 50000
@@ -1441,10 +1418,6 @@
       ],
       "31": [
         {
-          "resource": 23,
-          "amount": 500
-        },
-        {
           "resource": 3,
           "amount": 7500
         },
@@ -1466,10 +1439,6 @@
         }
       ],
       "32": [
-        {
-          "resource": 23,
-          "amount": 5000
-        },
         {
           "resource": 3,
           "amount": 25000
@@ -1493,10 +1462,6 @@
       ],
       "33": [
         {
-          "resource": 23,
-          "amount": 25000
-        },
-        {
           "resource": 3,
           "amount": 50000
         },
@@ -1518,10 +1483,6 @@
         }
       ],
       "34": [
-        {
-          "resource": 23,
-          "amount": 500
-        },
         {
           "resource": 3,
           "amount": 7500
@@ -1545,10 +1506,6 @@
       ],
       "35": [
         {
-          "resource": 23,
-          "amount": 5000
-        },
-        {
           "resource": 3,
           "amount": 25000
         },
@@ -1570,10 +1527,6 @@
         }
       ],
       "36": [
-        {
-          "resource": 23,
-          "amount": 25000
-        },
         {
           "resource": 3,
           "amount": 50000
@@ -1597,19 +1550,11 @@
       ],
       "37": [
         {
-          "resource": 23,
-          "amount": 50
-        },
-        {
           "resource": 36,
           "amount": 5000
         }
       ],
       "38": [
-        {
-          "resource": 23,
-          "amount": 50
-        },
         {
           "resource": 35,
           "amount": 5000
@@ -1622,8 +1567,8 @@
     "hyperstructureCreationCosts": [
       {
         "resource_tier": 1,
-        "min_amount": 30000,
-        "max_amount": 30000
+        "min_amount": 3000,
+        "max_amount": 3000
       }
     ],
     "hyperstructureConstructionCosts": [
@@ -1644,28 +1589,28 @@
       },
       {
         "resource_tier": 5,
-        "min_amount": 1200000,
-        "max_amount": 2400000
+        "min_amount": 120000,
+        "max_amount": 240000
       },
       {
         "resource_tier": 6,
-        "min_amount": 900000,
-        "max_amount": 1800000
+        "min_amount": 90000,
+        "max_amount": 180000
       },
       {
         "resource_tier": 7,
-        "min_amount": 400000,
-        "max_amount": 800000
+        "min_amount": 40000,
+        "max_amount": 80000
       },
       {
         "resource_tier": 8,
-        "min_amount": 200000,
-        "max_amount": 400000
+        "min_amount": 20000,
+        "max_amount": 40000
       },
       {
         "resource_tier": 9,
-        "min_amount": 70000,
-        "max_amount": 140000
+        "min_amount": 7000,
+        "max_amount": 14000
       }
     ],
     "hyperstructureTotalCosts": [
@@ -1733,7 +1678,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x4e207ec2a2383320236841da7799bedb86f9690103ddf7133178370d83eff30",
+    "season_pool_fee_recipient": "0x5f3e089c5367695ed89afb3b54547c780ddc351cf0cf551de90ea9905d33c60",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1932,137 +1877,137 @@
   "setup": {
     "chain": "sepolia",
     "addresses": {
-      "seasonPass": "0x20d4d0697dccc6aaeb99f44e3484456311fd71e49be6ed55575374baa0c6e3e",
-      "realms": "0x55cb1e8fca521f789585b1ace898d52c5cd77d5148415a619bebb21853bda7e",
-      "lords": "0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a",
+      "seasonPass": "0x361289f04d0c26365fa445de3139a8c18bf05c7a18be0352409d9318d8e0ee2",
+      "realms": "0x2be72b4e0d86f998805da14440ea5dad012631c52297634514a3ef24959cb6a",
+      "lords": "0x3212cafb8c7120cdf4f786789d3ea0c7dd96a94bbdef167540d576e205bb82",
       "resources": {
         "STONE": [
           1,
-          "0x1cd8b0274c2e4a9ec7d0ca437867dfb297e5148cf77a55f93a7547997cf8d57"
+          "0x4fe949657fb56768beee0157f22bd24088697b7cb5746a1b668c5c9dd48d306"
         ],
         "COAL": [
           2,
-          "0x53e5c85d1cf63764fcdfa912c4ab02635a335628f39c55462eef2785c2e6ae"
+          "0x26cbd0a28f2fc66d5d2fce8655d90fca059583beaf8f8d856af82c0a73bfa3e"
         ],
         "WOOD": [
           3,
-          "0x600c80c4e25dcfe76ab0806af4c1d3a611be6741f00d26f9771c9c725d0979c"
+          "0x7ec41f8344d213b93ae2b883968a703796a17ad9c5919710e618fac38693336"
         ],
         "COPPER": [
           4,
-          "0x10f40bf3a34fd1cf858e9eb6348539eb7504b42dd6671a91bac2209878c5e82"
+          "0x7f254891c78a705eb8769e02ed56c8c329261a0ddc329278e411a1f34066906"
         ],
         "IRONWOOD": [
           5,
-          "0x5f8154ffb1c2c4e1864d8790bbafb689df7690c745e84694c108da77e0babeb"
+          "0x4d62580d29fa34c3640db229c678b5ccef45d6d57268d1df84e88302b7033da"
         ],
         "OBSIDIAN": [
           6,
-          "0x6343ca3316ff3a70f40ed33ea4cfa156bd5291c11d39bf60ddbac73e73b0c11"
+          "0x5b8f5a984103032e493d1cbbe20b1d1d9237dbdbc441bdb6ee6dea04bbd8a8a"
         ],
         "GOLD": [
           7,
-          "0x2e888375052ebca07a0b996b0687d5865d8ae099c6902be532c278c59ddb7b5"
+          "0x455c710fbce1fd609cbe81894e6f00f6ace5a3caece0fd1b0fb7898337c6eb"
         ],
         "SILVER": [
           8,
-          "0x13c2ee64bc4aadda8a49cad47a9d3cf2a6faede8dbb79db513d2adf93c5de1b"
+          "0x3c43ce38124899c6d3e7bf3ea041c7ad0ead36be97332f257f61addfef05a8d"
         ],
         "MITHRAL": [
           9,
-          "0x4ad58e5a5eb9cd019f034c7c5bd5875458236c4feaeb32da6403131590c99de"
+          "0x67ffd5005d4fc824a993ca1b7496931d4883faf346151c0cc77b4e0c2204bd7"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x470d822e0c420805a5e4de0dc07d5f5a5df793ea9c3ba9ec10960a18a086797"
+          "0x24c7f63f98cd4b84004c7c7d28c6e6ffc8fa7e5d159fbfc23be4cb80c9bf85b"
         ],
         "COLDIRON": [
           11,
-          "0x2bd8298b257085f8e9177438620a3daab427f839c3a4dacbff8259b543616fa"
+          "0x15d0f8fe0ca2acc8645cf9a3085790be11dfa1be869d605cb6972ffb5cca371"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x6c0bf97638be3c4ef8365ddd02f8ea6e0f9444e3aa598d3ad2c2d4436085df9"
+          "0x7c22dcd64fe5fb02781e5e20b6ead328281984e4eb9aaceefe0b33da226cfd9"
         ],
         "RUBY": [
           13,
-          "0x16694cc0510ba3f9986439d8b7a09df2f3a98d2568658d9e498e5155cc8c5df"
+          "0x21bb7a9daf7c5fe0a221ce0540c0eb2845198194cf82684a7286d76a9e0afb0"
         ],
         "DIAMONDS": [
           14,
-          "0x3006061fa8088418cdda787cb0808a352e66a47c1e3c843b0340cbd6234ce88"
+          "0x22566b42d7126a0e777d0ca5801401eda11a3e951ae7958ae1e64443edbf376"
         ],
         "HARTWOOD": [
           15,
-          "0x11810dcfb0fc4bbfe65ad868d36302b9483b42b45d61208ca441f16979b22e4"
+          "0x232b2c4a56525e8c65aefe77707a3469937844eb939d78734b6b278fa618b40"
         ],
         "IGNIUM": [
           16,
-          "0x5249c67718a9197e4f4278d0739dfad36fc43a8903a26d18496e10814fc5222"
+          "0x3358b1913b13ad61d78962efdba4bf2e865a224e8381248354d11edd5c223e1"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x327abb2bc5995449df3ee47abbd8cdb4308915287a5338ac65c923aad7627e7"
+          "0x2af3684999ea7c7814ce67d9488633987cc4b0c8893c8a41d66496fe8074965"
         ],
         "TRUEICE": [
           18,
-          "0x3f32f069954ce53b3dc9e28af50a96e734271149f589d943c318629c8ac361a"
+          "0x5952ecd9ffbeaeee48243ce8adabfabfda4d8dcd2c1ad2c456bbd5766c730bc"
         ],
         "ADAMANTINE": [
           19,
-          "0x4ef805feadc473cc8deeba51de1c85ce147772828e5a2c182b36bce57cbcbfa"
+          "0x18ad25df3b044129b979d827d6be99529becb25c4ffcd1f9af6eb4dc67d13eb"
         ],
         "SAPPHIRE": [
           20,
-          "0x6a14d102e6f4fd7553fe5294dd46a038f081f355c42a509e5b8c5e0d4bd016e"
+          "0x3e4f6ce4a74782afa25838beced074588bb6b63d51266f912e99835eb6f7721"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x18ce3ccaa004fa892865e2d8f8deab188423ba90139dfe8afeac83e50359147"
+          "0x44c8109e7eded30a40d74e1326c7f9f3ad647e1c3f57bdfdd7641ad2e10eda4"
         ],
         "DRAGONHIDE": [
           22,
-          "0xe744be935fb0584851992e68bfde0c88673f82faac1b0484071e12d59a4a54"
+          "0x3469b5aaecfdb1cad7dd62530c6123a881b442058fa5bf5d24fb4441b96e321"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x4e2d4f1c2958ba389df2baa02c29e3db971ecaf9ab7b8c5c42990d0773181a1"
+          "0x64d58e90ec3f0b3d310d6dc4dfa9afc25b2ad575b21a140e8293586e6cd7b46"
         ],
         "DONKEY": [
           25,
-          "0x54fde73f835b0f1711130e54f7f32fd1ba4a0882f789f1af9aedb35a70ecf59"
+          "0x45bd4730f198eba5bd7731b0bbd2cbdc9b01a422cd13c1f714516b9a56362c2"
         ],
         "KNIGHT": [
           26,
-          "0xbb693379169b053e44a3d380faa1cf4cd9c09ac064cc54a82443882a368d83"
+          "0x1d4e57d9fbd9869c248cfdb3109ecc970625dd0bfc3c6e8f39a0adc3acf5113"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x78961255ddde436b2a3cf8406231ffcd95173fd3a5737b0e9016520c3da6d39"
+          "0x5799464fc94b420d10eeca361b6a4c0d18771e9fcc420926288147acceab0a3"
         ],
         "PALADIN": [
           32,
-          "0x7b6c08e357dd65d292f31630fd67a8e78bf213e03ca0042176c714bf426d5a2"
+          "0x5e81444ea0b38e31478f79e14499efbbdcbe01f057b17281d4a2c3d11a37efa"
         ],
         "WHEAT": [
           35,
-          "0x47ee6e3543ac4192922eaf589ef115392116774acc3c07044a91caf8e1677b5"
+          "0x7fd33908bc3bd522be7a20b216c7f730c87b6772908ea0d2007f42dbb959c20"
         ],
         "FISH": [
           36,
-          "0x33b366d0b952fed62836924387c2b43259d66efdc7b3c13ed2b563d6dc38af9"
+          "0x2a7e408d62926cb56d3c91198ff732655db059a2c155bce14dcf0e35b42c4c9"
         ],
         "LORDS": [
           37,
-          "0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a"
+          "0x3212cafb8c7120cdf4f786789d3ea0c7dd96a94bbdef167540d576e205bb82"
         ]
       }
     },
     "manifest": {
       "world": {
         "class_hash": "0x7c9469d45a9cdbab775035afb48e1fa73fb35ab059fcb9dfb0a301aa973e783",
-        "address": "0x329903a8f0c9a58155bfbc4113c38cb0a8c24663442876e0b50ee32f087d5db",
-        "seed": "eternum-sepolia-s1.6",
+        "address": "0x4b8dd8a29839edc832089096d8c3882d1d74aea28b2da14f5ade3c08c08b4e",
+        "seed": "eternum-sepolia-s1.13",
         "name": "Eternum Sepolia",
         "entrypoints": [
           "uuid",
@@ -3372,8 +3317,8 @@
       },
       "contracts": [
         {
-          "address": "0x4783183eda5de5c2cdfcdbfc736568c12b47a5cba240b20fe1da40ad60a21fe",
-          "class_hash": "0x4f3721b0ce05e24cd7baf3bca28e5de7770309031e23752e9543d3e1fc1fb5f",
+          "address": "0x4c36a33d1804f02549d321f22c30fbba7d20e78a535f6c826340f94a28df8fd",
+          "class_hash": "0x7c9b9b65d6835d163b59e32f0f34d29e288aa75df5961f5d21c8fb81d41f028",
           "abi": [
             {
               "type": "impl",
@@ -3694,8 +3639,8 @@
           ]
         },
         {
-          "address": "0x64e032240fdb351a6e710cebd035f0349dbd92a757a1da3a204d338fb530483",
-          "class_hash": "0x795170bccfc9fdab64babbb44487c72195023fe04479b1462ef0e03af0e4755",
+          "address": "0x630be9829efbbdb0c47bf947cef6f8594e224def5a1a4e7e89642d2b7079b47",
+          "class_hash": "0x17d3ff802c56ee45ee26af9fd381045d26131f1765cef186c9e549bac8ea57f",
           "abi": [
             {
               "type": "impl",
@@ -4285,6 +4230,10 @@
               "type": "struct",
               "name": "s1_eternum::models::config::TroopDamageConfig",
               "members": [
+                {
+                  "name": "damage_raid_percent_num",
+                  "type": "core::integer::u16"
+                },
                 {
                   "name": "damage_biome_bonus_num",
                   "type": "core::integer::u16"
@@ -5051,8 +5000,8 @@
           ]
         },
         {
-          "address": "0x6123d377c7ab9526d134037bc8c634f128e29fb74fef50717b99ab9549baf91",
-          "class_hash": "0x461a6c4f0399617365fbfb6f372fde20f1d30bb6bdeb041d0b2a4ac59195fb2",
+          "address": "0x6b2e4392a69eeee3f27334cab7ddb1418e4d53efb56563889aad6f1fcc89294",
+          "class_hash": "0x32a69d71f8f31fc57dcfbc3b4fb54314eaa97d1875bfe5b186e822f377edde0",
           "abi": [
             {
               "type": "impl",
@@ -5265,8 +5214,8 @@
           ]
         },
         {
-          "address": "0x33ffbee07def424b88bc093baad07bb735b8268e40da8f6d4d5bac51b080ac4",
-          "class_hash": "0x746c9d4742ba49c5fd2675dbc24eeee12abf2986e521b8066b806dd05182357",
+          "address": "0x58fd0056317eb25fa5811555ce33454e73f54ce7be13040d0fef7fabdeafbbf",
+          "class_hash": "0x5f9c455657ff912886aedddd93487ba9c61abecd268ae70d14e71a8e874587",
           "abi": [
             {
               "type": "impl",
@@ -5564,8 +5513,8 @@
           ]
         },
         {
-          "address": "0x37d811a5263c21e35ae9300cb054f7d306d507965eaa50698f961ecf455f80d",
-          "class_hash": "0x46d1b87ac65fe987ce8bbc87184f40ff1e7f9e93d38da8ce3d0a78a064cdb34",
+          "address": "0x87e27e30eba9aab561fcdadec66ca823e502bd6dee6a476290c5d05fb6df6",
+          "class_hash": "0x63cbd31d144f1cad8ba5a3fb8470919247493f9126e77b91eaf1c2281d1c9a1",
           "abi": [
             {
               "type": "impl",
@@ -5918,8 +5867,8 @@
           ]
         },
         {
-          "address": "0x6310027e3936b75fbf5794d13e520034bfb6f2d5027d0fa11c406ef9d2b48d4",
-          "class_hash": "0x5e5c17b8805aa4ac91222ecb15a5efad9c188c0a529a5a9c87d40f28e3143cb",
+          "address": "0x395aac9e2b67265ee689fa886614b1b99d18ca088fa7d13b69eaa2ead368b44",
+          "class_hash": "0x2a8fafcab4d67af977a60374d8a8e80e1ba072a4d08099a8f8a3faa2ba0c813",
           "abi": [
             {
               "type": "impl",
@@ -6159,8 +6108,8 @@
           ]
         },
         {
-          "address": "0x1a0a159602b469315344befbc6dd4f2b0886eb4729c504b79fa37707c0ff439",
-          "class_hash": "0x438c99611bece13e54ea11e88ab9d488b8395892569b48d07443c54cd94185c",
+          "address": "0x1f56b00f72414ace1973d215046ff63bcd54fd5781b7063ca4e0596aaf1465b",
+          "class_hash": "0x3ebce84a448717f5de567319355b18092d2b1baa19bcc254800aed97249c557",
           "abi": [
             {
               "type": "impl",
@@ -6359,8 +6308,8 @@
           ]
         },
         {
-          "address": "0x78bd477906360716bf977bc9770120d11da5c33b098e6deea84342a27af27ce",
-          "class_hash": "0x7f0800631217eee9b41ce8ebfb6afc1d1d68f870659173fa619fd90fb88279d",
+          "address": "0x651230ee8be340eca86392f4f61398b5bbc23ae49122a60c79f63433d6611db",
+          "class_hash": "0x7b40d5decf79a0dbafab87b2860d3d647e44415201c5b3c20d20d13b035db37",
           "abi": [
             {
               "type": "impl",
@@ -6423,10 +6372,26 @@
               "items": [
                 {
                   "type": "function",
-                  "name": "transfer_ownership",
+                  "name": "transfer_structure_ownership",
                   "inputs": [
                     {
-                      "name": "entity_id",
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "new_owner",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "transfer_agent_ownership",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -6558,13 +6523,14 @@
           "tag": "s1_eternum-ownership_systems",
           "selector": "0x5045fbdb3ad9b695ea6f218e57a3ca2ce575a2964f30e15f2e710f691aa0622",
           "systems": [
-            "transfer_ownership",
+            "transfer_structure_ownership",
+            "transfer_agent_ownership",
             "upgrade"
           ]
         },
         {
-          "address": "0x560bc99937e0d22f469d2fe86b47c50d77da29aa5b61ac645df0c06d72e3462",
-          "class_hash": "0x5538372183a96c2f44456ab858cd67b9e41026e053e555fa93ddb8a13c43475",
+          "address": "0x52f1e9a4f562e0c69432357c285914218e1a05100f9693b60be983288494489",
+          "class_hash": "0x3a73dae12b752feff7b99629a6dab04747d068d990e5a27aeed32c83aee9fa3",
           "abi": [
             {
               "type": "impl",
@@ -6824,6 +6790,20 @@
               ]
             },
             {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
               "type": "struct",
               "name": "s1_eternum::models::position::Coord",
               "members": [
@@ -6876,6 +6856,10 @@
                     {
                       "name": "building_category",
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
+                    },
+                    {
+                      "name": "pay_labor",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [],
@@ -7121,8 +7105,8 @@
           ]
         },
         {
-          "address": "0x7a963a4c91ccc6f4ee6ac387d0101e822befc3a790638c32c4469addece25a9",
-          "class_hash": "0x13ff3f3649c7d2114283ad9a2307f45646dd2251b228d6f8755a71ff44d13fb",
+          "address": "0x4db08b5adba7175a1ab73f904ea36e2ad8fbfe24cecabce97ff001bda126ed1",
+          "class_hash": "0x3acadbc5e32211b3e40e55e916f7ba8d303370f2f31b6e6ac8a8f4be31ef256",
           "abi": [
             {
               "type": "impl",
@@ -7355,8 +7339,8 @@
           ]
         },
         {
-          "address": "0x6102c9a3cc0b841aa515af052acb2c5ba30f20acca343707df6ef84f39b0580",
-          "class_hash": "0x1ecee446bf59105cd6f9d8621849c04a05a947bac749137aeec3e5522dad3ed",
+          "address": "0x1c837febf99e6c053f3aacdd6cc94f62a2fd86752c08fce4f8ff704476c4ffd",
+          "class_hash": "0x10d9c6825e8e03877bf919c464d52873cd3a9e9317223d156825deaa360a584",
           "abi": [
             {
               "type": "impl",
@@ -7610,8 +7594,8 @@
           ]
         },
         {
-          "address": "0x39dd54255f6bc407b0cb989c02bbc817960e89441c267ff2c1501c04e9290d1",
-          "class_hash": "0x21f3c91ba85f7fe06282ebc63a3580431f25e190ac1efefdf06711472832a16",
+          "address": "0x29cd606f0cdd6b264da8c84d20560cc53a9fe1fd9184f6f963ac47ab6abeab3",
+          "class_hash": "0x4f56b10d4988fa790c372e0b2df5bb0d2a78ad78bc1e00dd543f10505439dd0",
           "abi": [
             {
               "type": "impl",
@@ -7937,8 +7921,8 @@
           ]
         },
         {
-          "address": "0x4e207ec2a2383320236841da7799bedb86f9690103ddf7133178370d83eff30",
-          "class_hash": "0x5bfa4084ff27849615287eaa9989b3c8e8c7cbfff39bd98bc0efbf21d9b31b8",
+          "address": "0x5f3e089c5367695ed89afb3b54547c780ddc351cf0cf551de90ea9905d33c60",
+          "class_hash": "0x600b668110ee177e4ddac3fb6cece3d85635d7bca66b958d69a57fb9413d87e",
           "abi": [
             {
               "type": "impl",
@@ -8174,8 +8158,8 @@
           ]
         },
         {
-          "address": "0x15bda33baec77a6cf75df5220efa932b5bbf4ba13133fc4411111c6b090112f",
-          "class_hash": "0x54a3c4f2033ddf18ba1d5a4e7c49d9001f0c623cb766f0e83a42edcd4651337",
+          "address": "0x34f42aa74819d39874bcc40460f0cc3f6040179756e28591401b9a493cb4114",
+          "class_hash": "0x49121007a6870f8ab2dccc9e0d2fde515cb453a1f0835bbf0f034d70025e11",
           "abi": [
             {
               "type": "impl",
@@ -8374,8 +8358,8 @@
           ]
         },
         {
-          "address": "0x21b97bd2af72c47fd383eb70d09126cf0c26758e0190a7aa445e5e346b18ede",
-          "class_hash": "0x6560d205a9e1d3f8782a82e567523bdb06f807f22975d2e63ebbc6eb8603833",
+          "address": "0x73c51c86e7e338522fc80a843912e9f7b96be949911be956d2cb373c99045e3",
+          "class_hash": "0x32dc029c4e914b09f49e7c462f95b2b6f25b61592053a02d0619a125f175cda",
           "abi": [
             {
               "type": "impl",
@@ -8611,8 +8595,8 @@
           ]
         },
         {
-          "address": "0x28e5c99db5cb6e55f31ca039f8b715196d47f0dde42f64651074596c1f21499",
-          "class_hash": "0x30d6d8a3ece5cb6ae2e98e29b5fa177d934b77d82c55b586058699a65b3b870",
+          "address": "0x1eaa8ae2020ab99a382ad36c3e73938e2c5f64965fdb07fa0c8ec7f64a743ab",
+          "class_hash": "0x5c7784b6ff709f23d1cbf79cf955bb1147f2ae607009f0017a0f776d7c781bc",
           "abi": [
             {
               "type": "impl",
@@ -8877,8 +8861,8 @@
           ]
         },
         {
-          "address": "0x3b1b4d266b3e7661a5604746a996307c21b3968c80df9d84ae9ce65b018ca12",
-          "class_hash": "0x7dbc45dc5678ecee888e667126b313572b2cc67131b6a9ef7a9226be1aa8cdc",
+          "address": "0x1ab053833cf6e3cf1b26ad72d8560a87477e6a2d3f4cd630d6e51b4dfabc6a8",
+          "class_hash": "0xda0bda8f2be3bd8cfffe11887f29254406863b1701a1eb7152818e0b044dee",
           "abi": [
             {
               "type": "impl",
@@ -9183,8 +9167,8 @@
           ]
         },
         {
-          "address": "0x5d401ac7537dd4d6ab7fc8d14dc1c0201bbb5235344895c6b34f99b7ec14475",
-          "class_hash": "0x39ed7c0875eee851f87eb5ec17fcb86e31e60ecad58b61287701f3940fc7890",
+          "address": "0x30c4c9dc171ec7867f3bbcf5390b43c20d1c40224f14e4b141678afc73f6314",
+          "class_hash": "0x418e9547981491a5c0be4a70cf079dd8bb15a460036d57f74bc8e56a79ed84a",
           "abi": [
             {
               "type": "impl",
@@ -9654,8 +9638,8 @@
           ]
         },
         {
-          "address": "0x780bf2932868233307aa83c981d1f6c18ca5a70b93d39d344e17b7ee6c4684e",
-          "class_hash": "0x686b4ff06a40463b45873634bd052e7487a4a64a789f6bd58c275dd9f3098aa",
+          "address": "0x43c049c70530e5c033282c85c530dc024e9d721a983d90fd95b216d37bee32f",
+          "class_hash": "0x55e9691bf69d5771f36c9c865924e0e0cb3c7c7a3a3622fe808ab380fbb2752",
           "abi": [
             {
               "type": "impl",
@@ -9916,8 +9900,8 @@
           ]
         },
         {
-          "address": "0x6929ab51427f510e630d78c0764751ecc23686bc2ace0b0a7e17c596f8d453b",
-          "class_hash": "0x1f4f7572f8a0e3c8fe19696564d9711438af6015b99a8720577cb8cc5fc4955",
+          "address": "0x25bf93ca0e6b34593aa8e7889148fd2afc619d8a09f275f7e3c478f3dc1fb60",
+          "class_hash": "0x41b52813ce71edb12ef35fb29b7ecb4a19f12041a9f3836b8d1cbdce89f0bb7",
           "abi": [
             {
               "type": "impl",
@@ -10347,8 +10331,260 @@
           ]
         },
         {
-          "address": "0x769ded3b01fe727d441694cbb64f6e428ea03a5dc4a0d9e871d5d5ac5df5c71",
-          "class_hash": "0x43587ef450d28c988cc489917d5a16b777960285e849f7afcb49ca4b861ebda",
+          "address": "0x4ad58ce3550a07306dd564c06df260f0b80a92080496fc133c9d4b3d4a36df9",
+          "class_hash": "0x5c9c84ad6732e1598a410134422d26daf9736153e05b366e3388d79d57ce8f5",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "troop_raid_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "troop_raid_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "TroopRaidSystemsImpl",
+              "interface_name": "s1_eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems"
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::models::position::Direction",
+              "variants": [
+                {
+                  "name": "East",
+                  "type": "()"
+                },
+                {
+                  "name": "NorthEast",
+                  "type": "()"
+                },
+                {
+                  "name": "NorthWest",
+                  "type": "()"
+                },
+                {
+                  "name": "West",
+                  "type": "()"
+                },
+                {
+                  "name": "SouthWest",
+                  "type": "()"
+                },
+                {
+                  "name": "SouthEast",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::combat::contracts::troop_raid::ITroopRaidSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "raid_explorer_vs_guard",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "structure_direction",
+                      "type": "s1_eternum::models::position::Direction"
+                    },
+                    {
+                      "name": "steal_resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::combat::contracts::troop_raid::troop_raid_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-troop_raid_systems",
+          "selector": "0x2cba999742f3b0dad2f036c7ea44826e236555cf5d82930faadcf43260524",
+          "systems": [
+            "raid_explorer_vs_guard",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x5c2ab0e88b9e2f8b502973f36bbb4f8de589a166ce1071f37fcd0dac6c03f5b",
+          "class_hash": "0x2c637c833d5049e027b10ad2e4e884379091977f78ec315be79481ae746619c",
           "abi": [
             {
               "type": "impl",
@@ -10595,6 +10831,18 @@
         },
         {
           "members": [],
+          "class_hash": "0x14e74dad24f6f735820c712458830abb4da8436110a7b61a6fb315285ea9b2f",
+          "tag": "s1_eternum-AgentCount",
+          "selector": "0x775c3ea779b07da3b53cb737bc3d20ec1acfdcae1066601f630acb127468115"
+        },
+        {
+          "members": [],
+          "class_hash": "0x14c49a0f29476ea2afe3c89e16e9ca60263335c12b872279a2db1d55702a0e7",
+          "tag": "s1_eternum-AgentOwner",
+          "selector": "0x4b0db2589fac99b5de94eeb279e466737fdf06029e398c9d2f89fbf91ed1318"
+        },
+        {
+          "members": [],
           "class_hash": "0x1d42c07d4f132b7104b5f85c47d6135f9fe6797d3379fe53869764b0ed7006",
           "tag": "s1_eternum-Building",
           "selector": "0x383bc83e69df10c0e58ce05aef021bb904346af8b28de6dd09ed16a497fae29"
@@ -10775,7 +11023,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x4630583ca87626591629a6ab91f8cde202dd29d0946b847c6eadeb893cb5c12",
+          "class_hash": "0x225c82c9d68eda6ad28b4bd6140c38d510f6f21d18b7f62f008a78840303375",
           "tag": "s1_eternum-Structure",
           "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
         },
@@ -10817,7 +11065,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x4844af99f0898f49d7219269c4cb85646bd25ad9199c3fe938e95122df308af",
+          "class_hash": "0x51cf2b77839f23a380659936e48c7fab4a8075d971a7d67d1ffee52220f960b",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

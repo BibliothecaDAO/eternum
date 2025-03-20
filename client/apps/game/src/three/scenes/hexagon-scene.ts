@@ -409,7 +409,7 @@ export abstract class HexagonScene {
   private createGroundMesh() {
     const scale = 60;
     const metalness = 0;
-    const roughness = 0.1;
+    const roughness = 0.66;
 
     const geometry = new THREE.PlaneGeometry(2668, 1390.35);
     const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {

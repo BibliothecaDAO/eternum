@@ -30,35 +30,12 @@ export const SettlementMinimap = ({
     setSelectedLocation,
     availableLocations,
     settledLocations,
-    hoveredLocation,
-    setHoveredLocation,
-    occupiedLocations,
     bankLocations,
     selectedCoords,
-
-    // Map view state
-    mapViewState,
-    setMapViewState,
-
-    // Interaction state
-    isDragging,
-    setIsDragging,
-    lastMousePosition,
-    setLastMousePosition,
-    mouseStartPosition,
-    setMouseStartPosition,
-    customNormalizedCoords,
 
     // Resources state
     bankIcon,
     setBankIcon,
-    animationTime,
-
-    // Functions
-    handleCoordinateChange,
-    centerOnCoordinates,
-    resetMapCenter,
-    setZoom,
   } = settlementState;
 
   // Load bank icon
@@ -72,16 +49,6 @@ export const SettlementMinimap = ({
   const canvasInteractions = useCanvasInteractions({
     availableLocations,
     settledLocations,
-    mapCenter: mapViewState.mapCenter,
-    mapSize: mapViewState.mapSize,
-    isDragging,
-    lastMousePosition,
-    mouseStartPosition,
-    setIsDragging,
-    setLastMousePosition,
-    setMouseStartPosition,
-    setMapCenter: (center) => setMapViewState((prev) => ({ ...prev, mapCenter: center })),
-    setHoveredLocation,
     setSelectedLocation,
     onSelectLocation,
   });
@@ -93,10 +60,10 @@ export const SettlementMinimap = ({
 
       {/* Controls */}
       <SettlementControls
-        customNormalizedCoords={customNormalizedCoords}
-        onCoordinateChange={handleCoordinateChange}
-        onCenterCoordinates={centerOnCoordinates}
-        onResetMapCenter={resetMapCenter}
+        customNormalizedCoords={canvasInteractions.customNormalizedCoords}
+        onCoordinateChange={canvasInteractions.handleCoordinateChange}
+        onCenterCoordinates={canvasInteractions.centerOnCoordinates}
+        onResetMapCenter={canvasInteractions.resetMapCenter}
       />
 
       {/* Canvas */}
@@ -106,19 +73,17 @@ export const SettlementMinimap = ({
         settledLocations={settledLocations}
         bankLocations={bankLocations}
         selectedLocation={selectedLocation}
-        hoveredLocation={hoveredLocation}
-        occupiedLocations={occupiedLocations}
+        getHoveredLocation={canvasInteractions.getHoveredLocation}
         extraPlayerOccupiedLocations={extraPlayerOccupiedLocations}
-        mapCenter={mapViewState.mapCenter}
-        mapSize={mapViewState.mapSize}
-        zoomLevel={mapViewState.zoomLevel}
-        animationTime={animationTime}
+        mapCenter={canvasInteractions.mapCenter}
+        mapSize={canvasInteractions.mapSize}
+        zoomLevel={canvasInteractions.zoomLevel}
         bankIcon={bankIcon}
         onMouseDown={canvasInteractions.handleMouseDown}
         onMouseMove={canvasInteractions.handleMouseMove}
         onMouseUp={canvasInteractions.handleMouseUp}
         onMouseLeave={canvasInteractions.handleMouseUp}
-        onZoom={setZoom}
+        onZoom={canvasInteractions.setZoom}
       />
 
       {/* Confirm Button */}

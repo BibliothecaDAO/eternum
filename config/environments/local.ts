@@ -46,7 +46,10 @@ export const LocalEternumGlobalConfig: Config = {
   // cheap hyperstructures
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureCreationCosts: [{ resource_tier: ResourceTier.Lords, min_amount: 3_000, max_amount: 3_000 }],
+    hyperstructureTotalCosts: [
+      { resource_tier: ResourceTier.Lords, min_amount: 500, max_amount: 500 },
+      { resource_tier: ResourceTier.Common, min_amount: 120_000, max_amount: 120_000 },
+    ],
   },
   // no grace period
   battle: {
@@ -56,14 +59,11 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: {
-    ...CommonEternumGlobalConfig.startingResources.filter(
-      (resource) => resource.resource !== ResourcesIds.AncientFragment,
-    ),
+  startingResources: [
     ...multiplyStartingResources(1000).filter((resource) => resource.resource !== ResourcesIds.AncientFragment),
     ...[{ resource: ResourcesIds.AncientFragment, amount: 1_000_000_000 }],
     ...[{ resource: ResourcesIds.Labor, amount: 1_000_000_000 }],
-  },
+  ],
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km

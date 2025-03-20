@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BANK_ICON_PATH,
   COLORS,
@@ -16,13 +16,11 @@ interface SettlementCanvasProps {
   settledLocations: SettlementLocation[];
   bankLocations: SettlementLocation[];
   selectedLocation: SettlementLocation | null;
-  hoveredLocation: SettlementLocation | null;
-  occupiedLocations: SettlementLocation[];
+  getHoveredLocation: () => SettlementLocation | null;
   extraPlayerOccupiedLocations: SettlementLocation[];
   mapCenter: { x: number; y: number };
   mapSize: { width: number; height: number };
   zoomLevel: number;
-  animationTime: number;
   bankIcon: HTMLImageElement | null;
   onMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -40,13 +38,11 @@ export const SettlementCanvas = ({
   settledLocations,
   bankLocations,
   selectedLocation,
-  hoveredLocation,
-  occupiedLocations,
+  getHoveredLocation,
   extraPlayerOccupiedLocations,
   mapCenter,
   mapSize,
   zoomLevel,
-  animationTime,
   bankIcon,
   onMouseDown,
   onMouseMove,
@@ -55,6 +51,34 @@ export const SettlementCanvas = ({
   onZoom,
 }: SettlementCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [animationTime, setAnimationTime] = useState(0);
+
+  // Set up animation loop
+  useEffect(() => {
+    let animationFrameId: number;
+    let lastTimestamp: number;
+
+    const animate = (timestamp: number) => {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      // Update animation time
+      setAnimationTime((prev) => prev + deltaTime);
+
+      // Continue the animation loop
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    // Start the animation loop
+    animationFrameId = requestAnimationFrame(animate);
+
+    // Clean up on unmount
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   // Load bank icon
   useEffect(() => {
@@ -92,6 +116,22 @@ export const SettlementCanvas = ({
       canvas.removeEventListener("wheel", handleWheelEvent);
     };
   }, [onZoom]);
+
+  // // Set up a custom event listener for forced redraws
+  // useEffect(() => {
+  //   const canvas = canvasRef.current;
+  //   if (!canvas) return;
+
+  //   const handleNeedsRedraw = () => {
+  //     renderCanvas();
+  //   };
+
+  //   canvas.addEventListener("needsRedraw", handleNeedsRedraw);
+
+  //   return () => {
+  //     canvas.removeEventListener("needsRedraw", handleNeedsRedraw);
+  //   };
+  // }, [renderCanvas]);
 
   // Draw the minimap
   const renderCanvas = () => {
@@ -131,29 +171,6 @@ export const SettlementCanvas = ({
     ctx.strokeStyle = "rgba(119, 103, 86, 0.2)"; // Subtle grid color
     ctx.lineWidth = 0.5;
 
-    // // Draw concentric hexagons for each layer
-    // for (let layer = 1; layer <= maxLayers; layer++) {
-    //   ctx.beginPath();
-
-    //   for (let side = 0; side < 6; side++) {
-    //     const startCoord = sideLayerXFirstCoord(side, layer);
-    //     const startPos = worldToCanvas(startCoord.x, startCoord.y);
-
-    //     if (side === 0) {
-    //       ctx.moveTo(startPos.x, startPos.y);
-    //     } else {
-    //       ctx.lineTo(startPos.x, startPos.y);
-    //     }
-    //   }
-
-    //   // Close the hexagon
-    //   const firstCoord = sideLayerXFirstCoord(0, layer);
-    //   const firstPos = worldToCanvas(firstCoord.x, firstCoord.y);
-    //   ctx.lineTo(firstPos.x, firstPos.y);
-
-    //   ctx.stroke();
-    // }
-
     // Draw center point - Fix: Use SETTLEMENT_CENTER instead of mapCenter
     const centerPos = worldToCanvas(SETTLEMENT_CENTER, SETTLEMENT_CENTER);
     ctx.fillStyle = COLORS.CENTER;
@@ -173,6 +190,9 @@ export const SettlementCanvas = ({
       }
     });
 
+    // Get the current hovered location when needed (not from props)
+    const hoveredLocation = getHoveredLocation();
+
     // Draw available locations
     availableLocations.forEach((location) => {
       // Skip if outside visible area
@@ -189,7 +209,7 @@ export const SettlementCanvas = ({
         (extra) => extra.layer === location.layer && extra.side === location.side && extra.point === location.point,
       );
 
-      const isMine = occupiedLocations.some(
+      const isMine = settledLocations.some(
         (settled) =>
           settled.layer === location.layer &&
           settled.side === location.side &&
@@ -247,8 +267,7 @@ export const SettlementCanvas = ({
         hoveredLocation &&
         hoveredLocation.side === location.side &&
         hoveredLocation.layer === location.layer &&
-        hoveredLocation.point === location.point &&
-        !isSettled // Only highlight if not settled
+        hoveredLocation.point === location.point
       ) {
         ctx.strokeStyle = COLORS.HOVERED;
         ctx.lineWidth = 1.5;
@@ -336,7 +355,7 @@ export const SettlementCanvas = ({
     availableLocations,
     selectedLocation,
     settledLocations,
-    hoveredLocation,
+    getHoveredLocation,
     mapCenter,
     mapSize,
     zoomLevel,

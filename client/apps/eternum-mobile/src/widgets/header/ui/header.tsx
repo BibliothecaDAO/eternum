@@ -1,5 +1,4 @@
 import { ROUTES } from "@/shared/consts/routes";
-import { useAuth } from "@/shared/hooks/use-auth";
 import { Button } from "@/shared/ui/button";
 import { ModeToggle } from "@/shared/ui/mode-toggle";
 import {
@@ -11,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/shared/ui/sheet";
+import { useDisconnect } from "@starknet-react/core";
 import { Link, useMatches, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -23,14 +23,14 @@ const navigation = [
 
 export function Header() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { disconnect } = useDisconnect();
   const [open, setOpen] = useState(false);
   const matches = useMatches();
   const currentPath = matches.at(-1)?.pathname;
 
   const handleLogout = () => {
     setOpen(false);
-    logout();
+    disconnect();
     navigate({ to: ROUTES.LOGIN });
   };
 

@@ -7,6 +7,11 @@ export interface SystemSigner {
   signer: AccountInterface | Account;
 }
 
+export interface CreateVillageProps extends SystemSigner {
+  connected_realm: num.BigNumberish;
+  direction: num.BigNumberish;
+}
+
 export interface MintAndSettleTestRealmProps extends SystemSigner {
   token_id: num.BigNumberish;
   realms_address: string;
@@ -446,6 +451,7 @@ export interface TroopLimitConfigProps {
 }
 
 export interface TroopDamageConfigProps {
+  damage_raid_percent_num: num.BigNumberish;
   damage_biome_bonus_num: num.BigNumberish;
   damage_beta_small: num.BigNumberish;
   damage_beta_large: num.BigNumberish;

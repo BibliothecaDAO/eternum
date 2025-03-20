@@ -102,11 +102,7 @@ export const CapacityInfo = ({
           className="storehouse-selector px-3 flex gap-2 justify-start items-center text-xxs md:text-sm"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
-          {structureCategory !== StructureType.Realm ? (
-            <div className="self-center">∞</div>
-          ) : (
-            <div className="self-center">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
-          )}
+          <div className="self-center">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
         </div>
       )}
 

@@ -77,7 +77,6 @@ export type Structure = {
   name: string;
   category: StructureType;
   ownerName?: string;
-  protectors: ArmyInfo[];
   owner: ContractAddress;
   position: Position;
 };
@@ -358,6 +357,7 @@ export interface Config {
       t1DamageValue: bigint;
       t2DamageMultiplier: bigint;
       t3DamageMultiplier: bigint;
+      damageRaidPercentNum: number;
       damageBiomeBonusNum: number;
       damageScalingFactor: bigint;
       damageC0: bigint;
@@ -449,6 +449,7 @@ export interface Config {
 export interface RealmInfo {
   realmId: ID;
   entityId: ID;
+  category: StructureType;
   name: string;
   resources: ResourcesIds[];
   order: number;
