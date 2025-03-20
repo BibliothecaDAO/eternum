@@ -40,7 +40,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         .then(() => setShowResourceReveal(true))
         .finally(() => setIsLoading(false));
     }
-    // onClose();
   };
 
   const selectRandomRealm = () => {

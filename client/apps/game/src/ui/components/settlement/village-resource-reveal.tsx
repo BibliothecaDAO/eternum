@@ -120,11 +120,11 @@ export const VillageResourceReveal = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full relative">
-      <div className="text-xl font-bold mb-4 text-center">Resource Discovery</div>
+      <div className="text-xl font-bold mb-4 text-center text-gold">Resource Discovery</div>
 
-      <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-amber-700 bg-amber-900/30 backdrop-blur-sm shadow-xl">
+      <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-gold/30 bg-dark-brown/80 backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-800/40 to-amber-950/40">
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90">
           <AnimatePresence>
             {isSpinning && (
               <motion.div
@@ -142,7 +142,7 @@ export const VillageResourceReveal = ({
                 {rouletteResources.map((resource, index) => (
                   <div
                     key={`${resource}-${index}`}
-                    className="p-2 bg-amber-800/50 rounded-lg shadow-inner flex items-center justify-center"
+                    className="p-2 bg-dark-brown/80 rounded-lg shadow-inner flex items-center justify-center"
                   >
                     <ResourceIcon resource={resource} size="xl" className="" />
                   </div>
@@ -163,8 +163,8 @@ export const VillageResourceReveal = ({
             }}
             className="absolute inset-0 flex flex-col items-center justify-center p-4"
           >
-            <div className="text-lg font-bold mb-2 text-amber-100">You minted:</div>
-            <div className="p-6 bg-amber-800/70 rounded-xl shadow-inner flex flex-col items-center justify-center">
+            <div className="text-lg font-bold mb-2 text-gold">You minted:</div>
+            <div className="p-6 bg-dark-brown/80 rounded-xl shadow-inner flex flex-col items-center justify-center">
               <ResourceIcon
                 resource={
                   Object.keys(ResourcesIds).find(
@@ -174,7 +174,7 @@ export const VillageResourceReveal = ({
                 size="xxl"
                 className="mb-2"
               />
-              <div className="text-xl font-bold text-amber-100 mt-2">
+              <div className="text-xl font-bold text-gold mt-2">
                 {Object.keys(ResourcesIds).find(
                   (key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource,
                 ) + " Village"}
@@ -236,15 +236,15 @@ export const VillageResourceReveal = ({
                       height: `${Math.random() * 16 + 8}px`,
                       borderRadius: Math.random() > 0.3 ? "50%" : `${Math.random() * 5}px`,
                       backgroundColor: [
-                        "#FFD700", // Gold
-                        "#FFA500", // Orange
-                        "#FF4500", // OrangeRed
-                        "#FF8C00", // DarkOrange
-                        "#FFFF00", // Yellow
-                        "#FFFFFF", // White sparkles
-                        "#FF00FF", // Magenta
+                        "#D4AF37", // Gold
+                        "#C5A028", // Darker gold
+                        "#E6BE44", // Lighter gold
+                        "#F8F4E3", // Off-white
+                        "#8B7355", // Brown
+                        "#A67C52", // Light brown
+                        "#5C4033", // Dark brown
                       ][Math.floor(Math.random() * 7)],
-                      boxShadow: "0 0 12px 4px rgba(255, 255, 255, 0.5)",
+                      boxShadow: "0 0 12px 4px rgba(212, 175, 55, 0.5)",
                       zIndex: 30,
                     }}
                   />
@@ -267,7 +267,7 @@ export const VillageResourceReveal = ({
                   height: "80px",
                   borderRadius: "50%",
                   background:
-                    "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,215,0,0.4) 70%, transparent 100%)",
+                    "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(212,175,55,0.4) 70%, transparent 100%)",
                   transform: "translate(-50%, -50%)",
                   zIndex: 25,
                 }}
@@ -303,9 +303,9 @@ export const VillageResourceReveal = ({
                       position: "absolute",
                       width: "4px",
                       height: "30px",
-                      background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,215,0,1) 100%)",
+                      background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(212,175,55,1) 100%)",
                       borderRadius: "50%",
-                      boxShadow: "0 0 15px 5px rgba(255, 215, 0, 0.7)",
+                      boxShadow: "0 0 15px 5px rgba(212, 175, 55, 0.7)",
                       transform: `rotate(${Math.random() * 360}deg)`,
                       zIndex: 20,
                     }}
@@ -320,7 +320,7 @@ export const VillageResourceReveal = ({
                   opacity: [0, 0.8, 0],
                   transition: { duration: 1.2, ease: "easeOut" },
                 }}
-                className="absolute inset-0 bg-amber-300/40 z-10"
+                className="absolute inset-0 bg-gold/40 z-10"
               />
 
               {/* Radial glow */}
@@ -344,7 +344,7 @@ export const VillageResourceReveal = ({
                   height: "200%",
                   borderRadius: "50%",
                   background:
-                    "radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,165,0,0.4) 40%, transparent 70%)",
+                    "radial-gradient(circle, rgba(212,175,55,0.8) 0%, rgba(166,124,82,0.4) 40%, transparent 70%)",
                   transform: "translate(-50%, -50%)",
                   zIndex: 10,
                 }}
@@ -360,7 +360,7 @@ export const VillageResourceReveal = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={startSpin}
-          className="mt-6 px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg shadow-lg"
+          className="mt-6 px-6 py-3 bg-gold hover:bg-gold/80 text-dark-brown font-bold rounded-lg shadow-lg"
         >
           Reveal Resource
         </motion.button>
