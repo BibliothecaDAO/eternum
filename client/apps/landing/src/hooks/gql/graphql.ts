@@ -6924,6 +6924,17 @@ export type S1_Eternum_WorldConfig_Troop_Damage_ConfigWhereInput = {
   damage_biome_bonus_numNEQ?: InputMaybe<Scalars['u16']['input']>;
   damage_biome_bonus_numNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
   damage_biome_bonus_numNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_num?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numEQ?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numGT?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numGTE?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  damage_raid_percent_numLIKE?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numLT?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numLTE?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numNEQ?: InputMaybe<Scalars['u16']['input']>;
+  damage_raid_percent_numNOTIN?: InputMaybe<Array<InputMaybe<Scalars['u16']['input']>>>;
+  damage_raid_percent_numNOTLIKE?: InputMaybe<Scalars['u16']['input']>;
   damage_c0?: InputMaybe<Scalars['u128']['input']>;
   damage_c0EQ?: InputMaybe<Scalars['u128']['input']>;
   damage_c0GT?: InputMaybe<Scalars['u128']['input']>;

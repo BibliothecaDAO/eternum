@@ -2018,6 +2018,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_troop_config",
       calldata: [
         // damage config
+        damage_config.damage_raid_percent_num,
         damage_config.damage_biome_bonus_num,
         damage_config.damage_beta_small,
         damage_config.damage_beta_large,

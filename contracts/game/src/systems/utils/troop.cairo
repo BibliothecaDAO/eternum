@@ -355,8 +355,36 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 }
 
+pub enum TroopRaidOutcome {
+    Success,
+    Failure,
+    Chance,
+}
+
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
+    fn raid_outcome(success_weight: u128, failure_weight: u128) -> TroopRaidOutcome {
+        if success_weight > failure_weight * 2 {
+            return TroopRaidOutcome::Success;
+        }
+        if failure_weight > success_weight * 2 {
+            return TroopRaidOutcome::Failure;
+        }
+        return TroopRaidOutcome::Chance;
+    }
+
+    fn raid(success_weight: u128, failure_weight: u128, vrf_seed: u256) -> bool {
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![success_weight, failure_weight].span(),
+            array![].span(),
+            1,
+            true,
+            vrf_seed,
+        )[0];
+        return success;
+    }
+
     fn make_payment(
         ref world: WorldStorage, from_structure_id: ID, amount: u128, category: TroopType, tier: TroopTier,
     ) {
