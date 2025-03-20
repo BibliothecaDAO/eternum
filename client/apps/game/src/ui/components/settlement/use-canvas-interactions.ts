@@ -6,10 +6,6 @@ interface CanvasInteractionsProps {
   settledLocations: SettlementLocation[];
   mapCenter: { x: number; y: number };
   mapSize: { width: number; height: number };
-  lastMousePosition: { x: number; y: number } | null;
-  mouseStartPosition: { x: number; y: number } | null;
-  setLastMousePosition: (position: { x: number; y: number } | null) => void;
-  setMouseStartPosition: (position: { x: number; y: number } | null) => void;
   setMapCenter: (center: { x: number; y: number }) => void;
   setSelectedLocation: (location: SettlementLocation | null) => void;
   onSelectLocation: (location: SettlementLocation) => void;
@@ -23,10 +19,6 @@ export const useCanvasInteractions = ({
   settledLocations,
   mapCenter,
   mapSize,
-  lastMousePosition,
-  mouseStartPosition,
-  setLastMousePosition,
-  setMouseStartPosition,
   setMapCenter,
   setSelectedLocation,
   onSelectLocation,
@@ -34,8 +26,8 @@ export const useCanvasInteractions = ({
   // Use refs instead of state for hover information and dragging state
   const hoveredLocationRef = useRef<SettlementLocation | null>(null);
   const isDraggingRef = useRef(false);
-  const lastMousePositionRef = useRef<{ x: number; y: number } | null>(lastMousePosition);
-  const mouseStartPositionRef = useRef<{ x: number; y: number } | null>(mouseStartPosition);
+  const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const mouseStartPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   // Function to get current hovered location (for external access if needed)
   const getHoveredLocation = useCallback(() => {

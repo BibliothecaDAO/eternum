@@ -38,10 +38,6 @@ export const SettlementMinimap = ({
     setMapViewState,
 
     // Interaction state
-    lastMousePosition,
-    setLastMousePosition,
-    mouseStartPosition,
-    setMouseStartPosition,
     customNormalizedCoords,
 
     // Resources state
@@ -68,10 +64,6 @@ export const SettlementMinimap = ({
     settledLocations,
     mapCenter: mapViewState.mapCenter,
     mapSize: mapViewState.mapSize,
-    lastMousePosition,
-    mouseStartPosition,
-    setLastMousePosition,
-    setMouseStartPosition,
     setMapCenter: (center) => setMapViewState((prev) => ({ ...prev, mapCenter: center })),
     setSelectedLocation,
     onSelectLocation,
