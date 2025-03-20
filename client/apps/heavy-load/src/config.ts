@@ -55,6 +55,7 @@ export const CONFIG = {
   moveExplorers: true,
   levelUpRealms: true,
   createBuildings: true,
+  createMarketOrders: true,
 };
 
 export const SYSTEM_ADDRESSES = {

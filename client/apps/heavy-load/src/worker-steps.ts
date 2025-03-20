@@ -1,8 +1,16 @@
+import { multiplyByPrecision, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 import { parentPort } from "worker_threads";
 import { CONFIG } from "./config";
 import { getExplorerEntityIds, getRealmEntityIds } from "./queries";
-import { createBuildings, createExplorerArmy, createRealm, levelUpRealms, moveExplorer } from "./system-calls";
+import {
+  createBuildings,
+  createExplorerArmy,
+  createMarketOrders,
+  createRealm,
+  levelUpRealms,
+  moveExplorer,
+} from "./system-calls";
 
 export function reportProgress(
   account: { address: string; privateKey: string },
@@ -221,12 +229,12 @@ export function calculateRealmSettlements(
 
   // Calculate the relative position offset from the base CONFIG.startRealmId
   const relativeOffset = startRealmId - CONFIG.startRealmId;
-  
+
   // Calculate all required settlements
   for (let i = 0; i < count; i++) {
     // Use the relative position for settlement calculation
     const position = relativeOffset + i;
-    
+
     // Start with layer 2
     let layer = 2;
     let totalSpotsInPreviousLayers = 0;
@@ -255,4 +263,76 @@ export function calculateRealmSettlements(
   }
 
   return settlements;
+}
+
+export async function executeCreateMarketOrders(
+  account: { address: string; privateKey: string },
+  accountObject: Account,
+) {
+  reportProgress(
+    account,
+    "creating_orders",
+    `Creating market orders for account ${account.address.substring(0, 8)}...`,
+  );
+
+  const realmEntityIds = await getRealmEntityIds(accountObject);
+  let ordersCreated = 0;
+
+  const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+
+  for (let j = 0; j < realmEntityIds.length; j++) {
+    const realmEntityId = realmEntityIds[j];
+
+    try {
+      // Create 3 different types of orders for each realm
+      // Order 1: Realm sells resource 1 for Lords
+      await createMarketOrders(
+        accountObject,
+        realmEntityId,
+        ResourcesIds.Stone, // Resource type 1 (what realm gives)
+        ResourcesIds.Lords, // Lords (what realm receives)
+        (1), // Max amount
+        expiresAt,
+      );
+
+      // Order 2: Realm sells resource 2 for Lords
+      await createMarketOrders(
+        accountObject,
+        realmEntityId,
+        ResourcesIds.Silver, // Resource type 2 (what realm gives)
+        ResourcesIds.Lords, // Lords (what realm receives)
+        (1), // Max amount
+        expiresAt,
+      );
+
+      // Order 3: Realm sells resource 3 for Lords
+      await createMarketOrders(
+        accountObject,
+        realmEntityId,
+        ResourcesIds.Wood, // Resource type 3 (what realm gives)
+        ResourcesIds.Lords, // Lords (what realm receives)
+        (1), // Max amount
+        expiresAt,
+      );
+
+      ordersCreated += 3;
+
+      reportProgress(
+        account,
+        "creating_orders",
+        `Created market orders for ${j + 1}/${realmEntityIds.length} realms for account ${account.address.substring(0, 8)}...`,
+        { completed: j + 1, total: realmEntityIds.length },
+      );
+    } catch (error) {
+      parentPort?.postMessage({
+        type: "error",
+        success: false,
+        address: account.address,
+        error: `Error creating market orders for realm ${realmEntityId}: ${error}`,
+        message: `Error creating market orders for realm ${realmEntityId} for account ${account.address.substring(0, 8)}...: ${error}`,
+      });
+    }
+  }
+
+  return ordersCreated;
 }

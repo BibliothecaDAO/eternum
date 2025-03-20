@@ -263,11 +263,11 @@ export async function createMarketOrders(
   expires_at: number,
 ) {
   const taker_id = 0;
-  const maker_gives_min_resource_amount = 1;
-  const taker_pays_min_resource_amount = multiplyByPrecision(10) / maker_gives_max_count;
+  const maker_gives_min_resource_amount = multiplyByPrecision(1);
+  const taker_pays_min_resource_amount = maker_gives_max_count / maker_gives_max_count;
 
   try {
-    let tx = await account.execute(
+    await account.execute(
       [
         {
           contractAddress: SYSTEM_ADDRESSES.tradeSystems,
@@ -287,7 +287,6 @@ export async function createMarketOrders(
       { version: 3 },
     );
 
-    await provider.waitForTransaction(tx.transaction_hash);
   } catch (error) {
     const errorMsg = `Failed to create market order: ${error}`;
     summary.errors.push(errorMsg);

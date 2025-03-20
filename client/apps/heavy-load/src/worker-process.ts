@@ -6,6 +6,7 @@ import { getRealmEntityIds } from "./queries";
 import {
   executeCreateBuildings,
   executeCreateExplorerArmies,
+  executeCreateMarketOrders,
   executeLevelUpRealms,
   executeMoveExplorers,
   executeRealmCreation,
@@ -25,6 +26,7 @@ export async function workerProcess(
     let armiesCreated = 0;
     let explorersMoved = 0;
     let realmsCreated = 0;
+    let ordersCreated = 0;
 
     if (CONFIG.spawnRealms) {
       realmsCreated = await executeRealmCreation(account, accountObject, addresses, startRealmId, realmCount);
@@ -79,6 +81,16 @@ export async function workerProcess(
       );
     }
 
+    if (CONFIG.createMarketOrders) {
+      ordersCreated = await executeCreateMarketOrders(account, accountObject);
+    } else {
+      reportProgress(
+        account,
+        "skipped_orders",
+        `Skipped creating market orders for account ${account.address.substring(0, 8)}...`
+      );
+    }
+
     parentPort?.postMessage({
       type: "complete",
       success: true,
@@ -86,6 +98,7 @@ export async function workerProcess(
       realmsCreated: realmsCreated,
       armiesCreated: armiesCreated,
       explorersMoved: explorersMoved,
+      ordersCreated: ordersCreated,
       message: `Completed processing for account ${account.address.substring(0, 8)}...`,
     });
   } catch (error) {
