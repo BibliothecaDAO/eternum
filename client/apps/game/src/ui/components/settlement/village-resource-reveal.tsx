@@ -150,13 +150,6 @@ export const VillageResourceReveal = ({
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Center marker */}
-          <div className="absolute left-0 right-0 h-16 z-10 pointer-events-none flex items-center justify-center">
-            <div className="w-full h-full bg-gradient-to-r from-amber-600/0 via-amber-400/80 to-amber-600/0 animate-pulse"></div>
-            <div className="absolute left-0 w-4 h-16 bg-amber-300/80 -skew-x-12"></div>
-            <div className="absolute right-0 w-4 h-16 bg-amber-300/80 skew-x-12"></div>
-          </div>
         </div>
 
         {/* Revealed resource (shown after spin) */}
@@ -197,36 +190,165 @@ export const VillageResourceReveal = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="absolute inset-0 pointer-events-none"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                overflow: "visible",
+              }}
             >
-              {/* Particles */}
-              {Array.from({ length: 20 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{
-                    x: "50%",
-                    y: "50%",
-                    scale: 0,
-                    opacity: 1,
-                  }}
-                  animate={{
-                    x: `${Math.random() * 100}%`,
-                    y: `${Math.random() * 100}%`,
-                    scale: Math.random() * 0.5 + 0.5,
-                    opacity: 0,
-                    transition: {
-                      duration: 1.5 + Math.random(),
-                      ease: "easeOut",
-                    },
-                  }}
-                  className="absolute w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: ["#FFD700", "#FFA500", "#FF4500", "#FF8C00"][Math.floor(Math.random() * 4)],
-                  }}
-                />
-              ))}
+              {/* Confetti particles */}
+              {Array.from({ length: 80 }).map((_, i) => {
+                // Calculate even distribution from center
+                const angle = Math.random() * Math.PI * 2; // Random angle in radians
+                const distance = 30 + Math.random() * 40; // Distance from center (30-70%)
 
-              {/* Light rays */}
-              <div className="absolute inset-0 bg-gradient-radial from-amber-400/20 to-transparent animate-pulse"></div>
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{
+                      x: "-50%",
+                      y: "-50%",
+                      left: "50%",
+                      top: "50%",
+                      scale: 0,
+                      opacity: 1,
+                      rotate: 0,
+                    }}
+                    animate={{
+                      x: `calc(-50% + ${Math.cos(angle) * distance}px)`,
+                      y: `calc(-50% + ${Math.sin(angle) * distance}px)`,
+                      scale: Math.random() * 2 + 1.5,
+                      opacity: [1, 0.8, 0],
+                      rotate: Math.random() * 720 - 360,
+                      transition: {
+                        duration: 2.5 + Math.random() * 1.5,
+                        ease: "easeOut",
+                      },
+                    }}
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      top: "50%",
+                      width: `${Math.random() * 16 + 8}px`,
+                      height: `${Math.random() * 16 + 8}px`,
+                      borderRadius: Math.random() > 0.3 ? "50%" : `${Math.random() * 5}px`,
+                      backgroundColor: [
+                        "#FFD700", // Gold
+                        "#FFA500", // Orange
+                        "#FF4500", // OrangeRed
+                        "#FF8C00", // DarkOrange
+                        "#FFFF00", // Yellow
+                        "#FFFFFF", // White sparkles
+                        "#FF00FF", // Magenta
+                      ][Math.floor(Math.random() * 7)],
+                      boxShadow: "0 0 12px 4px rgba(255, 255, 255, 0.5)",
+                      zIndex: 30,
+                    }}
+                  />
+                );
+              })}
+
+              {/* Burst effect at center */}
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{
+                  scale: [0, 1.5],
+                  opacity: [0, 0.8, 0],
+                  transition: { duration: 1, ease: "easeOut" },
+                }}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: "80px",
+                  height: "80px",
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,215,0,0.4) 70%, transparent 100%)",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 25,
+                }}
+              />
+
+              {/* Shooting stars */}
+              {Array.from({ length: 12 }).map((_, i) => {
+                // Randomize direction of shooting stars
+                const originX = Math.random() > 0.5 ? -10 : 110;
+                const originY = Math.random() > 0.5 ? -10 : 110;
+                const destX = Math.random() * 100;
+                const destY = Math.random() * 100;
+
+                return (
+                  <motion.div
+                    key={`star-${i}`}
+                    initial={{
+                      x: originX,
+                      y: originY,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      x: destX,
+                      y: destY,
+                      opacity: [0, 1, 1, 0],
+                      transition: {
+                        duration: 1 + Math.random(),
+                        delay: Math.random() * 2,
+                        ease: "linear",
+                      },
+                    }}
+                    style={{
+                      position: "absolute",
+                      width: "4px",
+                      height: "30px",
+                      background: "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,215,0,1) 100%)",
+                      borderRadius: "50%",
+                      boxShadow: "0 0 15px 5px rgba(255, 215, 0, 0.7)",
+                      transform: `rotate(${Math.random() * 360}deg)`,
+                      zIndex: 20,
+                    }}
+                  />
+                );
+              })}
+
+              {/* Light flash */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: [0, 0.8, 0],
+                  transition: { duration: 1.2, ease: "easeOut" },
+                }}
+                className="absolute inset-0 bg-amber-300/40 z-10"
+              />
+
+              {/* Radial glow */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{
+                  opacity: [0, 0.7, 0.5, 0.7, 0.3, 0],
+                  scale: 2,
+                  transition: {
+                    duration: 3,
+                    times: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                    repeat: 1,
+                    repeatType: "reverse",
+                  },
+                }}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: "200%",
+                  height: "200%",
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,165,0,0.4) 40%, transparent 70%)",
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 10,
+                }}
+              />
             </motion.div>
           </>
         )}
