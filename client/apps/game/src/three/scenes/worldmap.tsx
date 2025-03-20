@@ -469,26 +469,6 @@ export default class WorldmapScene extends HexagonScene {
     this.structureHexes.get(newCol)?.set(newRow, { id: entityId, owner: address });
   }
 
-  private getHexKey(col: number, row: number): string {
-    return `${col},${row}`;
-  }
-
-  private isHexRendered(biome: BiomeType, col: number, row: number): boolean {
-    const hexSet = this.renderedHexes.get(biome);
-    return hexSet?.has(this.getHexKey(col, row)) || false;
-  }
-
-  private markHexRendered(biome: BiomeType, col: number, row: number) {
-    if (!this.renderedHexes.has(biome)) {
-      this.renderedHexes.set(biome, new Set());
-    }
-    this.renderedHexes.get(biome)!.add(this.getHexKey(col, row));
-  }
-
-  private clearRenderedHexes() {
-    this.renderedHexes.clear();
-  }
-
   public async updateExploredHex(update: TileSystemUpdate) {
     const { hexCoords, removeExplored, biome } = update;
 
@@ -505,11 +485,6 @@ export default class WorldmapScene extends HexagonScene {
       this.removeCachedMatricesAroundColRow(chunkRow, chunkCol);
       this.currentChunk = "null"; // reset the current chunk to force a recomputation
       this.updateVisibleChunks();
-      return;
-    }
-
-    // Check if hex is already rendered
-    if (this.isHexRendered(biome as BiomeType, col, row)) {
       return;
     }
 
@@ -580,9 +555,6 @@ export default class WorldmapScene extends HexagonScene {
       hexMesh.setMatrixAt(currentCount, dummy.matrix);
       hexMesh.setCount(currentCount + 1);
       hexMesh.needsUpdate();
-
-      // Mark hex as rendered
-      this.markHexRendered(biome as BiomeType, col, row);
 
       // Cache the updated matrices for the chunk
       this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
@@ -680,9 +652,6 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    // Clear rendered hexes when starting a new chunk
-    this.clearRenderedHexes();
-
     this.interactiveHexManager.clearHexes();
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
@@ -766,19 +735,12 @@ export default class WorldmapScene extends HexagonScene {
 
         dummy.updateMatrix();
 
-        // Skip if hex is already rendered
-        if (this.isHexRendered(biome, globalCol, globalRow)) {
-          continue;
-        }
-
         if (isExplored) {
           biomeHexes[biome].push(dummy.matrix.clone());
-          this.markHexRendered(biome, globalCol, globalRow);
         } else {
           dummy.position.y = 0.01;
           dummy.updateMatrix();
           biomeHexes["Outline"].push(dummy.matrix.clone());
-          this.markHexRendered(BiomeType.None, globalCol, globalRow); // Use None for outline
         }
       }
 
