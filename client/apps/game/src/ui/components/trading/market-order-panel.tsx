@@ -12,7 +12,7 @@ import {
   divideByPrecision,
   EntityType,
   findResourceById,
-  getRealmAddressName,
+  getAddressNameFromEntity,
   getTotalResourceWeightKg,
   multiplyByPrecision,
   ResourcesIds,
@@ -328,7 +328,7 @@ const OrderRow = memo(
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
-      return getRealmAddressName(offer.makerId, dojo.setup.components);
+      return getAddressNameFromEntity(offer.makerId, dojo.setup.components);
     }, [offer.originName]);
 
     const onAccept = async () => {

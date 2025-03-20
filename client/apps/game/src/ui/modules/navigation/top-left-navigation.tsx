@@ -61,7 +61,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   });
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address],
   );
 

@@ -12,9 +12,9 @@ import {
   computeTravelTime,
   configManager,
   EntityType,
-  getRealmAddressName,
+  getAddressNameFromEntity,
   ID,
-  multiplyByPrecision
+  multiplyByPrecision,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
@@ -218,7 +218,6 @@ export const TransferBetweenEntities = ({
       );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
-  console.log("speed", configManager.getSpeedConfig(EntityType.DONKEY));
   const onSendResources = () => {
     setIsLoading(true);
     const resourcesList = selectedResourceIds.map((id: number) => ({
@@ -257,11 +256,10 @@ export const TransferBetweenEntities = ({
   };
 
   const entitiesListWithAccountNames = useMemo(() => {
-    console.log(entitiesList);
     return entitiesList.map(({ entities, name }) => ({
       entities: entities.map((entity) => ({
         ...entity,
-        accountName: getRealmAddressName(entity.entityId, components),
+        accountName: getAddressNameFromEntity(entity.entityId, components),
       })),
       name,
     }));

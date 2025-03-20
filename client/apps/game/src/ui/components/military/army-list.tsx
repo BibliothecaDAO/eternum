@@ -51,7 +51,7 @@ export const EntityArmyList = ({
     return guards.filter((guard) => guard.troops.count > 0n).length;
   }, [guards]);
 
-  const isRealm = structure.category === StructureType.Realm;
+  const isRealmOrVillage = structure.category === StructureType.Realm || structure.category === StructureType.Village;
 
   const armyManager = useMemo(() => {
     if (!structure.entity_id) return null;
@@ -102,7 +102,7 @@ export const EntityArmyList = ({
           <div
             className="flex justify-center items-center p-4"
             onMouseEnter={() => {
-              if (!isRealm) {
+              if (!isRealmOrVillage) {
                 setTooltip({
                   content: "Can only create attacking armies on realms",
                   position: "top",
@@ -118,7 +118,7 @@ export const EntityArmyList = ({
           >
             <Button
               variant="primary"
-              disabled={!isRealm || totalExplorersCount >= structure.base.troop_max_explorer_count}
+              disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
               className="attack-army-selector px-6 py-2 text-lg flex items-center gap-2"
               onClick={() => setShowTroopSelection(true)}
             >

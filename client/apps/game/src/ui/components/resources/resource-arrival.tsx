@@ -7,67 +7,63 @@ import clsx from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 
-export const StructureArrivals = memo(
-  ({
-    structure,
-    isExpanded,
-    toggleStructure,
-  }: {
-    structure: any;
-    isExpanded: boolean;
-    toggleStructure: (id: string) => void;
-  }) => {
-    const arrivals = useArrivalsByStructure(structure.entityId);
+export const StructureArrivals = memo(({ structure }: { structure: any }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
 
-    const { currentBlockTimestamp } = getBlockTimestamp();
+  const arrivals = useArrivalsByStructure(structure.entityId);
 
-    if (arrivals.length === 0) return null;
+  const { currentBlockTimestamp } = getBlockTimestamp();
 
-    // Calculate summary information
-    const readyArrivals = arrivals.filter((arrival) => arrival.arrivesAt <= currentBlockTimestamp).length;
-    const pendingArrivals = arrivals.length - readyArrivals;
+  if (arrivals.length === 0) return null;
 
-    // Count total resources
-    const totalResources = arrivals.reduce((total, arrival) => total + arrival.resources.filter(Boolean).length, 0);
+  // Calculate summary information
+  const readyArrivals = arrivals.filter((arrival) => arrival.arrivesAt <= currentBlockTimestamp).length;
+  const pendingArrivals = arrivals.length - readyArrivals;
 
-    return (
-      <div className="border border-gold/20 rounded-md">
-        <button
-          className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
-          onClick={() => toggleStructure(structure.entityId.toString())}
-        >
-          <div className="flex items-center">
-            <h4 className="text-gold font-medium">{structure.name}</h4>
-          </div>
-          <div className="flex items-center gap-2">
-            {readyArrivals > 0 && (
-              <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span>{readyArrivals} ready</span>
-              </div>
-            )}
-            {pendingArrivals > 0 && (
-              <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
-                <span>{pendingArrivals} pending</span>
-              </div>
-            )}
-            <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
-            <div className="text-gold ml-2">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
-          </div>
-        </button>
+  // Count total resources
+  const totalResources = arrivals.reduce((total, arrival) => total + arrival.resources.filter(Boolean).length, 0);
 
-        {isExpanded && (
-          <div className="flex flex-col gap-2 p-2">
-            {arrivals.map((arrival) => (
-              <ResourceArrival arrival={arrival} key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  },
-);
+  const toggleStructure = () => {
+    setIsExpanded((prev) => !prev);
+  };
+
+  return (
+    <div className="border border-gold/20 rounded-md">
+      <button
+        className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
+        onClick={toggleStructure}
+      >
+        <div className="flex items-center">
+          <h4 className="text-gold font-medium">{structure.name}</h4>
+        </div>
+        <div className="flex items-center gap-2">
+          {readyArrivals > 0 && (
+            <div className="flex items-center gap-1 bg-emerald-900/40 text-emerald-400 rounded-md px-2 py-0.5 text-xs font-medium">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span>{readyArrivals} ready</span>
+            </div>
+          )}
+          {pendingArrivals > 0 && (
+            <div className="flex items-center gap-1 bg-amber-900/40 text-amber-400 rounded-md px-2 py-0.5 text-xs font-medium">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+              <span>{pendingArrivals} pending</span>
+            </div>
+          )}
+          <div className="text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">{totalResources} resources</div>
+          <div className="text-gold ml-2">{isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</div>
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="flex flex-col gap-2 p-2">
+          {arrivals.map((arrival) => (
+            <ResourceArrival arrival={arrival} key={`${arrival.structureEntityId}-${arrival.day}-${arrival.slot}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
 
 const ResourceArrival = ({ arrival }: { arrival: ResourceArrivalInfo }) => {
   const { currentBlockTimestamp } = getBlockTimestamp();

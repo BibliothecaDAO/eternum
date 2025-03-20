@@ -991,6 +991,7 @@ export function defineContractComponents(world: World) {
             realm_id: RecsType.Number,
             order: RecsType.Number,
             has_wonder: RecsType.Boolean,
+            villages_count: RecsType.Number,
             village_realm: RecsType.Number,
           },
           category: RecsType.Number,
@@ -1043,10 +1044,12 @@ export function defineContractComponents(world: World) {
               //explorers
               "Span<u32>",
               "u128",
+              // structure metadata
               "u16",
               "u8",
               "bool",
               "u8",
+              "u32",
             ],
             customTypes: ["StructureBase", "GuardTroops", "TroopType", "TroopTier", "Stamina", "StructureMetadata"],
           },

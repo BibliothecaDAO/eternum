@@ -44,9 +44,6 @@ export class ClientConfigManager {
     this.components = components;
     this.config = config;
 
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    console.log("worldConfig", worldConfig);
-
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
     this.initializeRealmUpgradeCosts();
@@ -204,6 +201,16 @@ export class ClientConfigManager {
 
   private initializeStructureCosts() {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
+  }
+
+  public getMaxLevel(category: StructureType) {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (category === StructureType.Realm) {
+      return Number(worldConfig?.structure_max_level_config?.realm_max ?? 0);
+    } else if (category === StructureType.Village) {
+      return Number(worldConfig?.structure_max_level_config?.village_max ?? 0);
+    }
+    return 0;
   }
 
   private getHyperstructureConstructionCosts() {

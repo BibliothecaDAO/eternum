@@ -31,7 +31,6 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
   const {
     network: { contractComponents: components },
-    components: clientComponents,
   } = setupResult;
 
   const debouncedSetEntities = debounce(() => {

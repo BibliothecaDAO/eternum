@@ -77,7 +77,6 @@ export type Structure = {
   name: string;
   category: StructureType;
   ownerName?: string;
-  protectors: ArmyInfo[];
   owner: ContractAddress;
   position: Position;
 };
@@ -450,6 +449,7 @@ export interface Config {
 export interface RealmInfo {
   realmId: ID;
   entityId: ID;
+  category: StructureType;
   name: string;
   resources: ResourcesIds[];
   order: number;

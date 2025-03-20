@@ -62,6 +62,7 @@ pub struct StructureMetadata {
     pub realm_id: u16,
     pub order: u8,
     pub has_wonder: bool,
+    pub villages_count: u8,
     // associated with village
     pub village_realm: ID,
 }

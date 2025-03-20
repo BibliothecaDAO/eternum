@@ -41,15 +41,6 @@ export const getResourcesFromBalance = (
   currentDefaultTick: number,
   components: ClientComponents,
 ): Resource[] => {
-  // const weight = getComponentValue(components.Weight, getEntityIdFromKeys([BigInt(entityId)]));
-  // const hasWeightlessResources = configManager
-  //   .getWeightLessResources()
-  //   .some(
-  //     (resourceId) =>
-  //       (getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)]))?.balance ??
-  //         0n) > 0n,
-  //   );
-  // if (!weight?.value && !hasWeightlessResources) return [];
   // todo: improve optimisation
   const resourceIds = resources.map((r) => r.id);
   return resourceIds

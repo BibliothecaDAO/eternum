@@ -12,6 +12,7 @@ import {
   queryRealmCount,
   SeasonPassRealm,
 } from "@/ui/components/cityview/realm/settle-realm-component";
+import MintVillagePassModal from "@/ui/components/settlement/mint-village-pass-modal";
 import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
@@ -124,6 +125,11 @@ export const LocalStepOne = () => {
     return normalizedCoords;
   }, [selectedLocation]);
 
+  const handleVillagePassClick = () => {
+    console.log("Village pass clicked");
+    toggleModal(<MintVillagePassModal onClose={() => toggleModal(null)} />);
+  };
+
   return (
     <>
       {selectedLocation ? (
@@ -176,6 +182,15 @@ export const LocalStepOne = () => {
           </div>
         </Button>
       )}
+      <Button
+        onClick={handleVillagePassClick}
+        className={`${loading ? "" : "animate-pulse"} mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1`}
+      >
+        <div className="flex items-center gap-2">
+          <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
+          Mint Village Pass
+        </div>
+      </Button>
     </>
   );
 };
