@@ -739,7 +739,7 @@ export default class WorldmapScene extends HexagonScene {
             dummyObject.position.y += 0.05;
             dummyObject.rotation.y = randomRotation;
           } else {
-            dummyObject.position.y += 0.1;
+            dummyObject.position.y += 0.05;
             dummyObject.rotation.y = 0;
           }
 
@@ -747,6 +747,7 @@ export default class WorldmapScene extends HexagonScene {
 
           if (isExplored) {
             const biome = isExplored as BiomeType;
+            //const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
             biomeHexes[biome].push(dummyObject.matrix.clone());
           } else {
             dummyObject.position.y = 0.01;

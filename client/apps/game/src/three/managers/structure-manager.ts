@@ -106,7 +106,7 @@ export class StructureManager {
     const { entityId, hexCoords, structureType, stage, level, owner, hasWonder } = update;
     const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     const position = getWorldPositionForHex(normalizedCoord);
-
+    position.y += 0.05;
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
@@ -178,7 +178,7 @@ export class StructureManager {
         visibleStructures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
           const position = getWorldPositionForHex(structure.hexCoords);
-
+          position.y += 0.05;
           if (this.entityIdLabels.has(structure.entityId)) {
             const label = this.entityIdLabels.get(structure.entityId)!;
             label.position.copy(position);
