@@ -22,7 +22,6 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  Biome,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -42,6 +41,9 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { ArmySystemUpdate, SceneName, StructureSystemUpdate, TileSystemUpdate } from "../types";
 import { getWorldPositionForHex } from "../utils";
 
+const dummyObject = new THREE.Object3D();
+const dummyVector = new THREE.Vector3();
+
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
   private renderChunkSize = {
@@ -52,9 +54,6 @@ export default class WorldmapScene extends HexagonScene {
   private totalStructures: number = 0;
 
   private currentChunk: string = "null";
-
-  // Add tracking for rendered hexes
-  private renderedHexes: Map<BiomeType, Set<string>> = new Map();
 
   private armyManager: ArmyManager;
   private structureManager: StructureManager;
@@ -70,6 +69,7 @@ export default class WorldmapScene extends HexagonScene {
   private previouslyHoveredHex: HexPosition | null = null;
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
+  private updateHexagonGridPromise: Promise<void> | null = null;
 
   // Label groups
   private armyLabelsGroup: THREE.Group;
@@ -493,6 +493,8 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!this.exploredTiles.get(col)!.has(row)) {
       this.exploredTiles.get(col)!.set(row, biome);
+    } else {
+      return;
     }
 
     const dummy = new THREE.Object3D();
@@ -522,18 +524,15 @@ export default class WorldmapScene extends HexagonScene {
     dummy.updateMatrix();
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(pos.x, pos.z);
-    const hexCol = chunkX * this.chunkSize;
-    const hexRow = chunkZ * this.chunkSize;
+    const hexChunkCol = chunkX * this.chunkSize;
+    const hexChunkRow = chunkZ * this.chunkSize;
+
     const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
     const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
 
     // if the hex is within the chunk, add it to the interactive hex manager and to the biome
-    if (
-      hexCol >= renderedChunkCenterCol - this.renderChunkSize.width / 2 &&
-      hexCol <= renderedChunkCenterCol + this.renderChunkSize.width / 2 &&
-      hexRow >= renderedChunkCenterRow - this.renderChunkSize.height / 2 &&
-      hexRow <= renderedChunkCenterRow + this.renderChunkSize.height / 2
-    ) {
+    if (this.isColRowInVisibleChunk(col, row)) {
+      await this.updateHexagonGridPromise;
       this.interactiveHexManager.addHex({ col, row });
 
       // Add border hexes for newly explored hex
@@ -562,8 +561,24 @@ export default class WorldmapScene extends HexagonScene {
 
       this.interactiveHexManager.renderHexes();
     } else {
-      this.removeCachedMatricesAroundColRow(renderedChunkCenterCol, renderedChunkCenterRow);
+      this.removeCachedMatricesAroundColRow(hexChunkCol, hexChunkRow);
     }
+  }
+
+  isColRowInVisibleChunk(col: number, row: number) {
+    const renderedChunkCenterRow = parseInt(this.currentChunk.split(",")[0]);
+    const renderedChunkCenterCol = parseInt(this.currentChunk.split(",")[1]);
+
+    // if the hex is within the chunk, add it to the interactive hex manager and to the biome
+    if (
+      col >= renderedChunkCenterCol - this.renderChunkSize.width / 2 &&
+      col <= renderedChunkCenterCol + this.renderChunkSize.width / 2 &&
+      row >= renderedChunkCenterRow - this.renderChunkSize.height / 2 &&
+      row <= renderedChunkCenterRow + this.renderChunkSize.height / 2
+    ) {
+      return true;
+    }
+    return false;
   }
 
   getChunksAround(chunkKey: string) {
@@ -652,116 +667,114 @@ export default class WorldmapScene extends HexagonScene {
       return;
     }
 
-    this.interactiveHexManager.clearHexes();
-    const dummy = new THREE.Object3D();
-    const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
-      None: [],
-      Ocean: [],
-      DeepOcean: [],
-      Beach: [],
-      Scorched: [],
-      Bare: [],
-      Tundra: [],
-      Snow: [],
-      TemperateDesert: [],
-      Shrubland: [],
-      Taiga: [],
-      Grassland: [],
-      TemperateDeciduousForest: [],
-      TemperateRainForest: [],
-      SubtropicalDesert: [],
-      TropicalSeasonalForest: [],
-      TropicalRainForest: [],
-      Outline: [],
-    };
+    this.updateHexagonGridPromise = new Promise((resolve) => {
+      this.interactiveHexManager.clearHexes();
+      const biomeHexes: Record<BiomeType | "Outline", THREE.Matrix4[]> = {
+        None: [],
+        Ocean: [],
+        DeepOcean: [],
+        Beach: [],
+        Scorched: [],
+        Bare: [],
+        Tundra: [],
+        Snow: [],
+        TemperateDesert: [],
+        Shrubland: [],
+        Taiga: [],
+        Grassland: [],
+        TemperateDeciduousForest: [],
+        TemperateRainForest: [],
+        SubtropicalDesert: [],
+        TropicalSeasonalForest: [],
+        TropicalRainForest: [],
+        Outline: [],
+      };
 
-    const hexPositions: THREE.Vector3[] = [];
-    const batchSize = 25; // Adjust batch size as needed
-    let currentIndex = 0;
-    let hashedTiles: string[] = [];
+      const batchSize = 25; // Adjust batch size as needed
+      let currentIndex = 0;
 
-    this.computeTileEntities(this.currentChunk);
+      this.computeTileEntities(this.currentChunk);
 
-    const processBatch = async () => {
-      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+      const processBatch = async () => {
+        const endIndex = Math.min(currentIndex + batchSize, rows * cols);
 
-      for (let i = currentIndex; i < endIndex; i++) {
-        const row = Math.floor(i / cols) - rows / 2;
-        const col = (i % cols) - cols / 2;
+        for (let i = currentIndex; i < endIndex; i++) {
+          const row = Math.floor(i / cols) - rows / 2;
+          const col = (i % cols) - cols / 2;
 
-        const globalRow = startRow + row;
-        const globalCol = startCol + col;
+          const globalRow = startRow + row;
+          const globalCol = startCol + col;
 
-        hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
-        const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
-        dummy.position.copy(pos);
+          const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
+          dummyObject.position.copy(pos);
 
-        const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
+          const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
 
-        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
-        if (isStructure) {
-          dummy.scale.set(0, 0, 0);
-        } else {
-          dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
-        }
+          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+          if (isStructure) {
+            dummyObject.scale.set(0, 0, 0);
+          } else {
+            dummyObject.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
+          }
 
-        if (!isExplored) {
-          const neighborOffsets = getNeighborOffsets(globalRow);
-          const isBorder = neighborOffsets.some(({ i, j }) => {
-            const neighborCol = globalCol + i;
-            const neighborRow = globalRow + j;
-            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
-          });
+          if (!isExplored) {
+            const neighborOffsets = getNeighborOffsets(globalRow);
+            const isBorder = neighborOffsets.some(({ i, j }) => {
+              const neighborCol = globalCol + i;
+              const neighborRow = globalRow + j;
+              return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
+            });
 
-          if (isBorder) {
+            if (isBorder) {
+              this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+            }
+          } else {
             this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
           }
-        } else {
-          this.interactiveHexManager.addHex({ col: globalCol, row: globalRow });
+
+          const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
+          const rotationIndex = Math.floor(rotationSeed * 6);
+          const randomRotation = (rotationIndex * Math.PI) / 3;
+          if (!IS_FLAT_MODE) {
+            dummyObject.position.y += 0.05;
+            dummyObject.rotation.y = randomRotation;
+          } else {
+            dummyObject.position.y += 0.1;
+            dummyObject.rotation.y = 0;
+          }
+
+          dummyObject.updateMatrix();
+
+          if (isExplored) {
+            const biome = isExplored as BiomeType;
+            biomeHexes[biome].push(dummyObject.matrix.clone());
+          } else {
+            dummyObject.position.y = 0.01;
+            dummyObject.updateMatrix();
+            biomeHexes["Outline"].push(dummyObject.matrix.clone());
+          }
         }
 
-        const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
-        const rotationIndex = Math.floor(rotationSeed * 6);
-        const randomRotation = (rotationIndex * Math.PI) / 3;
-        if (!IS_FLAT_MODE) {
-          dummy.position.y += 0.05;
-          dummy.rotation.y = randomRotation;
+        currentIndex = endIndex;
+        if (currentIndex < rows * cols) {
+          requestAnimationFrame(processBatch);
         } else {
-          dummy.position.y += 0.1;
-          dummy.rotation.y = 0;
+          for (const [biome, matrices] of Object.entries(biomeHexes)) {
+            const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+            matrices.forEach((matrix, index) => {
+              hexMesh.setMatrixAt(index, matrix);
+            });
+            hexMesh.setCount(matrices.length);
+          }
+          this.cacheMatricesForChunk(startRow, startCol);
+          this.interactiveHexManager.renderHexes();
+          resolve();
         }
+      };
 
-        const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
-
-        dummy.updateMatrix();
-
-        if (isExplored) {
-          biomeHexes[biome].push(dummy.matrix.clone());
-        } else {
-          dummy.position.y = 0.01;
-          dummy.updateMatrix();
-          biomeHexes["Outline"].push(dummy.matrix.clone());
-        }
-      }
-
-      currentIndex = endIndex;
-      if (currentIndex < rows * cols) {
+      Promise.all(this.modelLoadPromises).then(() => {
         requestAnimationFrame(processBatch);
-      } else {
-        for (const [biome, matrices] of Object.entries(biomeHexes)) {
-          const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-          matrices.forEach((matrix, index) => {
-            hexMesh.setMatrixAt(index, matrix);
-          });
-          hexMesh.setCount(matrices.length);
-        }
-        this.cacheMatricesForChunk(startRow, startCol);
-        this.interactiveHexManager.renderHexes();
-      }
-    };
-
-    Promise.all(this.modelLoadPromises).then(() => {
-      requestAnimationFrame(processBatch);
+      });
     });
   }
 
@@ -876,7 +889,7 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   updateVisibleChunks(force: boolean = false) {
-    const cameraPosition = new THREE.Vector3();
+    const cameraPosition = dummyVector;
     cameraPosition.copy(this.controls.target);
     const { selectedEntityId } = this.state.entityActions;
     // Adjust the camera position to load chunks earlier in both directions
