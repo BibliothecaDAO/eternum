@@ -358,6 +358,7 @@ export interface Config {
       t1DamageValue: bigint;
       t2DamageMultiplier: bigint;
       t3DamageMultiplier: bigint;
+      damageRaidPercentNum: number;
       damageBiomeBonusNum: number;
       damageScalingFactor: bigint;
       damageC0: bigint;

@@ -7,7 +7,11 @@ use s1_eternum::models::resource::production::production::{ProductionStrategyImp
 trait IProductionContract<TContractState> {
     /// Create and Destroy Buildings
     fn create_building(
-        ref self: TContractState, structure_id: ID, directions: Span<Direction>, building_category: BuildingCategory,
+        ref self: TContractState,
+        structure_id: ID,
+        directions: Span<Direction>,
+        building_category: BuildingCategory,
+        pay_labor: bool,
     );
     fn destroy_building(ref self: TContractState, structure_id: ID, building_coord: Coord);
 
@@ -57,6 +61,7 @@ mod production_systems {
             structure_id: ID,
             mut directions: Span<s1_eternum::models::position::Direction>,
             building_category: BuildingCategory,
+            pay_labor: bool,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure season is not over
@@ -113,7 +118,7 @@ mod production_systems {
             }
 
             // pay one time cost of the building
-            building.make_payment(building_count, ref world);
+            building.make_payment(building_count, ref world, pay_labor);
         }
 
 

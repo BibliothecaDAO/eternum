@@ -16,7 +16,6 @@ pub trait ITroopBattleSystems<T> {
 #[dojo::contract]
 pub mod troop_battle_systems {
     use core::num::traits::zero::Zero;
-
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
@@ -26,13 +25,19 @@ pub mod troop_battle_systems {
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
+    use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
-    use s1_eternum::systems::utils::{structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl}};
+    use s1_eternum::systems::utils::{
+        resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
+    };
     use s1_eternum::utils::map::biomes::{Biome, get_biome};
+    use s1_eternum::utils::random::{VRFImpl};
+    use super::super::super::super::super::models::troop::GuardTrait;
 
 
     #[abi(embed_v0)]
@@ -316,9 +321,10 @@ pub mod troop_battle_systems {
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+            let mut explorer_defender_troops = explorer_defender.troops;
             structure_guard_aggressor_troops
                 .attack(
-                    ref explorer_defender.troops,
+                    ref explorer_defender_troops,
                     defender_biome,
                     troop_stamina_config,
                     troop_damage_config,
@@ -326,6 +332,7 @@ pub mod troop_battle_systems {
                 );
 
             // update explorer
+            explorer_defender.troops = explorer_defender_troops;
             if explorer_defender.troops.count.is_zero() {
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
