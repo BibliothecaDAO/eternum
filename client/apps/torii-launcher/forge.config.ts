@@ -24,7 +24,7 @@ const config: ForgeConfig = {
       config: {
         name: "Eternum Torii Launcher",
         setupExe: "Eternum Torii Launcher.exe",
-        setupIcon: "./public/icon.png",
+        setupIcon: "./public/icon",
       },
     },
     {
@@ -33,18 +33,15 @@ const config: ForgeConfig = {
         macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
       }),
     },
-
-    // new MakerRpm({}),
-    // new MakerDeb({}),
-    // {
-    //   name: "@electron-forge/maker-dmg",
-    //   config: {
-    //     background: "./public/icon.png",
-    //     format: "ULFO",
-    //     icon: "./public/icon.png",
-    //     name: "Eternum Launcher",
-    //   },
-    // },
+    {
+      name: "@electron-forge/maker-dmg",
+      config: {
+        background: "./public/icon.png",
+        format: "ULFO",
+        icon: "./public/icon.png",
+        name: "Eternum Launcher",
+      },
+    },
   ],
   plugins: [
     new VitePlugin({
