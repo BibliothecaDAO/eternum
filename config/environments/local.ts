@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { multiplyStartingResources } from "./utils/resource";
 
@@ -69,6 +69,42 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
+  },
+  realmUpgradeCosts: {
+    ...CommonEternumGlobalConfig.realmUpgradeCosts,
+    [RealmLevels.Settlement]: [],
+    [RealmLevels.City]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Kingdom]: [
+      { resource: ResourcesIds.ColdIron, amount: 1 },
+      { resource: ResourcesIds.Hartwood, amount: 1 },
+      { resource: ResourcesIds.Diamonds, amount: 1 },
+      { resource: ResourcesIds.Sapphire, amount: 1 },
+      { resource: ResourcesIds.DeepCrystal, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Empire]: [
+      { resource: ResourcesIds.AlchemicalSilver, amount: 1 },
+      { resource: ResourcesIds.Adamantine, amount: 1 },
+      { resource: ResourcesIds.Mithral, amount: 1 },
+      { resource: ResourcesIds.Dragonhide, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+  },
+  buildings: {
+    ...CommonEternumGlobalConfig.buildings,
+    buildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.buildingCosts,
+      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    },
+    buildingPopulation: {
+      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+      [BuildingType.ResourceWheat]: 0,
+    },
   },
 };
 
