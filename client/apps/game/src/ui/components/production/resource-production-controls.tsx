@@ -38,7 +38,6 @@ export const ResourceProductionControls = ({
     setup: {
       account: { account },
       systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
-      components: { Resource },
     },
   } = useDojo();
 
@@ -92,8 +91,6 @@ export const ResourceProductionControls = ({
   const outputResource = useMemo(() => {
     return configManager.resourceOutput[selectedResource];
   }, [selectedResource]);
-
-  console.log({ outputResource });
 
   const resourceManager = useResourceManager(realm.entityId);
 

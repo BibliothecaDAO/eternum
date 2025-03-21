@@ -29,14 +29,20 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
 
   const REALM_PRODUCTION_EXCLUDED = [
     ResourcesIds.AncientFragment,
-    ResourcesIds.Crossbowman,
-    ResourcesIds.Knight,
-    ResourcesIds.Paladin,
     ResourcesIds.Fish,
     ResourcesIds.Wheat,
     ResourcesIds.Donkey,
     ResourcesIds.Lords,
     ResourcesIds.Labor,
+    ResourcesIds.Knight,
+    ResourcesIds.KnightT2,
+    ResourcesIds.KnightT3,
+    ResourcesIds.Paladin,
+    ResourcesIds.PaladinT2,
+    ResourcesIds.PaladinT3,
+    ResourcesIds.Crossbowman,
+    ResourcesIds.CrossbowmanT2,
+    ResourcesIds.CrossbowmanT3,
   ];
 
   const orderedResources = useMemo(() => {
