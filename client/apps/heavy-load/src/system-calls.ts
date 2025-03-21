@@ -183,25 +183,25 @@ export async function createBuildings(account: Account, entity_id: number) {
     const layer1CallData = buildingLayouts.layer1.map((direction) => ({
       contractAddress: SYSTEM_ADDRESSES.productionSystems,
       entrypoint: "create_building",
-      calldata: [entity_id, direction, BuildingType.ResourceWheat],
+      calldata: [entity_id, direction, BuildingType.ResourceWheat, false],
     }));
 
     const layer2CallData = buildingLayouts.layer2.map((directions) => ({
       contractAddress: SYSTEM_ADDRESSES.productionSystems,
       entrypoint: "create_building",
-      calldata: [entity_id, directions, BuildingType.ResourceWheat],
+      calldata: [entity_id, directions, BuildingType.ResourceWheat, false],
     }));
 
     const layer3CallData = buildingLayouts.layer3.map((directions) => ({
       contractAddress: SYSTEM_ADDRESSES.productionSystems,
       entrypoint: "create_building",
-      calldata: [entity_id, directions, BuildingType.ResourceWheat],
+      calldata: [entity_id, directions, BuildingType.ResourceWheat, false],
     }));
 
     const layer4CallData = buildingLayouts.layer4.map((directions) => ({
       contractAddress: SYSTEM_ADDRESSES.productionSystems,
       entrypoint: "create_building",
-      calldata: [entity_id, directions, BuildingType.ResourceWheat],
+      calldata: [entity_id, directions, BuildingType.ResourceWheat, false],
     }));
 
     // Execute a separate transaction for each layer
