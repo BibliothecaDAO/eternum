@@ -208,74 +208,76 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
 
   const handleClick = seasonPassRealms.length > 0 ? () => setSettleRealm((prev) => !prev) : undefined;
   return (
-    hasAcceptedToS &&
-    (seasonPassRealms.length > 0 ? (
-      <Button
-        onClick={handleClick}
-        className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-          realms.length === 0 ? "animate-pulse" : ""
-        }`}
-      >
-        <div className="flex items-center">
-          <div className="w-6 h-6 bg-black/20 rounded-xl mr-1 md:mr-2 flex justify-center align-bottom text-center items-center">
-            {seasonPassRealms.length}
+    hasAcceptedToS && (
+      <div className="space-y-4">
+        {seasonPassRealms.length > 0 && (
+          <Button
+            isPulsing={true}
+            onClick={handleClick}
+            className={`w-full h-10 md:h-12 lg:h-12 2xl:h-14 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+              realms.length === 0 ? "animate-pulse" : ""
+            }`}
+          >
+            <div className="flex items-center justify-center">
+              <div className="w-7 h-7 bg-black/20 rounded-full mr-2 md:mr-3 flex justify-center items-center font-semibold">
+                {seasonPassRealms.length}
+              </div>
+              <span className="text-lg font-medium">Redeem Season Pass</span>
+            </div>
+          </Button>
+        )}
+        <div className="flex flex-col gap-3 w-full">
+          <div className="flex gap-3 w-full">
+            <a
+              className="text-brown cursor-pointer text-lg w-1/2"
+              href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button
+                className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+                  realms.length === 0 ? "animate-pulse" : ""
+                }`}
+              >
+                <div className="flex items-center justify-center">
+                  <TreasureChest className="!w-5 !h-5 mr-2 fill-brown text-brown" />
+                  <span className="font-medium">Get Realm Pass</span>
+                </div>
+              </Button>
+            </a>
+            <a className="text-brown cursor-pointer text-lg w-1/2" target="_blank" rel="noopener noreferrer">
+              <Button
+                onClick={handleVillagePassClick}
+                className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+                  realms.length === 0 ? "animate-pulse" : ""
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <TreasureChest className="!w-5 !h-5 fill-brown text-brown" />
+                  <span className="font-medium">Mint Village Pass</span>
+                </div>
+              </Button>
+            </a>
           </div>
-          Redeem Season Pass
-        </div>
-      </Button>
-    ) : (
-      <div className="flex flex-col gap-2 w-full">
-        <div className="flex gap-2 w-full">
           <a
-            className="text-brown cursor-pointer text-lg w-1/2"
-            href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+            className="text-white cursor-pointer text-lg w-full"
+            href={`https://empire.realms.world/trade`}
             target="_blank"
             rel="noopener noreferrer"
           >
             <Button
-              onClick={handleClick}
-              className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
+              className={`w-full h-12 !text-white !bg-black/80 !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md hover:bg-black/90 ${
                 realms.length === 0 ? "animate-pulse" : ""
               }`}
             >
-              <div className="flex items-center">
-                <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
-                Get Realm Pass
-              </div>
-            </Button>
-          </a>
-          <a className="text-brown cursor-pointer text-lg w-1/2" target="_blank" rel="noopener noreferrer">
-            <Button
-              onClick={handleVillagePassClick}
-              className={`mt-8 w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-                realms.length === 0 ? "animate-pulse" : ""
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
-                Mint Village Pass
+              <div className="flex items-center justify-center gap-2">
+                <LordsIcon className="!w-5 !h-5 fill-white text-white" />
+                <span className="font-medium">Bridge in Lords</span>
               </div>
             </Button>
           </a>
         </div>
-        <a
-          className="text-white cursor-pointer text-lg w-full"
-          href={`https://empire.realms.world/trade`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button
-            className={`w-full h-8 md:h-12 lg:h-10 2xl:h-12 !text-white !bg-black/70 !normal-case rounded-md hover:scale-105 hover:-translate-y-1 ${
-              realms.length === 0 ? "animate-pulse" : ""
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <LordsIcon className="!w-4 !h-4 fill-white text-white mb-1" />
-              Bridge in Lords
-            </div>
-          </Button>
-        </a>
       </div>
-    ))
+    )
   );
 };

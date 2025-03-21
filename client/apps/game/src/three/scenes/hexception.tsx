@@ -724,7 +724,6 @@ export default class HexceptionScene extends HexagonScene {
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
-    console.log("existingBuildings", existingBuildings);
 
     if (structureType && structureType !== StructureType.Realm && structureType !== StructureType.Village) {
       existingBuildings.push({

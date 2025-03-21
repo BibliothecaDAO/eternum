@@ -10,9 +10,9 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 
-export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
+export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
 
   const quantity = entityId ? getBuildingQuantity(entityId, BuildingType.Storehouse, dojo.setup.components) : 0;
@@ -49,4 +49,4 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
       </div>
     );
   });
-};
+});
