@@ -97,3 +97,7 @@ pub mod utils {
     pub mod troop;
     pub mod village;
 }
+
+pub mod quest {
+    pub mod contracts;
+}

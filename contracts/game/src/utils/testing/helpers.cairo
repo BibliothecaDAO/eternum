@@ -20,7 +20,12 @@ use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImp
 pub fn MOCK_MAP_CONFIG() -> MapConfig {
     MapConfig {
         reward_resource_amount: 750,
+        shards_mines_win_probability: 5000,
         shards_mines_fail_probability: 5000,
+        hyps_win_prob: 5000,
+        hyps_fail_prob: 5000,
+        hyps_fail_prob_increase_p_hex: 5000,
+        hyps_fail_prob_increase_p_fnd: 5000,
         mine_wheat_grant_amount: 0,
         mine_fish_grant_amount: 1,
     }
@@ -103,12 +108,17 @@ pub fn MOCK_MULTIPLE_RESOURCE_BURN_STRATEGY() -> MultipleResourceBurnPrStrategy 
 
 pub fn MOCK_PRODUCTION_CONFIG(
     resource_type: u8,
-    produced_amount: u128,
+    realm_output_per_tick: u64,
+    village_output_per_tick: u64,
     labor_burn_strategy: LaborBurnPrStrategy,
     multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy,
 ) -> ProductionConfig {
     ProductionConfig {
-        resource_type, realm_output_per_tick: produced_amount, labor_burn_strategy, multiple_resource_burn_strategy,
+        resource_type,
+        realm_output_per_tick,
+        village_output_per_tick,
+        labor_burn_strategy,
+        multiple_resource_burn_strategy,
     }
 }
 
@@ -116,6 +126,7 @@ pub fn MOCK_DEFAULT_PRODUCTION_CONFIG(resource_type: u8) -> ProductionConfig {
     ProductionConfig {
         resource_type,
         realm_output_per_tick: 100,
+        village_output_per_tick: 100,
         labor_burn_strategy: LaborBurnPrStrategy {
             resource_rarity: 0,
             wheat_burn_per_labor: 0,

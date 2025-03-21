@@ -86,6 +86,44 @@ version = "2.9.2"
 source = "git+https://github.com/dojoengine/dojo?tag=v1.3.0#e4702479ec9cf0f01d6927d36f0a3910cf6cb3e3"
 
 [[package]]
+name = "openzeppelin_access"
+version = "0.20.0"
+source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+dependencies = [
+ "openzeppelin_introspection",
+]
+
+[[package]]
+name = "openzeppelin_account"
+version = "0.20.0"
+source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+dependencies = [
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
+]
+
+[[package]]
+name = "openzeppelin_introspection"
+version = "0.20.0"
+source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+
+[[package]]
+name = "openzeppelin_token"
+version = "0.20.0"
+source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+dependencies = [
+ "openzeppelin_access",
+ "openzeppelin_account",
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
+]
+
+[[package]]
+name = "openzeppelin_utils"
+version = "0.20.0"
+source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.20.0#7756fd1de2b4ebd239fa6e372d75535cea02e5e5"
+
+[[package]]
 name = "s1_eternum"
 version = "1.0.0"
 dependencies = [
@@ -95,4 +133,16 @@ dependencies = [
  "cubit",
  "dojo",
  "dojo_cairo_test",
+ "openzeppelin_token",
+ "tournaments",
+]
+
+[[package]]
+name = "tournaments"
+version = "0.0.1"
+source = "git+https://github.com/Provable-Games/tournaments.git?branch=feat%2Fmake-tests-pub#ab526b6fd66b5e26449a1cd8f50729458009b301"
+dependencies = [
+ "dojo",
+ "openzeppelin_introspection",
+ "openzeppelin_token",
 ]
