@@ -1,14 +1,25 @@
 import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
 import { getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
-import { useBuildings, useDojo, usePlayerOwnedRealmsAndVillagesInfo, useResourceManager } from "@bibliothecadao/react";
+import {
+  useBuildings,
+  useDojo,
+  usePlayerOwnedRealmsInfo,
+  usePlayerOwnedVillagesInfo,
+  useResourceManager,
+} from "@bibliothecadao/react";
 import { useCallback, useMemo } from "react";
 import { getLaborConfig } from "../lib/labor";
 import { LaborProductionCalldata, ResourceProductionCalldata } from "./types";
 
 export const useProduction = () => {
   const { structureEntityId } = useStore();
-  const realmsAndVillages = usePlayerOwnedRealmsAndVillagesInfo();
+  const realms = usePlayerOwnedRealmsInfo();
+  const villages = usePlayerOwnedVillagesInfo();
+
+  const realmsAndVillages = useMemo(() => {
+    return [...realms, ...villages];
+  }, [realms, villages]);
 
   const selectedRealm = useMemo(() => {
     return realmsAndVillages.find((r) => r.entityId === structureEntityId);
