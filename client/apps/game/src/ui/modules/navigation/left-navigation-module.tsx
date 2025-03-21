@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
 import { AllResourceArrivals } from "@/ui/components/trading/resource-arrivals";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
@@ -42,8 +41,6 @@ export const LeftNavigationModule = memo(() => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  console.log("left navigation");
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
@@ -228,7 +225,6 @@ export const LeftNavigationModule = memo(() => {
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
-              {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>
           <motion.div

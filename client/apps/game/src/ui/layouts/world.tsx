@@ -72,15 +72,37 @@ const RealmTransferManager = lazy(() =>
   import("../components/resources/realm-transfer-manager").then((module) => ({ default: module.RealmTransferManager })),
 );
 
-export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+// Modal component to prevent unnecessary World re-renders
+const ModalOverlay = () => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  console.log("world");
+  return (
+    <Suspense fallback={null}>
+      <BlankOverlayContainer zIndex={120} open={showModal}>
+        {modalContent}
+      </BlankOverlayContainer>
+    </Suspense>
+  );
+};
+
+// Blank overlay component for onboarding
+const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => {
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+
+  return (
+    <Suspense fallback={null}>
+      <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
+        <Onboarding backgroundImage={backgroundImage} />
+      </BlankOverlayContainer>
+    </Suspense>
+  );
+};
+
+export const World = ({ backgroundImage }: { backgroundImage: string }) => {
+  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   // Setup hooks
   useStructureEntityId();
@@ -159,12 +181,11 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
           <LoadingOroborus loading={isLoadingScreenEnabled} />
           <RealmTransferManager zIndex={100} />
-          <BlankOverlayContainer zIndex={120} open={showModal}>
-            {modalContent}
-          </BlankOverlayContainer>
-          <BlankOverlayContainer zIndex={110} open={showBlankOverlay}>
-            <Onboarding backgroundImage={backgroundImage} />
-          </BlankOverlayContainer>
+
+          {/* Extracted modal components */}
+          <ModalOverlay />
+          <OnboardingOverlay backgroundImage={backgroundImage} />
+
           <ActionInstructions />
           <ActionInfo />
           <EntitiesInfoLabel />

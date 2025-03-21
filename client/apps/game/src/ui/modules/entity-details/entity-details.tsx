@@ -3,6 +3,7 @@ import { useQuery } from "@bibliothecadao/react";
 
 export const EntityDetails = ({ className }: { className?: string }) => {
   const { isMapView } = useQuery();
+
   return (
     <div className={`h-full ${className}`}>
       {isMapView ? (
