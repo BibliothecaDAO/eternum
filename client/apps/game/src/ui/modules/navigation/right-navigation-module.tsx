@@ -78,10 +78,10 @@ export const RightNavigationModule = () => {
       </motion.div>
 
       <BaseContainer
-        className={`w-full pointer-events-auto overflow-y-scroll h-[60vh] rounded-l-2xl border-l-2 border-y-2 border-gold/20`}
+        className={`w-full pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 border-gold/20`}
       >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
-          {!!structureEntityId && (
+          {view === RightView.ResourceTable && !!structureEntityId && (
             <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
               <EntityResourceTable entityId={structureEntityId} />
             </div>

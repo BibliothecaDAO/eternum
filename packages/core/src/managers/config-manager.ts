@@ -1,6 +1,7 @@
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
+  BiomeType,
   BuildingType,
   CapacityConfig,
   GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
@@ -42,9 +43,6 @@ export class ClientConfigManager {
   public setDojo(components: ContractComponents, config: Config) {
     this.components = components;
     this.config = config;
-
-    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
-    console.log("worldConfig", worldConfig);
 
     this.initializeResourceProduction();
     this.initializeHyperstructureTotalCosts();
@@ -205,6 +203,16 @@ export class ClientConfigManager {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
   }
 
+  public getMaxLevel(category: StructureType) {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    if (category === StructureType.Realm) {
+      return Number(worldConfig?.structure_max_level_config?.realm_max ?? 0);
+    } else if (category === StructureType.Village) {
+      return Number(worldConfig?.structure_max_level_config?.village_max ?? 0);
+    }
+    return 0;
+  }
+
   private getHyperstructureConstructionCosts() {
     const hyperstructureResourceConfig = getComponentValue(
       this.components.HyperstructureResourceConfig,
@@ -222,14 +230,50 @@ export class ClientConfigManager {
     return this.resourceWeightsKg[resourceId] || 0;
   }
 
-  getTravelStaminaCost() {
+  getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     return this.getValueOrDefault(() => {
-      const staminaConfig = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.troop_stamina_config;
-      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
-    }, 1);
+      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      const baseStaminaCost = worldConfig?.troop_stamina_config?.stamina_travel_stamina_cost || 0;
+      const biomeBonus = worldConfig?.troop_stamina_config?.stamina_bonus_value || 0;
+
+      // Biome-specific modifiers per troop type
+      switch (biome) {
+        case BiomeType.Ocean:
+          return baseStaminaCost - biomeBonus; // -10 for all troops
+        case BiomeType.DeepOcean:
+          return baseStaminaCost - biomeBonus; // -10 for all troops
+        case BiomeType.Beach:
+          return baseStaminaCost; // No modifier
+        case BiomeType.Grassland:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.Shrubland:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.SubtropicalDesert:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.TemperateDesert:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.TropicalRainForest:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.TropicalSeasonalForest:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.TemperateRainForest:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.TemperateDeciduousForest:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.Tundra:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.Taiga:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.Snow:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+        case BiomeType.Bare:
+          return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
+        case BiomeType.Scorched:
+          return baseStaminaCost + biomeBonus;
+        default:
+          return baseStaminaCost;
+      }
+    }, 0);
   }
 
   getExploreStaminaCost() {
@@ -333,6 +377,7 @@ export class ClientConfigManager {
           stamina_bonus_value: troopStaminaConfig?.stamina_bonus_value ?? 0,
           stamina_attack_req: troopStaminaConfig?.stamina_attack_req ?? 0,
           damage_biome_bonus_num: combatConfig?.damage_biome_bonus_num ?? 0,
+          damage_raid_percent_num: combatConfig?.damage_raid_percent_num ?? 0,
           damage_beta_small: combatConfig?.damage_beta_small ?? 0n,
           damage_beta_large: combatConfig?.damage_beta_large ?? 0n,
           damage_scaling_factor: combatConfig?.damage_scaling_factor ?? 0n,
@@ -347,6 +392,7 @@ export class ClientConfigManager {
         stamina_bonus_value: 0,
         stamina_attack_req: 0,
         damage_biome_bonus_num: 0,
+        damage_raid_percent_num: 0,
         damage_beta_small: 0n,
         damage_beta_large: 0n,
         damage_scaling_factor: 0n,
@@ -382,8 +428,10 @@ export class ClientConfigManager {
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.troop_stamina_config;
-      return staminaConfig?.stamina_travel_stamina_cost ?? 0;
-    }, 1);
+      const baseTravelCost = staminaConfig?.stamina_travel_stamina_cost ?? 0;
+      const biomeBonus = staminaConfig?.stamina_bonus_value ?? 0;
+      return Math.max(baseTravelCost - biomeBonus, 10);
+    }, 10);
   }
 
   getResourceBridgeFeeSplitConfig() {
@@ -474,27 +522,35 @@ export class ClientConfigManager {
     return bankConfig.lpFeesNumerator / bankConfig.lpFeesDenominator;
   }
 
-  getCapacityConfig(category: CapacityConfig) {
+  getCapacityConfigKg(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
       const capacityConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.capacity_config;
 
+      let capacityInGrams = 0;
       switch (category) {
         case CapacityConfig.Structure:
-          return Number(capacityConfig?.structure_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.structure_capacity ?? 0);
+          break;
         case CapacityConfig.Donkey:
-          return Number(capacityConfig?.donkey_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.donkey_capacity ?? 0);
+          break;
         case CapacityConfig.Army:
-          return Number(capacityConfig?.troop_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.troop_capacity ?? 0);
+          break;
         case CapacityConfig.Storehouse:
-          return Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+          capacityInGrams = Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+          break;
         case CapacityConfig.None:
           return 0;
         default:
           throw new Error("Invalid capacity config category");
       }
+
+      // Convert from grams to kg by dividing by 1000
+      return gramToKg(capacityInGrams);
     }, 0);
   }
 

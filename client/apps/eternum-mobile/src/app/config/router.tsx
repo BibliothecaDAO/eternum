@@ -63,10 +63,20 @@ const chatRoute = createRoute({
   component: ChatPage,
 });
 
+// Add catch-all route for 404
+const notFoundRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "*",
+  beforeLoad: () => {
+    throw redirect({ to: ROUTES.LOGIN });
+  },
+});
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
   protectedLayoutRoute.addChildren([realmRoute, settingsRoute, tradeRoute, chatRoute]),
+  notFoundRoute,
 ]);
 
 // Create the router

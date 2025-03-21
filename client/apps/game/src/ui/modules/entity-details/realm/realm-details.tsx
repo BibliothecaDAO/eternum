@@ -19,7 +19,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
-export const RealmDetails = () => {
+export const RealmVillageDetails = () => {
   const dojo = useDojo();
 
   const { currentBlockTimestamp } = useBlockTimestamp();
@@ -34,6 +34,10 @@ export const RealmDetails = () => {
 
   const isRealm = useMemo(() => {
     return structure?.structure.base.category === StructureType.Realm;
+  }, [structure]);
+
+  const isVillage = useMemo(() => {
+    return structure?.structure.base.category === StructureType.Village;
   }, [structure]);
 
   const address = useMemo(() => {
@@ -110,7 +114,7 @@ export const RealmDetails = () => {
           </div>
         </div>
 
-        {isRealm && (
+        {(isRealm || isVillage) && (
           <Tabs
             selectedIndex={selectedTab}
             onChange={(index: number) => setSelectedTab(index)}

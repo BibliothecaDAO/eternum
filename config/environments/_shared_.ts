@@ -32,6 +32,7 @@ import {
   TROOP_DAMAGE_BIOME_BONUS_NUM,
   TROOP_DAMAGE_C0,
   TROOP_DAMAGE_DELTA,
+  TROOP_DAMAGE_RAID_PERCENT_NUM,
   TROOP_DAMAGE_SCALING_FACTOR,
   TROOP_EXPLORE_FISH_COST,
   TROOP_EXPLORE_STAMINA_COST,
@@ -148,8 +149,8 @@ export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
-export const SETTLEMENT_BASE_DISTANCE = 10;
-export const SETTLEMENT_MIN_FIRST_LAYER_DISTANCE = 30;
+export const SETTLEMENT_BASE_DISTANCE = 30;
+export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 export const SETTLEMENT_POINTS_PLACED = 0;
 export const SETTLEMENT_CURRENT_LAYER = 1;
 export const SETTLEMENT_CURRENT_SIDE = 1;
@@ -256,6 +257,7 @@ export const EternumGlobalConfig: Config = {
       t1DamageValue: TROOP_BASE_DAMAGE,
       t2DamageMultiplier: TROOP_T2_DAMAGE_MULTIPLIER,
       t3DamageMultiplier: TROOP_T3_DAMAGE_MULTIPLIER,
+      damageRaidPercentNum: TROOP_DAMAGE_RAID_PERCENT_NUM,
       damageBiomeBonusNum: TROOP_DAMAGE_BIOME_BONUS_NUM,
       damageScalingFactor: TROOP_DAMAGE_SCALING_FACTOR,
       damageBetaSmall: TROOP_DAMAGE_BETA_SMALL,
@@ -292,11 +294,7 @@ export const EternumGlobalConfig: Config = {
   settlement: {
     center: SETTLEMENT_CENTER,
     base_distance: SETTLEMENT_BASE_DISTANCE,
-    min_first_layer_distance: SETTLEMENT_MIN_FIRST_LAYER_DISTANCE,
-    points_placed: SETTLEMENT_POINTS_PLACED,
-    current_layer: SETTLEMENT_CURRENT_LAYER,
-    current_side: SETTLEMENT_CURRENT_SIDE,
-    current_point_on_side: SETTLEMENT_CURRENT_POINT_ON_SIDE,
+    subsequent_distance: SETTLEMENT_SUBSEQUENT_DISTANCE,
   },
   buildings: {
     buildingCapacity: BUILDING_CAPACITY,

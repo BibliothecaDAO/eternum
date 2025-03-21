@@ -18,7 +18,6 @@ import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { REALM_MAX_LEVEL } from "../../../../../../../../config/environments/utils/levels";
 
 export const Castle = () => {
   const dojo = useDojo();
@@ -40,7 +39,8 @@ export const Castle = () => {
   const getNextRealmLevel = useMemo(() => {
     if (!realmInfo) return null;
     const nextLevel = realmInfo.level + 1;
-    return nextLevel < REALM_MAX_LEVEL ? nextLevel : null;
+    const res = nextLevel <= configManager.getMaxLevel(realmInfo.category) ? nextLevel : null;
+    return res;
   }, [realmInfo]);
 
   const checkBalance = useMemo(() => {

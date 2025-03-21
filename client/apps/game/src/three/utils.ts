@@ -2,6 +2,12 @@ import { calculateDistance, HexPosition, Position } from "@bibliothecadao/eternu
 import * as THREE from "three";
 import { HEX_SIZE } from "./scenes/constants";
 
+export const hashCoordinates = (x: number, y: number): number => {
+  // Simple hash function to generate a deterministic value between 0 and 1
+  const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return hash - Math.floor(hash);
+};
+
 export const getHexagonCoordinates = (
   instancedMesh: THREE.InstancedMesh,
   instanceId: number,

@@ -93,8 +93,6 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
     if (!closestBank) return;
 
-    console.log({ closestBank });
-
     const performSwap = () => {
       return operation({
         signer: account,

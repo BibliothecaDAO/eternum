@@ -83,7 +83,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceDragonhide]: "Dragonhide Resource",
   [BuildingType.ResourceLabor]: "Labor Resource",
   [BuildingType.ResourceAncientFragment]: "Ancient Fragment Resource",
-  [BuildingType.ResourceDonkey]: "Donkey Resource",
+  [BuildingType.ResourceDonkey]: "Market",
   [BuildingType.ResourceKnightT1]: "Knight T1 Resource",
   [BuildingType.ResourceKnightT2]: "Knight T2 Resource",
   [BuildingType.ResourceKnightT3]: "Knight T3 Resource",
@@ -93,8 +93,8 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourcePaladinT1]: "Paladin T1 Resource",
   [BuildingType.ResourcePaladinT2]: "Paladin T2 Resource",
   [BuildingType.ResourcePaladinT3]: "Paladin T3 Resource",
-  [BuildingType.ResourceWheat]: "Wheat Resource",
-  [BuildingType.ResourceFish]: "Fish Resource",
+  [BuildingType.ResourceWheat]: "Farm",
+  [BuildingType.ResourceFish]: "Fishing Village",
 };
 
 export function getBuildingCategory(category: BuildingType): CairoCustomEnum {

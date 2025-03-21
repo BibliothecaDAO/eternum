@@ -54,8 +54,8 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
             content: (
               <>
                 <div>
-                  Capacity: {formatStringNumber(formatNumber(Number(army.weight), 0))} /{" "}
-                  {formatStringNumber(formatNumber(Number(armyTotalCapacity), 0))} kg
+                  Capacity: {formatStringNumber(Number(army.weight), 0)} /{" "}
+                  {formatStringNumber(Number(armyTotalCapacity), 0)} kg
                 </div>
                 {capacityColor !== CapacityColor.LIGHT && <div className="text-red">Offload to continue exploring</div>}
               </>

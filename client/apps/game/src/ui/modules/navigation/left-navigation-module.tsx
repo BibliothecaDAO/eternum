@@ -1,15 +1,12 @@
-import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { EntityResourceTable } from "@/ui/components/resources/entity-resource-table";
 import { MarketModal } from "@/ui/components/trading/market-modal";
 import { AllResourceArrivals } from "@/ui/components/trading/resource-arrivals";
-import { BuildingThumbs, IS_MOBILE, MenuEnum } from "@/ui/config";
+import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { Chat } from "@/ui/modules/chat/chat";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
@@ -31,11 +28,6 @@ const WorldStructuresMenu = lazy(() =>
   })),
 );
 
-// todo: implement this with new arrivals logic
-// const AllResourceArrivals = lazy(() =>
-//   import("@/ui/components/trading/resource-arrivals").then((module) => ({ default: module.AllResourceArrivals })),
-// );
-
 export const LeftNavigationModule = memo(() => {
   const {
     account: { account },
@@ -50,17 +42,11 @@ export const LeftNavigationModule = memo(() => {
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { toggleModal } = useModalStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const { isMapView } = useQuery();
 
   const structureInfo = useMemo(
-    () =>
-      getEntityInfo(
-        structureEntityId,
-        ContractAddress(account.address),
-        getBlockTimestamp().currentDefaultTick,
-        components,
-      ),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), components),
     [structureEntityId, account.address, components],
   );
 
@@ -68,8 +54,11 @@ export const LeftNavigationModule = memo(() => {
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
 
-  const isRealm = useMemo(
-    () => Boolean(structureInfo) && structureInfo?.structureCategory === StructureType.Realm,
+  const isRealmOrVillage = useMemo(
+    () =>
+      Boolean(structureInfo) &&
+      (structureInfo?.structureCategory === StructureType.Realm ||
+        structureInfo?.structureCategory === StructureType.Village),
     [structureInfo],
   );
 
@@ -101,12 +90,10 @@ export const LeftNavigationModule = memo(() => {
               tooltipLocation="top"
               label="Details"
               active={view === LeftView.EntityView}
-              size={IS_MOBILE ? "lg" : "xl"}
+              size={"xl"}
               onClick={() => setView(view === LeftView.EntityView ? LeftView.None : LeftView.EntityView)}
             />
-            {!IS_MOBILE && (
-              <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
-            )}
+            <KeyBoardKey invertColors={view === LeftView.EntityView} className="absolute top-1 right-1" keyName="E" />
           </div>
         ),
       },
@@ -120,7 +107,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={military}
             active={view === LeftView.MilitaryView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.MilitaryView ? LeftView.None : LeftView.MilitaryView)}
           />
         ),
@@ -129,13 +116,13 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
-            disabled={disableButtons || !isRealm || isMapView}
+            disabled={disableButtons || !isRealmOrVillage || isMapView}
             className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
             active={view === LeftView.ConstructionView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.ConstructionView ? LeftView.None : LeftView.ConstructionView)}
           />
         ),
@@ -149,7 +136,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label="Resource Arrivals"
             active={view === LeftView.ResourceArrivals}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals)}
           />
         ),
@@ -163,7 +150,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={worldStructures}
             active={view === LeftView.WorldStructuresView}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() =>
               setView(view === LeftView.WorldStructuresView ? LeftView.None : LeftView.WorldStructuresView)
             }
@@ -180,7 +167,7 @@ export const LeftNavigationModule = memo(() => {
             tooltipLocation="top"
             label={trade}
             active={isPopupOpen(trade)}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
           />
         ),
@@ -190,7 +177,7 @@ export const LeftNavigationModule = memo(() => {
         button: (
           <CircleButton
             image={BuildingThumbs.resources}
-            size={IS_MOBILE ? "lg" : "xl"}
+            size={"xl"}
             tooltipLocation="top"
             label="Balance"
             active={view === LeftView.ResourceTable}
@@ -208,12 +195,11 @@ export const LeftNavigationModule = memo(() => {
         MenuEnum.worldStructures,
         MenuEnum.resourceArrivals,
         MenuEnum.trade,
-        ...(IS_MOBILE ? [MenuEnum.resourceTable] : []),
       ].includes(item.name as MenuEnum),
     );
 
     return filteredNavigation;
-  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealm]);
+  }, [view, openedPopups, structureEntityId, isMapView, disableButtons, isRealmOrVillage]);
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -225,7 +211,7 @@ export const LeftNavigationModule = memo(() => {
       <div className="flex-grow overflow-hidden">
         <div
           className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
-            isOffscreen(view) ? (IS_MOBILE ? "-translate-x-[92%]" : "-translate-x-[88%]") : ""
+            isOffscreen(view) ? "-translate-x-[88%]" : ""
           }`}
         >
           <BaseContainer
@@ -239,7 +225,6 @@ export const LeftNavigationModule = memo(() => {
               )}
               {view === LeftView.WorldStructuresView && <WorldStructuresMenu />}
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
-              {view === LeftView.ResourceTable && <EntityResourceTable entityId={structureEntityId} />}
             </Suspense>
           </BaseContainer>
           <motion.div
@@ -256,11 +241,9 @@ export const LeftNavigationModule = memo(() => {
           </motion.div>
         </div>
       </div>
-      {!IS_MOBILE && (
-        <div className="flex">
-          <Chat />
-        </div>
-      )}
+      <div className="flex">
+        <Chat />
+      </div>
     </div>
   );
 });

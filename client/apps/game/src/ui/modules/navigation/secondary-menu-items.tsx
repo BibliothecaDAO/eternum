@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useModalStore } from "@/hooks/store/use-modal-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintModal } from "@/ui/components/hints/hint-modal";
 import { HomeButton } from "@/ui/components/home-button";
@@ -12,9 +11,9 @@ import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
+import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
-import { useAccount } from "@starknet-react/core";
 
 export const SecondaryMenuItems = () => {
   const {
@@ -25,7 +24,7 @@ export const SecondaryMenuItems = () => {
     },
   } = useDojo();
 
-  const { toggleModal } = useModalStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const { connector } = useAccountStore();
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);

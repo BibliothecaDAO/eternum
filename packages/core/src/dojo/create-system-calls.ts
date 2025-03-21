@@ -50,6 +50,10 @@ export function createSystemCalls({
     await provider.cancel_order(props);
   };
 
+  const mint_and_settle_test_realm = async (props: SystemProps.MintAndSettleTestRealmProps) => {
+    await provider.mint_and_settle_test_realm(props);
+  };
+
   const mint_test_realm = async (props: SystemProps.MintTestRealmProps) => {
     await provider.mint_test_realm(props);
   };
@@ -158,8 +162,8 @@ export function createSystemCalls({
     await provider.mint_resources(props);
   };
 
-  const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
-    await provider.create_hyperstructure(props);
+  const initialize_hyperstructure = async (props: SystemProps.InitializeHyperstructureProps) => {
+    await provider.initialize(props);
   };
 
   const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps) => {
@@ -301,6 +305,10 @@ export function createSystemCalls({
     await provider.structure_troop_adjacent_transfer(props);
   };
 
+  const create_village = async (props: SystemProps.CreateVillageProps) => {
+    await provider.create_village(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -319,6 +327,7 @@ export function createSystemCalls({
     cancel_order: withAuth(cancel_order),
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
+    create_village: withAuth(create_village),
     transfer_resources: withAuth(transfer_resources),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
@@ -326,7 +335,7 @@ export function createSystemCalls({
     create_building: withAuth(create_building),
     uuid: uuid,
 
-    create_hyperstructure: withAuth(create_hyperstructure),
+    initialize_hyperstructure: withAuth(initialize_hyperstructure),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
     set_co_owners: withAuth(set_co_owners),
@@ -350,6 +359,7 @@ export function createSystemCalls({
     attach_lords: withAuth(attach_lords),
     detach_lords: withAuth(detach_lords),
     mint_test_lords: withAuth(mint_test_lords),
+    mint_and_settle_test_realm: withAuth(mint_and_settle_test_realm),
     bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
     bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
     bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),

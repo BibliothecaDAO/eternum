@@ -1,15 +1,16 @@
-import { computeTrades, ResourcesIds } from "@bibliothecadao/eternum";
+import { computeTrades, getEntityIdFromKeys, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
-import { useDojo, usePlayerOwnedRealms } from "../";
+import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "../";
 
 export function useMarket(currentBlockTimestamp: number) {
   const {
     setup: { components },
   } = useDojo();
 
-  const playerRealms = usePlayerOwnedRealms();
+  const playerRealmsEntities = usePlayerOwnedRealmEntities();
+  const playerVillagesEntities = usePlayerOwnedVillageEntities();
 
   const allMarket = useEntityQuery([HasValue(components.Trade, { taker_id: 0 })]);
   const allTrades = useMemo(() => {
@@ -17,8 +18,10 @@ export function useMarket(currentBlockTimestamp: number) {
   }, [allMarket]);
 
   const userTrades = useMemo(() => {
-    return allTrades.filter((trade) => playerRealms.map((realm) => realm.entityId).includes(trade.makerId));
-  }, [allTrades]);
+    return allTrades.filter((trade) =>
+      [...playerRealmsEntities, ...playerVillagesEntities].includes(getEntityIdFromKeys([BigInt(trade.makerId)])),
+    );
+  }, [allTrades, playerRealmsEntities, playerVillagesEntities]);
 
   const bidOffers = useMemo(() => {
     if (!allTrades) return [];

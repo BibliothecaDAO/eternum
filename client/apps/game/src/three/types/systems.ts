@@ -16,8 +16,9 @@ export type StructureSystemUpdate = {
   hexCoords: HexPosition;
   structureType: StructureType;
   stage: StructureProgress;
+  initialized: boolean;
   level: number;
-  owner: { address: bigint };
+  owner: { address: bigint; ownerName: string; guildName: string };
   hasWonder: boolean;
 };
 

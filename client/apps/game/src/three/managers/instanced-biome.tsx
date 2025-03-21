@@ -28,7 +28,8 @@ export default class InstancedModel {
       if (child instanceof THREE.Mesh) {
         if (!child.material.depthWrite) {
           child.material.depthWrite = true;
-          renderOrder = 4;
+          child.material.alphaTest = 0.05;
+          renderOrder = 3;
         } else {
           renderOrder = 2;
         }
@@ -47,7 +48,7 @@ export default class InstancedModel {
           tmp.renderOrder = renderOrder;
         }
         if (name === "Outline") {
-          tmp.renderOrder = 5;
+          tmp.renderOrder = 4;
         }
         if (name.toLowerCase().includes("ocean")) {
           tmp.renderOrder = 1;

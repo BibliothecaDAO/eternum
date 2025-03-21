@@ -224,7 +224,10 @@ pub mod troop_movement_util_systems {
 
             // ensure caller is the troop movement systems
             let (troop_movement_systems_address, _) = world.dns(@"troop_movement_systems").unwrap();
-            assert!(starknet::get_caller_address() == troop_movement_systems_address, "caller must be the troop movement systems");
+            assert!(
+                starknet::get_caller_address() == troop_movement_systems_address,
+                "caller must be the troop movement systems",
+            );
             let mut tile = tile;
             let hyps_lottery_won: bool = iHyperstructureDiscoveryImpl::lottery(
                 world, tile.into(), map_config, vrf_seed,

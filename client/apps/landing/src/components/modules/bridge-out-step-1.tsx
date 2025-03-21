@@ -11,8 +11,7 @@ import {
   ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
-  getTotalResourceWeightGrams,
-  multiplyByPrecision,
+  getTotalResourceWeightKg,
   resources,
 } from "@bibliothecadao/eternum";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
@@ -101,13 +100,13 @@ export const BridgeOutStep1 = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const orderWeight = useMemo(() => {
+  const orderWeightKg = useMemo(() => {
     const validSelections = Object.entries(selectedResourceAmounts).filter(([id, amount]) => amount > 0 && id != "NaN");
     if (validSelections.length > 0) {
-      const totalWeight = getTotalResourceWeightGrams(
+      const totalWeight = getTotalResourceWeightKg(
         validSelections.map(([id, amount]) => ({
           resourceId: id as unknown as ResourcesIds,
-          amount: multiplyByPrecision(amount),
+          amount: amount,
         })),
       );
       return totalWeight;
@@ -117,12 +116,12 @@ export const BridgeOutStep1 = () => {
   }, [selectedResourceAmounts]);
 
   const donkeysNeeded = useMemo(() => {
-    if (orderWeight) {
-      return calculateDonkeysNeeded(orderWeight);
+    if (orderWeightKg) {
+      return calculateDonkeysNeeded(orderWeightKg);
     } else {
       return 0;
     }
-  }, [orderWeight]);
+  }, [orderWeightKg]);
 
   const onSendToBank = async () => {
     if (realmEntityId) {

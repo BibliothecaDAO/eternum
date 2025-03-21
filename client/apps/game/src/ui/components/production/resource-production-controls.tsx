@@ -38,7 +38,6 @@ export const ResourceProductionControls = ({
     setup: {
       account: { account },
       systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
-      components: { Resource },
     },
   } = useDojo();
 
@@ -52,7 +51,7 @@ export const ResourceProductionControls = ({
     const calldata = {
       from_entity_id: realm.entityId,
       produced_resource_types: [selectedResource],
-      production_tick_counts: [ticks * outputResource.amount],
+      production_tick_counts: [ticks],
       signer: account,
     };
 

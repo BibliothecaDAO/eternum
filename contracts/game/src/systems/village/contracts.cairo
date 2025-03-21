@@ -17,10 +17,11 @@ pub mod village_systems {
 
     use s1_eternum::models::map::{TileOccupier};
     use s1_eternum::models::position::{Coord};
-    use s1_eternum::models::position::{Direction};
+    use s1_eternum::models::position::{Direction, NUM_DIRECTIONS};
+    use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
-        StructureOwnerStoreImpl,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
@@ -40,6 +41,20 @@ pub mod village_systems {
             // ensure connected entity is a realm
             let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, connected_realm);
             assert!(connected_structure.category == StructureCategory::Realm.into(), "connected entity is not a realm");
+
+            // update village count for the realm
+            let mut connected_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                ref world, connected_realm,
+            );
+            connected_structure_metadata.villages_count += 1;
+            StructureMetadataStoreImpl::store(connected_structure_metadata, ref world, connected_realm);
+
+            // ensure there can't be more than 6 villages per realm
+            assert!(
+                connected_structure_metadata.villages_count <= NUM_DIRECTIONS,
+                "connected realm already has {} villages",
+                NUM_DIRECTIONS,
+            );
 
             // make village parameters
             let village_id: ID = world.dispatcher.uuid();
@@ -66,6 +81,16 @@ pub mod village_systems {
                 village_resources,
                 villiage_metadata,
                 TileOccupier::Village,
+            );
+
+            // place castle building
+            BuildingImpl::create(
+                ref world,
+                village_id,
+                StructureCategory::Village.into(),
+                village_coord,
+                BuildingCategory::ResourceLabor,
+                BuildingImpl::center(),
             );
 
             village_id.into()

@@ -1,25 +1,19 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   BuildingType,
-  CapacityConfig,
-  configManager,
   getBuildingQuantity,
-  gramToKg,
+  getRealmInfo,
   ID,
-  multiplyByPrecision,
   RESOURCE_TIERS,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 
-export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
+export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
-
-  const { currentDefaultTick: tick } = useBlockTimestamp();
 
   const quantity = entityId ? getBuildingQuantity(entityId, BuildingType.Storehouse, dojo.setup.components) : 0;
 
@@ -27,8 +21,10 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
 
   const maxStorehouseCapacityKg = useMemo(() => {
     if (structure?.base.category !== StructureType.Realm) return Infinity;
-    const storehouseCapacityKg = gramToKg(configManager.getCapacityConfig(CapacityConfig.Storehouse));
-    return multiplyByPrecision(quantity * storehouseCapacityKg + storehouseCapacityKg);
+    if (!entityId) return 0;
+    const capacity = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components)?.storehouses
+      .capacityKg;
+    return capacity || 0;
   }, [quantity, entityId]);
 
   if (!entityId || entityId === 0) {
@@ -43,8 +39,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
         key={resourceId}
         resourceId={resourceId}
         resourceManager={resourceManager}
-        maxStorehouseCapacityKg={maxStorehouseCapacityKg}
-        tick={tick}
+        maxCapacityKg={maxStorehouseCapacityKg}
       />
     ));
 
@@ -54,4 +49,4 @@ export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) 
       </div>
     );
   });
-};
+});

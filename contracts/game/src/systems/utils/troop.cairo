@@ -5,6 +5,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::map::{Tile, TileOccupier};
@@ -162,25 +163,18 @@ pub impl iExplorerImpl of iExplorerTrait {
 
     fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("agent_controller_config"),
-            );
-            assert!(
-                agent_controller_config.address == starknet::get_caller_address(), "caller is not the agent controller",
-            );
+            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            assert!(agent_owner.address == starknet::get_caller_address(), "caller is not the agent owner");
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_owner();
         }
     }
+
     fn assert_caller_not_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
-            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("agent_controller_config"),
-            );
-            assert!(agent_controller_config.address.is_non_zero(), "agent controller config is not set");
-            assert!(
-                agent_controller_config.address != starknet::get_caller_address(), "caller owns the agent but should not",
-            );
+            let agent_owner: AgentOwner = world.read_model(self.explorer_id);
+            assert!(agent_owner.address.is_non_zero(), "agent owner is not set");
+            assert!(agent_owner.address != starknet::get_caller_address(), "caller owns the agent but should not");
         } else {
             StructureOwnerStoreImpl::retrieve(ref world, self.owner).assert_caller_not_owner();
         }
@@ -194,39 +188,38 @@ pub impl iExplorerImpl of iExplorerTrait {
         mut biomes: Array<Biome>,
         current_tick: u64,
     ) {
-        let mut stamina_cost: u128 = match explore {
-            true => { troop_stamina_config.stamina_explore_stamina_cost.into() * biomes.len().into() },
-            false => troop_stamina_config.stamina_travel_stamina_cost.into() * biomes.len().into(),
-        };
-
-        let mut total_additional_stamina_cost: u128 = 0;
-        let mut total_deducted_stamina_cost: u128 = 0;
         loop {
             match biomes.pop_front() {
                 Option::Some(biome) => {
-                    let (add, stamina_bonus) = explorer.troops.stamina_movement_bonus(biome, troop_stamina_config);
-                    if add {
-                        total_additional_stamina_cost += stamina_bonus.into();
-                    } else {
-                        total_deducted_stamina_cost += stamina_bonus.into();
-                    }
+                    let stamina_cost: u64 = match explore {
+                        true => { troop_stamina_config.stamina_explore_stamina_cost.into() },
+                        false => {
+                            let mut stamina_cost: u64 = troop_stamina_config.stamina_travel_stamina_cost.into();
+                            let (add, stamina_bonus) = explorer
+                                .troops
+                                .stamina_travel_bonus(biome, troop_stamina_config);
+                            if add {
+                                stamina_cost += stamina_bonus.into();
+                            } else {
+                                stamina_cost -= stamina_bonus.into();
+                            }
+                            stamina_cost
+                        },
+                    };
+                    explorer
+                        .troops
+                        .stamina
+                        .spend(
+                            explorer.troops.category,
+                            troop_stamina_config,
+                            stamina_cost.try_into().unwrap(),
+                            current_tick,
+                            true,
+                        );
                 },
                 Option::None => { break; },
             }
         };
-
-        stamina_cost += total_additional_stamina_cost;
-        if total_deducted_stamina_cost > stamina_cost {
-            stamina_cost = 0;
-        } else {
-            stamina_cost -= total_deducted_stamina_cost;
-        }
-        explorer
-            .troops
-            .stamina
-            .spend(
-                explorer.troops.category, troop_stamina_config, stamina_cost.try_into().unwrap(), current_tick, true,
-            );
     }
 
     fn burn_food_cost(
@@ -296,6 +289,14 @@ pub impl iExplorerImpl of iExplorerTrait {
 
 
     fn explorer_from_agent_delete(ref world: WorldStorage, ref explorer: ExplorerTroops) {
+        // decrease agent count
+        AgentCountImpl::decrease(ref world);
+
+        // delete agent owner
+        let agent_owner = AgentOwner { explorer_id: explorer.explorer_id, address: Zero::zero() };
+        world.erase_model(@agent_owner);
+
+        // explorer delete
         Self::_explorer_delete(ref world, ref explorer);
     }
 
@@ -354,8 +355,36 @@ pub impl iExplorerImpl of iExplorerTrait {
     }
 }
 
+pub enum TroopRaidOutcome {
+    Success,
+    Failure,
+    Chance,
+}
+
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
+    fn raid_outcome(success_weight: u128, failure_weight: u128) -> TroopRaidOutcome {
+        if success_weight > failure_weight * 2 {
+            return TroopRaidOutcome::Success;
+        }
+        if failure_weight > success_weight * 2 {
+            return TroopRaidOutcome::Failure;
+        }
+        return TroopRaidOutcome::Chance;
+    }
+
+    fn raid(success_weight: u128, failure_weight: u128, vrf_seed: u256) -> bool {
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![success_weight, failure_weight].span(),
+            array![].span(),
+            1,
+            true,
+            vrf_seed,
+        )[0];
+        return success;
+    }
+
     fn make_payment(
         ref world: WorldStorage, from_structure_id: ID, amount: u128, category: TroopType, tier: TroopTier,
     ) {
@@ -506,7 +535,7 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
 
         // agent discovery
         let explorer_id: ID = world.dispatcher.uuid();
-        let troop_tier: TroopTier = TroopTier::T3;
+        let troop_tier: TroopTier = TroopTier::T1;
         let explorer: ExplorerTroops = iExplorerImpl::create(
             ref world,
             ref tile,
@@ -521,11 +550,34 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         );
 
         // set name based on id
-        let name: felt252 = 'Daydreams Agent Bread';
+        let names: Array<felt252> = Self::names();
+        let names_index: u128 = random::random(seed, salt, names.len().into());
+        let name: felt252 = *names.at(names_index.try_into().unwrap());
         let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
         world.write_model(@name);
 
+        // todo: limit agent count during increase. check max
+
+        // increase agent count
+        AgentCountImpl::increase(ref world);
+
+        // set agent ownership
+        let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("agent_controller_config"),
+        );
+        world.write_model(@AgentOwner { explorer_id, address: agent_controller_config.address });
+
         // todo: give agent resources
+
+        // hack to grant agents lords
+        // todo: remove
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
+        let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
+        let mut lords_resource = SingleResourceStoreImpl::retrieve(
+            ref world, explorer.explorer_id, ResourceTypes::LORDS, ref explorer_weight, lords_weight_grams, false,
+        );
+        lords_resource.add(5000 * RESOURCE_PRECISION, ref explorer_weight, lords_weight_grams);
+        lords_resource.store(ref world);
 
         // emit event
         world
@@ -535,5 +587,56 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
                 },
             );
         return explorer;
+    }
+
+    fn names() -> Array<felt252> {
+        array![
+            'Daydreams Agent Bread',
+            'Daydreams Agent Doughnut',
+            'Daydreams Agent Chaos',
+            'Daydreams Agent Giggles',
+            'Daydreams Agent Noodle',
+            'Daydreams Agent Pickle',
+            'Daydreams Agent Wobble',
+            'Daydreams Agent Sprinkles',
+            'Daydreams Agent Kazoo',
+            'Daydreams Agent Waffle',
+            'Daydreams Agent Mischief',
+            'Daydreams Agent Whiskers',
+            'Daydreams Agent Poptart',
+            'Daydreams Agent Bubbles',
+            'Daydreams Agent Snooze',
+            'Daydreams Agent Pink',
+            'Daydreams Agent Biscuit',
+            'Daydreams Agent Sparkle',
+            'Daydreams Agent Whimsy',
+            'Daydreams Agent Pancake',
+            'Daydreams Agent Mario',
+            'Daydreams Agent Scramble',
+            'Daydreams Agent Jitters',
+            'Daydreams Agent Fizzle',
+            'Daydreams Agent Waffles',
+            'Daydreams Agent Doodle',
+            'Daydreams Agent Floof',
+            'Daydreams Agent Bumblebee',
+            'Daydreams Agent Quibble',
+            'Daydreams Agent Marshmallow',
+            'Daydreams Agent Zigzag',
+            'Daydreams Agent Pebble',
+            'Daydreams Agent Wiggles',
+            'Daydreams Agent Cinnamon',
+            'Daydreams Agent Noodles',
+            'Daydreams Agent Popsicle',
+            'Daydreams Agent Twizzle',
+            'Daydreams Agent Mumble',
+            'Daydreams Agent Squiggle',
+            'Daydreams Agent Blinky',
+            'Daydreams Agent Razzle',
+            'Daydreams Agent Pretzel',
+            'Daydreams Agent Bubblegum',
+            'Daydreams Agent Sizzle',
+            'Daydreams Agent Pickle',
+            'Daydreams Agent Frizzle',
+        ]
     }
 }

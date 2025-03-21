@@ -119,49 +119,6 @@ export class ArmyActionManager {
     };
   }
 
-  // todo : refactor to use stamina config
-  public static staminaDrain(biome: BiomeType, troopType: TroopType) {
-    const baseStaminaCost = 20; // Base cost to move to adjacent hex
-
-    // Biome-specific modifiers per troop type
-    switch (biome) {
-      case BiomeType.Ocean:
-        return baseStaminaCost - 10; // -10 for all troops
-      case BiomeType.DeepOcean:
-        return baseStaminaCost - 10; // -10 for all troops
-      case BiomeType.Beach:
-        return baseStaminaCost; // No modifier
-      case BiomeType.Grassland:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.Shrubland:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.SubtropicalDesert:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.TemperateDesert:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.TropicalRainForest:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
-      case BiomeType.TropicalSeasonalForest:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
-      case BiomeType.TemperateRainForest:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
-      case BiomeType.TemperateDeciduousForest:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
-      case BiomeType.Tundra:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.Taiga:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 10 : 0);
-      case BiomeType.Snow:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? 0 : 10);
-      case BiomeType.Bare:
-        return baseStaminaCost + (troopType === TroopType.Paladin ? -10 : 0);
-      case BiomeType.Scorched:
-        return baseStaminaCost + 10; // +10 for all troops
-      default:
-        return baseStaminaCost;
-    }
-  }
-
   public findActionPaths(
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
@@ -171,7 +128,6 @@ export class ArmyActionManager {
     playerAddress: ContractAddress,
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
-    if (armyStamina === 0n) return new ActionPaths();
 
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
@@ -198,15 +154,9 @@ export class ArmyActionManager {
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
-
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
-      const staminaCost = biome
-        ? ArmyActionManager.staminaDrain(biome, troopType)
-        : configManager.getExploreStaminaCost();
-
-      if (staminaCost > armyStamina) continue;
-
+      // Determine action type first
       let actionType;
       if (isMine) {
         actionType = ActionType.Help;
@@ -217,6 +167,16 @@ export class ArmyActionManager {
       } else {
         actionType = ActionType.Explore;
       }
+
+      // For travel/explore actions, check stamina cost
+      let staminaCost = 0;
+      if (actionType === ActionType.Move) {
+        staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
+      } else if (actionType === ActionType.Explore) {
+        staminaCost = configManager.getExploreStaminaCost();
+      }
+
+      if (staminaCost > armyStamina) continue;
 
       priorityQueue.push({
         position: { col, row },
@@ -264,7 +224,7 @@ export class ArmyActionManager {
 
           if (!isExplored || hasArmy || hasStructure) continue;
 
-          const staminaCost = ArmyActionManager.staminaDrain(biome!, troopType);
+          const staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
           const nextStaminaUsed = staminaUsed + staminaCost;
 
           if (nextStaminaUsed > armyStamina) continue;
@@ -292,11 +252,16 @@ export class ArmyActionManager {
     return actionPaths;
   }
 
-  private readonly _optimisticExplorerUpdate = (staminaCost: number, newPosition: HexPosition) => {
+  private readonly _optimisticExplorerUpdate = (
+    staminaAmount: bigint,
+    staminaCost: number,
+    currentArmiesTick: number,
+    newPosition: HexPosition,
+  ) => {
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
     const stamina = explorerTroops?.troops.stamina;
 
-    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const overrideId = uuid();
 
     if (!stamina) return;
 
@@ -313,12 +278,16 @@ export class ArmyActionManager {
           ...explorerTroops.troops,
           stamina: {
             ...explorerTroops.troops.stamina,
-            amount: stamina.amount - BigInt(staminaCost),
-            updated_tick: stamina.updated_tick,
+            amount: staminaAmount - BigInt(staminaCost),
+            updated_tick: BigInt(currentArmiesTick),
           },
         },
       },
     });
+
+    return () => {
+      this.components.ExplorerTroops.removeOverride(overrideId);
+    };
   };
 
   private readonly _optimisticCapacityUpdate = (overrideId: string, additionalWeightKg: number) => {
@@ -337,12 +306,18 @@ export class ArmyActionManager {
         },
       },
     });
+
+    return () => {
+      this.components.Resource.removeOverride(overrideId);
+    };
   };
 
   private readonly _optimisticTileUpdate = (newPosition: HexPosition, previousPosition: HexPosition) => {
+    let overrideId = uuid();
+
     const previousEntity = getEntityIdFromKeys([BigInt(previousPosition.col), BigInt(previousPosition.row)]);
 
-    this.components.Tile.addOverride(previousEntity, {
+    this.components.Tile.addOverride(overrideId, {
       entity: previousEntity,
       value: {
         col: previousPosition.col,
@@ -356,7 +331,7 @@ export class ArmyActionManager {
       id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
     });
 
-    this.components.Tile.addOverride(newEntity, {
+    this.components.Tile.addOverride(overrideId, {
       entity: newEntity,
       value: {
         col: newPosition.col,
@@ -366,24 +341,46 @@ export class ArmyActionManager {
         biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
       },
     });
+
+    return () => {
+      this.components.Tile.removeOverride(overrideId);
+    };
   };
 
-  private readonly _optimisticExplore = (col: number, row: number) => {
+  private readonly _optimisticExplore = (col: number, row: number, currentArmiesTick: number) => {
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
 
     let overrideId = uuid();
 
-    this._optimisticExplorerUpdate(configManager.getExploreStaminaCost(), newPosition);
-    this._optimisticTileUpdate(newPosition, previousPosition);
-    this._optimisticCapacityUpdate(
+    const staminaManager = new StaminaManager(this.components, this.entityId);
+    const staminaCost = configManager.getExploreStaminaCost();
+    const currentStamina = staminaManager.getStamina(currentArmiesTick).amount;
+
+    const removeExplorerOverride = this._optimisticExplorerUpdate(
+      currentStamina,
+      staminaCost,
+      currentArmiesTick,
+      newPosition,
+    );
+    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
+    const removeCapacityOverride = this._optimisticCapacityUpdate(
       overrideId,
       // all resources you can find have the same weight as wood
       configManager.getExploreReward() * configManager.getResourceWeightKg(ResourcesIds.Wood),
     );
-    this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
+    const removeFoodCostsOverride = this._optimisticFoodCosts(overrideId, TravelTypes.Explore);
 
-    return overrideId;
+    return {
+      removeVisualOverrides: () => {
+        removeExplorerOverride?.();
+        removeTileOverride();
+      },
+      removeNonVisualOverrides: () => {
+        removeCapacityOverride?.();
+        removeFoodCostsOverride?.();
+      },
+    };
   };
 
   private readonly _findDirection = (path: HexPosition[]) => {
@@ -394,45 +391,67 @@ export class ArmyActionManager {
     return getDirectionBetweenAdjacentHexes(startPos, endPos);
   };
 
-  private readonly _exploreHex = async (signer: DojoAccount, path: HexPosition[]) => {
-    const direction = this._findDirection(path);
+  private readonly _exploreHex = async (signer: DojoAccount, path: ActionPath[], currentArmiesTick: number) => {
+    const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) return;
 
-    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
+    const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticExplore(
+      path[1].hex.col,
+      path[1].hex.row,
+      currentArmiesTick,
+    );
 
-    this.provider
-      .explorer_move({
+    try {
+      await this.provider.explorer_move({
         explorer_id: this.entityId,
         directions: [direction],
         explore: true,
         signer,
-      })
-      .catch((e) => {
-        console.log({ e });
-      })
-      .finally(() => {
-        // remove all non visual overrides
-        this._removeOverride(overrideId);
       });
+    } catch (e) {
+      console.log({ e });
+      removeVisualOverrides();
+      removeNonVisualOverrides();
+    } finally {
+      // remove all non visual overrides
+      removeNonVisualOverrides();
+      removeVisualOverrides();
+    }
   };
 
-  private readonly _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
-    const overrideId = getEntityIdFromKeys([BigInt(this.entityId)]);
+  private readonly _optimisticTravelHex = (col: number, row: number, path: ActionPath[], currentArmiesTick: number) => {
+    const overrideId = uuid();
 
     const previousPosition = this._getCurrentPosition();
     const newPosition = { col, row };
+    let staminaCost = 0;
 
-    this._optimisticExplorerUpdate(configManager.getTravelStaminaCost() * pathLength, newPosition);
-    this._optimisticTileUpdate(newPosition, previousPosition);
-    this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
+    for (const { biomeType } of path) {
+      if (!biomeType) continue;
+      staminaCost += configManager.getTravelStaminaCost(biomeType, this._getTroopType());
+    }
 
-    return overrideId;
-  };
+    const staminaManager = new StaminaManager(this.components, this.entityId);
+    const currentStamina = staminaManager.getStamina(currentArmiesTick).amount;
 
-  // you can remove all non visual overrides when the action fails or succeeds
-  private readonly _removeOverride = (overrideId: string) => {
-    this.components.Resource.removeOverride(overrideId);
-    this.components.ExplorerTroops.removeOverride(overrideId);
+    const removeExplorerOverride = this._optimisticExplorerUpdate(
+      currentStamina,
+      staminaCost,
+      currentArmiesTick,
+      newPosition,
+    );
+    const removeTileOverride = this._optimisticTileUpdate(newPosition, previousPosition);
+    const removeFoodCostsOverride = this._optimisticFoodCosts(overrideId, TravelTypes.Travel);
+
+    return {
+      removeVisualOverrides: () => {
+        removeExplorerOverride?.();
+        removeTileOverride();
+      },
+      removeNonVisualOverrides: () => {
+        removeFoodCostsOverride?.();
+      },
+    };
   };
 
   private readonly _optimisticFoodCosts = (overrideId: string, travelType: TravelTypes) => {
@@ -446,51 +465,73 @@ export class ArmyActionManager {
     }
 
     // need to add back precision for optimistic resource update
-    this.resourceManager.optimisticResourceUpdate(
+    const removeWheatResourceOverride = this.resourceManager.optimisticResourceUpdate(
       overrideId,
       ResourcesIds.Wheat,
       -BigInt(multiplyByPrecision(costs.wheatPayAmount)),
     );
-    this.resourceManager.optimisticResourceUpdate(
+    const removeFishResourceOverride = this.resourceManager.optimisticResourceUpdate(
       overrideId,
       ResourcesIds.Fish,
       -BigInt(multiplyByPrecision(costs.fishPayAmount)),
     );
+
+    return () => {
+      removeWheatResourceOverride?.();
+      removeFishResourceOverride?.();
+    };
   };
 
-  private readonly _travelToHex = async (signer: Account | AccountInterface, path: HexPosition[]) => {
-    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
+  private readonly _travelToHex = async (
+    signer: Account | AccountInterface,
+    path: ActionPath[],
+    currentArmiesTick: number,
+  ) => {
+    const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticTravelHex(
+      path[path.length - 1].hex.col,
+      path[path.length - 1].hex.row,
+      path,
+      currentArmiesTick,
+    );
 
     const directions = path
       .map((_, i) => {
         if (path[i + 1] === undefined) return undefined;
         return this._findDirection([
-          { col: path[i].col, row: path[i].row },
-          { col: path[i + 1].col, row: path[i + 1].row },
+          { col: path[i].hex.col, row: path[i].hex.row },
+          { col: path[i + 1].hex.col, row: path[i + 1].hex.row },
         ]);
       })
       .filter((d) => d !== undefined) as number[];
 
-    this.provider
-      .explorer_move({
+    try {
+      await this.provider.explorer_move({
         signer,
         explorer_id: this.entityId,
         directions,
         explore: false,
-      })
-      .catch((e) => {
-        console.log({ e });
-      })
-      .finally(() => {
-        this._removeOverride(overrideId);
       });
+    } catch (e) {
+      console.log({ e });
+      removeVisualOverrides();
+      removeNonVisualOverrides();
+    } finally {
+      // remove all non visual overrides
+      removeNonVisualOverrides();
+      removeVisualOverrides();
+    }
   };
 
-  public moveArmy = (signer: Account | AccountInterface, path: HexPosition[], isExplored: boolean) => {
+  public moveArmy = (
+    signer: Account | AccountInterface,
+    path: ActionPath[],
+    isExplored: boolean,
+    currentArmiesTick: number,
+  ) => {
     if (!isExplored) {
-      this._exploreHex(signer, path);
+      this._exploreHex(signer, path, currentArmiesTick);
     } else {
-      this._travelToHex(signer, path);
+      this._travelToHex(signer, path, currentArmiesTick);
     }
   };
 

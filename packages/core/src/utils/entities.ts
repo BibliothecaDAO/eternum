@@ -1,20 +1,13 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { divideByPrecision } from ".";
 import { CapacityConfig, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { configManager } from "../managers/config-manager";
 import { ContractAddress, EntityType, ID } from "../types";
 import { getRealmNameById } from "./realm";
-import { getResourcesFromBalance } from "./resources";
 
-export const getEntityInfo = (
-  entityId: ID,
-  playerAccount: ContractAddress,
-  currentDefaultTick: number,
-  components: ClientComponents,
-) => {
+export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
   const { Structure, ExplorerTroops } = components;
   const entityIdBigInt = BigInt(entityId);
 
@@ -41,13 +34,11 @@ export const getEntityInfo = (
       : structure
         ? CapacityConfig.Structure
         : CapacityConfig.None;
-  const capacity = configManager.getCapacityConfig(capacityCategoryId);
-
-  const resources = getResourcesFromBalance(entityId, currentDefaultTick, components);
+  const capacityKg = configManager.getCapacityConfigKg(capacityCategoryId);
 
   return {
     entityId,
-    capacity: divideByPrecision(Number(capacity) || 0),
+    capacityKg: Number(capacityKg) || 0,
     position: explorer
       ? { x: explorer.coord.x, y: explorer.coord.y }
       : structure
@@ -55,7 +46,6 @@ export const getEntityInfo = (
         : undefined,
     owner,
     isMine: ContractAddress(owner || 0n) === playerAccount,
-    resources,
     entityType: explorer ? EntityType.TROOP : EntityType.DONKEY,
     structureCategory: structure?.base.category,
     structure,
@@ -71,7 +61,8 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
   const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-  if (structure?.base.category === StructureType.Realm) {
+  if (!structure) return "";
+  if (structure.base.category === StructureType.Realm) {
     return getRealmName(structure);
   }
 
@@ -79,7 +70,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
     return shortString.decodeShortString(entityName.name.toString());
   }
 
-  if (abbreviate && structure) {
+  if (abbreviate) {
     const abbreviations: Record<string, string> = {
       FragmentMine: "FM",
       Hyperstructure: "HS",
@@ -91,7 +82,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
       return `${abbr} ${structure.entity_id}`;
     }
   }
-  return `${structure?.base.category} ${structure?.entity_id}`;
+  return `${StructureType[structure.base.category]} ${structure.entity_id}`;
 };
 
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {

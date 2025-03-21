@@ -4,7 +4,6 @@ import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { IS_MOBILE } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
@@ -18,7 +17,6 @@ import {
   getEntityInfo,
   ID,
   PlayerStructure,
-  StructureType,
   TickIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -56,15 +54,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
     return saved ? JSON.parse(saved) : [];
   });
 
   const entityInfo = useMemo(
-    () => getEntityInfo(structureEntityId, ContractAddress(account.address), currentDefaultTick, setup.components),
+    () => getEntityInfo(structureEntityId, ContractAddress(account.address), setup.components),
     [structureEntityId, currentDefaultTick, account.address],
   );
 
@@ -120,7 +116,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
 
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+  const { progress } = useMemo(() => {
     const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
     const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
@@ -161,10 +157,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                         key={index}
                         value={structure.structure.entity_id?.toString() || ""}
                       >
-                        <div className="self-center flex gap-4 text-xl">
-                          {structure.name}
-                          {IS_MOBILE ? structureIcons[structure.structure.base.category] : ""}
-                        </div>
+                        <div className="self-center flex gap-4 text-xl">{structure.name}</div>
                       </SelectItem>
                     </div>
                   ))}
@@ -188,7 +181,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          structureCategory={structure.structureCategory as StructureType}
           className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
         />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">

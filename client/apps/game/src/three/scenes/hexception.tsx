@@ -369,10 +369,13 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
+    // Always clear the tooltip first to prevent it from persisting when other elements overlap
+    this.state.setTooltip(null);
+
     if (hex === null) {
-      this.state.setTooltip(null);
       return;
     }
+
     const { position, hexCoords } = hex;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
@@ -411,8 +414,6 @@ export default class HexceptionScene extends HexagonScene {
         ),
         position: "top",
       });
-    } else {
-      this.state.setTooltip(null);
     }
   }
   protected onHexagonRightClick(): void {}
@@ -653,7 +654,7 @@ export default class HexceptionScene extends HexagonScene {
       buildablePositions.forEach((position) => {
         dummy.position.x = position.x;
         dummy.position.z = position.z;
-        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0 : position.y / 2;
+        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0.15 : 0.15 + position.y / 2;
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
 
@@ -666,9 +667,9 @@ export default class HexceptionScene extends HexagonScene {
           withBuilding = true;
           const buildingObj = dummy.clone();
           const rotation = Math.PI / 3;
-          buildingObj.rotation.y = rotation * 4;
+          buildingObj.rotation.y = rotation * 3;
           if (building.category === BuildingType.ResourceLabor) {
-            buildingObj.rotation.y = rotation * 2;
+            buildingObj.rotation.y = rotation * 3;
           }
           if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill) {
             buildingObj.rotation.y = rotation * 2;
@@ -700,7 +701,7 @@ export default class HexceptionScene extends HexagonScene {
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
-      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0 : position.y / 2;
+      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0.15 : 0.15 + position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       const rotationSeed = this.hashCoordinates(position.col, position.row);
       const rotationIndex = Math.floor(rotationSeed * 6);
@@ -725,7 +726,7 @@ export default class HexceptionScene extends HexagonScene {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
 
-    if (structureType && structureType !== StructureType.Realm) {
+    if (structureType && structureType !== StructureType.Realm && structureType !== StructureType.Village) {
       existingBuildings.push({
         col: BUILDINGS_CENTER[0],
         row: BUILDINGS_CENTER[1],

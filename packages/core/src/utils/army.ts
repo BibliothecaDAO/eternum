@@ -6,6 +6,7 @@ import {
   configManager,
   Direction,
   divideByPrecision,
+  getAddressNameFromEntity,
   getArmyTotalCapacityInKg,
   getNeighborHexes,
   gramToKg,
@@ -51,11 +52,12 @@ export const formatArmies = (
         entity_owner_id: explorerTroops.owner,
         stamina,
         owner: structure?.owner,
+        ownerName: getAddressNameFromEntity(explorerTroops.owner, components) || "",
         structure,
         isMine,
         isMercenary,
         isHome,
-        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${explorerTroops.explorer_id}`,
+        name: `${name ? shortString.decodeShortString(name.name.toString()) : `Army`} ${explorerTroops.explorer_id}`,
       };
     })
     .filter((army): army is ArmyInfo => army !== undefined);

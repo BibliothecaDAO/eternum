@@ -1,29 +1,17 @@
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { ArmyInfo, Structure, StructureType } from "@bibliothecadao/eternum";
+import { getStructureTypeName, Structure, StructureType } from "@bibliothecadao/eternum";
 import { useGetHyperstructureProgress, useGuardsByStructure } from "@bibliothecadao/react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 
 type StructureListItemProps = {
   structure: Structure;
-  setShowMergeTroopsPopup: (show: boolean) => void;
-  ownArmySelected: ArmyInfo | undefined;
   maxInventory?: number;
   showButtons?: boolean;
 };
 
-const immuneTooltipContent = (
-  <>
-    This structure is currently immune to attacks.
-    <br />
-    During this period, you are also unable to attack other players.
-  </>
-);
-
 export const StructureListItem = ({
   structure,
-  setShowMergeTroopsPopup,
-  ownArmySelected,
   maxInventory = Infinity,
   showButtons = false,
 }: StructureListItemProps) => {
@@ -32,6 +20,10 @@ export const StructureListItem = ({
   const guards = useGuardsByStructure({ structureEntityId: structure.entityId }).filter(
     (guard) => guard.troops.count > 0n,
   );
+
+  const isRealm = structure.structure.base.category === StructureType.Realm;
+
+  const structureTypeName = isRealm ? structure.name : getStructureTypeName(structure.structure.category);
 
   const progress =
     structure.structure.base.category === StructureType.Hyperstructure
@@ -47,19 +39,17 @@ export const StructureListItem = ({
       >
         <div className="flex w-full justify-between">
           <div className="flex flex-col w-[45%] justify-between">
-            <div className="h4 text-xl flex flex-row justify-between ">
-              <div className="mr-2 text-base">{structure.name}</div>
+            <div className="h4 text-xl flex flex-col">
+              <div className="text-base font-semibold text-gold">{structureTypeName}</div>
+              {!isRealm && <div className="text-sm text-gold/80">{structure.name}</div>}
             </div>
             {structure.structure.base.category === StructureType.Hyperstructure && (
               <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
             )}
 
-            {structure.structure.base.category === StructureType.Realm && (
-              <RealmResourcesIO realmEntityId={structure.entityId} />
-            )}
+            {isRealm && <RealmResourcesIO realmEntityId={structure.entityId} />}
           </div>
           <div className="flex flex-col content-center w-[55%]">
-            {/* {structure.protector && <TroopChip troops={structure.protector?.troops} />} */}
             <CompactDefenseDisplay
               troops={guards.map((army) => ({
                 slot: army.slot,

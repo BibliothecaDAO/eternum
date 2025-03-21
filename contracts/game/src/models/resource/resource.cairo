@@ -73,8 +73,6 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
             let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
             resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
             if resource.production.last_updated_at != now {
-                let mut entity_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
-
                 // harvest the resource and get the amount of resources produced
                 let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
 

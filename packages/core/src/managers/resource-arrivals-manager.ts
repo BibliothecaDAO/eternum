@@ -71,26 +71,12 @@ export class ResourceArrivalManager {
   }
 
   public async offload(signer: Account | AccountInterface, resourceCount: number) {
-    let overrideId: string = "";
-    try {
-      overrideId = this.optimisticOffload();
-
-      await this.systemCalls.arrivals_offload({
+      return this.systemCalls.arrivals_offload({
         signer,
         structureId: this.arrival.structureEntityId,
         day: this.arrival.day,
         slot: this.arrival.slot,
         resource_count: resourceCount,
       });
-    } catch (error) {
-      if (overrideId) {
-        this.components.ResourceArrival.removeOverride(overrideId);
-      }
-      console.error("Error offloading resources:", error);
-    } finally {
-      if (overrideId) {
-        this.components.ResourceArrival.removeOverride(overrideId);
-      }
-    }
   }
 }

@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { multiplyStartingResources } from "./utils/resource";
 
@@ -46,7 +46,10 @@ export const LocalEternumGlobalConfig: Config = {
   // cheap hyperstructures
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureCreationCosts: [{ resource_tier: ResourceTier.Lords, min_amount: 3_000, max_amount: 3_000 }],
+    hyperstructureTotalCosts: [
+      { resource_tier: ResourceTier.Lords, min_amount: 500, max_amount: 500 },
+      { resource_tier: ResourceTier.Common, min_amount: 120_000, max_amount: 120_000 },
+    ],
   },
   // no grace period
   battle: {
@@ -56,10 +59,7 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: {
-    ...CommonEternumGlobalConfig.startingResources,
-    ...multiplyStartingResources(1000),
-  },
+  startingResources: multiplyStartingResources(1000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
@@ -69,6 +69,42 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.season,
     startSettlingAfterSeconds: 59, // 1 minute
     startMainAfterSeconds: 60,
+  },
+  realmUpgradeCosts: {
+    ...CommonEternumGlobalConfig.realmUpgradeCosts,
+    [RealmLevels.Settlement]: [],
+    [RealmLevels.City]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Kingdom]: [
+      { resource: ResourcesIds.ColdIron, amount: 1 },
+      { resource: ResourcesIds.Hartwood, amount: 1 },
+      { resource: ResourcesIds.Diamonds, amount: 1 },
+      { resource: ResourcesIds.Sapphire, amount: 1 },
+      { resource: ResourcesIds.DeepCrystal, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Empire]: [
+      { resource: ResourcesIds.AlchemicalSilver, amount: 1 },
+      { resource: ResourcesIds.Adamantine, amount: 1 },
+      { resource: ResourcesIds.Mithral, amount: 1 },
+      { resource: ResourcesIds.Dragonhide, amount: 1 },
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+  },
+  buildings: {
+    ...CommonEternumGlobalConfig.buildings,
+    buildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.buildingCosts,
+      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    },
+    buildingPopulation: {
+      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+      [BuildingType.ResourceWheat]: 0,
+    },
   },
 };
 

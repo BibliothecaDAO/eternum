@@ -4,7 +4,7 @@ import { shortString } from "starknet";
 import { configManager, Structure } from "..";
 import { MERCENARIES, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
-import { ArmyInfo, ContractAddress, ID, Position, TickIds } from "../types";
+import { ContractAddress, ID, Position, TickIds } from "../types";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 
@@ -38,7 +38,6 @@ const getStructureInfo = (
   const structure = getComponentValue(components.Structure, entity);
   if (!structure) return;
 
-  const protectors: ArmyInfo[] = [];
 
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
@@ -51,7 +50,6 @@ const getStructureInfo = (
     owner: structure.owner,
     name,
     position: { x: structure.base.coord_x, y: structure.base.coord_y },
-    protectors,
     isMine: ContractAddress(structure.owner) === playerAddress,
     isMercenary: structure.owner === 0n,
     ownerName,
@@ -84,4 +82,21 @@ export const getStructureImmunityTimer = (structure: Structure | undefined, curr
 
   if (!currentBlockTimestamp) return 0;
   return immunityEndTimestamp - currentBlockTimestamp!;
+};
+
+export const getStructureTypeName = (structureType: StructureType) => {
+  switch (structureType) {
+    case StructureType.Bank:
+      return "Bank";
+    case StructureType.Hyperstructure:
+      return "Hyperstructure";
+    case StructureType.FragmentMine:
+      return "Fragment Mine";
+    case StructureType.Village:
+      return "Village";
+    case StructureType.Realm:
+      return "Realm";
+    default:
+      return "Unknown";
+  }
 };

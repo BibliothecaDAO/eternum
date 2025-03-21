@@ -1,5 +1,5 @@
-import * as THREE from "three";
 import { Particles } from "@/three/managers/particles";
+import * as THREE from "three";
 
 export class SelectedHexManager {
   private particles: Particles;

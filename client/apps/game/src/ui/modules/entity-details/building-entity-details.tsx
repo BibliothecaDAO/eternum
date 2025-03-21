@@ -4,9 +4,8 @@ import { LeftView } from "@/types";
 import { BuildingInfo, ResourceInfo } from "@/ui/components/construction/select-preview-building";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import Button from "@/ui/elements/button";
-import { RealmDetails } from "@/ui/modules/entity-details/realm/realm-details";
+import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -29,7 +28,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const BuildingEntityDetails = () => {
   const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const [isLoading, setIsLoading] = useState(false);
   const [buildingState, setBuildingState] = useState<{
@@ -58,7 +56,6 @@ export const BuildingEntityDetails = () => {
   const selectedStructureInfo = getEntityInfo(
     structureEntityId,
     ContractAddress(dojo.account.account.address),
-    currentDefaultTick,
     dojo.setup.components,
   );
 
@@ -66,7 +63,8 @@ export const BuildingEntityDetails = () => {
     () =>
       selectedBuildingHex.innerCol === BUILDINGS_CENTER[0] &&
       selectedBuildingHex.innerRow === BUILDINGS_CENTER[1] &&
-      selectedStructureInfo?.structureCategory === StructureType.Realm,
+      (selectedStructureInfo?.structureCategory === StructureType.Realm ||
+        selectedStructureInfo?.structureCategory === StructureType.Village),
     [selectedBuildingHex.innerCol, selectedBuildingHex.innerRow],
   );
 
@@ -158,7 +156,7 @@ export const BuildingEntityDetails = () => {
     <div className="building-entity-details-selector flex flex-col h-full">
       {isCastleSelected ? (
         <div className="flex-grow w-full space-y-1 text-sm">
-          <RealmDetails />
+          <RealmVillageDetails />
         </div>
       ) : (
         <>

@@ -1,12 +1,10 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { configManager, gramToKg } from "..";
-import { BuildingType, CapacityConfig, findResourceIdByTrait, orders, StructureType } from "../constants";
+import { configManager, getAddressNameFromEntity, getEntityName, ResourceManager } from "..";
+import { findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
 import { ID, RealmInfo, RealmInterface, RealmWithPosition } from "../types";
-import { getBuildingCount, packValues, unpackValue } from "./packed-data";
+import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
   const { Structure } = components;
@@ -20,19 +18,6 @@ export const getRealmWithPosition = (entity: Entity, components: ClientComponent
     name: getRealmNameById(structure.metadata.realm_id),
     owner: structure?.owner,
   } as RealmWithPosition;
-};
-
-export const getRealmAddressName = (realmEntityId: ID, components: ClientComponents) => {
-  // use value strict because we know the structure exists
-  const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  if (!structure) return "";
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
-
-  if (addressName) {
-    return shortString.decodeShortString(String(addressName.name));
-  } else {
-    return "";
-  }
 };
 
 interface Attribute {
@@ -62,19 +47,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
   const structure = getComponentValue(components.Structure, entity);
   const structureBuildings = getComponentValue(components.StructureBuildings, entity);
 
-  const buildingCounts = [
-    structureBuildings?.packed_counts_1 || 0n,
-    structureBuildings?.packed_counts_2 || 0n,
-    structureBuildings?.packed_counts_3 || 0n,
-  ];
-
-  const storehouseQuantity = getBuildingCount(BuildingType.Storehouse, buildingCounts) || 0;
-
-  const storehouses = (() => {
-    const storehouseCapacity = configManager.getCapacityConfig(CapacityConfig.Storehouse);
-    return { capacityKg: (storehouseQuantity + 1) * gramToKg(storehouseCapacity), quantity: storehouseQuantity };
-  })();
-
   if (structure) {
     const realm_id = structure.metadata.realm_id;
     const order = structure.metadata.order;
@@ -82,18 +54,21 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     const entity_id = structure.entity_id;
     const produced_resources = structure.resources_packed;
 
-    const name = getRealmNameById(realm_id);
+    const name = getEntityName(structure.entity_id, components);
 
     const resources = unpackValue(BigInt(produced_resources));
+
+    const resourceManager = new ResourceManager(components, entity_id);
 
     return {
       realmId: realm_id,
       entityId: entity_id,
-      storehouses,
+      category: structure.category,
       name,
       level,
       resources,
       order,
+      storehouses: resourceManager.getStoreCapacityKg(),
       position: { x: structure.base.coord_x, y: structure.base.coord_y },
       population: structureBuildings?.population.current,
       capacity: structureBuildings?.population.max,
@@ -102,7 +77,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
           structureBuildings.population.current,
       owner: structure?.owner,
-      ownerName: getRealmAddressName(entity_id, components),
+      ownerName: getAddressNameFromEntity(entity_id, components) || "",
       hasWonder: structure.metadata.has_wonder,
     };
   }
@@ -156,7 +131,36 @@ export const hasEnoughPopulationForBuilding = (realm: any, building: number) => 
   const buildingPopulation = configManager.getBuildingCategoryConfig(building).population_cost;
   const basePopulationCapacity = configManager.getBasePopulationCapacity();
 
-  console.log({ buildingPopulation, basePopulationCapacity, realm, building });
-
   return (realm?.population || 0) + buildingPopulation <= basePopulationCapacity + (realm?.capacity || 0);
+};
+
+export const maxLayer = (realmCount: number): number => {
+  // Calculate the maximum layer on the concentric hexagon
+  // that can be built on based on realm count
+
+  if (realmCount <= 1500) {
+    return 26; // 2105 capacity
+  }
+
+  if (realmCount <= 2500) {
+    return 32; // 3167 capacity
+  }
+
+  if (realmCount <= 3500) {
+    return 37; // 4217 capacity
+  }
+
+  if (realmCount <= 4500) {
+    return 41; // 5165 capacity
+  }
+
+  if (realmCount <= 5500) {
+    return 45; // 6209 capacity
+  }
+
+  if (realmCount <= 6500) {
+    return 49; // 7349 capacity
+  }
+
+  return 52; // 8267 capacity
 };

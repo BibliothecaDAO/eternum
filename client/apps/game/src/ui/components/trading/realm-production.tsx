@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { configManager, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
-import { useRealms } from "@bibliothecadao/react";
+import { useAllRealms } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
 export const RealmProduction = () => {
@@ -10,7 +10,7 @@ export const RealmProduction = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   // todo: pay attention to expensive query
-  const realms = useRealms();
+  const realms = useAllRealms();
   const [filterProduced, setFilterProduced] = useState<number | null>(null);
   const [filterConsumed, setFilterConsumed] = useState<number | null>(null);
 

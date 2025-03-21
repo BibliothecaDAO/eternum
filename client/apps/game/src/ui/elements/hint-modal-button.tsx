@@ -1,4 +1,4 @@
-import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import CircleButton from "@/ui/elements/circle-button";
 import { HintModal } from "../components/hints/hint-modal";
 import { BuildingThumbs } from "../config";
@@ -9,7 +9,7 @@ type HintModalButtonProps = {
 };
 
 export const HintModalButton = ({ className, section }: HintModalButtonProps) => {
-  const { toggleModal } = useModalStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
     <CircleButton

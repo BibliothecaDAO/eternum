@@ -55,6 +55,7 @@ export type ArmyInfo = {
   troops: Troops;
   stamina: bigint;
   name: string;
+  ownerName: string;
   isMine: boolean;
   isMercenary: boolean;
   isHome: boolean;
@@ -76,7 +77,6 @@ export type Structure = {
   name: string;
   category: StructureType;
   ownerName?: string;
-  protectors: ArmyInfo[];
   owner: ContractAddress;
   position: Position;
 };
@@ -357,6 +357,7 @@ export interface Config {
       t1DamageValue: bigint;
       t2DamageMultiplier: bigint;
       t3DamageMultiplier: bigint;
+      damageRaidPercentNum: number;
       damageBiomeBonusNum: number;
       damageScalingFactor: bigint;
       damageC0: bigint;
@@ -393,11 +394,7 @@ export interface Config {
   settlement: {
     center: number;
     base_distance: number;
-    min_first_layer_distance: number;
-    points_placed: number;
-    current_layer: number;
-    current_side: number;
-    current_point_on_side: number;
+    subsequent_distance: number;
   };
   season: {
     startSettlingAfterSeconds: number;
@@ -452,10 +449,15 @@ export interface Config {
 export interface RealmInfo {
   realmId: ID;
   entityId: ID;
+  category: StructureType;
   name: string;
   resources: ResourcesIds[];
   order: number;
   position: Position;
+  storehouses: {
+    capacityKg: number;
+    quantity: number;
+  };
   population?: number | undefined;
   capacity?: number;
   hasCapacity: boolean;
@@ -463,10 +465,6 @@ export interface RealmInfo {
   ownerName: string;
   hasWonder: boolean;
   level: number;
-  storehouses: {
-    capacityKg: number;
-    quantity: number;
-  };
 }
 
 export interface PlayerInfo {

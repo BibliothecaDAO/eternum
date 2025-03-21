@@ -991,6 +991,7 @@ export function defineContractComponents(world: World) {
             realm_id: RecsType.Number,
             order: RecsType.Number,
             has_wonder: RecsType.Boolean,
+            villages_count: RecsType.Number,
             village_realm: RecsType.Number,
           },
           category: RecsType.Number,
@@ -1043,10 +1044,12 @@ export function defineContractComponents(world: World) {
               //explorers
               "Span<u32>",
               "u128",
+              // structure metadata
               "u16",
               "u8",
               "bool",
               "u8",
+              "u32",
             ],
             customTypes: ["StructureBase", "GuardTroops", "TroopType", "TroopTier", "Stamina", "StructureMetadata"],
           },
@@ -1156,11 +1159,7 @@ export function defineContractComponents(world: World) {
           settlement_config: {
             center: RecsType.Number,
             base_distance: RecsType.Number,
-            min_first_layer_distance: RecsType.Number,
-            points_placed: RecsType.Number,
-            current_layer: RecsType.Number,
-            current_side: RecsType.Number,
-            current_point_on_side: RecsType.Number,
+            subsequent_distance: RecsType.Number,
           },
           tick_config: {
             armies_tick_in_seconds: RecsType.Number,
@@ -1196,6 +1195,7 @@ export function defineContractComponents(world: World) {
             base_cost_percent_increase: RecsType.Number,
           },
           troop_damage_config: {
+            damage_raid_percent_num: RecsType.Number,
             damage_biome_bonus_num: RecsType.Number,
             damage_beta_small: RecsType.BigInt,
             damage_beta_large: RecsType.BigInt,
@@ -1244,6 +1244,9 @@ export function defineContractComponents(world: World) {
             regular_immunity_ticks: RecsType.Number,
             hyperstructure_immunity_ticks: RecsType.Number,
           },
+          realm_count: {
+            count: RecsType.Number,
+          },
           season_config: {
             start_settling_at: RecsType.Number,
             start_main_at: RecsType.Number,
@@ -1281,11 +1284,7 @@ export function defineContractComponents(world: World) {
               "u32", // MapConfig mine_fish_grant_amount
               "u32", // SettlementConfig center
               "u32", // SettlementConfig base_distance
-              "u32", // SettlementConfig min_first_layer_distance
-              "u32", // SettlementConfig points_placed
-              "u32", // SettlementConfig current_layer
-              "u32", // SettlementConfig current_side
-              "u32", // SettlementConfig current_point_on_side
+              "u32", // SettlementConfig subsequent_distance
               "u64", // TickConfig armies_tick_in_seconds
               "u32", // BankConfig lp_fee_num
               "u32", // BankConfig lp_fee_denom
@@ -1307,6 +1306,7 @@ export function defineContractComponents(world: World) {
               "u8", // StructureMaxLevelConfig village_max
               "u32", // BuildingConfig base_population
               "u16", // BuildingConfig base_cost_percent_increase
+              "u16", // TroopDamageConfig damage_raid_percent_num
               "u16", // TroopDamageConfig damage_biome_bonus_num
               "u64", // TroopDamageConfig damage_beta_small
               "u64", // TroopDamageConfig damage_beta_large
@@ -1344,6 +1344,7 @@ export function defineContractComponents(world: World) {
               "u8", // TradeConfig max_count
               "u8", // BattleConfig regular_immunity_ticks
               "u8", // BattleConfig hyperstructure_immunity_ticks
+              "u16", // RealmCountConfig realm_count
               "u64", // SeasonConfig start_settling_at
               "u64", // SeasonConfig start_main_at
               "u64", // SeasonConfig end_at

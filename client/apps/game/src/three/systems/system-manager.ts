@@ -181,13 +181,41 @@ export class SystemManager {
             hasWonder = structure.metadata.has_wonder || false;
           }
 
+          const addressName = getComponentValue(
+            this.setup.components.AddressName,
+            getEntityIdFromKeys([BigInt(structure.owner)]),
+          );
+
+          const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+          const guild = structure.owner
+            ? getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([BigInt(structure.owner)]))
+            : undefined;
+
+          let guildName = "";
+          if (guild?.guild_entity_id) {
+            const guildEntityName = getComponentValue(
+              this.setup.components.AddressName,
+              getEntityIdFromKeys([BigInt(guild.guild_entity_id)]),
+            );
+            guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+          }
+
+          const hyperstructure = getComponentValue(
+            this.setup.components.Hyperstructure,
+            getEntityIdFromKeys([BigInt(structure.entity_id)]),
+          );
+
+          const initialized = hyperstructure?.initialized || false;
+
           return {
             entityId: structure.entity_id,
             hexCoords: { col: structure.base.coord_x, row: structure.base.coord_y },
             structureType: structure.base.category as StructureType,
+            initialized,
             stage,
             level,
-            owner: { address: structure.owner },
+            owner: { address: structure.owner, ownerName, guildName },
             hasWonder,
           };
         });
