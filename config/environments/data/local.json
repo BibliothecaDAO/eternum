@@ -747,11 +747,11 @@
         "fish_burn_per_labor": 0
       },
       "24": {
-        "resource_rarity": 21,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
+        "resource_rarity": 0,
+        "depreciation_percent_num": 0,
+        "depreciation_percent_denom": 0,
+        "wheat_burn_per_labor": 0,
+        "fish_burn_per_labor": 0
       },
       "25": {
         "resource_rarity": 0,
@@ -761,11 +761,11 @@
         "fish_burn_per_labor": 0
       },
       "26": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
+        "resource_rarity": 26,
+        "depreciation_percent_num": 10,
+        "depreciation_percent_denom": 100,
+        "wheat_burn_per_labor": 50,
+        "fish_burn_per_labor": 50
       },
       "27": {
         "resource_rarity": 0,
@@ -782,11 +782,11 @@
         "fish_burn_per_labor": 0
       },
       "29": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
+        "resource_rarity": 29,
+        "depreciation_percent_num": 10,
+        "depreciation_percent_denom": 100,
+        "wheat_burn_per_labor": 50,
+        "fish_burn_per_labor": 50
       },
       "30": {
         "resource_rarity": 0,
@@ -803,11 +803,11 @@
         "fish_burn_per_labor": 0
       },
       "32": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
+        "resource_rarity": 29,
+        "depreciation_percent_num": 10,
+        "depreciation_percent_denom": 100,
+        "wheat_burn_per_labor": 50,
+        "fish_burn_per_labor": 50
       },
       "33": {
         "resource_rarity": 0,
@@ -997,6 +997,7 @@
       "t1DamageValue": "1844674407370955161600",
       "t2DamageMultiplier": "46116860184273879040",
       "t3DamageMultiplier": "129127208515966861312",
+      "damageRaidPercentNum": 1000,
       "damageBiomeBonusNum": 3000,
       "damageScalingFactor": "64563604257983430656",
       "damageBetaSmall": "4611686018427387904",
@@ -1026,8 +1027,8 @@
       "guardResurrectionDelay": 86400,
       "mercenariesTroopLowerBound": 100,
       "mercenariesTroopUpperBound": 200,
-      "agentTroopLowerBound": 400000,
-      "agentTroopUpperBound": 500000
+      "agentTroopLowerBound": 1000,
+      "agentTroopUpperBound": 3000
     }
   },
   "settlement": {
@@ -1163,10 +1164,6 @@
       "0": [],
       "1": [
         {
-          "resource": 23,
-          "amount": 2500
-        },
-        {
           "resource": 3,
           "amount": 75000
         },
@@ -1184,10 +1181,6 @@
         }
       ],
       "2": [
-        {
-          "resource": 23,
-          "amount": 5000
-        },
         {
           "resource": 6,
           "amount": 50000
@@ -1341,10 +1334,6 @@
       "26": [],
       "27": [
         {
-          "resource": 23,
-          "amount": 10000
-        },
-        {
           "resource": 8,
           "amount": 50000
         },
@@ -1362,10 +1351,6 @@
         }
       ],
       "28": [
-        {
-          "resource": 23,
-          "amount": 5000
-        },
         {
           "resource": 1,
           "amount": 75000
@@ -1389,10 +1374,6 @@
       ],
       "29": [
         {
-          "resource": 23,
-          "amount": 50000
-        },
-        {
           "resource": 1,
           "amount": 250000
         },
@@ -1414,10 +1395,6 @@
         }
       ],
       "30": [
-        {
-          "resource": 23,
-          "amount": 250000
-        },
         {
           "resource": 1,
           "amount": 500000
@@ -1441,10 +1418,6 @@
       ],
       "31": [
         {
-          "resource": 23,
-          "amount": 5000
-        },
-        {
           "resource": 3,
           "amount": 75000
         },
@@ -1466,10 +1439,6 @@
         }
       ],
       "32": [
-        {
-          "resource": 23,
-          "amount": 50000
-        },
         {
           "resource": 3,
           "amount": 250000
@@ -1493,10 +1462,6 @@
       ],
       "33": [
         {
-          "resource": 23,
-          "amount": 250000
-        },
-        {
           "resource": 3,
           "amount": 500000
         },
@@ -1518,10 +1483,6 @@
         }
       ],
       "34": [
-        {
-          "resource": 23,
-          "amount": 5000
-        },
         {
           "resource": 3,
           "amount": 75000
@@ -1545,10 +1506,6 @@
       ],
       "35": [
         {
-          "resource": 23,
-          "amount": 50000
-        },
-        {
           "resource": 3,
           "amount": 250000
         },
@@ -1570,10 +1527,6 @@
         }
       ],
       "36": [
-        {
-          "resource": 23,
-          "amount": 250000
-        },
         {
           "resource": 3,
           "amount": 500000
@@ -1597,19 +1550,11 @@
       ],
       "37": [
         {
-          "resource": 23,
-          "amount": 500
-        },
-        {
           "resource": 36,
           "amount": 50000
         }
       ],
       "38": [
-        {
-          "resource": 23,
-          "amount": 500
-        },
         {
           "resource": 35,
           "amount": 50000
