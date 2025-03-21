@@ -17,7 +17,6 @@ import {
   getEntityInfo,
   ID,
   PlayerStructure,
-  StructureType,
   TickIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
@@ -182,7 +181,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          structureCategory={structure.structureCategory as StructureType}
           className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
         />
         <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">

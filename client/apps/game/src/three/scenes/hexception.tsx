@@ -369,10 +369,13 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
   protected onHexagonMouseMove(hex: { position: THREE.Vector3; hexCoords: HexPosition } | null): void {
+    // Always clear the tooltip first to prevent it from persisting when other elements overlap
+    this.state.setTooltip(null);
+
     if (hex === null) {
-      this.state.setTooltip(null);
       return;
     }
+
     const { position, hexCoords } = hex;
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     //check if it on main hex
@@ -411,8 +414,6 @@ export default class HexceptionScene extends HexagonScene {
         ),
         position: "top",
       });
-    } else {
-      this.state.setTooltip(null);
     }
   }
   protected onHexagonRightClick(): void {}

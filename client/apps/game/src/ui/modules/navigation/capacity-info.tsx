@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BuildingType, configManager, getRealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { BuildingType, configManager, getRealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -64,15 +64,7 @@ const WorkersHutInfo = () => {
   );
 };
 
-export const CapacityInfo = ({
-  structureEntityId,
-  structureCategory,
-  className,
-}: {
-  structureEntityId: number;
-  structureCategory?: StructureType;
-  className?: string;
-}) => {
+export const CapacityInfo = ({ structureEntityId, className }: { structureEntityId: number; className?: string }) => {
   const { setup } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
 

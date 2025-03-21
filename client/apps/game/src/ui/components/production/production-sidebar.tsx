@@ -1,8 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { ID, RealmInfo, resources } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import { memo, useMemo } from "react";
 
@@ -40,8 +39,6 @@ const SidebarRealm = ({
     return buildings;
   }, [realm]);
 
-  const resourceManager = useResourceManager(realm.entityId);
-
   return (
     <div
       onClick={onSelect}
@@ -54,18 +51,14 @@ const SidebarRealm = ({
 
       <div className="flex flex-wrap gap-2 mb-2">
         {Object.values(realm.resources).map((resource) => {
-          const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resource);
-          if (balance > 0) {
-            return (
-              <ResourceIcon
-                key={resource}
-                resource={resources.find((r) => r.id === resource)?.trait || ""}
-                size="sm"
-                className="opacity-80"
-              />
-            );
-          }
-          return null;
+          return (
+            <ResourceIcon
+              key={resource}
+              resource={resources.find((r) => r.id === resource)?.trait || ""}
+              size="sm"
+              className="opacity-80"
+            />
+          );
         })}
       </div>
 

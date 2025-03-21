@@ -1,5 +1,5 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
-import { configManager, getAddressNameFromEntity, ResourceManager } from "..";
+import { configManager, getAddressNameFromEntity, getEntityName, ResourceManager } from "..";
 import { findResourceIdByTrait, orders, StructureType } from "../constants";
 import realmsJson from "../data/realms.json";
 import { ClientComponents } from "../dojo";
@@ -54,7 +54,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
     const entity_id = structure.entity_id;
     const produced_resources = structure.resources_packed;
 
-    const name = getRealmNameById(realm_id);
+    const name = getEntityName(structure.entity_id, components);
 
     const resources = unpackValue(BigInt(produced_resources));
 
