@@ -79,6 +79,8 @@ pub enum TileOccupier {
     //
     HyperstructureLevel2,
     HyperstructureLevel3,
+    //
+    Quest,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -117,6 +119,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::RealmWonderLevel4 => 30,
             TileOccupier::HyperstructureLevel2 => 31,
             TileOccupier::HyperstructureLevel3 => 32,
+            TileOccupier::Quest => 33,
         }
     }
 }
