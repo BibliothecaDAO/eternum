@@ -1,4 +1,4 @@
-import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
@@ -46,7 +46,7 @@ const BANKS: Bank[] = [
 ];
 
 export const MarketHeader = () => {
-  const { toggleModal } = useModalStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
     <div className="grid grid-cols-4 p-3 flex-wrap justify-between items-start gap-6 mb-8 rounded-xl shadow-lg border border-gold/20 relative">

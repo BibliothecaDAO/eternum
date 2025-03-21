@@ -62,13 +62,7 @@ const RightNavigationModule = lazy(() =>
 const TopLeftNavigation = lazy(() =>
   import("../modules/navigation/top-left-navigation").then((module) => ({ default: module.TopLeftNavigation })),
 );
-const EventStream = lazy(() =>
-  import("../modules/stream/event-stream").then((module) => ({ default: module.EventStream })),
-);
 const Onboarding = lazy(() => import("./onboarding").then((module) => ({ default: module.Onboarding })));
-const OrientationOverlay = lazy(() =>
-  import("../components/overlays/orientation-overlay").then((module) => ({ default: module.OrientationOverlay })),
-);
 
 const MiniMapNavigation = lazy(() =>
   import("../modules/navigation/mini-map-navigation").then((module) => ({ default: module.MiniMapNavigation })),
@@ -85,6 +79,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+
+  console.log("world");
 
   // Setup hooks
   useStructureEntityId();

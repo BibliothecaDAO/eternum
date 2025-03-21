@@ -1,7 +1,7 @@
 import { ReactComponent as CheckboxChecked } from "@/assets/icons/checkbox-checked.svg";
 import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as MapIcon } from "@/assets/icons/common/map.svg";
-import { useModalStore } from "@/hooks/store/use-modal-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
@@ -133,7 +133,7 @@ export const SeasonPassRealm = ({
     };
     fetchRealmCount();
   }, []);
-  const { toggleModal } = useModalStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const handleLocationSelect = (location: SettlementLocation) => {
     if (onSelectLocation) {
