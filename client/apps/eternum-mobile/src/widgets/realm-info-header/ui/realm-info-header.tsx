@@ -4,12 +4,12 @@ import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
 import { FELT_CENTER, getLevelName } from "@bibliothecadao/eternum";
-import { usePlayerOwnedRealms } from "@bibliothecadao/react";
+import { usePlayerOwnedRealmsAndVillagesInfo } from "@bibliothecadao/react";
 import { ChevronDown, Copy } from "lucide-react";
 import { useMemo } from "react";
 
 export const RealmInfoHeader = () => {
-  const playerRealms = usePlayerOwnedRealms();
+  const playerRealmsAndVillages = usePlayerOwnedRealmsAndVillagesInfo();
   const { structureEntityId, selectedRealm, setSelectedStructure } = useStore();
 
   const adjustedCoords = useMemo(() => {
@@ -52,10 +52,10 @@ export const RealmInfoHeader = () => {
         <div>
           <h1 className="text-5xl font-bold font-bokor flex items-end gap-2">
             <SelectStructureDrawer
-              structures={playerRealms}
+              structures={playerRealmsAndVillages}
               selectedStructureId={structureEntityId}
               onSelectStructure={(entityId) => {
-                const realm = playerRealms.find((r) => r.entityId === entityId);
+                const realm = playerRealmsAndVillages.find((r) => r.entityId === entityId);
                 setSelectedStructure(realm || null);
               }}
             >

@@ -9,7 +9,7 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
-import { getOffchainRealm, RealmInfo, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
+import { getOffchainRealm, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -247,7 +247,7 @@ export const SeasonPassRealm = ({
   );
 };
 
-export const getUnusedSeasonPasses = async (accountAddress: string, realms: RealmInfo[]) => {
+export const getUnusedSeasonPasses = async (accountAddress: string, realmIds: number[]) => {
   const balances = await querySeasonPasses(accountAddress);
   const seasonPassAddress = await getSeasonPassAddress();
   return balances?.tokenBalances?.edges
@@ -267,7 +267,7 @@ export const getUnusedSeasonPasses = async (accountAddress: string, realms: Real
     })
     .filter(
       (realm: SeasonPassRealm): realm is SeasonPassRealm =>
-        realm !== undefined && realms.every((r) => r.realmId !== Number(realm.realmId)),
+        realm !== undefined && !realmIds.includes(Number(realm.realmId)),
     )
     .sort(
       (a: SeasonPassRealm, b: SeasonPassRealm) =>

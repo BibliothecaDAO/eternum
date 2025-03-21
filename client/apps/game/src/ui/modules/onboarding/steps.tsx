@@ -20,7 +20,7 @@ import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getRandomRealmEntity } from "@/utils/realms";
 import { getMaxLayer } from "@/utils/settlement";
-import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
@@ -202,7 +202,12 @@ export const StepOne = () => {
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
 
-  const realms = usePlayerOwnedRealms();
+  const realmEntities = usePlayerOwnedRealmEntities();
+  const villageEntities = usePlayerOwnedVillageEntities();
+
+  const hasRealmsOrVillages = useMemo(() => {
+    return realmEntities.length > 0 || villageEntities.length > 0;
+  }, [realmEntities, villageEntities]);
 
   const navigateToHexView = useNavigateToHexView();
 
@@ -213,7 +218,16 @@ export const StepOne = () => {
   };
 
   const onPlayModeClick = () => {
-    const realmPosition = new Position(realms[0]?.position);
+    const randomRealmEntityOrVillageEntity =
+      realmEntities.length > 0 ? realmEntities[0] : villageEntities.length > 0 ? villageEntities[0] : undefined;
+
+    const structure = randomRealmEntityOrVillageEntity
+      ? getComponentValue(components.Structure, randomRealmEntityOrVillageEntity)
+      : undefined;
+
+    if (!structure) return;
+
+    const realmPosition = new Position({ x: structure?.base.coord_x, y: structure?.base.coord_y });
     navigateToHexView(realmPosition);
   };
 
@@ -222,9 +236,9 @@ export const StepOne = () => {
       <SpectateButton onClick={onSpectatorModeClick} />
       {hasAcceptedToS ? (
         <OnboardingButton
-          disabled={realms.length <= 0}
+          disabled={!hasRealmsOrVillages}
           className={`!bg-gold border-none ${
-            realms.length <= 0 ? "opacity-40 hover:none disabled:pointer-events-none" : ""
+            !hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""
           }`}
           onClick={onPlayModeClick}
         >
@@ -252,6 +266,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     account: { account },
     setup: {
       systemCalls: { create_multiple_realms },
+      components: { Structure },
     },
   } = useDojo();
 
@@ -294,7 +309,10 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       }
 
       // Refresh the list of season passes after settling
-      const updatedSeasonPasses = await getUnusedSeasonPasses(account.address, realms);
+      const updatedSeasonPasses = await getUnusedSeasonPasses(
+        account.address,
+        realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
+      );
       setSeasonPassRealms(updatedSeasonPasses);
       setSelectedRealms([]);
       setLoading(false);
@@ -304,10 +322,13 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     }
   };
 
-  const realms = usePlayerOwnedRealms();
+  const realms = usePlayerOwnedRealmEntities();
 
   useEffect(() => {
-    getUnusedSeasonPasses(account.address, realms).then((unsettledSeasonPassRealms) => {
+    getUnusedSeasonPasses(
+      account.address,
+      realms.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
+    ).then((unsettledSeasonPassRealms) => {
       if (unsettledSeasonPassRealms.length !== seasonPassRealms.length) {
         setSeasonPassRealms(unsettledSeasonPassRealms);
         setLoading(false);

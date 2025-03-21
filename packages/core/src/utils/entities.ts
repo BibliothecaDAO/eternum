@@ -61,7 +61,8 @@ const getRealmName = (structure: ComponentValue<ClientComponents["Structure"]["s
 export const getEntityName = (entityId: ID, components: ClientComponents, abbreviate: boolean = false) => {
   const entityName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(entityId)]));
   const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-  if (structure?.base.category === StructureType.Realm) {
+  if (!structure) return "";
+  if (structure.base.category === StructureType.Realm) {
     return getRealmName(structure);
   }
 
@@ -69,7 +70,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
     return shortString.decodeShortString(entityName.name.toString());
   }
 
-  if (abbreviate && structure) {
+  if (abbreviate) {
     const abbreviations: Record<string, string> = {
       FragmentMine: "FM",
       Hyperstructure: "HS",
@@ -81,7 +82,7 @@ export const getEntityName = (entityId: ID, components: ClientComponents, abbrev
       return `${abbr} ${structure.entity_id}`;
     }
   }
-  return `${structure?.base.category} ${structure?.entity_id}`;
+  return `${StructureType[structure.base.category]} ${structure.entity_id}`;
 };
 
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {

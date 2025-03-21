@@ -1,6 +1,6 @@
 import Button from "@/ui/elements/button";
 import { Direction, getFreeVillagePositions, getRealmNameById, HexPosition, ID } from "@bibliothecadao/eternum";
-import { useDojo, useRealms } from "@bibliothecadao/react";
+import { useAllRealms, useDojo } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { ModalContainer } from "../modal-container";
 import { VillageResourceReveal } from "./village-resource-reveal";
@@ -17,7 +17,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
       systemCalls: { create_village },
     },
   } = useDojo();
-  const realms = useRealms();
+  const realms = useAllRealms();
 
   const realmsWithVillageSlots = useMemo(() => {
     return realms.filter((realm) => realm.metadata.villages_count <= 5);

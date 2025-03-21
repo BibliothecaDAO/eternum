@@ -9,7 +9,8 @@ import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
 import { Controller } from "@/ui/modules/controller/controller";
 import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
-import { useDojo, usePlayerOwnedRealms } from "@bibliothecadao/react";
+import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
@@ -186,20 +187,30 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
 const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   const {
     account: { account },
+    setup: { components },
   } = useDojo();
+  const { Structure } = components;
 
   const hasAcceptedToS = useUIStore((state) => state.hasAcceptedToS);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const [seasonPassRealms, setSeasonPassRealms] = useState<SeasonPassRealm[]>([]);
-  const realms = usePlayerOwnedRealms();
+  const realmsEntities = usePlayerOwnedRealmEntities();
+  const villageEntities = usePlayerOwnedVillageEntities();
 
   useEffect(() => {
     const fetchSeasonPasses = async () => {
-      const unsettledSeasonPassRealms = await getUnusedSeasonPasses(account.address, realms);
+      const unsettledSeasonPassRealms = await getUnusedSeasonPasses(
+        account.address,
+        realmsEntities.map((entity) => getComponentValue(Structure, entity)?.metadata.realm_id || 0),
+      );
       setSeasonPassRealms(unsettledSeasonPassRealms);
     };
     fetchSeasonPasses();
-  }, [realms, account.address]);
+  }, [realmsEntities, account.address]);
+
+  const hasRealmsOrVillages = useMemo(() => {
+    return realmsEntities.length > 0 || villageEntities.length > 0;
+  }, [realmsEntities, villageEntities]);
 
   const handleVillagePassClick = () => {
     console.log("Village pass clicked");
@@ -215,7 +226,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             isPulsing={true}
             onClick={handleClick}
             className={`w-full h-10 md:h-12 lg:h-12 2xl:h-14 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-              realms.length === 0 ? "animate-pulse" : ""
+              !hasRealmsOrVillages ? "animate-pulse" : ""
             }`}
           >
             <div className="flex items-center justify-center">
@@ -236,7 +247,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             >
               <Button
                 className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                  realms.length === 0 ? "animate-pulse" : ""
+                  !hasRealmsOrVillages ? "animate-pulse" : ""
                 }`}
               >
                 <div className="flex items-center justify-center">
@@ -249,7 +260,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               <Button
                 onClick={handleVillagePassClick}
                 className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                  realms.length === 0 ? "animate-pulse" : ""
+                  !hasRealmsOrVillages ? "animate-pulse" : ""
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -267,7 +278,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           >
             <Button
               className={`w-full h-12 !text-white !bg-black/80 !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md hover:bg-black/90 ${
-                realms.length === 0 ? "animate-pulse" : ""
+                !hasRealmsOrVillages ? "animate-pulse" : ""
               }`}
             >
               <div className="flex items-center justify-center gap-2">

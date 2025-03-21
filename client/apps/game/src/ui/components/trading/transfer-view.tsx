@@ -8,7 +8,7 @@ import {
   getGuildMembersFromPlayerAddress,
   getRealmNameById,
 } from "@bibliothecadao/eternum";
-import { useDojo, usePlayerOwnedRealms, usePlayerStructures } from "@bibliothecadao/react";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -20,7 +20,6 @@ export const TransferView = () => {
   } = useDojo();
   const { Structure } = components;
 
-  const playerRealms = usePlayerOwnedRealms();
   const playerStructures = usePlayerStructures();
 
   const [guildOnly, setGuildOnly] = useState(false);
@@ -82,7 +81,14 @@ export const TransferView = () => {
       filterBy={setGuildOnly}
       filtered={guildOnly}
       entitiesList={[
-        { entities: playerRealms, name: "Your Realms" },
+        {
+          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Realm),
+          name: "Your Realms",
+        },
+        {
+          entities: playerStructures.filter((structure) => structure.structure.base.category === StructureType.Village),
+          name: "Your Villages",
+        },
         {
           entities: playerStructures.filter(
             (structure) => structure.structure.base.category === StructureType.Hyperstructure,
