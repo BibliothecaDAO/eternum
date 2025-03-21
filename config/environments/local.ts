@@ -59,11 +59,7 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: [
-    ...multiplyStartingResources(1000).filter((resource) => resource.resource !== ResourcesIds.AncientFragment),
-    ...[{ resource: ResourcesIds.AncientFragment, amount: 1_000_000_000 }],
-    ...[{ resource: ResourcesIds.Labor, amount: 1_000_000_000 }],
-  ],
+  startingResources: multiplyStartingResources(1000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
@@ -103,13 +99,11 @@ export const LocalEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.buildings,
     buildingCosts: {
       ...CommonEternumGlobalConfig.buildings.buildingCosts,
-      [BuildingType.WorkersHut]: [
-        { resource: ResourcesIds.Labor, amount: 1 },
-        { resource: ResourcesIds.Wood, amount: 1 },
-        { resource: ResourcesIds.Stone, amount: 1 },
-        { resource: ResourcesIds.Coal, amount: 1 },
-        { resource: ResourcesIds.Copper, amount: 1 },
-      ],
+      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+    },
+    buildingPopulation: {
+      ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+      [BuildingType.ResourceWheat]: 0,
     },
   },
 };
