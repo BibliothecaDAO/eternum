@@ -226,7 +226,6 @@ const OrderRow = memo(
   }) => {
     const dojo = useDojo();
 
-
     const { play: playLordsSound } = useUiSounds(soundSelector.addLords);
 
     const { currentDefaultTick } = useBlockTimestamp();
@@ -323,7 +322,6 @@ const OrderRow = memo(
     const donkeyProduction = useMemo(() => {
       return resourceManager.getProduction(ResourcesIds.Donkey);
     }, []);
-    
 
     const donkeyBalance = useMemo(() => {
       return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);

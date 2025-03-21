@@ -108,7 +108,6 @@ pub struct StructureBase {
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 pub struct StructureMetadata {
     // associated with realm
-    // associated with realm
     pub realm_id: u16,
     pub order: u8,
     pub has_wonder: bool,
