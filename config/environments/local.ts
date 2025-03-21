@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { multiplyStartingResources } from "./utils/resource";
 
@@ -59,10 +59,7 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: [
-    ...multiplyStartingResources(1000).filter((resource) => resource.resource !== ResourcesIds.AncientFragment),
-    ...[{ resource: ResourcesIds.AncientFragment, amount: 1_000_000_000 }],
-  ],
+  startingResources: multiplyStartingResources(1000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
