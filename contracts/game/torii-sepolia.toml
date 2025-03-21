@@ -1,27 +1,40 @@
 rpc = "https://api.cartridge.gg/x/starknet/sepolia"
 
-world_address = "0x42f4d634a4c3806188b0c7555c122b5634ece788118be8858906bceee17793b"
+world_address = "0x4b8dd8a29839edc832089096d8c3882d1d74aea28b2da14f5ade3c08c08b4e"
+
+db_dir = "torii-sepolia"
 
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
 
-index_pending = true # Enable indexing pending blocks
+pending = true # Enable indexing pending blocks
 
 polling_interval = 500 # Polling interval in milliseconds
 
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 
-index_transactions = true
+transactions = true
+
+contracts = [
+	"erc721:0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+	"erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
+	"erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+]
+
+namespaces = ["s1_eternum"]
 
 world_block = 0
 
-contracts = [
-	"erc721:0x20d4d0697dccc6aaeb99f44e3484456311fd71e49be6ed55575374baa0c6e3e",
-	"erc721:0x55cb1e8fca521f789585b1ace898d52c5cd77d5148415a619bebb21853bda7e",
-	"erc20:0x7db71ba1ea66ba654cd4ade89f2d64ca59afdaedc25d23b5c03b44942ef455a",
-]
+[sql]
+all_model_indices = false
+model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -1_000_000 # 1024MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
 
 [events]
 raw = false
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]

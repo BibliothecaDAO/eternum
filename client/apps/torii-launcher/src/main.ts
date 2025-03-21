@@ -231,7 +231,7 @@ async function handleTorii(toriiVersion: string) {
         throw new Error(`Database directory not found at: ${dbPath}`);
       }
 
-      child = spawn.spawn(toriiPath, ["--http.cors_origins", "*", "--config", toriiTomlPath, "--db-dir", dbPath], {
+      child = spawn.spawn(toriiPath, ["--config", toriiTomlPath, "--db-dir", dbPath], {
         detached: true,
         stdio: ["ignore", "pipe", "pipe"],
       });

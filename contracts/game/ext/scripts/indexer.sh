@@ -22,16 +22,14 @@
 #
 # CONFIGURATION:
 #   The script starts Torii with the following default settings:
-#   - World address: 0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa
 #   - RPC URL: http://localhost:8080
 #   - Network: local
-#   - CORS: Enabled for all origins
-#   - Config file: torii.toml
+#   - Config file: torii-<network>.toml
 #
 # FILES:
 #   - PID file: contracts/game/pids/indexer.<network>.pid
 #   - Log file: contracts/game/logs/indexer.<network>.log
-#   - Database: contracts/game/torii-db
+#   - Database: contracts/game/torii-<network>.db
 #
 # EXAMPLES:
 #   Start with default settings:
@@ -78,9 +76,8 @@ DB_DIR="torii.$NETWORK.db"
 TORII_CONFIG="torii-$NETWORK.toml"
 
 # Torii settings
-DEFAULT_WORLD_ADDRESS="0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
 DEFAULT_RPC_URL="http://localhost:8080"
-WORLD_ADDRESS=$DEFAULT_WORLD_ADDRESS  # Will be overridden by args if provided
+WORLD_ADDRESS=""  # Will be overridden by args if provided
 RPC_URL=${RPC_URL:-$DEFAULT_RPC_URL}  # Use env var or default
 PORT=8080
 
@@ -237,26 +234,21 @@ if [ -f "$LOG_FILE" ]; then
     rm "$LOG_FILE"
 fi
 
-# Run torii in the background with log handling
-echo -e ""
-echo -e "${GREEN}Starting Torii Indexer with:${NC}"
-echo -e "${GREEN}- World address: ${BOLD}${BLUE}$WORLD_ADDRESS${NC}"
-echo -e "${GREEN}- RPC URL: ${BOLD}${BLUE}$RPC_URL${NC}"
-echo -e "${GREEN}- Network: ${BOLD}${BLUE}$NETWORK${NC}"
-echo -e ""
+# Prepare base command
+TORII_CMD="torii --config $TORII_CONFIG"
 
-if [ "$RPC_URL" != "http://localhost:8080" ] && [ "$RPC_URL" != "http://127.0.0.1:8080" ]; then
-    torii --world $WORLD_ADDRESS \
-        --rpc $RPC_URL \
-        --http.cors_origins "*" \
-        --db-dir $DB_DIR \
-        --config $TORII_CONFIG > >(setup_log_handling) 2>&1 &
-else
-    torii --world $WORLD_ADDRESS \
-        --http.cors_origins "*" \
-        --db-dir $DB_DIR \
-        --config $TORII_CONFIG > >(setup_log_handling) 2>&1 &
+# Add world address if provided
+if [ -n "$WORLD_ADDRESS" ]; then
+    TORII_CMD="$TORII_CMD --world $WORLD_ADDRESS"
 fi
+
+# Add RPC URL if not using localhost
+if [ "$RPC_URL" != "http://localhost:8080" ] && [ "$RPC_URL" != "http://127.0.0.1:8080" ]; then
+    TORII_CMD="$TORII_CMD --rpc $RPC_URL"
+fi
+
+# Execute with logging
+$TORII_CMD > >(setup_log_handling) 2>&1 &
 
 # Store the PID
 echo $! > "$PID_FILE"

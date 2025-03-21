@@ -2,6 +2,8 @@ rpc = "http://127.0.0.1:8080"
 
 world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
 
+db_dir = "torii-local"
+
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
@@ -12,14 +14,27 @@ polling_interval = 500 # Polling interval in milliseconds
 
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 
-world_block = 0
+transactions = true
 
 contracts = [
-	"erc721:0x354fea8c8cdabc5907fba75cac918e7895724ef9a076ebdd0c5225bb13941a3",
-	"erc721:0x45164e57909419527ac65e2e9920e29fa29d2c99cce0817e81e72adbdb5a5a6",
-	"erc20:0x362f30c25ed168ae887c9a1ba010514a10e4845870d47efa0ee4117220e25da",
+	"erc721:0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+	"erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
+	"erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
 ]
+
+namespaces = ["s1_eternum"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -500_000 # 512MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
 
 [events]
 raw = false
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
