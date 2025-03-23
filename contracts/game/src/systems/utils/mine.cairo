@@ -51,7 +51,6 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             Zero::zero(),
             structure_id,
             StructureCategory::FragmentMine,
-            true,
             array![].span(),
             Default::default(),
             TileOccupier::FragmentMine,

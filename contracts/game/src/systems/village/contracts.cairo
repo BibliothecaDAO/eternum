@@ -77,7 +77,6 @@ pub mod village_systems {
                 village_owner,
                 village_id,
                 StructureCategory::Village,
-                false,
                 village_resources,
                 villiage_metadata,
                 TileOccupier::Village,

@@ -78,7 +78,6 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             Zero::zero(),
             structure_id,
             StructureCategory::Hyperstructure,
-            true,
             array![].span(),
             Default::default(),
             TileOccupier::Hyperstructure,
