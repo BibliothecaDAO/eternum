@@ -193,7 +193,6 @@ pub mod realm_systems {
                 owner,
                 structure_id,
                 StructureCategory::Realm,
-                false,
                 resources.span(),
                 StructureMetadata {
                     realm_id: realm_id.try_into().unwrap(), order, has_wonder, villages_count: 0, village_realm: 0,

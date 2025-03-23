@@ -69,7 +69,6 @@ pub mod bank_systems {
                     caller,
                     bank_entity_id,
                     StructureCategory::Bank,
-                    false,
                     array![].span(),
                     Default::default(),
                     TileOccupier::Bank,

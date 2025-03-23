@@ -23,7 +23,6 @@ pub impl iStructureImpl of IStructureTrait {
         owner: starknet::ContractAddress,
         structure_id: ID,
         category: StructureCategory,
-        assert_tile_explored: bool,
         resources: Span<u8>,
         metadata: StructureMetadata,
         tile_occupier: TileOccupier,
@@ -32,14 +31,8 @@ pub impl iStructureImpl of IStructureTrait {
         let mut tile: Tile = world.read_model((coord.x, coord.y));
         assert!(tile.not_occupied(), "something exists on this coords");
 
-        if assert_tile_explored {
-            // ensure tile is explored
-            assert!(tile.discovered(), "tile not explored");
-        } else {
-            // ensure tile is not explored
-            assert!(!tile.discovered(), "tile already explored");
-
-            // explore the tile
+        // explore the tile if biome is not set
+        if tile.biome == Biome::None.into() {
             let biome: Biome = get_biome(coord.x.into(), coord.y.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
