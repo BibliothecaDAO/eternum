@@ -1,14 +1,18 @@
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION};
-use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
+use s1_eternum::constants::{
+    DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids,
+};
+use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::models::resource::resource::{ResourceImpl};
+use s1_eternum::models::resource::resource::{
+    ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+};
 use s1_eternum::models::structure::{
-    Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
-    StructureResourcesImpl,
+    Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
+    StructureOwnerStoreImpl, StructureResourcesImpl,
 };
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight};
@@ -85,6 +89,30 @@ pub impl iStructureImpl of IStructureTrait {
                 StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
             }
         }
+    }
+
+
+    fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
+        let resources_ids = all_resource_ids();
+        for resource_id in resources_ids {
+            let starting_resources_config: StartingResourcesConfig = world.read_model(resource_id);
+            let mut resource_amount: u128 = starting_resources_config.resource_amount;
+            if resource_id == ResourceTypes::LORDS || resource_amount == 0 {
+                continue;
+            }
+            if structure_metadata.has_wonder {
+                resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
+            }
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_id);
+            let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource_id, ref structure_weight, resource_weight_grams, true,
+            );
+            realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+            realm_resource.store(ref world);
+        };
+        structure_weight.store(ref world, structure_id);
     }
 }
 

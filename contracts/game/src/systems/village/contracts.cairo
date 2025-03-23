@@ -82,6 +82,9 @@ pub mod village_systems {
                 TileOccupier::Village,
             );
 
+            // grant starting resources
+            iStructureImpl::grant_starting_resources(ref world, village_id);
+
             // place castle building
             BuildingImpl::create(
                 ref world,
