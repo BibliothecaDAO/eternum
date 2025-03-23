@@ -56,7 +56,7 @@ export const getDelegates = createServerFn({ method: "GET" })
       nextCursor = parseInt(nextItem?.delegatedVotes ?? "0");
     }
 
-    return { items, nextCursor };
+    return { items: items, nextCursor };
   });
 
 export const getDelegatesQueryOptions = (
@@ -84,16 +84,23 @@ const GetDelegateByIDInput = z.object({
 export const getDelegateByID = createServerFn({ method: "GET" })
   .validator((input: unknown) => GetDelegateByIDInput.parse(input))
   .handler(async (ctx) => {
-    return db.query.delegates.findFirst({
-      where: and(
-        eq(delegates.user, ctx.data.address),
-        sql`upper_inf(block_range)`,
-      ),
-      with: { delegateProfile: true },
-      columns: {
-        block_range: false,
-      },
-    });
+    console.log(ctx.data.address);
+    if (ctx.data.address) {
+      console.log("here");
+      const res = await db.query.delegates.findFirst({
+        where: and(
+          eq(delegates.user, ctx.data.address),
+          sql`upper_inf(block_range)`,
+        ),
+        with: { delegateProfile: true },
+        columns: {
+          block_range: false,
+        },
+      });
+      console.log(res);
+      return res ?? null;
+    }
+    return null;
   });
 
 export const getDelegateByIDQueryOptions = (

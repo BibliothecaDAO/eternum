@@ -263,6 +263,22 @@ export const reorgRollback = pgTable(
   ],
 );
 
+export const indexerFilters = pgTable(
+  "__indexer_filters",
+  {
+    id: text().notNull(),
+    filter: text().notNull(),
+    fromBlock: integer("from_block").notNull(),
+    toBlock: integer("to_block"),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.id, table.fromBlock],
+      name: "__indexer_filters_pkey",
+    }),
+  ],
+);
+
 export const indexerSchemaVersion = pgTable("__indexer_schema_version", {
   k: integer().primaryKey().notNull(),
   version: integer().notNull(),

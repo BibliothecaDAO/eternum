@@ -82,7 +82,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   const { data } = useCurrentDelegate();
   const currentDelegateQuery = useSuspenseQuery(
     getDelegateByIDQueryOptions({
-      address: formatAddress(num.toHex(BigInt(data ?? 0))),
+      address: data && formatAddress(num.toHex(BigInt(data))),
     }),
   );
   const currentDelegate = currentDelegateQuery.data;
@@ -141,11 +141,13 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </p>
                 <p className="flex justify-between gap-2">
                   <span className="text-3xl">
-                    {usersCollections.data.find(
-                      (collection) =>
-                        collection.address ==
-                        CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
-                    )?.user_token_count ?? 0}
+                    {(usersCollections.data &&
+                      usersCollections.data.find(
+                        (collection) =>
+                          collection.address ==
+                          CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
+                      )?.user_token_count) ??
+                      0}
                   </span>
                   <span className="flex items-center gap-2">
                     on <StarknetIcon className="h-6 w-6" /> Starknet
