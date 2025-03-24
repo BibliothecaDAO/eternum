@@ -17,6 +17,7 @@ import {
   debouncedGetEntitiesFromTorii,
   debouncedGetMarketFromTorii,
 } from "./debounced-queries";
+import { handleExplorerTroopsIfDeletion } from "./utils";
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
@@ -36,6 +37,8 @@ const syncEntitiesDebounced = async <S extends Schema>(
   const debouncedSetEntities = debounce(() => {
     if (Object.keys(entityBatch).length > 0) {
       if (logging) console.log("Applying batch update override check", entityBatch);
+
+      handleExplorerTroopsIfDeletion(entityBatch, components);
 
       setEntities(entityBatch, components as any, logging);
 
