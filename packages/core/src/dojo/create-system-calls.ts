@@ -110,10 +110,6 @@ export function createSystemCalls({
     await provider.arrivals_offload(props);
   };
 
-  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
-    await provider.transfer_resources(props);
-  };
-
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
@@ -328,7 +324,6 @@ export function createSystemCalls({
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     create_village: withAuth(create_village),
-    transfer_resources: withAuth(transfer_resources),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),

@@ -715,39 +715,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Transfer resources between entities
-   *
-   * @param props - Properties for transferring resources
-   * @param props.sending_entity_id - ID of the entity sending resources
-   * @param props.receiving_entity_id - ID of the entity receiving resources
-   * @param props.resources - Array of resource amounts to transfer
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   *
-   * @example
-   * ```typescript
-   * // Transfer 100 wood and 50 stone from entity 123 to entity 456
-   * {
-   *   sending_entity_id: 123,
-   *   receiving_entity_id: 456,
-   *   resources: [1, 100, 2, 50], // [resourceId, amount, resourceId, amount]
-   *   signer: account
-   * }
-   * ```
-   */
-  public async transfer_resources(props: SystemProps.TransferResourcesProps) {
-    const { sending_entity_id, receiving_entity_id, resources, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
-      entrypoint: "transfer",
-      calldata: [sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  /**
    * Send resources from one entity to another
    *
    * @param props - Properties for sending resources
