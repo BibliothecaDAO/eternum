@@ -10,7 +10,7 @@ pub trait IWorldConfig<T> {
 }
 #[starknet::interface]
 pub trait IMercenariesConfig<T> {
-    fn set_mercenaries_name_config(ref self: T);
+    fn set_mercenaries_name_config(ref self: T, name: felt252);
 }
 
 #[starknet::interface]
@@ -286,13 +286,13 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl MercenariesConfigImpl of super::IMercenariesConfig<ContractState> {
-        fn set_mercenaries_name_config(ref self: ContractState) {
+        fn set_mercenaries_name_config(ref self: ContractState, name: felt252) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
             // assert that name not set
             let mut address_name: AddressName = world.read_model(starknet::contract_address_const::<0>());
-            address_name.name = 'Mercenaries';
+            address_name.name = name;
             world.write_model(@address_name);
         }
     }

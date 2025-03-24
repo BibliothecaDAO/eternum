@@ -491,6 +491,9 @@ export interface SetWorldConfigProps extends SystemSigner {
   admin_address: num.BigNumberish;
 }
 
+export interface SetMercenariesNameConfigProps extends SystemSigner {
+  name: num.BigNumberish;
+}
 export interface SetDonkeySpeedConfigProps extends SystemSigner {
   sec_per_km: num.BigNumberish;
 }

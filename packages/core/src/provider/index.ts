@@ -2143,13 +2143,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [admin_address],
     });
   }
-  public async set_mercenaries_name_config(props: SystemProps.SystemSigner) {
-    const { signer } = props;
+  public async set_mercenaries_name_config(props: SystemProps.SetMercenariesNameConfigProps) {
+    const {name, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_name_config",
-      calldata: [],
+      calldata: [name],
     });
   }
 

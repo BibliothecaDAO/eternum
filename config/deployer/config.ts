@@ -174,12 +174,14 @@ export const setWorldConfig = async (config: Config) => {
   `),
   );
 
+  const mercenariesName = "0x5468652056616e6775617264";
   const mercenariesTx = await config.provider.set_mercenaries_name_config({
     signer: config.account,
+    name: mercenariesName, // The Vanguard
   });
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow(`Setting Mercenaries Name`)}
+    ┌─ ${chalk.yellow(`Setting Mercenaries Name to ${mercenariesName}`)}
     └────────────────────────────────`),
   );
 

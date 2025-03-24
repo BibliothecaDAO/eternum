@@ -1635,7 +1635,7 @@
     },
     {
       "address": "0x630be9829efbbdb0c47bf947cef6f8594e224def5a1a4e7e89642d2b7079b47",
-      "class_hash": "0x1f0fd28983ce630c7dedd8246806eee9640c64ec11c554cfd56399b866c16ab",
+      "class_hash": "0x1e59e10822a8e299423f4ebbaeec6073206fa82b872b3b386ada0b4b06a9636",
       "abi": [
         {
           "type": "impl",
@@ -1752,7 +1752,12 @@
             {
               "type": "function",
               "name": "set_mercenaries_name_config",
-              "inputs": [],
+              "inputs": [
+                {
+                  "name": "name",
+                  "type": "core::felt252"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             }
