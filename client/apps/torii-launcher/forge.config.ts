@@ -31,10 +31,13 @@ const config: ForgeConfig = {
       },
     },
     {
-      name: "@electron-forge/maker-zip",
-      config: (arch: string) => ({
-        macUpdateManifestBaseUrl: `http://s3.us-east-1.amazonaws.com/eternum-torii-updates/darwin/${arch}`,
-      }),
+      name: "@electron-forge/maker-deb",
+      config: {
+        options: {
+          maintainer: "BibliothecaDAO",
+          homepage: "https://eternum.realms.world/",
+        },
+      },
     },
     {
       name: "@electron-forge/maker-dmg",
