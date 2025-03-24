@@ -1,4 +1,3 @@
-import { useAuthSync } from "@/shared/hooks/use-auth";
 import useStore from "@/shared/store";
 import { Footer } from "@/widgets/footer";
 import { Header } from "@/widgets/header";
@@ -8,7 +7,6 @@ import { useEffect } from "react";
 import { syncMarketAndBankData, syncPlayerStructuresData } from "../dojo/sync";
 
 export function Layout() {
-  useAuthSync();
   const dojo = useDojo();
   const playerStructures = usePlayerStructures();
   const setLoading = useStore((state) => state.setLoading);
