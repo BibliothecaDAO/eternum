@@ -504,13 +504,11 @@ export class ArmyModel {
     if (!movement) return;
 
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
-    const modelType = this.entityModelMap.get(entityId);
-    const baseAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
-    const targetAngle = baseAngle + (modelType === ModelType.Boat ? -Math.PI / 6 : 0);
+    const baseAngle = Math.atan2(direction.x, direction.z);
 
-    movement.targetRotation = targetAngle;
+    movement.targetRotation = baseAngle;
     if (movement.currentRotation === 0) {
-      movement.currentRotation = targetAngle;
+      movement.currentRotation = baseAngle;
     }
   }
 
