@@ -170,6 +170,7 @@ export default class HexceptionScene extends HexagonScene {
       (state) => state.previewBuilding,
       (building) => {
         if (building) {
+          this.interactiveHexManager.setAuraVisibility(false);
           this.buildingPreview?.setPreviewBuilding(building as any);
           this.highlightHexManager.highlightHexes(
             this.highlights.map((hex) => ({
@@ -178,6 +179,7 @@ export default class HexceptionScene extends HexagonScene {
             })),
           );
         } else {
+          this.interactiveHexManager.setAuraVisibility(true);
           this.clearBuildingMode();
         }
       },
@@ -403,8 +405,8 @@ export default class HexceptionScene extends HexagonScene {
     if (building && producedResource) {
       this.state.setTooltip({
         content: (
-          <div className="flex items-center space-x-1">
-            <ResourceIcon size="sm" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
+          <div className="flex items-center text-lg space-x-1">
+            <ResourceIcon size="lg" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
             <div>Producing {findResourceById(producedResource as ResourcesIds)?.trait}</div>
             <div>—</div>
             <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
@@ -654,7 +656,7 @@ export default class HexceptionScene extends HexagonScene {
       buildablePositions.forEach((position) => {
         dummy.position.x = position.x;
         dummy.position.z = position.z;
-        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0.15 : 0.15 + position.y / 2;
+        dummy.position.y = isMainHex || isFlat || position.isBorder ? 0.05 : 0.05 + position.y / 2;
         dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         dummy.updateMatrix();
 
@@ -701,7 +703,7 @@ export default class HexceptionScene extends HexagonScene {
     positions.forEach((position) => {
       dummy.position.x = position.x;
       dummy.position.z = position.z;
-      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0.15 : 0.15 + position.y / 2;
+      dummy.position.y = isMainHex || isFlat || position.isBorder || IS_FLAT_MODE ? 0.05 : 0.05 + position.y / 2;
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
       const rotationSeed = this.hashCoordinates(position.col, position.row);
       const rotationIndex = Math.floor(rotationSeed * 6);
