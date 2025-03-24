@@ -16,17 +16,17 @@ export class ArmyManager {
     private readonly realmEntityId: ID,
   ) {}
 
-  private _updateResourceBalances(overrideId: string, resourceId: ResourcesIds, amount: number): void {
+  private _updateResourceBalances(resourceId: ResourcesIds, amount: number): () => void {
     const resourceManager = new ResourceManager(this.components, this.realmEntityId);
-    resourceManager.optimisticResourceUpdate(overrideId, resourceId, -BigInt(amount));
+    return resourceManager.optimisticResourceUpdate(resourceId, -BigInt(amount));
   }
 
   private _updateExplorerTroops(
-    overrideId: string,
     armyEntityId: ID,
     army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>,
     troopCount: number,
   ): void {
+    const overrideId = uuid();
     this.components.ExplorerTroops.addOverride(overrideId, {
       entity: getEntityIdFromKeys([BigInt(armyEntityId)]),
       value: {
@@ -57,7 +57,8 @@ export class ArmyManager {
     }
   }
 
-  private _updateGuardTroops(overrideId: string, structureId: number, guardSlot: number, troopCount: number): void {
+  private _updateGuardTroops(structureId: number, guardSlot: number, troopCount: number): void {
+    const overrideId = uuid();
     const structureEntity = getEntityIdFromKeys([BigInt(structureId)]);
     const structure = getComponentValue(this.components.Structure, structureEntity);
     if (!structure) return;
@@ -94,7 +95,6 @@ export class ArmyManager {
   }
 
   private _optimisticAddTroops(
-    overrideId: string,
     troopType: TroopType,
     troopTier: TroopTier,
     troopCount: number,
@@ -106,15 +106,15 @@ export class ArmyManager {
     // Update resource balances for each troop type
     if (troopCount > 0) {
       const troopResourceId = this._getTroopResourceId(troopType, troopTier);
-      this._updateResourceBalances(overrideId, troopResourceId, troopCount);
+      this._updateResourceBalances(troopResourceId, troopCount);
 
       if (isExplorer && armyEntityId) {
         const army = getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(armyEntityId)]));
         if (army) {
-          this._updateExplorerTroops(overrideId, armyEntityId, army, multiplyByPrecision(troopCount));
+          this._updateExplorerTroops(armyEntityId, army, multiplyByPrecision(troopCount));
         }
       } else if (structureId !== undefined && guardSlot !== undefined) {
-        this._updateGuardTroops(overrideId, structureId, guardSlot, multiplyByPrecision(troopCount));
+        this._updateGuardTroops(structureId, guardSlot, multiplyByPrecision(troopCount));
       }
     }
   }
@@ -134,7 +134,7 @@ export class ArmyManager {
       home_direction: homeDirection,
     });
 
-    this._optimisticAddTroops(uuid(), troopType, troopTier, troopCount, true, armyEntityId);
+    this._optimisticAddTroops(troopType, troopTier, troopCount, true, armyEntityId);
   }
 
   // don't need to multiply by precision here because the guard_add function already does it
@@ -154,7 +154,7 @@ export class ArmyManager {
       amount: multiplyByPrecision(troopCount),
     });
 
-    this._optimisticAddTroops(uuid(), troopType, troopTier, troopCount, false, undefined, this.realmEntityId, slot);
+    this._optimisticAddTroops(troopType, troopTier, troopCount, false, undefined, this.realmEntityId, slot);
   }
 
   // don't need to multiply by precision here because the explorer_create function already does it

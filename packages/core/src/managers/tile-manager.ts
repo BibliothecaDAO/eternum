@@ -120,18 +120,12 @@ export class TileManager {
     return bonusPercent;
   };
 
-  private _optimisticBuilding = (
-    entityId: ID,
-    col: number,
-    row: number,
-    buildingType: BuildingType,
-    resourceType?: number,
-  ) => {
-    let overrideId = uuid();
+  private _optimisticBuilding = (entityId: ID, col: number, row: number, buildingType: BuildingType) => {
+    let buildingOverrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
     // override building
-    this.components.Building.addOverride(overrideId, {
+    this.components.Building.addOverride(buildingOverrideId, {
       entity,
       value: {
         outer_col: this.col,
@@ -151,8 +145,9 @@ export class TileManager {
     // because the resource cost increase when adding more buildings
     const resourceChange = getBuildingCosts(entityId, this.components, buildingType);
 
+    let removeResourceOverride: () => void;
     resourceChange?.forEach((resource) => {
-      this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
+      removeResourceOverride = this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
     });
 
     const populationOverrideId = uuid();
@@ -198,13 +193,17 @@ export class TileManager {
       },
     });
 
-    return { overrideId, populationOverrideId, quantityOverrideId };
+    return () => {
+      this.components.Building.removeOverride(buildingOverrideId);
+      this.components.StructureBuildings.removeOverride(populationOverrideId);
+      this.components.StructureBuildings.removeOverride(quantityOverrideId);
+      removeResourceOverride();
+    };
   };
 
   private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: bigint) => {
     const resourceManager = new ResourceManager(this.components, entity);
-    const overrideId = uuid();
-    resourceManager.optimisticResourceUpdate(overrideId, resourceType, actualResourceChange);
+    return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
   };
 
   private _optimisticDestroy = (entityId: ID, col: number, row: number) => {
@@ -305,7 +304,6 @@ export class TileManager {
     structureEntityId: ID,
     buildingType: BuildingType,
     hexCoords: HexPosition,
-    resourceType?: number,
   ) => {
     const { col, row } = hexCoords;
 
@@ -313,18 +311,8 @@ export class TileManager {
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
 
-    let overrideId: string;
-    let populationOverrideId: string;
-    let quantityOverrideId: string;
-
     // add optimistic rendering
-    ({ overrideId, populationOverrideId, quantityOverrideId } = this._optimisticBuilding(
-      structureEntityId,
-      col,
-      row,
-      buildingType,
-      resourceType,
-    ));
+    const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType);
 
     try {
       await this.systemCalls.create_building({
@@ -334,12 +322,10 @@ export class TileManager {
         building_category: buildingType,
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
-      this.components.StructureBuildings.removeOverride(populationOverrideId);
-      this.components.Structure.removeOverride(overrideId);
-      this.components.StructureBuildings.removeOverride(quantityOverrideId);
       console.error(error);
       throw error;
+    } finally {
+      removeBuildingOverride();
     }
   };
 
