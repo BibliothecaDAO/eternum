@@ -23,6 +23,7 @@ const ICONS = {
   MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
   REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
+    [StructureType.Village]: "/images/buildings/construction/castleZero.png",
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,

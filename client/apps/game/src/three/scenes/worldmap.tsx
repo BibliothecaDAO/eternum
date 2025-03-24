@@ -380,6 +380,7 @@ export default class WorldmapScene extends HexagonScene {
     this.controls.maxDistance = IS_FLAT_MODE ? 40 : 20;
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
+    this.highlightHexManager.setYOffset(0.025);
     this.moveCameraToURLLocation();
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
