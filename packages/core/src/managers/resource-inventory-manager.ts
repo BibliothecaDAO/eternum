@@ -1,13 +1,12 @@
 import { ResourceManager, type DojoAccount, type ID, type Resource } from "..";
 import { ClientComponents } from "../dojo/create-client-components";
-import { EternumProvider } from "../provider";
-
+import { SystemCalls } from "../dojo/create-system-calls";
 export class ResourceInventoryManager {
   carrierEntityId: ID;
 
   constructor(
     private readonly components: ClientComponents,
-    private readonly provider: EternumProvider,
+    private readonly systemCalls: SystemCalls,
     carrierEntityId: ID,
   ) {
     this.carrierEntityId = carrierEntityId;
@@ -29,7 +28,7 @@ export class ResourceInventoryManager {
     const removeResourceOverride = this._optimisticOffloadAll(receiverEntityId, inventoryResources);
 
     if (inventoryResources.length > 0) {
-      await this.provider
+      await this.systemCalls
         .send_resources({
           signer,
           sender_entity_id: this.carrierEntityId,

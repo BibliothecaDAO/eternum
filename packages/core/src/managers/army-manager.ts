@@ -4,14 +4,14 @@ import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
 import { Direction, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { EternumProvider } from "../provider";
+import { SystemCalls } from "../dojo/create-system-calls";
 import { ID, TroopTier, TroopType } from "../types";
 import { multiplyByPrecision } from "../utils";
 import { ResourceManager } from "./resource-manager";
 
 export class ArmyManager {
   constructor(
-    private readonly provider: EternumProvider,
+    private readonly systemCalls: SystemCalls,
     private readonly components: ClientComponents,
     private readonly realmEntityId: ID,
   ) {}
@@ -127,7 +127,7 @@ export class ArmyManager {
     troopCount: number,
     homeDirection: Direction,
   ): Promise<void> {
-    this.provider.explorer_add({
+    this.systemCalls.explorer_add({
       signer,
       to_explorer_id: armyEntityId,
       amount: multiplyByPrecision(troopCount),
@@ -145,7 +145,7 @@ export class ArmyManager {
     troopCount: number,
     slot: number,
   ): Promise<void> {
-    await this.provider.guard_add({
+    await this.systemCalls.guard_add({
       signer,
       for_structure_id: this.realmEntityId,
       slot,
@@ -165,7 +165,7 @@ export class ArmyManager {
     troopCount: number,
     spawnDirection: Direction,
   ): Promise<void> {
-    await this.provider.explorer_create({
+    await this.systemCalls.explorer_create({
       signer,
       for_structure_id: this.realmEntityId,
       category: Object.keys(TroopType).indexOf(troopType),
@@ -176,11 +176,9 @@ export class ArmyManager {
   }
 
   public async deleteExplorerArmy(signer: Account | AccountInterface, armyId: ID): Promise<void> {
-    await this.provider.explorer_delete({
+    await this.systemCalls.explorer_delete({
       signer,
       explorer_id: armyId,
     });
-
-    // this.components.Army.removeOverride(getEntityIdFromKeys([BigInt(armyId)]));
   }
 }

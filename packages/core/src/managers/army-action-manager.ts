@@ -20,7 +20,7 @@ import {
   ResourcesIds,
 } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
-import { EternumProvider } from "../provider";
+import { SystemCalls } from "../dojo/create-system-calls";
 import { ContractAddress, HexEntityInfo, HexPosition, ID, TileOccupier, TravelTypes, TroopType } from "../types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
@@ -36,7 +36,7 @@ export class ArmyActionManager {
 
   constructor(
     private readonly components: ClientComponents,
-    private readonly provider: EternumProvider,
+    private readonly systemCalls: SystemCalls,
     entityId: ID,
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
@@ -409,7 +409,7 @@ export class ArmyActionManager {
     );
 
     try {
-      await this.provider.explorer_move({
+      await this.systemCalls.explorer_move({
         explorer_id: this.entityId,
         directions: [direction],
         explore: true,
@@ -508,7 +508,7 @@ export class ArmyActionManager {
       .filter((d) => d !== undefined) as number[];
 
     try {
-      await this.provider.explorer_move({
+      await this.systemCalls.explorer_move({
         signer,
         explorer_id: this.entityId,
         directions,
