@@ -289,5 +289,3 @@ export const indexerCheckpoints = pgTable("__indexer_checkpoints", {
   orderKey: integer("order_key").notNull(),
   uniqueKey: text("unique_key").default("").notNull(),
 });
-
-export * from "./auth-schema";

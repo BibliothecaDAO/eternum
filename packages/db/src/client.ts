@@ -1,12 +1,12 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import config from "../drizzle.config";
-
 import type { NeonQueryFunction } from "@neondatabase/serverless";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { neon, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 
-import * as schema from "./schema";
+import config from "../drizzle.config";
 import { env } from "../env";
+import * as authSchema from "./auth-schema";
+import * as schema from "./schema";
 
 if (!env.VERCEL_ENV) {
   neonConfig.wsProxy = (/*host*/) => `127.0.0.1/v1`;
@@ -16,9 +16,9 @@ if (!env.VERCEL_ENV) {
 }
 
 export const neonSql = neon(
-  config.dbCredentials.url
+  config.dbCredentials.url,
 ) satisfies NeonQueryFunction<boolean, boolean>;
 
-export const db = drizzle(neonSql, { schema });
+export const db = drizzle(neonSql, { schema: { ...schema, ...authSchema } });
 
 export type Database = NodePgDatabase<typeof schema>;
