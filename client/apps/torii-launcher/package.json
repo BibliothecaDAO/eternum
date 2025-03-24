@@ -1,7 +1,7 @@
 {
   "name": "torii-launcher",
   "type": "commonjs",
-  "productName": "Torii Launcher",
+  "productName": "ToriiLauncher",
   "version": "0.0.1",
   "description": "Launcher for Eternum's Torii",
   "main": ".vite/build/main.js",
