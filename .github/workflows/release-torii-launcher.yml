@@ -18,6 +18,9 @@ jobs:
             { name: 'windows', image: 'windows-latest' },
           ]
     runs-on: ${{ matrix.os.image }}
+    defaults:
+      run:
+        working-directory: ./client/apps/torii-launcher
     steps:
       - name: Github checkout
         uses: actions/checkout@v4
