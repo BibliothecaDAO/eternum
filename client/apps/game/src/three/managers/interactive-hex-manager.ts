@@ -13,12 +13,28 @@ export class InteractiveHexManager {
   private matrix = new THREE.Matrix4();
   private position = new THREE.Vector3();
   private dummy = new THREE.Object3D();
+  private showAura: boolean = true;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.hoverAura = new Aura();
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onClick = this.onClick.bind(this);
+  }
+
+  public setAuraVisibility(visible: boolean) {
+    this.showAura = visible;
+    if (!visible && this.hoverAura.isInScene(this.scene)) {
+      this.hoverAura.removeFromScene(this.scene);
+    }
+  }
+
+  public toggleAura() {
+    this.setAuraVisibility(!this.showAura);
+  }
+
+  public isAuraVisible(): boolean {
+    return this.showAura;
   }
 
   public onMouseMove(raycaster: THREE.Raycaster) {
@@ -35,9 +51,11 @@ export class InteractiveHexManager {
 
           this.position.setFromMatrixPosition(this.matrix);
 
-          this.hoverAura.setPosition(this.position.x, 0.21, this.position.z);
-          if (!this.hoverAura.isInScene(this.scene)) {
-            this.hoverAura.addToScene(this.scene);
+          if (this.showAura) {
+            this.hoverAura.setPosition(this.position.x, 0.3, this.position.z);
+            if (!this.hoverAura.isInScene(this.scene)) {
+              this.hoverAura.addToScene(this.scene);
+            }
           }
           return hoveredHex;
         }

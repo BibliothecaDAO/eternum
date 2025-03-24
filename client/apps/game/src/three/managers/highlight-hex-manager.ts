@@ -43,7 +43,7 @@ export class HighlightHexManager {
       const position = getWorldPositionForHex(hex.hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
-      highlightMesh.position.set(position.x, 0.3, position.z);
+      highlightMesh.position.set(position.x, 0.175, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
 
       // Disable raycasting for this mesh
