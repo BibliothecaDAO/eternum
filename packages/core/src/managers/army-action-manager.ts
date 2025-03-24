@@ -336,6 +336,16 @@ export class ArmyActionManager {
     const newEntity = world.registerEntity({
       id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
     });
+    // createEntity(world, [
+    //   this.components.Tile,
+    //   {
+    //     col: newPosition.col,
+    //     row: newPosition.row,
+    //     occupier_id: this.entityId,
+    //     occupier_type: TileOccupier.Explorer,
+    //     biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
+    //   },
+    // ]);
 
     const newTile = getComponentValue(this.components.Tile, newEntity);
 
