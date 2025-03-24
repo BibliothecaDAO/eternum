@@ -46,7 +46,7 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
-  private readonly boatScale = new THREE.Vector3(0.3, 0.3, 0.3);
+  private readonly boatScale = new THREE.Vector3(1, 1, 1);
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
@@ -506,7 +506,7 @@ export class ArmyModel {
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
     const modelType = this.entityModelMap.get(entityId);
     const baseAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
-    const targetAngle = baseAngle + (modelType === ModelType.Boat ? Math.PI / 3 : 0);
+    const targetAngle = baseAngle + (modelType === ModelType.Boat ? -Math.PI / 6 : 0);
 
     movement.targetRotation = targetAngle;
     if (movement.currentRotation === 0) {
