@@ -1635,7 +1635,7 @@
     },
     {
       "address": "0x630be9829efbbdb0c47bf947cef6f8594e224def5a1a4e7e89642d2b7079b47",
-      "class_hash": "0x17d3ff802c56ee45ee26af9fd381045d26131f1765cef186c9e549bac8ea57f",
+      "class_hash": "0x1f0fd28983ce630c7dedd8246806eee9640c64ec11c554cfd56399b866c16ab",
       "abi": [
         {
           "type": "impl",
@@ -1735,6 +1735,24 @@
                   "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "MercenariesConfigImpl",
+          "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_mercenaries_name_config",
+              "inputs": [],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -2969,6 +2987,7 @@
       "systems": [
         "set_agent_controller",
         "set_world_config",
+        "set_mercenaries_name_config",
         "set_season_config",
         "set_vrf_config",
         "set_starting_resources_config",

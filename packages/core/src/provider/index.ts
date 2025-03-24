@@ -2143,6 +2143,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [admin_address],
     });
   }
+  public async set_mercenaries_name_config(props: SystemProps.SystemSigner) {
+    const { signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_mercenaries_name_config",
+      calldata: [],
+    });
+  }
 
   public async set_structure_max_level_config(props: SystemProps.SetStructureMaxLevelConfigProps) {
     const { realm_max_level, village_max_level, signer } = props;
