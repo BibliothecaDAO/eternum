@@ -1,4 +1,4 @@
-rpc = "http://127.0.0.1:8080"
+rpc = "http://127.0.0.1:5050"
 
 world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
 
@@ -17,9 +17,9 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-      "erc721:0x533aa7c4d2e3af957187065cf4a009500ed4c453f9225c7be57c99e485f0d2",
-      "erc721:0x7e40b4676694b5d078b5ca06891668615116b483482172f2e23655dc5887a01",
-      "erc20:0x5abc6c3cb1f6f09b88414ed9cafafdf6f17ef8458dbd3cb7d62433a19cf4be2",
+      "erc721:0x7a9f473a7576372b37338f088bab124a491f4a41ae9f4698dd13cdc87e5afb4",
+      "erc721:0x78d5516731c24a9af7847a45b20115ed8b0c41b3ff1e5196edc1474298c16ab",
+      "erc20:0x74fbdd470ac2414fdbd2d6cf467437bc45f02159c20fe0afd00a2126053800b",
 ]
 
 namespaces = ["s1_eternum"]

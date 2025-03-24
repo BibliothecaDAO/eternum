@@ -7,14 +7,18 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: false,
     icon: "public/icon",
+    osxSign: {},
   },
   rebuildConfig: {},
   publishers: [
     {
-      name: "@electron-forge/publisher-s3",
+      name: "@electron-forge/publisher-github",
       config: {
-        bucket: "eternum-torii-updates",
-        public: true,
+        repository: {
+          owner: "BibliothecaDAO",
+          name: "eternum",
+        },
+        prerelease: false,
       },
     },
   ],
