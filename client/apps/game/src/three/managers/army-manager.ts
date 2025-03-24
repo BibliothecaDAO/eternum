@@ -24,6 +24,11 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
+const TIERS_TO_STARS = {
+  [TroopTier.T1]: "⭐",
+  [TroopTier.T2]: "⭐⭐",
+  [TroopTier.T3]: "⭐⭐⭐",
+};
 
 export class ArmyManager {
   private scene: THREE.Scene;
@@ -384,7 +389,7 @@ export class ArmyManager {
       `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
     );
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.category} ${army.tier}`;
+    line2.textContent = `${army.category} ${TIERS_TO_STARS[army.tier]}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);

@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -23,6 +23,7 @@ const ICONS = {
   MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
   REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
+    [StructureType.Village]: "/images/buildings/construction/castleZero.png",
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
@@ -191,6 +192,11 @@ export class StructureManager {
 
           if (structureType === StructureType.Bank) {
             this.dummy.rotation.y = (4 * Math.PI) / 6;
+          } else {
+            const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+            const rotationIndex = Math.floor(rotationSeed * 6);
+            const randomRotation = (rotationIndex * Math.PI) / 3;
+            this.dummy.rotation.y = randomRotation;
           }
           this.dummy.updateMatrix();
           let modelType = models[structure.stage];

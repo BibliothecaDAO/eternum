@@ -162,15 +162,33 @@ export const setWorldConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_world_config({
+  const adminAddresstx = await config.provider.set_world_config({
     signer: config.account,
     admin_address: config.account.address,
   });
 
   console.log(
     chalk.cyan(`
+    ${chalk.gray("Admin Address Transaction:")} ${chalk.white(adminAddresstx.statusReceipt)}
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `),
+  );
+
+  const mercenariesName = "0x5468652056616e6775617264";
+  const mercenariesTx = await config.provider.set_mercenaries_name_config({
+    signer: config.account,
+    name: mercenariesName, // The Vanguard
+  });
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow(`Setting Mercenaries Name to ${mercenariesName}`)}
+    └────────────────────────────────`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ${chalk.gray("Mercenaries Name Transaction:")} ${chalk.white(mercenariesTx.statusReceipt)}
     ${chalk.green("✨ Configuration successfully deployed")}
-    ${chalk.gray("Transaction:")} ${chalk.white(tx.statusReceipt)}
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   `),
   );
