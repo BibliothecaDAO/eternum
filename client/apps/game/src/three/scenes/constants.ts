@@ -142,8 +142,8 @@ export const buildingModelPaths = {
     [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
   },
   [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
     [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   },
   [BUILDINGS_GROUPS.WONDER]: {
@@ -184,8 +184,8 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
   ],
   [StructureType.Hyperstructure]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
     BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
