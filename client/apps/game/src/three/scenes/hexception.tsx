@@ -403,8 +403,8 @@ export default class HexceptionScene extends HexagonScene {
     if (building && producedResource) {
       this.state.setTooltip({
         content: (
-          <div className="flex items-center space-x-1">
-            <ResourceIcon size="sm" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
+          <div className="flex items-center text-lg space-x-1">
+            <ResourceIcon size="lg" resource={findResourceById(producedResource as ResourcesIds)?.trait ?? ""} />
             <div>Producing {findResourceById(producedResource as ResourcesIds)?.trait}</div>
             <div>—</div>
             <div className={clsx(!isActive ? "text-order-giants" : "text-order-brilliance")}>
