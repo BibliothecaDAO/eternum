@@ -1,17 +1,21 @@
 import { configManager, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborConfig } from "../model/types";
 
+
 export const getLaborConfig = (resourceId: number): LaborConfig | undefined => {
   const laborProducedPerResource = configManager.laborOutputPerResource[resourceId as keyof typeof configManager.laborOutputPerResource];
   const laborResourceOutput
    = configManager.resourceOutputRate[ResourcesIds.Labor as keyof typeof configManager.resourceOutputRate];
   const simpleSystemResourceInputs = configManager.simpleSystemResourceInputs[resourceId as keyof typeof configManager.simpleSystemResourceInputs];
-  const laborBurnPerResource = simpleSystemResourceInputs.filter(x=>x.resource == ResourcesIds.Labor)[0] || {resource: resourceId, amount: 0};
+  const laborBurnPerResourceOutput = simpleSystemResourceInputs.filter(x=>x.resource == ResourcesIds.Labor)[0] || {resource: resourceId, amount: 0};
+  const simpleSystemResourceOutput = configManager.simpleSystemResourceOutput[resourceId as keyof typeof configManager.simpleSystemResourceOutput] || {resource: resourceId, amount: 0};
+
   return {
     laborProductionPerResource: laborProducedPerResource.amount / RESOURCE_PRECISION,
-    laborBurnPerResource: laborBurnPerResource.amount,
+    laborBurnPerResourceOutput: laborBurnPerResourceOutput.amount,
     laborRatePerTick: laborResourceOutput.realm_output_per_second / RESOURCE_PRECISION,
     inputResources: simpleSystemResourceInputs,
+    resourceOutputPerInputResources: simpleSystemResourceOutput.amount,
   };
 };
 

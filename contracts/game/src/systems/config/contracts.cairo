@@ -426,7 +426,6 @@ pub mod config_systems {
             output_per_complex_input: u64,
             complex_input_list: Span<(u8, u128)>,
         ) {
-            
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 

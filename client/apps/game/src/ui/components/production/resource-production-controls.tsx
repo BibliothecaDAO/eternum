@@ -5,9 +5,8 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
-  multiplyByPrecision,
   RealmInfo,
-  ResourcesIds,
+  ResourcesIds
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
@@ -50,7 +49,7 @@ export const ResourceProductionControls = ({
     const calldata = {
       from_entity_id: realm.entityId,
       produced_resource_types: [selectedResource],
-      production_tick_counts: [ticks],
+      production_cycles: [ticks],
       signer: account,
     };
 
@@ -65,14 +64,13 @@ export const ResourceProductionControls = ({
 
   const handleLaborResourcesProduce = async () => {
     if (!laborConfig) return;
-    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
 
-    if (productionAmount > 0 && laborNeeded > 0 && productionAmount > 0) {
+    if (productionAmount > 0) {
       setIsLoading(true);
-
+      let productionCycles = Math.floor(productionAmount / laborConfig?.resourceOutputPerInputResources);
       const calldata = {
         from_entity_id: realm.entityId,
-        labor_amounts: [multiplyByPrecision(laborNeeded)],
+        production_cycles: [productionCycles],
         produced_resource_types: [selectedResource],
         signer: account,
       };
@@ -140,7 +138,7 @@ export const ResourceProductionControls = ({
       return !ticks || ticks <= 0;
     } else {
       if (!laborConfig) return true;
-      const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
+      const laborNeeded = Math.round(laborConfig.laborBurnPerResourceOutput * productionAmount);
       return productionAmount <= 0 || laborNeeded <= 0;
     }
   }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);

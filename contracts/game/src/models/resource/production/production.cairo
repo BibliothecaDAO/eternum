@@ -178,17 +178,14 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
 
     // burn labor for production of some other resource
     fn burn_labor_for_resource_production(
-        ref world: WorldStorage, from_entity_id: ID, labor_amount: u128, produced_resource_type: u8,
+        ref world: WorldStorage, from_entity_id: ID, cycles: u128, produced_resource_type: u8,
     ) {
-        assert!(labor_amount % RESOURCE_PRECISION == 0, "labor amount must be exactly divisible by RESOURCE_PRECISION");
-        assert!(labor_amount.is_non_zero(), "zero labor amount");
+        assert!(cycles.is_non_zero(), "zero cycles");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // ensure resource can be converted to labor
         let produced_resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
-        let labor_amount_without_precision = labor_amount / RESOURCE_PRECISION;
-        let produced_resource_amount: u128 = produced_resource_factory_config.output_per_simple_input.into()
-            * labor_amount_without_precision;
+        let produced_resource_amount: u128 = produced_resource_factory_config.output_per_simple_input.into() * cycles;
         assert!(produced_resource_amount.is_non_zero(), "can't convert labor to specified resource");
 
         // burn labor and food from balance
@@ -209,12 +206,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             let mut payment_resource = SingleResourceStoreImpl::retrieve(
                 ref world, from_entity_id, payment_resource_type, ref from_entity_weight, resource_weight_grams, true,
             );
-            payment_resource
-                .spend(
-                    payment_resource_amount * labor_amount_without_precision,
-                    ref from_entity_weight,
-                    resource_weight_grams,
-                );
+            payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
         };
 
@@ -237,10 +229,10 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
     // burn multiple other predefined resources for production of one resource
     // e.g burn stone, coal and copper for production of gold
     fn burn_resource_for_resource_production(
-        ref world: WorldStorage, from_entity_id: ID, produced_resource_type: u8, production_seconds: u128,
+        ref world: WorldStorage, from_entity_id: ID, produced_resource_type: u8, cycles: u128,
     ) {
         assert!(produced_resource_type.is_non_zero(), "wrong resource type");
-        assert!(production_seconds.is_non_zero(), "zero production seconds");
+        assert!(cycles.is_non_zero(), "zero production seconds");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // ensure there is a config for this labor resource
@@ -261,8 +253,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             let mut payment_resource = SingleResourceStoreImpl::retrieve(
                 ref world, from_entity_id, payment_resource_type, ref from_entity_weight, resource_weight_grams, true,
             );
-            payment_resource
-                .spend(payment_resource_amount * production_seconds, ref from_entity_weight, resource_weight_grams);
+            payment_resource.spend(payment_resource_amount * cycles, ref from_entity_weight, resource_weight_grams);
             payment_resource.store(ref world);
         };
 
@@ -277,8 +268,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
-        let produceable_amount = production_seconds
-            * produced_resource_factory_config.output_per_complex_input.into();
+        let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
