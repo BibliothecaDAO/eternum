@@ -211,7 +211,10 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
                 <div className="flex justify-between">
                   <div className="text-md">{TroopType[troop.troopType]}</div>
                 </div>
-                <div className="px-2 py-1 bg-white/10  flex justify-between">
+                <div className="text-xs font-bold mt-1 mb-2">
+                  Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                </div>
+                <div className="px-2 py-1 bg-white/10 flex justify-between">
                   <ResourceIcon
                     withTooltip={false}
                     resource={
@@ -225,10 +228,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
               </div>
 
               {isCurrentTroopType && (
-                <div className="flex items-center mt-auto flex-col">
-                  <div className="px-2 text-xs font-bold mb-3">
-                    Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
-                  </div>
+                <div className="mt-auto">
                   <NumberInput
                     max={divideByPrecision(balance)}
                     min={0}
