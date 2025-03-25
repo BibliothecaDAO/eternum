@@ -268,7 +268,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
               : "Add Defense"}
         </Button>
         {onCancel && (
-          <Button variant="secondary" className="w-1/2" onClick={onCancel}>
+          <Button isLoading={isLoading} variant="secondary" className="w-1/2" onClick={onCancel}>
             Cancel
           </Button>
         )}
