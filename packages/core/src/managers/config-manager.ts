@@ -17,6 +17,13 @@ import { ContractComponents } from "../dojo/contract-components";
 import { Config, EntityType, TickIds, TroopType } from "../types";
 import { gramToKg } from "../utils";
 
+type LaborConfig = {
+  laborProductionPerResource: number;
+  laborBurnPerResource: number;
+  laborRatePerTick: number;
+  inputResources: { resource: ResourcesIds; amount: number }[];
+};
+
 export class ClientConfigManager {
   private static _instance: ClientConfigManager;
   private components!: ContractComponents;
@@ -24,7 +31,10 @@ export class ClientConfigManager {
   buildingOutputs: Record<number, number> = {};
   complexSystemResourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
-  resourceOutputRate: Record<number, { resource: ResourcesIds; village_output_per_second: number, realm_output_per_second: number }> = {};
+  resourceOutputRate: Record<
+    number,
+    { resource: ResourcesIds; village_output_per_second: number; realm_output_per_second: number }
+  > = {};
 
   simpleSystemResourceInputs: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   simpleSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
@@ -33,6 +43,7 @@ export class ClientConfigManager {
   hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
+  simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   structureCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   resourceWeightsKg: Record<number, number> = {};
 
@@ -115,13 +126,13 @@ export class ClientConfigManager {
       this.complexSystemResourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
         amount: this.divideByPrecision(Number(productionConfig?.output_per_complex_input) ?? 0),
-      }
+      };
 
       this.simpleSystemResourceInputs[Number(resourceType)] = simpleSystemResourceInputs;
       this.simpleSystemResourceOutput[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
         amount: this.divideByPrecision(Number(productionConfig?.output_per_simple_input) ?? 0),
-      }
+      };
 
       this.laborOutputPerResource[Number(resourceType)] = {
         resource: Number(resourceType) as ResourcesIds,
@@ -132,7 +143,7 @@ export class ClientConfigManager {
         resource: Number(resourceType) as ResourcesIds,
         realm_output_per_second: Number(productionConfig?.realm_output_per_second),
         village_output_per_second: Number(productionConfig?.village_output_per_second),
-      }
+      };
     }
   }
 
@@ -186,26 +197,49 @@ export class ClientConfigManager {
     for (const buildingConfigEntity of buildingConfigsEntities) {
       const buildingConfig = getComponentValue(this.components.BuildingCategoryConfig, buildingConfigEntity);
       if (buildingConfig) {
-        const entityId = buildingConfig.complex_erection_cost_id;
-        const resourceCount = buildingConfig.complex_erection_cost_count || 0;
-        const inputs: { resource: ResourcesIds; amount: number }[] = [];
+        // Process complex building costs
+        const complexEntityId = buildingConfig.complex_erection_cost_id;
+        const complexResourceCount = buildingConfig.complex_erection_cost_count || 0;
+        const complexInputs: { resource: ResourcesIds; amount: number }[] = [];
 
-        for (let index = 0; index < resourceCount; index++) {
+        for (let index = 0; index < complexResourceCount; index++) {
           const resource = getComponentValue(
             this.components.ResourceList,
-            getEntityIdFromKeys([BigInt(entityId), BigInt(index)]),
+            getEntityIdFromKeys([BigInt(complexEntityId), BigInt(index)]),
           );
 
           if (resource) {
-            inputs.push({
+            complexInputs.push({
               resource: resource.resource_type as ResourcesIds,
               amount: this.divideByPrecision(Number(resource.amount)),
             });
           }
         }
 
-        this.complexBuildingCosts[Number(buildingConfig.category)] = inputs;
+        this.complexBuildingCosts[Number(buildingConfig.category)] = complexInputs;
 
+        // Process simple building costs
+        const simpleEntityId = buildingConfig.simple_erection_cost_id;
+        const simpleResourceCount = buildingConfig.simple_erection_cost_count || 0;
+        const simpleInputs: { resource: ResourcesIds; amount: number }[] = [];
+
+        for (let index = 0; index < simpleResourceCount; index++) {
+          const resource = getComponentValue(
+            this.components.ResourceList,
+            getEntityIdFromKeys([BigInt(simpleEntityId), BigInt(index)]),
+          );
+
+          if (resource) {
+            simpleInputs.push({
+              resource: resource.resource_type as ResourcesIds,
+              amount: this.divideByPrecision(Number(resource.amount)),
+            });
+          }
+        }
+
+        this.simpleBuildingCosts[Number(buildingConfig.category)] = simpleInputs;
+
+        // Set building outputs
         const resourceType = getProducedResource(buildingConfig.category);
 
         if (resourceType) {
@@ -852,6 +886,25 @@ export class ClientConfigManager {
       },
     );
   }
+
+  public getLaborConfig = (resourceId: number): LaborConfig | undefined => {
+    const laborProducedPerResource =
+      configManager.laborOutputPerResource[resourceId as keyof typeof configManager.laborOutputPerResource];
+    const laborResourceOutput =
+      configManager.resourceOutputRate[ResourcesIds.Labor as keyof typeof configManager.resourceOutputRate];
+    const simpleSystemResourceInputs =
+      configManager.simpleSystemResourceInputs[resourceId as keyof typeof configManager.simpleSystemResourceInputs];
+    const laborBurnPerResource = simpleSystemResourceInputs.filter((x) => x.resource == ResourcesIds.Labor)[0] || {
+      resource: resourceId,
+      amount: 0,
+    };
+    return {
+      laborProductionPerResource: laborProducedPerResource.amount / RESOURCE_PRECISION,
+      laborBurnPerResource: laborBurnPerResource.amount,
+      laborRatePerTick: laborResourceOutput.realm_output_per_second / RESOURCE_PRECISION,
+      inputResources: simpleSystemResourceInputs,
+    };
+  };
 }
 
 export const configManager = ClientConfigManager.instance();

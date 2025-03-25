@@ -1,7 +1,6 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
@@ -43,7 +42,7 @@ export const ResourceProductionControls = ({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const laborConfig = useMemo(() => getLaborConfig(selectedResource), [selectedResource]);
+  const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
 
   const handleRawResourcesProduce = async () => {
     if (!ticks) return;

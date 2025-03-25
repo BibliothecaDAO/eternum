@@ -65,6 +65,9 @@ interface UIStore {
   showToS: boolean;
   setShowToS: (show: boolean) => void;
   setModal: (content: React.ReactNode | null, show: boolean) => void;
+  // labor
+  useSimpleCost: boolean;
+  setUseSimpleCost: (useSimpleCost: boolean) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -139,5 +142,7 @@ export const useUIStore = create(
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
+    useSimpleCost: true,
+    setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
   })),
 );

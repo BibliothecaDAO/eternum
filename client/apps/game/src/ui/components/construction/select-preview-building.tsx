@@ -42,6 +42,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
 
@@ -93,7 +95,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const resource = findResourceById(resourceId)!;
               const building = getBuildingFromResource(resourceId);
 
-              const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
+              const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
               if (!complexBuildingCosts) return;
               const cost = [...complexBuildingCosts, ...configManager.complexSystemResourceInputs[resourceId]];
 
@@ -125,7 +127,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   active={previewBuilding?.resource === resourceId}
                   buildingName={resource?.trait}
                   resourceName={resource?.trait}
-                  toolTip={<ResourceInfo buildingId={building} resourceId={resourceId} entityId={entityId} />}
+                  toolTip={
+                    <ResourceInfo
+                      buildingId={building}
+                      resourceId={resourceId}
+                      entityId={entityId}
+                      useSimpleCost={useSimpleCost}
+                    />
+                  }
                   hasFunds={hasBalance}
                   hasPopulation={hasEnoughPopulation}
                 />
@@ -161,7 +170,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isWorkersHut = building === BuildingType.WorkersHut;
                 const isStorehouse = building === BuildingType.Storehouse;
 
-                const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
+                const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
                 if (!complexBuildingCosts) return;
 
@@ -212,7 +221,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           ] as keyof typeof ResourcesIds)
                         : undefined
                     }
-                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
+                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
                     hasFunds={hasBalance}
                     hasPopulation={hasEnoughPopulation}
                   />
@@ -285,7 +294,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         })
                         .map((buildingType, index) => {
                           const building = BuildingType[buildingType as keyof typeof BuildingType];
-                          const buildingCost = getBuildingCosts(entityId, dojo.setup.components, building);
+                          const buildingCost = getBuildingCosts(
+                            entityId,
+                            dojo.setup.components,
+                            building,
+                            useSimpleCost,
+                          );
                           const info = getMilitaryBuildingInfo(building);
 
                           const hasBalance = checkBalance(buildingCost);
@@ -315,7 +329,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                   configManager.getResourceBuildingProduced(building)
                                 ] as keyof typeof ResourcesIds
                               }
-                              toolTip={<BuildingInfo buildingId={building} entityId={entityId} />}
+                              toolTip={
+                                <BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />
+                              }
                               hasFunds={hasBalance}
                               hasPopulation={hasEnoughPopulation}
                             />
@@ -330,12 +346,31 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
       },
     ],
-    [realm, entityId, selectedTab, previewBuilding, playResourceSound],
+    [realm, entityId, selectedTab, previewBuilding, playResourceSound, useSimpleCost],
   );
 
   return (
     <div className={`${className}`}>
-      <HintModalButton className="absolute top-1 right-1" section={HintSection.Buildings} />
+      <div className="flex justify-between items-center px-3 py-2 bg-brown/30 border-b border-gold/20">
+        <div className="text-gold text-sm font-medium">Building Costs</div>
+        <div className="flex items-center gap-2">
+          <label className="inline-flex items-center cursor-pointer">
+            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : "text-gold"}`}>Pro</span>
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={useSimpleCost}
+                onChange={() => setUseSimpleCost(!useSimpleCost)}
+              />
+              <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
+            </div>
+            <span className={`ml-2 text-xs ${useSimpleCost ? "text-gold" : "text-gold/50"}`}>Lite</span>
+          </label>
+          <HintModalButton className="" section={HintSection.Buildings} />
+        </div>
+      </div>
+
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => {
@@ -441,16 +476,20 @@ export const ResourceInfo = ({
   entityId,
   isPaused,
   hintModal = false,
+  useSimpleCost = false,
 }: {
   resourceId: ResourcesIds;
   buildingId: BuildingType;
   entityId: ID | undefined;
   isPaused?: boolean;
   hintModal?: boolean;
+  useSimpleCost?: boolean;
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  let cost = configManager.complexSystemResourceInputs[resourceId];
+  let cost = useSimpleCost
+    ? configManager.simpleSystemResourceInputs[resourceId]
+    : configManager.complexSystemResourceInputs[resourceId];
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
   if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
@@ -463,8 +502,8 @@ export const ResourceInfo = ({
   );
 
   const buildingCost = useMemo(() => {
-    return getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId) ?? [];
-  }, [entityId, dojo.setup.components, buildingId, structureBuildings]);
+    return getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId, useSimpleCost) ?? [];
+  }, [entityId, dojo.setup.components, buildingId, structureBuildings, useSimpleCost]);
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -583,19 +622,21 @@ export const BuildingInfo = ({
   name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString],
   hintModal = false,
   isPaused,
+  useSimpleCost = false,
 }: {
   buildingId: BuildingType;
   entityId: ID | undefined;
   name?: string;
   hintModal?: boolean;
   isPaused?: boolean;
+  useSimpleCost?: boolean;
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
 
-  const buildingCost = getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId) || [];
+  const buildingCost = getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId, useSimpleCost) || [];
 
   const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
   const population = buildingPopCapacityConfig.population_cost;
@@ -604,7 +645,12 @@ export const BuildingInfo = ({
   const extraStorehouseCapacityKg =
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
 
-  let ongoingCost = resourceProduced !== undefined ? configManager.complexSystemResourceInputs[resourceProduced] || [] : [];
+  let ongoingCost =
+    resourceProduced !== undefined
+      ? (useSimpleCost
+          ? configManager.simpleSystemResourceInputs[resourceProduced]
+          : configManager.complexSystemResourceInputs[resourceProduced]) || []
+      : [];
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 

@@ -1,7 +1,6 @@
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getLaborConfig } from "@/utils/labor";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
 
 interface LaborResourcesPanelProps {
   selectedResource: number;
@@ -20,7 +19,7 @@ export const LaborResourcesPanel = ({
   isSelected,
   onSelect,
 }: LaborResourcesPanelProps) => {
-  const laborConfig = getLaborConfig(selectedResource);
+  const laborConfig = configManager.getLaborConfig(selectedResource);
   const laborInputResources = laborConfig?.inputResources;
 
   const handleInputChange = (value: number, inputResource: number) => {

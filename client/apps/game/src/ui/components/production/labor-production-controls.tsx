@@ -3,14 +3,14 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-    divideByPrecision,
-    findResourceById,
-    multiplyByPrecision,
-    RealmInfo,
-    ResourcesIds,
+  configManager,
+  divideByPrecision,
+  findResourceById,
+  multiplyByPrecision,
+  RealmInfo,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
@@ -48,7 +48,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   };
 
   const laborConfig = useMemo(() => {
-    return selectedResources.map((r) => getLaborConfig(r.id));
+    return selectedResources.map((r) => configManager.getLaborConfig(r.id));
   }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {
