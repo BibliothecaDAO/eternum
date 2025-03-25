@@ -271,7 +271,7 @@ export class StructureManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
-      "text-gold",
+      structure.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
       "text-xs",
@@ -286,7 +286,7 @@ export class StructureManager {
 
     // Select appropriate icon
     let iconPath = ICONS.STRUCTURES[structure.structureType];
-    if (structure.structureType === StructureType.Realm) {
+    if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
       if (structure.hasWonder) {
         iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
       } else {

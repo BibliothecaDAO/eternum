@@ -373,7 +373,7 @@ export class ArmyManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
-      "text-gold",
+      army.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
       "text-xs",
@@ -382,7 +382,7 @@ export class ArmyManager {
     );
     const orderName = army.order.toLowerCase();
     const img = document.createElement("img");
-    img.src = `/images/orders/${orderName}.png`;
+    img.src = `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
     img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
     labelDiv.appendChild(img);
 
