@@ -7,14 +7,18 @@ import { currencyFormat } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   findResourceById,
+  getEntityIdFromKeys,
   getTotalResourceWeightKg,
   ID,
+  isMilitaryResource,
   PlayerStructure,
   RESOURCE_PRECISION,
   ResourceManager,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
 import { num } from "starknet";
@@ -30,6 +34,7 @@ type transferCall = {
 export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => {
   const {
     setup: {
+      components,
       systemCalls: { send_resources_multiple },
     },
     account: { account },
@@ -46,6 +51,31 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [resourceManager, tick]);
 
   const playerStructures = usePlayerStructures();
+
+  const playerStructuresFiltered = useMemo(() => {
+    // For military resources, we need special handling
+    if (isMilitaryResource(resource)) {
+      const selectedStructure = getComponentValue(
+        components.Structure,
+        getEntityIdFromKeys([BigInt(selectedStructureEntityId)]),
+      );
+
+      // If the selected structure is a village, only show the connected realm
+      if (selectedStructure?.category === StructureType.Village) {
+        const realmEntityId = selectedStructure.metadata.village_realm;
+        return playerStructures.filter((structure) => structure.structure.entity_id === realmEntityId);
+      } else {
+        return playerStructures.filter(
+          (structure) =>
+            structure.category !== StructureType.Village ||
+            structure.structure.metadata.village_realm === selectedStructureEntityId,
+        );
+      }
+    }
+
+    // Default case: return all player structures
+    return playerStructures;
+  }, [components.Structure, playerStructures, selectedStructureEntityId, resource]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [calls, setCalls] = useState<transferCall[]>([]);
@@ -113,7 +143,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
           <div className="py-3 text-center text-xl">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
         </div>
 
-        {playerStructures.map((structure) => (
+        {playerStructuresFiltered.map((structure) => (
           <RealmTransferBalance
             key={structure.structure.entity_id}
             structure={structure}

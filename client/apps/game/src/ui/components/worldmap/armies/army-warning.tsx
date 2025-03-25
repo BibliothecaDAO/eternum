@@ -21,7 +21,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyActionManager(dojo.setup.components, dojo.network.provider, army.entityId);
+    return new ArmyActionManager(dojo.setup.components, dojo.setup.systemCalls, army.entityId);
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
