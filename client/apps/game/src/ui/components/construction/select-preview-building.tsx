@@ -93,9 +93,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const resource = findResourceById(resourceId)!;
               const building = getBuildingFromResource(resourceId);
 
-              const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
-              if (!buildingCosts) return;
-              const cost = [...buildingCosts, ...configManager.resourceInputs[resourceId]];
+              const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
+              if (!complexBuildingCosts) return;
+              const cost = [...complexBuildingCosts, ...configManager.complexSystemResourceInputs[resourceId]];
 
               const hasBalance = checkBalance(cost);
 
@@ -161,11 +161,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isWorkersHut = building === BuildingType.WorkersHut;
                 const isStorehouse = building === BuildingType.Storehouse;
 
-                const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
+                const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building);
 
-                if (!buildingCosts) return;
+                if (!complexBuildingCosts) return;
 
-                const hasBalance = checkBalance(buildingCosts);
+                const hasBalance = checkBalance(complexBuildingCosts);
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
                   building === BuildingType.WorkersHut
@@ -450,7 +450,7 @@ export const ResourceInfo = ({
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  let cost = configManager.resourceInputs[resourceId];
+  let cost = configManager.complexSystemResourceInputs[resourceId];
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
   if (resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
@@ -604,7 +604,7 @@ export const BuildingInfo = ({
   const extraStorehouseCapacityKg =
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
 
-  let ongoingCost = resourceProduced !== undefined ? configManager.resourceInputs[resourceProduced] || [] : [];
+  let ongoingCost = resourceProduced !== undefined ? configManager.complexSystemResourceInputs[resourceProduced] || [] : [];
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 

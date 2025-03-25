@@ -9,7 +9,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
-import { BUILDING_CAPACITY, BUILDING_COSTS, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED } from "./utils/building";
+import { BUILDING_CAPACITY, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED, COMPLEX_BUILDING_COSTS, SIMPLE_BUILDING_COSTS } from "./utils/building";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -17,11 +17,13 @@ import {
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
+  LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
+  RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-  RESOURCE_PRODUCTION_THROUGH_LABOR,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
   RESOURCES_WEIGHTS_NANOGRAM,
-  STARTING_RESOURCES,
+  STARTING_RESOURCES
 } from "./utils/resource";
 import {
   TROOP_AGENTS_TROOP_LOWER_BOUND,
@@ -194,9 +196,11 @@ export const EternumGlobalConfig: Config = {
     resourceMultiplier: RESOURCE_PRECISION,
     resourceAmountPerTick: RESOURCE_AMOUNT_PER_TICK,
     startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
-    resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
-    resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-    resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
+    productionByComplexRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES,
+    productionByComplexRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    productionBySimpleRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
+    productionBySimpleRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
+    laborOutputPerResource: LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
     resourceWeightsGrams: RESOURCES_WEIGHTS_NANOGRAM,
     resourceRarity: RESOURCE_RARITY,
   },
@@ -300,7 +304,8 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    buildingCosts: BUILDING_COSTS,
+    complexBuildingCosts: COMPLEX_BUILDING_COSTS,
+    simpleBuildingCost: SIMPLE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {

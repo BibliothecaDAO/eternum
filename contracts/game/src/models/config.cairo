@@ -35,9 +35,10 @@ pub struct WorldConfig {
     pub capacity_config: CapacityConfig,
     pub trade_config: TradeConfig,
     pub battle_config: BattleConfig,
-    pub realm_count: RealmCountConfig,
+    pub realm_count_config: RealmCountConfig,
     pub season_config: SeasonConfig,
     pub agent_controller_config: AgentControllerConfig,
+    pub starting_resources_config: StartingResourcesConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -470,117 +471,21 @@ pub struct WeightConfig {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
-// rename to ResourceFactoryConfig
-pub struct ProductionConfig {
+pub struct ResourceFactoryConfig {
     #[key]
     pub resource_type: u8,
-    // production amount per building, per tick for realm
-    pub realm_output_per_tick: u64,
-    // production amount per building, per tick for village
-    pub village_output_per_tick: u64,
-    // values needed for converting resources to labor and vice versa
-    pub labor_burn_strategy: LaborBurnPrStrategy,
-    // values needed for converting multiple resources to a single resource
-    pub multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy,
-}
-
-/// A strategy for converting resources using a labor-based intermediary system.
-/// This system allows for resource conversion while maintaining economic balance
-/// through resource rarity and depreciation mechanics.
-///
-/// # Fields
-/// * `resource_rarity` - Defines both the resource's relative value and its labor conversion rate
-/// * `depreciation_percent_num` - Numerator of depreciation fraction (e.g., 2 for 20%)
-/// * `depreciation_percent_denom` - Denominator of depreciation fraction (e.g., 10 for 20%)
-///
-/// # Resource to Labor Conversion
-/// When converting a resource to labor, the formula is:
-/// ```
-/// labor_amount = resource_amount * resource_rarity
-/// ```
-///
-/// # Labor to Resource Conversion
-/// When converting labor to a resource, the formula includes depreciation:
-/// ```
-/// resource_amount = labor_amount / target_resource_rarity * (1 - depreciation)
-/// ```
-///
-/// # Example
-/// Given the following configuration:
-/// ```
-/// Resource      Rarity      Depreciation
-/// Wood         100         20% (2/10)
-/// Gold         1000        10% (1/10)
-/// ```
-///
-/// ## Converting Wood to Gold
-/// 1. Convert 3 wood to labor:
-///    * Labor = 3 * 100 = 300 labor
-/// 2. Convert labor to gold (with 10% depreciation):
-///    * Gold = 300 / 1000 * (1 - 1/10) = 0.27 gold
-///
-/// ## Converting Gold to Wood
-/// 1. Convert 7 gold to labor:
-///    * Labor = 7 * 1000 = 7000 labor
-/// 2. Convert labor to wood (with 20% depreciation):
-///    * Wood = 7000 / 100 * (1 - 2/10) = 56 wood
-///
-/// # Note
-/// The depreciation is always applied based on the target resource's depreciation rate,
-/// creating an intentional loss in the conversion process
-///
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct LaborBurnPrStrategy {
-    /// Represents the resource's rarity and determines labor conversion rate.
-    /// Higher values indicate rarer resources that yield more labor when converted.
-    pub resource_rarity: u128,
-    /// Amount of wheat to burn per labor
-    pub wheat_burn_per_labor: u128,
-    /// Amount of fish to burn per labor
-    pub fish_burn_per_labor: u128,
-    /// Numerator of the depreciation percentage fraction.
-    pub depreciation_percent_num: u16,
-    /// Denominator of the depreciation percentage fraction.
-    pub depreciation_percent_denom: u16,
-}
-
-/// A simple production strategy that requires burning multiple resources to produce output.
-///
-/// # Fields
-/// * `required_resources_id` - ID referencing the list of required input resources
-/// * `required_resources_count` - Number of different resources needed for production
-///
-/// # Example
-/// If crafting stone requires:
-/// - 2 coal
-/// - 1 wood
-/// - 1 coldiron
-/// Then:
-/// - required_resources_id would point to the id of ResourceList
-/// - required_resources_count would be 3
-///
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct MultipleResourceBurnPrStrategy {
-    /// ID referencing the list of required input resources
-    pub required_resources_id: ID,
-    /// Number of different resource types needed
-    pub required_resources_count: u8,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct BankConfig {
-    pub lp_fee_num: u32,
-    pub lp_fee_denom: u32,
-    pub owner_fee_num: u32,
-    pub owner_fee_denom: u32,
-}
-
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-pub struct BuildingConfig {
-    pub base_population: u32,
-    pub base_cost_percent_increase: u16,
+    // production machine output per second
+    pub realm_output_per_second: u64,
+    pub village_output_per_second: u64,
+    pub labor_output_per_resource: u64,
+    pub output_per_simple_input: u64, // loinput = labor only input
+    pub output_per_complex_input: u64, // nlinput = non labor input
+    pub simple_input_list_id: ID,
+    pub complex_input_list_id: ID,
+    pub simple_input_list_count: u8,
+    pub complex_input_list_count: u8,
 }
 
 
@@ -589,12 +494,29 @@ pub struct BuildingConfig {
 pub struct BuildingCategoryConfig {
     #[key]
     pub category: u8,
-    pub erection_cost_id: ID,
-    pub erection_cost_count: u32,
-    pub population_cost: u32,
-    pub capacity_grant: u32,
+    pub complex_erection_cost_id: ID,
+    pub complex_erection_cost_count: u8,
+    pub simple_erection_cost_id: ID,
+    pub simple_erection_cost_count: u8,
+    pub population_cost: u8,
+    pub capacity_grant: u8,
 }
 
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BuildingConfig {
+    pub base_population: u32,
+    pub base_cost_percent_increase: u16,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct BankConfig {
+    pub lp_fee_num: u32,
+    pub lp_fee_denom: u32,
+    pub owner_fee_num: u32,
+    pub owner_fee_denom: u32,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct BattleConfig {
@@ -636,11 +558,9 @@ pub impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
 
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
 pub struct StartingResourcesConfig {
-    #[key]
-    pub resource_type: u8,
-    pub resource_amount: u128,
+    pub resources_list_id: ID,
+    pub resources_list_count: u8,
 }
 
 

@@ -58,8 +58,8 @@ export const policies = toSessionPolicies({
           entrypoint: "set_tick_config",
         },
         {
-          name: "set_production_config",
-          entrypoint: "set_production_config",
+          name: "set_resource_factory_config",
+          entrypoint: "set_resource_factory_config",
         },
         {
           name: "set_donkey_speed_config",
@@ -294,16 +294,16 @@ export const policies = toSessionPolicies({
           entrypoint: "resume_building_production",
         },
         {
-          name: "burn_other_resources_for_labor_production",
-          entrypoint: "burn_other_resources_for_labor_production",
+          name: "burn_resource_for_labor_production",
+          entrypoint: "burn_resource_for_labor_production",
         },
         {
-          name: "burn_labor_resources_for_other_production",
-          entrypoint: "burn_labor_resources_for_other_production",
+          name: "burn_labor_for_resource_production",
+          entrypoint: "burn_labor_for_resource_production",
         },
         {
-          name: "burn_other_predefined_resources_for_resources",
-          entrypoint: "burn_other_predefined_resources_for_resources",
+          name: "burn_resource_for_resource_production",
+          entrypoint: "burn_resource_for_resource_production",
         },
         {
           name: "dojo_name",

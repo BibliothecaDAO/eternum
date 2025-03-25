@@ -97,8 +97,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    buildingCosts: {
-      ...CommonEternumGlobalConfig.buildings.buildingCosts,
+    complexBuildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
       [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
     },
     buildingPopulation: {

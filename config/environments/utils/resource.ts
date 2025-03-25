@@ -1,9 +1,8 @@
 import {
   ResourcesIds,
-  type ProductionByLaborParams,
   type ResourceCost,
   type ResourceInputs,
-  type ResourceOutputs,
+  type ResourceOutputs
 } from "@bibliothecadao/eternum";
 
 // weight in kg
@@ -88,268 +87,6 @@ export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS: ResourceOutputs = {
   [ResourcesIds.Labor]: 30,
 };
 
-export const RESOURCE_PRODUCTION_THROUGH_LABOR: ProductionByLaborParams = {
-  [ResourcesIds.Wood]: {
-    resource_rarity: 1,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Stone]: {
-    resource_rarity: 1,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Coal]: {
-    resource_rarity: 1,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Copper]: {
-    resource_rarity: 2,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Obsidian]: {
-    resource_rarity: 2,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Silver]: {
-    resource_rarity: 3,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Ironwood]: {
-    resource_rarity: 4,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.ColdIron]: {
-    resource_rarity: 5,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Gold]: {
-    resource_rarity: 5,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Hartwood]: {
-    resource_rarity: 8,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Diamonds]: {
-    resource_rarity: 17,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Sapphire]: {
-    resource_rarity: 20,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Ruby]: {
-    resource_rarity: 21,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.DeepCrystal]: {
-    resource_rarity: 21,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Ignium]: {
-    resource_rarity: 29,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.EtherealSilica]: {
-    resource_rarity: 31,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.TrueIce]: {
-    resource_rarity: 36,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.TwilightQuartz]: {
-    resource_rarity: 45,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.AlchemicalSilver]: {
-    resource_rarity: 54,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Adamantine]: {
-    resource_rarity: 91,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Mithral]: {
-    resource_rarity: 136,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  [ResourcesIds.Dragonhide]: {
-    resource_rarity: 218,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 25,
-    fish_burn_per_labor: 30,
-  },
-  // cannot be produced through labor
-  [ResourcesIds.AncientFragment]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Donkey]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Knight]: {
-    resource_rarity: 26,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 50,
-    fish_burn_per_labor: 50,
-  },
-  [ResourcesIds.KnightT2]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.KnightT3]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Crossbowman]: {
-    resource_rarity: 29,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 50,
-    fish_burn_per_labor: 50,
-  },
-  [ResourcesIds.CrossbowmanT2]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.CrossbowmanT3]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Paladin]: {
-    resource_rarity: 29,
-    depreciation_percent_num: 10,
-    depreciation_percent_denom: 100,
-    wheat_burn_per_labor: 50,
-    fish_burn_per_labor: 50,
-  },
-  [ResourcesIds.PaladinT2]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.PaladinT3]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Wheat]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Fish]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Lords]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-  [ResourcesIds.Labor]: {
-    resource_rarity: 0,
-    depreciation_percent_num: 0,
-    depreciation_percent_denom: 0,
-    wheat_burn_per_labor: 0,
-    fish_burn_per_labor: 0,
-  },
-};
 export const RESOURCE_PRODUCTION_INPUT_RESOURCES: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Stone, amount: 4.1 },
@@ -575,6 +312,142 @@ export const STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Paladin, amount: 1200 },
   { resource: ResourcesIds.AncientFragment, amount: 200 },
 ];
+
+export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {
+  [ResourcesIds.Wood]: 0.1, // we can use decimals now
+  [ResourcesIds.Stone]: 0.2,
+  [ResourcesIds.Coal]: 1,
+  [ResourcesIds.Copper]: 1,
+  [ResourcesIds.Obsidian]: 1,
+  [ResourcesIds.Silver]: 1,
+  [ResourcesIds.Ironwood]: 1,
+  [ResourcesIds.ColdIron]: 1,
+  [ResourcesIds.Gold]: 1,
+  [ResourcesIds.Hartwood]: 1,
+  [ResourcesIds.Diamonds]: 1,
+  [ResourcesIds.Sapphire]: 1,
+  [ResourcesIds.Ruby]: 1,
+  [ResourcesIds.DeepCrystal]: 1,
+  [ResourcesIds.Ignium]: 1,
+  [ResourcesIds.EtherealSilica]: 1,
+  [ResourcesIds.TrueIce]: 1,
+  [ResourcesIds.TwilightQuartz]: 1,
+  [ResourcesIds.AlchemicalSilver]: 1,
+  [ResourcesIds.Adamantine]: 1,
+  [ResourcesIds.Mithral]: 1,
+  [ResourcesIds.Dragonhide]: 1,
+  [ResourcesIds.Donkey]: 0,
+  [ResourcesIds.Knight]: 0,
+  [ResourcesIds.KnightT2]: 0,
+  [ResourcesIds.KnightT3]: 0,
+  [ResourcesIds.Crossbowman]: 0,
+  [ResourcesIds.CrossbowmanT2]: 0,
+  [ResourcesIds.CrossbowmanT3]: 0,
+  [ResourcesIds.Paladin]: 0,
+  [ResourcesIds.PaladinT2]: 0,
+  [ResourcesIds.PaladinT3]: 0,
+  [ResourcesIds.Lords]: 0,
+  [ResourcesIds.Wheat]: 0,
+  [ResourcesIds.Fish]: 0,
+  [ResourcesIds.AncientFragment]: 0,
+  [ResourcesIds.Labor]: 0,
+};
+export const RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM: ResourceOutputs = RESOURCE_PRODUCTION_OUTPUT_AMOUNTS;
+
+export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs = {
+  [ResourcesIds.Wood]: [
+    { resource: ResourcesIds.Labor, amount: 0.04 },
+    { resource: ResourcesIds.Wheat, amount: 1 },
+    { resource: ResourcesIds.Fish, amount: 2 },
+  ],
+  [ResourcesIds.Stone]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Coal]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Copper]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Obsidian]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Silver]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Ironwood]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.ColdIron]: [
+  ],
+  [ResourcesIds.Gold]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Hartwood]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Diamonds]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Sapphire]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.Ruby]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+  ],
+  [ResourcesIds.DeepCrystal]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.Ignium]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.EtherealSilica]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.TrueIce]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.TwilightQuartz]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.AlchemicalSilver]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.Adamantine]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.Mithral]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.Dragonhide]: [
+    { resource: ResourcesIds.Labor, amount: 0.1 },
+
+  ],
+  [ResourcesIds.Donkey]: [],
+  [ResourcesIds.Knight]: [],
+  [ResourcesIds.KnightT2]: [],
+  [ResourcesIds.KnightT3]: [],
+  [ResourcesIds.Crossbowman]: [],
+  [ResourcesIds.CrossbowmanT2]: [],
+  [ResourcesIds.CrossbowmanT3]: [],
+  [ResourcesIds.Paladin]: [],
+  [ResourcesIds.PaladinT2]: [],
+  [ResourcesIds.PaladinT3]: [],
+  [ResourcesIds.Wheat]: [],
+  [ResourcesIds.Fish]: [],
+  [ResourcesIds.Lords]: [],
+  [ResourcesIds.AncientFragment]: [],
+  [ResourcesIds.Labor]: [],
+};
+
 
 export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {
   return STARTING_RESOURCES.map((resource) => ({

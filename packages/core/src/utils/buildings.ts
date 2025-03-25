@@ -15,7 +15,7 @@ export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, co
 };
 
 export const getConsumedBy = (resourceProduced: ResourcesIds) => {
-  return Object.entries(configManager.resourceInputs)
+  return Object.entries(configManager.complexSystemResourceInputs)
     .map(([resourceId, inputs]) => {
       const resource = inputs.find(
         (input: { resource: number; amount: number }) => input.resource === resourceProduced,
@@ -34,9 +34,9 @@ export const getBuildingCosts = (realmEntityId: ID, components: ClientComponents
 
   let updatedCosts: ResourceCost[] = [];
 
-  if (!configManager.buildingCosts[Number(buildingCategory)]) return undefined;
+  if (!configManager.complexBuildingCosts[Number(buildingCategory)]) return undefined;
 
-  configManager.buildingCosts[Number(buildingCategory)].forEach((cost) => {
+  configManager.complexBuildingCosts[Number(buildingCategory)].forEach((cost) => {
     const baseCost = cost.amount;
     const percentageAdditionalCost = (baseCost * (buildingBaseCostPercentIncrease / 100)) / 100;
     const scaleFactor = Math.max(0, buildingQuantity ?? 0 - 1);

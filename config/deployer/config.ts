@@ -10,7 +10,6 @@ import {
   scaleResourceCostMinMax,
   scaleResourceInputs,
   scaleResourceOutputs,
-  scaleResourceProductionByLaborParams,
   scaleResources,
   type Config as EternumConfig,
   type ResourceInputs,
@@ -47,7 +46,7 @@ export class GameConfigDeployer {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
     await setAgentControllerConfig(config);
-    await setProductionConfig(config);
+    await SetResourceFactoryConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setTradeConfig(config);
     await setStartingResourcesConfig(config);
@@ -76,21 +75,21 @@ export class GameConfigDeployer {
 
   getResourceOutputsScaled(): ResourceOutputs {
     return scaleResourceOutputs(
-      this.globalConfig.resources.resourceOutputs,
+      this.globalConfig.resources.productionByComplexRecipeOutputs,
       this.globalConfig.resources.resourcePrecision,
     );
   }
 
   getBuildingCostsScaled(): ResourceInputs {
     return scaleResourceInputs(
-      this.globalConfig.buildings.buildingCosts,
+      this.globalConfig.buildings.complexBuildingCosts,
       this.globalConfig.resources.resourcePrecision,
     );
   }
 
   getResourceInputsScaled(): ResourceInputs {
     return scaleResourceInputs(
-      this.globalConfig.resources.resourceInputs,
+      this.globalConfig.resources.productionByComplexRecipe,
       this.globalConfig.resources.resourcePrecision,
     );
   }
@@ -194,7 +193,7 @@ export const setWorldConfig = async (config: Config) => {
   );
 };
 
-export const setProductionConfig = async (config: Config) => {
+export const SetResourceFactoryConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
   ⚡ RESOURCE PRODUCTION CONFIGURATION ⚡
@@ -202,30 +201,43 @@ export const setProductionConfig = async (config: Config) => {
   );
 
   const calldataArray = [];
-  const scaledResourceInputs = scaleResourceInputs(
-    config.config.resources.resourceInputs,
+
+  const scaledProductionByResourceRecipe = scaleResourceInputs(
+    config.config.resources.productionByComplexRecipe,
     config.config.resources.resourcePrecision,
   );
-  const scaledResourceOutputs = scaleResourceOutputs(
-    config.config.resources.resourceOutputs,
+  
+  const scaledProductionByResourceRecipeOutputs = scaleResourceOutputs(
+    config.config.resources.productionByComplexRecipeOutputs,
     config.config.resources.resourcePrecision,
   );
 
-  const scaledResourceProductionByLaborParams = scaleResourceProductionByLaborParams(
-    config.config.resources.resourceProductionByLaborParams,
+  const scaledProductionBySimpleRecipe = scaleResourceInputs(
+    config.config.resources.productionBySimpleRecipe,
     config.config.resources.resourcePrecision,
   );
+  
+  const scaledProductionBySimpleRecipeOutputs = scaleResourceOutputs(
+    config.config.resources.productionBySimpleRecipeOutputs,
+    config.config.resources.resourcePrecision,
+  );
+    
+  const scaledProductionOfLaborOutputs = scaleResourceOutputs(
+    config.config.resources.laborOutputPerResource,
+    config.config.resources.resourcePrecision,
+  );
+  
 
-  for (const resourceId of Object.keys(scaledResourceInputs) as unknown as ResourcesIds[]) {
-    const outputAmountPerBuildingPerTick = scaledResourceOutputs[resourceId];
-    const predefinedResourceBurnCost = scaledResourceInputs[resourceId];
-    const resourceProductionByLaborParams = scaledResourceProductionByLaborParams[resourceId];
+  for (const resourceId of Object.keys(scaledProductionByResourceRecipe) as unknown as ResourcesIds[]) {
     const calldata = {
       resource_type: resourceId,
-      realm_output_per_tick: outputAmountPerBuildingPerTick,
-      village_output_per_tick: outputAmountPerBuildingPerTick / 2,
-      predefined_resource_burn_cost: predefinedResourceBurnCost,
-      labor_burn_strategy: resourceProductionByLaborParams,
+      realm_output_per_second: scaledProductionByResourceRecipeOutputs[resourceId],
+      village_output_per_second: scaledProductionByResourceRecipeOutputs[resourceId] / 2,
+      labor_output_per_resource: scaledProductionOfLaborOutputs[resourceId],
+      resource_output_per_simple_input: scaledProductionBySimpleRecipeOutputs[resourceId],
+      simple_input_resources_list: scaledProductionBySimpleRecipe[resourceId],
+      resource_output_per_complex_input: scaledProductionByResourceRecipeOutputs[resourceId],
+      complex_input_resources_list: scaledProductionByResourceRecipe[resourceId]
     };
 
     calldataArray.push(calldata);
@@ -233,36 +245,42 @@ export const setProductionConfig = async (config: Config) => {
     console.log(
       chalk.cyan(`
     ┌─ ${chalk.yellow(ResourcesIds[calldata.resource_type])}
-    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for realm:`)} ${chalk.white(`${inGameAmount(calldata.realm_output_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
-    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for village:`)} ${chalk.white(`${inGameAmount(calldata.village_output_per_tick, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
-    │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
-    │     ${chalk.gray(``)} ${
-      calldata.labor_burn_strategy.resource_rarity === 0
-        ? chalk.red("Cannot be produced with labor")
-        : `
-    │     ${chalk.gray(`Resource Rarity:`)} ${chalk.white(` ${calldata.labor_burn_strategy.resource_rarity}`)}
-    │     ${chalk.gray(`Depreciation Rate:`)} ${chalk.white(` ${(calldata.labor_burn_strategy.depreciation_percent_num / calldata.labor_burn_strategy.depreciation_percent_denom) * 100}%`)}
-    │     ${chalk.gray(`Wheat Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.wheat_burn_per_labor, config.config))}
-    │     ${chalk.gray(`Fish Burn Per Labor:`)} ${chalk.white(inGameAmount(calldata.labor_burn_strategy.fish_burn_per_labor, config.config))}`
-    }
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for realm:`)} ${chalk.white(`${inGameAmount(calldata.realm_output_per_second, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
+    │  ${chalk.gray(`${ResourcesIds[calldata.resource_type]} produced per tick, per building for village:`)} ${chalk.white(`${inGameAmount(calldata.village_output_per_second, config.config)} ${chalk.yellow(ResourcesIds[calldata.resource_type])}`)}
+    │  ${chalk.gray(`${chalk.white(`${inGameAmount(calldata.resource_output_per_simple_input, config.config)}`)} ${chalk.yellow(`${ResourcesIds[calldata.resource_type]}`)} is produced, for every ${chalk.white(`1`)} labor given`)}
+    │  ${chalk.gray(`${chalk.white(`${inGameAmount(calldata.resource_output_per_complex_input, config.config)}`)} ${chalk.yellow(`${ResourcesIds[calldata.resource_type]}`)} is produced, for every ${chalk.white(`1`)} unit of complex resources given`)}
+    │  ${chalk.gray(`${chalk.white(`${inGameAmount(calldata.labor_output_per_resource, config.config)}`)}  ${chalk.yellow(`Labor`)} is produced, for every ${chalk.white(`1`)} ${chalk.yellow(`${ResourcesIds[calldata.resource_type]}`)} given`)} 
     │  ${chalk.gray(``)}
-    │  ${chalk.gray(`Using Multiple Resource Burn Production Strategy:`)}
+    │  ${chalk.gray(`Using Complex Burn Production Strategy:`)}
     │  ${
-      calldata.predefined_resource_burn_cost.length > 0
+      calldata.complex_input_resources_list.length > 0
         ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
-          calldata.predefined_resource_burn_cost
+          calldata.complex_input_resources_list
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : `    ${chalk.blue("Can't be produced with multiple resources")}`
+        : `    ${chalk.blue("Can't be produced with complex strategy")}`
+    }
+    │  ${chalk.gray(``)}
+    │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
+    │  ${
+      calldata.simple_input_resources_list.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
+          calldata.simple_input_resources_list
+            .map(
+              (c) => `
+    │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
+            )
+            .join("")
+        : `    ${chalk.blue("Can't be produced using labor")}`
     }
     └────────────────────────────────`),
     );
   }
 
-  const tx = await config.provider.set_production_config({ signer: config.account, calls: calldataArray });
+  const tx = await config.provider.set_resource_factory_config({ signer: config.account, calls: calldataArray });
 
   console.log(
     chalk.cyan(`
@@ -316,8 +334,10 @@ export const setBuildingConfig = async (config: Config) => {
   const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
   const buildingPopulation = config.config.buildings.buildingPopulation;
   const buildingCapacity = config.config.buildings.buildingCapacity;
-  const buildingCosts = config.config.buildings.buildingCosts;
-  const scaledBuildingCosts = scaleResourceInputs(buildingCosts, config.config.resources.resourcePrecision);
+  const complexBuildingCosts = config.config.buildings.complexBuildingCosts;
+  const scaledComplexBuildingCosts = scaleResourceInputs(complexBuildingCosts, config.config.resources.resourcePrecision);
+  const simpleBuildingCosts = config.config.buildings.simpleBuildingCost;
+  const scaledSimpleBuildingCosts = scaleResourceInputs(simpleBuildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
   const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
 
@@ -339,12 +359,15 @@ export const setBuildingConfig = async (config: Config) => {
   console.log(chalk.green(`    ✔ Base configuration complete `) + chalk.gray(tx.statusReceipt));
 
   // Non Resource Building Config
-  for (const buildingId of Object.keys(scaledBuildingCosts) as unknown as BuildingType[]) {
-    if (scaledBuildingCosts[buildingId].length !== 0) {
-      const costs = scaledBuildingCosts[buildingId];
+  for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
+      const costs = scaledComplexBuildingCosts[buildingId];
       const population = buildingPopulation[buildingId] ?? 0;
       const capacity = buildingCapacity[buildingId] ?? 0;
-
+      console.log(
+        chalk.cyan(`
+      🏗️  Complex Building Cost
+      ═══════════════════════════`),
+      );
       console.log(
         chalk.cyan(`
     ┌─ ${chalk.yellow(BuildingType[buildingId])}
@@ -372,20 +395,62 @@ export const setBuildingConfig = async (config: Config) => {
     │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     └────────────────────────────────`),
       );
-
-      const categoryTx = await config.provider.set_building_category_config({
-        signer: config.account,
-        building_category: buildingId,
-        cost_of_building: costs,
-        population_cost: buildingPopulation[buildingId] ?? 0,
-        capacity_grant: buildingCapacity[buildingId] ?? 0,
-      });
-
-      console.log(chalk.green(`    ✔ Category configuration complete `) + chalk.gray(categoryTx.statusReceipt));
+  
     }
-  }
 
-  console.log();
+      for (const buildingId of Object.keys(scaledSimpleBuildingCosts) as unknown as BuildingType[]) {
+          const costs = scaledSimpleBuildingCosts[buildingId];
+          const population = buildingPopulation[buildingId] ?? 0;
+          const capacity = buildingCapacity[buildingId] ?? 0;
+          console.log(
+            chalk.cyan(`
+          🏗️  Simple Building Cost
+          ═══════════════════════════`),
+          );
+          console.log(
+            chalk.cyan(`
+        ┌─ ${chalk.yellow(BuildingType[buildingId])}
+        │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[buildingResourceProduced[buildingId] as ResourcesIds])}
+        │  ${chalk.gray("Consumes")} ${chalk.white(population)} ${chalk.gray("population")}
+        │  ${chalk.gray("Adds")} ${chalk.white(capacity)} ${chalk.gray("capacity")}
+        │  ${chalk.gray("Building Costs (with ")}${chalk.white((buildingScalePercent / 10_000) * 100 + "%")}${chalk.gray(" increase per building):")}
+        │  
+        │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
+        │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
+        │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
+          { length: BUILDING_COST_DISPLAY_ROWS },
+          (_, i) => {
+            const buildingNum = i + 1;
+            const costsStr = costs
+              .map((c) => {
+                const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+                return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+              })
+              .join("");
+            return `
+        │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
+          },
+        ).join("")}
+        │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
+        └────────────────────────────────`),
+          );
+    }
+
+    const calldataArray = []
+
+    for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
+      calldataArray.push(
+        {
+          building_category: buildingId,
+          complex_building_cost: scaledComplexBuildingCosts[buildingId],
+          simple_building_cost: scaledSimpleBuildingCosts[buildingId],
+          population_cost: buildingPopulation[buildingId] ?? 0,
+          capacity_grant: buildingCapacity[buildingId] ?? 0,
+        }
+      )
+  }        
+  const categoryTx = await config.provider.set_building_category_config({signer: config.account, calls: calldataArray});
+  console.log(chalk.green(`   ✔ Category configuration complete `) + chalk.gray(categoryTx.statusReceipt));
 };
 
 export const setRealmUpgradeConfig = async (config: Config) => {

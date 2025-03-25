@@ -343,8 +343,8 @@ const MyLiquidity = ({
 
 const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }) => {
   const { setup } = useDojo();
-  const inputResources = configManager.resourceInputs[marketManager.resourceId];
-  const outputAmount = configManager.resourceOutput[marketManager.resourceId].amount;
+  const inputResources = configManager.complexSystemResourceInputs[marketManager.resourceId];
+  const outputAmount = configManager.complexSystemResourceOutput[marketManager.resourceId].amount;
 
   if (!inputResources?.length) return null;
   const totalPrice =

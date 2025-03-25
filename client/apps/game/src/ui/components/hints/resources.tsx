@@ -67,13 +67,13 @@ export const Resources = () => {
 const ResourceTable = () => {
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(configManager.resourceInputs) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(configManager.complexSystemResourceInputs) as unknown as ResourcesIds[]) {
       if (resourceId == ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
         amount: configManager.getResourceOutputs(resourceId),
         resource_type: resourceId,
-        cost: configManager.resourceInputs[resourceId].map((cost: any) => ({
+        cost: configManager.complexSystemResourceInputs[resourceId].map((cost: any) => ({
           ...cost,
           amount: multiplyByPrecision(cost.amount),
         })),

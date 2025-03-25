@@ -387,23 +387,19 @@ export interface SetTickConfigProps extends SystemSigner {
   tick_interval_in_seconds: num.BigNumberish;
 }
 
-export interface SetProductionConfigProps extends SystemSigner {
+export interface SetResourceFactoryConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    realm_output_per_tick: num.BigNumberish;
-    village_output_per_tick: num.BigNumberish;
-    labor_burn_strategy: LaborBurnProductionStrategy;
-    predefined_resource_burn_cost: ResourceCosts[];
+    realm_output_per_second: num.BigNumberish,
+    village_output_per_second: num.BigNumberish,
+    labor_output_per_resource: num.BigNumberish,
+    resource_output_per_simple_input: num.BigNumberish,
+    simple_input_resources_list: ResourceCosts[],
+    resource_output_per_complex_input: num.BigNumberish,
+    complex_input_resources_list: ResourceCosts[],
   }[];
 }
 
-interface LaborBurnProductionStrategy {
-  resource_rarity: num.BigNumberish;
-  depreciation_percent_num: num.BigNumberish;
-  depreciation_percent_denom: num.BigNumberish;
-  wheat_burn_per_labor: num.BigNumberish;
-  fish_burn_per_labor: num.BigNumberish;
-}
 
 export interface SetBankConfigProps extends SystemSigner {
   lp_fee_num: num.BigNumberish;
@@ -469,10 +465,13 @@ export interface SetBuildingConfigProps extends SystemSigner {
 }
 
 export interface SetBuildingCategoryConfigProps extends SystemSigner {
-  building_category: BuildingType;
-  cost_of_building: ResourceCosts[];
-  population_cost: num.BigNumberish;
-  capacity_grant: num.BigNumberish;
+  calls: {
+    building_category: BuildingType;
+    complex_building_cost: ResourceCosts[];
+    simple_building_cost: ResourceCosts[];
+    population_cost: num.BigNumberish;
+    capacity_grant: num.BigNumberish;
+  }[];
 }
 
 export interface setRealmUpgradeConfigProps extends SystemSigner {

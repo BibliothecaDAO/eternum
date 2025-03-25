@@ -2,11 +2,11 @@ import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
 import { getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
 import {
-  useBuildings,
-  useDojo,
-  usePlayerOwnedRealmsInfo,
-  usePlayerOwnedVillagesInfo,
-  useResourceManager,
+    useBuildings,
+    useDojo,
+    usePlayerOwnedRealmsInfo,
+    usePlayerOwnedVillagesInfo,
+    useResourceManager,
 } from "@bibliothecadao/react";
 import { useCallback, useMemo } from "react";
 import { getLaborConfig } from "../lib/labor";
@@ -29,7 +29,7 @@ export const useProduction = () => {
     setup: {
       components: { Resource },
       account: { account },
-      systemCalls: { burn_labor_resources_for_other_production, burn_other_predefined_resources_for_resources },
+      systemCalls: { burn_labor_for_resource_production, burn_resource_for_resource_production },
     },
   } = useDojo();
 
@@ -70,7 +70,7 @@ export const useProduction = () => {
   const startLaborProduction = useCallback(
     async (calldata: Omit<LaborProductionCalldata, "signer">) => {
       try {
-        await burn_labor_resources_for_other_production({
+        await burn_labor_for_resource_production({
           from_entity_id: calldata.entity_id,
           labor_amounts: calldata.resource_amounts,
           produced_resource_types: calldata.resource_types,
@@ -82,13 +82,13 @@ export const useProduction = () => {
         return false;
       }
     },
-    [burn_labor_resources_for_other_production, account],
+    [burn_labor_for_resource_production, account],
   );
 
   const startResourceProduction = useCallback(
     async (calldata: Omit<ResourceProductionCalldata, "signer">) => {
       try {
-        await burn_other_predefined_resources_for_resources({
+        await burn_resource_for_resource_production({
           from_entity_id: calldata.entity_id,
           produced_resource_types: [calldata.resource_type],
           production_tick_counts: [calldata.amount],
@@ -100,7 +100,7 @@ export const useProduction = () => {
         return false;
       }
     },
-    [burn_other_predefined_resources_for_resources, account],
+    [burn_resource_for_resource_production, account],
   );
 
   const pauseProduction = useCallback(async () => {

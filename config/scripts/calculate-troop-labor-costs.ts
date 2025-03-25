@@ -1,13 +1,13 @@
 import { ResourcesIds } from "@bibliothecadao/eternum";
 
-import { RESOURCE_PRODUCTION_INPUT_RESOURCES, RESOURCE_PRODUCTION_THROUGH_LABOR } from "../environments/utils/resource";
+import { RESOURCE_PRODUCTION_COMPLEX_SYSTEM, RESOURCE_PRODUCTION_INPUT_RESOURCES } from "../environments/utils/resource";
 
 // T1 Troop types we're calculating for
 const T1_TROOPS = [ResourcesIds.Paladin, ResourcesIds.Crossbowman, ResourcesIds.Knight];
 
 // Function to calculate labor cost for a specific resource
 function calculateLaborCostForResource(resourceId: ResourcesIds): number {
-  const laborParams = RESOURCE_PRODUCTION_THROUGH_LABOR[resourceId];
+  const laborParams = RESOURCE_PRODUCTION_COMPLEX_SYSTEM[resourceId];
 
   if (!laborParams) {
     return 0;

@@ -6,11 +6,11 @@ import { formatStringNumber } from "@/ui/utils/utils";
 import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  divideByPrecision,
-  findResourceById,
-  multiplyByPrecision,
-  RealmInfo,
-  ResourcesIds,
+    divideByPrecision,
+    findResourceById,
+    multiplyByPrecision,
+    RealmInfo,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
@@ -19,7 +19,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_resources_for_labor_production },
+      systemCalls: { burn_resource_for_labor_production },
     },
   } = useDojo();
 
@@ -39,7 +39,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     };
 
     try {
-      await burn_other_resources_for_labor_production(calldata);
+      await burn_resource_for_labor_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {

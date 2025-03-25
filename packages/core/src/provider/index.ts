@@ -996,12 +996,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, directions, building_category, signer } = props;
 
     // TOOODO: FIX
-    let use_labor = false;
+    let use_simple = false;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "create_building",
-      calldata: CallData.compile([entity_id, directions, building_category, use_labor]),
+      calldata: CallData.compile([entity_id, directions, building_category, use_simple]),
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -2011,29 +2011,28 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_production_config(props: SystemProps.SetProductionConfigProps) {
+  public async set_resource_factory_config(props: SystemProps.SetResourceFactoryConfigProps) {
     const { signer, calls } = props;
-
-    const productionCalldataArray = calls.map((call) => {
+    const resourceFactoryCalldataArray = calls.map((call) => {
       return {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-        entrypoint: "set_production_config",
+        entrypoint: "set_resource_factory_config",
         calldata: [
           call.resource_type,
-          call.realm_output_per_tick,
-          call.village_output_per_tick,
-          call.labor_burn_strategy.resource_rarity,
-          call.labor_burn_strategy.wheat_burn_per_labor,
-          call.labor_burn_strategy.fish_burn_per_labor,
-          call.labor_burn_strategy.depreciation_percent_num,
-          call.labor_burn_strategy.depreciation_percent_denom,
-          call.predefined_resource_burn_cost.length,
-          ...call.predefined_resource_burn_cost.flatMap(({ resource, amount }) => [resource, amount]),
+          call.realm_output_per_second,
+          call.village_output_per_second,
+          call.labor_output_per_resource,
+          call.resource_output_per_simple_input,
+          call.simple_input_resources_list.length,
+          ...call.simple_input_resources_list.flatMap(({ resource, amount }) => [resource, amount]),
+          call.resource_output_per_complex_input,
+          call.complex_input_resources_list.length,
+          ...call.complex_input_resources_list.flatMap(({ resource, amount }) => [resource, amount]),
         ],
       };
     });
 
-    return await this.executeAndCheckTransaction(signer, productionCalldataArray);
+    return await this.executeAndCheckTransaction(signer, resourceFactoryCalldataArray);
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
@@ -2174,19 +2173,24 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_building_category_config(props: SystemProps.SetBuildingCategoryConfigProps) {
-    const { building_category, cost_of_building, population_cost, capacity_grant, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_building_category_config",
-      calldata: [
-        building_category,
-        cost_of_building.length,
-        ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
-        population_cost,
-        capacity_grant,
-      ],
+    const { signer, calls } = props;
+    const calldataArray = calls.map((call) => {
+      return {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+        entrypoint: "set_building_category_config",
+        calldata: [
+          call.building_category,
+          call.complex_building_cost.length,
+          ...call.complex_building_cost.flatMap(({ resource, amount }) => [resource, amount]),
+          call.simple_building_cost.length,
+          ...call.simple_building_cost.flatMap(({ resource, amount }) => [resource, amount]),
+          call.population_cost,
+          call.capacity_grant,
+        ],
+      };
     });
+
+    return await this.executeAndCheckTransaction(signer, calldataArray);
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
@@ -2421,12 +2425,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async burn_other_resources_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
+  public async burn_resource_for_labor_production(props: SystemProps.BurnOtherResourcesForLaborProductionProps) {
     const { entity_id, resource_types, resource_amounts, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_other_resources_for_labor_production",
+      entrypoint: "burn_resource_for_labor_production",
       calldata: [entity_id, resource_types.length, ...resource_types, resource_amounts.length, ...resource_amounts],
     });
 
@@ -2454,12 +2458,12 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async burn_labor_resources_for_other_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
+  public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
     const { from_entity_id, labor_amounts, produced_resource_types, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_labor_resources_for_other_production",
+      entrypoint: "burn_labor_for_resource_production",
       calldata: [
         from_entity_id,
         labor_amounts.length,
@@ -2493,14 +2497,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async burn_other_predefined_resources_for_resources(
+  public async burn_resource_for_resource_production(
     props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
   ) {
     const { from_entity_id, produced_resource_types, production_tick_counts, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
-      entrypoint: "burn_other_predefined_resources_for_resources",
+      entrypoint: "burn_resource_for_resource_production",
       calldata: [
         from_entity_id,
         produced_resource_types.length,

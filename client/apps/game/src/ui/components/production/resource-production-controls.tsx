@@ -37,7 +37,7 @@ export const ResourceProductionControls = ({
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
+      systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
     },
   } = useDojo();
 
@@ -56,7 +56,7 @@ export const ResourceProductionControls = ({
     };
 
     try {
-      await burn_other_predefined_resources_for_resources(calldata);
+      await burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -79,7 +79,7 @@ export const ResourceProductionControls = ({
       };
 
       try {
-        await burn_labor_resources_for_other_production(calldata);
+        await burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
       } finally {
@@ -89,7 +89,7 @@ export const ResourceProductionControls = ({
   };
 
   const outputResource = useMemo(() => {
-    return configManager.resourceOutput[selectedResource];
+    return configManager.complexSystemResourceOutput[selectedResource];
   }, [selectedResource]);
 
   const resourceManager = useResourceManager(realm.entityId);
@@ -99,7 +99,7 @@ export const ResourceProductionControls = ({
 
     const balances: Record<number, number> = {};
     const allResources = [
-      ...configManager.resourceInputs[selectedResource],
+      ...configManager.complexSystemResourceInputs[selectedResource],
       { resource: selectedResource, amount: 1 },
       { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
@@ -121,7 +121,7 @@ export const ResourceProductionControls = ({
 
   const currentInputs = useMemo(() => {
     return useRawResources
-      ? configManager.resourceInputs[selectedResource].map(({ resource, amount }) => ({
+      ? configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
           resource,
           amount: amount / outputResource.amount,
         }))

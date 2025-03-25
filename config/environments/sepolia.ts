@@ -44,8 +44,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    buildingCosts: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.buildings.buildingCosts).map(([key, value]) => [
+    complexBuildingCosts: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.buildings.complexBuildingCosts).map(([key, value]) => [
         key,
         value.map((cost: ResourceCost) => ({
           resource: cost.resource,
@@ -60,8 +60,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   resources: {
     ...CommonEternumGlobalConfig.resources,
-    resourceOutputs: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.resources.resourceOutputs).map(([key, value]) => [key, value * 10]),
+    productionByComplexRecipeOutputs: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs).map(([key, value]) => [key, value * 10]),
     ),
   },
   // no grace period

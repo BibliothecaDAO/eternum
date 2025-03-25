@@ -11,9 +11,9 @@ export const Buildings = () => {
     for (const buildingId of Object.keys(BuildingType) as unknown as BuildingType[]) {
       if (isNaN(Number(buildingId))) continue;
 
-      const buildingCosts = configManager.buildingCosts[buildingId];
+      const complexBuildingCosts = configManager.complexBuildingCosts[buildingId];
 
-      if (buildingCosts.length !== 0) {
+      if (complexBuildingCosts.length !== 0) {
         const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
         const population = buildingPopCapacityConfig.population_cost;
         const capacity = buildingPopCapacityConfig.capacity_grant;
@@ -23,7 +23,7 @@ export const Buildings = () => {
           building_capacity: capacity,
           building_population: population,
           building_resource_type: configManager.getResourceBuildingProduced(buildingId),
-          cost_of_building: buildingCosts.map((cost) => {
+          cost_of_building: complexBuildingCosts.map((cost) => {
             return {
               ...cost,
               amount: cost.amount,

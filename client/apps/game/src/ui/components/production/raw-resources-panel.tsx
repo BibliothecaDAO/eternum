@@ -23,7 +23,7 @@ export const RawResourcesPanel = ({
   outputResource,
 }: RawResourcesPanelProps) => {
   const rawInputResources = useMemo(() => {
-    return configManager.resourceInputs[selectedResource].map((resource) => ({
+    return configManager.complexSystemResourceInputs[selectedResource].map((resource) => ({
       ...resource,
       amount: resource.amount / outputResource.amount,
     }));

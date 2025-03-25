@@ -3,7 +3,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
-import { ID, ProductionByLaborParams, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
+import { ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 import { unpackValue } from "./packed-data";
 
 // used for entities that don't have any production
@@ -149,15 +149,3 @@ export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplie
   return multipliedCosts;
 };
 
-export const scaleResourceProductionByLaborParams = (config: ProductionByLaborParams, multiplier: number) => {
-  let multipliedValues: ProductionByLaborParams = {};
-
-  for (let buildingType in config) {
-    multipliedValues[buildingType] = {
-      ...config[buildingType],
-      wheat_burn_per_labor: config[buildingType].wheat_burn_per_labor * multiplier,
-      fish_burn_per_labor: config[buildingType].fish_burn_per_labor * multiplier,
-    };
-  }
-  return multipliedValues;
-};

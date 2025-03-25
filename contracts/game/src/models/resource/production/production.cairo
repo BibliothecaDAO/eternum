@@ -4,8 +4,7 @@ use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{LaborBurnPrStrategy, MultipleResourceBurnPrStrategy, ProductionConfig};
-use s1_eternum::models::config::{TickImpl};
+use s1_eternum::models::config::{ResourceFactoryConfig};
 
 use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
@@ -101,7 +100,7 @@ pub impl ProductionImpl of ProductionTrait {
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
         let start_at = resource.production.last_updated_at;
 
-        // last updated tick must always be updated
+        // last updated time must always be updated
         resource.production.set_last_updated_at(now);
 
         // ensure lords can not be produced
@@ -134,21 +133,24 @@ pub impl ProductionImpl of ProductionTrait {
 
 #[generate_trait]
 pub impl ProductionStrategyImpl of ProductionStrategyTrait {
-    // burn other resource for production of labor
-    fn burn_other_resource_for_labor_production(
+    // burn resource for production of labor
+    fn burn_resource_for_labor_production(
         ref world: WorldStorage, from_entity_id: ID, from_resource_type: u8, from_resource_amount: u128,
     ) {
         assert!(from_resource_type.is_non_zero(), "wrong resource type");
         assert!(from_resource_amount.is_non_zero(), "zero resource amount");
+        assert!(
+            from_resource_amount % RESOURCE_PRECISION == 0,
+            "resource amount must be exactly divisible by RESOURCE_PRECISION",
+        );
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
-        // ensure rarity has been set for resource
-        let from_resource_production_config: ProductionConfig = world.read_model(from_resource_type);
-        let from_resource_labor_burn_strategy: LaborBurnPrStrategy = from_resource_production_config
-            .labor_burn_strategy;
-        assert!(
-            from_resource_labor_burn_strategy.resource_rarity.is_non_zero(), "resource can't be converted to labor",
-        );
+        // ensure cost has been set for resource
+        let from_resource_factory_config: ResourceFactoryConfig = world.read_model(from_resource_type);
+        let from_resource_amount_without_precision = from_resource_amount / RESOURCE_PRECISION;
+        let produced_labor_amount: u128 = from_resource_factory_config.labor_output_per_resource.into()
+            * from_resource_amount_without_precision;
+        assert!(produced_labor_amount.is_non_zero(), "resource can't be converted to labor");
 
         // remove the resource amount from from_resource balance
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
@@ -159,13 +161,12 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         from_resource.spend(from_resource_amount, ref from_entity_weight, resource_weight_grams);
         from_resource.store(ref world);
 
-        // increase labor balance of the entity
+        // add produceable labor amount to factory
         let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
         let mut from_labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
-        let produced_labor_amount: u128 = from_resource_amount * from_resource_labor_burn_strategy.resource_rarity;
         from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
         from_labor_resource.production = from_labor_resource_production;
         from_labor_resource.store(ref world);
@@ -176,71 +177,48 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
     }
 
     // burn labor for production of some other resource
-    fn burn_labor_resource_for_other_production(
+    fn burn_labor_for_resource_production(
         ref world: WorldStorage, from_entity_id: ID, labor_amount: u128, produced_resource_type: u8,
     ) {
         assert!(labor_amount % RESOURCE_PRECISION == 0, "labor amount must be exactly divisible by RESOURCE_PRECISION");
         assert!(labor_amount.is_non_zero(), "zero labor amount");
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
-        // burn labor from balance
+        // ensure resource can be converted to labor
+        let produced_resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
+        let labor_amount_without_precision = labor_amount / RESOURCE_PRECISION;
+        let produced_resource_amount: u128 = produced_resource_factory_config.output_per_simple_input.into()
+            * labor_amount_without_precision;
+        assert!(produced_resource_amount.is_non_zero(), "can't convert labor to specified resource");
+
+        // burn labor and food from balance
+        let produced_resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
+        let payment_resources_id = produced_resource_factory_config.simple_input_list_id;
+        let payment_resources_count = produced_resource_factory_config.simple_input_list_count;
+        assert!(payment_resources_count.is_non_zero(), "labor can't be produced from specified resource");
+
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
-        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-        let mut labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
-        );
-        labor_resource.spend(labor_amount, ref from_entity_weight, labor_resource_weight_grams);
-        labor_resource.store(ref world);
+        for i in 0..payment_resources_count {
+            let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
+            let payment_resource_type = payment_resource_cost.resource_type;
+            let payment_resource_amount = payment_resource_cost.amount;
+            assert!(payment_resource_amount.is_non_zero(), "payment resource cost is 0");
 
-        // ensure rarity has been set for resource
-        let produced_resource_production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let produced_resource_labor_burn_strategy: LaborBurnPrStrategy = produced_resource_production_config
-            .labor_burn_strategy;
-        assert!(
-            produced_resource_labor_burn_strategy.resource_rarity.is_non_zero(),
-            "can't convert labor to specified resource",
-        );
+            // make payment for produced resource
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, payment_resource_type);
+            let mut payment_resource = SingleResourceStoreImpl::retrieve(
+                ref world, from_entity_id, payment_resource_type, ref from_entity_weight, resource_weight_grams, true,
+            );
+            payment_resource
+                .spend(
+                    payment_resource_amount * labor_amount_without_precision,
+                    ref from_entity_weight,
+                    resource_weight_grams,
+                );
+            payment_resource.store(ref world);
+        };
 
-        // burn wheat and fish
-        let wheat_burn_amount: u128 = labor_amount
-            / RESOURCE_PRECISION
-            * produced_resource_labor_burn_strategy.wheat_burn_per_labor;
-        let fish_burn_amount: u128 = labor_amount
-            / RESOURCE_PRECISION
-            * produced_resource_labor_burn_strategy.fish_burn_per_labor;
-
-        // spend wheat resource
-        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::WHEAT, ref from_entity_weight, wheat_weight_grams, true,
-        );
-        wheat_resource.spend(wheat_burn_amount, ref from_entity_weight, wheat_weight_grams);
-        wheat_resource.store(ref world);
-
-        // spend fish resource
-        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleResourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::FISH, ref from_entity_weight, fish_weight_grams, true,
-        );
-        fish_resource.spend(fish_burn_amount, ref from_entity_weight, fish_weight_grams);
-        fish_resource.store(ref world);
-
-        // get the amount of produced resource the specified labor can create
-        let produced_resource_rarity: u128 = produced_resource_labor_burn_strategy.resource_rarity;
-        let produced_resource_depreciation_num: u128 = produced_resource_labor_burn_strategy
-            .depreciation_percent_num
-            .into();
-        let produced_resource_depreciation_denom: u128 = produced_resource_labor_burn_strategy
-            .depreciation_percent_denom
-            .into();
-        let produced_resource_depreciation_diff: u128 = (produced_resource_depreciation_denom
-            - produced_resource_depreciation_num);
-        let produced_resource_amount: u128 = (labor_amount
-            * produced_resource_depreciation_diff
-            / produced_resource_rarity
-            / produced_resource_depreciation_denom);
-
-        // add produced resource amount to factory
+        // add produceable resource amount to factory
         let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
         let mut produced_resource = SingleResourceStoreImpl::retrieve(
             ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
@@ -258,7 +236,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
 
     // burn multiple other predefined resources for production of one resource
     // e.g burn stone, coal and copper for production of gold
-    fn burn_other_predefined_resources_for_resource(
+    fn burn_resource_for_resource_production(
         ref world: WorldStorage, from_entity_id: ID, produced_resource_type: u8, production_seconds: u128,
     ) {
         assert!(produced_resource_type.is_non_zero(), "wrong resource type");
@@ -266,29 +244,26 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         assert!(from_entity_id.is_non_zero(), "zero entity id");
 
         // ensure there is a config for this labor resource
-        let produced_resource_production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let produced_resource_multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy =
-            produced_resource_production_config
-            .multiple_resource_burn_strategy;
-        let other_resources_count = produced_resource_multiple_resource_burn_strategy.required_resources_count;
-        let other_resources_id = produced_resource_multiple_resource_burn_strategy.required_resources_id;
-        assert!(other_resources_count.is_non_zero(), "specified resource can't be produced from other resources");
+        let produced_resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
+        let payment_resources_id = produced_resource_factory_config.complex_input_list_id;
+        let payment_resources_count = produced_resource_factory_config.complex_input_list_count;
+        assert!(payment_resources_count.is_non_zero(), "specified resource can't be produced from non labor resources");
 
         let mut from_entity_weight: Weight = WeightStoreImpl::retrieve(ref world, from_entity_id);
-        for i in 0..other_resources_count {
-            let other_resource_cost: ResourceList = world.read_model((other_resources_id, i));
-            let other_resource_type = other_resource_cost.resource_type;
-            let other_resource_amount = other_resource_cost.amount;
-            assert!(other_resource_amount.is_non_zero(), "specified resource cost is 0");
+        for i in 0..payment_resources_count {
+            let payment_resource_cost: ResourceList = world.read_model((payment_resources_id, i));
+            let payment_resource_type = payment_resource_cost.resource_type;
+            let payment_resource_amount = payment_resource_cost.amount;
+            assert!(payment_resource_amount.is_non_zero(), "payment resource cost is 0");
 
             // make payment for produced resource
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, other_resource_type);
-            let mut other_resource = SingleResourceStoreImpl::retrieve(
-                ref world, from_entity_id, other_resource_type, ref from_entity_weight, resource_weight_grams, true,
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, payment_resource_type);
+            let mut payment_resource = SingleResourceStoreImpl::retrieve(
+                ref world, from_entity_id, payment_resource_type, ref from_entity_weight, resource_weight_grams, true,
             );
-            other_resource
-                .spend(other_resource_amount * production_seconds, ref from_entity_weight, resource_weight_grams);
-            other_resource.store(ref world);
+            payment_resource
+                .spend(payment_resource_amount * production_seconds, ref from_entity_weight, resource_weight_grams);
+            payment_resource.store(ref world);
         };
 
         // add produced resource amount to factory
@@ -302,8 +277,8 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
-        // produceable amount should be same for realm and village. village output is just slower
-        let produceable_amount = production_seconds * produced_resource_production_config.realm_output_per_tick.into();
+        let produceable_amount = production_seconds
+            * produced_resource_factory_config.output_per_complex_input.into();
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
