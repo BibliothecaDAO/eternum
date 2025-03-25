@@ -117,8 +117,6 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
     [defenseTroops],
   );
 
-  console.log({ cooldownSlots });
-
   return (
     <div className="p-3 bg-brown-900/80 rounded-lg border border-gold/10">
       <div className="flex justify-end">
