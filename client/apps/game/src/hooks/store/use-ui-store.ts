@@ -142,6 +142,7 @@ export const useUIStore = create(
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),
     ...createWorldStoreSlice(set),
+    // labor
     useSimpleCost: true,
     setUseSimpleCost: (useSimpleCost: boolean) => set({ useSimpleCost }),
   })),
