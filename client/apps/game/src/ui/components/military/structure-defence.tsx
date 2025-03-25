@@ -65,7 +65,7 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 
   const dojo = useDojo();
-  const armyManager = new ArmyManager(dojo.setup.network.provider, dojo.setup.components, structureId);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structureId);
 
   useEffect(() => {
     setDefenseTroops(troops);
@@ -116,8 +116,6 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
     },
     [defenseTroops],
   );
-
-  console.log({ cooldownSlots });
 
   return (
     <div className="p-3 bg-brown-900/80 rounded-lg border border-gold/10">

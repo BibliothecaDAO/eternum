@@ -13,13 +13,17 @@ import {
   EntityType,
   findResourceById,
   getAddressNameFromEntity,
+  getEntityIdFromKeys,
   getTotalResourceWeightKg,
+  isMilitaryResource,
   multiplyByPrecision,
   ResourcesIds,
+  StructureType,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ONE_MONTH = 2628000;
@@ -249,10 +253,6 @@ const OrderRow = memo(
       [entityId, offer],
     );
 
-    const returnResources = useMemo(() => {
-      return [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
-    }, [offer]);
-
     const [loading, setLoading] = useState(false);
 
     const isSelf = useMemo(() => {
@@ -365,6 +365,79 @@ const OrderRow = memo(
       }
     };
 
+    const renderConfirmationPopup = useCallback(() => {
+      const isVillageAndMilitaryResource =
+        getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+          StructureType.Village &&
+        (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId));
+
+      return (
+        <ConfirmationPopup
+          title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
+          onConfirm={isSelf ? onCancel : onAccept}
+          onCancel={() => setConfirmOrderModal(false)}
+          isLoading={loading}
+          disabled={
+            isSelf
+              ? false
+              : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
+          }
+        >
+          {isSelf ? (
+            <div className="p-4 text-center">
+              <p>Are you sure you want to cancel this order?</p>
+            </div>
+          ) : (
+            <div className="p-4 text-center">
+              <div className="flex gap-3 mb-4">
+                <NumberInput
+                  value={inputValue}
+                  className="w-full"
+                  onChange={setInputValue}
+                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+                />
+                <Button
+                  onClick={() =>
+                    setInputValue(
+                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                    )
+                  }
+                >
+                  Max
+                </Button>
+              </div>
+              <p className="mb-2">
+                <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+                <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+                <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
+              </p>
+              <div className="flex justify-between mt-4">
+                <div>Donkeys Required</div>
+                <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                  {donkeysNeeded} [{donkeyBalance}]
+                </div>
+              </div>
+            </div>
+          )}
+        </ConfirmationPopup>
+      );
+    }, [
+      isSelf,
+      isBuy,
+      donkeysNeeded,
+      donkeyBalance,
+      loading,
+      inputValue,
+      getsDisplayNumber,
+      resourceBalanceRatio,
+      lordsBalanceRatio,
+      getDisplayResource,
+      calculatedLords,
+      calculatedResourceAmount,
+      onCancel,
+      onAccept,
+    ]);
+
     return (
       <div
         key={offer.tradeId}
@@ -415,52 +488,7 @@ const OrderRow = memo(
             {accountName} ({offer.originName})
           </div>
         </div>
-        {confirmOrderModal && (
-          <ConfirmationPopup
-            title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
-            onConfirm={isSelf ? onCancel : onAccept}
-            onCancel={() => setConfirmOrderModal(false)}
-            isLoading={loading}
-            disabled={isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
-          >
-            {isSelf ? (
-              <div className="p-4 text-center">
-                <p>Are you sure you want to cancel this order?</p>
-              </div>
-            ) : (
-              <div className="p-4 text-center">
-                <div className="flex gap-3 mb-4">
-                  <NumberInput
-                    value={inputValue}
-                    className="w-full"
-                    onChange={setInputValue}
-                    max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
-                  />
-                  <Button
-                    onClick={() =>
-                      setInputValue(
-                        divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
-                      )
-                    }
-                  >
-                    Max
-                  </Button>
-                </div>
-                <p className="mb-2">
-                  <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-                  <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-                  <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
-                </p>
-                <div className="flex justify-between mt-4">
-                  <div>Donkeys Required</div>
-                  <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-                    {donkeysNeeded} [{donkeyBalance}]
-                  </div>
-                </div>
-              </div>
-            )}
-          </ConfirmationPopup>
-        )}
+        {confirmOrderModal && renderConfirmationPopup()}
       </div>
     );
   },
@@ -480,9 +508,11 @@ const OrderCreation = memo(
     const {
       account: { account },
       setup: {
+        components,
         systemCalls: { create_order },
       },
     } = useDojo();
+
     useEffect(() => {
       setBid(String(lords / resource));
     }, [resource, lords]);
@@ -585,6 +615,37 @@ const OrderCreation = memo(
       return donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
+    const renderConfirmationPopupCreateOrder = useCallback(() => {
+      const isVillageAndMilitaryResource =
+        getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+          StructureType.Village && isMilitaryResource(resourceId);
+
+      return (
+        <ConfirmationPopup
+          title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
+          onConfirm={createOrder}
+          onCancel={() => setShowConfirmation(false)}
+          isLoading={loading}
+          disabled={isVillageAndMilitaryResource}
+        >
+          <div className="p-4 text-center">
+            <p className="mb-4">
+              Villages cannot buy or sell military resources. You can only transfer them with your connected realm.
+            </p>
+            <div className="flex flex-col gap-2">
+              <div>
+                Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+              </div>
+              <div>Price: {lords.toLocaleString()} Lords</div>
+              <div>
+                Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
+              </div>
+            </div>
+          </div>
+        </ConfirmationPopup>
+      );
+    }, [isBuy, createOrder, loading, setShowConfirmation]);
+
     return (
       <div
         className={`flex justify-between p-4 text-xl flex-wrap mt-auto bg-gold/5 border-gold/10 border rounded-xl ${
@@ -675,28 +736,7 @@ const OrderCreation = memo(
             Create {isBuy ? "Buy " : "Sell "} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
           </Button>
         </div>
-
-        {showConfirmation && (
-          <ConfirmationPopup
-            title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
-            onConfirm={createOrder}
-            onCancel={() => setShowConfirmation(false)}
-            isLoading={loading}
-          >
-            <div className="p-4 text-center">
-              <p className="mb-4">Are you sure you want to create this order?</p>
-              <div className="flex flex-col gap-2">
-                <div>
-                  Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
-                </div>
-                <div>Price: {lords.toLocaleString()} Lords</div>
-                <div>
-                  Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
-                </div>
-              </div>
-            </div>
-          </ConfirmationPopup>
-        )}
+        {showConfirmation && renderConfirmationPopupCreateOrder()}
       </div>
     );
   },

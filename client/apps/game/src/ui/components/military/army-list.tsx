@@ -55,8 +55,8 @@ export const EntityArmyList = ({
 
   const armyManager = useMemo(() => {
     if (!structure.entity_id) return null;
-    return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.entity_id);
-  }, [structure.entity_id, dojo.network.provider, dojo.setup.components]);
+    return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
+  }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
 
   const name = useMemo(
     () => getEntityName(structure.entity_id, dojo.setup.components),

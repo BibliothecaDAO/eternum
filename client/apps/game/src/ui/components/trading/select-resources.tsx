@@ -4,7 +4,16 @@ import ListSelect from "@/ui/elements/list-select";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { divideByPrecision, getBalance, ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  canTransferMilitaryResources,
+  divideByPrecision,
+  getBalance,
+  ID,
+  isMilitaryResource,
+  RESOURCE_TIERS,
+  resources,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
@@ -14,16 +23,22 @@ export const SelectResources = ({
   selectedResourceAmounts,
   setSelectedResourceAmounts,
   entity_id,
+  toEntityId,
 }: {
   selectedResourceIds: any;
   setSelectedResourceIds: any;
   selectedResourceAmounts: any;
   setSelectedResourceAmounts: any;
   entity_id: ID;
+  toEntityId: ID;
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const { playResourceSound } = usePlayResourceSound();
+
+  const canTransferMilitary = useMemo(() => {
+    return canTransferMilitaryResources(entity_id, toEntityId, dojo.setup.components);
+  }, [entity_id, toEntityId, dojo.setup.components]);
 
   const orderedResources = useMemo(() => {
     return Object.values(RESOURCE_TIERS)
@@ -31,8 +46,11 @@ export const SelectResources = ({
       .map((resourceId) => ({
         id: resourceId,
         trait: ResourcesIds[resourceId],
-      }));
-  }, []);
+      }))
+      .filter((res) => {
+        return canTransferMilitary || !isMilitaryResource(res.id);
+      });
+  }, [canTransferMilitary]);
 
   const unselectedResources = useMemo(
     () => orderedResources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -50,6 +68,13 @@ export const SelectResources = ({
 
   return (
     <div className="items-center col-span-4 space-y-2 p-3">
+      {!canTransferMilitary && (
+        <div className="bg-red-500/20 border border-red-500/40 p-3 rounded-md mb-4">
+          <p className="text-red-400 text-sm">
+            Military resources can only be transferred between a village and its connected realm.
+          </p>
+        </div>
+      )}
       {selectedResourceIds.map((id: any, index: any) => {
         const resource = getBalance(entity_id, id, currentDefaultTick, dojo.setup.components);
 

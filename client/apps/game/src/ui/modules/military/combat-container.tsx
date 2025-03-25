@@ -358,7 +358,7 @@ export const CombatContainer = ({
     if (attackerType !== AttackerType.Structure || structureGuards.length === 0) return null;
 
     return (
-      <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm mb-4">
+      <div className="p-3 sm:p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm mb-4 overflow-hidden">
         <h3 className="text-lg font-semibold text-gold mb-3">Select Attacking Troops</h3>
         <div className="flex flex-wrap gap-2">
           {structureGuards.map((guard) => (
@@ -396,7 +396,7 @@ export const CombatContainer = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 mx-auto">
+    <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
       <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
         <div className="flex items-center justify-between">
@@ -414,7 +414,7 @@ export const CombatContainer = ({
       {/* Troop Selector for Structure */}
       {TroopSelector()}
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Attacker Panel */}
         <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
           <div className="relative z-10">
@@ -481,9 +481,11 @@ export const CombatContainer = ({
 
       {/* Battle Results */}
       {targetArmyData && remainingTroops && attackerArmyData && (
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg">
-          <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Battle Prediction</h3>
-          <div className="grid grid-cols-2 gap-8">
+        <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg overflow-hidden">
+          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4">
+            Battle Prediction
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
               {
                 label: "Attacker",
@@ -532,7 +534,7 @@ export const CombatContainer = ({
             ].map(({ label, troops, isWinner, originalTroops, currentStamina, newStamina }) => (
               <div
                 key={label}
-                className="relative p-4 rounded-lg border border-gold/10"
+                className="relative p-3 sm:p-4 rounded-lg border border-gold/10 overflow-hidden"
                 style={{
                   backgroundImage: originalTroops
                     ? `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(
@@ -544,17 +546,17 @@ export const CombatContainer = ({
                   backgroundPosition: "center",
                 }}
               >
-                <div className="relative z-10 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-xl text-gold">{label}</h4>
+                <div className="relative z-10 space-y-3 sm:space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="font-bold text-lg sm:text-xl text-gold">{label}</h4>
                     {isWinner && (
-                      <span className="px-2 py-1 bg-green-900/50 text-green-400 text-sm font-medium rounded border border-green-400/30">
+                      <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs sm:text-sm font-medium rounded border border-green-400/30">
                         Victory!
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="text-gold/80">
                       <div className="text-sm font-medium mb-1">Remaining Forces</div>
                       <div className="text-xl font-bold flex items-baseline">

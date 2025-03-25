@@ -14,21 +14,26 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
+  getEntityIdFromKeys,
   ID,
+  isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
   RESOURCE_TIERS,
   Resources,
   resources,
   ResourcesIds,
+  setup,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
-    setup,
+    setup: { components, systemCalls },
   } = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
@@ -47,8 +52,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
-    [setup, resourceId, account.address],
+    () => new MarketManager(components, ContractAddress(account.address), resourceId),
+    [components, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -65,11 +70,11 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   }, [marketManager.resourceId]);
 
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, setup.components).balance,
+    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components).balance,
     [entityId, currentDefaultTick, getBalance],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, currentDefaultTick, setup.components).balance,
+    () => getBalance(entityId, resourceId, currentDefaultTick, components).balance,
     [entityId, resourceId, currentDefaultTick, getBalance],
   );
 
@@ -87,9 +92,9 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   const onSwap = useCallback(() => {
     setIsLoading(true);
-    const operation = isBuyResource ? setup.systemCalls.buy_resources : setup.systemCalls.sell_resources;
+    const operation = isBuyResource ? systemCalls.buy_resources : systemCalls.sell_resources;
 
-    const closestBank = getClosestBank(entityId, setup.components);
+    const closestBank = getClosestBank(entityId, components);
 
     if (!closestBank) return;
 
@@ -200,7 +205,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     ],
   );
 
-  const renderConfirmationPopup = useMemo(() => {
+  const renderConfirmationPopup = useCallback(() => {
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
@@ -210,19 +215,28 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
 
-    const closestBank = getClosestBank(entityId, setup.components);
+    const closestBank = getClosestBank(entityId, components);
 
     if (!closestBank) return;
+
+    const isVillageAndMilitaryResource =
+      getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup
         title="Confirm Swap"
         warning={warningMessage}
-        disabled={!canCarry}
+        disabled={!canCarry || isVillageAndMilitaryResource}
         isLoading={isLoading}
         onConfirm={onSwap}
         onCancel={() => setOpenConfirmation(false)}
       >
+        {isVillageAndMilitaryResource && (
+          <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
+            Military resources cannot be traded from village structures.
+          </div>
+        )}
         <div className="amm-swap-fee-selector">
           <div className=" flex items-center justify-center space-x-2">
             <div className="flex justify-center items-center text-danger">
@@ -345,7 +359,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           </div>
         </div>
       </div>
-      {openConfirmation && renderConfirmationPopup}
+      {openConfirmation && renderConfirmationPopup()}
     </div>
   );
 };
