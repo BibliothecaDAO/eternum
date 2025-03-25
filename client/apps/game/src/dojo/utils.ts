@@ -1,6 +1,7 @@
 import { ContractComponents } from "@bibliothecadao/eternum";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 
+// TODO: only workaround for now
 export const handleExplorerTroopsIfDeletion = async (
   entityUpdate: any,
   components: ContractComponents,
