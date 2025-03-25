@@ -21,8 +21,8 @@ export const formatArmies = (
   components: ClientComponents,
 ): ArmyInfo[] => {
   return armies
-    .map((armyEntityId) => {
-      const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntityId);
+    .map((armyEntity) => {
+      const explorerTroops = getComponentValue(components.ExplorerTroops, armyEntity);
       if (!explorerTroops) return undefined;
 
       const position = explorerTroops.coord;
@@ -30,11 +30,11 @@ export const formatArmies = (
       const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
       const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
 
-      const resource = getComponentValue(components.Resource, armyEntityId);
+      const resource = getComponentValue(components.Resource, armyEntity);
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
-      const name = getComponentValue(components.AddressName, armyEntityId);
+      const name = getComponentValue(components.AddressName, armyEntity);
       const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorerTroops.owner)]));
 
       const isMine = (structure?.owner || 0n) === playerAddress;

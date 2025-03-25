@@ -21,7 +21,7 @@ export const CombatModal = ({
 
   return (
     <ModalContainer size="large">
-      <div className="production-modal-selector container border mx-auto bg-dark border-gold/30 h-full rounded-2xl relative">
+      <div className="production-modal-selector container border mx-auto bg-dark border-gold/30 h-full rounded-2xl relative flex flex-col">
         {/* Tab Selection */}
         <div className="flex justify-center border-b border-gold/30">
           <div className="flex">
@@ -40,7 +40,7 @@ export const CombatModal = ({
         </div>
 
         {/* Content */}
-        <div className="h-full col-span-12 w-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
             {activeTab === ModalTab.Combat ? (
               <CombatContainer attackerEntityId={attackerEntityId} targetHex={targetHex} />

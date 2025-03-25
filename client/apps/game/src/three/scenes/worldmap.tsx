@@ -293,11 +293,7 @@ export default class WorldmapScene extends HexagonScene {
     // can only move on explored hexes
     const isExplored = ActionPaths.getActionType(actionPath) === ActionType.Move;
     if (actionPath.length > 0) {
-      const armyActionManager = new ArmyActionManager(
-        this.dojo.components,
-        this.dojo.network.provider,
-        selectedEntityId,
-      );
+      const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       playSound(soundSelector.unitMarching1, this.state.isSoundOn, this.state.effectsLevel);
       armyActionManager.moveArmy(account!, actionPath, isExplored, getBlockTimestamp().currentArmiesTick);
       this.state.updateEntityActionHoveredHex(null);
@@ -352,7 +348,7 @@ export default class WorldmapScene extends HexagonScene {
   private onArmySelection(selectedEntityId: ID, playerAddress: ContractAddress) {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
 
-    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.network.provider, selectedEntityId);
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
@@ -440,7 +436,8 @@ export default class WorldmapScene extends HexagonScene {
     // Remove from old position if it changed
     if (
       oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row || this.armyHexes.get(oldPos.col)?.get(oldPos.row))
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
     }

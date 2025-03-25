@@ -81,24 +81,6 @@ export class SystemManager {
           callback,
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-              const newState = update.value[0] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-              const prevState = update.value[1] as ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
-
-              if (!newState.explorer_id) {
-                if (prevState && prevState.explorer_id) {
-                  return {
-                    entityId: prevState.explorer_id,
-                    hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
-                    order: 0,
-                    owner: { address: 0n, ownerName: "", guildName: "" },
-                    troopType: TroopType.Knight,
-                    troopTier: TroopTier.T1,
-                    deleted: true,
-                  };
-                }
-                return;
-              }
-
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer) return;
 
@@ -136,6 +118,7 @@ export class SystemManager {
                 owner: { address: owner || 0n, ownerName, guildName },
                 troopType: explorer.troops.category as TroopType,
                 troopTier: explorer.troops.tier as TroopTier,
+                deleted: explorer.troops.count === 0n,
               };
             }
           },

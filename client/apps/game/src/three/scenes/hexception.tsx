@@ -323,7 +323,6 @@ export default class HexceptionScene extends HexagonScene {
             useUIStore.getState().structureEntityId,
             buildingType.type,
             normalizedCoords,
-            buildingType.resource,
           );
         } catch (error) {
           console.log("catched error so removing building", error);

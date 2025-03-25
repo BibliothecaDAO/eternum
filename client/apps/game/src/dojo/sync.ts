@@ -11,12 +11,12 @@ import {
 import { Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
-import { debounce } from "lodash";
 import {
     debouncedGetDonkeysAndArmiesFromTorii,
     debouncedGetEntitiesFromTorii,
     debouncedGetMarketFromTorii,
 } from "./debounced-queries";
+import { handleExplorerTroopsIfDeletion } from "./utils";
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
@@ -27,53 +27,98 @@ const syncEntitiesDebounced = async <S extends Schema>(
 ) => {
   if (logging) console.log("Starting syncEntities");
 
-  let entityBatch: Record<string, any> = {};
+  // Create a queue for updates
+  const updateQueue: Array<{ entityId: string; data: any }> = [];
+  let isProcessing = false;
 
   const {
     network: { contractComponents: components },
   } = setupResult;
 
-  const debouncedSetEntities = debounce(() => {
-    if (Object.keys(entityBatch).length > 0) {
-      if (logging) console.log("Applying batch update override check", entityBatch);
+  // Function to process the next item in the queue
+  const processNextInQueue = async () => {
+    if (updateQueue.length === 0 || isProcessing) return;
 
-      setEntities(entityBatch, components as any, logging);
+    isProcessing = true;
+    const batchSize = 10; // Process up to 10 updates at once
+    const batch: Record<string, any> = {};
 
-      entityBatch = {}; // Clear the batch after applying
+    // Take up to batchSize items from the queue
+    const itemsToProcess = updateQueue.splice(0, batchSize);
+
+    if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
+
+    // Prepare the batch
+    itemsToProcess.forEach(({ entityId, data }) => {
+      // Deep merge logic for each entity
+      if (batch[entityId]) {
+        batch[entityId] = mergeDeep(batch[entityId], data);
+      } else {
+        batch[entityId] = data;
+      }
+    });
+
+    if (Object.keys(batch).length > 0) {
+      try {
+        if (logging) console.log("Applying batch update", batch);
+
+        handleExplorerTroopsIfDeletion(batch, components, logging);
+        setEntities(batch, components as any, logging);
+      } catch (error) {
+        console.error("Error processing entity batch:", error);
+      }
     }
-  }, 200); // Increased debounce time to 1 second for larger batches
+
+    isProcessing = false;
+
+    // If there are more items, continue processing
+    if (updateQueue.length > 0) {
+      setTimeout(processNextInQueue, 0); // Use setTimeout to avoid blocking
+    }
+  };
+
+  // Deep merge to handle nested structs
+  const mergeDeep = (target: any, source: any) => {
+    if (!source) return target;
+    const output = { ...target };
+
+    Object.keys(source).forEach((key) => {
+      if (
+        source[key] &&
+        typeof source[key] === "object" &&
+        !Array.isArray(source[key]) &&
+        output[key] &&
+        typeof output[key] === "object" &&
+        !Array.isArray(output[key])
+      ) {
+        output[key] = mergeDeep(output[key], source[key]);
+      } else {
+        output[key] = source[key];
+      }
+    });
+
+    return output;
+  };
+
+  // Function to add update to queue and trigger processing
+  const queueUpdate = (entityId: string, data: any) => {
+    updateQueue.push({ entityId, data });
+
+    // Debounce the processing to batch updates
+    if (!isProcessing) {
+      setTimeout(processNextInQueue, 50); // Small delay to allow batching
+    }
+  };
 
   // Handle entity updates
   const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
     if (logging) console.log("Entity updated", fetchedEntities, data);
 
-    // Deep merge to handle nested structs
-    const mergeDeep = (target: any, source: any) => {
-      if (!source) return target;
-      const output = { ...target };
-
-      Object.keys(source).forEach((key) => {
-        if (
-          source[key] &&
-          typeof source[key] === "object" &&
-          !Array.isArray(source[key]) &&
-          output[key] &&
-          typeof output[key] === "object" &&
-          !Array.isArray(output[key])
-        ) {
-          output[key] = mergeDeep(output[key], source[key]);
-        } else {
-          output[key] = source[key];
-        }
-      });
-
-      return output;
-    };
-
-    // Merge new data with existing data for this entity, handling nested structs
-    entityBatch[fetchedEntities] = entityBatch[fetchedEntities] ? mergeDeep(entityBatch[fetchedEntities], data) : data;
-
-    debouncedSetEntities();
+    try {
+      queueUpdate(fetchedEntities, data);
+    } catch (error) {
+      console.error("Error queuing entity update:", error);
+    }
   });
 
   // Handle event message updates
@@ -83,12 +128,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
     (fetchedEntities: any, data: any) => {
       if (logging) console.log("Event message updated", fetchedEntities);
 
-      // Merge new data with existing data for this entity
-      entityBatch[fetchedEntities] = {
-        ...entityBatch[fetchedEntities],
-        ...data,
-      };
-      debouncedSetEntities();
+      try {
+        queueUpdate(fetchedEntities, data);
+      } catch (error) {
+        console.error("Error queuing event message update:", error);
+      }
     },
   );
 

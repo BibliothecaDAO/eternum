@@ -319,7 +319,11 @@ export class ArmyManager {
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
-    if (!path || path.length === 0) return;
+    if (!path || path.length === 0) {
+      // If no path is found, just teleport the army to the target position
+      this.armies.set(entityId, { ...armyData, hexCoords });
+      return;
+    }
 
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
@@ -365,6 +369,7 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
+    console.log("adding entity id label", army);
     const labelDiv = document.createElement("div");
     labelDiv.classList.add(
       "rounded-md",
@@ -376,18 +381,20 @@ export class ArmyManager {
       "flex",
       "items-center",
     );
-    const orderName = army.order.toLowerCase();
+    const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
-    img.src = `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
+    img.src = isDaydreamsAgent
+      ? "/images/logos/daydreams.png"
+      : `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
     img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
     labelDiv.appendChild(img);
 
     const textContainer = document.createElement("div");
     textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createTextNode(
-      `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
-    );
+    const line1 = document.createElement("span");
+    line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
+    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
     const line2 = document.createElement("strong");
     line2.textContent = `${army.category} ${TIERS_TO_STARS[army.tier]}`;
 

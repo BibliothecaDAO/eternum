@@ -9,14 +9,17 @@ import {
   ID,
   MarketManager,
   ResourcesIds,
+  StructureType,
   computeTravelTime,
   configManager,
   divideByPrecision,
   getClosestBank,
+  isMilitaryResource,
   resources,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import React, { useCallback, useMemo, useState } from "react";
 
 type LiquidityResourceRowProps = {
@@ -92,7 +95,6 @@ export const LiquidityResourceRow = ({
         shares: withdrawShares,
         signer: dojoContext.account.account,
       };
-      console.log(calldata);
 
       dojoContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
         setIsLoading(false);
@@ -121,8 +123,12 @@ export const LiquidityResourceRow = ({
     [marketManager, lordsAmount, resourceAmount],
   );
 
-  const renderConfirmationPopup = useMemo(() => {
+  const renderConfirmationPopup = useCallback(() => {
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
+
+    const isVillageAndMilitaryResource =
+      getComponentValue(dojoContext.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
 
     const travelResources = [
       { amount: divideByPrecision(lords), resourceId: ResourcesIds.Lords },
@@ -137,12 +143,18 @@ export const LiquidityResourceRow = ({
       <ConfirmationPopup
         title="Confirm Withdraw"
         warning="Warning: not enough donkeys to transport resources"
-        disabled={!canCarry}
+        disabled={!canCarry || isVillageAndMilitaryResource}
         isLoading={isLoading}
         onConfirm={() => onWithdraw(withdrawalPercentage)}
         onCancel={() => setOpenConfirmation(false)}
       >
         <div className="space-y-4">
+          {isVillageAndMilitaryResource && (
+            <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
+              Military resources cannot be traded from village structures.
+            </div>
+          )}
+
           <div className="flex flex-col items-center space-y-2">
             <div className="w-full flex items-center justify-between">
               <span>Withdrawal Amount:</span>
@@ -234,7 +246,7 @@ export const LiquidityResourceRow = ({
           </div>
         </div>
       </div>
-      {openConfirmation && renderConfirmationPopup}
+      {openConfirmation && renderConfirmationPopup()}
     </>
   );
 };

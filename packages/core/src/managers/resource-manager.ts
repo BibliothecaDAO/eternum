@@ -1,6 +1,7 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { uuid } from "@latticexyz/utils";
 import { BuildingType, CapacityConfig, ResourcesIds } from "../constants";
 import { ClientComponents } from "../dojo/create-client-components";
 import { ID, Resource } from "../types";
@@ -129,7 +130,9 @@ export class ResourceManager {
     return Number(balance + amountProduced);
   }
 
-  public optimisticResourceUpdate = (overrideId: string, resourceId: ResourcesIds, actualResourceChange: bigint) => {
+  public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: bigint) => {
+    const overrideId = uuid();
+
     const entity = getEntityIdFromKeys([BigInt(this.entityId), BigInt(resourceId)]);
     const currentBalance = this.balance(resourceId);
     const weight = configManager.getResourceWeightKg(resourceId);
