@@ -355,7 +355,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         <div className="text-gold text-sm font-medium">Building Costs</div>
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center cursor-pointer">
-            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : "text-gold"}`}>Pro</span>
+            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : "text-gold"}`}>Standard</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -365,7 +365,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               />
               <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
             </div>
-            <span className={`ml-2 text-xs ${useSimpleCost ? "text-gold" : "text-gold/50"}`}>Lite</span>
+            <span className={`ml-2 text-xs ${useSimpleCost ? "text-gold" : "text-gold/50"}`}>Simple</span>
           </label>
           <HintModalButton className="" section={HintSection.Buildings} />
         </div>
