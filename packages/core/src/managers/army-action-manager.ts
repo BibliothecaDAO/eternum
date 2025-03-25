@@ -389,11 +389,9 @@ export class ArmyActionManager {
     const removeFoodCostsOverride = this._optimisticFoodCosts(TravelTypes.Explore);
 
     return {
-      removeVisualOverrides: () => {
+      removeOverrides: () => {
         removeExplorerOverride?.();
         removeTileOverride();
-      },
-      removeNonVisualOverrides: () => {
         removeCapacityOverride();
         removeFoodCostsOverride?.();
       },
@@ -412,11 +410,7 @@ export class ArmyActionManager {
     const direction = this._findDirection(path.map((p) => p.hex));
     if (direction === undefined || direction === null) return;
 
-    const { removeVisualOverrides, removeNonVisualOverrides } = this._optimisticExplore(
-      path[1].hex.col,
-      path[1].hex.row,
-      currentArmiesTick,
-    );
+    const { removeOverrides } = this._optimisticExplore(path[1].hex.col, path[1].hex.row, currentArmiesTick);
 
     try {
       await this.systemCalls.explorer_move({
@@ -427,12 +421,10 @@ export class ArmyActionManager {
       });
     } catch (e) {
       console.log({ e });
-      removeVisualOverrides();
-      removeNonVisualOverrides();
+      removeOverrides();
     } finally {
       // remove all non visual overrides
-      removeVisualOverrides();
-      removeNonVisualOverrides();
+      removeOverrides();
     }
   };
 

@@ -436,7 +436,8 @@ export default class WorldmapScene extends HexagonScene {
     // Remove from old position if it changed
     if (
       oldPos &&
-      (oldPos.col !== newPos.col || oldPos.row !== newPos.row || this.armyHexes.get(oldPos.col)?.get(oldPos.row))
+      (oldPos.col !== newPos.col || oldPos.row !== newPos.row) &&
+      this.armyHexes.get(oldPos.col)?.get(oldPos.row)?.id === entityId
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
     }

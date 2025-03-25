@@ -2111,7 +2111,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
   public async set_mercenaries_name_config(props: SystemProps.SetMercenariesNameConfigProps) {
-    const {name, signer } = props;
+    const { name, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
