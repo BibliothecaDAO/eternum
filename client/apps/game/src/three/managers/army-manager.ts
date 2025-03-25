@@ -319,7 +319,11 @@ export class ArmyManager {
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
-    if (!path || path.length === 0) return;
+    if (!path || path.length === 0) {
+      // If no path is found, just teleport the army to the target position
+      this.armies.set(entityId, { ...armyData, hexCoords });
+      return;
+    }
 
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
