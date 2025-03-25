@@ -62,7 +62,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
       try {
         if (logging) console.log("Applying batch update", batch);
 
-        handleExplorerTroopsIfDeletion(batch, components, true);
+        handleExplorerTroopsIfDeletion(batch, components, logging);
         setEntities(batch, components as any, logging);
       } catch (error) {
         console.error("Error processing entity batch:", error);
@@ -148,7 +148,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
