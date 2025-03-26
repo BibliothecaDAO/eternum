@@ -104,20 +104,19 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
   } = useDojo();
   const [armies, setArmies] = useState<Entities | null>(null);
   const { selectedRealm } = useStore();
+
+  // todo: make this dynamic
   const distance = 10;
 
   useEffect(() => {
     const fetchArmies = async () => {
-      console.log({ selectedRealm });
       if (!selectedRealm) return;
-      console.log({ position: selectedRealm.position });
       const armies = await queryArmiesInRadius(
         toriiClient,
         selectedRealm.position.x,
         selectedRealm.position.y,
         distance,
       );
-      console.log({ armies });
       setArmies(armies);
     };
     fetchArmies();
@@ -125,8 +124,6 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
 
   // const { enemiesCount, distance } = generateDummyData();
   const { color, bgColor, icon: Icon } = getDangerLevel(distance);
-
-  const enemiesCount = 10;
 
   return (
     <Card className={cn(bgColor)}>
@@ -137,7 +134,7 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
         </CardTitle>
         <div className="text-xs space-y-1">
           <div>
-            <span className="font-bold">{enemiesCount}</span> enemies around
+            <span className="font-bold">{Object.keys(armies || {}).length}</span> enemies around
           </div>
           <div>
             <span className="font-semibold">{distance}</span> Hexes Away
