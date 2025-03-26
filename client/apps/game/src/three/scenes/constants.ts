@@ -67,6 +67,7 @@ enum BuildingFilenames {
   Realm1 = "castle1.glb",
   Realm2 = "castle2.glb",
   Realm3 = "castle3.glb",
+  Village = "village.glb",
   WonderAnimated = "wonder2.glb",
 }
 
@@ -190,7 +191,7 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
   [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0],
+  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
 };
 
 export const StructureLabelPaths: Record<StructureType, string> = {
