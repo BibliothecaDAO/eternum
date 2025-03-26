@@ -132,45 +132,36 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourceAncientFragment]: [],
   // Basic Buildings - primarily Common resources
   [BuildingType.ResourceWheat]: [
-    { resource: ResourcesIds.Labor, amount: 500 },
-    { resource: ResourcesIds.Fish, amount: 50_000 },
+    { resource: ResourcesIds.Fish, amount: 500_000 },
   ],
   [BuildingType.ResourceFish]: [
-    { resource: ResourcesIds.Labor, amount: 500 },
-    { resource: ResourcesIds.Wheat, amount: 50_000 },
+    { resource: ResourcesIds.Wheat, amount: 500_000 },
   ],
-  [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Labor, amount: 2_500 },
-    { resource: ResourcesIds.Wood, amount: 75_000 },
-    { resource: ResourcesIds.Stone, amount: 75_000 },
-    { resource: ResourcesIds.Coal, amount: 75_000 },
-    { resource: ResourcesIds.Copper, amount: 50_000 },
-  ],
-  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceStone]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceObsidian]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceSilver]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceHartwood]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceDiamonds]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceSapphire]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceRuby]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceDeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
+  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceStone]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceObsidian]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceSilver]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceHartwood]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceDiamonds]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceSapphire]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceRuby]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceDeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   [BuildingType.ResourceIgnium]: [{ resource: ResourcesIds.Wheat, amount: 75 }],
-  [BuildingType.ResourceEtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceTrueIce]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceTwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceAlchemicalSilver]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceAdamantine]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
-  [BuildingType.ResourceMithral]: [{ resource: ResourcesIds.Wheat, amount: 75_000 }],
-  [BuildingType.ResourceDragonhide]: [{ resource: ResourcesIds.Fish, amount: 75_000 }],
+  [BuildingType.ResourceEtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceTrueIce]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceTwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceAlchemicalSilver]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceAdamantine]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceMithral]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceDragonhide]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   // T1 Military Buildings - primarily Uncommon resources
   [BuildingType.ResourceKnightT1]: [
-    { resource: ResourcesIds.Labor, amount: 5_000 },
+    { resource: ResourcesIds.Labor, amount: 75_000 },
     { resource: ResourcesIds.Stone, amount: 75_000 },
     { resource: ResourcesIds.Coal, amount: 75_000 },
     { resource: ResourcesIds.Copper, amount: 25_000 },
@@ -178,7 +169,7 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.ColdIron, amount: 25_000 },
   ],
   [BuildingType.ResourceCrossbowmanT1]: [
-    { resource: ResourcesIds.Labor, amount: 5_000 },
+    { resource: ResourcesIds.Labor, amount: 75_000 },
     { resource: ResourcesIds.Wood, amount: 75_000 },
     { resource: ResourcesIds.Coal, amount: 75_000 },
     { resource: ResourcesIds.Obsidian, amount: 25_000 },
@@ -186,7 +177,7 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Ironwood, amount: 25_000 },
   ],
   [BuildingType.ResourcePaladinT1]: [
-    { resource: ResourcesIds.Labor, amount: 5_000 },
+    { resource: ResourcesIds.Labor, amount: 75_000 },
     { resource: ResourcesIds.Wood, amount: 75_000 },
     { resource: ResourcesIds.Stone, amount: 75_000 },
     { resource: ResourcesIds.Copper, amount: 50_000 },
@@ -196,70 +187,76 @@ export const COMPLEX_BUILDING_COSTS: ResourceInputs = {
 
   // T2 Military Buildings - include Rare resources
   [BuildingType.ResourceKnightT2]: [
-    { resource: ResourcesIds.Labor, amount: 50_000 },
+    { resource: ResourcesIds.Labor, amount: 250_000 },
     { resource: ResourcesIds.Stone, amount: 250_000 },
     { resource: ResourcesIds.Coal, amount: 250_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
-    { resource: ResourcesIds.Ruby, amount: 50_000 },
-    { resource: ResourcesIds.DeepCrystal, amount: 25_000 },
+    { resource: ResourcesIds.Ruby, amount: 75_000 },
+    { resource: ResourcesIds.DeepCrystal, amount: 50_000 },
   ],
   [BuildingType.ResourceCrossbowmanT2]: [
-    { resource: ResourcesIds.Labor, amount: 50_000 },
+    { resource: ResourcesIds.Labor, amount: 250_000 },
     { resource: ResourcesIds.Wood, amount: 250_000 },
     { resource: ResourcesIds.Coal, amount: 250_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
-    { resource: ResourcesIds.Diamonds, amount: 50_000 },
-    { resource: ResourcesIds.EtherealSilica, amount: 25_000 },
+    { resource: ResourcesIds.Diamonds, amount: 75_000 },
+    { resource: ResourcesIds.EtherealSilica, amount: 50_000 },
   ],
   [BuildingType.ResourcePaladinT2]: [
-    { resource: ResourcesIds.Labor, amount: 50_000 },
+    { resource: ResourcesIds.Labor, amount: 250_000 },
     { resource: ResourcesIds.Wood, amount: 250_000 },
     { resource: ResourcesIds.Stone, amount: 250_000 },
     { resource: ResourcesIds.Hartwood, amount: 100_000 },
-    { resource: ResourcesIds.Sapphire, amount: 50_000 },
-    { resource: ResourcesIds.Ignium, amount: 25_000 },
+    { resource: ResourcesIds.Sapphire, amount: 75_000 },
+    { resource: ResourcesIds.Ignium, amount: 50_000 },
   ],
 
   // T3 Military Buildings - include Epic and Legendary resources
   [BuildingType.ResourceKnightT3]: [
-    { resource: ResourcesIds.Labor, amount: 250_000 },
+    { resource: ResourcesIds.Labor, amount: 750_000 },
     { resource: ResourcesIds.Stone, amount: 500_000 },
     { resource: ResourcesIds.Coal, amount: 500_000 },
     { resource: ResourcesIds.Hartwood, amount: 250_000 },
-    { resource: ResourcesIds.TwilightQuartz, amount: 50_000 },
-    { resource: ResourcesIds.Mithral, amount: 25_000 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 100_000 },
+    { resource: ResourcesIds.Mithral, amount: 50_000 },
   ],
   [BuildingType.ResourceCrossbowmanT3]: [
-    { resource: ResourcesIds.Labor, amount: 250_000 },
+    { resource: ResourcesIds.Labor, amount: 750_000 },
     { resource: ResourcesIds.Wood, amount: 500_000 },
     { resource: ResourcesIds.Coal, amount: 500_000 },
     { resource: ResourcesIds.Hartwood, amount: 250_000 },
-    { resource: ResourcesIds.TrueIce, amount: 50_000 },
-    { resource: ResourcesIds.Dragonhide, amount: 25_000 },
+    { resource: ResourcesIds.TrueIce, amount: 100_000 },
+    { resource: ResourcesIds.Dragonhide, amount: 50_000 },
   ],
   [BuildingType.ResourcePaladinT3]: [
-    { resource: ResourcesIds.Labor, amount: 250_000 },
+    { resource: ResourcesIds.Labor, amount: 750_000 },
     { resource: ResourcesIds.Wood, amount: 500_000 },
     { resource: ResourcesIds.Stone, amount: 500_000 },
     { resource: ResourcesIds.Hartwood, amount: 250_000 },
-    { resource: ResourcesIds.AlchemicalSilver, amount: 50_000 },
-    { resource: ResourcesIds.Adamantine, amount: 25_000 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 100_000 },
+    { resource: ResourcesIds.Adamantine, amount: 50_000 },
   ],
 
   // Specialist Buildings - mix of resources across tiers
   [BuildingType.ResourceDonkey]: [
-    { resource: ResourcesIds.Labor, amount: 10_000 },
+    { resource: ResourcesIds.Labor, amount: 50_000 },
     { resource: ResourcesIds.Silver, amount: 50_000 },
     { resource: ResourcesIds.Hartwood, amount: 25_000 },
-    { resource: ResourcesIds.Sapphire, amount: 10_000 },
-    { resource: ResourcesIds.Ruby, amount: 10_000 },
+    { resource: ResourcesIds.Sapphire, amount: 5_000 },
+    { resource: ResourcesIds.Ruby, amount: 5_000 },
+  ],
+  [BuildingType.WorkersHut]: [
+    { resource: ResourcesIds.Labor, amount: 25_000 },
+    { resource: ResourcesIds.Wood, amount: 50_000 },
+    { resource: ResourcesIds.Stone, amount: 50_000 },
+    { resource: ResourcesIds.Coal, amount: 50_000 },
+    { resource: ResourcesIds.Copper, amount: 25_000 },
   ],
   [BuildingType.Storehouse]: [
-    { resource: ResourcesIds.Labor, amount: 5_000 },
+    { resource: ResourcesIds.Labor, amount: 25_000 },
     { resource: ResourcesIds.Obsidian, amount: 50_000 },
     { resource: ResourcesIds.Hartwood, amount: 10_000 },
-    { resource: ResourcesIds.Diamonds, amount: 10_000 },
-    { resource: ResourcesIds.DeepCrystal, amount: 5_000 },
+    { resource: ResourcesIds.Diamonds, amount: 5_000 },
   ],
 };
 
@@ -268,75 +265,70 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.None]: [],
   [BuildingType.ResourceLabor]: [],
   [BuildingType.ResourceAncientFragment]: [],
+  // Basic Buildings - primarily Common resources
   [BuildingType.ResourceWheat]: [
-    { resource: ResourcesIds.Labor, amount: 200 },
+    { resource: ResourcesIds.Fish, amount: 500_000 },
   ],
   [BuildingType.ResourceFish]: [
-    { resource: ResourcesIds.Labor, amount: 200 },
+    { resource: ResourcesIds.Wheat, amount: 500_000 },
   ],
-  [BuildingType.WorkersHut]: [
-    { resource: ResourcesIds.Labor, amount: 3000 },
-  ],
-  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceStone]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceObsidian]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceSilver]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceHartwood]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceDiamonds]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceSapphire]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceRuby]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceDeepCrystal]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceIgnium]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceEtherealSilica]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceTrueIce]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceTwilightQuartz]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceAlchemicalSilver]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceAdamantine]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceMithral]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
-  [BuildingType.ResourceDragonhide]: [{ resource: ResourcesIds.Labor, amount: 3000 }],
+  [BuildingType.ResourceWood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceStone]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceCoal]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceCopper]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceObsidian]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceSilver]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceIronwood]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceColdIron]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceGold]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceHartwood]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceDiamonds]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceSapphire]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceRuby]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceDeepCrystal]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceIgnium]: [{ resource: ResourcesIds.Wheat, amount: 75 }],
+  [BuildingType.ResourceEtherealSilica]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceTrueIce]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceTwilightQuartz]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceAlchemicalSilver]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceAdamantine]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
+  [BuildingType.ResourceMithral]: [{ resource: ResourcesIds.Wheat, amount: 750_000 }],
+  [BuildingType.ResourceDragonhide]: [{ resource: ResourcesIds.Fish, amount: 750_000 }],
   // T1 Military Buildings - primarily Uncommon resources
   [BuildingType.ResourceKnightT1]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 250_000 },
   ],
   [BuildingType.ResourceCrossbowmanT1]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 300_000 },
   ],
   [BuildingType.ResourcePaladinT1]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 600_000 },
   ],
 
   // T2 Military Buildings - include Rare resources
   [BuildingType.ResourceKnightT2]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 560_000 },
   ],
   [BuildingType.ResourceCrossbowmanT2]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 590_000 },
   ],
   [BuildingType.ResourcePaladinT2]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 590_000 },
   ],
 
   // T3 Military Buildings - include Epic and Legendary resources
-  [BuildingType.ResourceKnightT3]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
-  ],
-  [BuildingType.ResourceCrossbowmanT3]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
-  ],
-  [BuildingType.ResourcePaladinT3]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
-  ],
+  [BuildingType.ResourceKnightT3]: [],
+  [BuildingType.ResourceCrossbowmanT3]: [],
+  [BuildingType.ResourcePaladinT3]: [],
 
   // Specialist Buildings - mix of resources across tiers
   [BuildingType.ResourceDonkey]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 600_000 },
+  ],
+  [BuildingType.WorkersHut]: [
+    { resource: ResourcesIds.Labor, amount: 250_000 },
   ],
   [BuildingType.Storehouse]: [
-    { resource: ResourcesIds.Labor, amount: 3000 }
+    { resource: ResourcesIds.Labor, amount: 300_000 },
   ],
 };
