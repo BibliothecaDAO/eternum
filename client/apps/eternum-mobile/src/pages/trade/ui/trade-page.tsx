@@ -35,8 +35,13 @@ export const TradePage = () => {
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const marketManager = useMemo(
-    () => new MarketManager(components, ContractAddress(account.address), sellResourceId),
-    [components, sellResourceId, account.address],
+    () =>
+      new MarketManager(
+        components,
+        ContractAddress(account.address),
+        sellResourceId === ResourcesIds.Lords ? buyResourceId : sellResourceId,
+      ),
+    [components, sellResourceId, buyResourceId, account.address],
   );
 
   const ownerFee = sellAmount * configManager.getAdminBankOwnerFee();
