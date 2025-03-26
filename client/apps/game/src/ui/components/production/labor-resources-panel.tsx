@@ -27,7 +27,7 @@ export const LaborResourcesPanel = ({
     if (!laborInputResources) return;
     const resourceConfig = laborInputResources.find((r) => r.resource === inputResource);
     if (!resourceConfig) return;
-    const newAmount = value / laborConfig.laborBurnPerResourceOutput * laborConfig.resourceOutputPerInputResources;
+    const newAmount = (value / laborConfig.laborBurnPerResourceOutput) * laborConfig.resourceOutputPerInputResources;
     setProductionAmount(newAmount);
   };
 
@@ -36,7 +36,7 @@ export const LaborResourcesPanel = ({
 
     const maxAmounts = laborInputResources.map((input) => {
       const balance = resourceBalances[input.resource] || 0;
-      return Math.floor(balance / input.amount * laborConfig.resourceOutputPerInputResources);
+      return Math.floor((balance / input.amount) * laborConfig.resourceOutputPerInputResources);
     });
 
     return Math.max(1, Math.min(...maxAmounts));
@@ -66,7 +66,7 @@ export const LaborResourcesPanel = ({
               <div className="flex items-center justify-between w-full">
                 <div className="w-2/3">
                   <NumberInput
-                    value={Math.round(input.amount * productionAmount / resourceOutputPerInputResources)}
+                    value={Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)}
                     onChange={(value) => handleInputChange(value, input.resource)}
                     min={0}
                     max={resourceBalances[input.resource] || 0}
@@ -75,7 +75,8 @@ export const LaborResourcesPanel = ({
                 </div>
                 <span
                   className={`text-sm font-medium ${
-                    resourceBalances[input.resource] < input.amount * productionAmount
+                    resourceBalances[input.resource] <
+                    Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)
                       ? "text-order-giants"
                       : "text-gold/60"
                   }`}

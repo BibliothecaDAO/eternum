@@ -4539,7 +4539,7 @@
     },
     {
       "address": "0x31173dedf74b09681ab45d36d6aae6aff8ba43dba2773af642d22ff13eb01d0",
-      "class_hash": "0x78463053a9e1357a347d46229579feeca59c30442c49909f12021c5c50d46eb",
+      "class_hash": "0xd30a3b0367101aff990414ae2a3387656647d1686e44804980e69fbc48c59d",
       "abi": [
         {
           "type": "impl",
@@ -4951,7 +4951,7 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "labor_amounts",
+                  "name": "production_cycles",
                   "type": "core::array::Span::<core::integer::u128>"
                 },
                 {
@@ -4975,7 +4975,7 @@
                   "type": "core::array::Span::<core::integer::u8>"
                 },
                 {
-                  "name": "production_tick_counts",
+                  "name": "production_cycles",
                   "type": "core::array::Span::<core::integer::u128>"
                 }
               ],

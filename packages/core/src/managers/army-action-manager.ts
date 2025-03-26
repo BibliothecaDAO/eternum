@@ -507,7 +507,6 @@ export class ArmyActionManager {
     } catch (e) {
       console.log({ e });
     } finally {
-      // remove all non visual overrides
       removeOverrides();
     }
   };

@@ -2,11 +2,11 @@ import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
 import { getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
 import {
-    useBuildings,
-    useDojo,
-    usePlayerOwnedRealmsInfo,
-    usePlayerOwnedVillagesInfo,
-    useResourceManager,
+  useBuildings,
+  useDojo,
+  usePlayerOwnedRealmsInfo,
+  usePlayerOwnedVillagesInfo,
+  useResourceManager,
 } from "@bibliothecadao/react";
 import { useCallback, useMemo } from "react";
 import { getLaborConfig } from "../lib/labor";
@@ -72,7 +72,7 @@ export const useProduction = () => {
       try {
         await burn_labor_for_resource_production({
           from_entity_id: calldata.entity_id,
-          labor_amounts: calldata.resource_amounts,
+          production_cycles: calldata.resource_amounts,
           produced_resource_types: calldata.resource_types,
           signer: account,
         });
@@ -91,7 +91,7 @@ export const useProduction = () => {
         await burn_resource_for_resource_production({
           from_entity_id: calldata.entity_id,
           produced_resource_types: [calldata.resource_type],
-          production_tick_counts: [calldata.amount],
+          production_cycles: [calldata.amount],
           signer: account,
         });
         return true;

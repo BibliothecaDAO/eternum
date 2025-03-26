@@ -133,14 +133,25 @@ export const ResourceProductionControls = ({
     setTicks(Math.floor(productionAmount / outputResource.amount));
   }, [productionAmount]);
 
+  const rawCurrentInputs = useMemo(() => {
+    return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
+      resource,
+      amount: amount / outputResource.amount,
+    }));
+  }, [selectedResource, outputResource]);
+
+  const laborCurrentInputs = useMemo(() => {
+    return (
+      laborConfig?.inputResources.map(({ resource, amount }) => ({
+        resource,
+        amount: amount / laborConfig.resourceOutputPerInputResources,
+      })) || []
+    );
+  }, [laborConfig]);
+
   const currentInputs = useMemo(() => {
-    return useRawResources
-      ? configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
-          resource,
-          amount: amount / outputResource.amount,
-        }))
-      : laborConfig?.inputResources || [];
-  }, [useRawResources, selectedResource, laborConfig]);
+    return useRawResources ? rawCurrentInputs : laborCurrentInputs;
+  }, [useRawResources, rawCurrentInputs, laborCurrentInputs]);
 
   const isOverBalance = useMemo(() => {
     return Object.values(currentInputs).some(({ resource, amount }) => {
@@ -160,17 +171,17 @@ export const ResourceProductionControls = ({
     }
   }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
 
-  if (currentInputs.length === 0) return null;
-
   const buildingCount = useMemo(() => {
     return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
   }, [realm.entityId, selectedResource, components]);
+
+  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
 
-      <div className={`grid ${laborConfig ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
+      <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
         <RawResourcesPanel
           selectedResource={selectedResource}
           productionAmount={productionAmount}
@@ -181,7 +192,7 @@ export const ResourceProductionControls = ({
           outputResource={outputResource}
         />
 
-        {laborConfig && (
+        {laborCurrentInputs.length > 0 && (
           <LaborResourcesPanel
             selectedResource={selectedResource}
             productionAmount={productionAmount}

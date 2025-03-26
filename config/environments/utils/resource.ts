@@ -1,9 +1,4 @@
-import {
-  ResourcesIds,
-  type ResourceCost,
-  type ResourceInputs,
-  type ResourceOutputs
-} from "@bibliothecadao/eternum";
+import { ResourcesIds, type ResourceCost, type ResourceInputs, type ResourceOutputs } from "@bibliothecadao/eternum";
 
 // weight in kg
 // grams / 10^9
@@ -360,85 +355,35 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
     { resource: ResourcesIds.Wheat, amount: 1 },
     { resource: ResourcesIds.Fish, amount: 2 },
   ],
-  [ResourcesIds.Stone]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Coal]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Copper]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Obsidian]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Silver]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Ironwood]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.ColdIron]: [
-  ],
-  [ResourcesIds.Gold]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Hartwood]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Diamonds]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Sapphire]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.Ruby]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-  ],
-  [ResourcesIds.DeepCrystal]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.Ignium]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.EtherealSilica]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.TrueIce]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.TwilightQuartz]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.AlchemicalSilver]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.Adamantine]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.Mithral]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
-  [ResourcesIds.Dragonhide]: [
-    { resource: ResourcesIds.Labor, amount: 0.1 },
-
-  ],
+  [ResourcesIds.Stone]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Coal]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Copper]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Obsidian]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Silver]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Ironwood]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.ColdIron]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Gold]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Hartwood]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Diamonds]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Sapphire]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Ruby]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.DeepCrystal]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Ignium]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.EtherealSilica]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.TrueIce]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.TwilightQuartz]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.AlchemicalSilver]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Adamantine]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Mithral]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
+  [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
   [ResourcesIds.Donkey]: [],
-  [ResourcesIds.Knight]: [],
+  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
   [ResourcesIds.KnightT2]: [],
   [ResourcesIds.KnightT3]: [],
-  [ResourcesIds.Crossbowman]: [],
+  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
   [ResourcesIds.CrossbowmanT2]: [],
   [ResourcesIds.CrossbowmanT3]: [],
-  [ResourcesIds.Paladin]: [],
+  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Labor, amount: 0.1 }],
   [ResourcesIds.PaladinT2]: [],
   [ResourcesIds.PaladinT3]: [],
   [ResourcesIds.Wheat]: [],
@@ -447,7 +392,6 @@ export const RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM: ResourceInputs =
   [ResourcesIds.AncientFragment]: [],
   [ResourcesIds.Labor]: [],
 };
-
 
 export const multiplyStartingResources = (multiplier: number): ResourceCost[] => {
   return STARTING_RESOURCES.map((resource) => ({
