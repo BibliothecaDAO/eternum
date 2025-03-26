@@ -35,9 +35,9 @@ export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: Ar
           )}
         </div>
         <Button
-          variant="secondary"
+          variant={readyCount > 0 ? "default" : "secondary"}
           size="sm"
-          className="w-full font-semibold"
+          className={cn("w-full font-semibold", readyCount > 0 && "bg-green-500 hover:bg-green-600 text-white")}
           onClick={onClaim}
           disabled={readyCount === 0}
         >
