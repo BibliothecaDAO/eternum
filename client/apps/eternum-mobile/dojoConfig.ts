@@ -1,7 +1,7 @@
 import { createDojoConfig } from "@dojoengine/core";
 import { Chain, getGameManifest } from "../../../contracts/utils/utils";
 import { env } from "./env";
-import { ETERNUM_CONFIG } from "./src/shared/config/config";
+import { ETERNUM_CONFIG } from "./src/app/config/config";
 
 const {
   VITE_PUBLIC_NODE_URL,

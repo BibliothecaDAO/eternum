@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { useBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { currencyFormat, currencyIntlFormat } from "@/shared/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
