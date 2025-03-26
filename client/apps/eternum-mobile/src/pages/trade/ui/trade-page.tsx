@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowDownUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
@@ -55,6 +55,14 @@ export const TradePage = () => {
   const hasEnough = useMemo(() => {
     return multiplyByPrecision(sellAmount) <= sellBalance;
   }, [sellAmount, sellBalance]);
+
+  useEffect(() => {
+    // Recalculate amounts when resource IDs change
+    if (sellAmount > 0) {
+      const newSellAmount = Math.min(sellAmount, divideByPrecision(sellBalance));
+      handleSellAmountChange(newSellAmount);
+    }
+  }, [sellResourceId, buyResourceId]);
 
   const handleSwap = () => {
     const tempResourceId = buyResourceId;
