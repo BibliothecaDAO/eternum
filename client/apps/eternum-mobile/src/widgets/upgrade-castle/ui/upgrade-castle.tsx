@@ -1,17 +1,49 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
-import { getLevelName } from "@bibliothecadao/eternum";
+import {
+  configManager,
+  ContractAddress,
+  getEntityIdFromKeys,
+  getLevelName,
+  getRealmInfo,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Castle, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { UpgradeDrawer } from "./upgrade-drawer";
 
 interface UpgradeCastleProps {
-  castleLevel: number;
-  onUpgrade: () => Promise<void>;
+  realmEntityId: number;
 }
 
-export const UpgradeCastle = ({ castleLevel, onUpgrade }: UpgradeCastleProps) => {
+export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const dojo = useDojo();
+
+  const realmInfo = useMemo(
+    () => getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components),
+    [realmEntityId, dojo.setup.components],
+  );
+
+  const getNextRealmLevel = useMemo(() => {
+    if (!realmInfo) return null;
+    const nextLevel = realmInfo.level + 1;
+    return nextLevel <= configManager.getMaxLevel(realmInfo.category) ? nextLevel : null;
+  }, [realmInfo]);
+
+  const handleUpgrade = async () => {
+    if (!realmInfo) return;
+
+    await dojo.setup.systemCalls.upgrade_realm({
+      signer: dojo.account.account,
+      realm_entity_id: realmInfo.entityId,
+    });
+  };
+
+  if (!realmInfo || !getNextRealmLevel) return null;
+
+  const isOwner = realmInfo.owner === ContractAddress(dojo.account.account.address);
+  if (!isOwner) return null;
 
   return (
     <>
@@ -33,10 +65,10 @@ export const UpgradeCastle = ({ castleLevel, onUpgrade }: UpgradeCastleProps) =>
           <div className="flex flex-1 flex-col gap-3">
             <h3 className="flex flex-col text-xl font-bold">
               <span className="text-success">Ready to Upgrade!</span>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                to {getLevelName(castleLevel)}
+              <span className="flex items-center gap-2 text-muted-foreground">
+                {getLevelName(realmInfo.level)}
                 <ArrowRight className="h-4 w-4" />
-                Level {castleLevel}
+                {getLevelName(getNextRealmLevel)}
               </span>
             </h3>
 
@@ -46,14 +78,14 @@ export const UpgradeCastle = ({ castleLevel, onUpgrade }: UpgradeCastleProps) =>
               size="lg"
             >
               <Castle className="mr-2 h-4 w-4" />
-              Upgrade Now
+              Upgrade to Level {getNextRealmLevel}
             </Button>
           </div>
 
           <div className="relative h-28 w-28 shrink-0">
             <div className="absolute inset-0 animate-pulse rounded-full bg-success/20 blur-xl" />
             <img
-              src={`/images/castles/castle-0.png`}
+              src={`/images/castles/castle-${realmInfo.level}.png`}
               alt="Castle"
               className="relative h-full w-full object-contain drop-shadow-xl"
             />
@@ -64,8 +96,9 @@ export const UpgradeCastle = ({ castleLevel, onUpgrade }: UpgradeCastleProps) =>
       <UpgradeDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        castleLevel={castleLevel}
-        onUpgrade={onUpgrade}
+        castleLevel={realmInfo.level}
+        realmEntityId={realmEntityId}
+        onUpgrade={handleUpgrade}
       />
     </>
   );

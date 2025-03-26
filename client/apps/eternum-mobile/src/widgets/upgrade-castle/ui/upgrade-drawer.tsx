@@ -1,6 +1,9 @@
+import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
-import { ResourcesIds, getLevelName, resources } from "@bibliothecadao/eternum";
+import { ResourceIcon } from "@/shared/ui/resource-icon";
+import { configManager, divideByPrecision, getBalance, getLevelName, resources } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -8,22 +11,17 @@ interface UpgradeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   castleLevel: number;
+  realmEntityId: number;
   onUpgrade: () => Promise<void>;
 }
 
 type UpgradeStep = "cost" | "upgrading" | "success" | "error";
 
-// Mock upgrade cost data - in real app this would come from the backend
-const MOCK_UPGRADE_COST = [
-  { id: ResourcesIds.Stone, amount: 1000000 },
-  { id: ResourcesIds.Wood, amount: 1000000 },
-  { id: ResourcesIds.Gold, amount: 1000000 },
-  { id: ResourcesIds.Mithral, amount: 1000000 },
-];
-
-export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, onUpgrade }: UpgradeDrawerProps) => {
+export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onUpgrade }: UpgradeDrawerProps) => {
   const [step, setStep] = useState<UpgradeStep>("cost");
   const [error, setError] = useState<string>("");
+  const { setup } = useDojo();
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   // Reset state when drawer is closed
   useEffect(() => {
@@ -46,38 +44,63 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, onUpgrade }: Upgra
     }
   };
 
+  const getUpgradeCosts = () => {
+    const nextLevel = castleLevel + 1;
+    return configManager.realmUpgradeCosts[nextLevel] || [];
+  };
+
+  const checkBalance = () => {
+    const costs = getUpgradeCosts();
+    return costs.every((cost) => {
+      const balance = getBalance(realmEntityId, cost.resource, currentDefaultTick, setup.components);
+      return divideByPrecision(balance.balance) >= cost.amount;
+    });
+  };
+
   const renderStepContent = () => {
     switch (step) {
       case "cost":
         return (
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle className="text-3xl font-bokor text-center">Upgrade Castle</DrawerTitle>
-              <DrawerDescription className="text-center">Upgrade to {getLevelName(castleLevel)}</DrawerDescription>
+              <DrawerTitle className="text-3xl font-bokor text-center">Upgrade Realm</DrawerTitle>
+              <DrawerDescription className="text-center">Upgrade to {getLevelName(castleLevel + 1)}</DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="space-y-4">
                 <h4 className="text-lg font-medium">Required Resources:</h4>
                 <div className="space-y-3">
-                  {MOCK_UPGRADE_COST.map((resource) => {
-                    const resourceData = resources.find((r) => r.id === resource.id);
+                  {getUpgradeCosts().map((cost) => {
+                    const resourceData = resources.find((r) => r.id === cost.resource);
                     if (!resourceData) return null;
 
+                    const balance = getBalance(realmEntityId, cost.resource, currentDefaultTick, setup.components);
+                    const currentAmount = divideByPrecision(balance.balance);
+                    const hasEnough = currentAmount >= cost.amount;
+
                     return (
-                      <div key={resource.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                      <div
+                        key={cost.resource}
+                        className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                      >
                         <div className="flex items-center gap-3">
-                          <img src={resourceData.img} alt={resourceData.trait} className="h-8 w-8" />
+                          <ResourceIcon resourceId={cost.resource} size={24} />
                           <span className="font-medium">{resourceData.trait}</span>
                         </div>
-                        <span className="text-muted-foreground">{resource.amount.toLocaleString()}</span>
+                        <div className="text-right">
+                          <span className={`${hasEnough ? "text-green-500" : "text-red-500"}`}>
+                            {currentAmount.toLocaleString()} /
+                          </span>
+                          <span className="text-muted-foreground ml-1">{cost.amount.toLocaleString()}</span>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <Button className="w-full" size="lg" onClick={handleUpgrade}>
-                Confirm Upgrade
+              <Button className="w-full" size="lg" onClick={handleUpgrade} disabled={!checkBalance()}>
+                {checkBalance() ? "Confirm Upgrade" : "Insufficient Resources"}
               </Button>
             </div>
           </DrawerContent>
