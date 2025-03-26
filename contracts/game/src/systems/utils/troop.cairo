@@ -363,6 +363,14 @@ pub enum TroopRaidOutcome {
 
 #[generate_trait]
 pub impl iTroopImpl of iTroopTrait {
+    fn random_amount(seed: u256, salt: u128, lower_bound: u32, upper_bound: u32) -> u128 {
+        let range: u128 = (upper_bound - lower_bound).into();
+        let mut troop_amount: u128 = random::random(seed, salt, range);
+        troop_amount += lower_bound.into();
+        troop_amount * RESOURCE_PRECISION
+    }
+
+
     fn raid_outcome(success_weight: u128, failure_weight: u128) -> TroopRaidOutcome {
         if success_weight > failure_weight * 2 {
             return TroopRaidOutcome::Success;
@@ -449,13 +457,12 @@ pub impl iMercenariesImpl of iMercenariesTrait {
                 Option::Some((
                     slot, tier, category,
                 )) => {
-                    let lower_bound: u128 = troop_limit_config.mercenaries_troop_lower_bound.into()
-                        * RESOURCE_PRECISION;
-                    let upper_bound: u128 = troop_limit_config.mercenaries_troop_upper_bound.into()
-                        * RESOURCE_PRECISION;
-                    let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
-                    let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
-                    troop_amount += lower_bound;
+                    let troop_amount = iTroopImpl::random_amount(
+                        seed,
+                        salt,
+                        troop_limit_config.mercenaries_troop_lower_bound,
+                        troop_limit_config.mercenaries_troop_upper_bound,
+                    );
                     let (mut troops, _): (Troops, u32) = structure_guards.from_slot(*slot);
 
                     iGuardImpl::add(
@@ -522,11 +529,9 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         current_tick: u64,
     ) -> ExplorerTroops {
         let mut salt: u128 = 124;
-        let lower_bound: u128 = troop_limit_config.agents_troop_lower_bound.into() * RESOURCE_PRECISION;
-        let upper_bound: u128 = troop_limit_config.agents_troop_upper_bound.into() * RESOURCE_PRECISION;
-        let max_troops_from_lower_bound: u128 = upper_bound - lower_bound;
-        let mut troop_amount: u128 = random::random(seed, salt, max_troops_from_lower_bound);
-        troop_amount += lower_bound;
+        let troop_amount = iTroopImpl::random_amount(
+            seed, salt, troop_limit_config.agents_troop_lower_bound, troop_limit_config.agents_troop_upper_bound,
+        );
 
         // select a troop type with equal probability
         let troop_types: Array<TroopType> = array![TroopType::Knight, TroopType::Crossbowman, TroopType::Paladin];
