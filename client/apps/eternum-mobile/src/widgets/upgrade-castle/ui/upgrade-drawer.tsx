@@ -1,8 +1,9 @@
+import { useStructureUpgrade } from "@/features/upgrade-structure";
 import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { configManager, divideByPrecision, getBalance, getLevelName, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBalance, resources } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,7 +23,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
   const [error, setError] = useState<string>("");
   const { setup } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const nextLevel = currentLevel + 1;
+  const { upgradeCosts, nextLevel, nextLevelName, currentLevelName, canUpgrade } = useStructureUpgrade(realmEntityId);
 
   // Reset state when drawer is closed
   useEffect(() => {
@@ -45,18 +46,6 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
     }
   };
 
-  const getUpgradeCosts = () => {
-    return configManager.realmUpgradeCosts[nextLevel] || [];
-  };
-
-  const checkBalance = () => {
-    const costs = getUpgradeCosts();
-    return costs.every((cost) => {
-      const balance = getBalance(realmEntityId, cost.resource, currentDefaultTick, setup.components);
-      return divideByPrecision(balance.balance) >= cost.amount;
-    });
-  };
-
   const renderStepContent = () => {
     switch (step) {
       case "cost":
@@ -65,14 +54,14 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
             <DrawerHeader>
               <DrawerTitle className="text-3xl font-bokor text-center">Upgrade Castle</DrawerTitle>
               <DrawerDescription className="text-center">
-                {getLevelName(currentLevel)} → {getLevelName(nextLevel)}
+                {currentLevelName} → {nextLevelName}
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="space-y-4">
                 <h4 className="text-lg font-medium">Required Resources:</h4>
                 <div className="space-y-3">
-                  {getUpgradeCosts().map((cost) => {
+                  {upgradeCosts.map((cost) => {
                     const resourceData = resources.find((r) => r.id === cost.resource);
                     if (!resourceData) return null;
 
@@ -101,8 +90,8 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
                 </div>
               </div>
 
-              <Button className="w-full" size="lg" onClick={handleUpgrade} disabled={!checkBalance()}>
-                {checkBalance() ? `Upgrade to Level ${nextLevel}` : "Insufficient Resources"}
+              <Button className="w-full" size="lg" onClick={handleUpgrade} disabled={!canUpgrade}>
+                {canUpgrade ? `Upgrade to Level ${nextLevel}` : "Insufficient Resources"}
               </Button>
             </div>
           </DrawerContent>
@@ -114,7 +103,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
             <DrawerHeader>
               <DrawerTitle className="text-3xl font-bokor text-center">Upgrading Castle</DrawerTitle>
               <DrawerDescription className="text-center">
-                {getLevelName(currentLevel)} → {getLevelName(nextLevel)}
+                {currentLevelName} → {nextLevelName}
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
@@ -134,9 +123,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
           <DrawerContent>
             <DrawerHeader>
               <DrawerTitle className="text-3xl font-bokor text-center text-green-500">Upgrade Successful</DrawerTitle>
-              <DrawerDescription className="text-center">
-                Your castle is now {getLevelName(nextLevel)}
-              </DrawerDescription>
+              <DrawerDescription className="text-center">Your castle is now {nextLevelName}</DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="flex justify-center">

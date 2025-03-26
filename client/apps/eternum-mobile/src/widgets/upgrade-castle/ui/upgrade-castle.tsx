@@ -1,18 +1,10 @@
-import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { useStructureUpgrade } from "@/features/upgrade-structure";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
-import {
-  configManager,
-  ContractAddress,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  getLevelName,
-  getRealmInfo,
-} from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Castle, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { UpgradeDrawer } from "./upgrade-drawer";
 
 interface UpgradeCastleProps {
@@ -22,56 +14,12 @@ interface UpgradeCastleProps {
 export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const dojo = useDojo();
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const { currentLevel, nextLevel, canUpgrade, upgradeProgress, currentLevelName, nextLevelName, handleUpgrade } =
+    useStructureUpgrade(realmEntityId);
 
-  const realmInfo = useMemo(
-    () => getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components),
-    [realmEntityId, dojo.setup.components],
-  );
-
-  const getNextRealmLevel = useMemo(() => {
-    if (!realmInfo) return null;
-    const nextLevel = realmInfo.level + 1;
-    return nextLevel <= configManager.getMaxLevel(realmInfo.category) ? nextLevel : null;
-  }, [realmInfo]);
-
-  const { checkUpgradeRequirements, resourceProgress } = useMemo(() => {
-    if (!realmInfo || !getNextRealmLevel) return { checkUpgradeRequirements: false, resourceProgress: 0 };
-
-    const costs = configManager.realmUpgradeCosts[getNextRealmLevel] || [];
-    let totalProgress = 0;
-
-    const hasRequirements = costs.every((cost) => {
-      const balance = getBalance(realmEntityId, cost.resource, currentDefaultTick, dojo.setup.components);
-      const currentAmount = divideByPrecision(balance.balance);
-      const progress = Math.min(100, (currentAmount * 100) / cost.amount);
-      totalProgress += progress;
-      return currentAmount >= cost.amount;
-    });
-
-    const averageProgress = costs.length > 0 ? Math.floor(totalProgress / costs.length) : 0;
-
-    return {
-      checkUpgradeRequirements: hasRequirements,
-      resourceProgress: averageProgress,
-    };
-  }, [realmInfo, getNextRealmLevel, realmEntityId, currentDefaultTick, dojo.setup.components]);
-
-  const handleUpgrade = async () => {
-    if (!realmInfo) return;
-
-    await dojo.setup.systemCalls.upgrade_realm({
-      signer: dojo.account.account,
-      realm_entity_id: realmInfo.entityId,
-    });
-  };
-
-  if (!realmInfo) return null;
-
-  const isOwner = realmInfo.owner === ContractAddress(dojo.account.account.address);
+  // Check ownership
+  const isOwner = ContractAddress(dojo.account.account.address);
   if (!isOwner) return null;
-
-  const canUpgrade = getNextRealmLevel !== null && checkUpgradeRequirements;
 
   return (
     <>
@@ -108,7 +56,7 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
         <CardContent className="relative flex items-center justify-between gap-4 pt-3">
           <div className="flex flex-1 flex-col gap-3">
             <h3 className="flex flex-col text-xl font-bold">
-              {getNextRealmLevel !== null ? (
+              {nextLevel !== null ? (
                 <>
                   <span className={canUpgrade ? "text-success" : "text-muted-foreground"}>
                     {canUpgrade ? "Ready to Upgrade!" : "Need More Resources"}
@@ -116,17 +64,17 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
                   <span className="flex items-center gap-2 text-muted-foreground">
                     {canUpgrade ? (
                       <>
-                        {getLevelName(realmInfo.level)}
+                        {currentLevelName}
                         <ArrowRight className="h-4 w-4" />
-                        {getLevelName(getNextRealmLevel)}
+                        {nextLevelName}
                       </>
                     ) : (
-                      <span className="text-muted-foreground text-lg">Progress: {resourceProgress}%</span>
+                      <span className="text-muted-foreground text-lg">Progress: {upgradeProgress}%</span>
                     )}
                   </span>
                 </>
               ) : (
-                <span className="text-muted-foreground">{getLevelName(realmInfo.level)} (Max Level)</span>
+                <span className="text-muted-foreground">{currentLevelName} (Max Level)</span>
               )}
             </h3>
 
@@ -141,9 +89,9 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
               size="lg"
             >
               <Castle className="mr-2 h-4 w-4" />
-              {getNextRealmLevel !== null
+              {nextLevel !== null
                 ? canUpgrade
-                  ? `Upgrade to Level ${getNextRealmLevel}`
+                  ? `Upgrade to Level ${nextLevel}`
                   : "Show Requirements"
                 : "View Castle Details"}
             </Button>
@@ -152,7 +100,7 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
           <div className="relative h-28 w-28 shrink-0">
             {canUpgrade && <div className="absolute inset-0 animate-pulse rounded-full bg-success/20 blur-xl" />}
             <img
-              src={`/images/castles/castle-${realmInfo.level}.png`}
+              src={`/images/castles/castle-${currentLevel}.png`}
               alt="Castle"
               className="relative h-full w-full object-contain drop-shadow-xl"
             />
@@ -163,7 +111,7 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
       <UpgradeDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        currentLevel={realmInfo.level}
+        currentLevel={currentLevel}
         realmEntityId={realmEntityId}
         onUpgrade={handleUpgrade}
       />
