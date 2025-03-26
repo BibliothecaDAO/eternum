@@ -1,6 +1,6 @@
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
 
 interface NearbyEnemiesProps {
@@ -58,11 +58,13 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
             <span className="font-semibold">{distance}</span> Hexes Away
           </div>
         </div>
+      </CardContent>
+      <CardFooter className="p-4">
         <Button variant="secondary" size="sm" className="w-full font-semibold" onClick={onView}>
           View Details
           <Eye className="w-4 h-4 ml-2" />
         </Button>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 };
