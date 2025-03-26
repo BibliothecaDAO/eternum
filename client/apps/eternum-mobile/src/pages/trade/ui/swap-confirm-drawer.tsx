@@ -274,7 +274,7 @@ export const SwapConfirmDrawer = ({
               <div className="h-px bg-border" />
 
               <div className="text-center">
-                <span className="text-muted-foreground">Time remaining: {getTimeRemaining()}</span>
+                <span className="text-muted-foreground">Time until arrival: {getTimeRemaining()}</span>
               </div>
 
               <Button className="w-full" size="lg" disabled>
@@ -307,7 +307,7 @@ export const SwapConfirmDrawer = ({
               <div className="h-px bg-border" />
 
               <div className="text-center">
-                <span className="text-muted-foreground">Time remaining: {getTimeRemaining()}</span>
+                <span className="text-muted-foreground">Time until arrival: {getTimeRemaining()}</span>
               </div>
 
               <Button className="w-full" size="lg" onClick={onClose}>
