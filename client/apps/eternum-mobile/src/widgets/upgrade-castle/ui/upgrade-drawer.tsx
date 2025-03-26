@@ -11,19 +11,18 @@ import { useEffect, useState } from "react";
 interface UpgradeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  currentLevel: number;
   realmEntityId: number;
-  onUpgrade: () => Promise<void>;
 }
 
 type UpgradeStep = "cost" | "upgrading" | "success" | "error";
 
-export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, onUpgrade }: UpgradeDrawerProps) => {
+export const UpgradeDrawer = ({ isOpen, onClose, realmEntityId }: UpgradeDrawerProps) => {
   const [step, setStep] = useState<UpgradeStep>("cost");
   const [error, setError] = useState<string>("");
   const { setup } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const { upgradeCosts, nextLevel, nextLevelName, currentLevelName, canUpgrade } = useStructureUpgrade(realmEntityId);
+  const { upgradeCosts, nextLevel, nextLevelName, currentLevelName, canUpgrade, handleUpgrade } =
+    useStructureUpgrade(realmEntityId);
 
   // Reset state when drawer is closed
   useEffect(() => {
@@ -35,10 +34,10 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
     }
   }, [isOpen]);
 
-  const handleUpgrade = async () => {
+  const onUpgradeClick = async () => {
     try {
       setStep("upgrading");
-      await onUpgrade();
+      await handleUpgrade();
       setStep("success");
     } catch (err) {
       setStep("error");
@@ -90,7 +89,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, on
                 </div>
               </div>
 
-              <Button className="w-full" size="lg" onClick={handleUpgrade} disabled={!canUpgrade}>
+              <Button className="w-full" size="lg" onClick={onUpgradeClick} disabled={!canUpgrade}>
                 {canUpgrade ? `Upgrade to Level ${nextLevel}` : "Insufficient Resources"}
               </Button>
             </div>
