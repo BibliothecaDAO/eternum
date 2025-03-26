@@ -4,7 +4,7 @@ import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
 import { ResourcesCard } from "@/widgets/resources-card";
 import { UpgradeCastle } from "@/widgets/upgrade-castle";
 import { useCallback } from "react";
-import { ProductionWidgetsSection } from "../components/labor-widgets-section";
+import { ProductionWidgetsSection } from "../components/production-widgets-section";
 import { useRealmTabs } from "../realm-page";
 
 export function OverviewTab() {
