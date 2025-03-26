@@ -1,6 +1,7 @@
 import { useResourceArrivals } from "@/features/resource-arrivals";
 import { useStore } from "@/shared/store";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
+import { NearbyEnemies } from "@/widgets/nearby-enemies";
 import { ResourcesCard } from "@/widgets/resources-card";
 import { useCallback } from "react";
 import { ProductionWidgetsSection } from "../components/labor-widgets-section";
@@ -36,7 +37,7 @@ export function OverviewTab() {
       {/* <UpgradeCastle castleLevel={1} onUpgrade={handleUpgrade} /> */}
 
       <div className="grid grid-cols-2 gap-4">
-        {/* <NearbyEnemies entityId={1} onView={handleViewEnemies} /> */}
+        <NearbyEnemies entityId={1} onView={() => {}} />
         <ArrivedDonkeys
           onClaim={handleClaimDonkeys}
           readyCount={summary.readyArrivals}
