@@ -83,7 +83,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::_instant_arrivals_transfer(ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false);
+        Self::_instant_arrivals_transfer(
+            ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false,
+        );
     }
 
     #[inline(always)]
