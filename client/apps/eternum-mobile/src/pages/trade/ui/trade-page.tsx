@@ -179,7 +179,6 @@ export const TradePage = () => {
           Number((sellResourceId === ResourcesIds.Lords ? buyAmount : sellAmount).toFixed(2)),
         ),
       });
-      setIsConfirmOpen(false);
     } catch (error) {
       console.error("Swap failed:", error);
       throw new Error("Swap failed");
