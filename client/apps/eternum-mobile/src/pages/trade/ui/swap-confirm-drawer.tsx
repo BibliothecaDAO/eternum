@@ -1,9 +1,20 @@
+import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { Resources } from "@bibliothecadao/eternum";
+import {
+  calculateDonkeysNeeded,
+  configManager,
+  divideByPrecision,
+  getBalance,
+  getTotalResourceWeightKg,
+  Resources,
+  ResourcesIds,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Check, Loader2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface ConfirmDrawerProps {
   isOpen: boolean;
@@ -13,6 +24,7 @@ interface ConfirmDrawerProps {
   sellResource: Resources;
   buyResource: Resources;
   onConfirm: () => Promise<void>;
+  travelTime?: number; // Travel time in seconds
 }
 
 type SwapState = "confirm" | "swapping" | "success" | "error";
@@ -25,11 +37,84 @@ export const SwapConfirmDrawer = ({
   sellResource,
   buyResource,
   onConfirm,
+  travelTime,
 }: ConfirmDrawerProps) => {
   const [state, setState] = useState<SwapState>("confirm");
   const [error, setError] = useState<string>("");
-  // @ts-ignore
-  const [timeLeft, setTimeLeft] = useState("0 hrs 10 mins");
+  const [canCarry, setCanCarry] = useState(false);
+
+  const { structureEntityId } = useStore();
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+
+  // Calculate resource weights
+  const resourceWeightKg = useMemo(() => {
+    // Determine which resource is being transported (the non-Lords one)
+    const transportedResource =
+      buyResource.id === ResourcesIds.Lords
+        ? { resourceId: sellResource.id, amount: sellAmount }
+        : { resourceId: buyResource.id, amount: buyAmount };
+
+    return getTotalResourceWeightKg([transportedResource]);
+  }, [buyResource, sellResource, buyAmount, sellAmount]);
+
+  // Calculate needed donkeys based on weight
+  const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
+
+  // Get donkey balance
+  const donkeyBalance = useMemo(() => {
+    const { balance } = getBalance(structureEntityId, ResourcesIds.Donkey, currentDefaultTick, components);
+    return divideByPrecision(balance);
+  }, [components, currentDefaultTick, structureEntityId]);
+
+  // Calculate arrival time - mirroring travel-info.tsx approach
+  const arrivalTime = useMemo(() => {
+    if (travelTime === undefined) return null;
+
+    // Convert travel time from seconds to minutes for calculation
+    const travelTimeMinutes = travelTime / 60;
+
+    const currentTimestampMs = getBlockTimestamp().currentBlockTimestamp * 1000;
+    const travelTimeMs = travelTimeMinutes * 60 * 1000;
+    const arrivalTimeMs = currentTimestampMs + travelTimeMs;
+
+    // Calculate the next hour boundary after arrival
+    const arrivalDate = new Date(arrivalTimeMs);
+    const nextHourDate = new Date(arrivalDate);
+    nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
+
+    return nextHourDate;
+  }, [travelTime]);
+
+  // Format arrival time
+  const formattedArrivalTime = useMemo(() => {
+    if (!arrivalTime) return "";
+
+    const hours = arrivalTime.getHours();
+    const minutes = arrivalTime.getMinutes();
+
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  }, [arrivalTime]);
+
+  // Timer effect to update the formatted time
+  useEffect(() => {
+    if ((state === "swapping" || state === "success") && arrivalTime) {
+      const timer = setInterval(() => {
+        // Force re-render to update the formatted time
+        setState((prevState) => prevState);
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [state, arrivalTime]);
+
+  // Check if we have enough donkeys
+  useEffect(() => {
+    setCanCarry(donkeyBalance >= neededDonkeys);
+  }, [donkeyBalance, neededDonkeys]);
 
   // Reset state when drawer is closed
   useEffect(() => {
@@ -52,6 +137,28 @@ export const SwapConfirmDrawer = ({
     }
   };
 
+  // Calculate time remaining for display
+  const getTimeRemaining = () => {
+    if (!arrivalTime) return "";
+
+    const now = Date.now();
+    const timeLeft = Math.max(0, arrivalTime.getTime() - now);
+
+    if (timeLeft <= 0) return "Arrived";
+
+    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
   const renderContent = () => {
     switch (state) {
       case "confirm":
@@ -70,21 +177,29 @@ export const SwapConfirmDrawer = ({
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Travel Time</span>
-                  <span>0 hrs 10 mins</span>
+              {!canCarry && (
+                <div className="p-2 bg-red-500/20 text-red-500 rounded-md">
+                  Not enough donkeys to transport resources
                 </div>
+              )}
+
+              <div className="space-y-2">
+                {arrivalTime && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Estimated Arrival</span>
+                    <span>{formattedArrivalTime}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Transfer Weight</span>
-                  <span>2 kg</span>
+                  <span>{resourceWeightKg} kg</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Donkeys Burnt for Transfer</span>
                   <div className="flex items-center gap-1">
-                    <span>1</span>
-                    <ResourceIcon resourceId={25} size={20} />
-                    <span className="text-sm text-muted-foreground">[1000600]</span>
+                    <span className={neededDonkeys > donkeyBalance ? "text-red-500" : ""}>{neededDonkeys}</span>
+                    <ResourceIcon resourceId={ResourcesIds.Donkey} size={20} />
+                    <span className="text-sm text-muted-foreground">[{donkeyBalance}]</span>
                   </div>
                 </div>
               </div>
@@ -95,22 +210,22 @@ export const SwapConfirmDrawer = ({
                 <h3 className="font-medium">Resource Weights</h3>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={31} size={20} />
-                    <span>LORDS: 0 kg/unit</span>
+                    <ResourceIcon resourceId={ResourcesIds.Lords} size={20} />
+                    <span>LORDS: {configManager.getResourceWeightKg(ResourcesIds.Lords)} kg/unit</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={29} size={20} />
-                    <span>Food: 0.1 kg/unit</span>
+                    <ResourceIcon resourceId={ResourcesIds.Wheat} size={20} />
+                    <span>Food: {configManager.getResourceWeightKg(ResourcesIds.Wheat)} kg/unit</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={1} size={20} />
-                    <span>Other: 1 kg/unit</span>
+                    <ResourceIcon resourceId={ResourcesIds.Wood} size={20} />
+                    <span>Other: {configManager.getResourceWeightKg(ResourcesIds.Wood)} kg/unit</span>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">Each resource has a different weight per unit.</p>
               </div>
 
-              <Button className="w-full" size="lg" onClick={handleConfirm}>
+              <Button className="w-full" size="lg" onClick={handleConfirm} disabled={!canCarry}>
                 Confirm Swap
               </Button>
             </div>
@@ -140,7 +255,7 @@ export const SwapConfirmDrawer = ({
               <div className="h-px bg-border" />
 
               <div className="text-center">
-                <span className="text-muted-foreground">Travel time left: {timeLeft}</span>
+                <span className="text-muted-foreground">Time remaining: {getTimeRemaining()}</span>
               </div>
 
               <Button className="w-full" size="lg" disabled>
@@ -173,7 +288,7 @@ export const SwapConfirmDrawer = ({
               <div className="h-px bg-border" />
 
               <div className="text-center">
-                <span className="text-muted-foreground">Travel time left: {timeLeft}</span>
+                <span className="text-muted-foreground">Time remaining: {getTimeRemaining()}</span>
               </div>
 
               <Button className="w-full" size="lg" onClick={onClose}>

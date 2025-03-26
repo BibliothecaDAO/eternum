@@ -8,6 +8,7 @@ import {
   ContractAddress,
   divideByPrecision,
   getBalance,
+  getClosestBank,
   MarketManager,
   multiplyByPrecision,
   resources,
@@ -149,10 +150,16 @@ export const TradePage = () => {
 
   const handleConfirmSwap = async () => {
     try {
+      const closestBank = getClosestBank(structureEntityId, components);
+
+      if (!closestBank) {
+        throw new Error("No bank found");
+      }
+
       const operation = sellResourceId === ResourcesIds.Lords ? systemCalls.buy_resources : systemCalls.sell_resources;
       await operation({
         signer: account,
-        bank_entity_id: structureEntityId,
+        bank_entity_id: closestBank.bankId,
         entity_id: structureEntityId,
         resource_type: sellResourceId === ResourcesIds.Lords ? buyResourceId : sellResourceId,
         amount: multiplyByPrecision(Number(sellAmount.toFixed(2))),
@@ -160,12 +167,16 @@ export const TradePage = () => {
       setIsConfirmOpen(false);
     } catch (error) {
       console.error("Swap failed:", error);
+      throw new Error("Swap failed");
     }
   };
 
   const slippage = marketManager.slippage(multiplyByPrecision(Math.abs(sellAmount - lpFee)), true) || 0;
 
   const marketPrice = marketManager.getMarketPrice();
+
+  // Get closest bank and travel time
+  const closestBank = useMemo(() => getClosestBank(structureEntityId, components), [structureEntityId, components]);
 
   return (
     <div className="container p-4 space-y-6">
@@ -254,7 +265,7 @@ export const TradePage = () => {
         </CardContent>
       </Card>
 
-      {sellResource && buyResource && (
+      {sellResource && buyResource && closestBank && (
         <SwapConfirmDrawer
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
@@ -263,6 +274,7 @@ export const TradePage = () => {
           sellResource={sellResource}
           buyResource={buyResource}
           onConfirm={handleConfirmSwap}
+          travelTime={closestBank.travelTime}
         />
       )}
     </div>
