@@ -15,7 +15,6 @@ export const ProductionDrawer = ({ building, realm, open, onOpenChange }: Produc
 
   if (!realm) return null;
   if (isLaborMode) {
-    console.log("realm labor", realm);
     return <LaborProductionDrawer realm={realm} open={open} onOpenChange={onOpenChange} />;
   }
   return <ResourcesProductionDrawer building={building} realm={realm} open={open} onOpenChange={onOpenChange} />;
