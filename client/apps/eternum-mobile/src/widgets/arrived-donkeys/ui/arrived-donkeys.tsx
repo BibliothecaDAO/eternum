@@ -17,9 +17,9 @@ export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: Ar
   }
 
   return (
-    <Card>
+    <Card className={cn(readyCount > 0 && "bg-green-500/10")}>
       <CardContent className="space-y-3 p-4 h-full">
-        <CardTitle className={cn("text-sm flex w-full items-center gap-2")}>
+        <CardTitle className={cn("text-sm flex w-full items-center gap-2", readyCount > 0 && "text-green-500")}>
           <PackageCheck className="w-4 h-4" />
           Arrivals
         </CardTitle>
@@ -35,9 +35,9 @@ export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: Ar
           )}
         </div>
         <Button
-          variant={readyCount > 0 ? "default" : "secondary"}
+          variant="secondary"
           size="sm"
-          className={cn("w-full font-semibold", readyCount > 0 && "bg-green-500 hover:bg-green-600 text-white")}
+          className="w-full font-semibold"
           onClick={onClaim}
           disabled={readyCount === 0}
         >
