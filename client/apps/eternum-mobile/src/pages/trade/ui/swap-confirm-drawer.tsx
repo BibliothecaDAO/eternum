@@ -50,16 +50,24 @@ export const SwapConfirmDrawer = ({
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  // Calculate resource weights
-  const resourceWeightKg = useMemo(() => {
-    // Determine which resource is being transported (the non-Lords one)
-    const transportedResource =
-      buyResource.id === ResourcesIds.Lords
-        ? { resourceId: sellResource.id, amount: sellAmount }
-        : { resourceId: buyResource.id, amount: buyAmount };
+  // Determine which resources are being transported - mirroring swap.tsx
+  const resourcesToTransport = useMemo(() => {
+    // In a swap, only one resource is actually transported:
+    // - If selling Lords (buying resource), we transport the resource being purchased
+    // - If selling resource (buying Lords), we transport Lords (not the resource being sold)
+    if (sellResource.id === ResourcesIds.Lords) {
+      // Selling Lords to buy another resource - transport the purchased resource
+      return [{ resourceId: buyResource.id, amount: buyAmount }];
+    } else {
+      // Selling resource to buy Lords - transport Lords (not the resource)
+      return [{ resourceId: ResourcesIds.Lords, amount: buyAmount }];
+    }
+  }, [sellResource.id, buyResource.id, buyAmount]);
 
-    return getTotalResourceWeightKg([transportedResource]);
-  }, [buyResource, sellResource, buyAmount, sellAmount]);
+  // Calculate resource weights from the resources being transported
+  const resourceWeightKg = useMemo(() => {
+    return getTotalResourceWeightKg(resourcesToTransport);
+  }, [resourcesToTransport]);
 
   // Calculate needed donkeys based on weight
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
@@ -159,6 +167,17 @@ export const SwapConfirmDrawer = ({
     }
   };
 
+  // Determine which resource is being transported (for display)
+  const transportedResource = useMemo(() => {
+    if (sellResource.id === ResourcesIds.Lords) {
+      // If selling Lords (buying resource), we're transporting the resource being purchased
+      return buyResource.trait;
+    } else {
+      // If selling resource (buying Lords), we're transporting Lords
+      return "Lords";
+    }
+  }, [sellResource.id, buyResource.trait]);
+
   const renderContent = () => {
     switch (state) {
       case "confirm":
@@ -179,7 +198,7 @@ export const SwapConfirmDrawer = ({
             <div className="p-6 space-y-6">
               {!canCarry && (
                 <div className="p-2 bg-red-500/20 text-red-500 rounded-md">
-                  Not enough donkeys to transport resources
+                  Not enough donkeys to transport {transportedResource}
                 </div>
               )}
 
