@@ -41,7 +41,9 @@ pub trait IVRFConfig<T> {
 
 #[starknet::interface]
 pub trait IStartingResourcesConfig<T> {
-    fn set_starting_resources_config(ref self: T, resources: Span<(u8, u128)>);
+    fn set_starting_resources_config(
+        ref self: T, realm_starting_resources: Span<(u8, u128)>, village_starting_resources: Span<(u8, u128)>,
+    );
 }
 
 #[starknet::interface]
@@ -345,25 +347,51 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl StartingResourcesConfigImpl of super::IStartingResourcesConfig<ContractState> {
-        fn set_starting_resources_config(ref self: ContractState, resources: Span<(u8, u128)>) {
+        fn set_starting_resources_config(
+            ref self: ContractState,
+            realm_starting_resources: Span<(u8, u128)>,
+            village_starting_resources: Span<(u8, u128)>,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let resources_list_id = world.dispatcher.uuid();
-            for i in 0..resources.len() {
-                let (resource_type, resource_amount) = *resources.at(i);
+            // add realm starting resources
+            let realm_resources_list_id = world.dispatcher.uuid();
+            for i in 0..realm_starting_resources.len() {
+                let (resource_type, resource_amount) = *realm_starting_resources.at(i);
                 world
                     .write_model(
                         @ResourceList {
-                            entity_id: resources_list_id, index: i, resource_type, amount: resource_amount,
+                            entity_id: realm_resources_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
             };
-
-            let starting_resources = StartingResourcesConfig {
-                resources_list_id, resources_list_count: resources.len().try_into().unwrap(),
+            let realm_starting_resources = StartingResourcesConfig {
+                resources_list_id: realm_resources_list_id,
+                resources_list_count: realm_starting_resources.len().try_into().unwrap(),
             };
-            WorldConfigUtilImpl::set_member(ref world, selector!("starting_resources_config"), starting_resources);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("realm_start_resources_config"), realm_starting_resources,
+            );
+
+            // add village starting resources
+            let village_resources_list_id = world.dispatcher.uuid();
+            for i in 0..village_starting_resources.len() {
+                let (resource_type, resource_amount) = *village_starting_resources.at(i);
+                world
+                    .write_model(
+                        @ResourceList {
+                            entity_id: village_resources_list_id, index: i, resource_type, amount: resource_amount,
+                        },
+                    );
+            };
+            let village_starting_resources = StartingResourcesConfig {
+                resources_list_id: village_resources_list_id,
+                resources_list_count: village_starting_resources.len().try_into().unwrap(),
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("village_start_resources_config"), village_starting_resources,
+            );
         }
     }
 

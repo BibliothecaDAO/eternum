@@ -123,7 +123,7 @@ export const setStartingResourcesConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const calldataArray = [];
+  const realmStartResourcesArray = [];
   for (const elem of Object.values(config.config.startingResources)) {
     const calldata = {
       resource: elem.resource,
@@ -132,17 +132,34 @@ export const setStartingResourcesConfig = async (config: Config) => {
 
     console.log(
       chalk.cyan(`
-    ✧ Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
+    ✧ Realm Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
     );
 
     console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
 
-    calldataArray.push(calldata);
+    realmStartResourcesArray.push(calldata);
+  }
+
+  const villageStartResourcesArray = [];
+  for (const elem of Object.values(config.config.villageStartingResources)) {
+    const calldata = {
+      resource: elem.resource,
+      amount: elem.amount * config.config.resources.resourcePrecision,
+    };
+
+    console.log(
+      chalk.cyan(`
+    ✧ Village Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
+    );
+
+    console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
+    villageStartResourcesArray.push(calldata);
   }
 
   const tx = await config.provider.set_starting_resources_config({
     signer: config.account,
-    startingResources: calldataArray,
+    realmStartingResources: realmStartResourcesArray,
+    villageStartingResources: realmStartResourcesArray
   });
 
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));

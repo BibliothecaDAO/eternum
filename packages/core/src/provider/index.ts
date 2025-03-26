@@ -1774,12 +1774,17 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_starting_resources_config(props: SystemProps.SetStartingResourcesConfigProps) {
-    const { startingResources, signer } = props;
+    const { realmStartingResources, villageStartingResources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_starting_resources_config",
-      calldata: [startingResources.length, ...startingResources.flatMap(({ resource, amount }) => [resource, amount])],
+      calldata: [
+        realmStartingResources.length, 
+        ...realmStartingResources.flatMap(({ resource, amount }) => [resource, amount]),
+        villageStartingResources.length, 
+        ...villageStartingResources.flatMap(({ resource, amount }) => [resource, amount]),
+      ],
     });
   }
 

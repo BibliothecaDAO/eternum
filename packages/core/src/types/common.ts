@@ -428,6 +428,7 @@ export interface Config {
     hyperstructurePointsForWin: number;
   };
   startingResources: ResourceCost[];
+  villageStartingResources: ResourceCost[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;

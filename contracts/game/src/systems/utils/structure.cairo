@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
@@ -93,9 +94,11 @@ pub impl iStructureImpl of IStructureTrait {
     fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
-        let starting_resources: StartingResourcesConfig = WorldConfigUtilImpl::get_member(
-            world, selector!("starting_resources_config"),
-        );
+        let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
+            WorldConfigUtilImpl::get_member(world, selector!("village_start_resources_config"))
+        } else {
+            WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
+        };
 
         for i in 0..starting_resources.resources_list_count {
             let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));

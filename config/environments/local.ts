@@ -8,7 +8,7 @@
 
 import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { multiplyStartingResources } from "./utils/resource";
+import { multiplyStartingResources, multiplyVillageStartingResources } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -62,6 +62,7 @@ export const LocalEternumGlobalConfig: Config = {
   },
   // starting resources x1000
   startingResources: multiplyStartingResources(1000),
+  villageStartingResources: multiplyVillageStartingResources(1000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km

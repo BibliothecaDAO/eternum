@@ -38,7 +38,8 @@ pub struct WorldConfig {
     pub realm_count_config: RealmCountConfig,
     pub season_config: SeasonConfig,
     pub agent_controller_config: AgentControllerConfig,
-    pub starting_resources_config: StartingResourcesConfig,
+    pub realm_start_resources_config: StartingResourcesConfig,
+    pub village_start_resources_config: StartingResourcesConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

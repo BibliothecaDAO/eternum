@@ -457,6 +457,12 @@ export const multiplyStartingResources = (multiplier: number): ResourceCost[] =>
   }));
 };
 
+export const multiplyVillageStartingResources = (multiplier: number): ResourceCost[] => {
+  return VILLAGE_STARTING_RESOURCES.map((resource) => ({
+    resource: resource.resource,
+    amount: resource.amount * multiplier,
+  }));
+};
 export const RESOURCE_BANDS = {
   T1_TROOPS_PRIMARY: [
     ResourcesIds.Copper,

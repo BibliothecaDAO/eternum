@@ -336,7 +336,8 @@ interface ResourceCosts {
 }
 
 export interface SetStartingResourcesConfigProps extends SystemSigner {
-  startingResources: ResourceCosts[];
+  realmStartingResources: ResourceCosts[];
+  villageStartingResources: ResourceCosts[];
 }
 
 export interface SetMapConfigProps extends SystemSigner {

@@ -23,7 +23,8 @@ import {
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
   RESOURCES_WEIGHTS_NANOGRAM,
-  STARTING_RESOURCES
+  STARTING_RESOURCES,
+  VILLAGE_STARTING_RESOURCES
 } from "./utils/resource";
 import {
   TROOP_AGENTS_TROOP_LOWER_BOUND,
@@ -338,6 +339,7 @@ export const EternumGlobalConfig: Config = {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
   },
   startingResources: STARTING_RESOURCES,
+  villageStartingResources: VILLAGE_STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,

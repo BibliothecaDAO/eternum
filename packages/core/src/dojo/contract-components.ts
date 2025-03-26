@@ -1238,7 +1238,11 @@ export function defineContractComponents(world: World) {
             end_grace_seconds: RecsType.Number,
           },
           agent_controller_config: RecsType.BigInt,
-          starting_resources_config: {
+          realm_start_resources_config: {
+            resources_list_id: RecsType.Number,
+            resources_list_count: RecsType.Number,
+          },
+          village_start_resources_config: {
             resources_list_id: RecsType.Number,
             resources_list_count: RecsType.Number,
           },
@@ -1338,8 +1342,10 @@ export function defineContractComponents(world: World) {
               "u64", // SeasonConfig end_at
               "u32", // SeasonConfig end_grace_seconds
               "ContractAddress", // AgentControllerConfig address
-              "u32", // StartingResourcesConfig resources_list_id
-              "u8", // StartingResourcesConfig resources_list_count
+              "u32", // realm StartingResourcesConfig resources_list_id
+              "u8", // realm StartingResourcesConfig resources_list_count
+              "u32", // village StartingResourcesConfig resources_list_id
+              "u8", // village StartingResourcesConfig resources_list_count
             ],
             customTypes: [],
           },
