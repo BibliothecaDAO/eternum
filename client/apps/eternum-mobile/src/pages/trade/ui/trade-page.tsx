@@ -21,8 +21,8 @@ import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 export const TradePage = () => {
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
-  const [buyResourceId, setBuyResourceId] = useState(1); // Default to first resource
-  const [sellResourceId, setSellResourceId] = useState(2); // Default to second resource
+  const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
+  const [sellResourceId, setSellResourceId] = useState(1); // Default to first non-Lords resource
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { structureEntityId } = useStore();
 
@@ -106,6 +106,44 @@ export const TradePage = () => {
     }
   };
 
+  const handleSellResourceChange = (newResourceId: number) => {
+    if (newResourceId === buyResourceId) {
+      // If the new sell resource matches buy resource, swap them
+      setBuyResourceId(sellResourceId);
+    } else if (newResourceId === ResourcesIds.Lords) {
+      // If changing to Lords, make sure buy resource is not Lords
+      if (buyResourceId === ResourcesIds.Lords) {
+        setBuyResourceId(sellResourceId);
+      }
+    } else if (buyResourceId !== ResourcesIds.Lords) {
+      // If neither would be Lords, set buy to Lords
+      setBuyResourceId(ResourcesIds.Lords);
+    }
+    setSellResourceId(newResourceId);
+    // Reset amounts when changing resources
+    setBuyAmount(0);
+    setSellAmount(0);
+  };
+
+  const handleBuyResourceChange = (newResourceId: number) => {
+    if (newResourceId === sellResourceId) {
+      // If the new buy resource matches sell resource, swap them
+      setSellResourceId(buyResourceId);
+    } else if (newResourceId === ResourcesIds.Lords) {
+      // If changing to Lords, make sure sell resource is not Lords
+      if (sellResourceId === ResourcesIds.Lords) {
+        setSellResourceId(buyResourceId);
+      }
+    } else if (sellResourceId !== ResourcesIds.Lords) {
+      // If neither would be Lords, set sell to Lords
+      setSellResourceId(ResourcesIds.Lords);
+    }
+    setBuyResourceId(newResourceId);
+    // Reset amounts when changing resources
+    setBuyAmount(0);
+    setSellAmount(0);
+  };
+
   const sellResource = resources.find((r) => r.id === sellResourceId);
   const buyResource = resources.find((r) => r.id === buyResourceId);
 
@@ -142,7 +180,7 @@ export const TradePage = () => {
           amount={sellAmount}
           resourceId={sellResourceId}
           onAmountChange={handleSellAmountChange}
-          onResourceChange={setSellResourceId}
+          onResourceChange={handleSellResourceChange}
           entityId={structureEntityId}
         />
 
@@ -157,7 +195,7 @@ export const TradePage = () => {
           amount={buyAmount}
           resourceId={buyResourceId}
           onAmountChange={handleBuyAmountChange}
-          onResourceChange={setBuyResourceId}
+          onResourceChange={handleBuyResourceChange}
           entityId={structureEntityId}
         />
       </div>
