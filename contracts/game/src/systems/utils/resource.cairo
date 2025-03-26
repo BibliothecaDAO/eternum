@@ -83,9 +83,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::_instant_transfer(
-            ref world, from_troop_id, ref from_troop_weight, to_structure_id, ref to_structure_weight, resources, false,
-        );
+        Self::_instant_arrivals_transfer(ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false);
     }
 
     #[inline(always)]
@@ -183,8 +181,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                         from_resource.store(ref world);
                     }
 
-                    // add resource to balance
-                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, 0);
+                    // add resource to balance to the last open slot so it arrives immediately
+                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::previous_arrival_slot(ref world, 0);
                     let mut realm_resources_array = ResourceArrivalImpl::read_slot(
                         ref world, to_id, arrival_day, arrival_slot,
                     );
