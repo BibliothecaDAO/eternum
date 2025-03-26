@@ -35,13 +35,26 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
     return nextLevel <= configManager.getMaxLevel(realmInfo.category) ? nextLevel : null;
   }, [realmInfo]);
 
-  const checkUpgradeRequirements = useMemo(() => {
-    if (!realmInfo || !getNextRealmLevel) return false;
+  const { checkUpgradeRequirements, resourceProgress } = useMemo(() => {
+    if (!realmInfo || !getNextRealmLevel) return { checkUpgradeRequirements: false, resourceProgress: 0 };
+
     const costs = configManager.realmUpgradeCosts[getNextRealmLevel] || [];
-    return costs.every((cost) => {
+    let totalProgress = 0;
+
+    const hasRequirements = costs.every((cost) => {
       const balance = getBalance(realmEntityId, cost.resource, currentDefaultTick, dojo.setup.components);
-      return divideByPrecision(balance.balance) >= cost.amount;
+      const currentAmount = divideByPrecision(balance.balance);
+      const progress = Math.min(100, (currentAmount * 100) / cost.amount);
+      totalProgress += progress;
+      return currentAmount >= cost.amount;
     });
+
+    const averageProgress = costs.length > 0 ? Math.floor(totalProgress / costs.length) : 0;
+
+    return {
+      checkUpgradeRequirements: hasRequirements,
+      resourceProgress: averageProgress,
+    };
   }, [realmInfo, getNextRealmLevel, realmEntityId, currentDefaultTick, dojo.setup.components]);
 
   const handleUpgrade = async () => {
@@ -101,9 +114,15 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
                     {canUpgrade ? "Ready to Upgrade!" : "Need More Resources"}
                   </span>
                   <span className="flex items-center gap-2 text-muted-foreground">
-                    {getLevelName(realmInfo.level)}
-                    <ArrowRight className="h-4 w-4" />
-                    {getLevelName(getNextRealmLevel)}
+                    {canUpgrade ? (
+                      <>
+                        {getLevelName(realmInfo.level)}
+                        <ArrowRight className="h-4 w-4" />
+                        {getLevelName(getNextRealmLevel)}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground text-lg">Progress: {resourceProgress}%</span>
+                    )}
                   </span>
                 </>
               ) : (
