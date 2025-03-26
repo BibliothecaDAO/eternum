@@ -9,7 +9,13 @@ import {
 } from "@bibliothecadao/eternum";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
-import { BUILDING_CAPACITY, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED, COMPLEX_BUILDING_COSTS, SIMPLE_BUILDING_COSTS } from "./utils/building";
+import {
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  BUILDING_RESOURCE_PRODUCED,
+  COMPLEX_BUILDING_COSTS,
+  SIMPLE_BUILDING_COSTS,
+} from "./utils/building";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -24,7 +30,7 @@ import {
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
   RESOURCES_WEIGHTS_NANOGRAM,
   STARTING_RESOURCES,
-  VILLAGE_STARTING_RESOURCES
+  VILLAGE_STARTING_RESOURCES,
 } from "./utils/resource";
 import {
   TROOP_AGENTS_TROOP_LOWER_BOUND,
@@ -194,9 +200,6 @@ export const EternumGlobalConfig: Config = {
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
-    resourceMultiplier: RESOURCE_PRECISION,
-    resourceAmountPerTick: RESOURCE_AMOUNT_PER_TICK,
-    startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
     productionByComplexRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES,
     productionByComplexRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
     productionBySimpleRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,

@@ -288,9 +288,6 @@ export interface Config {
   };
   resources: {
     resourcePrecision: number;
-    resourceMultiplier: number;
-    resourceAmountPerTick: number;
-    startingResourcesInputProductionFactor: number;
     productionByComplexRecipe: ResourceInputs;
     productionByComplexRecipeOutputs: ResourceOutputs;
     productionBySimpleRecipe: ResourceInputs;

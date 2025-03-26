@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { CapacityConfig, type Config, type ResourceCost, type ResourceInputs } from "@bibliothecadao/eternum";
+import { type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -42,26 +42,35 @@ export const SepoliaEternumGlobalConfig: Config = {
     agentFindProbability: 1,
     agentFindFailProbability: 5,
   },
-  buildings: {
-    ...CommonEternumGlobalConfig.buildings,
-    complexBuildingCosts: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.buildings.complexBuildingCosts).map(([key, value]) => [
-        key,
-        value.map((cost: ResourceCost) => ({
-          resource: cost.resource,
-          amount: cost.amount / 10,
-        })),
-      ]),
-    ) as ResourceInputs,
-  },
-  carryCapacityGram: {
-    ...CommonEternumGlobalConfig.carryCapacityGram,
-    [CapacityConfig.Structure]: 4_000_000_000_000, // 4b kg
-  },
+  // buildings: {
+  //   ...CommonEternumGlobalConfig.buildings,
+  //   complexBuildingCosts: Object.fromEntries(
+  //     Object.entries(CommonEternumGlobalConfig.buildings.complexBuildingCosts).map(([key, value]) => [
+  //       key,
+  //       value.map((cost: ResourceCost) => ({
+  //         resource: cost.resource,
+  //         amount: cost.amount / 10,
+  //       })),
+  //     ]),
+  //   ) as ResourceInputs,
+  // },
+  // carryCapacityGram: {
+  //   ...CommonEternumGlobalConfig.carryCapacityGram,
+  //   [CapacityConfig.Structure]: 4_000_000_000_000, // 4b kg
+  // },
   resources: {
     ...CommonEternumGlobalConfig.resources,
     productionByComplexRecipeOutputs: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs).map(([key, value]) => [key, value * 10]),
+      Object.entries(CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs).map(([key, value]) => [
+        key,
+        value * 10,
+      ]),
+    ),
+    productionBySimpleRecipeOutputs: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.resources.productionBySimpleRecipeOutputs).map(([key, value]) => [
+        key,
+        value * 10,
+      ]),
     ),
   },
   // no grace period
