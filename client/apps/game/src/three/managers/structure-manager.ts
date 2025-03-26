@@ -324,7 +324,7 @@ export class StructureManager {
       structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
-          : "(Uninitialized)"
+          : "Foundation"
         : ""
     }`;
     typeText.classList.add("text-xs");
