@@ -3,6 +3,7 @@ import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardTitle } from "@/shared/ui/card";
 import { useDojo } from "@bibliothecadao/react";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { Entities, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -50,47 +51,12 @@ const queryArmiesInRadius = async (client: ToriiClient, centerX: number, centerY
     dont_include_hashed_keys: false,
     entity_updated_after: 0,
     order_by: [],
-    clause: {
-      Composite: {
-        operator: "And",
-        clauses: [
-          // X coordinate within range
-          {
-            Member: {
-              model: "s1_eternum-ExplorerTroops",
-              member: "coord.x",
-              operator: "Gte",
-              value: { Primitive: { U32: centerX - radius } },
-            },
-          },
-          {
-            Member: {
-              model: "s1_eternum-ExplorerTroops",
-              member: "coord.x",
-              operator: "Lte",
-              value: { Primitive: { U32: centerX + radius } },
-            },
-          },
-          // Y coordinate within range
-          {
-            Member: {
-              model: "s1_eternum-ExplorerTroops",
-              member: "coord.y",
-              operator: "Gte",
-              value: { Primitive: { U32: centerY - radius } },
-            },
-          },
-          {
-            Member: {
-              model: "s1_eternum-ExplorerTroops",
-              member: "coord.y",
-              operator: "Lte",
-              value: { Primitive: { U32: centerY + radius } },
-            },
-          },
-        ],
-      },
-    },
+    clause: AndComposeClause([
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", centerX - radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", centerX + radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", centerY - radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", centerY + radius),
+    ]).build(),
   };
 
   const results = await client.getEntities(query);
