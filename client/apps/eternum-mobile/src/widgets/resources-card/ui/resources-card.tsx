@@ -95,7 +95,7 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
         </div>
 
         {/* Collapsed view - horizontal scroll */}
-        <div className={cn("flex gap-4 overflow-x-auto pb-2", isExpanded && "hidden")}>
+        <div className={cn("flex gap-4 overflow-x-auto pb-2 px-2", isExpanded && "hidden")}>
           {visibleCollapsedResources.map((resourceId) => renderResourceItem(resourceId))}
         </div>
 

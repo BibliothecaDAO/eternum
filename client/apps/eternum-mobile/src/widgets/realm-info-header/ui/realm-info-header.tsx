@@ -1,5 +1,6 @@
 import { useResourceBalances } from "@/features/resource-balances/model/use-resource-balances";
 import { useStructureUpgrade } from "@/features/upgrade-structure/model/use-structure-upgrade";
+import { currencyFormat } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -49,7 +50,7 @@ export const RealmInfoHeader = () => {
       {/* First row */}
       <div className="flex items-center space-x-2">
         <Badge variant="secondary" className="font-mono">
-          {lordsBalance.toFixed(2)} $LORDS
+          {currencyFormat(lordsBalance)} $LORDS
         </Badge>
 
         <div className="flex items-center gap-2">
