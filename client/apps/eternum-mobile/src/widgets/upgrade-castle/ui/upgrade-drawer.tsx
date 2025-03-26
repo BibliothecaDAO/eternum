@@ -3,7 +3,7 @@ import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { divideByPrecision, getBalance, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBalance, LEVEL_DESCRIPTIONS, resources } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -55,6 +55,9 @@ export const UpgradeDrawer = ({ isOpen, onClose, realmEntityId }: UpgradeDrawerP
               <DrawerDescription className="text-center">
                 {currentLevelName} → {nextLevelName}
               </DrawerDescription>
+              <p className="text-sm text-center text-muted-foreground mt-2">
+                {LEVEL_DESCRIPTIONS[nextLevel as keyof typeof LEVEL_DESCRIPTIONS]}
+              </p>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="space-y-4">
