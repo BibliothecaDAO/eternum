@@ -175,7 +175,9 @@ export const TradePage = () => {
         bank_entity_id: closestBank.bankId,
         entity_id: structureEntityId,
         resource_type: sellResourceId === ResourcesIds.Lords ? buyResourceId : sellResourceId,
-        amount: multiplyByPrecision(Number(sellAmount.toFixed(2))),
+        amount: multiplyByPrecision(
+          Number((sellResourceId === ResourcesIds.Lords ? buyAmount : sellAmount).toFixed(2)),
+        ),
       });
       setIsConfirmOpen(false);
     } catch (error) {
