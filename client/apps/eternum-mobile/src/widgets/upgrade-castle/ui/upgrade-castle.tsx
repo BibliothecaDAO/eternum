@@ -96,7 +96,7 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
       <UpgradeDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        castleLevel={realmInfo.level}
+        currentLevel={realmInfo.level}
         realmEntityId={realmEntityId}
         onUpgrade={handleUpgrade}
       />

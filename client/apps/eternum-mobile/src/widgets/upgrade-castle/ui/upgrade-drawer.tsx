@@ -10,18 +10,19 @@ import { useEffect, useState } from "react";
 interface UpgradeDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  castleLevel: number;
+  currentLevel: number;
   realmEntityId: number;
   onUpgrade: () => Promise<void>;
 }
 
 type UpgradeStep = "cost" | "upgrading" | "success" | "error";
 
-export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onUpgrade }: UpgradeDrawerProps) => {
+export const UpgradeDrawer = ({ isOpen, onClose, currentLevel, realmEntityId, onUpgrade }: UpgradeDrawerProps) => {
   const [step, setStep] = useState<UpgradeStep>("cost");
   const [error, setError] = useState<string>("");
   const { setup } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const nextLevel = currentLevel + 1;
 
   // Reset state when drawer is closed
   useEffect(() => {
@@ -45,7 +46,6 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onU
   };
 
   const getUpgradeCosts = () => {
-    const nextLevel = castleLevel + 1;
     return configManager.realmUpgradeCosts[nextLevel] || [];
   };
 
@@ -63,8 +63,10 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onU
         return (
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle className="text-3xl font-bokor text-center">Upgrade Realm</DrawerTitle>
-              <DrawerDescription className="text-center">Upgrade to {getLevelName(castleLevel + 1)}</DrawerDescription>
+              <DrawerTitle className="text-3xl font-bokor text-center">Upgrade Castle</DrawerTitle>
+              <DrawerDescription className="text-center">
+                {getLevelName(currentLevel)} → {getLevelName(nextLevel)}
+              </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="space-y-4">
@@ -100,7 +102,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onU
               </div>
 
               <Button className="w-full" size="lg" onClick={handleUpgrade} disabled={!checkBalance()}>
-                {checkBalance() ? "Confirm Upgrade" : "Insufficient Resources"}
+                {checkBalance() ? `Upgrade to Level ${nextLevel}` : "Insufficient Resources"}
               </Button>
             </div>
           </DrawerContent>
@@ -111,7 +113,9 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onU
           <DrawerContent>
             <DrawerHeader>
               <DrawerTitle className="text-3xl font-bokor text-center">Upgrading Castle</DrawerTitle>
-              <DrawerDescription className="text-center">To {getLevelName(castleLevel)}</DrawerDescription>
+              <DrawerDescription className="text-center">
+                {getLevelName(currentLevel)} → {getLevelName(nextLevel)}
+              </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
               <div className="flex justify-center">
@@ -131,7 +135,7 @@ export const UpgradeDrawer = ({ isOpen, onClose, castleLevel, realmEntityId, onU
             <DrawerHeader>
               <DrawerTitle className="text-3xl font-bokor text-center text-green-500">Upgrade Successful</DrawerTitle>
               <DrawerDescription className="text-center">
-                Your castle is now {getLevelName(castleLevel)}
+                Your castle is now {getLevelName(nextLevel)}
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-6 space-y-6">
