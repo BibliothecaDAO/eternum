@@ -34,7 +34,6 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
-  console.log("realm", realm);
   const resourceManager = useResourceManager(realm.entityId);
 
   const handleProduce = async () => {

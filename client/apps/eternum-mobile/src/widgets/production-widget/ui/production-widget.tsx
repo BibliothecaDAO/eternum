@@ -7,11 +7,9 @@ import { ResourceIcon } from "@/shared/ui/resource-icon";
 import {
   configManager,
   divideByPrecision,
-  findResourceById,
   formatTime,
   ID,
   resources,
-  ResourcesIds,
   TickIds,
   TimeFormat,
 } from "@bibliothecadao/eternum";
@@ -71,10 +69,6 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
       const interval = setInterval(() => {
         realTick += 1;
         const newBalance = resourceManager.balanceWithProduction(realTick, building.produced.resource);
-        if (building.produced.resource === ResourcesIds.Wheat) {
-          console.log(findResourceById(building.produced.resource)?.trait);
-          console.log("newBalance", currencyFormat(newBalance, 2));
-        }
         setBalance(newBalance);
       }, tickTime);
       return () => clearInterval(interval);
