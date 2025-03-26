@@ -960,10 +960,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_building(props: SystemProps.CreateBuildingProps) {
-    const { entity_id, directions, building_category, signer } = props;
-
-    // TOOODO: FIX
-    let use_simple = false;
+    const { entity_id, directions, building_category, use_simple, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
@@ -2464,9 +2461,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * }
    * ```
    */
-  public async burn_resource_for_resource_production(
-    props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
-  ) {
+  public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
     const { from_entity_id, produced_resource_types, production_tick_counts, signer } = props;
 
     const call = this.createProviderCall(signer, {

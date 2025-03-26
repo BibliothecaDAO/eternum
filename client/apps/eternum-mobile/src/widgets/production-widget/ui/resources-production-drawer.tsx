@@ -10,6 +10,8 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
+  getBuildingFromResource,
+  getBuildingQuantity,
   multiplyByPrecision,
   RealmInfo,
   resources,
@@ -18,7 +20,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LaborBuilding } from "../model/types";
 
 interface ResourcesProductionDrawerProps {
@@ -233,6 +235,10 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     }
   };
 
+  const buildingCount = useMemo(() => {
+    return getBuildingQuantity(realm.entityId, getBuildingFromResource(building.produced.resource), components);
+  }, [realm.entityId, building.produced.resource, components]);
+
   const ticks = Math.floor(outputAmount / configManager.complexSystemResourceOutput[building.produced.resource].amount);
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
@@ -373,7 +379,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
               <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
                 <span className="text-gold/80">Production Time:</span>
-                <span className="font-medium">{formatProductionTime(ticks)}</span>
+                <span className="font-medium">{formatProductionTime(Math.floor(ticks / buildingCount))}</span>
               </div>
 
               {isActive && timeLeft > 0 && (

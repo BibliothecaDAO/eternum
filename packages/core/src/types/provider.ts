@@ -143,6 +143,7 @@ export interface CreateBuildingProps extends SystemSigner {
   entity_id: num.BigNumberish;
   directions: num.BigNumberish[];
   building_category: BuildingType;
+  use_simple: boolean;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {
@@ -390,16 +391,15 @@ export interface SetTickConfigProps extends SystemSigner {
 export interface SetResourceFactoryConfigProps extends SystemSigner {
   calls: {
     resource_type: num.BigNumberish;
-    realm_output_per_second: num.BigNumberish,
-    village_output_per_second: num.BigNumberish,
-    labor_output_per_resource: num.BigNumberish,
-    resource_output_per_simple_input: num.BigNumberish,
-    simple_input_resources_list: ResourceCosts[],
-    resource_output_per_complex_input: num.BigNumberish,
-    complex_input_resources_list: ResourceCosts[],
+    realm_output_per_second: num.BigNumberish;
+    village_output_per_second: num.BigNumberish;
+    labor_output_per_resource: num.BigNumberish;
+    resource_output_per_simple_input: num.BigNumberish;
+    simple_input_resources_list: ResourceCosts[];
+    resource_output_per_complex_input: num.BigNumberish;
+    complex_input_resources_list: ResourceCosts[];
   }[];
 }
-
 
 export interface SetBankConfigProps extends SystemSigner {
   lp_fee_num: num.BigNumberish;

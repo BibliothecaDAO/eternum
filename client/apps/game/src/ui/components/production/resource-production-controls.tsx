@@ -5,6 +5,8 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
+  getBuildingFromResource,
+  getBuildingQuantity,
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
@@ -13,6 +15,20 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
+
+const formatProductionTime = (ticks: number) => {
+  const days = Math.floor(ticks / (24 * 60 * 60));
+  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((ticks % (60 * 60)) / 60);
+  const seconds = ticks % 60;
+
+  return [
+    days > 0 ? `${days}d ` : "",
+    hours > 0 ? `${hours}h ` : "",
+    minutes > 0 ? `${minutes}m ` : "",
+    `${seconds}s`,
+  ].join("");
+};
 
 export const ResourceProductionControls = ({
   selectedResource,
@@ -36,6 +52,7 @@ export const ResourceProductionControls = ({
   const {
     setup: {
       account: { account },
+      components,
       systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
     },
   } = useDojo();
@@ -147,6 +164,10 @@ export const ResourceProductionControls = ({
 
   if (currentInputs.length === 0) return null;
 
+  const buildingCount = useMemo(() => {
+    return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
+  }, [realm.entityId, selectedResource, components]);
+
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
@@ -191,23 +212,7 @@ export const ResourceProductionControls = ({
         </div>
         <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
           <span className="text-gold/80">Production Time:</span>
-          <span className="font-medium">
-            {ticks
-              ? (() => {
-                  const days = Math.floor(ticks / (24 * 60 * 60));
-                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-                  const seconds = ticks % 60;
-
-                  return [
-                    days > 0 ? `${days}d ` : "",
-                    hours > 0 ? `${hours}h ` : "",
-                    minutes > 0 ? `${minutes}m ` : "",
-                    `${seconds}s`,
-                  ].join("");
-                })()
-              : "0s"}
-          </span>
+          <span className="font-medium">{ticks ? formatProductionTime(Math.floor(ticks / buildingCount)) : "0s"}</span>
         </div>
       </div>
 

@@ -188,7 +188,7 @@ export default class HexceptionScene extends HexagonScene {
     useUIStore.subscribe(
       (state) => state.useSimpleCost,
       (useSimpleCost) => {
-        this.state.setUseSimpleCost(useSimpleCost);
+        this.state.useSimpleCost = useSimpleCost;
       },
     );
   }

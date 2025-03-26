@@ -153,7 +153,7 @@ export class TileManager {
 
     let removeResourceOverride: () => void;
     resourceChange?.forEach((resource) => {
-      removeResourceOverride = this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
+      removeResourceOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
     });
 
     const populationOverrideId = uuid();
@@ -207,7 +207,7 @@ export class TileManager {
     };
   };
 
-  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: bigint) => {
+  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: number) => {
     const resourceManager = new ResourceManager(this.components, entity);
     return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
   };
@@ -327,6 +327,7 @@ export class TileManager {
         entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
+        use_simple: useSimpleCost,
       });
     } catch (error) {
       console.error(error);

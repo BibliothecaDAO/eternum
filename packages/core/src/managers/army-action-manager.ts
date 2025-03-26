@@ -2,16 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import {
-  Biome,
-  BiomeType,
-  divideByPrecision,
-  DojoAccount,
-  kgToNanogram,
-  multiplyByPrecision,
-  nanogramToKg,
-  world,
-} from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToNanogram, nanogramToKg, world } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -471,11 +462,11 @@ export class ArmyActionManager {
     // need to add back precision for optimistic resource update
     const removeWheatResourceOverride = this.resourceManager.optimisticResourceUpdate(
       ResourcesIds.Wheat,
-      -BigInt(multiplyByPrecision(costs.wheatPayAmount)),
+      -costs.wheatPayAmount,
     );
     const removeFishResourceOverride = this.resourceManager.optimisticResourceUpdate(
       ResourcesIds.Fish,
-      -BigInt(multiplyByPrecision(costs.fishPayAmount)),
+      -costs.fishPayAmount,
     );
 
     return () => {
