@@ -21,12 +21,13 @@ export const LaborResourcesPanel = ({
 }: LaborResourcesPanelProps) => {
   const laborConfig = configManager.getLaborConfig(selectedResource);
   const laborInputResources = laborConfig?.inputResources;
+  const resourceOutputPerInputResources = laborConfig?.resourceOutputPerInputResources ?? 0;
 
   const handleInputChange = (value: number, inputResource: number) => {
     if (!laborInputResources) return;
     const resourceConfig = laborInputResources.find((r) => r.resource === inputResource);
     if (!resourceConfig) return;
-    const newAmount = value / resourceConfig.amount;
+    const newAmount = value / laborConfig.laborBurnPerResourceOutput * laborConfig.resourceOutputPerInputResources;
     setProductionAmount(newAmount);
   };
 
@@ -35,7 +36,7 @@ export const LaborResourcesPanel = ({
 
     const maxAmounts = laborInputResources.map((input) => {
       const balance = resourceBalances[input.resource] || 0;
-      return Math.floor(balance / input.amount);
+      return Math.floor(balance / input.amount * laborConfig.resourceOutputPerInputResources);
     });
 
     return Math.max(1, Math.min(...maxAmounts));
@@ -65,7 +66,7 @@ export const LaborResourcesPanel = ({
               <div className="flex items-center justify-between w-full">
                 <div className="w-2/3">
                   <NumberInput
-                    value={Math.round(input.amount * productionAmount)}
+                    value={Math.round(input.amount * productionAmount / resourceOutputPerInputResources)}
                     onChange={(value) => handleInputChange(value, input.resource)}
                     min={0}
                     max={resourceBalances[input.resource] || 0}

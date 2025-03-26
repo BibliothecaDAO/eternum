@@ -12,7 +12,6 @@ import {
   formatTime,
   getBuildingFromResource,
   getBuildingQuantity,
-  multiplyByPrecision,
   RealmInfo,
   resources,
   ResourcesIds,
@@ -67,7 +66,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       await systemCalls.burn_resource_for_resource_production({
         from_entity_id: realm.entityId,
         produced_resource_types: [building.produced.resource],
-        production_tick_counts: [ticks],
+        production_cycles: [ticks],
         signer: account,
       });
     } catch (error) {
@@ -79,16 +78,14 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const handleLaborResourcesProduce = async () => {
     if (!laborConfig) return;
-    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * outputAmount);
-
-    if (outputAmount > 0 && laborNeeded > 0) {
+    if (outputAmount > 0) {
       const loadingState = isActive ? setIsExtendLoading : setIsLoading;
       loadingState(true);
-
+      let productionCycles = Math.floor(outputAmount / laborConfig?.resourceOutputPerInputResources);
       try {
         await systemCalls.burn_labor_for_resource_production({
           from_entity_id: realm.entityId,
-          labor_amounts: [multiplyByPrecision(laborNeeded)],
+          production_cycles: [productionCycles],
           produced_resource_types: [building.produced.resource],
           signer: account,
         });

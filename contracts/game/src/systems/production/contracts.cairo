@@ -24,14 +24,17 @@ trait IProductionContract<TContractState> {
     );
 
     fn burn_labor_for_resource_production(
-        ref self: TContractState, from_structure_id: ID, labor_amounts: Span<u128>, produced_resource_types: Span<u8>,
+        ref self: TContractState,
+        from_structure_id: ID,
+        production_cycles: Span<u128>,
+        produced_resource_types: Span<u8>,
     );
 
     fn burn_resource_for_resource_production(
         ref self: TContractState,
         from_structure_id: ID,
         produced_resource_types: Span<u8>,
-        production_tick_counts: Span<u128>,
+        production_cycles: Span<u128>,
     );
 }
 
@@ -216,7 +219,7 @@ mod production_systems {
         fn burn_labor_for_resource_production(
             ref self: ContractState,
             from_structure_id: ID,
-            labor_amounts: Span<u128>,
+            production_cycles: Span<u128>,
             produced_resource_types: Span<u8>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -235,13 +238,13 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             assert!(
-                labor_amounts.len() == produced_resource_types.len(),
+                production_cycles.len() == produced_resource_types.len(),
                 "labor and produced resource types must be the same length",
             );
 
-            for i in 0..labor_amounts.len() {
+            for i in 0..production_cycles.len() {
                 ProductionStrategyImpl::burn_labor_for_resource_production(
-                    ref world, from_structure_id, *labor_amounts.at(i), *produced_resource_types.at(i),
+                    ref world, from_structure_id, *production_cycles.at(i), *produced_resource_types.at(i),
                 );
             }
         }
@@ -253,7 +256,7 @@ mod production_systems {
             ref self: ContractState,
             from_structure_id: ID,
             produced_resource_types: Span<u8>,
-            production_tick_counts: Span<u128>,
+            production_cycles: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
@@ -271,13 +274,13 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             assert!(
-                produced_resource_types.len() == production_tick_counts.len(),
-                "produced resource types and production tick counts must be the same length",
+                produced_resource_types.len() == production_cycles.len(),
+                "produced resource types and production tick cycles must be the same length",
             );
 
             for i in 0..produced_resource_types.len() {
                 ProductionStrategyImpl::burn_resource_for_resource_production(
-                    ref world, from_structure_id, *produced_resource_types.at(i), *production_tick_counts.at(i),
+                    ref world, from_structure_id, *produced_resource_types.at(i), *production_cycles.at(i),
                 );
             }
         }

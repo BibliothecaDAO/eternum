@@ -39,12 +39,16 @@ export const RawResourcesPanel = ({
   const calculateMaxProduction = () => {
     if (!rawInputResources || !resourceBalances) return 1;
 
-    const maxAmounts = rawInputResources.map((input) => {
+    let minCycle = 1 << 30;
+    rawInputResources.forEach((input) => {
       const balance = resourceBalances[input.resource] || 0;
-      return Math.floor(balance / input.amount);
+      const count = Math.floor(balance / input.amount);
+      if (count < minCycle) {
+        minCycle = count
+      }
     });
-
-    return Math.max(1, Math.min(...maxAmounts));
+    
+    return Math.max(1, minCycle);
   };
 
   const handleMaxClick = () => {

@@ -2406,32 +2406,35 @@ export class EternumProvider extends EnhancedDojoProvider {
    *
    * @param props - Properties for burning labor for resources
    * @param props.from_entity_id - ID of the realm entity
-   * @param props.labor_amounts - Array of labor amounts to burn
+   * @param props.production_cycles - Array of cycles to burn
    * @param props.produced_resource_types - Array of resource types to produce
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    *
    * @example
    * ```typescript
-   * // Burn 200 labor to produce wood and stone
+   * // Burn 100 cycles worth of labor cost to produce wood
+   * // and another 100 cycles worth of labor cost to produce stone
+   * //
+   *
    * {
    *   from_entity_id: 123,
-   *   labor_amounts: [100, 100],
+   *   priduction_cycles: [100, 100],
    *   produced_resource_types: [1, 2], // wood and stone
    *   signer: account
    * }
    * ```
    */
   public async burn_labor_for_resource_production(props: SystemProps.BurnLaborResourcesForOtherProductionProps) {
-    const { from_entity_id, labor_amounts, produced_resource_types, signer } = props;
+    const { from_entity_id, production_cycles, produced_resource_types, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
       entrypoint: "burn_labor_for_resource_production",
       calldata: [
         from_entity_id,
-        labor_amounts.length,
-        ...labor_amounts,
+        production_cycles.length,
+        ...production_cycles,
         produced_resource_types.length,
         ...produced_resource_types,
       ],
@@ -2446,23 +2449,23 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for burning predefined resources
    * @param props.from_entity_id - ID of the realm entity
    * @param props.produced_resource_types - Array of resource types to produce
-   * @param props.production_tick_counts - Array of production tick counts
+   * @param props.production_cycles - Array of production cycles
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    *
    * @example
    * ```typescript
-   * // Burn predefined resources to produce gold for 2 ticks
+   * // Burn predefined resources to produce gold for 2 output/input cycles
    * {
    *   from_entity_id: 123,
    *   produced_resource_types: [5], // gold
-   *   production_tick_counts: [2],
+   *   production_cycles: [2],
    *   signer: account
    * }
    * ```
    */
   public async burn_resource_for_resource_production(props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps) {
-    const { from_entity_id, produced_resource_types, production_tick_counts, signer } = props;
+    const { from_entity_id, produced_resource_types, production_cycles, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
@@ -2471,8 +2474,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         from_entity_id,
         produced_resource_types.length,
         ...produced_resource_types,
-        production_tick_counts.length,
-        ...production_tick_counts,
+        production_cycles.length,
+        ...production_cycles,
       ],
     });
 

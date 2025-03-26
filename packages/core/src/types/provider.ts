@@ -647,8 +647,8 @@ export interface BurnOtherResourcesForLaborProductionProps {
 export interface BurnLaborResourcesForOtherProductionProps {
   /** ID of the realm entity */
   from_entity_id: number;
-  /** Array of labor amounts to burn */
-  labor_amounts: number[];
+  /** Array of cycles to burn */
+  production_cycles: number[];
   /** Array of resource types to produce */
   produced_resource_types: number[];
   /** Account executing the transaction */
@@ -663,8 +663,8 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
   from_entity_id: number;
   /** Array of resource types to produce */
   produced_resource_types: number[];
-  /** Array of production tick counts */
-  production_tick_counts: number[];
+  /** Array of production cycle counts */
+  production_cycles: number[];
   /** Account executing the transaction */
   signer: Account | AccountInterface;
 }
