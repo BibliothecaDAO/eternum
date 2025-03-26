@@ -159,7 +159,7 @@ export const setStartingResourcesConfig = async (config: Config) => {
   const tx = await config.provider.set_starting_resources_config({
     signer: config.account,
     realmStartingResources: realmStartResourcesArray,
-    villageStartingResources: realmStartResourcesArray
+    villageStartingResources: villageStartResourcesArray
   });
 
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));
