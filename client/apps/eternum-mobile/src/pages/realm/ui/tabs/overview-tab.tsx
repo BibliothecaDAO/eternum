@@ -23,9 +23,7 @@ export function OverviewTab() {
   // }, [switchTab]);
 
   const handleClaimDonkeys = useCallback(() => {
-    if (summary.readyArrivals > 0) {
-      switchTab("claim");
-    }
+    switchTab("claim");
   }, [switchTab, summary.readyArrivals]);
 
   return (
