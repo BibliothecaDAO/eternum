@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { useResourceBalances } from "@/features/resource-balances/model/use-resource-balances";
 import { currencyFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
@@ -6,9 +6,8 @@ import { Input } from "@/shared/ui/input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { ID, resources } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
 import { Search } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 
 interface ResourceSelectDrawerProps {
   onResourceSelect: (resourceId: number) => void;
@@ -24,20 +23,8 @@ export const ResourceSelectDrawer = ({
   entityId,
 }: ResourceSelectDrawerProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [resourceAmounts, setResourceAmounts] = useState<{ id: number; amount: number }[]>([]);
-  const { currentDefaultTick: tick } = useBlockTimestamp();
-  const resourceManager = useResourceManager(entityId);
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && entityId) {
-      const amounts = resources.map((resource) => ({
-        id: resource.id,
-        amount: resourceManager.balanceWithProduction(tick, resource.id),
-      }));
-      setResourceAmounts(amounts);
-    }
-  }, [isOpen, entityId, resourceManager, tick]);
+  const { resourceAmounts } = useResourceBalances(entityId);
 
   const filteredResources = resources.filter((resource) =>
     resource.trait.toLowerCase().includes(searchQuery.toLowerCase()),

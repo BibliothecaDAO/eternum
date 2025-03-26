@@ -1,3 +1,4 @@
+import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
@@ -12,6 +13,7 @@ export const TradePage = () => {
   const [buyResourceId, setBuyResourceId] = useState(1); // Default to first resource
   const [sellResourceId, setSellResourceId] = useState(2); // Default to second resource
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const { structureEntityId } = useStore();
 
   const handleSwap = () => {
     const tempResourceId = buyResourceId;
@@ -45,6 +47,7 @@ export const TradePage = () => {
           resourceId={sellResourceId}
           onAmountChange={setSellAmount}
           onResourceChange={setSellResourceId}
+          entityId={structureEntityId}
         />
 
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 !mt-[0] z-10">
@@ -59,6 +62,7 @@ export const TradePage = () => {
           resourceId={buyResourceId}
           onAmountChange={setBuyAmount}
           onResourceChange={setBuyResourceId}
+          entityId={structureEntityId}
         />
       </div>
 
