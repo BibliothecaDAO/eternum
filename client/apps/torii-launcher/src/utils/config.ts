@@ -1,8 +1,15 @@
 import * as fsPromises from "fs/promises";
 import tomlJson from "toml-json/dist";
-import { ETERNUM_PATH } from "../constants";
+import { APP_PATH } from "../constants";
 import { ConfigType, ToriiConfig } from "../types";
-import { getDbPath, getNetworkPath, getSettingsFilePath, getToriiTomlConfigPath, osUtils, warningLog } from "./os-utils";
+import {
+  getDbPath,
+  getNetworkPath,
+  getSettingsFilePath,
+  getToriiTomlConfigPath,
+  osUtils,
+  warningLog,
+} from "./os-utils";
 import { getToriiConfig } from "./torii";
 
 export const loadConfig = async (): Promise<ToriiConfig> => {
@@ -39,7 +46,7 @@ export async function getSavedConfigType(): Promise<ConfigType> {
 }
 
 export const saveConfigType = async (configType: ConfigType) => {
-  await osUtils.ensureDirectoryExists(ETERNUM_PATH);
+  await osUtils.ensureDirectoryExists(APP_PATH);
 
   const settingsFilePath = getSettingsFilePath();
   const exists = await osUtils.fileExists(settingsFilePath);

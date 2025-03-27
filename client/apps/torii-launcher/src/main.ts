@@ -7,8 +7,7 @@ import { mkdirSync } from "fs";
 import * as fsPromises from "fs/promises";
 import hasbin from "hasbin";
 import path from "path";
-import { updateElectronApp, UpdateSourceType } from "update-electron-app";
-import { DOJO_PATH } from "./constants";
+import { APP_PATH, DOJO_PATH } from "./constants";
 import { ConfigType, IpcMethod, Notification, ToriiConfig } from "./types";
 import { loadConfig, saveConfigType } from "./utils/config";
 import {
@@ -26,21 +25,21 @@ import { getToriiVersion } from "./utils/torii";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-if (require("electron-squirrel-startup") === true) app.quit();
-
 if (started) {
   app.quit();
 }
 
+app.dock.setIcon(path.join(__dirname, "icon.png"));
+
 let child: ChildProcessWithoutNullStreams | null = null;
 let config: ToriiConfig | null = null;
 
-updateElectronApp({
-  updateSource: {
-    type: UpdateSourceType.StaticStorage,
-    baseUrl: `https://my-bucket.s3.amazonaws.com/my-app-updates/${process.platform}/${process.arch}`,
-  },
-});
+// updateElectronApp({
+//   updateSource: {
+//     type: UpdateSourceType.StaticStorage,
+//     baseUrl: `https://my-bucket.s3.amazonaws.com/my-app-updates/${process.platform}/${process.arch}`,
+//   },
+// });
 let window: BrowserWindow | null = null;
 
 const createWindow = () => {
@@ -51,11 +50,13 @@ const createWindow = () => {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
       contextIsolation: true,
-      devTools: !app.isPackaged,
+    //   devTools: !app.isPackaged,
+      partition: "persist:eternum-launcher",
     },
+    resizable: false,
     center: true,
     title: "Eternum Launcher",
-    icon: path.join(__dirname, "/icon.png"),
+    icon: path.join(__dirname, "icon.png"),
     frame: false,
   });
 
@@ -239,12 +240,12 @@ async function handleTorii(toriiVersion: string) {
       });
 
       child.stdout.on("data", (data: Buffer) => {
-        // normalLog(`Torii stdout: ${data.toString()}`);
+        normalLog(`Torii stdout: ${data.toString()}`);
       });
 
       child.stderr.on("data", (data: Buffer) => {
-        // errorLog(`Torii stderr: ${data.toString()}`);
-        // sendNotification({ type: "Error", message: data.toString() });
+        errorLog(`Torii stderr: ${data.toString()}`);
+        sendNotification({ type: "Error", message: data.toString() });
       });
 
       let firstPass = true;
@@ -301,7 +302,7 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
     normalLog("Installing Torii on Windows...");
 
     // Create temporary directory for zip download
-    const tempDir = path.join(app.getPath("temp"), "torii-temp");
+    const tempDir = path.join(APP_PATH, "torii-temp");
     await fsPromises.mkdir(tempDir, { recursive: true });
     const zipPath = path.join(tempDir, "dojo.zip");
 

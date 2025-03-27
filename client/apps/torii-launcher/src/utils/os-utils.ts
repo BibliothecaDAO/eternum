@@ -2,7 +2,7 @@ import * as spawn from "cross-spawn";
 import * as fs from "fs";
 import * as fsPromises from "fs/promises";
 import * as path from "path";
-import { ETERNUM_PATH } from "../constants";
+import { APP_PATH } from "../constants";
 import { ConfigType } from "../types";
 
 /**
@@ -58,7 +58,7 @@ export const osUtils = {
 };
 
 export const getNetworkPath = (configType: ConfigType) => {
-  return path.join(ETERNUM_PATH, configType.toLowerCase());
+  return path.join(APP_PATH, configType.toLowerCase());
 };
 
 export const getDbPath = (configType: ConfigType) => {
@@ -71,7 +71,7 @@ export const getToriiTomlConfigPath = (configType: ConfigType) => {
 };
 
 export const getSettingsFilePath = () => {
-  return path.join(ETERNUM_PATH, "settings.json");
+  return path.join(APP_PATH, "settings.json");
 };
 
 export const getStateFilePath = (configType: ConfigType) => {

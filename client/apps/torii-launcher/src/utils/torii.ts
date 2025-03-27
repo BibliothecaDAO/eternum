@@ -1,6 +1,6 @@
 export const getToriiVersion = async () => {
   const response = await fetch(
-    "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/feat/next/contracts/game/Scarb.toml",
+    "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/Scarb.toml",
   );
   const data = await response.text();
 
@@ -13,7 +13,7 @@ export const getToriiVersion = async () => {
 
 export const getToriiConfig = async (configType: "local" | "mainnet" | "sepolia" | "slot") => {
   const response = await fetch(
-    `https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/feat/next/contracts/game/torii-${configType}.toml`,
+    `https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/torii-${configType}.toml`,
   );
 
   const data = await response.text();

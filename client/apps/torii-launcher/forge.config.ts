@@ -6,8 +6,18 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: false,
-    icon: "public/icon",
-    osxSign: {},
+    name: "Eternum Launcher",
+    icon: "./public/icon.icns",
+    osxSign: {
+      optionsForFile: (filePath) => {
+        // Here, we keep it simple and return a single entitlements.plist file.
+        // You can use this callback to map different sets of entitlements
+        // to specific files in your packaged app.
+        return {
+          entitlements: "./entitlements.plist",
+        };
+      },
+    },
   },
   rebuildConfig: {},
   publishers: [
@@ -25,28 +35,23 @@ const config: ForgeConfig = {
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: {
-        name: "EternumToriiLauncher",
-        setupExe: "EternumToriiLauncher.exe",
-      },
-    },
-    {
-      name: "@electron-forge/maker-deb",
-      config: {
-        options: {
-          maintainer: "BibliothecaDAO",
-          homepage: "https://eternum.realms.world/",
-        },
-      },
+      config: {},
     },
     {
       name: "@electron-forge/maker-dmg",
       config: {
-        background: "./public/icon.png",
         format: "ULFO",
         icon: "./public/icon.png",
         name: "Eternum Launcher",
       },
+    },
+    {
+      name: "@electron-forge/maker-deb",
+      config: {},
+    },
+    {
+      name: "@electron-forge/maker-rpm",
+      config: {},
     },
   ],
   plugins: [
@@ -76,7 +81,7 @@ const config: ForgeConfig = {
     new FusesPlugin({
       version: FuseVersion.V1,
       [FuseV1Options.RunAsNode]: false,
-      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableCookieEncryption]: false,
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
