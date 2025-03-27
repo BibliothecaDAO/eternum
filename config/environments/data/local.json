@@ -7,9 +7,6 @@
   },
   "resources": {
     "resourcePrecision": 1000000000,
-    "resourceMultiplier": 1000000000,
-    "resourceAmountPerTick": 10,
-    "startingResourcesInputProductionFactor": 6,
     "productionByComplexRecipe": {
       "1": [
         {
@@ -63,7 +60,7 @@
           "amount": 3
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -78,7 +75,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "6": [
@@ -91,7 +88,7 @@
           "amount": 3.3
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -106,7 +103,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "8": [
@@ -120,7 +117,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "9": [
@@ -134,7 +131,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "10": [
@@ -148,7 +145,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "11": [
@@ -162,7 +159,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "12": [
@@ -176,7 +173,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "13": [
@@ -190,7 +187,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "14": [
@@ -204,7 +201,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "15": [
@@ -218,7 +215,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "16": [
@@ -232,7 +229,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "17": [
@@ -246,7 +243,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "18": [
@@ -260,7 +257,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "19": [
@@ -274,7 +271,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "20": [
@@ -288,7 +285,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "21": [
@@ -302,7 +299,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "22": [
@@ -316,7 +313,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "23": [],
@@ -341,20 +338,16 @@
           "amount": 50
         },
         {
-          "resource": 8,
-          "amount": 2
+          "resource": 6,
+          "amount": 5.3
         },
         {
-          "resource": 5,
-          "amount": 5
+          "resource": 11,
+          "amount": 2.7
         }
       ],
       "27": [
         {
-          "resource": 26,
-          "amount": 0.08
-        },
-        {
           "resource": 35,
           "amount": 75
         },
@@ -363,24 +356,20 @@
           "amount": 75
         },
         {
-          "resource": 15,
-          "amount": 3
-        },
-        {
           "resource": 13,
-          "amount": 2
+          "amount": 3.1
         },
         {
           "resource": 12,
-          "amount": 1
+          "amount": 3.9
+        },
+        {
+          "resource": 26,
+          "amount": 0.1
         }
       ],
       "28": [
         {
-          "resource": 27,
-          "amount": 0.08
-        },
-        {
           "resource": 35,
           "amount": 100
         },
@@ -389,16 +378,16 @@
           "amount": 100
         },
         {
-          "resource": 18,
-          "amount": 3
+          "resource": 17,
+          "amount": 4
         },
         {
-          "resource": 10,
+          "resource": 9,
           "amount": 2
         },
         {
-          "resource": 19,
-          "amount": 1
+          "resource": 27,
+          "amount": 0.1
         }
       ],
       "29": [
@@ -411,19 +400,15 @@
           "amount": 50
         },
         {
-          "resource": 6,
-          "amount": 2
+          "resource": 8,
+          "amount": 4.4
         },
         {
-          "resource": 11,
-          "amount": 5
+          "resource": 5,
+          "amount": 3.6
         }
       ],
       "30": [
-        {
-          "resource": 29,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 75
@@ -434,22 +419,18 @@
         },
         {
           "resource": 14,
-          "amount": 3
+          "amount": 3.9
         },
         {
-          "resource": 20,
-          "amount": 2
+          "resource": 21,
+          "amount": 3.1
         },
         {
-          "resource": 16,
-          "amount": 1
+          "resource": 29,
+          "amount": 0.1
         }
       ],
       "31": [
-        {
-          "resource": 30,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 100
@@ -459,16 +440,16 @@
           "amount": 100
         },
         {
-          "resource": 17,
-          "amount": 3
-        },
-        {
           "resource": 18,
-          "amount": 2
+          "amount": 4.8
         },
         {
-          "resource": 9,
-          "amount": 1
+          "resource": 22,
+          "amount": 1.2
+        },
+        {
+          "resource": 30,
+          "amount": 0.1
         }
       ],
       "32": [
@@ -482,18 +463,14 @@
         },
         {
           "resource": 4,
-          "amount": 2
+          "amount": 5.4
         },
         {
           "resource": 7,
-          "amount": 5
+          "amount": 2.6
         }
       ],
       "33": [
-        {
-          "resource": 32,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 75
@@ -503,23 +480,19 @@
           "amount": 75
         },
         {
-          "resource": 13,
-          "amount": 3
+          "resource": 20,
+          "amount": 3.5
         },
         {
-          "resource": 15,
-          "amount": 2
+          "resource": 16,
+          "amount": 3.5
         },
         {
-          "resource": 21,
-          "amount": 1
+          "resource": 32,
+          "amount": 0.1
         }
       ],
       "34": [
-        {
-          "resource": 33,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 100
@@ -530,15 +503,15 @@
         },
         {
           "resource": 10,
-          "amount": 3
+          "amount": 3.1
         },
         {
-          "resource": 17,
-          "amount": 2
+          "resource": 19,
+          "amount": 2.9
         },
         {
-          "resource": 22,
-          "amount": 1
+          "resource": 33,
+          "amount": 0.1
         }
       ],
       "35": [],
@@ -588,148 +561,272 @@
       "1": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 10.4
+        },
+        {
+          "resource": 35,
+          "amount": 5
         }
       ],
       "2": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 13.1
+        },
+        {
+          "resource": 35,
+          "amount": 5
         }
       ],
       "3": [
         {
           "resource": 23,
-          "amount": 0.04
+          "amount": 10.4
         },
         {
           "resource": 35,
-          "amount": 1
-        },
-        {
-          "resource": 36,
-          "amount": 2
+          "amount": 5
         }
       ],
       "4": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 16.35
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "5": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 39.91
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "6": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 25.61
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "7": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 62.92
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "8": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 29.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "9": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 1075.75
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "10": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 504.01
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
-      "11": [],
+      "11": [
+        {
+          "resource": 23,
+          "amount": 48.49
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
       "12": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 213.98
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "13": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 185.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "14": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 121.18
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "15": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 79.82
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "16": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 222.95
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "17": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 367.25
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "18": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 319.54
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "19": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 652.08
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "20": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 172.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "21": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 281.58
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "22": [
         {
           "resource": 23,
-          "amount": 0.1
+          "amount": 1199
+        },
+        {
+          "resource": 36,
+          "amount": 5
         }
       ],
       "23": [],
       "24": [],
       "25": [],
-      "26": [],
+      "26": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 26
+        }
+      ],
       "27": [],
       "28": [],
-      "29": [],
+      "29": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 30
+        }
+      ],
       "30": [],
       "31": [],
-      "32": [],
+      "32": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 26
+        }
+      ],
       "33": [],
       "34": [],
       "35": [],
@@ -776,28 +873,28 @@
       "37": 0
     },
     "laborOutputPerResource": {
-      "1": 0.2,
+      "1": 1,
       "2": 1,
-      "3": 0.1,
-      "4": 1,
-      "5": 1,
-      "6": 1,
-      "7": 1,
-      "8": 1,
-      "9": 1,
-      "10": 1,
-      "11": 1,
-      "12": 1,
-      "13": 1,
-      "14": 1,
-      "15": 1,
-      "16": 1,
-      "17": 1,
-      "18": 1,
-      "19": 1,
-      "20": 1,
-      "21": 1,
-      "22": 1,
+      "3": 1,
+      "4": 2,
+      "5": 4,
+      "6": 2,
+      "7": 5,
+      "8": 3,
+      "9": 84,
+      "10": 37,
+      "11": 5,
+      "12": 16,
+      "13": 16,
+      "14": 14,
+      "15": 7,
+      "16": 22,
+      "17": 32,
+      "18": 26,
+      "19": 59,
+      "20": 16,
+      "21": 23,
+      "22": 128,
       "23": 0,
       "24": 0,
       "25": 0,
@@ -977,7 +1074,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 10,
+      "staminaBonusValue": 0,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -1134,29 +1231,29 @@
       "1": [
         {
           "resource": 23,
-          "amount": 2500
+          "amount": 25000
         },
         {
           "resource": 3,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 1,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 2,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 4,
-          "amount": 50000
+          "amount": 25000
         }
       ],
       "2": [
         {
           "resource": 23,
-          "amount": 5000
+          "amount": 25000
         },
         {
           "resource": 6,
@@ -1168,143 +1265,139 @@
         },
         {
           "resource": 14,
-          "amount": 10000
-        },
-        {
-          "resource": 12,
           "amount": 5000
         }
       ],
       "3": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "4": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "5": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "6": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "7": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "8": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "9": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "10": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "11": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "12": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "13": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "14": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "15": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "16": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "17": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "18": [
         {
           "resource": 35,
-          "amount": 75
+          "amount": 750000
         }
       ],
       "19": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "20": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "21": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "22": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "23": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "24": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "25": [],
@@ -1312,7 +1405,7 @@
       "27": [
         {
           "resource": 23,
-          "amount": 10000
+          "amount": 50000
         },
         {
           "resource": 8,
@@ -1324,17 +1417,17 @@
         },
         {
           "resource": 20,
-          "amount": 10000
+          "amount": 5000
         },
         {
           "resource": 13,
-          "amount": 10000
+          "amount": 5000
         }
       ],
       "28": [
         {
           "resource": 23,
-          "amount": 5000
+          "amount": 75000
         },
         {
           "resource": 1,
@@ -1360,7 +1453,7 @@
       "29": [
         {
           "resource": 23,
-          "amount": 50000
+          "amount": 250000
         },
         {
           "resource": 1,
@@ -1376,17 +1469,17 @@
         },
         {
           "resource": 13,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 12,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "30": [
         {
           "resource": 23,
-          "amount": 250000
+          "amount": 750000
         },
         {
           "resource": 1,
@@ -1402,17 +1495,17 @@
         },
         {
           "resource": 17,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 9,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "31": [
         {
           "resource": 23,
-          "amount": 5000
+          "amount": 75000
         },
         {
           "resource": 3,
@@ -1438,7 +1531,7 @@
       "32": [
         {
           "resource": 23,
-          "amount": 50000
+          "amount": 250000
         },
         {
           "resource": 3,
@@ -1454,17 +1547,17 @@
         },
         {
           "resource": 14,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 21,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "33": [
         {
           "resource": 23,
-          "amount": 250000
+          "amount": 750000
         },
         {
           "resource": 3,
@@ -1480,17 +1573,17 @@
         },
         {
           "resource": 18,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 22,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "34": [
         {
           "resource": 23,
-          "amount": 5000
+          "amount": 75000
         },
         {
           "resource": 3,
@@ -1516,7 +1609,7 @@
       "35": [
         {
           "resource": 23,
-          "amount": 50000
+          "amount": 250000
         },
         {
           "resource": 3,
@@ -1532,17 +1625,17 @@
         },
         {
           "resource": 20,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 16,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "36": [
         {
           "resource": 23,
-          "amount": 250000
+          "amount": 750000
         },
         {
           "resource": 3,
@@ -1558,11 +1651,11 @@
         },
         {
           "resource": 10,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 19,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "37": [
@@ -1573,12 +1666,8 @@
       ],
       "38": [
         {
-          "resource": 23,
-          "amount": 500
-        },
-        {
           "resource": 35,
-          "amount": 50000
+          "amount": 500000
         }
       ]
     },
@@ -1587,145 +1676,145 @@
       "1": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 250000
         }
       ],
       "2": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 300000
         }
       ],
       "3": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "4": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "5": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "6": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "7": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "8": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "9": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "10": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "11": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "12": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "13": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "14": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "15": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "16": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "17": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "18": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "19": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "20": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 35,
+          "amount": 750000
         }
       ],
       "21": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "22": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "23": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "24": [
         {
-          "resource": 23,
-          "amount": 3000
+          "resource": 36,
+          "amount": 750000
         }
       ],
       "25": [],
@@ -1733,73 +1822,58 @@
       "27": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 600000
         }
       ],
       "28": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 250000
         }
       ],
       "29": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 560000
         }
       ],
-      "30": [
-        {
-          "resource": 23,
-          "amount": 3000
-        }
-      ],
+      "30": [],
       "31": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 300000
         }
       ],
       "32": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 590000
         }
       ],
-      "33": [
-        {
-          "resource": 23,
-          "amount": 3000
-        }
-      ],
+      "33": [],
       "34": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 600000
         }
       ],
       "35": [
         {
           "resource": 23,
-          "amount": 3000
+          "amount": 590000
         }
       ],
-      "36": [
-        {
-          "resource": 23,
-          "amount": 3000
-        }
-      ],
+      "36": [],
       "37": [
         {
-          "resource": 23,
-          "amount": 200
+          "resource": 36,
+          "amount": 500000
         }
       ],
       "38": [
         {
-          "resource": 23,
-          "amount": 200
+          "resource": 35,
+          "amount": 500000
         }
       ]
     },
@@ -1885,7 +1959,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x2861d25f3dcc1dc1c5abce45f6c1169088891d036d8bbd3cc34f32bfe1bc17a",
+    "season_pool_fee_recipient": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1895,119 +1969,61 @@
   "startingResources": [
     {
       "resource": 35,
-      "amount": 1200000000
+      "amount": 3000000000
     },
     {
       "resource": 36,
-      "amount": 1200000000
+      "amount": 3000000000
     },
     {
-      "resource": 3,
-      "amount": 5000000
-    },
-    {
-      "resource": 1,
-      "amount": 5000000
-    },
-    {
-      "resource": 2,
-      "amount": 5000000
-    },
-    {
-      "resource": 4,
-      "amount": 5000000
-    },
-    {
-      "resource": 6,
-      "amount": 5000000
-    },
-    {
-      "resource": 8,
-      "amount": 5000000
-    },
-    {
-      "resource": 5,
-      "amount": 5000000
-    },
-    {
-      "resource": 11,
-      "amount": 5000000
-    },
-    {
-      "resource": 7,
-      "amount": 5000000
-    },
-    {
-      "resource": 15,
-      "amount": 5000000
-    },
-    {
-      "resource": 14,
-      "amount": 5000000
-    },
-    {
-      "resource": 20,
-      "amount": 5000000
-    },
-    {
-      "resource": 13,
-      "amount": 5000000
-    },
-    {
-      "resource": 12,
-      "amount": 5000000
-    },
-    {
-      "resource": 16,
-      "amount": 5000000
-    },
-    {
-      "resource": 21,
-      "amount": 5000000
-    },
-    {
-      "resource": 18,
-      "amount": 5000000
-    },
-    {
-      "resource": 17,
-      "amount": 5000000
-    },
-    {
-      "resource": 10,
-      "amount": 5000000
-    },
-    {
-      "resource": 19,
-      "amount": 5000000
-    },
-    {
-      "resource": 9,
-      "amount": 5000000
-    },
-    {
-      "resource": 22,
-      "amount": 5000000
+      "resource": 23,
+      "amount": 300000000
     },
     {
       "resource": 25,
-      "amount": 800000
+      "amount": 2000000
     },
     {
       "resource": 26,
-      "amount": 1200000
+      "amount": 833000
     },
     {
       "resource": 29,
-      "amount": 1200000
+      "amount": 833000
     },
     {
       "resource": 32,
-      "amount": 1200000
+      "amount": 833000
+    }
+  ],
+  "villageStartingResources": [
+    {
+      "resource": 35,
+      "amount": 2000000000
     },
     {
-      "resource": 24,
-      "amount": 200000
+      "resource": 36,
+      "amount": 2000000000
+    },
+    {
+      "resource": 23,
+      "amount": 200000000
+    },
+    {
+      "resource": 25,
+      "amount": 500000
+    },
+    {
+      "resource": 26,
+      "amount": 133000
+    },
+    {
+      "resource": 29,
+      "amount": 133000
+    },
+    {
+      "resource": 32,
+      "amount": 133000
     }
   ],
   "realmUpgradeCosts": {
@@ -2084,129 +2100,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x4cee182e3703db1d38c5082769fe13aeac98db631d7b0eaa6f5060d2a09a7db",
-      "realms": "0x3ce154b06a0a731f6f97f59412aefcb41379058cbbb2e11735030d4deae581",
-      "lords": "0x4199079e185727cd91608f52c3d96414492531d39a4bbd0335f33ff07e7a1f9",
+      "seasonPass": "0x28d970cf6a445af803b133dd0b6e9061c8f5e2f69a4e5e66354fffd8c0522e4",
+      "realms": "0x6d94c83adafddc88fd981a24b9b51c33da09fd62f3641c5a249fff402e944e4",
+      "lords": "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e",
       "resources": {
         "STONE": [
           1,
-          "0x35f93e019be31ae059fe58680335c604d3647bbd8180827ec19ebb76b4908b9"
+          "0x74388ef13f12692b4e16c7d6694dd08aca8f37dcc61254488645bd6ac565564"
         ],
         "COAL": [
           2,
-          "0xdd1a1f729519041c770c4ceede9cbe0a8896e3971e46b9be41400d3c9294dd"
+          "0x3770b73eb6984d5c8290b5067cb4671c97ef135a06d20c1cf063f99b95fb793"
         ],
         "WOOD": [
           3,
-          "0x3ce8529a153a03cd59e1be3650c703638f3777aaeb6aff55208514d3a83624d"
+          "0x4364e863adebebccb0a8c579d1785dca2736f83dd7c08b4d0afbb206f191ec4"
         ],
         "COPPER": [
           4,
-          "0x3658da6dd3ce5820a9bdf1fb9170ff0652fd673c44de0c3fcef0916c594c043"
+          "0x44c8d975a805e3e61467e3052eaf4afa8f557a0af4f6fa40fa54fd0690b3e70"
         ],
         "IRONWOOD": [
           5,
-          "0x5169f5a0c53762531a0441d15f8fe0da7a2b06a035f948324b50aef52c46b6a"
+          "0x6583a2dfe0c441bd270937409554ff4d6ba49a9153fb73f016ef8f06f34b923"
         ],
         "OBSIDIAN": [
           6,
-          "0x13a8ff2f77bd6eb2b665018aac5641cfab3089f0fafbaa3966ce445405d07e"
+          "0x54cdfe5d36345637db8a41024bebabb830f467f4c7e6f3f928c0b53f071ec08"
         ],
         "GOLD": [
           7,
-          "0x4425767a5611b262bc63ed803698ab673c00a534edfd4f14dec759f14906937"
+          "0x160aabbeb1510f7c14235554934ebe747b62f8beb8e6d2a3e9bac65515527a4"
         ],
         "SILVER": [
           8,
-          "0x7e8a2e6fe4a42d0750f0310cc6e8f7a07d9c8ab1d62b1e1343ba19e3a26e28d"
+          "0x16f38b3945dccf9bbb4c32590187417546993570a0747ee911ed62a882b68ca"
         ],
         "MITHRAL": [
           9,
-          "0x5a313f9ebab9bf71e85d0579a02f3a7a15bab81449f65d1a5e85a0973e33da"
+          "0x351ae477ad741e03b5804abc3835584b3550164cbfa426762bbeb2b3183cb77"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x5cfde3f6f08943515c452ea6107890712b4bf189c022f016bcd79e2c0c594f"
+          "0x37a4b6210bff7b620e18f0bd79a368d2996adbe307774a982b377fbdaf20afe"
         ],
         "COLDIRON": [
           11,
-          "0x93ae03e7d463e884e87af0fb3a8ac7951d492391a29db81538099d69e72a28"
+          "0x1f4316d9d7eb6040351689edf4da14be53f35e13512d559b056a245b1c69bb8"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x47db4e2d8513f1637f35ee9ffb279703a684cc7f7f85c6b2740ef7c86ee5ee"
+          "0x4aa25fe0ee843adcacc7591fade53af6afb47a831f44748551fe215903af9d"
         ],
         "RUBY": [
           13,
-          "0x6deede899d6fcac8de606d61a8cc73ae97e2bcacadb73bdff47f82bd531be3e"
+          "0xd0b113be9d645fe7b89ffc698cd7b51cfae63ad854ce86af1c3f7e87fa7941"
         ],
         "DIAMONDS": [
           14,
-          "0xb095d36b9120926db95ffd9a46a59b7d2a85057fdd10d1b32da7adfce174db"
+          "0x6ca428727a752fea4501d68c84c692eb614d0cab50b6065ed9d75fe23390cfe"
         ],
         "HARTWOOD": [
           15,
-          "0x1abb24f036b219ab1ed4989ab28c69ce14917c57eb11aed3ed52bd4ef281531"
+          "0x52ab39eeefb6386cd1abbc38cbcede080db15924ac80637cfd2fa6b2a6e3f0e"
         ],
         "IGNIUM": [
           16,
-          "0x7143598e9fcfd913a6f2349642dcb4e710b8ce392ad77aa48f2b3c4f2fa60a9"
+          "0x329e2f1edc9e734eeeb80ed9641261612ad561909713134d876b67472a1970f"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x2b3ea77cbe2f3d35ffa7d93c8985e4c94fb0ef0e9b4fed3331b5860c5c42577"
+          "0x482695d3490e28078d7c915d6cedea5f433d52f765de93ef1f9aa7924fd692c"
         ],
         "TRUEICE": [
           18,
-          "0x63f7fa4d5bdbb7a2e85acc3600935476ee9ff82625099972775eed5eccc2662"
+          "0x15c745ee2fdea9cec7110a837295aa26274815024cc899a12c7ca0a6803d6ba"
         ],
         "ADAMANTINE": [
           19,
-          "0x283042993c28c416f0371a565a9eba4d5594afe4e32fcdda88bb9e9e40b11f4"
+          "0x72f0fb40e9d2f1d6d3ec3e658b26df63967f8b537441c1b41f8bd44154bf74b"
         ],
         "SAPPHIRE": [
           20,
-          "0x2e88bb6bb0aaa6225b9340feb5186eb9801642d1e98ca3a06ff06a51f5c5535"
+          "0x170156186ee475299f8420073ca20524e5bc9c7f16ae659e64b154283818df9"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x6aa7821010e065c1f471a1d010e33778351e7c28d930164951feb78e2214a6b"
+          "0x1a8d260970254258a0dd7a322bb6ad3e693844be6c88f1d4a3ceb951535ca11"
         ],
         "DRAGONHIDE": [
           22,
-          "0x6e3da256b3982e42eb67dcf383640dec50a4d0fd90481c0b77af69baa7695d"
+          "0xeef0ad9a8bc8b7effa1dc4d97519d1025ece137929fe0cfb59e90e33c27a74"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x7b14184bc61e2501c172074962e565e5b2eb6140a2a2eeee320f8df40a14a31"
+          "0x1cafde2ae3a3a5080986871e0a39cb09d746c2a99ba9540488ea6758d1a3f3b"
         ],
         "DONKEY": [
           25,
-          "0x4c5e46590e2a31dfba6feff11f045f2018a592c9409fd60639c6635888fc7e"
+          "0x5d455cc4bec7530f67a75ea3406dd1d85ba1fd69b77119f1e8d74ce1344611d"
         ],
         "KNIGHT": [
           26,
-          "0xd8ba813c8b9fbe74e1eacfa2569277306b3c9875f7ad0452a6c41453c2b8a5"
+          "0x6de2f74af194ea4af6527bad35b4b6f4725d475da7168d2470ac0dda4020bd"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x7bc073443a84c960b91a9af9d4bc48eef057c144784328af3810845ca5f23bf"
+          "0x7d01fd5ef8e6cb95ea0f6f93788532727a6bf37a85d841b64f18b39e6b0942d"
         ],
         "PALADIN": [
           32,
-          "0xc50ff576249f1c3062cf013890ac6bd1a1db1be1804375e74996e790330f31"
+          "0x504cda2f28d47141e1140bd5562e0c53295009983a6729bdeaa6ca330f8819c"
         ],
         "WHEAT": [
           35,
-          "0xc38e302ad93d2a22194706138da3b29f3d33609e5c76d0f347baca6443e299"
+          "0x79fa48eac2fc709a501c18ecffd1d1f91c04f39fcb6faf650edfa720346c81e"
         ],
         "FISH": [
           36,
-          "0x70df8e6deb859f4419908cb6d76b4178b82267edf85d8c66c97de4ae87eba0d"
+          "0x7fb0185574ab8aaa29654fb9bc620ae125f00122273800905187719ccab6583"
         ],
         "LORDS": [
           37,
-          "0x4199079e185727cd91608f52c3d96414492531d39a4bbd0335f33ff07e7a1f9"
+          "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e"
         ]
       }
     },
@@ -3524,8 +3540,8 @@
       },
       "contracts": [
         {
-          "address": "0x7fbc949e7537f3c2b96c2cbf5dd0059bbb9206e93b47dbab7cdcaef9301538b",
-          "class_hash": "0x42858fe03996b1168680d1a5c6801f29d761104d8361536901eaf2411ebebb3",
+          "address": "0x308436495d8afc982df66016df09391706aabacdff031cbea6bc329608c08b8",
+          "class_hash": "0x60f805be74fdda65d60f10b412607c0c6e5646f1556ebed383d0cbe920e4cf5",
           "abi": [
             {
               "type": "impl",
@@ -3846,8 +3862,8 @@
           ]
         },
         {
-          "address": "0x7f6b1904afe60429c4dbf381e61bad4f1a2bfd9c8caf5d1c61f1bf82510fb6b",
-          "class_hash": "0x62a262ce5f9d4e1728cbda0ce471517db978a72f1ce973a2761ca7d78798d18",
+          "address": "0x23231d63352e9fc2336d4b168d199325a7afed5337cba3bea52f315d693782c",
+          "class_hash": "0x1106605ab129f7277e8dfa4ca8b3615646787e04a810931eaf79083af40d9e2",
           "abi": [
             {
               "type": "impl",
@@ -4065,7 +4081,11 @@
                   "name": "set_starting_resources_config",
                   "inputs": [
                     {
-                      "name": "resources",
+                      "name": "realm_starting_resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "village_starting_resources",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
@@ -5221,8 +5241,8 @@
           ]
         },
         {
-          "address": "0x24f096c05b62f15bb461c0e0ba5a2f122ec867a0577935114d114129fe1d0eb",
-          "class_hash": "0x580505e9abe3741dbce27e2c1a5618ffb706d8cfb7c9aeb945747b4635fae40",
+          "address": "0x599541cbcfb037659be5445d32c3c094c71acb4d0555cf5dcabd079a924a8e1",
+          "class_hash": "0x49b8c821dbe2eaa735eef86e52180981048815126efc1270191e1c9be485acd",
           "abi": [
             {
               "type": "impl",
@@ -5435,8 +5455,8 @@
           ]
         },
         {
-          "address": "0x62944d9f4df728902669d979114dac4f264520932b9fba954afdd8b29271ed6",
-          "class_hash": "0x32ecdedc4a0919beb22b43688e360db6c586e28e93588204726b9cac2b4b3f8",
+          "address": "0x22c37ace384c10e8c1a44f4efaa4a604c303c226b055fdb781753575381ccb6",
+          "class_hash": "0x475541ea665d855869963217202ccb74e0f3bca0cc98a7fdd8919d922f73217",
           "abi": [
             {
               "type": "impl",
@@ -5734,8 +5754,8 @@
           ]
         },
         {
-          "address": "0x1484493464d11f6b43f70f8e1cdda7d4c6230bb50cfd294fdca4e5d4c30f6d2",
-          "class_hash": "0x63d602e9a9d31a60978e4be6196fecef64d027042203c0517c575a0feccd0b3",
+          "address": "0xe5f18340404983e990dda7e18fbba418faa984ecf4ca1ccb2fefd0760fb6e3",
+          "class_hash": "0x3fbea94ad69a12990f173ec7e52935325049087d0555cf2f21609800b9c135c",
           "abi": [
             {
               "type": "impl",
@@ -6088,8 +6108,8 @@
           ]
         },
         {
-          "address": "0x1bfbf53ed328cc86dd05f324df9720f445f73f7c91074105d7f0d71cc46f740",
-          "class_hash": "0x162538ef4359eac5b8e123acd6702ff16b3fd1373f73be9e3e4ca452f4bf69b",
+          "address": "0x31b5fdd3dafbdea53d6548a175616ed56e392b6a54cc7848a23d123fb11b7f2",
+          "class_hash": "0x6fea985f1bf091020996f7c3bdf03311fc9e7384561dfdefe26fccd4be20b77",
           "abi": [
             {
               "type": "impl",
@@ -6329,8 +6349,8 @@
           ]
         },
         {
-          "address": "0xd4b5b7cc0ae4b3ba2557362ae9a835cab0d381299f8e6635906b55109d4857",
-          "class_hash": "0x49412fae1fc6f2619975384da4e9ff3fdde2d0b31fd4cbeb6b6dfcf992d1b8f",
+          "address": "0xea0affaf8b107d9493cb7eea6bf049f37cd7b28d5ca454f36a0e43028d93bb",
+          "class_hash": "0x398d0511919674d0a834c3d055dc4abf96c1425d205b801c36a71f95f372f57",
           "abi": [
             {
               "type": "impl",
@@ -6529,8 +6549,8 @@
           ]
         },
         {
-          "address": "0x5dd7b24590d9de9d122c22ca9c66d574ed3035552f0c5d939ae12bae6e62038",
-          "class_hash": "0x1fbea1fbb7a6a2ba239a9808c36563479388f5fddd5cc3352a8acf97689ee05",
+          "address": "0x5773ce41b4b5c4812c374eb6d7d4d7900c67eca12736b867e3018d6d75a9b34",
+          "class_hash": "0x765552772870cc5165d9d20f9e6714f7cbcba638300aa86b38436e2a5a988f3",
           "abi": [
             {
               "type": "impl",
@@ -6750,8 +6770,8 @@
           ]
         },
         {
-          "address": "0x31173dedf74b09681ab45d36d6aae6aff8ba43dba2773af642d22ff13eb01d0",
-          "class_hash": "0x78463053a9e1357a347d46229579feeca59c30442c49909f12021c5c50d46eb",
+          "address": "0x2c958151c74275448cf99f3a1116b9c4857ad9b14a2df3ae6f6501933c074ed",
+          "class_hash": "0x52fc96e1120c8ab1e2467f7173467ab5e021e5b96bb603ba05fc3e8130d7d55",
           "abi": [
             {
               "type": "impl",
@@ -7163,7 +7183,7 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "labor_amounts",
+                      "name": "production_cycles",
                       "type": "core::array::Span::<core::integer::u128>"
                     },
                     {
@@ -7187,7 +7207,7 @@
                       "type": "core::array::Span::<core::integer::u8>"
                     },
                     {
-                      "name": "production_tick_counts",
+                      "name": "production_cycles",
                       "type": "core::array::Span::<core::integer::u128>"
                     }
                   ],
@@ -7326,8 +7346,8 @@
           ]
         },
         {
-          "address": "0x7ab77273bc3599d1ac969b1f1142bac93076d3081c72c6328eaf3e5c1f4e2c9",
-          "class_hash": "0x54988dda2da631bfe8c71910e895ab0918225c74e8ecc282ffd4661e4de6ee1",
+          "address": "0x2610004641d7d98d99646ab839290bdc76dc4fdd1d5cdd4115dd06dff9cc3e8",
+          "class_hash": "0x24f2ecbe449d136cd9237fc03ff4fdd503bf4b68c0f256ceec8c03dd072696",
           "abi": [
             {
               "type": "impl",
@@ -7560,8 +7580,8 @@
           ]
         },
         {
-          "address": "0x1516f773dd0852bd1ff66d29ca610f179253da2e637fdcb7c380c7bdbbb7c46",
-          "class_hash": "0x4452450bf64b8504074a36a8520b59990a7cb0a9e7326217f330c07e3ffa398",
+          "address": "0x2c86de5f1c7f2536d2ce1906ef0a07983406b027a7d7b891e09aed0355c7a90",
+          "class_hash": "0x76dd68e4060372047c60d6c64a48eba56ae5eaac41b6992f1edebb7bb6e928e",
           "abi": [
             {
               "type": "impl",
@@ -7815,8 +7835,8 @@
           ]
         },
         {
-          "address": "0x124ae7e773e6537ccd5f0747636ffd298be6547b62eb8ecafe3a0219032276a",
-          "class_hash": "0x733f5a476b99fc9e0aa28e87ab762605ff5f03aaefc5990de740b33680d1346",
+          "address": "0x55b7eefcfaa8e96e78304cbb1294f9f18528ce86ecc4605eaba7f7e2e325e1e",
+          "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
           "abi": [
             {
               "type": "impl",
@@ -8142,8 +8162,8 @@
           ]
         },
         {
-          "address": "0x2861d25f3dcc1dc1c5abce45f6c1169088891d036d8bbd3cc34f32bfe1bc17a",
-          "class_hash": "0xbede5e6b422110715283dd4e9b28b5be1b1eab1c623915f768aeda958d56f",
+          "address": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
+          "class_hash": "0x3e372338ca4ad7a94e0753e2ed4c1cfed2625915374ffa12274c7dc16c82ab",
           "abi": [
             {
               "type": "impl",
@@ -8379,8 +8399,8 @@
           ]
         },
         {
-          "address": "0x5975920c0a0d7710efd3fb618bb3ed5593fbb68a7b77981a46b30cbdb4b429d",
-          "class_hash": "0x325f66c3121f95a60e44223b19277f40b388b0ea1f59cf89232d26edcc5216d",
+          "address": "0x2762db2bd8a71a67910142cf7bc5fc1fe3126299ca9f2ee340a64b15e6de49e",
+          "class_hash": "0x7bf254700d0654b563783dd2b69c7772afbad7640bfea5be42ba2b0556e24d3",
           "abi": [
             {
               "type": "impl",
@@ -8579,8 +8599,8 @@
           ]
         },
         {
-          "address": "0x57163bb02f72c0ab764e3efd7c20bfd6a54ff32d081e882931af453e05365df",
-          "class_hash": "0x10d0a1aa330311a97d3abac161f458d27d82de5295b1cae3e984a36163f2b01",
+          "address": "0xdf177fc98b6170116377b28e22aa9ead622397bc9f6e13804b17878f74fddf",
+          "class_hash": "0x67087bf51e717af506ae5a8bcd8e9e3a701635433edcdb5fac892f0d48b8030",
           "abi": [
             {
               "type": "impl",
@@ -8816,8 +8836,8 @@
           ]
         },
         {
-          "address": "0x25a7f78f249305805fac8d10405cadd3f2e1dadeaec6e9701f36277f31b3036",
-          "class_hash": "0x121483e7ff293ca2d69dbcd1f7b2c5b275f67bfaf50e255a78215ab93fcfc79",
+          "address": "0x6e068fca029199887c748e0c268e81d56be44d7f26d2dbbde38939172732a7c",
+          "class_hash": "0x21688e9838f4b27ec34ee3de294694dccaadf5e72cc4fde296e1fa3897d09ef",
           "abi": [
             {
               "type": "impl",
@@ -9082,8 +9102,8 @@
           ]
         },
         {
-          "address": "0x7c763901cfcc88f435dc15e06fe32f0fa781dccf524148fdf099cb1d8888df8",
-          "class_hash": "0x3770eef0fd5d6ab993ece695ee4d3d3a7cb4a856538e6e80904b7fffaaa9bcb",
+          "address": "0x74042a1e1435b381a9ce6b6285badd05a02300051a7648fbc766af89d302ff",
+          "class_hash": "0x6731a138dd8bbbaafe01b83b2d69eec7dec9b8582c7d51bfd11076201b7d7b1",
           "abi": [
             {
               "type": "impl",
@@ -9388,8 +9408,8 @@
           ]
         },
         {
-          "address": "0xe9d6803137d855b836dd9ca129ce7a237cb4085975d7c7b2657362c3e9efb1",
-          "class_hash": "0x505a6d08c15cb221d3b110830817636bb513bc325dbc86630f8ad60c4558df0",
+          "address": "0x443bd71b617d42a07f66d4da33060e56904e1baafb562593853247aabf255af",
+          "class_hash": "0x71e6d5d18472afd2fd7ece930b02817fc6c3b51950bf2335a5a02fb5ac41601",
           "abi": [
             {
               "type": "impl",
@@ -9859,8 +9879,8 @@
           ]
         },
         {
-          "address": "0x3e1bd6cccb0ee65ad5a1f55936393131a4bae791047775740d0e3600f4b482a",
-          "class_hash": "0x5f591edcd4e753ea18e6e75ac585fa23c2dd7eff38e0f7cd4cf99d733853edd",
+          "address": "0x5e767af64f707b83dee6908ffc0161fa4f7e6a5b2439badc53c30097fdfc036",
+          "class_hash": "0x22a9961f94a718a66563b42fdb57ee9d2ff43c2329da8c68c9c5b47e32126f2",
           "abi": [
             {
               "type": "impl",
@@ -10121,8 +10141,8 @@
           ]
         },
         {
-          "address": "0x786f4b71c396475947c4ee960c76bdc9ab08a1e57087f1aad8acb74134d5333",
-          "class_hash": "0x522e9d5caf2dc28672518b6f3fbed8597347eb0913c13efa3f382c0005ee1ee",
+          "address": "0x21fa1894447a964a2112a1797d0786cdbe881e2eda7a0649a6545f25080b07f",
+          "class_hash": "0x615708f36836a38c334e5ed956203d3c98186a46635fda8ae587af94b4cb322",
           "abi": [
             {
               "type": "impl",
@@ -10552,8 +10572,8 @@
           ]
         },
         {
-          "address": "0x5ce47af53323685affabb46c5187c65b43b6654ccd19f42ae5acbbf77031f4f",
-          "class_hash": "0x1678387227d15179d49bef2746fb9976ef74061a3168458890f7108cc2f451d",
+          "address": "0x7e3f9bd840b6138acae43d0fd68aca99d49fa291a5fa679978eb7d0152c188c",
+          "class_hash": "0x4fe6408fc860aaedd9fc4e71a23f6596cb7f40dfb3a6a233083d9451873dd9c",
           "abi": [
             {
               "type": "impl",
@@ -10804,8 +10824,8 @@
           ]
         },
         {
-          "address": "0x2e20d5d07e6071c5dac12d3643711232b9fc20c72117cc9b7b828b778978cd1",
-          "class_hash": "0x1a171c2163359711e4da13cd52730f5779285e65856a1c8cb1371d1205aac2a",
+          "address": "0x4c5455c2016d99e1fc54ac1f50d976a0e6eb0515a149475075a44615e81be5d",
+          "class_hash": "0x748691abda89e7a103b8a655d8cf369e8cd7af7c7978a5d11aa0d0a50e9a07a",
           "abi": [
             {
               "type": "impl",
@@ -11280,7 +11300,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x3afe6d694d792e0db91900285376c48b85da993acacea297335e84b6cb96c28",
+          "class_hash": "0x3e74a07618c145066993d51a48df0bc067370560b5aa5b07f233dad50b5892f",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }
