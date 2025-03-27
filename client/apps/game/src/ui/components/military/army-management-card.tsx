@@ -13,6 +13,7 @@ import {
   getBalance,
   getDirectionBetweenAdjacentHexes,
   getFreeDirectionsAroundStructure,
+  getTroopName,
   getTroopResourceId,
   ID,
   resources,
@@ -237,7 +238,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
               >
                 <div className="font-bold mb-4">
                   <div className="flex justify-between">
-                    <div className="text-md font-semibold">{TroopType[troop.troopType]}</div>
+                    <div className="text-sm font-semibold">{getTroopName(troop.troopType, selectedTier)}</div>
                   </div>
                   <div className="text-xs font-normal mt-1 mb-2">
                     Avail. <span className="text-gold">[{currencyFormat(balance ? Number(balance) : 0, 0)}]</span>

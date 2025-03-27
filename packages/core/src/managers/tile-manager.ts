@@ -156,8 +156,6 @@ export class TileManager {
       removeResourceOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
     });
 
-    const populationOverrideId = uuid();
-
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
     const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
 
@@ -201,7 +199,6 @@ export class TileManager {
 
     return () => {
       this.components.Building.removeOverride(buildingOverrideId);
-      this.components.StructureBuildings.removeOverride(populationOverrideId);
       this.components.StructureBuildings.removeOverride(quantityOverrideId);
       removeResourceOverride();
     };
@@ -219,6 +216,7 @@ export class TileManager {
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
 
     const currentBuilding = getComponentValue(this.components.Building, entity);
+    const type = currentBuilding?.category as BuildingType;
 
     this.components.Building.addOverride(overrideId, {
       entity,
@@ -238,27 +236,59 @@ export class TileManager {
     const populationOverrideId = uuid();
 
     const realmEntityId = getEntityIdFromKeys([BigInt(entityId)]);
-
-    const type = currentBuilding?.category as BuildingType;
-
     const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
+
+    // Get the current building count
+    const buildingCount = getBuildingCount(type, [
+      currentStructureBuildings?.packed_counts_1 || 0n,
+      currentStructureBuildings?.packed_counts_2 || 0n,
+      currentStructureBuildings?.packed_counts_3 || 0n,
+    ]);
+
+    // Decrease the count by 1 (ensuring it doesn't go below 0)
+    const newCount = buildingCount > 0 ? buildingCount - 1 : 0;
+
+    // Update the packed counts
+    const packedBuildingCount = setBuildingCount(
+      type,
+      [
+        currentStructureBuildings?.packed_counts_1 || 0n,
+        currentStructureBuildings?.packed_counts_2 || 0n,
+        currentStructureBuildings?.packed_counts_3 || 0n,
+      ],
+      newCount,
+    );
+    console.log("packedBuildingCount", packedBuildingCount, "newCount", newCount, "type", type);
+    const newBuildingCount = getBuildingCount(type, [
+      packedBuildingCount[0],
+      packedBuildingCount[1],
+      packedBuildingCount[2],
+    ]);
+    console.log("newBuildingCount", newBuildingCount, "type", type);
 
     this.components.StructureBuildings.addOverride(populationOverrideId, {
       entity: realmEntityId,
       value: {
         ...currentStructureBuildings,
+        packed_counts_1: packedBuildingCount[0],
+        packed_counts_2: packedBuildingCount[1],
+        packed_counts_3: packedBuildingCount[2],
         population: {
           current:
-            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.current || 0) -
+            (currentStructureBuildings?.population.current || 0) -
             configManager.getBuildingCategoryConfig(type).population_cost,
           max:
-            (getComponentValue(this.components.StructureBuildings, realmEntityId)?.population.max || 0) -
+            (currentStructureBuildings?.population.max || 0) -
             configManager.getBuildingCategoryConfig(type).capacity_grant,
         },
       },
     });
 
-    return overrideId;
+    return () => {
+      console.log("removing overrides");
+      this.components.Building.removeOverride(overrideId);
+      this.components.StructureBuildings.removeOverride(populationOverrideId);
+    };
   };
 
   private _optimisticPause = (col: number, row: number) => {
@@ -339,7 +369,7 @@ export class TileManager {
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
     // add optimistic rendering
-    const overrideId = this._optimisticDestroy(structureEntityId, col, row);
+    const removeBuildingOverride = this._optimisticDestroy(structureEntityId, col, row);
 
     try {
       await this.systemCalls.destroy_building({
@@ -351,9 +381,9 @@ export class TileManager {
         },
       });
     } catch (error) {
-      this.components.Building.removeOverride(overrideId);
-      console.error(error);
-      throw error;
+      console.log("error", error);
+    } finally {
+      removeBuildingOverride();
     }
   };
 

@@ -95,11 +95,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               const resource = findResourceById(resourceId)!;
               const building = getBuildingFromResource(resourceId);
 
-              const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
-              if (!complexBuildingCosts) return;
-              const cost = [...complexBuildingCosts, ...configManager.complexSystemResourceInputs[resourceId]];
+              const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-              const hasBalance = checkBalance(cost);
+              if (!buildingCosts) return;
+
+              const hasBalance = checkBalance(buildingCosts);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
                 realm,
@@ -170,11 +170,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const isWorkersHut = building === BuildingType.WorkersHut;
                 const isStorehouse = building === BuildingType.Storehouse;
 
-                const complexBuildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
+                const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
 
-                if (!complexBuildingCosts) return;
+                if (!buildingCosts) return;
 
-                const hasBalance = checkBalance(complexBuildingCosts);
+                const hasBalance = checkBalance(buildingCosts);
+
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
                   building === BuildingType.WorkersHut
@@ -305,6 +306,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           const hasBalance = checkBalance(buildingCost);
                           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                           const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+
+                          if (!buildingCost || buildingCost?.length === 0) return null;
 
                           return (
                             <BuildingCard
@@ -737,7 +740,9 @@ export const BuildingInfo = ({
               })}
           </div>
         </>
-      ) : null}
+      ) : (
+        <div className="text-gold/70 italic text-sm">No production costs in this mode</div>
+      )}
 
       {buildingCost.length !== 0 && (
         <>

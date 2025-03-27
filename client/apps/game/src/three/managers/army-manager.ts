@@ -8,6 +8,7 @@ import {
   BiomeType,
   configManager,
   ContractAddress,
+  getTroopName,
   HexEntityInfo,
   ID,
   orders,
@@ -396,7 +397,7 @@ export class ArmyManager {
     line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
     line1.style.color = isDaydreamsAgent ? army.color : "inherit";
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.category} ${TIERS_TO_STARS[army.tier]}`;
+    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
