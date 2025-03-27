@@ -91,6 +91,7 @@ export class ArmyActionManager {
     const maxTravelWheatSteps = Math.floor(wheat / travelFoodCosts.wheatPayAmount);
     const maxTravelFishSteps = Math.floor(fish / travelFoodCosts.fishPayAmount);
     const maxTravelSteps = Math.min(maxTravelWheatSteps, maxTravelFishSteps);
+
     return Math.min(maxStaminaSteps, maxTravelSteps);
   };
 
@@ -142,31 +143,31 @@ export class ArmyActionManager {
         structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
 
+      // Skip if hex requires exploration but army can't explore
       if (!isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
       const canAttack = (hasArmy || hasStructure) && !isMine;
 
-      // Determine action type first
+      // Determine action type
       let actionType;
+      let staminaCost = 0;
+
       if (isMine) {
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
       } else if (biome) {
         actionType = ActionType.Move;
+        // Skip if no movement range available
+        if (maxHex === 0) continue;
+        staminaCost = configManager.getTravelStaminaCost(biome, troopType);
       } else {
         actionType = ActionType.Explore;
-      }
-
-      // For travel/explore actions, check stamina cost
-      let staminaCost = 0;
-      if (actionType === ActionType.Move) {
-        staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
-      } else if (actionType === ActionType.Explore) {
         staminaCost = configManager.getExploreStaminaCost();
       }
 
+      // Skip if not enough stamina for the action
       if (staminaCost > armyStamina) continue;
 
       priorityQueue.push({
