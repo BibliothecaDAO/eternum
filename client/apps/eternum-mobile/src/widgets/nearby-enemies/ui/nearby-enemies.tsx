@@ -1,7 +1,12 @@
 import { cn } from "@/shared/lib/utils";
+import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
+import { useDojo } from "@bibliothecadao/react";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
+import { Entities, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface NearbyEnemiesProps {
   entityId: number;
@@ -31,16 +36,55 @@ const getDangerLevel = (distance: number) => {
   };
 };
 
-// Dummy data generator for demo purposes
-const generateDummyData = () => {
-  const enemiesCount = Math.floor(Math.random() * 10) + 1;
-  const distance = Math.floor(Math.random() * 20) + 1;
-  return { enemiesCount, distance };
+const queryArmiesInRadius = async (client: ToriiClient, centerX: number, centerY: number, radius: number) => {
+  const query: Query = {
+    limit: 100, // Adjust based on your needs
+    offset: 0,
+    entity_models: ["s1_eternum-ExplorerTroops"], // Replace with your actual model name
+    dont_include_hashed_keys: false,
+    entity_updated_after: 0,
+    order_by: [],
+    clause: AndComposeClause([
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", centerX - radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", centerX + radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", centerY - radius),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", centerY + radius),
+    ]).build(),
+  };
+
+  const results = await client.getEntities(query);
+  return results;
 };
 
 // @ts-ignore
 export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
-  const { enemiesCount, distance } = generateDummyData();
+  const {
+    network: { toriiClient },
+  } = useDojo();
+  const [armies, setArmies] = useState<Entities | null>(null);
+  const { selectedRealm } = useStore();
+
+  const distance = 20;
+
+  useEffect(() => {
+    const fetchArmies = async () => {
+      if (!selectedRealm) return;
+      const armies = await queryArmiesInRadius(
+        toriiClient,
+        selectedRealm.position.x,
+        selectedRealm.position.y,
+        distance,
+      );
+      setArmies(armies);
+    };
+
+    fetchArmies();
+
+    const interval = setInterval(fetchArmies, 180000);
+
+    return () => clearInterval(interval);
+  }, [toriiClient, selectedRealm]);
+
   const { color, bgColor, icon: Icon } = getDangerLevel(distance);
 
   return (
@@ -52,7 +96,7 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
         </CardTitle>
         <div className="text-xs space-y-1">
           <div>
-            <span className="font-bold">{enemiesCount}</span> enemies around
+            <span className="font-bold">{Object.keys(armies || {}).length}</span> enemies around
           </div>
           <div>
             <span className="font-semibold">{distance}</span> Hexes Away
