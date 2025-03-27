@@ -44,13 +44,13 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   startingResources: [
     ...CommonEternumGlobalConfig.startingResources,
-    { resource: 27, amount: 100_000 }, 
+    { resource: 27, amount: 100_000 },
     { resource: 30, amount: 100_000 },
     { resource: 33, amount: 100_000 },
   ],
   villageStartingResources: [
     ...CommonEternumGlobalConfig.villageStartingResources,
-    { resource: 27, amount: 50_000 }, 
+    { resource: 27, amount: 50_000 },
     { resource: 30, amount: 50_000 },
     { resource: 33, amount: 50_000 },
   ],
@@ -80,6 +80,12 @@ export const SepoliaEternumGlobalConfig: Config = {
     ),
     productionBySimpleRecipeOutputs: Object.fromEntries(
       Object.entries(CommonEternumGlobalConfig.resources.productionBySimpleRecipeOutputs).map(([key, value]) => [
+        key,
+        value * 10,
+      ]),
+    ),
+    laborOutputPerResource: Object.fromEntries(
+      Object.entries(CommonEternumGlobalConfig.resources.laborOutputPerResource).map(([key, value]) => [
         key,
         value * 10,
       ]),
