@@ -159,7 +159,7 @@ export const setStartingResourcesConfig = async (config: Config) => {
   const tx = await config.provider.set_starting_resources_config({
     signer: config.account,
     realmStartingResources: realmStartResourcesArray,
-    villageStartingResources: villageStartResourcesArray
+    villageStartingResources: villageStartResourcesArray,
   });
 
   console.log(chalk.gray(`\n    ⚡ Transaction: ${tx.statusReceipt}\n`));
@@ -223,7 +223,7 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     config.config.resources.productionByComplexRecipe,
     config.config.resources.resourcePrecision,
   );
-  
+
   const scaledProductionByResourceRecipeOutputs = scaleResourceOutputs(
     config.config.resources.productionByComplexRecipeOutputs,
     config.config.resources.resourcePrecision,
@@ -233,17 +233,16 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     config.config.resources.productionBySimpleRecipe,
     config.config.resources.resourcePrecision,
   );
-  
+
   const scaledProductionBySimpleRecipeOutputs = scaleResourceOutputs(
     config.config.resources.productionBySimpleRecipeOutputs,
     config.config.resources.resourcePrecision,
   );
-    
+
   const scaledProductionOfLaborOutputs = scaleResourceOutputs(
     config.config.resources.laborOutputPerResource,
     config.config.resources.resourcePrecision,
   );
-  
 
   for (const resourceId of Object.keys(scaledProductionByResourceRecipe) as unknown as ResourcesIds[]) {
     const calldata = {
@@ -254,7 +253,7 @@ export const SetResourceFactoryConfig = async (config: Config) => {
       resource_output_per_simple_input: scaledProductionBySimpleRecipeOutputs[resourceId],
       simple_input_resources_list: scaledProductionBySimpleRecipe[resourceId],
       resource_output_per_complex_input: scaledProductionByResourceRecipeOutputs[resourceId],
-      complex_input_resources_list: scaledProductionByResourceRecipe[resourceId]
+      complex_input_resources_list: scaledProductionByResourceRecipe[resourceId],
     };
 
     calldataArray.push(calldata);
@@ -352,7 +351,10 @@ export const setBuildingConfig = async (config: Config) => {
   const buildingPopulation = config.config.buildings.buildingPopulation;
   const buildingCapacity = config.config.buildings.buildingCapacity;
   const complexBuildingCosts = config.config.buildings.complexBuildingCosts;
-  const scaledComplexBuildingCosts = scaleResourceInputs(complexBuildingCosts, config.config.resources.resourcePrecision);
+  const scaledComplexBuildingCosts = scaleResourceInputs(
+    complexBuildingCosts,
+    config.config.resources.resourcePrecision,
+  );
   const simpleBuildingCosts = config.config.buildings.simpleBuildingCost;
   const scaledSimpleBuildingCosts = scaleResourceInputs(simpleBuildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
@@ -377,16 +379,16 @@ export const setBuildingConfig = async (config: Config) => {
 
   // Non Resource Building Config
   for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
-      const costs = scaledComplexBuildingCosts[buildingId];
-      const population = buildingPopulation[buildingId] ?? 0;
-      const capacity = buildingCapacity[buildingId] ?? 0;
-      console.log(
-        chalk.cyan(`
+    const costs = scaledComplexBuildingCosts[buildingId];
+    const population = buildingPopulation[buildingId] ?? 0;
+    const capacity = buildingCapacity[buildingId] ?? 0;
+    console.log(
+      chalk.cyan(`
       🏗️  Complex Building Cost
       ═══════════════════════════`),
-      );
-      console.log(
-        chalk.cyan(`
+    );
+    console.log(
+      chalk.cyan(`
     ┌─ ${chalk.yellow(BuildingType[buildingId])}
     │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[buildingResourceProduced[buildingId] as ResourcesIds])}
     │  ${chalk.gray("Consumes")} ${chalk.white(population)} ${chalk.gray("population")}
@@ -411,21 +413,20 @@ export const setBuildingConfig = async (config: Config) => {
     ).join("")}
     │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     └────────────────────────────────`),
-      );
-  
-    }
+    );
+  }
 
-      for (const buildingId of Object.keys(scaledSimpleBuildingCosts) as unknown as BuildingType[]) {
-          const costs = scaledSimpleBuildingCosts[buildingId];
-          const population = buildingPopulation[buildingId] ?? 0;
-          const capacity = buildingCapacity[buildingId] ?? 0;
-          console.log(
-            chalk.cyan(`
+  for (const buildingId of Object.keys(scaledSimpleBuildingCosts) as unknown as BuildingType[]) {
+    const costs = scaledSimpleBuildingCosts[buildingId];
+    const population = buildingPopulation[buildingId] ?? 0;
+    const capacity = buildingCapacity[buildingId] ?? 0;
+    console.log(
+      chalk.cyan(`
           🏗️  Simple Building Cost
           ═══════════════════════════`),
-          );
-          console.log(
-            chalk.cyan(`
+    );
+    console.log(
+      chalk.cyan(`
         ┌─ ${chalk.yellow(BuildingType[buildingId])}
         │  ${chalk.gray("Produces:")} ${chalk.white(ResourcesIds[buildingResourceProduced[buildingId] as ResourcesIds])}
         │  ${chalk.gray("Consumes")} ${chalk.white(population)} ${chalk.gray("population")}
@@ -450,23 +451,24 @@ export const setBuildingConfig = async (config: Config) => {
         ).join("")}
         │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
         └────────────────────────────────`),
-          );
-    }
+    );
+  }
 
-    const calldataArray = []
+  const calldataArray = [];
 
-    for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
-      calldataArray.push(
-        {
-          building_category: buildingId,
-          complex_building_cost: scaledComplexBuildingCosts[buildingId],
-          simple_building_cost: scaledSimpleBuildingCosts[buildingId],
-          population_cost: buildingPopulation[buildingId] ?? 0,
-          capacity_grant: buildingCapacity[buildingId] ?? 0,
-        }
-      )
-  }        
-  const categoryTx = await config.provider.set_building_category_config({signer: config.account, calls: calldataArray});
+  for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
+    calldataArray.push({
+      building_category: buildingId,
+      complex_building_cost: scaledComplexBuildingCosts[buildingId],
+      simple_building_cost: scaledSimpleBuildingCosts[buildingId],
+      population_cost: buildingPopulation[buildingId] ?? 0,
+      capacity_grant: buildingCapacity[buildingId] ?? 0,
+    });
+  }
+  const categoryTx = await config.provider.set_building_category_config({
+    signer: config.account,
+    calls: calldataArray,
+  });
   console.log(chalk.green(`   ✔ Category configuration complete `) + chalk.gray(categoryTx.statusReceipt));
 };
 
