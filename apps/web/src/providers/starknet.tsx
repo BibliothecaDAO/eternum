@@ -35,30 +35,34 @@ const slot: string = env.VITE_PUBLIC_SLOT;
 //const namespace: string = "eternum";
 const colorMode: ColorMode = "dark";
 
-const cartridgeController = new ControllerConnector({
-  //policies: [],
-  chains: [
-    {
-      rpcUrl:
-        env.VITE_PUBLIC_CHAIN == "sepolia"
-          ? "https://api.cartridge.gg/x/starknet/sepolia"
-          : "https://api.cartridge.gg/x/starknet/mainnet",
-    },
-  ],
-  defaultChainId:
-    env.VITE_PUBLIC_CHAIN == "sepolia"
-      ? ChainId.SN_SEPOLIA
-      : (ChainId.SN_MAIN as string),
-  theme,
-  colorMode,
-  tokens: {
-    erc20: [
-      LORDS[SUPPORTED_L2_CHAIN_ID]?.address as string /*, ...otherResources*/,
-    ],
-  },
-  // namespace,
-  slot,
-});
+const cartridgeController =
+  typeof window !== "undefined"
+    ? new ControllerConnector({
+        //policies: [],
+        chains: [
+          {
+            rpcUrl:
+              env.VITE_PUBLIC_CHAIN == "sepolia"
+                ? "https://api.cartridge.gg/x/starknet/sepolia"
+                : "https://api.cartridge.gg/x/starknet/mainnet",
+          },
+        ],
+        defaultChainId:
+          env.VITE_PUBLIC_CHAIN == "sepolia"
+            ? ChainId.SN_SEPOLIA
+            : (ChainId.SN_MAIN as string),
+        theme,
+        colorMode,
+        tokens: {
+          erc20: [
+            LORDS[SUPPORTED_L2_CHAIN_ID]
+              ?.address as string /*, ...otherResources*/,
+          ],
+        },
+        // namespace,
+        slot,
+      })
+    : null;
 
 const getConnectors = () => {
   // For Metamask

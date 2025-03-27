@@ -1,4 +1,5 @@
 //import type { ApibaraRuntimeConfig } from "apibara/types";
+import type { ApibaraRuntimeConfig } from "apibara/types";
 import type {
   ExtractTablesWithRelations,
   TablesRelationalConfig,
@@ -36,18 +37,7 @@ const chainId =
 const l2ChainId =
   env.VITE_PUBLIC_CHAIN === "sepolia" ? ChainId.SN_SEPOLIA : ChainId.SN_MAIN;
 
-export default function (/*runtimeConfig: ApibaraRuntimeConfig*/) {
-  return createIndexer({
-    database: db,
-  });
-}
-
-export function createIndexer<
-  TQueryResult extends PgQueryResultHKT,
-  TFullSchema extends Record<string, unknown> = Record<string, never>,
-  TSchema extends
-    TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
->({ database }: { database: PgDatabase<TQueryResult, TFullSchema, TSchema> }) {
+export default function (runtimeConfig: ApibaraRuntimeConfig) {
   console.log("eth indexer started");
   console.log(env.VITE_PUBLIC_CHAIN);
   console.log("messaging ", STARKNET_MESSAGING[chainId]);
@@ -62,6 +52,7 @@ export function createIndexer<
     finality: "accepted",
     startingBlock:
       env.VITE_PUBLIC_CHAIN === "sepolia" ? 6_180_467n : 204_33_152n,
+
     filter: {
       logs: [
         {
@@ -116,7 +107,7 @@ export function createIndexer<
     },
     plugins: [
       drizzleStorage({
-        db: database,
+        db: db,
         persistState: true,
         idColumn: "_id",
         indexerName: "eth-realms-bridge",

@@ -80,12 +80,17 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   const numberL2Realms = l2Realms?.data.length ?? 0;
 
   const { data } = useCurrentDelegate();
+  console.log("data", data);
   const currentDelegateQuery = useSuspenseQuery(
     getDelegateByIDQueryOptions({
-      address: data && formatAddress(num.toHex(BigInt(data))),
+      address:
+        data && BigInt(data) != 0n
+          ? formatAddress(num.toHex(BigInt(data)))
+          : undefined,
     }),
   );
   const currentDelegate = currentDelegateQuery.data;
+  console.log(currentDelegate);
 
   const { data: starknetBalance } = useBalance({
     address,
@@ -255,26 +260,26 @@ export function Homepage({ address }: { address: `0x${string}` }) {
           <h2 className="mb-2 text-xl font-semibold">Your Delegate</h2>
           <div className="flex flex-col gap-4">
             <Suspense fallback={<DelegateCardSkeleton />}>
-              {currentDelegate?.user &&
-                (BigInt(currentDelegate.user) == 0n ? (
-                  <Card>
-                    <CardHeader className="text-2xl">
-                      No delegate selected
-                    </CardHeader>
+              {!currentDelegate ||
+              (currentDelegate.user && BigInt(currentDelegate.user) == 0n) ? (
+                <Card>
+                  <CardHeader className="text-2xl">
+                    No delegate selected
+                  </CardHeader>
 
-                    <CardContent>
-                      You must delegate your Realms for governance in order to
-                      vote on proposals and receive $LORDS emissions
-                    </CardContent>
-                    <CardFooter>
-                      <Link to={`/delegate/list`}>
-                        <Button>Choose a Delegate</Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
-                ) : (
-                  <DelegateCard delegate={currentDelegate} />
-                ))}
+                  <CardContent>
+                    You must delegate your Realms for governance in order to
+                    vote on proposals and receive $LORDS emissions
+                  </CardContent>
+                  <CardFooter>
+                    <Link to={`/delegate/list`}>
+                      <Button>Choose a Delegate</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ) : (
+                <DelegateCard delegate={currentDelegate} />
+              )}
             </Suspense>
           </div>
         </div>
