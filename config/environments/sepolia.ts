@@ -42,6 +42,18 @@ export const SepoliaEternumGlobalConfig: Config = {
     agentFindProbability: 1,
     agentFindFailProbability: 5,
   },
+  startingResources: [
+    ...CommonEternumGlobalConfig.startingResources,
+    { resource: 27, amount: 100_000 }, 
+    { resource: 30, amount: 100_000 },
+    { resource: 33, amount: 100_000 },
+  ],
+  villageStartingResources: [
+    ...CommonEternumGlobalConfig.villageStartingResources,
+    { resource: 27, amount: 50_000 }, 
+    { resource: 30, amount: 50_000 },
+    { resource: 33, amount: 50_000 },
+  ],
   // buildings: {
   //   ...CommonEternumGlobalConfig.buildings,
   //   complexBuildingCosts: Object.fromEntries(

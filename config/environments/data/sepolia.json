@@ -2029,6 +2029,18 @@
     {
       "resource": 32,
       "amount": 833
+    },
+    {
+      "resource": 27,
+      "amount": 100000
+    },
+    {
+      "resource": 30,
+      "amount": 100000
+    },
+    {
+      "resource": 33,
+      "amount": 100000
     }
   ],
   "villageStartingResources": [
@@ -2059,6 +2071,18 @@
     {
       "resource": 32,
       "amount": 133
+    },
+    {
+      "resource": 27,
+      "amount": 50000
+    },
+    {
+      "resource": 30,
+      "amount": 50000
+    },
+    {
+      "resource": 33,
+      "amount": 50000
     }
   ],
   "realmUpgradeCosts": {
