@@ -17,6 +17,7 @@ export const BridgedResources = () => {
   const [sortedResources, setSortedResources] = useState<Array<[string, [number, string]]>>([]);
   const [resourceData, setResourceData] = useState<Record<string, { totalSupply: bigint; balance: bigint }>>({});
 
+  // todo: fix resources file with right resource id
   useEffect(() => {
     const getResources = async () => {
       const addresses = getResourceAddresses();
