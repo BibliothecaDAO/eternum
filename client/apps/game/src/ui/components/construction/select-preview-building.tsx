@@ -307,6 +307,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                           const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
+                          if (!buildingCost || buildingCost?.length === 0) return null;
+
                           return (
                             <BuildingCard
                               className={clsx("border border-gold/10", {
@@ -738,7 +740,9 @@ export const BuildingInfo = ({
               })}
           </div>
         </>
-      ) : null}
+      ) : (
+        <div className="text-gold/70 italic text-sm">No production costs in this mode</div>
+      )}
 
       {buildingCost.length !== 0 && (
         <>
