@@ -48,8 +48,10 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
           );
           // @ts-ignore
           const troopType = army["s1_eternum-ExplorerTroops"]["troops"]["value"]["category"]["value"]["option"];
+          // @ts-ignore
+          const tier = army["s1_eternum-ExplorerTroops"]["troops"]["value"]["tier"]["value"]["option"];
           const id = army["s1_eternum-ExplorerTroops"]["explorer_id"]["value"];
-          return { count, troopType, id };
+          return { count, troopType, id, tier };
         });
         setArmies(armies);
       } catch (err) {
