@@ -24,10 +24,11 @@
     "clsx": "^1.2.1",
     "lodash": "^4.17.21",
     "lucide-react": "^0.365.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "starknet": "catalog:",
     "vaul": "^1.1.2",
     "wouter": "^2.12.1",
     "zustand": "^4.5.2"
@@ -50,8 +51,5 @@
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5",
     "vite-plugin-mkcert": "^1.17.6"
-  },
-  "peerDependencies": {
-    "starknet": "6.23.1"
   }
 }

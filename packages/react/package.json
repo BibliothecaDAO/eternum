@@ -15,10 +15,10 @@
   },
   "peerDependencies": {
     "@bibliothecadao/eternum": "workspace:*",
-    "@dojoengine/react": "*",
-    "@starknet-react/core": "*",
-    "react": "^18",
-    "starknet": "^6.23.1",
+    "@dojoengine/react": "catalog:",
+    "@starknet-react/core": "catalog:",
+    "react": "catalog:",
+    "starknet": "catalog:",
     "wouter": "^2.12.1"
   },
   "devDependencies": {

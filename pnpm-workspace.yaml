@@ -10,3 +10,24 @@ packages:
   - "packages/*"
   - "contracts/season_pass/scripts/deployment"
   - "contracts/season_resources/scripts/deployment"
+
+catalog:
+  starknet: 6.23.1
+  "@cartridge/controller": ^0.7.8
+  "@cartridge/connector": ^0.7.8
+  "@starknet-react/core": 3.7.2
+  "@starknet-react/chains": 3.1.2
+  react: ^18
+  react-dom: ^18
+  "@types/react": ^18
+  "@types/react-dom": ^18
+  "@dojoengine/react": 1.2.4
+  "@dojoengine/core": 1.2.4
+  "@dojoengine/sdk": 1.2.4
+  "@dojoengine/predeployed-connector": 1.2.4
+  "@dojoengine/create-burner": 1.2.4
+  "@dojoengine/recs": ^2.0.13
+  "@dojoengine/state": "1.2.4"
+  "@dojoengine/torii-client": 1.2.4
+  "@dojoengine/torii-wasm": 1.2.4
+  "@dojoengine/utils": 1.2.4

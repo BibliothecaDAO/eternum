@@ -1,10 +1,10 @@
 import { getResourceAddresses } from "@/utils/addresses";
-import ControllerConnector from "@cartridge/connector/controller";
-import { predeployedAccounts, PredeployedAccountsConnector } from "@dojoengine/predeployed-connector";
+import { ControllerConnector } from "@cartridge/connector";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { Connector, jsonRpcProvider, StarknetConfig, voyager } from "@starknet-react/core";
-import React, { useCallback, useEffect, useState } from "react";
-import { constants } from "starknet";
+import { StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import type React from "react";
+import { useCallback } from "react";
+import { shortString } from "starknet";
 import { env } from "../../../env";
 import { policies } from "./policies";
 
@@ -22,15 +22,20 @@ const namespace: string = "s1_eternum";
 
 const nonLocalController = new ControllerConnector({
   chains: [
+    { rpcUrl: "http://localhost:5050" },
     {
       rpcUrl:
-        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050" && env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
+        env.VITE_PUBLIC_NODE_URL !== "http://127.0.0.1:5050" &&
+          env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
           ? env.VITE_PUBLIC_NODE_URL
           : "https://api.cartridge.gg/x/starknet/sepolia",
     },
   ],
-  defaultChainId:
-    env.VITE_PUBLIC_CHAIN === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA,
+  defaultChainId: shortString.encodeShortString("KATANA"),
+  // defaultChainId:
+  // 	env.VITE_PUBLIC_CHAIN === "mainnet"
+  // 		? constants.StarknetChainId.SN_MAIN
+  // 		: constants.StarknetChainId.SN_SEPOLIA,
   preset,
   policies,
   slot,
@@ -41,43 +46,15 @@ const nonLocalController = new ControllerConnector({
 });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  const [localConnector, setLocalConnector] = useState<PredeployedAccountsConnector | null>(null);
-
-  useEffect(() => {
-    if (env.VITE_PUBLIC_CHAIN === "local") {
-      predeployedAccounts({
-        rpc: env.VITE_PUBLIC_NODE_URL as string,
-        id: "katana",
-        name: "Katana",
-      }).then((connectors) => {
-        setLocalConnector(connectors[0]);
-      });
-    }
-  }, []);
-
   const rpc = useCallback(() => {
     return { nodeUrl: env.VITE_PUBLIC_NODE_URL };
   }, []);
-
-  if (env.VITE_PUBLIC_CHAIN !== "local") {
-    return (
-      <StarknetConfig
-        chains={[mainnet, sepolia]}
-        provider={jsonRpcProvider({ rpc })}
-        connectors={[nonLocalController]}
-        explorer={voyager}
-        autoConnect
-      >
-        {children}
-      </StarknetConfig>
-    );
-  }
 
   return (
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[localConnector as never as Connector]}
+      connectors={[nonLocalController]}
       explorer={voyager}
       autoConnect
     >
