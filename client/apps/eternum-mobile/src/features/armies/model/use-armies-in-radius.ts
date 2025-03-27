@@ -1,3 +1,4 @@
+import useStore from "@/shared/store";
 import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
@@ -13,7 +14,8 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
   const {
     network: { toriiClient },
   } = useDojo();
-  const [armies, setArmies] = useState<any[] | null>(null);
+  const { selectedRealm } = useStore();
+  const [armies, setArmies] = useState<any[] | []>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -41,7 +43,9 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
         };
 
         const results = await toriiClient.getEntities(query);
-        const armies = Object.values(results).map((army) => {
+        let armies = Object.values(results).map((army) => {
+          const owner = army["s1_eternum-ExplorerTroops"]["owner"]["value"];
+          const isEnemy = owner !== selectedRealm?.entityId;
           const count = divideByPrecision(
             // @ts-ignore
             Number(army["s1_eternum-ExplorerTroops"]["troops"]["value"]["count"]["value"]),
@@ -51,9 +55,19 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
           // @ts-ignore
           const tier = army["s1_eternum-ExplorerTroops"]["troops"]["value"]["tier"]["value"]["option"];
           const id = army["s1_eternum-ExplorerTroops"]["explorer_id"]["value"];
-          return { count, troopType, id, tier };
+          // @ts-ignore
+          const x = army["s1_eternum-ExplorerTroops"]["coord"]["value"]["x"]["value"];
+          // @ts-ignore
+          const y = army["s1_eternum-ExplorerTroops"]["coord"]["value"]["y"]["value"];
+          const distance = Math.round(Math.sqrt((x - center.x) ** 2 + (y - center.y) ** 2));
+          return { owner, count, troopType, id, tier, x, y, distance, isEnemy };
         });
-        setArmies(armies);
+        armies = armies.filter((army) => army.isEnemy);
+        if (armies.length > 0) {
+          setArmies(armies);
+        } else {
+          setArmies([]);
+        }
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Failed to fetch armies"));
       } finally {

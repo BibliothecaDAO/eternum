@@ -4,7 +4,7 @@ import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
-import { useEffect } from "react";
+import { useMemo } from "react";
 
 interface NearbyEnemiesProps {
   onView: () => void;
@@ -35,13 +35,13 @@ const getDangerLevel = (distance: number) => {
 
 export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
   const { selectedRealm } = useStore();
-  const distance = 20;
 
-  const { armies, count, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, distance);
-  useEffect(() => {
-    console.log(armies);
+  const { armies, count, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
+
+  const closestEnemy = useMemo(() => {
+    return armies.sort((a, b) => a.distance - b.distance)[0];
   }, [armies]);
-  const { color, bgColor, icon: Icon } = getDangerLevel(distance);
+  const { color, bgColor, icon: Icon } = getDangerLevel(closestEnemy ? closestEnemy.distance : 100);
 
   return (
     <Card className={cn(bgColor, "flex flex-col justify-between")}>
@@ -60,9 +60,11 @@ export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
               </>
             )}
           </div>
-          <div>
-            <span className="font-semibold">{distance}</span> Hexes Away
-          </div>
+          {closestEnemy && (
+            <div>
+              <span className="font-semibold">{closestEnemy.distance}</span> Hexes Away
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="p-4">
