@@ -11,7 +11,7 @@ interface ArrivedDonkeysProps {
 
 export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: ArrivedDonkeysProps) => {
   return (
-    <Card className={cn(readyCount > 0 && "bg-green-500/10")}>
+    <Card className={cn(readyCount > 0 && "bg-green-500/10", "flex flex-col justify-between")}>
       <CardContent className="space-y-3 p-4">
         <CardTitle className={cn("text-sm flex w-full items-center gap-2", readyCount > 0 && "text-green-500")}>
           <PackageCheck className="w-4 h-4" />

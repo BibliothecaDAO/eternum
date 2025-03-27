@@ -88,7 +88,7 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
   const { color, bgColor, icon: Icon } = getDangerLevel(distance);
 
   return (
-    <Card className={cn(bgColor)}>
+    <Card className={cn(bgColor, "flex flex-col justify-between")}>
       <CardContent className="space-y-3 p-4">
         <CardTitle className={cn("text-sm flex w-full items-center gap-2", color)}>
           <Icon className="w-4 h-4" />
