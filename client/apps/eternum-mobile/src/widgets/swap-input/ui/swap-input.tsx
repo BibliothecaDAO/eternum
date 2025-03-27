@@ -1,9 +1,10 @@
+import { useResourceBalances } from "@/features/resource-balances/model/use-resource-balances";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
-import { resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, ID, resources } from "@bibliothecadao/eternum";
 
 interface SwapInputProps {
   direction: "buy" | "sell";
@@ -11,11 +12,19 @@ interface SwapInputProps {
   amount: number;
   onAmountChange?: (amount: number) => void;
   onResourceChange?: (resourceId: number) => void;
+  entityId: ID;
 }
 
-export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onResourceChange }: SwapInputProps) => {
-  // Dummy balance for demonstration
-  const balance = Math.floor(Math.random() * 1000);
+export const SwapInput = ({
+  direction,
+  resourceId,
+  amount,
+  onAmountChange,
+  onResourceChange,
+  entityId,
+}: SwapInputProps) => {
+  const { resourceAmounts } = useResourceBalances(entityId);
+  const balance = divideByPrecision(Number(resourceAmounts.find((r) => r.id === resourceId)?.amount || 0));
 
   const handlePercentageClick = (percentage: number) => {
     onAmountChange?.(Math.floor((balance * percentage) / 100));
@@ -32,7 +41,7 @@ export const SwapInput = ({ direction, resourceId, amount, onAmountChange, onRes
           <ResourceSelectDrawer
             onResourceSelect={(id: number) => onResourceChange?.(id)}
             showBalance={true}
-            entityId={0}
+            entityId={entityId}
           >
             <Button variant="outline" className="w-[200px] justify-between">
               <div className="flex items-center gap-2">

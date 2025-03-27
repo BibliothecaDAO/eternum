@@ -1,9 +1,12 @@
+import { useResourceBalances } from "@/features/resource-balances/model/use-resource-balances";
+import { useStructureUpgrade } from "@/features/upgrade-structure/model/use-structure-upgrade";
+import { currencyFormat } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { FELT_CENTER, getLevelName } from "@bibliothecadao/eternum";
+import { FELT_CENTER, getLevelName, ResourcesIds } from "@bibliothecadao/eternum";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ChevronDown, Copy } from "lucide-react";
 import { useMemo } from "react";
@@ -17,6 +20,16 @@ export const RealmInfoHeader = () => {
   }, [playerRealms, playerVillages]);
 
   const { structureEntityId, selectedRealm, setSelectedStructure } = useStore();
+
+  // Get LORDS balance
+  const { resourceAmounts } = useResourceBalances(structureEntityId);
+  const lordsBalance = useMemo(() => {
+    const lordsResource = resourceAmounts.find((resource) => resource.id === ResourcesIds.Lords);
+    return lordsResource?.amount || 0;
+  }, [resourceAmounts]);
+
+  // Get level progress
+  const { upgradeProgress } = useStructureUpgrade(structureEntityId);
 
   const adjustedCoords = useMemo(() => {
     if (!selectedRealm) return null;
@@ -37,8 +50,7 @@ export const RealmInfoHeader = () => {
       {/* First row */}
       <div className="flex items-center space-x-2">
         <Badge variant="secondary" className="font-mono">
-          {/* TODO: Replace with actual balance */}
-          1000 $LORDS
+          {currencyFormat(lordsBalance)} $LORDS
         </Badge>
 
         <div className="flex items-center gap-2">
@@ -50,7 +62,7 @@ export const RealmInfoHeader = () => {
           </Badge>
         </div>
 
-        <span className="text-sm text-muted-foreground">#{selectedRealm?.realmId || "No realm"}</span>
+        <span className="text-sm text-muted-foreground">#{selectedRealm?.realmId || selectedRealm?.entityId}</span>
       </div>
 
       {/* Second row */}
@@ -75,7 +87,7 @@ export const RealmInfoHeader = () => {
             </span>
           </h1>
         </div>
-        <ProgressCircle progress={33} size="md">
+        <ProgressCircle progress={upgradeProgress} size="md">
           {(selectedRealm?.level || 0) + 1}
         </ProgressCircle>
       </div>

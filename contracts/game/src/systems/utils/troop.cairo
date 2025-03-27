@@ -370,7 +370,6 @@ pub impl iTroopImpl of iTroopTrait {
         troop_amount * RESOURCE_PRECISION
     }
 
-
     fn raid_outcome(success_weight: u128, failure_weight: u128) -> TroopRaidOutcome {
         if success_weight > failure_weight * 2 {
             return TroopRaidOutcome::Success;

@@ -106,6 +106,7 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
     fn interval_hours() -> u64 {
         1 // resource arrival gate open every 1 hour (24 slots per day)
     }
+
     fn last_slot() -> u8 {
         24
     }

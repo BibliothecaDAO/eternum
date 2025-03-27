@@ -1,6 +1,6 @@
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
 import { PackageCheck } from "lucide-react";
 
 interface ArrivedDonkeysProps {
@@ -10,16 +10,10 @@ interface ArrivedDonkeysProps {
 }
 
 export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: ArrivedDonkeysProps) => {
-  const totalCount = readyCount + pendingCount;
-
-  if (totalCount === 0) {
-    return null;
-  }
-
   return (
-    <Card>
-      <CardContent className="space-y-3 p-4 h-full">
-        <CardTitle className={cn("text-sm flex w-full items-center gap-2")}>
+    <Card className={cn(readyCount > 0 && "bg-green-500/10", "flex flex-col justify-between")}>
+      <CardContent className="space-y-3 p-4">
+        <CardTitle className={cn("text-sm flex w-full items-center gap-2", readyCount > 0 && "text-green-500")}>
           <PackageCheck className="w-4 h-4" />
           Arrivals
         </CardTitle>
@@ -34,17 +28,23 @@ export const ArrivedDonkeys = ({ onClaim, readyCount = 0, pendingCount = 0 }: Ar
             </div>
           )}
         </div>
+      </CardContent>
+      <CardFooter className="p-4">
         <Button
           variant="secondary"
           size="sm"
           className="w-full font-semibold"
           onClick={onClaim}
-          disabled={readyCount === 0}
+          disabled={readyCount === 0 && pendingCount === 0}
         >
-          {readyCount > 0 ? "Claim Resources" : "View Arrivals"}
+          {readyCount > 0
+            ? "Claim Resources"
+            : readyCount === 0 && pendingCount === 0
+              ? "No arrivals"
+              : "View Arrivals"}
           <PackageCheck className="w-4 h-4 ml-2" />
         </Button>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 };

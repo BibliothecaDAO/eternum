@@ -1,4 +1,4 @@
-import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
