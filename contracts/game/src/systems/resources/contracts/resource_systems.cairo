@@ -270,8 +270,8 @@ pub mod resource_systems {
             to_structure.assert_exists();
 
             // ensure to_structure is owned by caller
-            let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
-            to_structure_owner.assert_caller_owner();
+            // let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+            // to_structure_owner.assert_caller_owner();
 
             // ensure troop and stucture are adjacent to each other
             assert!(explorer.coord.is_adjacent(to_structure.coord()), "troop and structure are not adjacent");
@@ -302,11 +302,11 @@ pub mod resource_systems {
             from_structure_owner.assert_caller_owner();
 
             // ensure to_troop is owned by caller
-            let to_troop: ExplorerTroops = world.read_model(to_troop_id);
-            let to_troop_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_troop.owner);
-            to_troop_owner.assert_caller_owner();
+            // let to_troop_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_troop.owner);
+            // to_troop_owner.assert_caller_owner();
 
             // ensure from_structure and to_troop are adjacent to each other
+            let to_troop: ExplorerTroops = world.read_model(to_troop_id);
             let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
             assert!(from_structure.coord().is_adjacent(to_troop.coord), "from_structure and to_troop are not adjacent");
 

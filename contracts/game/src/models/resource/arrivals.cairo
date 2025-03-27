@@ -107,6 +107,22 @@ pub impl ResourceArrivalImpl of ResourceArrivalTrait {
         1 // resource arrival gate open every 1 hour (24 slots per day)
     }
 
+    fn last_slot() -> u8 {
+        24
+    }
+
+
+    fn previous_arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
+        let (arrival_day, arrival_slot) = Self::arrival_slot(ref world, travel_time);
+        if arrival_slot == 1 {
+            // the last slot of the previous day
+            (arrival_day - 1, Self::last_slot())
+        } else {
+            // the previous slot of the same day
+            (arrival_day, arrival_slot - 1)
+        }
+    }
+
     fn arrival_slot(ref world: WorldStorage, travel_time: u64) -> (u64, u8) {
         let arrival_interval_hours = Self::interval_hours();
         let arrival_time = starknet::get_block_timestamp() + travel_time;
