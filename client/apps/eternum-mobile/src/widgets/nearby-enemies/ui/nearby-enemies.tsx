@@ -9,7 +9,6 @@ import { AlertTriangle, Eye, Swords } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface NearbyEnemiesProps {
-  entityId: number;
   onView: () => void;
 }
 
@@ -57,7 +56,7 @@ const queryArmiesInRadius = async (client: ToriiClient, centerX: number, centerY
 };
 
 // @ts-ignore
-export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
+export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
   const {
     network: { toriiClient },
   } = useDojo();
