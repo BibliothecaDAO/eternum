@@ -111,10 +111,18 @@ export class SystemManager {
                 guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
               }
 
+              const order =
+                structure?.metadata.order ||
+                getComponentValue(
+                  this.setup.components.Structure,
+                  getEntityIdFromKeys([BigInt(structure?.metadata.village_realm || 0)]),
+                )?.metadata.order ||
+                0;
+
               return {
                 entityId: explorer.explorer_id,
                 hexCoords: { col: explorer.coord.x, row: explorer.coord.y },
-                order: structure?.metadata.order || 0,
+                order,
                 owner: { address: owner || 0n, ownerName, guildName },
                 troopType: explorer.troops.category as TroopType,
                 troopTier: explorer.troops.tier as TroopTier,
