@@ -1,11 +1,16 @@
-import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { ProductionWidget } from "@/widgets/production-widget";
 import { LaborBuilding } from "@/widgets/production-widget/model/types";
 import { Building, getProducedResource, RealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
-export function ProductionWidgetsSection({ selectedRealm }: { selectedRealm: RealmInfo }) {
+interface ProductionWidgetsSectionProps {
+  selectedRealm: RealmInfo;
+  isVertical?: boolean;
+}
+
+export function ProductionWidgetsSection({ selectedRealm, isVertical = false }: ProductionWidgetsSectionProps) {
   const buildings: Building[] = useBuildings(selectedRealm.position.x, selectedRealm.position.y);
   const resourceManager = useResourceManager(selectedRealm.entityId);
   const { currentBlockTimestamp } = getBlockTimestamp();
@@ -41,7 +46,11 @@ export function ProductionWidgetsSection({ selectedRealm }: { selectedRealm: Rea
 
   return (
     <div className="overflow-x-auto">
-      <div className="grid grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4">
+      <div
+        className={`grid ${
+          isVertical ? "grid-cols-1 gap-4" : "grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4"
+        }`}
+      >
         {buildingsWithProduction.map((building) => (
           <ProductionWidget
             key={`${building.innerCol}-${building.innerRow}`}

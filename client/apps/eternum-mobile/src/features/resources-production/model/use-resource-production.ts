@@ -1,4 +1,4 @@
-import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
 import { divideByPrecision, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";

@@ -269,7 +269,7 @@ pub mod resource_systems {
             let to_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
             to_structure.assert_exists();
 
-            // // ensure to_structure is owned by caller
+            // ensure to_structure is owned by caller
             // let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
             // to_structure_owner.assert_caller_owner();
 

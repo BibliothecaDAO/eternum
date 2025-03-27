@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { useResourceBalances } from "@/features/resource-balances";
 import { cn, currencyFormat, currencyIntlFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -6,14 +6,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { divideByPrecision, ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-interface ResourceAmount {
-  id: number;
-  amount: number;
-}
+import { useCallback, useMemo, useState } from "react";
 
 interface ResourcesCardProps {
   className?: string;
@@ -39,28 +33,7 @@ const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military",
 
 export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [resourceAmounts, setResourceAmounts] = useState<ResourceAmount[]>([]);
-  const { currentDefaultTick: tick } = useBlockTimestamp();
-  const resourceManager = useResourceManager(entityId);
-
-  const updateResourceAmounts = useCallback(() => {
-    if (!entityId) return;
-
-    const amounts = resources.map((resource) => ({
-      id: resource.id,
-      amount: resourceManager.balanceWithProduction(tick, resource.id),
-    }));
-
-    setResourceAmounts(amounts);
-  }, [entityId, resourceManager, tick]);
-
-  useEffect(() => {
-    updateResourceAmounts();
-
-    // Update resources periodically
-    const interval = setInterval(updateResourceAmounts, 1000);
-    return () => clearInterval(interval);
-  }, [updateResourceAmounts]);
+  const { resourceAmounts } = useResourceBalances(entityId);
 
   const renderResourceItem = useCallback(
     (resourceId: number) => {
@@ -122,7 +95,7 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
         </div>
 
         {/* Collapsed view - horizontal scroll */}
-        <div className={cn("flex gap-4 overflow-x-auto pb-2", isExpanded && "hidden")}>
+        <div className={cn("flex gap-4 overflow-x-auto pb-2 px-2", isExpanded && "hidden")}>
           {visibleCollapsedResources.map((resourceId) => renderResourceItem(resourceId))}
         </div>
 

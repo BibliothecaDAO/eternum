@@ -1,5 +1,5 @@
 import { getLaborConfig } from "@/features/resources-production/lib/labor";
-import { getBlockTimestamp } from "@/shared/lib/hooks/use-block-timestamp";
+import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
@@ -34,7 +34,6 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedResources, setSelectedResources] = useState<{ id: number; amount: number }[]>([]);
-  console.log("realm", realm);
   const resourceManager = useResourceManager(realm.entityId);
 
   const handleProduce = async () => {
