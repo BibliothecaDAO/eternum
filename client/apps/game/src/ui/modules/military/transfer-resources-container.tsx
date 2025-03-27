@@ -222,8 +222,15 @@ export const TransferResourcesContainer = ({
           to_troop_id: targetEntityId,
           resources: resourcesWithAmounts,
         });
+      } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
+        // todo : add this
+        // await troop_troop_adjacent_transfer({
+        //   signer: account,
+        //   from_troop_id: selectedEntityId,
+        //   to_troop_id: targetEntityId,
+        //   resources: resourcesWithAmounts,
+        // });
       }
-
       onTransferComplete();
     } catch (error) {
       console.error(error);
