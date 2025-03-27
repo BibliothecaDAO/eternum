@@ -7,12 +7,12 @@ import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
 import {
-  divideByPrecision,
-  findResourceById,
-  formatTime,
-  multiplyByPrecision,
-  RealmInfo,
-  ResourcesIds,
+    divideByPrecision,
+    findResourceById,
+    formatTime,
+    multiplyByPrecision,
+    RealmInfo,
+    ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
@@ -28,7 +28,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_resources_for_labor_production },
+      systemCalls: { burn_resource_for_labor_production },
     },
   } = useDojo();
 
@@ -47,7 +47,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
     };
 
     try {
-      await burn_other_resources_for_labor_production(calldata);
+      await burn_resource_for_labor_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {

@@ -155,6 +155,27 @@ export function getBuildingFromResource(resourceId: ResourcesIds): BuildingType 
       return BuildingType.ResourceWheat;
     case ResourcesIds.Fish:
       return BuildingType.ResourceFish;
+    case ResourcesIds.Donkey:
+      return BuildingType.ResourceDonkey;
+    case ResourcesIds.Knight:
+      return BuildingType.ResourceKnightT1;
+    case ResourcesIds.KnightT2:
+      return BuildingType.ResourceKnightT2;
+    case ResourcesIds.KnightT3:
+      return BuildingType.ResourceKnightT3;
+    case ResourcesIds.Crossbowman:
+      return BuildingType.ResourceCrossbowmanT1;
+    case ResourcesIds.CrossbowmanT2:
+      return BuildingType.ResourceCrossbowmanT2;
+    case ResourcesIds.CrossbowmanT3:
+      return BuildingType.ResourceCrossbowmanT3;
+    case ResourcesIds.Paladin:
+      return BuildingType.ResourcePaladinT1;
+    case ResourcesIds.PaladinT2:
+      return BuildingType.ResourcePaladinT2;
+    case ResourcesIds.PaladinT3:
+      return BuildingType.ResourcePaladinT3;
+
     default:
       return BuildingType.None;
   }

@@ -1,5 +1,5 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, LaborBurnPrStrategy, MapConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
+    BattleConfig, CapacityConfig, MapConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
     ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
@@ -41,7 +41,9 @@ pub trait IVRFConfig<T> {
 
 #[starknet::interface]
 pub trait IStartingResourcesConfig<T> {
-    fn set_starting_resources_config(ref self: T, resources: Span<(u8, u128)>);
+    fn set_starting_resources_config(
+        ref self: T, realm_starting_resources: Span<(u8, u128)>, village_starting_resources: Span<(u8, u128)>,
+    );
 }
 
 #[starknet::interface]
@@ -107,14 +109,17 @@ pub trait IMapConfig<T> {
 
 
 #[starknet::interface]
-pub trait IProductionConfig<T> {
-    fn set_production_config(
+pub trait IResourceFactoryConfig<T> {
+    fn set_resource_factory_config(
         ref self: T,
         resource_type: u8,
-        realm_output_per_tick: u64,
-        village_output_per_tick: u64,
-        labor_burn_strategy: LaborBurnPrStrategy,
-        predefined_resource_burn_cost: Span<(u8, u128)>,
+        realm_output_per_second: u64,
+        village_output_per_second: u64,
+        labor_output_per_resource: u64,
+        output_per_simple_input: u64,
+        simple_input_list: Span<(u8, u128)>,
+        output_per_complex_input: u64,
+        complex_input_list: Span<(u8, u128)>,
     );
 }
 
@@ -125,9 +130,10 @@ pub trait IBuildingConfig<T> {
     fn set_building_category_config(
         ref self: T,
         building_category: BuildingCategory,
-        cost_of_building: Span<(u8, u128)>,
-        population_cost: u32,
-        capacity_grant: u32,
+        complex_building_cost: Span<(u8, u128)>,
+        simple_building_cost: Span<(u8, u128)>,
+        population_cost: u8,
+        capacity_grant: u8,
     );
 }
 
@@ -172,15 +178,15 @@ pub mod config_systems {
 
     use s1_eternum::constants::DEFAULT_NS;
 
-    use s1_eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use s1_eternum::constants::{WORLD_CONFIG_ID};
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureResourceConfig, LaborBurnPrStrategy, MapConfig,
-        MultipleResourceBurnPrStrategy, ProductionConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWhitelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
-        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        HyperstructureConfig, HyperstructureResourceConfig, MapConfig, ResourceBridgeConfig,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
+        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
+        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+        WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
 
@@ -341,26 +347,51 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl StartingResourcesConfigImpl of super::IStartingResourcesConfig<ContractState> {
-        fn set_starting_resources_config(ref self: ContractState, resources: Span<(u8, u128)>) {
+        fn set_starting_resources_config(
+            ref self: ContractState,
+            realm_starting_resources: Span<(u8, u128)>,
+            village_starting_resources: Span<(u8, u128)>,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut resources = resources;
-            loop {
-                match resources.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount,
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        // ensure lords can't be minted
-                        assert!(resource_type != ResourceTypes::LORDS, "lords can't be minted as starting resource");
-                        assert(resource_amount > 0, 'amount must not be 0');
-
-                        world.write_model(@StartingResourcesConfig { resource_type, resource_amount });
-                    },
-                    Option::None => { break; },
-                };
+            // add realm starting resources
+            let realm_resources_list_id = world.dispatcher.uuid();
+            for i in 0..realm_starting_resources.len() {
+                let (resource_type, resource_amount) = *realm_starting_resources.at(i);
+                world
+                    .write_model(
+                        @ResourceList {
+                            entity_id: realm_resources_list_id, index: i, resource_type, amount: resource_amount,
+                        },
+                    );
             };
+            let realm_starting_resources = StartingResourcesConfig {
+                resources_list_id: realm_resources_list_id,
+                resources_list_count: realm_starting_resources.len().try_into().unwrap(),
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("realm_start_resources_config"), realm_starting_resources,
+            );
+
+            // add village starting resources
+            let village_resources_list_id = world.dispatcher.uuid();
+            for i in 0..village_starting_resources.len() {
+                let (resource_type, resource_amount) = *village_starting_resources.at(i);
+                world
+                    .write_model(
+                        @ResourceList {
+                            entity_id: village_resources_list_id, index: i, resource_type, amount: resource_amount,
+                        },
+                    );
+            };
+            let village_starting_resources = StartingResourcesConfig {
+                resources_list_id: village_resources_list_id,
+                resources_list_count: village_starting_resources.len().try_into().unwrap(),
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("village_start_resources_config"), village_starting_resources,
+            );
         }
     }
 
@@ -411,45 +442,61 @@ pub mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
-        fn set_production_config(
+    impl ResourceFactoryConfigImpl of super::IResourceFactoryConfig<ContractState> {
+        fn set_resource_factory_config(
             ref self: ContractState,
             resource_type: u8,
-            realm_output_per_tick: u64,
-            village_output_per_tick: u64,
-            labor_burn_strategy: LaborBurnPrStrategy,
-            predefined_resource_burn_cost: Span<(u8, u128)>,
+            realm_output_per_second: u64,
+            village_output_per_second: u64,
+            labor_output_per_resource: u64,
+            output_per_simple_input: u64,
+            simple_input_list: Span<(u8, u128)>,
+            output_per_complex_input: u64,
+            complex_input_list: Span<(u8, u128)>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            // save multiple resource burn cost
-            let predefined_resource_burn_cost_id = world.dispatcher.uuid();
-            for i in 0..predefined_resource_burn_cost.len() {
-                let (resource_type, resource_amount) = *predefined_resource_burn_cost.at(i);
+            // save cost of converting labor into resource
+            let simple_input_list_id = world.dispatcher.uuid();
+            for i in 0..simple_input_list.len() {
+                let (resource_type, resource_amount) = *simple_input_list.at(i);
                 world
                     .write_model(
                         @ResourceList {
-                            entity_id: predefined_resource_burn_cost_id,
-                            index: i,
-                            resource_type,
-                            amount: resource_amount,
+                            entity_id: simple_input_list_id, index: i, resource_type, amount: resource_amount,
                         },
                     );
             };
 
+            // save cost of converting resource into labor
+            let complex_input_list_id = world.dispatcher.uuid();
+            for i in 0..complex_input_list.len() {
+                let (resource_type, resource_amount) = *complex_input_list.at(i);
+                world
+                    .write_model(
+                        @ResourceList {
+                            entity_id: complex_input_list_id, index: i, resource_type, amount: resource_amount,
+                        },
+                    );
+            };
             // save production config
-            let mut resource_production_config: ProductionConfig = world.read_model(resource_type);
-            resource_production_config.realm_output_per_tick = realm_output_per_tick;
-            resource_production_config.village_output_per_tick = village_output_per_tick;
-            resource_production_config.labor_burn_strategy = labor_burn_strategy;
-            resource_production_config
-                .multiple_resource_burn_strategy =
-                    MultipleResourceBurnPrStrategy {
-                        required_resources_id: predefined_resource_burn_cost_id,
-                        required_resources_count: predefined_resource_burn_cost.len().try_into().unwrap(),
-                    };
-            world.write_model(@resource_production_config);
+            let mut resource_factory_config: ResourceFactoryConfig = Default::default();
+            resource_factory_config.resource_type = resource_type;
+            resource_factory_config.realm_output_per_second = realm_output_per_second;
+            resource_factory_config.village_output_per_second = village_output_per_second;
+
+            resource_factory_config.labor_output_per_resource = labor_output_per_resource;
+
+            resource_factory_config.output_per_simple_input = output_per_simple_input;
+            resource_factory_config.simple_input_list_id = simple_input_list_id;
+            resource_factory_config.simple_input_list_count = simple_input_list.len().try_into().unwrap();
+
+            resource_factory_config.output_per_complex_input = output_per_complex_input;
+            resource_factory_config.complex_input_list_id = complex_input_list_id;
+            resource_factory_config.complex_input_list_count = complex_input_list.len().try_into().unwrap();
+
+            world.write_model(@resource_factory_config);
         }
     }
 
@@ -551,33 +598,57 @@ pub mod config_systems {
         fn set_building_category_config(
             ref self: ContractState,
             building_category: BuildingCategory,
-            cost_of_building: Span<(u8, u128)>,
-            population_cost: u32,
-            capacity_grant: u32,
+            complex_building_cost: Span<(u8, u128)>,
+            simple_building_cost: Span<(u8, u128)>,
+            population_cost: u8,
+            capacity_grant: u8,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let resource_cost_id = world.dispatcher.uuid();
+            // set building cost when using complex
+            let complex_building_cost_id = world.dispatcher.uuid();
             let mut index = 0;
             loop {
-                if index == cost_of_building.len() {
+                if index == complex_building_cost.len() {
                     break;
                 }
-                let (resource_type, resource_amount) = *cost_of_building.at(index);
+                let (resource_type, resource_amount) = *complex_building_cost.at(index);
                 world
                     .write_model(
-                        @ResourceList { entity_id: resource_cost_id, index, resource_type, amount: resource_amount },
+                        @ResourceList {
+                            entity_id: complex_building_cost_id, index, resource_type, amount: resource_amount,
+                        },
                     );
 
                 index += 1;
             };
+
+            // set building cost when using non complex
+            let simple_building_cost_id = world.dispatcher.uuid();
+            let mut index = 0;
+            loop {
+                if index == simple_building_cost.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) = *simple_building_cost.at(index);
+                world
+                    .write_model(
+                        @ResourceList {
+                            entity_id: simple_building_cost_id, index, resource_type, amount: resource_amount,
+                        },
+                    );
+                index += 1;
+            };
+
             world
                 .write_model(
                     @BuildingCategoryConfig {
                         category: building_category.into(),
-                        erection_cost_id: resource_cost_id,
-                        erection_cost_count: cost_of_building.len(),
+                        complex_erection_cost_id: complex_building_cost_id,
+                        complex_erection_cost_count: complex_building_cost.len().try_into().unwrap(),
+                        simple_erection_cost_id: simple_building_cost_id,
+                        simple_erection_cost_count: simple_building_cost.len().try_into().unwrap(),
                         population_cost,
                         capacity_grant,
                     },

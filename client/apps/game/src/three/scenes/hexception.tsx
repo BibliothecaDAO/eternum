@@ -184,6 +184,13 @@ export default class HexceptionScene extends HexagonScene {
         }
       },
     );
+
+    useUIStore.subscribe(
+      (state) => state.useSimpleCost,
+      (useSimpleCost) => {
+        this.state.useSimpleCost = useSimpleCost;
+      },
+    );
   }
 
   private clearBuildingMode() {
@@ -317,12 +324,14 @@ export default class HexceptionScene extends HexagonScene {
       // if building mode
       if (!this.tileManager.isHexOccupied(normalizedCoords)) {
         this.clearBuildingMode();
+        const useSimpleCost = this.state.useSimpleCost;
         try {
           await this.tileManager.placeBuilding(
             account!,
             useUIStore.getState().structureEntityId,
             buildingType.type,
             normalizedCoords,
+            useSimpleCost,
           );
         } catch (error) {
           console.log("catched error so removing building", error);

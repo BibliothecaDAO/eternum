@@ -11,7 +11,7 @@ trait IProductionContract<TContractState> {
         structure_id: ID,
         directions: Span<Direction>,
         building_category: BuildingCategory,
-        pay_labor: bool,
+        use_simple: bool,
     );
     fn destroy_building(ref self: TContractState, structure_id: ID, building_coord: Coord);
 
@@ -19,19 +19,22 @@ trait IProductionContract<TContractState> {
     fn pause_building_production(ref self: TContractState, structure_id: ID, building_coord: Coord);
     fn resume_building_production(ref self: TContractState, structure_id: ID, building_coord: Coord);
 
-    fn burn_other_resources_for_labor_production(
+    fn burn_resource_for_labor_production(
         ref self: TContractState, structure_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>,
     );
 
-    fn burn_labor_resources_for_other_production(
-        ref self: TContractState, from_structure_id: ID, labor_amounts: Span<u128>, produced_resource_types: Span<u8>,
+    fn burn_labor_for_resource_production(
+        ref self: TContractState,
+        from_structure_id: ID,
+        production_cycles: Span<u128>,
+        produced_resource_types: Span<u8>,
     );
 
-    fn burn_other_predefined_resources_for_resources(
+    fn burn_resource_for_resource_production(
         ref self: TContractState,
         from_structure_id: ID,
         produced_resource_types: Span<u8>,
-        production_tick_counts: Span<u128>,
+        production_cycles: Span<u128>,
     );
 }
 
@@ -61,7 +64,7 @@ mod production_systems {
             structure_id: ID,
             mut directions: Span<s1_eternum::models::position::Direction>,
             building_category: BuildingCategory,
-            pay_labor: bool,
+            use_simple: bool,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             // ensure season is not over
@@ -118,7 +121,7 @@ mod production_systems {
             }
 
             // pay one time cost of the building
-            building.make_payment(building_count, ref world, pay_labor);
+            building.make_payment(building_count, ref world, use_simple);
         }
 
 
@@ -182,7 +185,7 @@ mod production_systems {
         }
 
         /// Burn other resource for production of labor
-        fn burn_other_resources_for_labor_production(
+        fn burn_resource_for_labor_production(
             ref self: ContractState, structure_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -206,17 +209,17 @@ mod production_systems {
             );
 
             for i in 0..resource_types.len() {
-                ProductionStrategyImpl::burn_other_resource_for_labor_production(
+                ProductionStrategyImpl::burn_resource_for_labor_production(
                     ref world, structure_id, *resource_types.at(i), *resource_amounts.at(i),
                 );
             }
         }
 
         // Burn production labor resource and add to production
-        fn burn_labor_resources_for_other_production(
+        fn burn_labor_for_resource_production(
             ref self: ContractState,
             from_structure_id: ID,
-            labor_amounts: Span<u128>,
+            production_cycles: Span<u128>,
             produced_resource_types: Span<u8>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -235,13 +238,13 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             assert!(
-                labor_amounts.len() == produced_resource_types.len(),
+                production_cycles.len() == produced_resource_types.len(),
                 "labor and produced resource types must be the same length",
             );
 
-            for i in 0..labor_amounts.len() {
-                ProductionStrategyImpl::burn_labor_resource_for_other_production(
-                    ref world, from_structure_id, *labor_amounts.at(i), *produced_resource_types.at(i),
+            for i in 0..production_cycles.len() {
+                ProductionStrategyImpl::burn_labor_for_resource_production(
+                    ref world, from_structure_id, *production_cycles.at(i), *produced_resource_types.at(i),
                 );
             }
         }
@@ -249,11 +252,11 @@ mod production_systems {
 
         // Burn other predefined resources for resource
         // e.g. Wood, Stone, Coal for Gold
-        fn burn_other_predefined_resources_for_resources(
+        fn burn_resource_for_resource_production(
             ref self: ContractState,
             from_structure_id: ID,
             produced_resource_types: Span<u8>,
-            production_tick_counts: Span<u128>,
+            production_cycles: Span<u128>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
@@ -271,13 +274,13 @@ mod production_systems {
             structure_owner.assert_caller_owner();
 
             assert!(
-                produced_resource_types.len() == production_tick_counts.len(),
-                "produced resource types and production tick counts must be the same length",
+                produced_resource_types.len() == production_cycles.len(),
+                "produced resource types and production tick cycles must be the same length",
             );
 
             for i in 0..produced_resource_types.len() {
-                ProductionStrategyImpl::burn_other_predefined_resources_for_resource(
-                    ref world, from_structure_id, *produced_resource_types.at(i), *production_tick_counts.at(i),
+                ProductionStrategyImpl::burn_resource_for_resource_production(
+                    ref world, from_structure_id, *produced_resource_types.at(i), *production_cycles.at(i),
                 );
             }
         }

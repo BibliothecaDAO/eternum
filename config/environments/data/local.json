@@ -10,7 +10,7 @@
     "resourceMultiplier": 1000000000,
     "resourceAmountPerTick": 10,
     "startingResourcesInputProductionFactor": 6,
-    "resourceInputs": {
+    "productionByComplexRecipe": {
       "1": [
         {
           "resource": 3,
@@ -545,7 +545,7 @@
       "36": [],
       "37": []
     },
-    "resourceOutputs": {
+    "productionByComplexRecipeOutputs": {
       "1": 30,
       "2": 30,
       "3": 30,
@@ -584,266 +584,235 @@
       "36": 50,
       "37": 0
     },
-    "resourceProductionByLaborParams": {
-      "1": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "2": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "3": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "4": {
-        "resource_rarity": 2,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "5": {
-        "resource_rarity": 4,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "6": {
-        "resource_rarity": 2,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "7": {
-        "resource_rarity": 5,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "8": {
-        "resource_rarity": 3,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "9": {
-        "resource_rarity": 136,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "10": {
-        "resource_rarity": 54,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "11": {
-        "resource_rarity": 5,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "12": {
-        "resource_rarity": 21,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "13": {
-        "resource_rarity": 21,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "14": {
-        "resource_rarity": 17,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "15": {
-        "resource_rarity": 8,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "16": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "17": {
-        "resource_rarity": 45,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "18": {
-        "resource_rarity": 36,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "19": {
-        "resource_rarity": 91,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "20": {
-        "resource_rarity": 20,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "21": {
-        "resource_rarity": 31,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "22": {
-        "resource_rarity": 218,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "23": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "24": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "25": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "26": {
-        "resource_rarity": 26,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "27": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "28": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "29": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "30": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "31": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "32": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "33": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "34": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "35": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "36": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "37": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      }
+    "productionBySimpleRecipe": {
+      "1": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "2": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "3": [
+        {
+          "resource": 23,
+          "amount": 0.04
+        },
+        {
+          "resource": 35,
+          "amount": 1
+        },
+        {
+          "resource": 36,
+          "amount": 2
+        }
+      ],
+      "4": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "5": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "6": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "7": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "8": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "9": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "10": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "11": [],
+      "12": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "13": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "14": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "15": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "16": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "17": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "18": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "19": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "20": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "21": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "22": [
+        {
+          "resource": 23,
+          "amount": 0.1
+        }
+      ],
+      "23": [],
+      "24": [],
+      "25": [],
+      "26": [],
+      "27": [],
+      "28": [],
+      "29": [],
+      "30": [],
+      "31": [],
+      "32": [],
+      "33": [],
+      "34": [],
+      "35": [],
+      "36": [],
+      "37": []
+    },
+    "productionBySimpleRecipeOutputs": {
+      "1": 30,
+      "2": 30,
+      "3": 30,
+      "4": 30,
+      "5": 30,
+      "6": 30,
+      "7": 30,
+      "8": 30,
+      "9": 30,
+      "10": 30,
+      "11": 30,
+      "12": 30,
+      "13": 30,
+      "14": 30,
+      "15": 30,
+      "16": 30,
+      "17": 30,
+      "18": 30,
+      "19": 30,
+      "20": 30,
+      "21": 30,
+      "22": 30,
+      "23": 30,
+      "24": 1,
+      "25": 0.5,
+      "26": 0.04,
+      "27": 0.04,
+      "28": 0.04,
+      "29": 0.04,
+      "30": 0.04,
+      "31": 0.04,
+      "32": 0.04,
+      "33": 0.04,
+      "34": 0.04,
+      "35": 50,
+      "36": 50,
+      "37": 0
+    },
+    "laborOutputPerResource": {
+      "1": 0.2,
+      "2": 1,
+      "3": 0.1,
+      "4": 1,
+      "5": 1,
+      "6": 1,
+      "7": 1,
+      "8": 1,
+      "9": 1,
+      "10": 1,
+      "11": 1,
+      "12": 1,
+      "13": 1,
+      "14": 1,
+      "15": 1,
+      "16": 1,
+      "17": 1,
+      "18": 1,
+      "19": 1,
+      "20": 1,
+      "21": 1,
+      "22": 1,
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0
     },
     "resourceWeightsGrams": {
       "1": 1000,
@@ -1160,9 +1129,13 @@
       "37": 35,
       "38": 36
     },
-    "buildingCosts": {
+    "complexBuildingCosts": {
       "0": [],
       "1": [
+        {
+          "resource": 23,
+          "amount": 2500
+        },
         {
           "resource": 3,
           "amount": 75000
@@ -1181,6 +1154,10 @@
         }
       ],
       "2": [
+        {
+          "resource": 23,
+          "amount": 5000
+        },
         {
           "resource": 6,
           "amount": 50000
@@ -1334,6 +1311,10 @@
       "26": [],
       "27": [
         {
+          "resource": 23,
+          "amount": 10000
+        },
+        {
           "resource": 8,
           "amount": 50000
         },
@@ -1351,6 +1332,10 @@
         }
       ],
       "28": [
+        {
+          "resource": 23,
+          "amount": 5000
+        },
         {
           "resource": 1,
           "amount": 75000
@@ -1374,6 +1359,10 @@
       ],
       "29": [
         {
+          "resource": 23,
+          "amount": 50000
+        },
+        {
           "resource": 1,
           "amount": 250000
         },
@@ -1395,6 +1384,10 @@
         }
       ],
       "30": [
+        {
+          "resource": 23,
+          "amount": 250000
+        },
         {
           "resource": 1,
           "amount": 500000
@@ -1418,6 +1411,10 @@
       ],
       "31": [
         {
+          "resource": 23,
+          "amount": 5000
+        },
+        {
           "resource": 3,
           "amount": 75000
         },
@@ -1439,6 +1436,10 @@
         }
       ],
       "32": [
+        {
+          "resource": 23,
+          "amount": 50000
+        },
         {
           "resource": 3,
           "amount": 250000
@@ -1462,6 +1463,10 @@
       ],
       "33": [
         {
+          "resource": 23,
+          "amount": 250000
+        },
+        {
           "resource": 3,
           "amount": 500000
         },
@@ -1483,6 +1488,10 @@
         }
       ],
       "34": [
+        {
+          "resource": 23,
+          "amount": 5000
+        },
         {
           "resource": 3,
           "amount": 75000
@@ -1506,6 +1515,10 @@
       ],
       "35": [
         {
+          "resource": 23,
+          "amount": 50000
+        },
+        {
           "resource": 3,
           "amount": 250000
         },
@@ -1527,6 +1540,10 @@
         }
       ],
       "36": [
+        {
+          "resource": 23,
+          "amount": 250000
+        },
         {
           "resource": 3,
           "amount": 500000
@@ -1556,8 +1573,233 @@
       ],
       "38": [
         {
+          "resource": 23,
+          "amount": 500
+        },
+        {
           "resource": 35,
           "amount": 50000
+        }
+      ]
+    },
+    "simpleBuildingCost": {
+      "0": [],
+      "1": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "2": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "3": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "4": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "5": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "6": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "7": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "8": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "9": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "10": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "11": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "12": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "13": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "14": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "15": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "16": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "17": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "18": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "19": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "20": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "21": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "22": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "23": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "24": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "25": [],
+      "26": [],
+      "27": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "28": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "29": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "30": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "31": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "32": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "33": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "34": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "35": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "36": [
+        {
+          "resource": 23,
+          "amount": 3000
+        }
+      ],
+      "37": [
+        {
+          "resource": 23,
+          "amount": 200
+        }
+      ],
+      "38": [
+        {
+          "resource": 23,
+          "amount": 200
         }
       ]
     },
@@ -1643,7 +1885,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x3fc0b20d1ebaadd82d8105f56346e85c9f0ac5fd7879e2c037085be61c04ac3",
+    "season_pool_fee_recipient": "0x2861d25f3dcc1dc1c5abce45f6c1169088891d036d8bbd3cc34f32bfe1bc17a",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1842,129 +2084,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x546806fb5e116f43fe4121d7293f0119d09ddaef077ea8389cffae46afd5e53",
-      "realms": "0x3fe134b8aa473677520385f6f59ed0fe1978515a8d86c7ad97971ae5e5afea2",
-      "lords": "0x9a0ede17697f760ee4b02ad42223fdd2b2b7e6afc2b1e9eafb7a97e4469d9e",
+      "seasonPass": "0x4cee182e3703db1d38c5082769fe13aeac98db631d7b0eaa6f5060d2a09a7db",
+      "realms": "0x3ce154b06a0a731f6f97f59412aefcb41379058cbbb2e11735030d4deae581",
+      "lords": "0x4199079e185727cd91608f52c3d96414492531d39a4bbd0335f33ff07e7a1f9",
       "resources": {
         "STONE": [
           1,
-          "0x28853deb396acff54b742b8ba1b485761173e226f8a61bc9f780a7b2dd829e4"
+          "0x35f93e019be31ae059fe58680335c604d3647bbd8180827ec19ebb76b4908b9"
         ],
         "COAL": [
           2,
-          "0x2f4b1ecadef220424ec7ec8952be781ea4d5304837d2ff1c163b8fa5506d887"
+          "0xdd1a1f729519041c770c4ceede9cbe0a8896e3971e46b9be41400d3c9294dd"
         ],
         "WOOD": [
           3,
-          "0x47b7aab0d8e212ead2f0dad1688d4dd4268835d1112648608956466e74d58c0"
+          "0x3ce8529a153a03cd59e1be3650c703638f3777aaeb6aff55208514d3a83624d"
         ],
         "COPPER": [
           4,
-          "0x7d00b3b2d97a7af47b7fcdcfeac717a877a09d6db445f4eb7a9aa3f0ad245b5"
+          "0x3658da6dd3ce5820a9bdf1fb9170ff0652fd673c44de0c3fcef0916c594c043"
         ],
         "IRONWOOD": [
           5,
-          "0x60b36f13d34935ac9f7433cc422bcd33ac428665aed5e34c2697d867b376ad6"
+          "0x5169f5a0c53762531a0441d15f8fe0da7a2b06a035f948324b50aef52c46b6a"
         ],
         "OBSIDIAN": [
           6,
-          "0x3a4fdedca60365384824fb0b51c89dd9f5239c5ecde4a377c1a1cd55dae15d3"
+          "0x13a8ff2f77bd6eb2b665018aac5641cfab3089f0fafbaa3966ce445405d07e"
         ],
         "GOLD": [
           7,
-          "0xb121966f8178e5e4dde0c0043f21075a3ff4de841211158ce4585cd382678b"
+          "0x4425767a5611b262bc63ed803698ab673c00a534edfd4f14dec759f14906937"
         ],
         "SILVER": [
           8,
-          "0x927bfc62f753efd8fa0d95a8e056b0341c11fab91c0818409cfd38f39d3965"
+          "0x7e8a2e6fe4a42d0750f0310cc6e8f7a07d9c8ab1d62b1e1343ba19e3a26e28d"
         ],
         "MITHRAL": [
           9,
-          "0x5860e780ebcdefdf6687b8709272e0302c6008fe982550d711526ba9f9b7e2b"
+          "0x5a313f9ebab9bf71e85d0579a02f3a7a15bab81449f65d1a5e85a0973e33da"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x3443b88780f9187e3561485b20fcf9a4b7c08ed3baa2e75cc9956aad2d9a64b"
+          "0x5cfde3f6f08943515c452ea6107890712b4bf189c022f016bcd79e2c0c594f"
         ],
         "COLDIRON": [
           11,
-          "0x5e65b95bdb227779b96175d39fb387fe1a65e9417103e8a84632e763b40c521"
+          "0x93ae03e7d463e884e87af0fb3a8ac7951d492391a29db81538099d69e72a28"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x72e7042e1849b3ca9a709710083b33d1e68de6e85bce294f56841a566b79bfa"
+          "0x47db4e2d8513f1637f35ee9ffb279703a684cc7f7f85c6b2740ef7c86ee5ee"
         ],
         "RUBY": [
           13,
-          "0x63830b27ac3cd5b8a743d4f195d0810a1f58e33781ce3d9f1dc4b05af6c18b7"
+          "0x6deede899d6fcac8de606d61a8cc73ae97e2bcacadb73bdff47f82bd531be3e"
         ],
         "DIAMONDS": [
           14,
-          "0x2073cd7030c9c6aee0350f048e869307c7f078b1b00b0ce41558a1f924e0dce"
+          "0xb095d36b9120926db95ffd9a46a59b7d2a85057fdd10d1b32da7adfce174db"
         ],
         "HARTWOOD": [
           15,
-          "0x4a30e95230db2b1f00f21fbca419edb3f0cacf2d9d50c79223f8457688a4871"
+          "0x1abb24f036b219ab1ed4989ab28c69ce14917c57eb11aed3ed52bd4ef281531"
         ],
         "IGNIUM": [
           16,
-          "0x3b586ab68eba397dbef697129492903d506e3af1c892ef8cc02f87dc6c0766f"
+          "0x7143598e9fcfd913a6f2349642dcb4e710b8ce392ad77aa48f2b3c4f2fa60a9"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x1d2c3d1048c6826f2686620e101e2c8fb2633612e42b1a36391d093e53af202"
+          "0x2b3ea77cbe2f3d35ffa7d93c8985e4c94fb0ef0e9b4fed3331b5860c5c42577"
         ],
         "TRUEICE": [
           18,
-          "0x7e66e0998959fc4103bb5cc4da9ef45471b107cc31b5afbdd879148b4446a1e"
+          "0x63f7fa4d5bdbb7a2e85acc3600935476ee9ff82625099972775eed5eccc2662"
         ],
         "ADAMANTINE": [
           19,
-          "0x189e9c960f2ad6e2f688640c0a394a8f5bf25007e7059e5873df3fbf5768c3d"
+          "0x283042993c28c416f0371a565a9eba4d5594afe4e32fcdda88bb9e9e40b11f4"
         ],
         "SAPPHIRE": [
           20,
-          "0x9b22327a007dc4f7eb3cac72d713c7867c37c723291a04f7254151d609feef"
+          "0x2e88bb6bb0aaa6225b9340feb5186eb9801642d1e98ca3a06ff06a51f5c5535"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x3d684e523c20ad8b6b8472a0a36370f56db21f286fe151f678cbfec67c45201"
+          "0x6aa7821010e065c1f471a1d010e33778351e7c28d930164951feb78e2214a6b"
         ],
         "DRAGONHIDE": [
           22,
-          "0x588eaa3b11e87d00b1844533499f04600f71f115ed43d1158317c89657e1d96"
+          "0x6e3da256b3982e42eb67dcf383640dec50a4d0fd90481c0b77af69baa7695d"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x2aa9b07c8a74b5704d2317ef1e953073194211e71d4bb3c430b45e0fa8f4cdb"
+          "0x7b14184bc61e2501c172074962e565e5b2eb6140a2a2eeee320f8df40a14a31"
         ],
         "DONKEY": [
           25,
-          "0x32828d9fd21a9e1220877817c1c3b24713458e43cababb43aed87f345d5872"
+          "0x4c5e46590e2a31dfba6feff11f045f2018a592c9409fd60639c6635888fc7e"
         ],
         "KNIGHT": [
           26,
-          "0x72607f2167a73418eb422643aaac0bd0d603544cdae6b4cacfe9dd1bb13dfd2"
+          "0xd8ba813c8b9fbe74e1eacfa2569277306b3c9875f7ad0452a6c41453c2b8a5"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x743a51919ffc8fe456ffadf19253eeac7dce65ea9db07e697d3bb21bed887c4"
+          "0x7bc073443a84c960b91a9af9d4bc48eef057c144784328af3810845ca5f23bf"
         ],
         "PALADIN": [
           32,
-          "0x64532ffadfe7fad62f7839f88c03c278894cd5c67a8a6436904efb3039efe75"
+          "0xc50ff576249f1c3062cf013890ac6bd1a1db1be1804375e74996e790330f31"
         ],
         "WHEAT": [
           35,
-          "0x5198f5fdf3244d6bd17f52c1e21ff4f0198d1b9bbc5fcd3a4d8792c662b2b6b"
+          "0xc38e302ad93d2a22194706138da3b29f3d33609e5c76d0f347baca6443e299"
         ],
         "FISH": [
           36,
-          "0x16a87769651917c06e88f378b83f8e3d024c5d0180be509dce606f5f68afeff"
+          "0x70df8e6deb859f4419908cb6d76b4178b82267edf85d8c66c97de4ae87eba0d"
         ],
         "LORDS": [
           37,
-          "0x9a0ede17697f760ee4b02ad42223fdd2b2b7e6afc2b1e9eafb7a97e4469d9e"
+          "0x4199079e185727cd91608f52c3d96414492531d39a4bbd0335f33ff07e7a1f9"
         ]
       }
     },
@@ -3282,8 +3524,8 @@
       },
       "contracts": [
         {
-          "address": "0x77b8b6f89ab4fd9482bdc039fd595dab967e40adf29341110415f2d4dff30b2",
-          "class_hash": "0x27ab97f19e674e6ca4972a932aa45dac016bde43a46e75cf37594ce3fdac6f7",
+          "address": "0x7fbc949e7537f3c2b96c2cbf5dd0059bbb9206e93b47dbab7cdcaef9301538b",
+          "class_hash": "0x42858fe03996b1168680d1a5c6801f29d761104d8361536901eaf2411ebebb3",
           "abi": [
             {
               "type": "impl",
@@ -3604,8 +3846,8 @@
           ]
         },
         {
-          "address": "0x7b8d4ae23a9a5b7dfddddbfc8dc5e0f0cfff71c220857ce1eb3e20302a63634",
-          "class_hash": "0x17d3ff802c56ee45ee26af9fd381045d26131f1765cef186c9e549bac8ea57f",
+          "address": "0x7f6b1904afe60429c4dbf381e61bad4f1a2bfd9c8caf5d1c61f1bf82510fb6b",
+          "class_hash": "0x62a262ce5f9d4e1728cbda0ce471517db978a72f1ce973a2761ca7d78798d18",
           "abi": [
             {
               "type": "impl",
@@ -3703,6 +3945,29 @@
                     {
                       "name": "admin_address",
                       "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "MercenariesConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_mercenaries_name_config",
+                  "inputs": [
+                    {
+                      "name": "name",
+                      "type": "core::felt252"
                     }
                   ],
                   "outputs": [],
@@ -3979,61 +4244,47 @@
             },
             {
               "type": "impl",
-              "name": "ProductionConfigImpl",
-              "interface_name": "s1_eternum::systems::config::contracts::IProductionConfig"
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::config::LaborBurnPrStrategy",
-              "members": [
-                {
-                  "name": "resource_rarity",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "wheat_burn_per_labor",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "fish_burn_per_labor",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "depreciation_percent_num",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "depreciation_percent_denom",
-                  "type": "core::integer::u16"
-                }
-              ]
+              "name": "ResourceFactoryConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig"
             },
             {
               "type": "interface",
-              "name": "s1_eternum::systems::config::contracts::IProductionConfig",
+              "name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig",
               "items": [
                 {
                   "type": "function",
-                  "name": "set_production_config",
+                  "name": "set_resource_factory_config",
                   "inputs": [
                     {
                       "name": "resource_type",
                       "type": "core::integer::u8"
                     },
                     {
-                      "name": "realm_output_per_tick",
+                      "name": "realm_output_per_second",
                       "type": "core::integer::u64"
                     },
                     {
-                      "name": "village_output_per_tick",
+                      "name": "village_output_per_second",
                       "type": "core::integer::u64"
                     },
                     {
-                      "name": "labor_burn_strategy",
-                      "type": "s1_eternum::models::config::LaborBurnPrStrategy"
+                      "name": "labor_output_per_resource",
+                      "type": "core::integer::u64"
                     },
                     {
-                      "name": "predefined_resource_burn_cost",
+                      "name": "output_per_simple_input",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "simple_input_list",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "output_per_complex_input",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "complex_input_list",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
@@ -4555,16 +4806,20 @@
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                     },
                     {
-                      "name": "cost_of_building",
+                      "name": "complex_building_cost",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "simple_building_cost",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     },
                     {
                       "name": "population_cost",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u8"
                     },
                     {
                       "name": "capacity_grant",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u8"
                     }
                   ],
                   "outputs": [],
@@ -4939,6 +5194,7 @@
           "systems": [
             "set_agent_controller",
             "set_world_config",
+            "set_mercenaries_name_config",
             "set_season_config",
             "set_vrf_config",
             "set_starting_resources_config",
@@ -4946,7 +5202,7 @@
             "set_capacity_config",
             "set_resource_weight_config",
             "set_tick_config",
-            "set_production_config",
+            "set_resource_factory_config",
             "set_donkey_speed_config",
             "set_battle_config",
             "set_hyperstructure_config",
@@ -4965,8 +5221,8 @@
           ]
         },
         {
-          "address": "0x4514dcdfb77c7a21c8fca08f6310dea05f55385807525d4f445c71505ebdd43",
-          "class_hash": "0x32a69d71f8f31fc57dcfbc3b4fb54314eaa97d1875bfe5b186e822f377edde0",
+          "address": "0x24f096c05b62f15bb461c0e0ba5a2f122ec867a0577935114d114129fe1d0eb",
+          "class_hash": "0x580505e9abe3741dbce27e2c1a5618ffb706d8cfb7c9aeb945747b4635fae40",
           "abi": [
             {
               "type": "impl",
@@ -5179,8 +5435,8 @@
           ]
         },
         {
-          "address": "0x2a1b2b9cd3bbc3fd75dba80b7f27fc6f609d3da4e13a8a5b23a076dd916487c",
-          "class_hash": "0x5f9c455657ff912886aedddd93487ba9c61abecd268ae70d14e71a8e874587",
+          "address": "0x62944d9f4df728902669d979114dac4f264520932b9fba954afdd8b29271ed6",
+          "class_hash": "0x32ecdedc4a0919beb22b43688e360db6c586e28e93588204726b9cac2b4b3f8",
           "abi": [
             {
               "type": "impl",
@@ -5478,8 +5734,8 @@
           ]
         },
         {
-          "address": "0x661bc75ea6719d673f01247a2e32aec185d8e4bf61468a10b6af95146d900df",
-          "class_hash": "0x63cbd31d144f1cad8ba5a3fb8470919247493f9126e77b91eaf1c2281d1c9a1",
+          "address": "0x1484493464d11f6b43f70f8e1cdda7d4c6230bb50cfd294fdca4e5d4c30f6d2",
+          "class_hash": "0x63d602e9a9d31a60978e4be6196fecef64d027042203c0517c575a0feccd0b3",
           "abi": [
             {
               "type": "impl",
@@ -5832,8 +6088,8 @@
           ]
         },
         {
-          "address": "0xe021d71627bd3cac826c91e91e226e1ba59be99b5bcc442955a1fe63b50519",
-          "class_hash": "0x2a8fafcab4d67af977a60374d8a8e80e1ba072a4d08099a8f8a3faa2ba0c813",
+          "address": "0x1bfbf53ed328cc86dd05f324df9720f445f73f7c91074105d7f0d71cc46f740",
+          "class_hash": "0x162538ef4359eac5b8e123acd6702ff16b3fd1373f73be9e3e4ca452f4bf69b",
           "abi": [
             {
               "type": "impl",
@@ -6073,8 +6329,8 @@
           ]
         },
         {
-          "address": "0x303cef23269357900a88cd03a0ed15f93656c455447fa21f83f7b3dc94d6b6d",
-          "class_hash": "0x3ebce84a448717f5de567319355b18092d2b1baa19bcc254800aed97249c557",
+          "address": "0xd4b5b7cc0ae4b3ba2557362ae9a835cab0d381299f8e6635906b55109d4857",
+          "class_hash": "0x49412fae1fc6f2619975384da4e9ff3fdde2d0b31fd4cbeb6b6dfcf992d1b8f",
           "abi": [
             {
               "type": "impl",
@@ -6273,8 +6529,8 @@
           ]
         },
         {
-          "address": "0x1c7a7b310c83c1bb44437a95d8ed6402443679062fc48521f5a647a46f15c88",
-          "class_hash": "0x7b40d5decf79a0dbafab87b2860d3d647e44415201c5b3c20d20d13b035db37",
+          "address": "0x5dd7b24590d9de9d122c22ca9c66d574ed3035552f0c5d939ae12bae6e62038",
+          "class_hash": "0x1fbea1fbb7a6a2ba239a9808c36563479388f5fddd5cc3352a8acf97689ee05",
           "abi": [
             {
               "type": "impl",
@@ -6494,8 +6750,8 @@
           ]
         },
         {
-          "address": "0x1076365f529b7522737be3a64c6106b38bbc233543109dd531fa7ae0020ba0b",
-          "class_hash": "0x3a73dae12b752feff7b99629a6dab04747d068d990e5a27aeed32c83aee9fa3",
+          "address": "0x31173dedf74b09681ab45d36d6aae6aff8ba43dba2773af642d22ff13eb01d0",
+          "class_hash": "0x78463053a9e1357a347d46229579feeca59c30442c49909f12021c5c50d46eb",
           "abi": [
             {
               "type": "impl",
@@ -6823,7 +7079,7 @@
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                     },
                     {
-                      "name": "pay_labor",
+                      "name": "use_simple",
                       "type": "core::bool"
                     }
                   ],
@@ -6880,7 +7136,7 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_other_resources_for_labor_production",
+                  "name": "burn_resource_for_labor_production",
                   "inputs": [
                     {
                       "name": "structure_id",
@@ -6900,7 +7156,7 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_labor_resources_for_other_production",
+                  "name": "burn_labor_for_resource_production",
                   "inputs": [
                     {
                       "name": "from_structure_id",
@@ -6920,7 +7176,7 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_other_predefined_resources_for_resources",
+                  "name": "burn_resource_for_resource_production",
                   "inputs": [
                     {
                       "name": "from_structure_id",
@@ -7063,15 +7319,15 @@
             "destroy_building",
             "pause_building_production",
             "resume_building_production",
-            "burn_other_resources_for_labor_production",
-            "burn_labor_resources_for_other_production",
-            "burn_other_predefined_resources_for_resources",
+            "burn_resource_for_labor_production",
+            "burn_labor_for_resource_production",
+            "burn_resource_for_resource_production",
             "upgrade"
           ]
         },
         {
-          "address": "0x71d481480d41879a52cb23cdfef1ca910a97f936f4d99f5850153dd9ad22ffd",
-          "class_hash": "0x57990348edcf9fb36ebf87598db00b0c0f394b8df67cad98b92f49c8aed8dd4",
+          "address": "0x7ab77273bc3599d1ac969b1f1142bac93076d3081c72c6328eaf3e5c1f4e2c9",
+          "class_hash": "0x54988dda2da631bfe8c71910e895ab0918225c74e8ecc282ffd4661e4de6ee1",
           "abi": [
             {
               "type": "impl",
@@ -7304,8 +7560,8 @@
           ]
         },
         {
-          "address": "0x2b5f40ea85cb8b09493655e166bf3646e583d95b3be502dd5c8919b3bac6e7f",
-          "class_hash": "0x10d9c6825e8e03877bf919c464d52873cd3a9e9317223d156825deaa360a584",
+          "address": "0x1516f773dd0852bd1ff66d29ca610f179253da2e637fdcb7c380c7bdbbb7c46",
+          "class_hash": "0x4452450bf64b8504074a36a8520b59990a7cb0a9e7326217f330c07e3ffa398",
           "abi": [
             {
               "type": "impl",
@@ -7559,8 +7815,8 @@
           ]
         },
         {
-          "address": "0x25dec73f44ec0122f02a58bbcbee91559957ad8b0ee160a5b52bb586ae90ba0",
-          "class_hash": "0x4f56b10d4988fa790c372e0b2df5bb0d2a78ad78bc1e00dd543f10505439dd0",
+          "address": "0x124ae7e773e6537ccd5f0747636ffd298be6547b62eb8ecafe3a0219032276a",
+          "class_hash": "0x733f5a476b99fc9e0aa28e87ab762605ff5f03aaefc5990de740b33680d1346",
           "abi": [
             {
               "type": "impl",
@@ -7886,8 +8142,8 @@
           ]
         },
         {
-          "address": "0x3fc0b20d1ebaadd82d8105f56346e85c9f0ac5fd7879e2c037085be61c04ac3",
-          "class_hash": "0x600b668110ee177e4ddac3fb6cece3d85635d7bca66b958d69a57fb9413d87e",
+          "address": "0x2861d25f3dcc1dc1c5abce45f6c1169088891d036d8bbd3cc34f32bfe1bc17a",
+          "class_hash": "0xbede5e6b422110715283dd4e9b28b5be1b1eab1c623915f768aeda958d56f",
           "abi": [
             {
               "type": "impl",
@@ -8123,8 +8379,8 @@
           ]
         },
         {
-          "address": "0x6a6c2c17c04f94fb5fdaf4bf6a4f5c6ffb1b0e74ffe86627e5f395311227771",
-          "class_hash": "0x49121007a6870f8ab2dccc9e0d2fde515cb453a1f0835bbf0f034d70025e11",
+          "address": "0x5975920c0a0d7710efd3fb618bb3ed5593fbb68a7b77981a46b30cbdb4b429d",
+          "class_hash": "0x325f66c3121f95a60e44223b19277f40b388b0ea1f59cf89232d26edcc5216d",
           "abi": [
             {
               "type": "impl",
@@ -8323,8 +8579,8 @@
           ]
         },
         {
-          "address": "0x1692f38dbdf8b89bf446a13e91c71c5befe516350e9a7371703db0fb3441ebf",
-          "class_hash": "0x32dc029c4e914b09f49e7c462f95b2b6f25b61592053a02d0619a125f175cda",
+          "address": "0x57163bb02f72c0ab764e3efd7c20bfd6a54ff32d081e882931af453e05365df",
+          "class_hash": "0x10d0a1aa330311a97d3abac161f458d27d82de5295b1cae3e984a36163f2b01",
           "abi": [
             {
               "type": "impl",
@@ -8560,8 +8816,8 @@
           ]
         },
         {
-          "address": "0x64dc8319b067d5a02f4be4f7c32d809638ae66df22a95e179b8b1248564c16f",
-          "class_hash": "0x5c7784b6ff709f23d1cbf79cf955bb1147f2ae607009f0017a0f776d7c781bc",
+          "address": "0x25a7f78f249305805fac8d10405cadd3f2e1dadeaec6e9701f36277f31b3036",
+          "class_hash": "0x121483e7ff293ca2d69dbcd1f7b2c5b275f67bfaf50e255a78215ab93fcfc79",
           "abi": [
             {
               "type": "impl",
@@ -8826,8 +9082,8 @@
           ]
         },
         {
-          "address": "0x6a61aaa77b707c5a7e4042cfadbb1ca316e7fabf663744dea275759c1bd4193",
-          "class_hash": "0xda0bda8f2be3bd8cfffe11887f29254406863b1701a1eb7152818e0b044dee",
+          "address": "0x7c763901cfcc88f435dc15e06fe32f0fa781dccf524148fdf099cb1d8888df8",
+          "class_hash": "0x3770eef0fd5d6ab993ece695ee4d3d3a7cb4a856538e6e80904b7fffaaa9bcb",
           "abi": [
             {
               "type": "impl",
@@ -9132,8 +9388,8 @@
           ]
         },
         {
-          "address": "0x1d4a8ecc66b65892e0bf650106239b277b60bcc9c04689c0294326ae57c778d",
-          "class_hash": "0x418e9547981491a5c0be4a70cf079dd8bb15a460036d57f74bc8e56a79ed84a",
+          "address": "0xe9d6803137d855b836dd9ca129ce7a237cb4085975d7c7b2657362c3e9efb1",
+          "class_hash": "0x505a6d08c15cb221d3b110830817636bb513bc325dbc86630f8ad60c4558df0",
           "abi": [
             {
               "type": "impl",
@@ -9603,8 +9859,8 @@
           ]
         },
         {
-          "address": "0xb74ea8e94f9f6c65f912e2047b9b5489ba036fff10f6c49b7b4250f788cc0f",
-          "class_hash": "0x55e9691bf69d5771f36c9c865924e0e0cb3c7c7a3a3622fe808ab380fbb2752",
+          "address": "0x3e1bd6cccb0ee65ad5a1f55936393131a4bae791047775740d0e3600f4b482a",
+          "class_hash": "0x5f591edcd4e753ea18e6e75ac585fa23c2dd7eff38e0f7cd4cf99d733853edd",
           "abi": [
             {
               "type": "impl",
@@ -9865,8 +10121,8 @@
           ]
         },
         {
-          "address": "0x2928386ecc5ddbac95d7875765fa41707c60a9e1d2ab600f61f36d322d05a2a",
-          "class_hash": "0x27eddf920de1f7a823e053e85720fe6d8850b0455a469549c6398fcf854db45",
+          "address": "0x786f4b71c396475947c4ee960c76bdc9ab08a1e57087f1aad8acb74134d5333",
+          "class_hash": "0x522e9d5caf2dc28672518b6f3fbed8597347eb0913c13efa3f382c0005ee1ee",
           "abi": [
             {
               "type": "impl",
@@ -10296,8 +10552,8 @@
           ]
         },
         {
-          "address": "0x5718c0e48b6a96034d01355d25990887a88c051d5fdcaf97e85d92363543b6e",
-          "class_hash": "0x5c9c84ad6732e1598a410134422d26daf9736153e05b366e3388d79d57ce8f5",
+          "address": "0x5ce47af53323685affabb46c5187c65b43b6654ccd19f42ae5acbbf77031f4f",
+          "class_hash": "0x1678387227d15179d49bef2746fb9976ef74061a3168458890f7108cc2f451d",
           "abi": [
             {
               "type": "impl",
@@ -10548,8 +10804,8 @@
           ]
         },
         {
-          "address": "0xc0f0a88331fc239722a90cc7ef70c5d7e6c9ef4891369a2fc157aa0c7664b2",
-          "class_hash": "0x1f332a74f6328852bb7921b4e68f4288900e5b449ed50ea32473ab5cd4ee0e5",
+          "address": "0x2e20d5d07e6071c5dac12d3643711232b9fc20c72117cc9b7b828b778978cd1",
+          "class_hash": "0x1a171c2163359711e4da13cd52730f5779285e65856a1c8cb1371d1205aac2a",
           "abi": [
             {
               "type": "impl",
@@ -10814,7 +11070,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x7ab6a16673c8e6903354fc4399e7e6e881590bc26f5743a3a90e2c79e44d843",
+          "class_hash": "0xec3259519f9c316eb71e3df81a799de4812564833ce811fc122b74d72c181c",
           "tag": "s1_eternum-BuildingCategoryConfig",
           "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
         },
@@ -10928,12 +11184,6 @@
         },
         {
           "members": [],
-          "class_hash": "0x481bdfa909868943c90592ee6edf1c26801179318aa11fdd7cd4bd04324b171",
-          "tag": "s1_eternum-ProductionConfig",
-          "selector": "0x38bacafc2ceed54f95033f7529efa9559f877aea41db072b797235cee383a06"
-        },
-        {
-          "members": [],
           "class_hash": "0x7702a9475dce2ccca23022565d543a88e3ec30c1a7be38f2eef4cadf479bd27",
           "tag": "s1_eternum-Progress",
           "selector": "0x510024ae0ff452228a083d9fb3aba5e3521c107ab7a84246efcac7bcdfddcb5"
@@ -10976,15 +11226,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
-          "tag": "s1_eternum-ResourceList",
-          "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
+          "class_hash": "0x354f632e875ed2d123834ffd88984292f3150ac2745e150e93b379742e48927",
+          "tag": "s1_eternum-ResourceFactoryConfig",
+          "selector": "0xadf4631a88b08d514ef767cfcec55f85ec9fb9bdd4392e441763958bdf612c"
         },
         {
           "members": [],
-          "class_hash": "0x2ad4e1df7cc008980f3ae5088a285c551829f8afaac2f5802661fdf46923b68",
-          "tag": "s1_eternum-StartingResourcesConfig",
-          "selector": "0x6068016cd230b9788ea055b9c8512081ba653a83cb11229cb54b9aa78289d2c"
+          "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
+          "tag": "s1_eternum-ResourceList",
+          "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
         },
         {
           "members": [],
@@ -11030,7 +11280,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x51cf2b77839f23a380659936e48c7fab4a8075d971a7d67d1ffee52220f960b",
+          "class_hash": "0x3afe6d694d792e0db91900285376c48b85da993acacea297335e84b6cb96c28",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

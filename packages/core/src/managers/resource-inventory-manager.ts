@@ -16,7 +16,7 @@ export class ResourceInventoryManager {
     let removeResourceOverride: () => void;
     inventoryResources.forEach((resource) => {
       const resourceManager = new ResourceManager(this.components, receiverEntityId);
-      removeResourceOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, -BigInt(resource.amount));
+      removeResourceOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, -resource.amount);
     });
 
     return () => {

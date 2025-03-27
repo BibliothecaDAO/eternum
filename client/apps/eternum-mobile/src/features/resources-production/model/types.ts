@@ -17,8 +17,9 @@ export interface ProductionResource {
 
 export interface LaborConfig {
   laborProductionPerResource: number;
-  laborBurnPerResource: number;
+  laborBurnPerResourceOutput: number;
   laborRatePerTick: number;
+  resourceOutputPerInputResources: number;
   inputResources: { resource: ResourcesIds; amount: number }[];
 }
 

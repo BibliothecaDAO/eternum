@@ -3,9 +3,9 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  configManager,
   divideByPrecision,
   findResourceById,
   multiplyByPrecision,
@@ -19,7 +19,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_resources_for_labor_production },
+      systemCalls: { burn_resource_for_labor_production },
     },
   } = useDojo();
 
@@ -39,7 +39,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     };
 
     try {
-      await burn_other_resources_for_labor_production(calldata);
+      await burn_resource_for_labor_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -48,7 +48,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   };
 
   const laborConfig = useMemo(() => {
-    return selectedResources.map((r) => getLaborConfig(r.id));
+    return selectedResources.map((r) => configManager.getLaborConfig(r.id));
   }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {

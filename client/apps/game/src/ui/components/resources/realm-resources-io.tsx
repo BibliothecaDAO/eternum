@@ -17,7 +17,7 @@ export const RealmResourcesIO = ({
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(realmEntityId)]), dojo.setup.components);
 
   const resourcesProduced = realm ? realm.resources : [];
-  const resourcesInputs = configManager.resourceInputs;
+  const resourcesInputs = configManager.complexSystemResourceInputs;
 
   const resourcesConsumed = [
     ...new Set(

@@ -10,7 +10,8 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  multiplyByPrecision,
+  getBuildingFromResource,
+  getBuildingQuantity,
   RealmInfo,
   resources,
   ResourcesIds,
@@ -18,7 +19,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LaborBuilding } from "../model/types";
 
 interface ResourcesProductionDrawerProps {
@@ -62,10 +63,10 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     loadingState(true);
 
     try {
-      await systemCalls.burn_other_predefined_resources_for_resources({
+      await systemCalls.burn_resource_for_resource_production({
         from_entity_id: realm.entityId,
         produced_resource_types: [building.produced.resource],
-        production_tick_counts: [ticks],
+        production_cycles: [ticks],
         signer: account,
       });
     } catch (error) {
@@ -77,16 +78,14 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const handleLaborResourcesProduce = async () => {
     if (!laborConfig) return;
-    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * outputAmount);
-
-    if (outputAmount > 0 && laborNeeded > 0) {
+    if (outputAmount > 0) {
       const loadingState = isActive ? setIsExtendLoading : setIsLoading;
       loadingState(true);
-
+      let productionCycles = Math.floor(outputAmount / laborConfig?.resourceOutputPerInputResources);
       try {
-        await systemCalls.burn_labor_resources_for_other_production({
+        await systemCalls.burn_labor_for_resource_production({
           from_entity_id: realm.entityId,
-          labor_amounts: [multiplyByPrecision(laborNeeded)],
+          production_cycles: [productionCycles],
           produced_resource_types: [building.produced.resource],
           signer: account,
         });
@@ -146,8 +145,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       }, {});
       setLaborInputAmounts(newInputs);
     } else {
-      const inputs = configManager.resourceInputs[building.produced.resource];
-      const outputConfig = configManager.resourceOutput[building.produced.resource];
+      const inputs = configManager.complexSystemResourceInputs[building.produced.resource];
+      const outputConfig = configManager.complexSystemResourceOutput[building.produced.resource];
       const resourceConfig = inputs.find((r) => r.resource === resourceId);
       if (!resourceConfig) return;
 
@@ -187,8 +186,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       }, {});
       setLaborInputAmounts(newInputs);
     } else {
-      const inputs = configManager.resourceInputs[building.produced.resource];
-      const outputConfig = configManager.resourceOutput[building.produced.resource];
+      const inputs = configManager.complexSystemResourceInputs[building.produced.resource];
+      const outputConfig = configManager.complexSystemResourceOutput[building.produced.resource];
 
       // Calculate max possible output based on available resources
       const maxOutputs = inputs.map((input) => {
@@ -217,8 +216,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
     // Update input amounts based on the new output value
     if (activeTab === "raw") {
-      const inputs = configManager.resourceInputs[building.produced.resource];
-      const outputConfig = configManager.resourceOutput[building.produced.resource];
+      const inputs = configManager.complexSystemResourceInputs[building.produced.resource];
+      const outputConfig = configManager.complexSystemResourceOutput[building.produced.resource];
       const newInputs = inputs.reduce((acc, input) => {
         const inputAmount = Math.round((input.amount * roundedValue) / outputConfig.amount);
         return { ...acc, [input.resource]: inputAmount };
@@ -233,7 +232,11 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     }
   };
 
-  const ticks = Math.floor(outputAmount / configManager.resourceOutput[building.produced.resource].amount);
+  const buildingCount = useMemo(() => {
+    return getBuildingQuantity(realm.entityId, getBuildingFromResource(building.produced.resource), components);
+  }, [realm.entityId, building.produced.resource, components]);
+
+  const ticks = Math.floor(outputAmount / configManager.complexSystemResourceOutput[building.produced.resource].amount);
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
@@ -267,7 +270,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
   };
 
   const renderContent = () => {
-    const rawInputs = configManager.resourceInputs[building.produced.resource];
+    const rawInputs = configManager.complexSystemResourceInputs[building.produced.resource];
     const laborInputs = laborConfig?.inputResources || [];
 
     return (
@@ -279,8 +282,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
           // Recalculate output amount based on the new tab's inputs
           if (newTab === "raw") {
-            const inputs = configManager.resourceInputs[building.produced.resource];
-            const outputConfig = configManager.resourceOutput[building.produced.resource];
+            const inputs = configManager.complexSystemResourceInputs[building.produced.resource];
+            const outputConfig = configManager.complexSystemResourceOutput[building.produced.resource];
             // Find first non-zero input or use first input
             const firstInput = inputs.find((input) => (inputAmounts[input.resource] ?? 0) > 0) || inputs[0];
             if (firstInput) {
@@ -373,7 +376,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
               <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
                 <span className="text-gold/80">Production Time:</span>
-                <span className="font-medium">{formatProductionTime(ticks)}</span>
+                <span className="font-medium">{formatProductionTime(Math.floor(ticks / buildingCount))}</span>
               </div>
 
               {isActive && timeLeft > 0 && (

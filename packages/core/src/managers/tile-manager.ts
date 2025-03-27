@@ -120,7 +120,13 @@ export class TileManager {
     return bonusPercent;
   };
 
-  private _optimisticBuilding = (entityId: ID, col: number, row: number, buildingType: BuildingType) => {
+  private _optimisticBuilding = (
+    entityId: ID,
+    col: number,
+    row: number,
+    buildingType: BuildingType,
+    useSimpleCost: boolean,
+  ) => {
     let buildingOverrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
@@ -143,11 +149,11 @@ export class TileManager {
     // override resource balance
     // need to retrieve the reosurce cost before adding extra building to the structure
     // because the resource cost increase when adding more buildings
-    const resourceChange = getBuildingCosts(entityId, this.components, buildingType);
+    const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
 
     let removeResourceOverride: () => void;
     resourceChange?.forEach((resource) => {
-      removeResourceOverride = this._overrideResource(entityId, resource.resource, -BigInt(resource.amount));
+      removeResourceOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
     });
 
     const populationOverrideId = uuid();
@@ -201,7 +207,7 @@ export class TileManager {
     };
   };
 
-  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: bigint) => {
+  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: number) => {
     const resourceManager = new ResourceManager(this.components, entity);
     return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
   };
@@ -304,6 +310,7 @@ export class TileManager {
     structureEntityId: ID,
     buildingType: BuildingType,
     hexCoords: HexPosition,
+    useSimpleCost: boolean,
   ) => {
     const { col, row } = hexCoords;
 
@@ -312,7 +319,7 @@ export class TileManager {
     const directions = getDirectionsArray(startingPosition, endPosition);
 
     // add optimistic rendering
-    const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType);
+    const removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
 
     try {
       await this.systemCalls.create_building({
@@ -320,6 +327,7 @@ export class TileManager {
         entity_id: structureEntityId,
         directions: directions,
         building_category: buildingType,
+        use_simple: useSimpleCost,
       });
     } catch (error) {
       console.error(error);

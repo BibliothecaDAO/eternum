@@ -1,30 +1,21 @@
-import { configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborConfig } from "../model/types";
 
+
 export const getLaborConfig = (resourceId: number): LaborConfig | undefined => {
-  const laborConfig = configManager.resourceLaborOutput[resourceId as keyof typeof configManager.resourceLaborOutput];
-
-  if (!laborConfig) return undefined;
-
-  const laborResource = configManager.resourceOutput[ResourcesIds.Labor as keyof typeof configManager.resourceOutput];
-
-  const depreciation = (100 - laborConfig.depreciation_percent_num) / laborConfig.depreciation_percent_denom;
+  const laborProducedPerResource = configManager.laborOutputPerResource[resourceId as keyof typeof configManager.laborOutputPerResource];
+  const laborResourceOutput
+   = configManager.resourceOutputRate[ResourcesIds.Labor as keyof typeof configManager.resourceOutputRate];
+  const simpleSystemResourceInputs = configManager.simpleSystemResourceInputs[resourceId as keyof typeof configManager.simpleSystemResourceInputs];
+  const laborBurnPerResourceOutput = simpleSystemResourceInputs.filter(x=>x.resource == ResourcesIds.Labor)[0] || {resource: resourceId, amount: 0};
+  const simpleSystemResourceOutput = configManager.simpleSystemResourceOutput[resourceId as keyof typeof configManager.simpleSystemResourceOutput] || {resource: resourceId, amount: 0};
 
   return {
-    laborProductionPerResource: laborConfig.resource_rarity,
-    laborBurnPerResource: laborConfig.resource_rarity / depreciation,
-    laborRatePerTick: laborResource.amount,
-    inputResources: [
-      { resource: ResourcesIds.Labor, amount: laborConfig.resource_rarity / depreciation },
-      {
-        resource: ResourcesIds.Wheat,
-        amount: (laborConfig.wheat_burn_per_labor * laborConfig.resource_rarity) / depreciation,
-      },
-      {
-        resource: ResourcesIds.Fish,
-        amount: (laborConfig.fish_burn_per_labor * laborConfig.resource_rarity) / depreciation,
-      },
-    ],
+    laborProductionPerResource: laborProducedPerResource.amount / RESOURCE_PRECISION,
+    laborBurnPerResourceOutput: laborBurnPerResourceOutput.amount,
+    laborRatePerTick: laborResourceOutput.realm_output_per_second / RESOURCE_PRECISION,
+    inputResources: simpleSystemResourceInputs,
+    resourceOutputPerInputResources: simpleSystemResourceOutput.amount,
   };
 };
 

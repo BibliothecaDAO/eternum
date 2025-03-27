@@ -1,14 +1,14 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  BUILDING_CAPACITY,
-  BUILDING_COSTS,
-  BUILDING_COSTS_SCALED,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingType,
-  RESOURCE_RARITY,
-  ResourcesIds,
-  resources,
+    BUILDING_CAPACITY,
+    BUILDING_POPULATION,
+    BUILDING_RESOURCE_PRODUCED,
+    BuildingType,
+    COMPLEX_BUILDING_COSTS,
+    COMPLEX_BUILDING_COSTS_SCALED,
+    RESOURCE_RARITY,
+    ResourcesIds,
+    resources,
 } from "@bibliothecadao/eternum";
 import { Badge } from "../ui/badge";
 
@@ -30,7 +30,7 @@ export const BuildingTable = () => {
     // const multiplier = HYPERSTRUCTURE_RESOURCE_MULTIPLIERS[buildingId] || 1; // Default multiplier is 1
 
     return (
-      BUILDING_COSTS_SCALED[buildingId]?.map((input) => ({
+      COMPLEX_BUILDING_COSTS_SCALED[buildingId]?.map((input) => ({
         ...input,
         adjustedAmount: input.amount * RESOURCE_RARITY[input.resource],
       })) || []
@@ -75,7 +75,7 @@ export const BuildingTable = () => {
               <TableCell>{BUILDING_POPULATION[type]}</TableCell>
               <TableCell>{resourceProduced}</TableCell>
               <TableCell className="rounded flex gap-2 justify-center">
-                {BUILDING_COSTS[type]?.map((input, idx) => (
+                {COMPLEX_BUILDING_COSTS[type]?.map((input, idx) => (
                   <Badge className={`border p-1`} key={idx} style={{ borderColor: resourceColor(input.resource) }}>
                     <img src={getResourceImage(input.resource)} className="w-6 h-6 mx-auto" /> x {input.amount}
                   </Badge>

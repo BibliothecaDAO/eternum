@@ -14,7 +14,7 @@ export const RealmProduction = () => {
   const [filterProduced, setFilterProduced] = useState<number | null>(null);
   const [filterConsumed, setFilterConsumed] = useState<number | null>(null);
 
-  const resourcesInputs = useMemo(() => configManager.resourceInputs, []);
+  const resourcesInputs = useMemo(() => configManager.complexSystemResourceInputs, []);
 
   const realmsProduction = useMemo(() => {
     return realms.map((realm) => {

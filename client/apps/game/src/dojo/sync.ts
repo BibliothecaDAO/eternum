@@ -1,20 +1,20 @@
 import { AppStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  BUILDING_CATEGORY_POPULATION_CONFIG_ID,
-  HYPERSTRUCTURE_CONFIG_ID,
-  PlayerStructure,
-  SetupResult,
-  WORLD_CONFIG_ID,
+    ADMIN_BANK_ENTITY_ID,
+    BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+    HYPERSTRUCTURE_CONFIG_ID,
+    PlayerStructure,
+    SetupResult,
+    WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
 import { Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import {
-  debouncedGetDonkeysAndArmiesFromTorii,
-  debouncedGetEntitiesFromTorii,
-  debouncedGetMarketFromTorii,
+    debouncedGetDonkeysAndArmiesFromTorii,
+    debouncedGetEntitiesFromTorii,
+    debouncedGetMarketFromTorii,
 } from "./debounced-queries";
 import { handleExplorerTroopsIfDeletion } from "./utils";
 
@@ -338,9 +338,8 @@ const configModels = [
   "s1_eternum-WorldConfig",
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
-  "s1_eternum-ProductionConfig",
+  "s1_eternum-ResourceFactoryConfig",
   "s1_eternum-BuildingCategoryConfig",
-  "s1_eternum-StartingResourcesConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
   "s1_eternum-ResourceList",
@@ -374,7 +373,7 @@ const eventModels = [
 const hyperstructureModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
-  "s1_eternum-ProductionConfig",
+  "s1_eternum-ResourceFactoryConfig",
 ];
 
 export const syncStructureData = async (

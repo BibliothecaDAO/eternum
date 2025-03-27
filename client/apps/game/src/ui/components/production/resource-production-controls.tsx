@@ -1,12 +1,12 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
-  multiplyByPrecision,
+  getBuildingFromResource,
+  getBuildingQuantity,
   RealmInfo,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
@@ -14,6 +14,20 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
+
+const formatProductionTime = (ticks: number) => {
+  const days = Math.floor(ticks / (24 * 60 * 60));
+  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((ticks % (60 * 60)) / 60);
+  const seconds = ticks % 60;
+
+  return [
+    days > 0 ? `${days}d ` : "",
+    hours > 0 ? `${hours}h ` : "",
+    minutes > 0 ? `${minutes}m ` : "",
+    `${seconds}s`,
+  ].join("");
+};
 
 export const ResourceProductionControls = ({
   selectedResource,
@@ -37,13 +51,14 @@ export const ResourceProductionControls = ({
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_predefined_resources_for_resources, burn_labor_resources_for_other_production },
+      components,
+      systemCalls: { burn_resource_for_resource_production, burn_labor_for_resource_production },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const laborConfig = useMemo(() => getLaborConfig(selectedResource), [selectedResource]);
+  const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
 
   const handleRawResourcesProduce = async () => {
     if (!ticks) return;
@@ -51,12 +66,12 @@ export const ResourceProductionControls = ({
     const calldata = {
       from_entity_id: realm.entityId,
       produced_resource_types: [selectedResource],
-      production_tick_counts: [ticks],
+      production_cycles: [ticks],
       signer: account,
     };
 
     try {
-      await burn_other_predefined_resources_for_resources(calldata);
+      await burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -66,20 +81,19 @@ export const ResourceProductionControls = ({
 
   const handleLaborResourcesProduce = async () => {
     if (!laborConfig) return;
-    const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
 
-    if (productionAmount > 0 && laborNeeded > 0 && productionAmount > 0) {
+    if (productionAmount > 0) {
       setIsLoading(true);
-
+      let productionCycles = Math.floor(productionAmount / laborConfig?.resourceOutputPerInputResources);
       const calldata = {
         from_entity_id: realm.entityId,
-        labor_amounts: [multiplyByPrecision(laborNeeded)],
+        production_cycles: [productionCycles],
         produced_resource_types: [selectedResource],
         signer: account,
       };
 
       try {
-        await burn_labor_resources_for_other_production(calldata);
+        await burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
       } finally {
@@ -89,7 +103,7 @@ export const ResourceProductionControls = ({
   };
 
   const outputResource = useMemo(() => {
-    return configManager.resourceOutput[selectedResource];
+    return configManager.complexSystemResourceOutput[selectedResource];
   }, [selectedResource]);
 
   const resourceManager = useResourceManager(realm.entityId);
@@ -99,7 +113,7 @@ export const ResourceProductionControls = ({
 
     const balances: Record<number, number> = {};
     const allResources = [
-      ...configManager.resourceInputs[selectedResource],
+      ...configManager.complexSystemResourceInputs[selectedResource],
       { resource: selectedResource, amount: 1 },
       { resource: ResourcesIds.Labor, amount: 1 },
       { resource: ResourcesIds.Wheat, amount: 1 },
@@ -119,14 +133,25 @@ export const ResourceProductionControls = ({
     setTicks(Math.floor(productionAmount / outputResource.amount));
   }, [productionAmount]);
 
+  const rawCurrentInputs = useMemo(() => {
+    return configManager.complexSystemResourceInputs[selectedResource].map(({ resource, amount }) => ({
+      resource,
+      amount: amount / outputResource.amount,
+    }));
+  }, [selectedResource, outputResource]);
+
+  const laborCurrentInputs = useMemo(() => {
+    return (
+      laborConfig?.inputResources.map(({ resource, amount }) => ({
+        resource,
+        amount: amount / laborConfig.resourceOutputPerInputResources,
+      })) || []
+    );
+  }, [laborConfig]);
+
   const currentInputs = useMemo(() => {
-    return useRawResources
-      ? configManager.resourceInputs[selectedResource].map(({ resource, amount }) => ({
-          resource,
-          amount: amount / outputResource.amount,
-        }))
-      : laborConfig?.inputResources || [];
-  }, [useRawResources, selectedResource, laborConfig]);
+    return useRawResources ? rawCurrentInputs : laborCurrentInputs;
+  }, [useRawResources, rawCurrentInputs, laborCurrentInputs]);
 
   const isOverBalance = useMemo(() => {
     return Object.values(currentInputs).some(({ resource, amount }) => {
@@ -141,18 +166,22 @@ export const ResourceProductionControls = ({
       return !ticks || ticks <= 0;
     } else {
       if (!laborConfig) return true;
-      const laborNeeded = Math.round(laborConfig.laborBurnPerResource * productionAmount);
+      const laborNeeded = Math.round(laborConfig.laborBurnPerResourceOutput * productionAmount);
       return productionAmount <= 0 || laborNeeded <= 0;
     }
   }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
 
-  if (currentInputs.length === 0) return null;
+  const buildingCount = useMemo(() => {
+    return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
+  }, [realm.entityId, selectedResource, components]);
+
+  if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
     <div className="bg-brown/20 p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
 
-      <div className={`grid ${laborConfig ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
+      <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
         <RawResourcesPanel
           selectedResource={selectedResource}
           productionAmount={productionAmount}
@@ -163,7 +192,7 @@ export const ResourceProductionControls = ({
           outputResource={outputResource}
         />
 
-        {laborConfig && (
+        {laborCurrentInputs.length > 0 && (
           <LaborResourcesPanel
             selectedResource={selectedResource}
             productionAmount={productionAmount}
@@ -192,23 +221,7 @@ export const ResourceProductionControls = ({
         </div>
         <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
           <span className="text-gold/80">Production Time:</span>
-          <span className="font-medium">
-            {ticks
-              ? (() => {
-                  const days = Math.floor(ticks / (24 * 60 * 60));
-                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-                  const seconds = ticks % 60;
-
-                  return [
-                    days > 0 ? `${days}d ` : "",
-                    hours > 0 ? `${hours}h ` : "",
-                    minutes > 0 ? `${minutes}m ` : "",
-                    `${seconds}s`,
-                  ].join("");
-                })()
-              : "0s"}
-          </span>
+          <span className="font-medium">{ticks ? formatProductionTime(Math.floor(ticks / buildingCount)) : "0s"}</span>
         </div>
       </div>
 

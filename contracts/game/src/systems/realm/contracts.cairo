@@ -105,7 +105,7 @@ pub mod realm_systems {
             );
 
             // update realm count
-            let realm_count_selector: felt252 = selector!("realm_count");
+            let realm_count_selector: felt252 = selector!("realm_count_config");
             let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
             realm_count.count += 1;
             WorldConfigUtilImpl::set_member(ref world, realm_count_selector, realm_count);

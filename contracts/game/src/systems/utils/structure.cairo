@@ -1,14 +1,13 @@
+use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{
-    DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST, all_resource_ids,
-};
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST};
 use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{
-    ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
@@ -95,19 +94,24 @@ pub impl iStructureImpl of IStructureTrait {
     fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
-        let resources_ids = all_resource_ids();
-        for resource_id in resources_ids {
-            let starting_resources_config: StartingResourcesConfig = world.read_model(resource_id);
-            let mut resource_amount: u128 = starting_resources_config.resource_amount;
-            if resource_id == ResourceTypes::LORDS || resource_amount == 0 {
-                continue;
-            }
+        let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
+            WorldConfigUtilImpl::get_member(world, selector!("village_start_resources_config"))
+        } else {
+            WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
+        };
+
+        for i in 0..starting_resources.resources_list_count {
+            let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));
+            assert!(resource.resource_type != ResourceTypes::LORDS, "invalid start resource");
+
+            let mut resource_type = resource.resource_type;
+            let mut resource_amount = resource.amount;
             if structure_metadata.has_wonder {
                 resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
             }
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
             let mut realm_resource = SingleResourceStoreImpl::retrieve(
-                ref world, structure_id, resource_id, ref structure_weight, resource_weight_grams, true,
+                ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
             );
             realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
             realm_resource.store(ref world);
