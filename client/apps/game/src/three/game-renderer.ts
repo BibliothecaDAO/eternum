@@ -42,8 +42,8 @@ export default class GameRenderer {
   private stats!: Stats;
 
   // Camera settings
-  private cameraDistance = Math.sqrt(2 * 7 * 7); // Maintain the same distance
-  private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
+  private cameraDistance = 10; // Maintain the same distance
+  private cameraAngle = Math.PI / 3;
 
   // Components
   private transitionManager!: TransitionManager;
@@ -198,7 +198,7 @@ export default class GameRenderer {
 
     // Adjust OrbitControls for new camera angle
     this.controls = new MapControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = false;
+    this.controls.enableRotate = true;
     this.controls.enableZoom = true;
     this.controls.enablePan = true;
     this.controls.panSpeed = 1;

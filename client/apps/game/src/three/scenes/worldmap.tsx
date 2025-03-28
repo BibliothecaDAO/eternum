@@ -22,6 +22,7 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  Biome,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -47,8 +48,8 @@ const dummyVector = new THREE.Vector3();
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
   private renderChunkSize = {
-    width: 40,
-    height: 30,
+    width: 60,
+    height: 44,
   };
 
   private totalStructures: number = 0;
@@ -372,8 +373,29 @@ export default class WorldmapScene extends HexagonScene {
     this.state.setSelectedHex(null);
   }
 
+  changeCameraView(position: 1 | 2 | 3) {
+    switch (position) {
+      case 1:
+        this.camera.far = 30;
+        this.mainDirectionalLight.castShadow = true;
+        break;
+      case 2:
+        this.camera.far = 30;
+        this.mainDirectionalLight.castShadow = true;
+        break;
+      case 3:
+        this.camera.far = 65;
+        this.mainDirectionalLight.castShadow = false;
+        break;
+    }
+    this.camera.updateProjectionMatrix();
+  }
+
   setup() {
-    this.controls.maxDistance = IS_FLAT_MODE ? 40 : 20;
+    this.controls.maxDistance = 40;
+    this.camera.far = 65;
+    this.camera.updateProjectionMatrix();
+    this.mainDirectionalLight.castShadow = false;
     this.controls.enablePan = true;
     this.controls.zoomToCursor = true;
     this.highlightHexManager.setYOffset(0.025);
@@ -708,7 +730,7 @@ export default class WorldmapScene extends HexagonScene {
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
 
-          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
+          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || true;
           if (isStructure) {
             dummyObject.scale.set(0, 0, 0);
           } else {
@@ -744,8 +766,8 @@ export default class WorldmapScene extends HexagonScene {
           dummyObject.updateMatrix();
 
           if (isExplored) {
-            const biome = isExplored as BiomeType;
-            //const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+            //const biome = isExplored as BiomeType;
+            const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
             biomeHexes[biome].push(dummyObject.matrix.clone());
           } else {
             dummyObject.position.y = 0.01;

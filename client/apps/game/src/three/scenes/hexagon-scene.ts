@@ -33,9 +33,9 @@ export abstract class HexagonScene {
   protected state!: AppStore;
   protected fog!: THREE.Fog;
 
-  private mainDirectionalLight!: THREE.DirectionalLight;
-  private hemisphereLight!: THREE.HemisphereLight;
-  private lightHelper!: THREE.DirectionalLightHelper;
+  protected mainDirectionalLight!: THREE.DirectionalLight;
+  protected hemisphereLight!: THREE.HemisphereLight;
+  protected lightHelper!: THREE.DirectionalLightHelper;
 
   private groundMesh!: THREE.Mesh;
 
@@ -66,7 +66,7 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0xffffff, 21, 42);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
-      this.scene.fog = this.fog;
+      //this.scene.fog = this.fog;
     }
 
     // subscribe to state changes
