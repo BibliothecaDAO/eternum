@@ -1,9 +1,9 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { divideByPrecision, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useMemo, useState } from "react";
-import { calculateLaborAmount, getLaborConfig } from "../lib/labor";
+import { calculateLaborAmount } from "../lib/labor";
 import { SelectedResource } from "./types";
 import { useProduction } from "./use-production";
 
@@ -14,7 +14,7 @@ export const useLaborProduction = () => {
   const { startLaborProduction } = useProduction();
 
   const laborConfigs = useMemo(() => {
-    return selectedResources.map((r) => getLaborConfig(r.id));
+    return selectedResources.map((r) => configManager.getLaborConfig(r.id));
   }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {

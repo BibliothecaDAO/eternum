@@ -1,4 +1,3 @@
-import { getLaborConfig } from "@/features/resources-production/lib/labor";
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
@@ -52,23 +51,45 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const resourceManager = useResourceManager(realm.entityId);
   const outputResource = resources.find((r) => r.id === building.produced.resource);
-  const laborConfig = getLaborConfig(building.produced.resource);
+  const laborConfig = configManager.getLaborConfig(building.produced.resource);
   const isActive = resourceManager.isActive(building.produced.resource);
 
   if (!outputResource) return null;
+
+  const resourceBalances = useMemo(() => {
+    const { currentBlockTimestamp } = getBlockTimestamp();
+    const inputs =
+      activeTab === "raw"
+        ? configManager.complexSystemResourceInputs[building.produced.resource]
+        : configManager.simpleSystemResourceInputs[building.produced.resource];
+    return inputs.map((resource) => {
+      const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.resource);
+      return { resource: resource.resource, balance: divideByPrecision(balance) };
+    }, 0);
+  }, [resourceManager, building.produced.resource, activeTab]);
+
+  const hasBalanceRaw = useMemo(() => {
+    return resourceBalances.every((resource) => (inputAmounts[resource.resource] || 0) <= resource.balance);
+  }, [resourceBalances, inputAmounts]);
+
+  const hasBalanceLabor = useMemo(() => {
+    return resourceBalances.every((resource) => (laborInputAmounts[resource.resource] || 0) <= resource.balance);
+  }, [resourceBalances, laborInputAmounts]);
 
   const handleRawResourcesProduce = async () => {
     if (!ticks) return;
     const loadingState = isActive ? setIsExtendLoading : setIsLoading;
     loadingState(true);
 
+    const calldata = {
+      from_entity_id: realm.entityId,
+      produced_resource_types: [building.produced.resource],
+      production_cycles: [ticks],
+      signer: account,
+    };
+
     try {
-      await systemCalls.burn_resource_for_resource_production({
-        from_entity_id: realm.entityId,
-        produced_resource_types: [building.produced.resource],
-        production_cycles: [ticks],
-        signer: account,
-      });
+      await systemCalls.burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -82,13 +103,15 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       const loadingState = isActive ? setIsExtendLoading : setIsLoading;
       loadingState(true);
       let productionCycles = Math.floor(outputAmount / laborConfig?.resourceOutputPerInputResources);
+      const calldata = {
+        from_entity_id: realm.entityId,
+        production_cycles: [productionCycles],
+        produced_resource_types: [building.produced.resource],
+        signer: account,
+      };
+
       try {
-        await systemCalls.burn_labor_for_resource_production({
-          from_entity_id: realm.entityId,
-          production_cycles: [productionCycles],
-          produced_resource_types: [building.produced.resource],
-          signer: account,
-        });
+        await systemCalls.burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
       } finally {
@@ -132,7 +155,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       }));
 
       // Calculate new output based on this input
-      const newOutputAmount = Math.round(value / resourceConfig.amount);
+      const newOutputAmount =
+        Math.round(value / laborConfig.laborBurnPerResourceOutput) * laborConfig.resourceOutputPerInputResources;
       setOutputAmount(newOutputAmount);
 
       // Update other inputs proportionally with rounding
@@ -168,20 +192,22 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       if (!laborConfig) return;
 
       // Calculate max possible output based on available resources
-      const maxOutputs = laborConfig.inputResources.map((input) => {
-        const { currentBlockTimestamp } = getBlockTimestamp();
-        const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, input.resource);
-        const availableAmount = Math.round(divideByPrecision(balance));
-        return Math.floor(availableAmount / input.amount);
+      let minCycle = 1 << 30;
+      laborConfig.inputResources.forEach((input) => {
+        const balance = resourceBalances.find((r) => r.resource === input.resource)?.balance || 0;
+        const count = Math.floor(balance / input.amount);
+        if (count < minCycle) {
+          minCycle = count;
+        }
       });
 
       // Use the minimum possible output to ensure we don't exceed any resource
-      const newOutputAmount = Math.max(1, Math.min(...maxOutputs));
+      const newOutputAmount = Math.max(1, minCycle) * laborConfig.resourceOutputPerInputResources;
       setOutputAmount(newOutputAmount);
 
       // Update all labor input amounts based on the new output amount with rounding
       const newInputs = laborConfig.inputResources.reduce((acc, input) => {
-        const inputAmount = Math.round(input.amount * newOutputAmount);
+        const inputAmount = Math.round((input.amount * newOutputAmount) / laborConfig.resourceOutputPerInputResources);
         return { ...acc, [input.resource]: inputAmount };
       }, {});
       setLaborInputAmounts(newInputs);
@@ -191,10 +217,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
       // Calculate max possible output based on available resources
       const maxOutputs = inputs.map((input) => {
-        const { currentBlockTimestamp } = getBlockTimestamp();
-        const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, input.resource);
-        const availableAmount = Math.round(divideByPrecision(balance));
-        return Math.floor((availableAmount * outputConfig.amount) / input.amount);
+        const balance = resourceBalances.find((r) => r.resource === input.resource)?.balance || 0;
+        return Math.floor((balance * outputConfig.amount) / input.amount);
       });
 
       // Use the minimum possible output to ensure we don't exceed any resource
@@ -225,7 +249,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       setInputAmounts(newInputs);
     } else if (laborConfig) {
       const newInputs = laborConfig.inputResources.reduce((acc, input) => {
-        const inputAmount = Math.round(input.amount * roundedValue);
+        const inputAmount = Math.round((input.amount * roundedValue) / laborConfig.resourceOutputPerInputResources);
         return { ...acc, [input.resource]: inputAmount };
       }, {});
       setLaborInputAmounts(newInputs);
@@ -240,11 +264,9 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
-    const { currentBlockTimestamp } = getBlockTimestamp();
-    const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, resourceId);
-    const availableAmount = divideByPrecision(balance);
-
     if (!resource) return null;
+
+    const availableAmount = resourceBalances.find((r) => r.resource === resourceId)?.balance ?? 0;
 
     return (
       <div key={resourceId} className="grid grid-cols-2 gap-4 py-2 items-center">
@@ -432,13 +454,17 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
               <Button
                 className="w-full"
                 onClick={activeTab === "raw" ? handleRawResourcesProduce : handleLaborResourcesProduce}
-                disabled={isLoading || outputAmount <= 0}
+                disabled={isLoading || outputAmount <= 0 || !hasBalanceRaw || !hasBalanceLabor}
               >
                 {isLoading ? (
                   <>
                     <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                     Starting Production...
                   </>
+                ) : !hasBalanceRaw ? (
+                  "Insufficient Raw Resources"
+                ) : !hasBalanceLabor ? (
+                  "Insufficient Labor Resources"
                 ) : (
                   "Start Production"
                 )}

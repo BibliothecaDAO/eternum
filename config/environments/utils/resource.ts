@@ -458,6 +458,21 @@ export const multiplyStartingResources = (multiplier: number): ResourceCost[] =>
   }));
 };
 
+/**
+ * Returns all resources with a specified amount
+ * @param amount The amount to assign to each resource
+ * @returns Array of ResourceCost objects for all resources
+ */
+export const getAllResourcesWithAmount = (amount: number): ResourceCost[] => {
+  // Filter out string keys and only keep numeric resource IDs
+  return Object.values(ResourcesIds)
+    .filter((resource): resource is ResourcesIds => typeof resource === "number")
+    .map((resource) => ({
+      resource,
+      amount,
+    }));
+};
+
 export const multiplyVillageStartingResources = (multiplier: number): ResourceCost[] => {
   return VILLAGE_STARTING_RESOURCES.map((resource) => ({
     resource: resource.resource,
