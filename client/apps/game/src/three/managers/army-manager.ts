@@ -389,6 +389,8 @@ export class ArmyManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
+      "hover:bg-brown/90",
+      "pointer-events-auto",
       army.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
@@ -396,6 +398,27 @@ export class ArmyManager {
       "flex",
       "items-center",
     );
+
+    // Store the original z-index when mouse enters
+    labelDiv.addEventListener("mouseenter", () => {
+      const originalZIndex = labelDiv.style.zIndex;
+      // Set a very high z-index
+      labelDiv.style.zIndex = "999999";
+
+      // Restore the original z-index when mouse leaves
+      const handleMouseLeave = () => {
+        labelDiv.style.zIndex = originalZIndex;
+        labelDiv.removeEventListener("mouseleave", handleMouseLeave);
+      };
+      labelDiv.addEventListener("mouseleave", handleMouseLeave);
+    });
+
+    // Prevent right click
+    labelDiv.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
     const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
     img.src = isDaydreamsAgent
@@ -428,7 +451,24 @@ export class ArmyManager {
     textContainer.appendChild(line2);
     labelDiv.appendChild(textContainer);
 
-    this.armyModel.addLabel(army.entityId, labelDiv, position);
+    const label = new CSS2DObject(labelDiv);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    // Store original renderOrder
+    const originalRenderOrder = label.renderOrder;
+
+    // Set renderOrder to Infinity on hover
+    labelDiv.addEventListener("mouseenter", () => {
+      label.renderOrder = Infinity;
+    });
+
+    // Restore original renderOrder when mouse leaves
+    labelDiv.addEventListener("mouseleave", () => {
+      label.renderOrder = originalRenderOrder;
+    });
+
+    this.armyModel.addLabel(army.entityId, label);
   }
 
   removeLabelsFromScene() {

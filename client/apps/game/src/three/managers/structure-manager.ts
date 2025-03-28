@@ -313,6 +313,9 @@ export class StructureManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
+      "hover:bg-brown/90",
+      "hover:z-[1000]",
+      "pointer-events-auto",
       structure.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
@@ -388,6 +391,19 @@ export class StructureManager {
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 1.5;
+
+    // Store original renderOrder
+    const originalRenderOrder = label.renderOrder;
+
+    // Set renderOrder to Infinity on hover
+    labelDiv.addEventListener("mouseenter", () => {
+      label.renderOrder = Infinity;
+    });
+
+    // Restore original renderOrder when mouse leaves
+    labelDiv.addEventListener("mouseleave", () => {
+      label.renderOrder = originalRenderOrder;
+    });
 
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);

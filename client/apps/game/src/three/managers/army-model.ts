@@ -568,13 +568,8 @@ export class ArmyModel {
   }
 
   // Label Management Methods
-  public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3): void {
+  public addLabel(entityId: number, label: CSS2DObject): void {
     this.removeLabel(entityId);
-
-    const label = new CSS2DObject(labelElement);
-    label.position.copy(position);
-    label.position.y += 1.5;
-
     this.labels.set(entityId, { label, entityId });
     this.labelsGroup.add(label);
   }
