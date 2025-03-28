@@ -45,6 +45,7 @@ export abstract class HexagonScene {
   protected lightHelper!: THREE.DirectionalLightHelper;
 
   private groundMesh!: THREE.Mesh;
+  private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
 
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
@@ -493,6 +494,20 @@ export abstract class HexagonScene {
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
 
+  public getCurrentCameraView(): CameraView {
+    return this.currentCameraView;
+  }
+
+  public addCameraViewListener(listener: (view: CameraView) => void) {
+    this.cameraViewListeners.add(listener);
+    // Immediately notify the listener of the current view
+    listener(this.currentCameraView);
+  }
+
+  public removeCameraViewListener(listener: (view: CameraView) => void) {
+    this.cameraViewListeners.delete(listener);
+  }
+
   protected changeCameraView(position: CameraView) {
     const target = this.controls.target;
     this.currentCameraView = position;
@@ -520,5 +535,8 @@ export abstract class HexagonScene {
 
     const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
     this.cameraAnimate(newPosition, target, 1);
+
+    // Notify all listeners of the camera view change
+    this.cameraViewListeners.forEach((listener) => listener(position));
   }
 }

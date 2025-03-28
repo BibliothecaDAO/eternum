@@ -135,8 +135,8 @@ export default class WorldmapScene extends HexagonScene {
     this.structureLabelsGroup = new THREE.Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup);
-    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup, this);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup, this);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -206,12 +206,13 @@ export default class WorldmapScene extends HexagonScene {
       (event: WheelEvent) => {
         if (event.deltaY > 0) {
           // Zoom out
-          this.currentCameraView = Math.min(CameraView.Far, this.currentCameraView + 1);
+          const newView = Math.min(CameraView.Far, this.currentCameraView + 1);
+          this.changeCameraView(newView);
         } else {
           // Zoom in
-          this.currentCameraView = Math.max(CameraView.Close, this.currentCameraView - 1);
+          const newView = Math.max(CameraView.Close, this.currentCameraView - 1);
+          this.changeCameraView(newView);
         }
-        this.changeCameraView(this.currentCameraView);
       },
       1000,
       { leading: true, trailing: false },
