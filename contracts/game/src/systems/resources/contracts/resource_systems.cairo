@@ -15,6 +15,7 @@ pub trait IResourceSystems<T> {
     fn structure_troop_adjacent_transfer(
         ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
     );
+    fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -349,6 +350,25 @@ pub mod resource_systems {
             iResourceTransferImpl::structure_to_troop_instant(
                 ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
             );
+        }
+
+        fn troop_burn(ref self: ContractState, explorer_id: ID, resources: Span<(u8, u128)>) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            assert!(explorer_id.is_non_zero(), "from_explorer_id does not exist");
+
+            // ensure from explorer is owned by caller
+            let explorer: ExplorerTroops = world.read_model(explorer_id);
+            let explorer_owner_structure_id: ID = explorer.owner;
+            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_owner_structure_id,
+            );
+            explorer_owner.assert_caller_owner();
+
+            // burn resources
+            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+            iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
         }
 
 
