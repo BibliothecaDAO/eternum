@@ -583,7 +583,26 @@ export class ArmyModel {
     const labelData = this.labels.get(entityId);
     if (labelData) {
       this.labelsGroup.remove(labelData.label);
+      if (labelData.label.element && labelData.label.element.parentNode) {
+        labelData.label.element.parentNode.removeChild(labelData.label.element);
+      }
       this.labels.delete(entityId);
+    }
+  }
+
+  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
+    const labelData = this.labels.get(entityId);
+    if (labelData?.label.element) {
+      const textContainer = labelData.label.element.querySelector(".flex.flex-col");
+      if (textContainer) {
+        if (isCompact) {
+          textContainer.classList.add("max-w-0", "ml-0");
+          textContainer.classList.remove("max-w-[200px]", "ml-2");
+        } else {
+          textContainer.classList.remove("max-w-0", "ml-0");
+          textContainer.classList.add("max-w-[200px]", "ml-2");
+        }
+      }
     }
   }
 
