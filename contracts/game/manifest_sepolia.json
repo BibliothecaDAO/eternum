@@ -5608,7 +5608,7 @@
     },
     {
       "address": "0x32263b5ee54112732e960f70551f0d364bfc6285d79f1c4f5e098875e73717e",
-      "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
+      "class_hash": "0x15c0e82c727bfb6e35dae6c3801fecf2d46aa8821ca4ff956a25ec09e1a1667",
       "abi": [
         {
           "type": "impl",
@@ -5765,6 +5765,26 @@
             },
             {
               "type": "function",
+              "name": "troop_troop_adjacent_transfer",
+              "inputs": [
+                {
+                  "name": "from_explorer_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "to_explorer_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
               "name": "troop_structure_adjacent_transfer",
               "inputs": [
                 {
@@ -5793,6 +5813,22 @@
                 },
                 {
                   "name": "to_troop_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "troop_burn",
+              "inputs": [
+                {
+                  "name": "explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -5928,8 +5964,10 @@
         "send",
         "pickup",
         "arrivals_offload",
+        "troop_troop_adjacent_transfer",
         "troop_structure_adjacent_transfer",
         "structure_troop_adjacent_transfer",
+        "troop_burn",
         "upgrade"
       ]
     },
