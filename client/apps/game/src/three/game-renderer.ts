@@ -210,7 +210,7 @@ export default class GameRenderer {
 
     // Adjust OrbitControls for new camera angle
     this.controls = new MapControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = true;
+    this.controls.enableRotate = false;
     this.controls.enableZoom = true;
     this.controls.enablePan = true;
     this.controls.panSpeed = 1;
