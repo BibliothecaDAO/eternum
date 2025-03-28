@@ -398,21 +398,6 @@ export class ArmyManager {
       "flex",
       "items-center",
     );
-
-    // Store the original z-index when mouse enters
-    labelDiv.addEventListener("mouseenter", () => {
-      const originalZIndex = labelDiv.style.zIndex;
-      // Set a very high z-index
-      labelDiv.style.zIndex = "999999";
-
-      // Restore the original z-index when mouse leaves
-      const handleMouseLeave = () => {
-        labelDiv.style.zIndex = originalZIndex;
-        labelDiv.removeEventListener("mouseleave", handleMouseLeave);
-      };
-      labelDiv.addEventListener("mouseleave", handleMouseLeave);
-    });
-
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
       e.preventDefault();
