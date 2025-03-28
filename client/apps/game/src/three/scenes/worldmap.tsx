@@ -10,7 +10,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE } from "@/three/scenes/constants";
-import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
@@ -206,12 +206,12 @@ export default class WorldmapScene extends HexagonScene {
       (event: WheelEvent) => {
         if (event.deltaY > 0) {
           // Zoom out
-          this.currentCameraView = Math.min(3, this.currentCameraView + 1);
+          this.currentCameraView = Math.min(CameraView.Far, this.currentCameraView + 1);
         } else {
           // Zoom in
-          this.currentCameraView = Math.max(1, this.currentCameraView - 1);
+          this.currentCameraView = Math.max(CameraView.Close, this.currentCameraView - 1);
         }
-        this.changeCameraView(this.currentCameraView as 1 | 2 | 3);
+        this.changeCameraView(this.currentCameraView);
       },
       1000,
       { leading: true, trailing: false },

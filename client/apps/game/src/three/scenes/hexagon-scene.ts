@@ -19,6 +19,13 @@ import { type MapControls } from "three/examples/jsm/controls/MapControls";
 import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
+
+export enum CameraView {
+  Close = 1,
+  Medium = 2,
+  Far = 3,
+}
+
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
@@ -41,7 +48,7 @@ export abstract class HexagonScene {
 
   protected cameraDistance = 10; // Maintain the same distance
   protected cameraAngle = Math.PI / 3;
-  protected currentCameraView = 2; // Track current camera view position
+  protected currentCameraView = CameraView.Medium; // Track current camera view position
 
   constructor(
     protected sceneName: SceneName,
@@ -486,22 +493,22 @@ export abstract class HexagonScene {
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
 
-  protected changeCameraView(position: 1 | 2 | 3) {
+  protected changeCameraView(position: CameraView) {
     const target = this.controls.target;
     this.currentCameraView = position;
 
     switch (position) {
-      case 1: // Close view
+      case CameraView.Close: // Close view
         this.mainDirectionalLight.castShadow = true;
         this.cameraDistance = 10;
         this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
-      case 2: // Medium view
+      case CameraView.Medium: // Medium view
         this.mainDirectionalLight.castShadow = true;
         this.cameraDistance = 20;
         this.cameraAngle = Math.PI / 3; // 60 degrees
         break;
-      case 3: // Far view
+      case CameraView.Far: // Far view
         this.mainDirectionalLight.castShadow = false;
         this.cameraDistance = 40;
         this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
