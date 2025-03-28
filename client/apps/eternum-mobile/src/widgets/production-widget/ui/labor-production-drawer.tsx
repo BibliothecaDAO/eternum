@@ -7,12 +7,12 @@ import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
 import {
-    divideByPrecision,
-    findResourceById,
-    formatTime,
-    multiplyByPrecision,
-    RealmInfo,
-    ResourcesIds,
+  divideByPrecision,
+  findResourceById,
+  formatTime,
+  multiplyByPrecision,
+  RealmInfo,
+  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";

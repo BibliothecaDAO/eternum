@@ -18,6 +18,7 @@ import {
   RESOURCE_PRECISION,
   resources,
   StaminaManager,
+  StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/eternum";
@@ -27,6 +28,7 @@ import { useMemo, useState } from "react";
 import { formatBiomeBonus, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
+  Village,
   Structure,
   Army,
 }
@@ -128,6 +130,7 @@ export const CombatContainer = ({
         info: getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
         id: targetEntity?.occupier_id,
         targetType: TargetType.Structure,
+        structureCategory: structure.category,
       };
     }
 
@@ -136,6 +139,7 @@ export const CombatContainer = ({
         info: getArmy(occupierId, ContractAddress(account.address), components)?.troops,
         id: targetEntity?.occupier_id,
         targetType: TargetType.Army,
+        structureCategory: null,
       };
     }
 
@@ -193,6 +197,10 @@ export const CombatContainer = ({
       getBlockTimestamp().currentArmiesTick,
       components,
     ).amount;
+  }, [target]);
+
+  const isVillageWithoutTroops = useMemo(() => {
+    return target?.structureCategory === StructureType.Village && !target?.info;
   }, [target]);
 
   const params = configManager.getCombatConfig();
@@ -395,6 +403,14 @@ export const CombatContainer = ({
     );
   };
 
+  const buttonMessage = useMemo(() => {
+    if (isVillageWithoutTroops) return "Villages cannot be claimed";
+    if (attackerStamina < combatConfig.stamina_attack_req)
+      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
+    if (!attackerArmyData) return "No Troops Present";
+    return "Attack!";
+  }, [isVillageWithoutTroops, attackerStamina, attackerArmyData, combatConfig]);
+
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
@@ -471,7 +487,6 @@ export const CombatContainer = ({
               <div className="mt-4 space-y-4">
                 <div className="text-gold/80">
                   <div className="text-sm font-medium mb-1">No Troops Present</div>
-                  <div className="text-xl font-bold text-green-400">Ready to Claim!</div>
                 </div>
               </div>
             )}
@@ -587,7 +602,11 @@ export const CombatContainer = ({
           <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Claim Opportunity</h3>
           <div className="text-center py-4">
             <div className="text-xl font-bold text-green-400 mb-2">No Defending Troops Present!</div>
-            <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
+            {isVillageWithoutTroops ? (
+              <p className="text-gold/80 mb-4">Villages cannot be claimed</p>
+            ) : (
+              <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
+            )}
           </div>
         </div>
       )}
@@ -598,14 +617,10 @@ export const CombatContainer = ({
           variant="primary"
           className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData}
+          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isVillageWithoutTroops}
           onClick={onAttack}
         >
-          {!targetArmyData && attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
-            ? "Claim Realm!"
-            : attackerStamina >= combatConfig.stamina_attack_req && attackerArmyData
-              ? "Attack!"
-              : `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`}
+          {buttonMessage}
         </Button>
       </div>
     </div>

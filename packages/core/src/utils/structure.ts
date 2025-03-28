@@ -38,7 +38,6 @@ const getStructureInfo = (
   const structure = getComponentValue(components.Structure, entity);
   if (!structure) return;
 
-
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([structure.owner]));
   const ownerName = addressName ? shortString.decodeShortString(addressName!.name.toString()) : MERCENARIES;
 

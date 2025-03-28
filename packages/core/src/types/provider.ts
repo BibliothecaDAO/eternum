@@ -841,6 +841,18 @@ export interface TroopStructureAdjacentTransferProps extends SystemSigner {
 }
 
 /**
+ * Properties for transferring resources from a troop to an adjacent troop
+ */
+export interface TroopTroopAdjacentTransferProps extends SystemSigner {
+  /** ID of the troop sending resources */
+  from_troop_id: number;
+  /** ID of the troop receiving resources */
+  to_troop_id: number;
+  /** Resources to transfer */
+  resources: Resource[];
+}
+
+/**
  * Properties for transferring resources from a structure to an adjacent troop
  */
 export interface StructureTroopAdjacentTransferProps extends SystemSigner {

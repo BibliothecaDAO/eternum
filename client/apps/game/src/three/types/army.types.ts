@@ -1,7 +1,6 @@
 import { TroopTier, TroopType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationMixer } from "three";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 
 export interface MovementData {
   startPos: THREE.Vector3;
@@ -12,11 +11,6 @@ export interface MovementData {
   floatingHeight: number;
   currentRotation: number;
   targetRotation: number;
-}
-
-export interface LabelData {
-  label: CSS2DObject;
-  entityId: number;
 }
 
 export interface ArmyInstanceData {

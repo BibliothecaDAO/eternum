@@ -227,15 +227,11 @@ export function createSystemCalls({
     }
   };
 
-  const burn_resource_for_labor_production = async (
-    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
-  ) => {
+  const burn_resource_for_labor_production = async (props: SystemProps.BurnOtherResourcesForLaborProductionProps) => {
     await provider.burn_resource_for_labor_production(props);
   };
 
-  const burn_labor_for_resource_production = async (
-    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
-  ) => {
+  const burn_labor_for_resource_production = async (props: SystemProps.BurnLaborResourcesForOtherProductionProps) => {
     await provider.burn_labor_for_resource_production(props);
   };
 
@@ -291,6 +287,10 @@ export function createSystemCalls({
 
   const attack_guard_vs_explorer = async (props: SystemProps.AttackGuardVsExplorerProps) => {
     await provider.attack_guard_vs_explorer(props);
+  };
+
+  const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps) => {
+    await provider.troop_troop_adjacent_transfer(props);
   };
 
   const troop_structure_adjacent_transfer = async (props: SystemProps.TroopStructureAdjacentTransferProps) => {
@@ -376,6 +376,7 @@ export function createSystemCalls({
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
 
+    troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
   };

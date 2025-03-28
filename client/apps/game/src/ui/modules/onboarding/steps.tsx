@@ -12,8 +12,8 @@ import {
   queryRealmCount,
   SeasonPassRealm,
 } from "@/ui/components/cityview/realm/settle-realm-component";
-import MintVillagePassModal from "@/ui/components/settlement/mint-village-pass-modal";
-import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
+import { MintVillagePassModal } from "@/ui/components/settlement/mint-village-pass-modal";
+import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
 import { OnboardingButton } from "@/ui/layouts/onboarding-button";

@@ -15,18 +15,6 @@ export interface MapViewState {
   zoomLevel: number;
 }
 
-// Canvas rendering context interface
-export interface CanvasRenderingContext {
-  canvas: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-  scale: number;
-  padding: number;
-}
-
 // Settlement minimap props interface
 export interface SettlementMinimapProps {
   onSelectLocation: (location: SettlementLocation) => void;

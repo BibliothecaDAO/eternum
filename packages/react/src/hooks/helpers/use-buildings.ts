@@ -1,9 +1,9 @@
 import {
-    Building,
-    BuildingType,
-    BuildingTypeToString,
-    configManager,
-    getProducedResource,
+  Building,
+  BuildingType,
+  BuildingTypeToString,
+  configManager,
+  getProducedResource,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
