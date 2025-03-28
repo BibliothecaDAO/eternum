@@ -42,8 +42,8 @@ export default class GameRenderer {
   private stats!: Stats;
 
   // Camera settings
-  private cameraDistance = Math.sqrt(2 * 7 * 7); // Maintain the same distance
-  private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
+  private cameraDistance = 10; // Maintain the same distance
+  private cameraAngle = Math.PI / 3;
 
   // Components
   private transitionManager!: TransitionManager;
@@ -126,6 +126,18 @@ export default class GameRenderer {
       },
       "move",
     );
+
+    // Add camera view controls
+    const cameraViewParams = { view: 2 };
+    moveCameraFolder.add(cameraViewParams, "view", [1, 2, 3]).name("Camera View");
+    moveCameraFolder
+      .add(
+        {
+          changeView: () => this.worldmapScene.changeCameraView(cameraViewParams.view as 1 | 2 | 3),
+        },
+        "changeView",
+      )
+      .name("Change View");
 
     moveCameraFolder.close();
   }

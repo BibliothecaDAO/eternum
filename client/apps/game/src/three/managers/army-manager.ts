@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
 import {
   Biome,
@@ -42,8 +43,15 @@ export class ArmyManager {
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: THREE.Group;
+  private currentCameraView: CameraView;
+  private hexagonScene?: HexagonScene;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
+  constructor(
+    scene: THREE.Scene,
+    renderChunkSize: { width: number; height: number },
+    labelsGroup?: THREE.Group,
+    hexagonScene?: HexagonScene,
+  ) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene, labelsGroup);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
@@ -51,6 +59,13 @@ export class ArmyManager {
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new THREE.Group();
+    this.hexagonScene = hexagonScene;
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+
+    // Subscribe to camera view changes if scene is provided
+    if (hexagonScene) {
+      hexagonScene.addCameraViewListener(this.handleCameraViewChange);
+    }
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -370,7 +385,6 @@ export class ArmyManager {
   }
 
   private async addEntityIdLabel(army: ArmyData, position: THREE.Vector3) {
-    console.log("adding entity id label", army);
     const labelDiv = document.createElement("div");
     labelDiv.classList.add(
       "rounded-md",
@@ -390,19 +404,24 @@ export class ArmyManager {
     img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
     labelDiv.appendChild(img);
 
-    const textContainer = document.createElement("div");
-    textContainer.classList.add("flex", "flex-col");
+    // Only add text container if not in far view
+    if (this.currentCameraView !== CameraView.Far) {
+      const textContainer = document.createElement("div");
+      textContainer.classList.add("flex", "flex-col");
 
-    const line1 = document.createElement("span");
-    line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
-    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
-    const line2 = document.createElement("strong");
-    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+      const line1 = document.createElement("span");
+      line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
+      line1.style.color = isDaydreamsAgent ? army.color : "inherit";
+      const line2 = document.createElement("strong");
+      line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 
-    textContainer.appendChild(line1);
-    textContainer.appendChild(line2);
-
-    labelDiv.appendChild(textContainer);
+      textContainer.appendChild(line1);
+      textContainer.appendChild(line2);
+      labelDiv.appendChild(textContainer);
+    } else {
+      // Remove margin from icon in compact mode
+      img.classList.remove("mr-2");
+    }
 
     this.armyModel.addLabel(army.entityId, labelDiv, position);
   }
@@ -417,5 +436,24 @@ export class ArmyManager {
 
   private removeEntityIdLabel(entityId: ID) {
     this.armyModel.removeLabel(entityId);
+  }
+
+  private handleCameraViewChange = (view: CameraView) => {
+    if (this.currentCameraView === view) return;
+    this.currentCameraView = view;
+    // Update all existing labels to reflect the new view
+    this.visibleArmies.forEach((army) => {
+      const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
+      this.removeEntityIdLabel(army.entityId);
+      this.addEntityIdLabel(army, position);
+    });
+  };
+
+  public destroy() {
+    // Clean up camera view listener
+    if (this.hexagonScene) {
+      this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
+    // Clean up any other resources...
   }
 }

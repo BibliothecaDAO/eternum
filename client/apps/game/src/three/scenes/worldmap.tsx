@@ -1,4 +1,5 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+import throttle from "lodash/throttle";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -9,7 +10,7 @@ import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { HEX_SIZE } from "@/three/scenes/constants";
-import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
 import { Position } from "@/types/position";
@@ -46,9 +47,10 @@ const dummyVector = new THREE.Vector3();
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
+  private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private renderChunkSize = {
-    width: 40,
-    height: 30,
+    width: 60,
+    height: 44,
   };
 
   private totalStructures: number = 0;
@@ -132,8 +134,8 @@ export default class WorldmapScene extends HexagonScene {
     this.structureLabelsGroup = new THREE.Group();
     this.structureLabelsGroup.name = "StructureLabelsGroup";
 
-    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup);
-    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup);
+    this.armyManager = new ArmyManager(this.scene, this.renderChunkSize, this.armyLabelsGroup, this);
+    this.structureManager = new StructureManager(this.scene, this.renderChunkSize, this.structureLabelsGroup, this);
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
@@ -195,6 +197,27 @@ export default class WorldmapScene extends HexagonScene {
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
     });
+  }
+
+  private setupCameraZoomHandler() {
+    // Add mouse wheel handler
+    this.wheelHandler = throttle(
+      (event: WheelEvent) => {
+        if (event.deltaY > 0) {
+          // Zoom out
+          const newView = Math.min(CameraView.Far, this.currentCameraView + 1);
+          this.changeCameraView(newView);
+        } else {
+          // Zoom in
+          const newView = Math.max(CameraView.Close, this.currentCameraView - 1);
+          this.changeCameraView(newView);
+        }
+      },
+      1000,
+      { leading: true, trailing: false },
+    );
+
+    window.addEventListener("wheel", this.wheelHandler, { passive: true });
   }
 
   public moveCameraToURLLocation() {
@@ -373,11 +396,16 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   setup() {
-    this.controls.maxDistance = IS_FLAT_MODE ? 40 : 20;
+    this.controls.maxDistance = 40;
+    this.camera.far = 65;
+    this.camera.updateProjectionMatrix();
+    this.mainDirectionalLight.castShadow = false;
     this.controls.enablePan = true;
-    this.controls.zoomToCursor = true;
+    this.controls.enableZoom = false;
+    this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
     this.moveCameraToURLLocation();
+    this.changeCameraView(2);
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
 
@@ -392,6 +420,8 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.clearTileEntityCache();
+
+    this.setupCameraZoomHandler();
   }
 
   onSwitchOff() {
@@ -405,6 +435,12 @@ export default class WorldmapScene extends HexagonScene {
     console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing structure labels from scene");
+
+    // Clean up wheel event listener
+    if (this.wheelHandler) {
+      window.removeEventListener("wheel", this.wheelHandler);
+      this.wheelHandler = null;
+    }
   }
 
   // used to track the position of the armies on the map

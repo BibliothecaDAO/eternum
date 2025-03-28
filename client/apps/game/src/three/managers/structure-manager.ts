@@ -2,6 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { StructureModelPaths } from "@/three/scenes/constants";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { FELT_CENTER } from "@/ui/config";
 import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
@@ -43,18 +44,51 @@ export class StructureManager {
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
   private labelsGroup: THREE.Group;
+  private currentCameraView: CameraView;
+  private hexagonScene?: HexagonScene;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
+  constructor(
+    scene: THREE.Scene,
+    renderChunkSize: { width: number; height: number },
+    labelsGroup?: THREE.Group,
+    hexagonScene?: HexagonScene,
+  ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.labelsGroup = labelsGroup || new THREE.Group();
+    this.hexagonScene = hexagonScene;
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModels();
+
+    // Subscribe to camera view changes if scene is provided
+    if (hexagonScene) {
+      hexagonScene.addCameraViewListener(this.handleCameraViewChange);
+    }
 
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
       // Update labels when ownership changes
       this.updateVisibleStructures();
     });
+  }
+
+  private handleCameraViewChange = (view: CameraView) => {
+    if (this.currentCameraView === view) {
+      return;
+    }
+    this.currentCameraView = view;
+
+    // First remove all existing labels
+    this.removeLabelsFromScene();
+    // Then recreate them with the new view mode
+    this.showLabels();
+  };
+
+  public destroy() {
+    // Clean up camera view listener
+    if (this.hexagonScene) {
+      this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
   }
 
   getTotalStructures() {
@@ -180,13 +214,12 @@ export class StructureManager {
           visibleStructureIds.add(structure.entityId);
           const position = getWorldPositionForHex(structure.hexCoords);
           position.y += 0.05;
+
+          // Always recreate the label to ensure it matches current camera view
           if (this.entityIdLabels.has(structure.entityId)) {
-            const label = this.entityIdLabels.get(structure.entityId)!;
-            label.position.copy(position);
-            label.position.y += 1.5;
-          } else {
-            this.addEntityIdLabel(structure, position);
+            this.removeEntityIdLabel(structure.entityId);
           }
+          this.addEntityIdLabel(structure, position);
 
           this.dummy.position.copy(position);
 
@@ -299,41 +332,46 @@ export class StructureManager {
     iconImg.src = iconPath;
     iconImg.classList.add("w-full", "h-full", "object-contain");
     iconContainer.appendChild(iconImg);
-
-    // Create content container
-    const contentContainer = document.createElement("div");
-    contentContainer.classList.add("flex", "flex-col");
-
-    // Add owner name and address
-    const ownerText = document.createElement("span");
-    const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
-    ownerText.textContent = displayName;
-    ownerText.classList.add("text-xs", "opacity-80");
-
-    // Add guild name if available
-    if (structure.owner.guildName) {
-      const guildText = document.createElement("span");
-      guildText.textContent = structure.owner.guildName;
-      guildText.classList.add("text-xs", "text-gold/70", "italic");
-      contentContainer.appendChild(guildText);
-    }
-
-    // Add structure type and level
-    const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure
-        ? structure.initialized
-          ? `(Stage ${structure.stage + 1})`
-          : "Foundation"
-        : ""
-    }`;
-    typeText.classList.add("text-xs");
-
-    contentContainer.appendChild(ownerText);
-    contentContainer.appendChild(typeText);
-
     labelDiv.appendChild(iconContainer);
-    labelDiv.appendChild(contentContainer);
+
+    // Only add text content if not in far view
+    if (this.currentCameraView !== CameraView.Far) {
+      // Create content container
+      const contentContainer = document.createElement("div");
+      contentContainer.classList.add("flex", "flex-col");
+
+      // Add owner name and address
+      const ownerText = document.createElement("span");
+      const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
+      ownerText.textContent = displayName;
+      ownerText.classList.add("text-xs", "opacity-80");
+
+      // Add guild name if available
+      if (structure.owner.guildName) {
+        const guildText = document.createElement("span");
+        guildText.textContent = structure.owner.guildName;
+        guildText.classList.add("text-xs", "text-gold/70", "italic");
+        contentContainer.appendChild(guildText);
+      }
+
+      // Add structure type and level
+      const typeText = document.createElement("strong");
+      typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+        structure.structureType === StructureType.Hyperstructure
+          ? structure.initialized
+            ? `(Stage ${structure.stage + 1})`
+            : "Foundation"
+          : ""
+      }`;
+      typeText.classList.add("text-xs");
+
+      contentContainer.appendChild(ownerText);
+      contentContainer.appendChild(typeText);
+      labelDiv.appendChild(contentContainer);
+    } else {
+      // Remove gap in compact mode
+      labelDiv.classList.remove("gap-2");
+    }
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
@@ -368,9 +406,7 @@ export class StructureManager {
     // Additional verification
     const remainingLabels = this.labelsGroup.children.filter((child) => child instanceof CSS2DObject);
     if (remainingLabels.length > 0) {
-      console.warn(`[StructureManager] Found ${remainingLabels.length} remaining labels in group after cleanup!`);
       remainingLabels.forEach((label) => {
-        console.warn("[StructureManager] Forcefully removing remaining label");
         this.labelsGroup.remove(label);
       });
     }
