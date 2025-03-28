@@ -314,7 +314,6 @@ export class StructureManager {
       "rounded-md",
       "bg-brown/50",
       "hover:bg-brown/90",
-      "hover:z-[1000]",
       "pointer-events-auto",
       structure.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
