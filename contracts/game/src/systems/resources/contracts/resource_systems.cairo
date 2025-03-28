@@ -6,12 +6,16 @@ pub trait IResourceSystems<T> {
     fn send(ref self: T, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>);
     fn pickup(ref self: T, recipient_structure_id: ID, owner_structure_id: ID, resources: Span<(u8, u128)>);
     fn arrivals_offload(ref self: T, from_structure_id: ID, day: u64, slot: u8, resource_count: u8);
+    fn troop_troop_adjacent_transfer(
+        ref self: T, from_explorer_id: ID, to_explorer_id: ID, resources: Span<(u8, u128)>,
+    );
     fn troop_structure_adjacent_transfer(
         ref self: T, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
     );
     fn structure_troop_adjacent_transfer(
         ref self: T, from_structure_id: ID, to_troop_id: ID, resources: Span<(u8, u128)>,
     );
+    fn troop_burn(ref self: T, explorer_id: ID, resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -247,6 +251,37 @@ pub mod resource_systems {
             );
         }
 
+        fn troop_troop_adjacent_transfer(
+            ref self: ContractState, from_explorer_id: ID, to_explorer_id: ID, resources: Span<(u8, u128)>,
+        ) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            assert!(from_explorer_id.is_non_zero(), "from_explorer_id does not exist");
+            assert!(to_explorer_id.is_non_zero(), "from_explorer_id does not exist");
+
+            // ensure from explorer is owned by caller
+            let from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
+            let from_explorer_owner_structure_id: ID = from_explorer.owner;
+            let from_explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, from_explorer_owner_structure_id,
+            );
+            from_explorer_owner.assert_caller_owner();
+
+            // ensure to explorer exists
+            let to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
+            assert!(to_explorer.owner.is_non_zero(), "to_explorer does not exist");
+
+            // ensure troop and stucture are adjacent to each other
+            assert!(from_explorer.coord.is_adjacent(to_explorer.coord), "troops are not adjacent to each other");
+
+            let mut from_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, from_explorer_id);
+            let mut to_explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, to_explorer_id);
+            iResourceTransferImpl::troop_to_troop_instant(
+                ref world, from_explorer, ref from_explorer_weight, to_explorer, ref to_explorer_weight, resources,
+            );
+        }
+
 
         fn troop_structure_adjacent_transfer(
             ref self: ContractState, from_explorer_id: ID, to_structure_id: ID, resources: Span<(u8, u128)>,
@@ -315,6 +350,25 @@ pub mod resource_systems {
             iResourceTransferImpl::structure_to_troop_instant(
                 ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
             );
+        }
+
+        fn troop_burn(ref self: ContractState, explorer_id: ID, resources: Span<(u8, u128)>) {
+            let mut world = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            assert!(explorer_id.is_non_zero(), "from_explorer_id does not exist");
+
+            // ensure from explorer is owned by caller
+            let explorer: ExplorerTroops = world.read_model(explorer_id);
+            let explorer_owner_structure_id: ID = explorer.owner;
+            let explorer_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                ref world, explorer_owner_structure_id,
+            );
+            explorer_owner.assert_caller_owner();
+
+            // burn resources
+            let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+            iResourceTransferImpl::troop_burn_instant(ref world, explorer, ref explorer_weight, resources);
         }
 
 
