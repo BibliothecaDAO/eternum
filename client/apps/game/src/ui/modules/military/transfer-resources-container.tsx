@@ -36,7 +36,11 @@ export const TransferResourcesContainer = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { troop_structure_adjacent_transfer, structure_troop_adjacent_transfer },
+      systemCalls: {
+        troop_structure_adjacent_transfer,
+        structure_troop_adjacent_transfer,
+        troop_troop_adjacent_transfer,
+      },
       components,
     },
   } = useDojo();
@@ -223,13 +227,12 @@ export const TransferResourcesContainer = ({
           resources: resourcesWithAmounts,
         });
       } else if (transferDirection === TransferDirection.ExplorerToExplorer) {
-        // todo : add this
-        // await troop_troop_adjacent_transfer({
-        //   signer: account,
-        //   from_troop_id: selectedEntityId,
-        //   to_troop_id: targetEntityId,
-        //   resources: resourcesWithAmounts,
-        // });
+        await troop_troop_adjacent_transfer({
+          signer: account,
+          from_troop_id: selectedEntityId,
+          to_troop_id: targetEntityId,
+          resources: resourcesWithAmounts,
+        });
       }
       onTransferComplete();
     } catch (error) {
