@@ -127,6 +127,18 @@ export default class GameRenderer {
       "move",
     );
 
+    // Add camera view controls
+    const cameraViewParams = { view: 2 };
+    moveCameraFolder.add(cameraViewParams, "view", [1, 2, 3]).name("Camera View");
+    moveCameraFolder
+      .add(
+        {
+          changeView: () => this.worldmapScene.changeCameraView(cameraViewParams.view as 1 | 2 | 3),
+        },
+        "changeView",
+      )
+      .name("Change View");
+
     moveCameraFolder.close();
   }
 

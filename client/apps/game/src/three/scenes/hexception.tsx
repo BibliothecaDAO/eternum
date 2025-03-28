@@ -288,6 +288,7 @@ export default class HexceptionScene extends HexagonScene {
     this.updateHexceptionGrid(this.hexceptionRadius);
     this.controls.maxDistance = IS_FLAT_MODE ? 36 : 18;
     this.controls.enablePan = false;
+    this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();

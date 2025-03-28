@@ -47,6 +47,8 @@ const dummyVector = new THREE.Vector3();
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
+  private cameraDistance = 10;
+  private cameraAngle = Math.PI / 3;
   private renderChunkSize = {
     width: 60,
     height: 44,
@@ -374,21 +376,32 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   changeCameraView(position: 1 | 2 | 3) {
+    const camera = this.controls.object;
+    const target = this.controls.target;
+
     switch (position) {
-      case 1:
-        this.camera.far = 30;
+      case 1: // Close view
         this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6; // 45 degrees
         break;
-      case 2:
-        this.camera.far = 30;
+      case 2: // Medium view
         this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3; // 60 degrees
         break;
-      case 3:
-        this.camera.far = 65;
+      case 3: // Far view
         this.mainDirectionalLight.castShadow = false;
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180;
         break;
     }
-    this.camera.updateProjectionMatrix();
+
+    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+
+    const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.cameraAnimate(newPosition, target, 1);
   }
 
   setup() {
@@ -397,9 +410,11 @@ export default class WorldmapScene extends HexagonScene {
     this.camera.updateProjectionMatrix();
     this.mainDirectionalLight.castShadow = false;
     this.controls.enablePan = true;
-    this.controls.zoomToCursor = true;
+    this.controls.enableZoom = false;
+    this.controls.zoomToCursor = false;
     this.highlightHexManager.setYOffset(0.025);
     this.moveCameraToURLLocation();
+    this.changeCameraView(2);
     this.minimap.moveMinimapCenterToUrlLocation();
     this.minimap.showMinimap();
 
