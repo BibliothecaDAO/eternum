@@ -508,7 +508,7 @@ export abstract class HexagonScene {
     this.cameraViewListeners.delete(listener);
   }
 
-  protected changeCameraView(position: CameraView) {
+  public changeCameraView(position: CameraView) {
     const target = this.controls.target;
     this.currentCameraView = position;
 
