@@ -71,12 +71,12 @@ export class ResourceArrivalManager {
   }
 
   public async offload(signer: Account | AccountInterface, resourceCount: number) {
-      return this.systemCalls.arrivals_offload({
-        signer,
-        structureId: this.arrival.structureEntityId,
-        day: this.arrival.day,
-        slot: this.arrival.slot,
-        resource_count: resourceCount,
-      });
+    return this.systemCalls.arrivals_offload({
+      signer,
+      structureId: this.arrival.structureEntityId,
+      day: this.arrival.day,
+      slot: this.arrival.slot,
+      resource_count: resourceCount,
+    });
   }
 }

@@ -3,7 +3,6 @@ import { ResourcesIds } from "@bibliothecadao/eternum";
 // Constants for minimap dimensions and settlement configuration
 export const MINIMAP_WIDTH = 900;
 export const MINIMAP_HEIGHT = 400;
-export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 30;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 

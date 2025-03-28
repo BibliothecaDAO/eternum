@@ -194,14 +194,6 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
   [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
 };
 
-export const StructureLabelPaths: Record<StructureType, string> = {
-  [StructureType.Realm]: "textures/realm_label.png",
-  [StructureType.Hyperstructure]: "textures/hyper_label.png",
-  [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
-  [StructureType.Bank]: "",
-  [StructureType.Village]: "",
-};
-
 export const MinesMaterialsParams: Record<
   number,
   { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number }
