@@ -48,9 +48,6 @@ const dummyVector = new THREE.Vector3();
 
 export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
-  private cameraDistance = 10;
-  private cameraAngle = Math.PI / 3;
-  private currentCameraView = 2; // Track current camera view position
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private renderChunkSize = {
     width: 60,
@@ -201,18 +198,24 @@ export default class WorldmapScene extends HexagonScene {
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
     });
+  }
 
+  private setupCameraZoomHandler() {
     // Add mouse wheel handler
-    this.wheelHandler = throttle((event: WheelEvent) => {
-      if (event.deltaY > 0) {
-        // Zoom out
-        this.currentCameraView = Math.min(3, this.currentCameraView + 1);
-      } else {
-        // Zoom in
-        this.currentCameraView = Math.max(1, this.currentCameraView - 1);
-      }
-      this.changeCameraView(this.currentCameraView as 1 | 2 | 3);
-    }, 100); // Throttle to 100ms
+    this.wheelHandler = throttle(
+      (event: WheelEvent) => {
+        if (event.deltaY > 0) {
+          // Zoom out
+          this.currentCameraView = Math.min(3, this.currentCameraView + 1);
+        } else {
+          // Zoom in
+          this.currentCameraView = Math.max(1, this.currentCameraView - 1);
+        }
+        this.changeCameraView(this.currentCameraView as 1 | 2 | 3);
+      },
+      1000,
+      { leading: true, trailing: false },
+    );
 
     window.addEventListener("wheel", this.wheelHandler, { passive: true });
   }
@@ -392,35 +395,6 @@ export default class WorldmapScene extends HexagonScene {
     this.state.setSelectedHex(null);
   }
 
-  changeCameraView(position: 1 | 2 | 3) {
-    const target = this.controls.target;
-    this.currentCameraView = position;
-
-    switch (position) {
-      case 1: // Close view
-        this.mainDirectionalLight.castShadow = true;
-        this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6; // 30 degrees
-        break;
-      case 2: // Medium view
-        this.mainDirectionalLight.castShadow = true;
-        this.cameraDistance = 20;
-        this.cameraAngle = Math.PI / 3; // 60 degrees
-        break;
-      case 3: // Far view
-        this.mainDirectionalLight.castShadow = false;
-        this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
-        break;
-    }
-
-    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-
-    const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    this.cameraAnimate(newPosition, target, 1);
-  }
-
   setup() {
     this.controls.maxDistance = 40;
     this.camera.far = 65;
@@ -446,6 +420,8 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.clearTileEntityCache();
+
+    this.setupCameraZoomHandler();
   }
 
   onSwitchOff() {

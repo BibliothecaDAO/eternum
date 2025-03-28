@@ -39,6 +39,10 @@ export abstract class HexagonScene {
 
   private groundMesh!: THREE.Mesh;
 
+  protected cameraDistance = 10; // Maintain the same distance
+  protected cameraAngle = Math.PI / 3;
+  protected currentCameraView = 2; // Track current camera view position
+
   constructor(
     protected sceneName: SceneName,
     protected controls: MapControls,
@@ -481,4 +485,33 @@ export abstract class HexagonScene {
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
+
+  protected changeCameraView(position: 1 | 2 | 3) {
+    const target = this.controls.target;
+    this.currentCameraView = position;
+
+    switch (position) {
+      case 1: // Close view
+        this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6; // 30 degrees
+        break;
+      case 2: // Medium view
+        this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3; // 60 degrees
+        break;
+      case 3: // Far view
+        this.mainDirectionalLight.castShadow = false;
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
+        break;
+    }
+
+    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+
+    const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.cameraAnimate(newPosition, target, 1);
+  }
 }
