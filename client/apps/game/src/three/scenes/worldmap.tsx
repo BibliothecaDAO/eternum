@@ -1,4 +1,5 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
+import throttle from "lodash/throttle";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -49,6 +50,8 @@ export default class WorldmapScene extends HexagonScene {
   private chunkSize = 10; // Size of each chunk
   private cameraDistance = 10;
   private cameraAngle = Math.PI / 3;
+  private currentCameraView = 2; // Track current camera view position
+  private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private renderChunkSize = {
     width: 60,
     height: 44,
@@ -198,6 +201,20 @@ export default class WorldmapScene extends HexagonScene {
     window.addEventListener("urlChanged", () => {
       this.clearSelection();
     });
+
+    // Add mouse wheel handler
+    this.wheelHandler = throttle((event: WheelEvent) => {
+      if (event.deltaY > 0) {
+        // Zoom out
+        this.currentCameraView = Math.min(3, this.currentCameraView + 1);
+      } else {
+        // Zoom in
+        this.currentCameraView = Math.max(1, this.currentCameraView - 1);
+      }
+      this.changeCameraView(this.currentCameraView as 1 | 2 | 3);
+    }, 100); // Throttle to 100ms
+
+    window.addEventListener("wheel", this.wheelHandler, { passive: true });
   }
 
   public moveCameraToURLLocation() {
@@ -376,14 +393,14 @@ export default class WorldmapScene extends HexagonScene {
   }
 
   changeCameraView(position: 1 | 2 | 3) {
-    const camera = this.controls.object;
     const target = this.controls.target;
+    this.currentCameraView = position;
 
     switch (position) {
       case 1: // Close view
         this.mainDirectionalLight.castShadow = true;
         this.cameraDistance = 10;
-        this.cameraAngle = Math.PI / 6; // 45 degrees
+        this.cameraAngle = Math.PI / 6; // 30 degrees
         break;
       case 2: // Medium view
         this.mainDirectionalLight.castShadow = true;
@@ -393,7 +410,7 @@ export default class WorldmapScene extends HexagonScene {
       case 3: // Far view
         this.mainDirectionalLight.castShadow = false;
         this.cameraDistance = 40;
-        this.cameraAngle = (50 * Math.PI) / 180;
+        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
         break;
     }
 
@@ -442,6 +459,12 @@ export default class WorldmapScene extends HexagonScene {
     console.debug("[WorldMap] Removing army labels from scene");
     this.structureManager.removeLabelsFromScene();
     console.debug("[WorldMap] Removing structure labels from scene");
+
+    // Clean up wheel event listener
+    if (this.wheelHandler) {
+      window.removeEventListener("wheel", this.wheelHandler);
+      this.wheelHandler = null;
+    }
   }
 
   // used to track the position of the armies on the map
