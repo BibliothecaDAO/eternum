@@ -87,7 +87,7 @@ export async function workerProcess(
       reportProgress(
         account,
         "skipped_orders",
-        `Skipped creating market orders for account ${account.address.substring(0, 8)}...`
+        `Skipped creating market orders for account ${account.address.substring(0, 8)}...`,
       );
     }
 

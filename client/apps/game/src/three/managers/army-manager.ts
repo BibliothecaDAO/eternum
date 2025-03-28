@@ -389,6 +389,8 @@ export class ArmyManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
+      "hover:bg-brown/90",
+      "pointer-events-auto",
       army.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
@@ -396,34 +398,62 @@ export class ArmyManager {
       "flex",
       "items-center",
     );
+    // Prevent right click
+    labelDiv.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
     const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
     img.src = isDaydreamsAgent
       ? "/images/logos/daydreams.png"
       : `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
-    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
+    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
     labelDiv.appendChild(img);
 
-    // Only add text container if not in far view
-    if (this.currentCameraView !== CameraView.Far) {
-      const textContainer = document.createElement("div");
-      textContainer.classList.add("flex", "flex-col");
+    // Create text container with transition
+    const textContainer = document.createElement("div");
+    textContainer.classList.add(
+      "flex",
+      "flex-col",
+      "transition-all",
+      "duration-700",
+      "ease-in-out",
+      "overflow-hidden",
+      "whitespace-nowrap",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
+    );
 
-      const line1 = document.createElement("span");
-      line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
-      line1.style.color = isDaydreamsAgent ? army.color : "inherit";
-      const line2 = document.createElement("strong");
-      line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
+    const line1 = document.createElement("span");
+    line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
+    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
+    const line2 = document.createElement("strong");
+    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 
-      textContainer.appendChild(line1);
-      textContainer.appendChild(line2);
-      labelDiv.appendChild(textContainer);
-    } else {
-      // Remove margin from icon in compact mode
-      img.classList.remove("mr-2");
-    }
+    textContainer.appendChild(line1);
+    textContainer.appendChild(line2);
+    labelDiv.appendChild(textContainer);
 
-    this.armyModel.addLabel(army.entityId, labelDiv, position);
+    const label = new CSS2DObject(labelDiv);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    // Store original renderOrder
+    const originalRenderOrder = label.renderOrder;
+
+    // Set renderOrder to Infinity on hover
+    labelDiv.addEventListener("mouseenter", () => {
+      label.renderOrder = Infinity;
+    });
+
+    // Restore original renderOrder when mouse leaves
+    labelDiv.addEventListener("mouseleave", () => {
+      label.renderOrder = originalRenderOrder;
+    });
+
+    this.armyModel.addLabel(army.entityId, label);
   }
 
   removeLabelsFromScene() {
@@ -441,11 +471,10 @@ export class ArmyManager {
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) return;
     this.currentCameraView = view;
+
     // Update all existing labels to reflect the new view
     this.visibleArmies.forEach((army) => {
-      const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-      this.removeEntityIdLabel(army.entityId);
-      this.addEntityIdLabel(army, position);
+      this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
     });
   };
 

@@ -1,6 +1,5 @@
 import { Position } from "@/types/position";
 import { ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
-import * as THREE from "three";
 
 export enum SceneName {
   WorldMap = "map",
@@ -41,20 +40,6 @@ export interface ArmyData {
   color: string;
   category: TroopType;
   tier: TroopTier;
-}
-
-export interface MovingArmyData {
-  startPos: THREE.Vector3;
-  endPos: THREE.Vector3;
-  progress: number;
-  matrixIndex: number;
-  currentPathIndex: number;
-}
-
-export interface MovingLabelData {
-  startPos: THREE.Vector3;
-  endPos: THREE.Vector3;
-  progress: number;
 }
 
 export interface RenderChunkSize {

@@ -568,13 +568,8 @@ export class ArmyModel {
   }
 
   // Label Management Methods
-  public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3): void {
+  public addLabel(entityId: number, label: CSS2DObject): void {
     this.removeLabel(entityId);
-
-    const label = new CSS2DObject(labelElement);
-    label.position.copy(position);
-    label.position.y += 1.5;
-
     this.labels.set(entityId, { label, entityId });
     this.labelsGroup.add(label);
   }
@@ -583,7 +578,26 @@ export class ArmyModel {
     const labelData = this.labels.get(entityId);
     if (labelData) {
       this.labelsGroup.remove(labelData.label);
+      if (labelData.label.element && labelData.label.element.parentNode) {
+        labelData.label.element.parentNode.removeChild(labelData.label.element);
+      }
       this.labels.delete(entityId);
+    }
+  }
+
+  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
+    const labelData = this.labels.get(entityId);
+    if (labelData?.label.element) {
+      const textContainer = labelData.label.element.querySelector(".flex.flex-col");
+      if (textContainer) {
+        if (isCompact) {
+          textContainer.classList.add("max-w-0", "ml-0");
+          textContainer.classList.remove("max-w-[200px]", "ml-2");
+        } else {
+          textContainer.classList.remove("max-w-0", "ml-0");
+          textContainer.classList.add("max-w-[200px]", "ml-2");
+        }
+      }
     }
   }
 

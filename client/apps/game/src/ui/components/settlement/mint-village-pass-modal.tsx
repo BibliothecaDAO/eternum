@@ -214,5 +214,3 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     </ModalContainer>
   );
 };
-
-export default MintVillagePassModal;

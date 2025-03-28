@@ -35,22 +35,14 @@ export function updateStatusDisplay(accountsData: { account: any; realmCount: nu
   logUpdate(content);
 }
 
-export function logWorkerMessage(message: string, color: (text: string) => string) {
-  logUpdate.clear();
-
-  console.log(color(message));
-}
-
-export function createProgressBar(percent: number): string {
+function createProgressBar(percent: number): string {
   const width = 20;
   const completed = Math.floor(width * (percent / 100));
   const remaining = width - completed;
   return "[" + "=".repeat(completed) + " ".repeat(remaining) + "]";
 }
 
-export function generateStatusDisplay(
-  accountsData: { account: any; realmCount: number; startRealmId: number }[],
-): string {
+function generateStatusDisplay(accountsData: { account: any; realmCount: number; startRealmId: number }[]): string {
   const lines: string[] = [];
 
   lines.push("");
@@ -304,21 +296,30 @@ export function generateStatusDisplay(
     } else {
       // Count realms that have been leveled up
       let leveledUpRealms = 0;
-      accountsData.forEach(data => {
+      accountsData.forEach((data) => {
         const { account } = data;
         const status = workerStatus[account.address];
-        if (status && (status.stage === "creating_buildings" || status.stage === "creating_armies" || 
-                       status.stage === "moving_explorers" || status.stage === "completed" || 
-                       status.stage === "lords_completed" || status.stage === "skipped_buildings" ||
-                       status.stage === "skipped_armies" || status.stage === "skipped_movement" || 
-                       status.stage === "waiting_for_lords" || status.stage === "processing_lords" ||
-                       status.stage === "skipped_leveling_realms" || status.stage === "waiting")) {
+        if (
+          status &&
+          (status.stage === "creating_buildings" ||
+            status.stage === "creating_armies" ||
+            status.stage === "moving_explorers" ||
+            status.stage === "completed" ||
+            status.stage === "lords_completed" ||
+            status.stage === "skipped_buildings" ||
+            status.stage === "skipped_armies" ||
+            status.stage === "skipped_movement" ||
+            status.stage === "waiting_for_lords" ||
+            status.stage === "processing_lords" ||
+            status.stage === "skipped_leveling_realms" ||
+            status.stage === "waiting")
+        ) {
           leveledUpRealms += data.realmCount;
         } else if (status && status.stage === "leveling_up_realms" && status.completed) {
           leveledUpRealms += status.completed;
         }
       });
-      
+
       const levelUpPercent = Math.round((leveledUpRealms / totalRealms) * 100) || 0;
       lines.push(
         chalk.yellow(
@@ -340,20 +341,28 @@ export function generateStatusDisplay(
     } else {
       // Count realms that have buildings created
       let buildingRealms = 0;
-      accountsData.forEach(data => {
+      accountsData.forEach((data) => {
         const { account } = data;
         const status = workerStatus[account.address];
-        if (status && (status.stage === "creating_armies" || status.stage === "moving_explorers" || 
-                      status.stage === "completed" || status.stage === "lords_completed" || 
-                      status.stage === "skipped_armies" || status.stage === "skipped_movement" || 
-                      status.stage === "waiting_for_lords" || status.stage === "processing_lords" ||
-                      status.stage === "waiting" || status.stage === "skipped_buildings")) {
+        if (
+          status &&
+          (status.stage === "creating_armies" ||
+            status.stage === "moving_explorers" ||
+            status.stage === "completed" ||
+            status.stage === "lords_completed" ||
+            status.stage === "skipped_armies" ||
+            status.stage === "skipped_movement" ||
+            status.stage === "waiting_for_lords" ||
+            status.stage === "processing_lords" ||
+            status.stage === "waiting" ||
+            status.stage === "skipped_buildings")
+        ) {
           buildingRealms += data.realmCount;
         } else if (status && status.stage === "creating_buildings" && status.completed) {
           buildingRealms += status.completed;
         }
       });
-      
+
       const buildingPercent = Math.round((buildingRealms / totalRealms) * 100) || 0;
       lines.push(
         chalk.yellow(
@@ -387,11 +396,11 @@ export function generateStatusDisplay(
   if (CONFIG.mintLords) {
     // Count all realms that have completed the Lords minting process
     // or are at a later stage
-    
+
     // For Lords, we need to specifically count realms that have completed the Lords process
     const lordsTotal = totalRealms; // Total realms that need Lords
     const lordsPercent = Math.round((totalLordsCompleted / lordsTotal) * 100) || 0;
-    
+
     lines.push(
       chalk.magenta(
         `Lords Minting: ${createProgressBar(lordsPercent)} ${lordsPercent}% (${totalLordsCompleted}/${lordsTotal} realms)`,

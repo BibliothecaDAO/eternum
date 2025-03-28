@@ -1,4 +1,4 @@
-import { multiplyByPrecision, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 import { parentPort } from "worker_threads";
 import { CONFIG } from "./config";
@@ -221,7 +221,7 @@ export async function executeMoveExplorers(
  * - Layer: starting at 2, increment whenever all sides and points have been settled
  * - Point: starts at 0, up to (layer - 2)
  */
-export function calculateRealmSettlements(
+function calculateRealmSettlements(
   startRealmId: number,
   count: number,
 ): Array<{ side: number; layer: number; point: number }> {
@@ -291,7 +291,7 @@ export async function executeCreateMarketOrders(
         realmEntityId,
         ResourcesIds.Stone, // Resource type 1 (what realm gives)
         ResourcesIds.Lords, // Lords (what realm receives)
-        (1), // Max amount
+        1, // Max amount
         expiresAt,
       );
 
@@ -301,7 +301,7 @@ export async function executeCreateMarketOrders(
         realmEntityId,
         ResourcesIds.Silver, // Resource type 2 (what realm gives)
         ResourcesIds.Lords, // Lords (what realm receives)
-        (1), // Max amount
+        1, // Max amount
         expiresAt,
       );
 
@@ -311,7 +311,7 @@ export async function executeCreateMarketOrders(
         realmEntityId,
         ResourcesIds.Wood, // Resource type 3 (what realm gives)
         ResourcesIds.Lords, // Lords (what realm receives)
-        (1), // Max amount
+        1, // Max amount
         expiresAt,
       );
 

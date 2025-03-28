@@ -33,7 +33,7 @@ export const LocalEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.troop.stamina,
       staminaTravelStaminaCost: 0,
       staminaExploreStaminaCost: 0,
-      staminaBonusValue: 0
+      staminaBonusValue: 0,
     },
   },
   exploration: {

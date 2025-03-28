@@ -14,7 +14,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
-import MintVillagePassModal from "../components/settlement/mint-village-pass-modal";
+import { MintVillagePassModal } from "../components/settlement/mint-village-pass-modal";
 
 interface OnboardingOverlayProps {
   controller?: boolean;

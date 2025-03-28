@@ -44,10 +44,10 @@ export const RawResourcesPanel = ({
       const balance = resourceBalances[input.resource] || 0;
       const count = Math.floor(balance / input.amount);
       if (count < minCycle) {
-        minCycle = count
+        minCycle = count;
       }
     });
-    
+
     return Math.max(1, minCycle);
   };
 

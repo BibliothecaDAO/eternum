@@ -1444,6 +1444,33 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Transfer resources from one troop to another adjacent troop
+   *
+   * @param props - Properties for transferring resources between troops
+   * @param props.from_troop_id - ID of the troop sending resources
+   * @param props.to_troop_id - ID of the troop receiving resources
+   * @param props.resources - Array of resource type and amount tuples to transfer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async troop_troop_adjacent_transfer(props: SystemProps.TroopTroopAdjacentTransferProps) {
+    const { from_troop_id, to_troop_id, resources, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
+      entrypoint: "troop_troop_adjacent_transfer",
+      calldata: [
+        from_troop_id,
+        to_troop_id,
+        resources.length,
+        ...resources.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
    * Transfer resources from a troop to an adjacent structure
    *
    * @param props - Properties for transferring resources from troop to structure
@@ -1780,9 +1807,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_starting_resources_config",
       calldata: [
-        realmStartingResources.length, 
+        realmStartingResources.length,
         ...realmStartingResources.flatMap(({ resource, amount }) => [resource, amount]),
-        villageStartingResources.length, 
+        villageStartingResources.length,
         ...villageStartingResources.flatMap(({ resource, amount }) => [resource, amount]),
       ],
     });

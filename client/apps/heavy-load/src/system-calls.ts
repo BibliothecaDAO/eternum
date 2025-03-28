@@ -286,7 +286,6 @@ export async function createMarketOrders(
       ],
       { version: 3 },
     );
-
   } catch (error) {
     const errorMsg = `Failed to create market order: ${error}`;
     summary.errors.push(errorMsg);
