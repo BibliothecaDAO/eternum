@@ -23,7 +23,6 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
-  Biome,
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -745,7 +744,7 @@ export default class WorldmapScene extends HexagonScene {
 
           const isStructure = this.structureManager.structureHexCoords.get(globalCol)?.has(globalRow) || false;
 
-          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || true;
+          const isExplored = this.exploredTiles.get(globalCol)?.get(globalRow) || false;
           if (isStructure) {
             dummyObject.scale.set(0, 0, 0);
           } else {
@@ -781,8 +780,8 @@ export default class WorldmapScene extends HexagonScene {
           dummyObject.updateMatrix();
 
           if (isExplored) {
-            //const biome = isExplored as BiomeType;
-            const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+            const biome = isExplored as BiomeType;
+            //const biome = Biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
             biomeHexes[biome].push(dummyObject.matrix.clone());
           } else {
             dummyObject.position.y = 0.01;
