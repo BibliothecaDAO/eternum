@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Message, User, Room } from "../types";
-import type ChatClient from "../chat";
+import type ChatClient from "../client/client";
+import { Message, Room, User } from "../types";
 
 // Hook for handling direct message events
 export const useDirectMessageEvents = (
@@ -8,11 +8,9 @@ export const useDirectMessageEvents = (
   userId: string,
   directMessageRecipient: string,
   addMessage: (message: Message) => void,
-  setUnreadMessages: React.Dispatch<
-    React.SetStateAction<Record<string, number>>
-  >,
+  setUnreadMessages: React.Dispatch<React.SetStateAction<Record<string, number>>>,
   setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
     console.log("Setting up directMessage event handlers");
@@ -21,17 +19,9 @@ export const useDirectMessageEvents = (
       return;
     }
 
-    const handleDirectMessage = ({
-      senderId,
-      senderUsername,
-      recipientId,
-      message,
-      timestamp,
-    }: any) => {
+    const handleDirectMessage = ({ senderId, senderUsername, recipientId, message, timestamp }: any) => {
       console.log(
-        `Received direct message from ${senderId} (${senderUsername}) to ${
-          recipientId || userId
-        }: ${message}`
+        `Received direct message from ${senderId} (${senderUsername}) to ${recipientId || userId}: ${message}`,
       );
 
       const actualRecipientId = recipientId || userId;
@@ -46,11 +36,7 @@ export const useDirectMessageEvents = (
         type: "direct",
       });
 
-      if (
-        senderId !== userId &&
-        actualRecipientId === userId &&
-        directMessageRecipient !== senderId
-      ) {
+      if (senderId !== userId && actualRecipientId === userId && directMessageRecipient !== senderId) {
         setUnreadMessages((prev) => ({
           ...prev,
           [senderId]: (prev[senderId] || 0) + 1,
@@ -58,17 +44,11 @@ export const useDirectMessageEvents = (
       }
     };
 
-    const handleDirectMessageHistory = ({
-      otherUserId,
-      messages: historyMessages,
-      requestId,
-    }: any) => {
+    const handleDirectMessageHistory = ({ otherUserId, messages: historyMessages, requestId }: any) => {
       console.log(
-        `Received direct message history with ${otherUserId} (requestId: ${
-          requestId || "none"
-        }):`,
+        `Received direct message history with ${otherUserId} (requestId: ${requestId || "none"}):`,
         historyMessages?.length || 0,
-        "messages"
+        "messages",
       );
 
       if (historyMessages && Array.isArray(historyMessages)) {
@@ -97,10 +77,8 @@ export const useDirectMessageEvents = (
               !(
                 msg.type === "direct" &&
                 ((msg.senderId === userId && msg.recipientId === otherUserId) ||
-                  (msg.senderId === otherUserId &&
-                    (msg.recipientId === userId ||
-                      msg.recipientId === undefined)))
-              )
+                  (msg.senderId === otherUserId && (msg.recipientId === userId || msg.recipientId === undefined)))
+              ),
           );
 
           return [...filteredMessages, ...formattedMessages];
@@ -131,21 +109,10 @@ export const useDirectMessageEvents = (
       console.log("Cleaning up directMessage event handlers");
       if (chatClient && chatClient.socket) {
         chatClient.socket.off("directMessage", handleDirectMessage);
-        chatClient.socket.off(
-          "directMessageHistory",
-          handleDirectMessageHistory
-        );
+        chatClient.socket.off("directMessageHistory", handleDirectMessageHistory);
       }
     };
-  }, [
-    chatClient,
-    userId,
-    directMessageRecipient,
-    addMessage,
-    setUnreadMessages,
-    setIsLoadingMessages,
-    setMessages,
-  ]);
+  }, [chatClient, userId, directMessageRecipient, addMessage, setUnreadMessages, setIsLoadingMessages, setMessages]);
 };
 
 // Hook for handling room message events
@@ -153,7 +120,7 @@ export const useRoomMessageEvents = (
   chatClient: ChatClient | null,
   addMessage: (message: Message) => void,
   setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
     console.log("Setting up roomMessage event handlers");
@@ -162,16 +129,8 @@ export const useRoomMessageEvents = (
       return;
     }
 
-    const handleRoomMessage = ({
-      senderId,
-      senderUsername,
-      roomId,
-      message,
-      timestamp,
-    }: any) => {
-      console.log(
-        `Received room message from ${senderId} (${senderUsername}) in room ${roomId}: ${message}`
-      );
+    const handleRoomMessage = ({ senderId, senderUsername, roomId, message, timestamp }: any) => {
+      console.log(`Received room message from ${senderId} (${senderUsername}) in room ${roomId}: ${message}`);
 
       addMessage({
         id: Date.now().toString(),
@@ -199,9 +158,7 @@ export const useRoomMessageEvents = (
         }));
 
         setMessages((prev: Message[]) => {
-          const filteredMessages = prev.filter(
-            (msg: Message) => !(msg.type === "room" && msg.roomId === roomId)
-          );
+          const filteredMessages = prev.filter((msg: Message) => !(msg.type === "room" && msg.roomId === roomId));
 
           return [...filteredMessages, ...formattedMessages];
         });
@@ -234,7 +191,7 @@ export const useRoomMessageEvents = (
 export const useGlobalMessageEvents = (
   chatClient: ChatClient | null,
   addMessage: (message: Message) => void,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
 ) => {
   useEffect(() => {
     console.log("Setting up globalMessage event handlers");
@@ -243,12 +200,7 @@ export const useGlobalMessageEvents = (
       return;
     }
 
-    const handleGlobalMessage = ({
-      senderId,
-      senderUsername,
-      message,
-      timestamp,
-    }: any) => {
+    const handleGlobalMessage = ({ senderId, senderUsername, message, timestamp }: any) => {
       addMessage({
         id: Date.now().toString(),
         senderId,
@@ -298,7 +250,7 @@ export const useUserEvents = (
   setOnlineUsers: React.Dispatch<React.SetStateAction<User[]>>,
   setOfflineUsers: React.Dispatch<React.SetStateAction<User[]>>,
   setIsLoadingUsers: React.Dispatch<React.SetStateAction<boolean>>,
-  onlineUsers: User[]
+  onlineUsers: User[],
 ) => {
   useEffect(() => {
     console.log("Setting up user event handlers");
@@ -346,16 +298,8 @@ export const useUserEvents = (
       }
     };
 
-    const handleUserLists = ({
-      onlineUsers,
-      offlineUsers,
-    }: {
-      onlineUsers: User[];
-      offlineUsers: User[];
-    }) => {
-      console.log(
-        `Received user lists: ${onlineUsers.length} online, ${offlineUsers.length} offline`
-      );
+    const handleUserLists = ({ onlineUsers, offlineUsers }: { onlineUsers: User[]; offlineUsers: User[] }) => {
+      console.log(`Received user lists: ${onlineUsers.length} online, ${offlineUsers.length} offline`);
       setOnlineUsers(onlineUsers);
       setOfflineUsers(offlineUsers);
       setIsLoadingUsers(false);
@@ -384,20 +328,14 @@ export const useUserEvents = (
         chatClient.socket.off("userLists", handleUserLists);
       }
     };
-  }, [
-    chatClient,
-    setOnlineUsers,
-    setOfflineUsers,
-    setIsLoadingUsers,
-    onlineUsers,
-  ]);
+  }, [chatClient, setOnlineUsers, setOfflineUsers, setIsLoadingUsers, onlineUsers]);
 };
 
 // Hook for handling room-related events
 export const useRoomEvents = (
   chatClient: ChatClient | null,
   setAvailableRooms: React.Dispatch<React.SetStateAction<Room[]>>,
-  setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>
+  setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   useEffect(() => {
     console.log("Setting up room event handlers");
@@ -481,7 +419,7 @@ export const useInitialDataEvents = (
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   setIsLoadingRooms: React.Dispatch<React.SetStateAction<boolean>>,
   setIsLoadingUsers: React.Dispatch<React.SetStateAction<boolean>>,
-  setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>
+  setIsLoadingMessages: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   useEffect(() => {
     console.log("Setting up initialData event handlers");
