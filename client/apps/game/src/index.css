@@ -322,3 +322,8 @@ canvas {
 button {
   font-family: "Cinzel", serif;
 }
+
+body {
+  cursor: url('/images/icons/cursor.png') 16 16, auto;
+}
+

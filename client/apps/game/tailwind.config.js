@@ -115,8 +115,8 @@ export default {
         xxs: ".625rem",
       },
       cursor: {
-        fancy: "url(/images/icons/cursor.png), pointer",
-        pointer: "url(/images/icons/cursor.png), pointer",
+        fancy: "url(/glove-cursor.png), pointer",
+        pointer: "url(/glove-cursor.png), pointer",
         grab: "url(public/images/icons/grab.png), grab",
         crosshair: "url(public/images/icons/cursor-cross.png), crosshair",
         wait: "url(public/images/logos/eternum-animated.png), wait",
