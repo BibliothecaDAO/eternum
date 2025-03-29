@@ -6,6 +6,7 @@ import MessageGroupComponent from "./components/chat/MessageGroup";
 import MessageInput from "./components/chat/MessageInput";
 
 import Button from "@/ui/elements/button";
+import CircleButton from "@/ui/elements/circle-button";
 import {
   useConnectionEvents,
   useDirectMessageEvents,
@@ -457,9 +458,10 @@ function ChatModule() {
 
   if (isMinimized) {
     return (
-      <button
+      <CircleButton
         onClick={() => setIsMinimized(false)}
-        className="fixed bottom-4 left-4 bg-brown border-2 border-gold/20 rounded-full p-2 text-gold/70 hover:text-gold transition-colors shadow-lg pointer-events-auto"
+        size="lg"
+        className="fixed bottom-2 left-2 pointer-events-auto"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -475,7 +477,7 @@ function ChatModule() {
             d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
           />
         </svg>
-      </button>
+      </CircleButton>
     );
   }
 

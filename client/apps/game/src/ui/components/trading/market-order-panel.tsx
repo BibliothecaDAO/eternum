@@ -141,14 +141,14 @@ const MarketOrders = memo(
     }, [offers]);
 
     return (
-      <div className="h-full flex flex-col gap-4 ">
+      <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
           className={`text-2xl flex panel-wood  font-bold  justify-between py-4 px-8 border-gold/10 border rounded-xl ${
             !isBuy ? "bg-green/20 text-green" : "bg-red/20 text-red"
           }`}
         >
-          <div className="self-center flex gap-4">
+          <div className="self-center flex">
             <div className="flex flex-col">
               <div className="uppercase text-sm text-opacity-80">{findResourceById(resourceId)?.trait || ""}</div>
               <div className="flex gap-3">

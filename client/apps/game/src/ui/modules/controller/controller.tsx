@@ -55,7 +55,7 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   return account ? (
     <>
       <Button onClick={handleConnected}>
-        <CartridgeSmall className={`w-6 md:w-6 mr-1 md:mr-1 !fill-currentself-center ${iconClassName}`} />
+        <CartridgeSmall className={`w-5 md:w-5 mr-1 md:mr-1 !fill-current self-center ${iconClassName}`} />
         <div className="align-center">{userName}</div>
       </Button>
       <CircleButton image={BuildingThumbs.leave} size="md" onClick={handleDisconnect}></CircleButton>

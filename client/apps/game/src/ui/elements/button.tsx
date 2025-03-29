@@ -19,12 +19,12 @@ type ButtonProps = {
     | "opaque";
   isLoading?: boolean;
   withoutSound?: boolean;
-  size?: "xs" | "md";
+  size?: "xs" | "md" | "lg";
 } & React.ComponentPropsWithRef<"button">;
 
 const STYLES = {
   baseStyle:
-    "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase button-wood",
+    "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 font-medium text-gold uppercase button-wood",
   primary:
     "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
   primarySelected:
@@ -45,6 +45,7 @@ const STYLES = {
 const SIZES = {
   xs: "text-xxs h-4 ",
   md: "",
+  lg: "text-xl px-8 py-4",
 };
 
 const Button: React.FC<ButtonProps> = ({

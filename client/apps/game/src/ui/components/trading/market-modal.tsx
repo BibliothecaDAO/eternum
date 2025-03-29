@@ -192,7 +192,7 @@ export const MarketModal = () => {
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
           <MarketHeader />
           <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
-            <Tabs.List className=" flex w-full panel-wood-bottom">
+            <Tabs.List className=" flex w-full">
               {tabs.map((tab, index) => (
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
