@@ -130,7 +130,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center rounded-b-lg bg-brown border-gold/30 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center panel-wood bg-brown border-gold/30 relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -181,9 +181,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30"
+          className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30 panel-wood"
         />
-        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30">
+        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30 panel-wood">
           <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
           </div>

@@ -81,7 +81,7 @@ const CircleButton = ({
         onMouseLeave={() => setTooltip(null)}
         onClick={handleClick}
         className={clsx(
-          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40",
+          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
           active ? "bg-gold !border-gold sepia-0" : "bg-brown/90 border-brown/30",
           className,
           sizes[size],

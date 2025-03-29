@@ -74,7 +74,7 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
 
   return (
     <motion.div
-      className="flex justify-center text-gold "
+      className="flex justify-center  "
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, width }}
       exit={{ opacity: 0 }}
@@ -93,7 +93,10 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
           <div
             onClick={handleClick}
             ref={nodeRef}
-            className={clsx("fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
+            className={clsx(
+              "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood",
+              className,
+            )}
             style={{ width: `${width}px` }}
           >
             {children}
@@ -117,7 +120,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2 rounded-t bg-brown/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
+      " items-center relative cursor-move z-30 p-2  bg-brown/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
@@ -182,7 +185,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 flex flex-col bg-brown/90 border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
+        `relative z-10 flex flex-col bg-brown border-gradient border overflow-auto bg-hex-bg bg-repeat`,
       )}
       style={{
         width: width ? width : "",
@@ -191,7 +194,7 @@ SecondaryPopup.Body = ({
       }}
     >
       {withWrapper ? (
-        <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto ">{children}</div>
+        <div className="relative z-10 border flex flex-col border-gray-gold overflow-auto ">{children}</div>
       ) : (
         children
       )}

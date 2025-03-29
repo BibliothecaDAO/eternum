@@ -15,9 +15,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center bg-brown/70 rounded-lg to-orange-900  p-4 animate-gradient-bg bg-[length:400%_400%] z-1 pointer-events-auto ">
+    <div className="w-full flex flex-col items-center justify-center bg-brown rounded-lg to-orange-900  p-4 animate-gradient-bg bg-[length:400%_400%] z-1 pointer-events-auto panel-wood ">
       <div className="p-6 md:p-8 w-full max-w-md mx-auto">
-        <h1 className="text-2xl md:text-3xl mb-6 text-center">Enter</h1>
+        <h1 className="text-2xl md:text-3xl mb-6 text-center">Enter Chat</h1>
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
           <input
             type="text"
