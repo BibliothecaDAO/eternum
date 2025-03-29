@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: " px-3 py-1 !outline-none border-y-2 border-transparent rounded  transition-color duration-200 hover:bg-gold   space-x-1 hover:text-brown font-bold ",
+      base: " px-3 py-1 !outline-none border-y-2 border-transparent rounded  transition-color duration-200 hover:bg-gold   space-x-1 hover:text-brown font-bold panel-wood",
       active: "bg-gold text-brown",
       inactive: "text-gold",
     },

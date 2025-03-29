@@ -49,17 +49,8 @@ export const MarketHeader = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
-    <div className="grid grid-cols-4 p-3 flex-wrap justify-between items-start gap-6 mb-8 rounded-xl shadow-lg border border-gold/20 relative">
-      <div className="self-center flex-grow max-w-2xl mx-auto">
-        <h3 className="text-5xl font-extrabold mb-1">The Lords Market</h3>
-        <div className="flex flex-row">
-          <p className="text-xs">
-            Engage in direct player-to-player trades through the orderbook, leverage the AMM for bank liquidity trades,
-            or boost your earnings by providing liquidity to the bank.
-          </p>
-        </div>
-      </div>
-      <div className="absolute top-4 left-4">
+    <div className="grid grid-cols-4 p-3 flex-wrap justify-between items-start gap-6 rounded-xl shadow-lg panel-wood-bottom relative">
+      <div className="absolute top-4 right-4">
         <CircleButton
           onClick={() => {
             toggleModal(null);
@@ -70,7 +61,7 @@ export const MarketHeader = () => {
           className="hover:bg-gold/20 transition-colors duration-200"
         />
       </div>
-      <div className="col-span-3 bg-brown p-3 rounded-xl text-sm shadow-lg border border-gold/30 h-full flex flex-col">
+      <div className="col-span-3  p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
         <BankInformationHeader />
         {BANKS.map((bank) => (
           <BankInformation key={bank.id} bank={bank} />
