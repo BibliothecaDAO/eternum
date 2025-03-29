@@ -14,6 +14,10 @@ import { WaveformBackground } from "@/components/WaveformBackground";
 import { TokenomicsChart } from "@/components/TokenomicsChart";
 import { stats } from "./data/stats";
 import { Badge } from "@/components/ui/badge";
+import { games } from "@/data/games";
+import { getProposals, getProposalsQueryOptions } from "./lib/getProposals";
+import { useQuery } from "@tanstack/react-query";
+import { Proposal } from "./gql/graphql";
 
 interface Game {
   id: number;
@@ -21,6 +25,7 @@ interface Game {
   image: string;
   backgroundImage: string;
   backgroundImages?: string[];
+  genre?: string[];
   description: string;
   status: "mainnet" | "testnet" | "development";
   isLive: boolean;
@@ -28,139 +33,14 @@ interface Game {
   whitepaper?: string;
   players?: number;
   tvl?: number;
+  links?: {
+    homepage?: string;
+    discord?: string;
+    twitter?: string;
+    telegram?: string;
+    github?: string;
+  };
 }
-
-const games: Game[] = [
-  {
-    id: 1,
-    title: "Stage 1",
-    image: "/stage-1.png",
-    backgroundImage: "/stage-1.png",
-    backgroundImages: ["/stage-1.png", "/stage-2.png", "/stage-3.png"],
-    description:
-      "Enter a world of endless possibilities. Battle through challenging levels and discover hidden secrets in this action-packed adventure.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 2,
-    title: "Stage 2",
-    image: "/stage-2.png",
-    backgroundImage: "/stage-2.png",
-    backgroundImages: ["/stage-2.png", "/stage-3.png", "/stage-1.png"],
-    description:
-      "Continue your journey through mystical realms. Face stronger opponents and master new abilities in this epic sequel.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 3,
-    title: "Stage 3",
-    image: "/stage-3.png",
-    backgroundImage: "/stage-3.png",
-    backgroundImages: ["/stage-3.png", "/stage-1.png", "/stage-2.png"],
-    description:
-      "The final chapter awaits. Prepare for the ultimate challenge as you face the most formidable foes yet.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 4,
-    title: "Neon Drift",
-    image: "/stage-1.png",
-    backgroundImage: "/stage-1.png",
-    description:
-      "Race through neon-lit streets in this high-octane cyberpunk racing experience. Master the art of drifting and become the ultimate street legend.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 5,
-    title: "Crystal Caverns",
-    image: "/stage-2.png",
-    backgroundImage: "/stage-2.png",
-    description:
-      "Delve deep into mysterious caves filled with glowing crystals and ancient magic. Solve intricate puzzles and uncover the secrets of a lost civilization.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 6,
-    title: "Sky Warriors",
-    image: "/stage-3.png",
-    backgroundImage: "/stage-3.png",
-    description:
-      "Take to the skies in epic aerial combat. Command your fleet of advanced aircraft and defend your kingdom from airborne threats.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 7,
-    title: "Frost Legion",
-    image: "/stage-1.png",
-    backgroundImage: "/stage-1.png",
-    description:
-      "Survive in a world frozen by eternal winter. Build your settlement, gather resources, and lead your people through the harshest conditions.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 8,
-    title: "Jungle Quest",
-    image: "/stage-2.png",
-    backgroundImage: "/stage-2.png",
-    description:
-      "Embark on a thrilling expedition through dense rainforests. Discover exotic wildlife, ancient temples, and face the challenges of the wilderness.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-  {
-    id: 9,
-    title: "Quantum Break",
-    image: "/stage-3.png",
-    backgroundImage: "/stage-3.png",
-    description:
-      "Manipulate time and space in this mind-bending sci-fi adventure. Use your quantum powers to prevent a catastrophic collapse of reality.",
-    status: "mainnet",
-    isLive: true,
-    studio: "Realm Studios",
-    whitepaper: "https://realms.world/whitepaper.pdf",
-    players: 15420,
-    tvl: 1234567,
-  },
-];
 
 function useCountAnimation(end: number, duration: number = 2) {
   const [count, setCount] = useState(0);
@@ -369,7 +249,7 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
 
 function TopBar({ onTitleClick }: { onTitleClick: () => void }) {
   const [time, setTime] = useState(new Date());
-  const [tokenPrice, _setTokenPrice] = useState("$0.42");
+  const [tokenPrice] = useState("$0.42");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -658,6 +538,32 @@ function TokenomicsSection() {
 }
 
 function TreasurySection() {
+
+  const { data: proposalsQuery } = useQuery(
+    getProposalsQueryOptions({
+      limit: 5,
+      skip: 0,
+      current: 1,
+      searchQuery: "",
+    }),
+  );
+
+  const isActive = (proposal: Proposal) => proposal.max_end * 1000 > Date.now();
+
+  const getProposalStatus = (proposal: Proposal) => {
+
+    if (
+      (proposal.scores_total ?? 0) >= 1500 &&
+      Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)
+    ) {
+      return   "Passed";
+      
+    } else if ((proposal.scores_total ?? 0) < 1500) {
+      return "Quorum not met";
+    } else {
+      return "Failed"
+    }
+  };
   return (
     <section className="min-h-screen flex items-center container mx-auto px-4 py-32">
       <motion.div
@@ -781,35 +687,19 @@ function TreasurySection() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  {
-                    title: "Increase Staking Rewards",
-                    status: "Active",
-                    votes: "65%",
-                  },
-                  {
-                    title: "New Game Integration",
-                    status: "Passed",
-                    votes: "82%",
-                  },
-                  {
-                    title: "Treasury Reallocation",
-                    status: "Failed",
-                    votes: "45%",
-                  },
-                ].map((proposal) => (
+                {proposalsQuery?.proposals?.map((proposal) => (
                   <div
-                    key={proposal.title}
+                    key={proposal?.metadata?.title}
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-medium">{proposal.title}</div>
+                      <div className="font-medium">{proposal?.metadata?.title}</div>
                       <div className="text-sm text-muted-foreground">
-                        {proposal.status}
+                        {proposal && isActive(proposal) ? "Active" : getProposalStatus(proposal)}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{proposal.votes}</div>
+                      <div className="font-medium">{proposal?.scores_total}</div>
                       <div className="text-sm text-muted-foreground">Votes</div>
                     </div>
                   </div>
@@ -935,7 +825,7 @@ function IntroSection() {
         initial="hidden"
         animate="show"
       >
-        {stats.map((stat, _index) => (
+        {stats.map((stat) => (
           <motion.div
             key={stat.id}
             variants={{
