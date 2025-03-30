@@ -1,40 +1,28 @@
 import { ExplorationTable } from "@/ui/components/hints/exploration-table";
 import { Headline } from "@/ui/elements/headline";
-import { tableOfContents } from "./utils";
 
 export const TheMap = () => {
-  const chapters = [
-    {
-      title: "Exploration",
-      content: (
-        <>
-          <p>
+  return (
+    <div className="space-y-8">
+      <Headline>The Map</Headline>
+
+      <section className="space-y-4">
+        <h4>Exploration</h4>
+        <div className="space-y-4 text-gray-200">
+          <p className="leading-relaxed">
             The world map starts unexplored, except for Realms. Exploring new tiles with your armies costs food and
             reveals hidden lands, potentially yielding random resources or uncovering valuable fragment mines.
           </p>
-          <ExplorationTable />
-        </>
-      ),
-    },
-    {
-      title: "Biomes",
-      content: "",
-    },
-  ];
-
-  const chapterTitles = chapters.map((chapter) => chapter.title);
-
-  return (
-    <>
-      <Headline>The Map</Headline>
-      {tableOfContents(chapterTitles)}
-
-      {chapters.map((chapter) => (
-        <div key={chapter.title}>
-          <h2 id={chapter.title}>{chapter.title}</h2>
-          {chapter.content}
         </div>
-      ))}
-    </>
+        <ExplorationTable />
+      </section>
+
+      <section className="space-y-4">
+        <h4>Biomes</h4>
+        <div className="space-y-4 text-gray-200">
+          <p className="leading-relaxed">{/* Content for biomes will be added here */}</p>
+        </div>
+      </section>
+    </div>
   );
 };
