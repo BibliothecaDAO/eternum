@@ -171,7 +171,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   });
 
   return (
-    <div className="bg-brown-900/50 border border-gold/20 rounded-lg p-4">
+    <div className="rounded-lg p-4">
       {isExplorer && !army && freeDirections.length === 0 && (
         <div className="text-xs text-red-500 mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-md flex items-center">
           <span className="mr-1">⚠️</span> No space available to create an army. Clear adjacent tiles to create an army.
@@ -186,12 +186,12 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
 
       {(!army || army.troops.count === 0n) && (
         <div className="mb-6">
-          <h4 className="text-gold/80 text-xs mb-2 font-semibold">SELECT TIER:</h4>
+          <h6 className="text-center mb-2">SELECT TIER</h6>
           <div className="flex justify-center gap-2 mb-2">
             {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
               <Button
                 key={tier}
-                variant={selectedTier === tier ? "primarySelected" : "primary"}
+                variant={selectedTier === tier ? "gold" : "primary"}
                 onClick={() => handleTierChange(tier)}
                 className={clsx(
                   "px-3 py-1",
@@ -206,9 +206,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
       )}
 
       <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="text-gold/80 text-xs font-semibold">SELECT TROOP TYPE:</h4>
-        </div>
+        <h6 className="text-center mb-2">SELECT TROOP TYPE</h6>
 
         <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
           {troops.map((troop) => {

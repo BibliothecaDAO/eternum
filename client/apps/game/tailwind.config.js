@@ -108,15 +108,15 @@ export default {
       },
       backgroundImage: {
         map: "url(/images/map.svg)",
-        // "hex-bg": "url(/hex-bg.png)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
       },
       fontSize: {
-        xxs: ".625rem",
+        xs: ".975rem",
+        xxs: ".825rem",
       },
       cursor: {
-        fancy: "url(/glove-cursor.png), pointer",
-        pointer: "url(/glove-cursor.png), pointer",
+        fancy: "url(/images/icons/cursor.png), pointer",
+        pointer: "url(/images/icons/cursor.png), pointer",
         grab: "url(public/images/icons/grab.png), grab",
         crosshair: "url(public/images/icons/cursor-cross.png), crosshair",
         wait: "url(public/images/logos/eternum-animated.png), wait",

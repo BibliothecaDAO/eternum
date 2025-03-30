@@ -11,27 +11,27 @@ import type { ReactNode } from "react";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: " px-3 py-1 !outline-none border-y-2 border-transparent rounded  transition-color duration-200 hover:bg-gold   space-x-1 hover:text-brown font-bold",
+      base: "px-3 py-1 !outline-none rounded transition-colors duration-200 hover:bg-gold space-x-1 hover:text-brown font-bold",
       active: "bg-gold text-brown",
       inactive: "text-gold",
     },
-    tabList: "flex w-full justify-center  p-2 ",
+    tabList: "flex w-full justify-center p-2 panel-wood border-2 border-yellow-700 rounded-lg",
   },
   primary: {
     tab: {
-      base: "relative mx-1 rounded-t-xl text-gold border-t transition-all duration-200 border-transparent !outline-none -mb-[1px] text-xs py-[12px] px-4",
-      active: "",
-      inactive: "",
+      base: "relative mx-1 rounded-t-xl text-gold transition-all duration-200 !outline-none text-sm py-2 px-4",
+      active: "bg-yellow-900/20 text-yellow-100",
+      inactive: "hover:bg-yellow-900/10",
     },
-    tabList: "flex w-full justify-center px-2",
+    tabList: "flex w-full justify-center p-2 panel-wood border-2 border-yellow-700 rounded-lg",
   },
   small: {
     tab: {
-      base: "relative flex w-full items-center justify-center px-2 py-2 tracking-widest hover:border-yellow-700 transition-all duration-450  focus-visible:ring-yellow-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-900 hover:text-yellow-100 hover:bg-cta-100 hover:bg-red-700 shadow-lg border-b-2 border-l  text-yellow-100 border-transparent paper",
-      active: "bg-gradient-to-r from-red-600 to-red-900 text-yellow-100 border-yellow-700",
-      inactive: "bg-transparent text-gray-200",
+      base: "relative flex w-full items-center justify-center px-2 py-2 tracking-widest transition-all duration-200 focus-visible:ring-yellow-700 text-yellow-100",
+      active: "bg-yellow-900/20 text-yellow-100",
+      inactive: "hover:bg-yellow-900/10 text-gray-200",
     },
-    tabList: "flex p-1 space-x-2 rounded-lg",
+    tabList: "flex p-1 space-x-2 panel-wood border-2 border-yellow-700 rounded-lg",
   },
 };
 

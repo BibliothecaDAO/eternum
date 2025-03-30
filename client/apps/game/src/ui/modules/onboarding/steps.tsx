@@ -235,10 +235,9 @@ export const StepOne = () => {
       {hasAcceptedToS ? (
         <Button
           size="lg"
+          variant="gold"
           disabled={!hasRealmsOrVillages}
-          className={`!bg-gold border-none w-full ${
-            !hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""
-          }`}
+          className={` w-full ${!hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>

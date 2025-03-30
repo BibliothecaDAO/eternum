@@ -18,7 +18,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-
+import { ArrowUpRightIcon } from "lucide-react";
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
@@ -72,41 +72,50 @@ export const Castle = () => {
   return (
     structure && (
       <div className="castle-selector w-full text-sm">
-        <div className="p-3">
-          <div className="flex justify-between items-start gap-4">
-            <div>
-              <div className="flex items-center gap-4">
-                <div className="text-2xl">{RealmLevels[realmInfo.level]}</div>
+        <div className="p-2 space-y-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 justify-between w-full">
+                <h5 className="text-2xl">{RealmLevels[realmInfo.level]}</h5>
                 {getNextRealmLevel && isOwner && (
-                  <Button variant="outline" disabled={!checkBalance} isLoading={isLoading} onClick={levelUpRealm}>
+                  <Button
+                    variant={checkBalance ? "gold" : "outline"}
+                    disabled={!checkBalance}
+                    isLoading={isLoading}
+                    onClick={levelUpRealm}
+                  >
                     {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
+
+                    <ArrowUpRightIcon className="w-4 h-4 ml-4" />
                   </Button>
                 )}
               </div>
-              {getNextRealmLevel && isOwner && (
-                <div className="mt-4">
-                  <p className="text-sm mb-4">
-                    Next Level: {RealmLevels[realmInfo.level + 1]},{" "}
+            </div>
+
+            {getNextRealmLevel && isOwner && (
+              <div className="bg-gold/5 border border-gold/10 rounded px-4 py-4 space-y-3">
+                <div>
+                  <h6 className="">Upgrade Requirements for {RealmLevels[realmInfo.level + 1]}</h6>
+                  <p className="text-gold/90 mb-3">
                     {LEVEL_DESCRIPTIONS[(realmInfo.level + 1) as keyof typeof LEVEL_DESCRIPTIONS]}
                   </p>
-                  <div className="mb-2 font-semibold uppercase">Upgrade Cost to {RealmLevels[realmInfo.level + 1]}</div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-3">
                     {configManager.realmUpgradeCosts[getNextRealmLevel]?.map((a: any) => (
                       <ResourceCost
                         key={a.resource}
-                        className="!text-gold"
                         type="vertical"
-                        size="xs"
+                        size="lg"
                         resourceId={a.resource}
                         amount={a.amount}
                       />
                     ))}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-          <div className="mt-6">
+
+          <div className="pt-2">
             {structure && structure.structure.base.category === StructureType.Realm && (
               <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entityId} />
             )}
