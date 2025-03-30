@@ -52,7 +52,7 @@ export const SecondaryMenuItems = () => {
             image={BuildingThumbs.guild}
             label={social}
             active={isPopupOpen(social)}
-            size="sm"
+            size="md"
             onClick={() => togglePopup(social)}
           />
         ),
@@ -66,7 +66,7 @@ export const SecondaryMenuItems = () => {
             image={BuildingThumbs.rewards}
             label={rewards}
             active={isPopupOpen(rewards)}
-            size="sm"
+            size="md"
             className="border-none"
             onClick={() => togglePopup(rewards)}
           />
@@ -77,8 +77,8 @@ export const SecondaryMenuItems = () => {
   }, [structureEntityId, gameEnded]);
 
   return (
-    <div className="flex gap-1 md:gap-4">
-      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-4 mt-2">
+    <div className="flex gap-1 md:gap-2">
+      <div className="top-right-navigation-selector self-center px-1 md:px-3 flex space-x-4 md:space-x-2 ">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
@@ -86,14 +86,14 @@ export const SecondaryMenuItems = () => {
           className="trophies-selector border-none"
           image={BuildingThumbs.trophy}
           label={"Trophies"}
-          size="sm"
+          size="md"
           onClick={handleTrophyClick}
         />
         <CircleButton
           className="hints-selector border-none"
           image={BuildingThumbs.question}
           label={"Lordpedia"}
-          size="sm"
+          size="md"
           onClick={() => toggleModal(<HintModal />)}
         />
         <CircleButton
@@ -101,7 +101,7 @@ export const SecondaryMenuItems = () => {
           tooltipLocation="bottom"
           image={BuildingThumbs.discord}
           label={"Discord"}
-          size="sm"
+          size="md"
           onClick={() => window.open("https://discord.gg/realmsworld")}
         />
         <CircleButton
@@ -110,14 +110,14 @@ export const SecondaryMenuItems = () => {
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
           label={"Support"}
-          size="sm"
+          size="md"
           onClick={() => togglePopup(settings)}
         />
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
         <HomeButton />
       </div>
       {isConnected && (
-        <div className="absolute top-12 right-0 bg-brown/90 mx-2">
+        <div className="absolute top-16 right-0 bg-brown/90 mx-2">
           <Button
             variant="secondary"
             className="w-full"

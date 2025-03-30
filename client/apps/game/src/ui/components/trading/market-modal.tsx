@@ -151,9 +151,9 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="market-modal-selector container border mx-auto grid grid-cols-12 bg-dark border-gold/30 h-full row-span-12 rounded-2xl relative">
+      <div className="market-modal-selector container border mx-auto grid grid-cols-12 bg-dark border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
         <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
-          <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center bg-brown p-4 rounded-xl w-full mb-4">
+          <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center   rounded-xl w-full ">
             <div className="">
               <Select
                 value={structureEntityId.toString()}
@@ -161,7 +161,7 @@ export const MarketModal = () => {
                   setStructureEntityId(ID(trait));
                 }}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] panel-wood-right">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
                 <SelectContent>

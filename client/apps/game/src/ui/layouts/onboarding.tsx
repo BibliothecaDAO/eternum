@@ -53,15 +53,12 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
-        <Button
-          className="!h-8 !w-40 normal-case font-normal flex items-center rounded-md !text-md !px-3 !text-black shadow-[0px_4px_4px_0px_#00000040] border border-[0.5px] !border-[#F5C2971F] backdrop-blur-xs !text-gold !bg-[#0000007A] hover:scale-105 hover:-translate-y-1 hover:!opacity-80"
-          variant="default"
-        >
+        <Button variant="default">
           <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
           Mint Season Pass
         </Button>
       </a>
-      {controller && <Controller className="!h-10 w-24 normal-case font-normal" iconClassName="!fill-black" />}
+      {controller && <Controller className="!h-10 w-24 normal-case font-normal" />}
     </div>
   );
 };
@@ -73,8 +70,8 @@ export const StepContainer = ({
   transition = true,
   loading = false,
 }: StepContainerProps) => {
-  const width = "max-w-[456px] w-full xl:w-[33vw]";
-  const height = "max-h-[316px] h-[44vh] lg:h-[36vh] 2xl:h-[33vh]";
+  const width = "w-[456px]";
+  const height = "h-screen";
   const size = `${width} ${height}`;
 
   const showToS = useUIStore((state) => state.showToS);
@@ -82,18 +79,18 @@ export const StepContainer = ({
 
   const motionProps = transition
     ? {
-        initial: { opacity: 0 },
-        animate: { opacity: 1, y: 20 },
+        initial: { opacity: 0, x: -20 },
+        animate: { opacity: 1, x: 0 },
         exit: { opacity: 0 },
         transition: { type: "ease-in-out", stiffness: 3, duration: 0.2 },
       }
     : {};
 
   return (
-    <motion.div className="flex justify-center z-50 px-4 md:px-0 flex-col" {...motionProps}>
+    <motion.div className="flex h-screen z-50" {...motionProps}>
       <div
-        className={`bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-6 lg:p-10 xl:p-8 2xl:p-12 text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${
-          showToS ? "max-w-[800px] w-full xl:w-[60vw] max-h-[80vh] h-[80vh]" : size
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] panel-wood-right ${
+          showToS ? "w-[800px]" : width
         } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
         {showToS ? (
@@ -111,35 +108,35 @@ export const StepContainer = ({
             </div>
           </div>
         ) : (
-          <>
-            <div className="w-full text-center">
-              <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8 xl:mb-8 2xl:mb-10">
+          <div className="flex flex-col h-full">
+            <div className="w-full text-center flex-shrink-0">
+              <div className="mx-auto flex mb-4 sm:mb-4 lg:mb-8">
                 {loading ? (
                   <img
                     src="/images/logos/eternum-loader.png"
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-64 xl:w-64 stroke-current mx-auto" />
+                  <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-48 stroke-current mx-auto" />
                 )}
               </div>
             </div>
-            {children}
-          </>
+            <div className="flex-grow overflow-auto">{children}</div>
+            {tos && (
+              <div className="mt-auto pt-4 flex-shrink-0">
+                <div className="w-full flex justify-center rounded-lg p-2">
+                  <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+                  <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
+                    By continuing you are agreeing to Eternum's{" "}
+                    <span className="inline underline">Terms of Service</span>
+                  </p>
+                </div>
+                <div className="relative w-full">{bottomChildren}</div>
+              </div>
+            )}
+          </div>
         )}
       </div>
-
-      {tos && (
-        <div className="mt-4">
-          <div className="w-full flex justify-center rounded-lg p-2">
-            <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
-            <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
-              By continuing you are agreeing to Eternum's <span className="inline underline">Terms of Service</span>
-            </p>
-          </div>
-          <div className={`relative ${width}`}>{bottomChildren}</div>
-        </div>
-      )}
     </motion.div>
   );
 };
@@ -151,7 +148,7 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
       src={`/images/covers/${backgroundImage}.png`}
       alt="Cover"
     />
-    <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center">
+    <div className="absolute z-10 w-screen h-screen">
       <OnboardingOverlay controller={controller} />
       {children}
     </div>
@@ -238,51 +235,54 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           </Button>
         )}
         <div className="flex flex-col gap-3 w-full">
-          <div className="flex gap-3 w-full">
+          <div className="flex gap-3 w-full flex-wrap">
             <a
-              className="text-brown cursor-pointer text-lg w-1/2"
+              className="text-brown cursor-pointer w-full"
               href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
               target="_blank"
               rel="noopener noreferrer"
             >
               <Button
-                className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+                size="lg"
+                className={`w-full !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
                   !hasRealmsOrVillages ? "animate-pulse" : ""
                 }`}
               >
                 <div className="flex items-center justify-center">
                   <TreasureChest className="!w-5 !h-5 mr-2 fill-brown text-brown" />
-                  <span className="font-medium">Get Realm Pass</span>
+                  <span className="font-medium">Get Season Pass</span>
                 </div>
               </Button>
             </a>
-            <a className="text-brown cursor-pointer text-lg w-1/2" target="_blank" rel="noopener noreferrer">
+            <a className="w-full" target="_blank" rel="noopener noreferrer">
               <Button
+                size="lg"
                 onClick={handleVillagePassClick}
-                className={`w-full h-12 !text-brown !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+                className={`w-full hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
                   !hasRealmsOrVillages ? "animate-pulse" : ""
                 }`}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <TreasureChest className="!w-5 !h-5 fill-brown text-brown" />
+                  <TreasureChest className="!w-5 !h-5 fill-gold" />
                   <span className="font-medium">Mint Village Pass</span>
                 </div>
               </Button>
             </a>
           </div>
           <a
-            className="text-white cursor-pointer text-lg w-full"
+            className="cursor-pointer text-lg w-full"
             href={`https://empire.realms.world/trade`}
             target="_blank"
             rel="noopener noreferrer"
           >
             <Button
-              className={`w-full h-12 !text-white !bg-black/80 !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md hover:bg-black/90 ${
+              size="lg"
+              className={`w-full  normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
                 !hasRealmsOrVillages ? "animate-pulse" : ""
               }`}
             >
               <div className="flex items-center justify-center gap-2">
-                <LordsIcon className="!w-5 !h-5 fill-white text-white" />
+                <LordsIcon className="!w-5 !h-5 fill-gold " />
                 <span className="font-medium">Bridge in Lords</span>
               </div>
             </Button>

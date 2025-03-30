@@ -108,11 +108,11 @@ export default {
       },
       backgroundImage: {
         map: "url(/images/map.svg)",
-        // "hex-bg": "url(/hex-bg.png)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
       },
       fontSize: {
-        xxs: ".625rem",
+        xs: ".975rem",
+        xxs: ".825rem",
       },
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",

@@ -30,6 +30,7 @@
     "react-draggable": "^4.4.6",
     "react-shepherd": "^6.1.6",
     "shepherd.js": "^14.3.0",
+    "socket.io-client": "^4.8.1",
     "three": "^0.166.0",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",

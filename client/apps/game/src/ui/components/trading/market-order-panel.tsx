@@ -141,14 +141,14 @@ const MarketOrders = memo(
     }, [offers]);
 
     return (
-      <div className="h-full flex flex-col gap-4">
+      <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-2xl flex  font-bold  justify-between py-4 px-8 border-gold/10 border rounded-xl ${
+          className={`text-2xl flex panel-wood  font-bold  justify-between py-4 px-8 border-gold/10 rounded-xl ${
             !isBuy ? "bg-green/20 text-green" : "bg-red/20 text-red"
           }`}
         >
-          <div className="self-center flex gap-4">
+          <div className="self-center flex">
             <div className="flex flex-col">
               <div className="uppercase text-sm text-opacity-80">{findResourceById(resourceId)?.trait || ""}</div>
               <div className="flex gap-3">
@@ -163,13 +163,13 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
+          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
             isBuy ? "order-buy-selector" : "order-sell-selector"
           }`}
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
-          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative`}>
+          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative `}>
             {offers.map((offer, index) => (
               <OrderRow
                 key={offer.tradeId}
@@ -648,7 +648,7 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto bg-gold/5 border-gold/10 border rounded-xl ${
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  border-gold/10 panel-wood  ${
           isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
         }`}
       >

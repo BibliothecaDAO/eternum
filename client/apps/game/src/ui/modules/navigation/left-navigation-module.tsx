@@ -6,12 +6,12 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { Chat } from "@/ui/modules/chat/chat";
 import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
+import ChatModule from "../ws-chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -215,7 +215,7 @@ export const LeftNavigationModule = memo(() => {
           }`}
         >
           <BaseContainer
-            className={`w-full pointer-events-auto rounded-r-2xl overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] border-r-2 border-y-2 border-gold/20`}
+            className={`w-full panel-wood pointer-events-auto rounded-r-2xl overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] border-r-2 border-y-2 `}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === LeftView.EntityView && <EntityDetails />}
@@ -242,7 +242,8 @@ export const LeftNavigationModule = memo(() => {
         </div>
       </div>
       <div className="flex">
-        <Chat />
+        {/* <Chat /> */}
+        <ChatModule />
       </div>
     </div>
   );

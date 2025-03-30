@@ -14,9 +14,9 @@ export const OnboardingButton = ({
 }) => {
   return (
     <Button
-      size="md"
+      size="lg"
       variant="outline"
-      className={`!text-sm w-32 h-8 lg:h-10 xl:h-10 2xl:h-12 border border-gold hover:border-gold/50 hover:scale-105 hover:-translate-y-1 font-normal !normal-case ${className}`}
+      className={`!text-sm w-32 h-8 lg:h-10 xl:h-10 2xl:h-12 ${className}`}
       onClick={onClick}
       disabled={disabled}
     >

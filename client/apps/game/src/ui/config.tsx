@@ -99,25 +99,30 @@ export const BUILDING_IMAGES_PATH = {
   [ResourceMiningTypes.Dragonhide]: `${BUILD_IMAGES_PREFIX}dragonhide.png`,
 };
 
+const prefix = "/image-icons/";
+
 export const BuildingThumbs = {
-  hex: "/images/buildings/thumb/question.png",
-  military: "/images/buildings/thumb/sword.png",
-  construction: "/images/buildings/thumb/crane.png",
-  trade: "/images/buildings/thumb/trade.png",
-  resources: "/images/buildings/thumb/resources.png",
-  banks: "/images/buildings/thumb/banks.png",
-  worldStructures: "/images/buildings/thumb/world-map.png",
-  leaderboard: "/images/buildings/thumb/leaderboard.png",
-  worldMap: "/images/buildings/thumb/world-map.png",
-  squire: "/images/buildings/thumb/squire.png",
-  question: "/images/buildings/thumb/question-wood.png",
-  scale: "/images/buildings/thumb/scale.png",
-  settings: "/images/buildings/thumb/settings.png",
-  guild: "/images/buildings/thumb/guilds.png",
-  trophy: "/images/buildings/thumb/trophy.png",
-  discord: "/images/buildings/thumb/discord.png",
-  rewards: "/images/buildings/thumb/rewards.png",
-  production: "/images/buildings/thumb/anvil.png",
+  hex: `${prefix}question.png`,
+  military: `${prefix}military.png`,
+  construction: `${prefix}construction.png`,
+  trade: `${prefix}donkey.png`,
+  resources: `${prefix}resources.png`,
+  banks: `${prefix}banks.png`,
+  worldStructures: `${prefix}world.png`,
+  leaderboard: `${prefix}leaderboard.png`,
+  worldMap: `${prefix}world.png`,
+  squire: `${prefix}squire.png`,
+  question: `${prefix}question.png`,
+  scale: `${prefix}trade.png`,
+  settings: `${prefix}support.png`,
+  guild: `${prefix}guild.png`,
+  trophy: `${prefix}trophy.png`,
+  discord: `${prefix}discord.png`,
+  rewards: `${prefix}rewards.png`,
+  production: `${prefix}production.png`,
+  home: `${prefix}home.png`,
+  time: `${prefix}time.png`,
+  leave: `${prefix}leave.png`,
 };
 
 export enum MenuEnum {
