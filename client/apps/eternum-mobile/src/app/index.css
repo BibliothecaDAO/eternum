@@ -1,0 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-bokor {
+  font-family: "Bokor", system-ui;
+}
+
+@layer base {
+  :root {
+    --background: 43 29% 93%;
+    --foreground: 30 35% 15%;
+    --card: 43 25% 95%;
+    --card-foreground: 30 35% 15%;
+    --popover: 43 25% 95%;
+    --popover-foreground: 30 35% 15%;
+    --primary: 28 34% 28%;
+    --primary-foreground: 43 29% 93%;
+    --secondary: 35 25% 85%;
+    --secondary-foreground: 28 34% 28%;
+    --muted: 35 25% 85%;
+    --muted-foreground: 30 20% 35%;
+    --accent: 30 30% 80%;
+    --accent-foreground: 28 34% 28%;
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 43 29% 93%;
+    --border: 30 25% 75%;
+    --input: 30 25% 75%;
+    --ring: 28 34% 28%;
+    --chart-1: 28 70% 45%;
+    --chart-2: 35 65% 40%;
+    --chart-3: 15 55% 35%;
+    --chart-4: 42 60% 50%;
+    --chart-5: 22 50% 45%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 30 15% 15%;
+    --foreground: 43 20% 85%;
+    --card: 30 15% 15%;
+    --card-foreground: 43 20% 85%;
+    --popover: 30 15% 15%;
+    --popover-foreground: 43 20% 85%;
+    --primary: 43 20% 85%;
+    --primary-foreground: 30 15% 15%;
+    --secondary: 28 20% 25%;
+    --secondary-foreground: 43 20% 85%;
+    --muted: 28 20% 25%;
+    --muted-foreground: 43 15% 65%;
+    --accent: 28 20% 25%;
+    --accent-foreground: 43 20% 85%;
+    --destructive: 0 50% 30%;
+    --destructive-foreground: 43 20% 85%;
+    --border: 28 20% 25%;
+    --input: 28 20% 25%;
+    --ring: 43 15% 75%;
+    --chart-1: 30 60% 45%;
+    --chart-2: 40 55% 40%;
+    --chart-3: 20 50% 35%;
+    --chart-4: 50 45% 40%;
+    --chart-5: 15 55% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .animate-collapsible-down {
+    animation: collapsible-down 0.2s ease-out;
+  }
+
+  .animate-collapsible-up {
+    animation: collapsible-up 0.2s ease-out;
+  }
+}

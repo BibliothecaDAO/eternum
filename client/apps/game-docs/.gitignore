@@ -1,0 +1,3 @@
+dist/
+node_modules/
+vocs.config.ts.timestamp-*.mjs

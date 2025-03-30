@@ -1,0 +1,209 @@
+use s1_eternum::alias::ID;
+use starknet::ContractAddress;
+
+#[starknet::interface]
+pub trait IResourceBridgeSystems<T> {
+    fn deposit(
+        ref self: T, token: ContractAddress, to_structure_id: ID, amount: u256, client_fee_recipient: ContractAddress,
+    );
+    fn withdraw(
+        ref self: T,
+        from_structure_id: ID,
+        to_address: ContractAddress,
+        token: ContractAddress,
+        amount: u128,
+        client_fee_recipient: ContractAddress,
+    );
+}
+
+
+#[dojo::contract]
+pub mod resource_bridge_systems {
+    use dojo::model::{ModelStorage};
+    use dojo::world::WorldStorage;
+    use s1_eternum::alias::ID;
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl};
+    use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadataStoreImpl,
+        StructureOwnerStoreImpl,
+    };
+    use s1_eternum::models::weight::{Weight};
+    use s1_eternum::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
+    use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+    use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
+    use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+    use starknet::ContractAddress;
+    use starknet::{get_caller_address, get_contract_address};
+
+    #[abi(embed_v0)]
+    impl ResourceBridgeImpl of super::IResourceBridgeSystems<ContractState> {
+        fn deposit(
+            ref self: ContractState,
+            token: ContractAddress,
+            to_structure_id: ID,
+            amount: u256,
+            client_fee_recipient: ContractAddress,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            // ensure the bridge is open
+            SeasonConfigImpl::get(world).assert_settling_started_and_grace_period_not_elapsed();
+
+            // ensure the recipient of the bridged resources is a realm or village
+            let mut to_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, to_structure_id);
+            assert!(
+                to_structure_base.category == StructureCategory::Realm.into()
+                    || to_structure_base.category == StructureCategory::Village.into(),
+                "recipient structure is not a realm or village",
+            );
+
+            // ensure bridge deposit is not paused
+            iBridgeImpl::assert_deposit_not_paused(world);
+
+            // ensure token being bridged is whitelisted
+            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
+
+            // ensure caller is owner of to_structure_id or realm systems
+            let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+            iBridgeImpl::assert_only_owner_or_realm_systems(world, get_caller_address(), to_structure_owner);
+
+            // transfer the deposit amount from the caller to this contract
+            let caller = get_caller_address();
+            let this = get_contract_address();
+            assert!(
+                ERC20ABIDispatcher { contract_address: token }.transfer_from(caller, this, amount),
+                "Bridge: transfer failed",
+            );
+
+            // note: we only apply this AFTER the contract has received the deposit
+            // apply inefficiency percentage to the deposit amount
+            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
+                ref world, resource_bridge_token_whitelist.resource_type,
+            );
+            let amount = (amount * inefficiency_percentage_denom.into()) / inefficiency_percentage_num.into();
+
+            // take platform fees from deposit
+            let platform_fees = iBridgeImpl::send_platform_fees(
+                ref world, token, client_fee_recipient, amount, BridgeTxType::Deposit,
+            );
+            let token_amount_less_platform_fees = amount - platform_fees;
+
+            // take realm fees from deposit and get final resource amount
+            let resource_total_amount = iBridgeImpl::token_amount_to_resource_amount(token, amount);
+            let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
+            let mut resource_realm_fees: u128 = 0;
+            if to_structure_base.category == StructureCategory::Village.into() {
+                let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
+                resource_realm_fees =
+                    iBridgeImpl::send_realm_fees(
+                        ref world,
+                        to_structure_id,
+                        to_structure_owner,
+                        to_structure_base,
+                        ref to_structure_weight,
+                        resource_bridge_token_whitelist.resource_type,
+                        resource_total_amount,
+                        BridgeTxType::Deposit,
+                    );
+            }
+            to_structure_weight.store(ref world, to_structure_id);
+
+            let resource_amount_less_platform_fees = iBridgeImpl::token_amount_to_resource_amount(
+                token, token_amount_less_platform_fees,
+            );
+            let resource_amount_less_all_fees = resource_amount_less_platform_fees - resource_realm_fees;
+
+            // transfer the resource to the recipient realm
+            let resources = array![(resource_bridge_token_whitelist.resource_type, resource_amount_less_all_fees)]
+                .span();
+
+            // beam resources into the recipient's resource arrivals. it costs 0 donkey and time
+            iResourceTransferImpl::portal_to_structure_arrivals_instant(ref world, to_structure_id, resources);
+        }
+
+        fn withdraw(
+            ref self: ContractState,
+            from_structure_id: ID,
+            to_address: ContractAddress,
+            token: ContractAddress,
+            amount: u128,
+            client_fee_recipient: ContractAddress,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            // ensure the bridge is open
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            // ensure bridge withdrawal is not paused
+            iBridgeImpl::assert_withdraw_not_paused(world);
+
+            // ensure caller is owner of from_structure_id
+            let from_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, from_structure_id);
+            assert!(from_structure_owner == get_caller_address(), "caller is not owner of from_structure_id");
+
+            // ensure from_structure_id is a realm or village
+            let from_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, from_structure_id);
+            assert!(
+                from_structure.category == StructureCategory::Realm.into()
+                    || from_structure.category == StructureCategory::Village.into(),
+                "from structure is not a realm or village",
+            );
+
+            // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
+            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
+
+            // burn the resource from sender's structure balance
+            let resource_type = resource_bridge_token_whitelist.resource_type;
+            let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, from_structure_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut resource: SingleResource = SingleResourceStoreImpl::retrieve(
+                ref world, from_structure_id, resource_type, ref from_structure_weight, resource_weight_grams, true,
+            );
+            resource.spend(amount, ref from_structure_weight, resource_weight_grams);
+            resource.store(ref world);
+
+            // note: we only apply this AFTER the contract has burned the withdrawal amount
+            // apply inefficiency percentage to the withdrawal amount
+            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
+                ref world, resource_bridge_token_whitelist.resource_type,
+            );
+            let amount = (amount * inefficiency_percentage_denom.into()) / inefficiency_percentage_num.into();
+
+            // send fees to realm if from_structure is a village
+            let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
+            let mut realm_resource_fee_amount = 0;
+            if from_structure.category == StructureCategory::Village.into() {
+                realm_resource_fee_amount =
+                    iBridgeImpl::send_realm_fees(
+                        ref world,
+                        from_structure_id,
+                        from_structure_owner,
+                        from_structure,
+                        ref from_structure_weight,
+                        resource_type,
+                        amount,
+                        BridgeTxType::Withdrawal,
+                    );
+            }
+            from_structure_weight.store(ref world, from_structure_id);
+
+            // send platform fees
+            let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
+                ref world, token, client_fee_recipient, token_amount, BridgeTxType::Withdrawal,
+            );
+            let realm_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, realm_resource_fee_amount);
+
+            // transfer withdrawm erc20 amount to recipient
+            let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
+            iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
+        }
+    }
+}

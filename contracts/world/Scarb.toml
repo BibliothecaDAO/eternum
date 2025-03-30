@@ -1,0 +1,28 @@
+[package]
+cairo-version = "=2.9.2"
+name = "s1_eternum"
+version = "1.0.0"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+starknet = "2.9.2"
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.1.2" }
+
+[dev-dependencies]
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.1.2" }
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
+
+[profile.local]
+
+[profile.sepolia]
+
+[profile.mainnet]
+
+[[target.starknet-contract]]
+sierra = true
+build-external-contracts = ["dojo::world::world_contract::world"]

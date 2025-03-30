@@ -13,3 +13,14 @@
 
 # ignore eliza folder
 **/eliza
+
+# ignore draco files
+**/draco
+
+# ignore generated files
+**/gql
+**/*.graphql
+**/*.gen.ts
+
+# ignore json files
+**/*.json

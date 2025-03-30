@@ -1,42 +1,38 @@
 {
-  "entry": ["eternum-docs/**/*.mdx", "eternum-docs/**/*.tsx"],
   "ignore": [
     "eliza/**",
 
-    ".trunk/**",
     "**/*.js",
-    "bot/**",
     "**/vitest**",
+    "client/apps/game/src/setupTests.ts",
 
-    "eternum-docs/vocs.config.ts",
-
-    "sdk/packages/eternum/global.d.ts",
-    "config/bank/index.ts",
-    "config/speed.ts",
+    "packages/**",
 
     "**/**__test__**/**",
     "**/**__tests__**/**",
+    "client/apps/game/src/setup-tests.ts",
 
-    "season_resources/scripts/deployment/config/index.ts",
-    "season_resources/scripts/deployment/config/provider/index.ts",
+    "client/apps/landing/src/routeTree.gen.ts",
+    "client/apps/landing/src/components/ui/**",
+    "client/apps/landing/src/components/typography/**",
+    "client/apps/landing/src/hooks/gql/**",
 
-    "client/src/three/components/FogManager.ts",
-    "client/src/hooks/useUISound.tsx",
-    "balancing/**",
-    "landing/**",
-    "client/pwa-assets.config.ts",
+    "client/apps/game-docs/vocs.config.ts",
+    "client/apps/game-docs/docs/**",
+    "client/apps/game-docs/vocs.config.ts",
 
-    "docs/components/**",
-    "docs/utils/**",
-    "vocs.config.ts",
+    "client/apps/game/src/ui/modules/chat/**",
 
-    "client/src/ui/modules/chat/types.tsx",
-    "client/src/ui/modules/chat/constants.tsx",
-    "client/src/ui/modules/chat/ChatTab.tsx",
-    "client/src/hooks/helpers/useGetAllPlayers.tsx",
-    "client/src/ui/modules/chat/InputField.tsx",
-    "client/src/ui/modules/chat/Chat.tsx",
-    "sdk/packages/eternum/src/scripts/extract.ts",
-    "sdk/packages/eternum/src/scripts/extractBuildings.ts"
+    "client/apps/game-docs/env.ts",
+
+    "client/apps/torii-launcher/**",
+
+    "client/apps/eternum-mobile/**",
+
+    "config/**",
+    "contracts/**",
+
+    "**/global.d.ts"
+
   ]
 }

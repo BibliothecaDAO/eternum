@@ -1,0 +1,43 @@
+import { ResourceManager, type DojoAccount, type ID, type Resource } from "..";
+import { ClientComponents } from "../dojo/create-client-components";
+import { SystemCalls } from "../dojo/create-system-calls";
+export class ResourceInventoryManager {
+  carrierEntityId: ID;
+
+  constructor(
+    private readonly components: ClientComponents,
+    private readonly systemCalls: SystemCalls,
+    carrierEntityId: ID,
+  ) {
+    this.carrierEntityId = carrierEntityId;
+  }
+
+  private readonly _optimisticOffloadAll = (receiverEntityId: ID, inventoryResources: Resource[]) => {
+    let removeResourceOverride: () => void;
+    inventoryResources.forEach((resource) => {
+      const resourceManager = new ResourceManager(this.components, receiverEntityId);
+      removeResourceOverride = resourceManager.optimisticResourceUpdate(resource.resourceId, -resource.amount);
+    });
+
+    return () => {
+      removeResourceOverride();
+    };
+  };
+
+  public onOffloadAll = async (signer: DojoAccount, receiverEntityId: ID, inventoryResources: Resource[]) => {
+    const removeResourceOverride = this._optimisticOffloadAll(receiverEntityId, inventoryResources);
+
+    if (inventoryResources.length > 0) {
+      await this.systemCalls
+        .send_resources({
+          signer,
+          sender_entity_id: this.carrierEntityId,
+          recipient_entity_id: receiverEntityId,
+          resources: inventoryResources.map((resource) => ({ resource: resource.resourceId, amount: resource.amount })),
+        })
+        .finally(() => {
+          removeResourceOverride();
+        });
+    }
+  };
+}

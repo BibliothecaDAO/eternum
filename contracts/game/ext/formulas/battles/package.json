@@ -1,0 +1,19 @@
+{
+  "name": "battles",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "simulate-battle": "node battle_time.js"
+  },
+  "dependencies": {
+    "@bibliothecadao/eternum": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.10"
+  }
+}
