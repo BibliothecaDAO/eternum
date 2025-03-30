@@ -11,56 +11,43 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { tableOfContents } from "./utils";
 
 export const Resources = () => {
-  const chapters = [
-    {
-      title: "Resource Production",
-      content: (
-        <>
-          <p className="my-5">
+  return (
+    <div className="space-y-8">
+      <Headline>Resources</Headline>
+
+      <section className="space-y-4">
+        <h4>Resource Production</h4>
+        <div className="space-y-4 text-gray-200">
+          <p className="leading-relaxed">
             Every resource, with the exception of Food, requires specific inputs for production. Maintaining a
             sufficient balance of these input resources is crucial; if depleted, production will cease. To ensure a
             steady supply, engage in trade with other players or utilize banking services to manage your resource
             equilibrium effectively.
-            <br />
-            <br />
+          </p>
+          <p className="leading-relaxed">
             Be careful though, if only one of the input resources is depleted, the consumption of the other resources
             will continue.
           </p>
-          <ResourceTable />
-        </>
-      ),
-    },
-    {
-      title: "Storage",
-      content: (
-        <p className="my-5">
-          <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold">
-            {` ${configManager.getCapacityConfigKg(CapacityConfig.Storehouse)}Kg capacity`}
-          </span>
-          . Build more of them to increase storage.
-        </p>
-      ),
-    },
-  ];
-
-  const chapterTitles = chapters.map((chapter) => chapter.title);
-
-  return (
-    <>
-      <Headline>Resources</Headline>
-      {tableOfContents(chapterTitles)}
-
-      {chapters.map((chapter) => (
-        <div key={chapter.title}>
-          <h2 id={chapter.title}>{chapter.title}</h2>
-          {chapter.content}
         </div>
-      ))}
-    </>
+        <ResourceTable />
+      </section>
+
+      <section className="space-y-4">
+        <h4>Storage</h4>
+        <div className="space-y-4 text-gray-200">
+          <p className="leading-relaxed">
+            <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse
+            adds
+            <span className="font-bold">
+              {` ${configManager.getCapacityConfigKg(CapacityConfig.Storehouse)}Kg capacity`}
+            </span>
+            . Build more of them to increase storage.
+          </p>
+        </div>
+      </section>
+    </div>
   );
 };
 
@@ -86,40 +73,44 @@ const ResourceTable = () => {
   }, []);
 
   return (
-    <table className="not-prose w-full p-2 border-gold/10">
-      <thead>
-        <tr>
-          <th>Resource</th>
-          <th>Production p/s</th>
-          <th>Cost p/s</th>
-        </tr>
-      </thead>
-      <tbody>
-        {resourceTable.map((resource) => {
-          const decimals = resource.amount > RESOURCE_PRECISION ? 0 : 2;
-          return (
-            <tr className="border border-gold/10" key={resource.resource_type}>
-              <td>
-                <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
-              </td>
-              <td className="text-xl text-center">{currencyFormat(resource.amount, decimals)}</td>
-              <td className="gap-1 flex flex-col p-2">
-                {resource.cost.map((cost, index) => {
-                  return (
-                    <div key={index}>
-                      <ResourceCost
-                        resourceId={cost.resource}
-                        amount={Number(currencyFormat(Number(cost.amount), 1))}
-                        size="lg"
-                      />
-                    </div>
-                  );
-                })}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="rounded-lg border border-gold/20 overflow-hidden mt-4">
+      <table className="not-prose w-full">
+        <thead className="bg-gold/5">
+          <tr className="border-b border-gold/20">
+            <th className="text-left p-4 text-light-pink">Resource</th>
+            <th className="text-center p-4 text-light-pink">Production p/s</th>
+            <th className="text-left p-4 text-light-pink">Cost p/s</th>
+          </tr>
+        </thead>
+        <tbody>
+          {resourceTable.map((resource) => {
+            const decimals = resource.amount > RESOURCE_PRECISION ? 0 : 2;
+            return (
+              <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors" key={resource.resource_type}>
+                <td className="p-4">
+                  <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
+                </td>
+                <td className="text-xl text-center p-4">{currencyFormat(resource.amount, decimals)}</td>
+                <td className="p-4">
+                  <div className="gap-3 flex flex-col">
+                    {resource.cost.map((cost, index) => {
+                      return (
+                        <div key={index}>
+                          <ResourceCost
+                            resourceId={cost.resource}
+                            amount={Number(currencyFormat(Number(cost.amount), 1))}
+                            size="lg"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 };
