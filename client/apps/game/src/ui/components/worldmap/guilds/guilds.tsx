@@ -151,52 +151,59 @@ export const Guilds = ({
   };
 
   return (
-    <div className="flex flex-col min-h-72 h-full w-full p-2 overflow-hidden">
-      {showGuildButton ? (
-        <Button
-          className="text-ellipsis uppercase font-sans !bg-blueish/20 hover:!bg-gold"
-          variant="primary"
-          onClick={() => viewGuildMembers(playerGuild.entityId)}
-        >
-          {playerGuild.name}
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      ) : (
-        <Button isLoading={isLoading} variant="primary" onClick={toggleIsCreatingGuild}>
-          {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
-        </Button>
-      )}
+    <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
+      <div className="flex flex-col space-y-4 mb-4">
+        <div className="flex flex-row gap-4 justify-between">
+          <Button variant="gold" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
+            {viewGuildInvites ? "Show Tribe Rankings" : "Show Tribe Invites"}
+          </Button>
+          {showGuildButton ? (
+            <Button
+              className="text-ellipsis uppercase font-medium bg-blueish/20 hover:bg-gold/80 transition-colors duration-200"
+              variant="primary"
+              onClick={() => viewGuildMembers(playerGuild.entityId)}
+            >
+              Tribe {playerGuild.name}
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button isLoading={isLoading} variant="primary" className="w-full" onClick={toggleIsCreatingGuild}>
+              {isCreatingGuild ? "Search Tribe" : "Create Tribe"}
+            </Button>
+          )}
+        </div>
 
-      <Button className="my-4" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
-        {viewGuildInvites ? "Tribe Rankings" : "Tribe Invites"}
-      </Button>
-
-      <div className="mb-4">
-        {isCreatingGuild ? (
-          <CreateGuildButton
-            handleCreateGuild={handleCreateGuild}
-            guildName={guildName}
-            setGuildName={setGuildName}
-            isPublic={isPublic}
-            setIsPublic={setIsPublic}
-          />
-        ) : (
-          <TextInput
-            placeholder="Search Tribe . . ."
-            onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)}
-          />
-        )}
+        <div className="w-full">
+          {isCreatingGuild ? (
+            <CreateGuildButton
+              handleCreateGuild={handleCreateGuild}
+              guildName={guildName}
+              setGuildName={setGuildName}
+              isPublic={isPublic}
+              setIsPublic={setIsPublic}
+            />
+          ) : (
+            <TextInput
+              placeholder="Search Tribe . . ."
+              onChange={(guildSearchTerm) => setGuildSearchTerm(guildSearchTerm)}
+              className="w-full button-wood"
+            />
+          )}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">
-        <div className="flex flex-col h-full p-2 bg-brown-900/50 border border-gold/30 rounded-xl backdrop-blur-sm">
+        <div className="flex flex-col h-full rounded-xl backdrop-blur-sm">
           <GuildListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
           <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {filteredGuilds.map((guild) => (
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}
             {!filteredGuilds.length && viewGuildInvites && (
-              <p className="text-center italic">No Tribe Invites Received</p>
+              <p className="text-center italic text-gold/70 py-4">No Tribe Invites Received</p>
+            )}
+            {!filteredGuilds.length && !viewGuildInvites && guildSearchTerm && (
+              <p className="text-center italic text-gold/70 py-4">No Tribes Found</p>
             )}
           </div>
         </div>

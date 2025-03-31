@@ -21,7 +21,7 @@ export const CombatModal = ({
 
   return (
     <ModalContainer size="large">
-      <div className="production-modal-selector container border mx-auto bg-dark border-gold/30 h-full rounded-2xl relative flex flex-col">
+      <div className="production-modal-selector container mx-auto  h-full rounded-2xl relative flex flex-col">
         {/* Tab Selection */}
         <div className="flex justify-center border-b border-gold/30">
           <div className="flex">

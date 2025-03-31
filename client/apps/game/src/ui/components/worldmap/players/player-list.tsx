@@ -38,13 +38,15 @@ export const PlayerList = ({
     sort: "none",
   });
 
-  const sortedPlayers = useMemo(
-    () => sortItems(players, activeSort, { sortKey: "rank", sort: "asc" }),
-    [players, activeSort],
-  );
+  const sortedPlayers = useMemo(() => {
+    const filteredPlayers = players.filter(
+      (player) => !player.name.includes("Daydreams") && !player.name.includes("Central Bank"),
+    );
+    return sortItems(filteredPlayers, activeSort, { sortKey: "rank", sort: "asc" });
+  }, [players, activeSort]);
 
   return (
-    <div className="flex flex-col h-full p-2 bg-brown-900/50 border border-gold/30 rounded-xl backdrop-blur-sm">
+    <div className="flex flex-col h-full">
       <PlayerListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         {sortedPlayers.map((player) => (
@@ -95,7 +97,7 @@ const PlayerListHeader = ({
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-12 pb-3 border-b border-gold/20">
+    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           key={sortKey}
@@ -137,8 +139,8 @@ const PlayerRow = ({
 
   return (
     <div
-      className={clsx("flex w-full rounded-lg transition-colors duration-200 mb-1", {
-        "bg-blueish/20 hover:bg-blueish/30": player.isUser,
+      className={clsx("flex w-full  transition-colors duration-200 mb-1", {
+        "bg-blueish/20 hover:bg-blueish/30 button-gold text-brown": player.isUser,
         "hover:bg-gold/5": !player.isUser,
       })}
     >
@@ -146,12 +148,12 @@ const PlayerRow = ({
         <p className="col-span-1 text-center font-medium italic px-1">
           {player.rank === Number.MAX_SAFE_INTEGER ? "☠️" : `#${player.rank}`}
         </p>
-        <p className="col-span-2 truncate font-semibold text-gold/90 px-1">{player.name}</p>
+        <p className="col-span-2 truncate px-1">{player.name}</p>
         <p className="col-span-2 truncate text-emerald-300/90 px-1">{player.guild && `${player.guild.name}`}</p>
         <p className="col-span-1 text-center font-medium px-1">{player.realms}</p>
         <p className="col-span-1 text-center font-medium px-1">{player.mines}</p>
         <p className="col-span-1 text-center font-medium px-1">{player.hyperstructures}</p>
-        <p className="col-span-2 font-medium text-amber-200/90 px-1">{currencyIntlFormat(player.points)}</p>
+        <p className="col-span-2 font-medium  px-1">{currencyIntlFormat(player.points)}</p>
         <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1">
           {currencyIntlFormat(player.lords)}
           <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />

@@ -414,13 +414,13 @@ export const CombatContainer = ({
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
-      <div className="p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
+      <div className="p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gold">Terrain: {biome}</h3>
-            <div className="mt-2 grid grid-cols-3 gap-4 text-sm text-gold/80">
-              <div>Knights: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
-              <div>Crossbowmen: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
+            <h2>Terrain: {biome}</h2>
+            <div className="flex gap-4 mt-4 text-xl">
+              <div>Melee: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
+              <div>Ranged: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
               <div>Paladins: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Paladin, biome))}</div>
             </div>
           </div>
@@ -432,78 +432,245 @@ export const CombatContainer = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Attacker Panel */}
-        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
-          <div className="relative z-10">
-            <h3 className="text-lg font-semibold text-gold">Attacker Forces</h3>
-            {attackerArmyData && (
-              <div className="mt-4 space-y-4">
-                <div className="text-gold/80">
-                  <div className="text-sm font-medium mb-1">
-                    {TroopType[attackerArmyData.troops.category as TroopType]}
-                    <span className="ml-2 text-xs">
-                      {formatBiomeBonus(combatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
-                    </span>
-                  </div>
-                  <div className="text-xl font-bold">{divideByPrecision(attackerArmyData.troops.count)}</div>
+        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
+          <h4>Attacker Forces (You)</h4>
+          {attackerArmyData && (
+            <div className="mt-4 space-y-4">
+              {/* Troop Information */}
+              <div className="p-3 border border-gold/10 rounded">
+                <h4 className="text-sm font-medium text-gold/90 mb-2">
+                  {TroopType[attackerArmyData.troops.category as TroopType]}
+                  <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
+                    Terrain Bonus:{" "}
+                    {formatBiomeBonus(combatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
+                  </span>
+                </h4>
+                <div className="text-2xl font-bold text-gold">
+                  {divideByPrecision(attackerArmyData.troops.count)} troops
                 </div>
-                {battleSimulation && (
-                  <div className="text-gold/80">
-                    <div className="text-sm font-medium mb-1">Damage Dealt to Defender</div>
-                    <div className="text-xl font-bold text-order-giants">
+              </div>
+
+              {/* Battle Simulation Results */}
+              {battleSimulation && (
+                <div className="p-3 border border-gold/10 rounded ">
+                  <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Projection</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
                       {-Math.ceil(battleSimulation.attackerDamage)}
                     </div>
+                    <div className="uppercase text-xs text-red-400">dead</div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Defender Panel */}
-        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm">
-          <div className="relative z-10">
-            <h3 className="text-lg font-semibold text-gold">Defender Forces</h3>
-            {targetArmyData ? (
-              <div className="mt-4 space-y-4">
-                <div className="text-gold/80">
-                  <div className="text-sm font-medium mb-1">
-                    {TroopType[targetArmyData.troops.category as TroopType]}
-                    <span className="ml-2 text-xs">
-                      {formatBiomeBonus(combatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
-                    </span>
-                  </div>
-                  <div className="text-xl font-bold">{divideByPrecision(targetArmyData.troops.count)}</div>
+        <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg  backdrop-blur-sm panel-wood">
+          <h4>Defender Forces</h4>
+          {targetArmyData ? (
+            <div className="mt-4 space-y-4">
+              {/* Troop Information */}
+              <div className="p-3 border border-gold/10 rounded ">
+                <h4 className="text-sm font-medium text-gold/90 mb-2">
+                  {TroopType[targetArmyData.troops.category as TroopType]}
+                  <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
+                    Terrain Bonus:{" "}
+                    {formatBiomeBonus(combatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
+                  </span>
+                </h4>
+                <div className="text-2xl font-bold text-gold">
+                  {divideByPrecision(targetArmyData.troops.count)} troops
                 </div>
-                {battleSimulation && (
-                  <div className="text-gold/80">
-                    <div className="text-sm font-medium mb-1">Damage Dealt to Attacker</div>
-                    <div className="text-xl font-bold text-order-giants">
+              </div>
+
+              {/* Battle Simulation Results */}
+              {battleSimulation && (
+                <div className="p-3 border border-gold/10 rounded">
+                  <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Projection</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
                       {-Math.ceil(battleSimulation.defenderDamage)}
                     </div>
+                    <div className="uppercase text-xs text-red-400">dead</div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="mt-4 space-y-4">
-                <div className="text-gold/80">
-                  <div className="text-sm font-medium mb-1">No Troops Present</div>
                 </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <div className="p-3 border border-gold/10 rounded bg-dark-brown/50">
+                <h4 className="text-sm font-medium text-gold/90 mb-2">No Troops Present</h4>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Battle Results */}
       {targetArmyData && remainingTroops && attackerArmyData && (
-        <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
           <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4">
             Battle Prediction
           </h3>
+
+          {/* Battle Outcome Bar */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gold font-semibold">Your Forces</span>
+              <span className="text-gold font-semibold">Enemy Forces</span>
+            </div>
+            <div className="relative h-10 bg-brown-900/70 rounded-md overflow-hidden border border-gold/20">
+              {/* Calculate percentage based on remaining troops ratio */}
+              {(() => {
+                const attackerPercentage = Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    (remainingTroops.attackerTroops / divideByPrecision(attackerArmyData.troops.count)) * 100,
+                  ),
+                );
+                const defenderPercentage = Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    (remainingTroops.defenderTroops / divideByPrecision(targetArmyData.troops.count)) * 100,
+                  ),
+                );
+
+                // Normalize to show relative strength in the bar
+                const totalPercentage = attackerPercentage + defenderPercentage;
+                const normalizedAttackerWidth = totalPercentage > 0 ? (attackerPercentage / totalPercentage) * 100 : 50;
+
+                return (
+                  <>
+                    <div
+                      className="absolute h-full bg-gold/40 transition-all duration-300 flex items-center"
+                      style={{ width: `${normalizedAttackerWidth}%` }}
+                    >
+                      {/* Combat Icons */}
+                      {Array.from({ length: Math.min(5, Math.ceil(remainingTroops.attackerTroops / 5)) }).map(
+                        (_, i) => (
+                          <div
+                            key={`attacker-icon-${i}`}
+                            className="w-5 h-5 mx-1 opacity-80"
+                            style={{
+                              backgroundImage: `url("/assets/ui/icons/${TroopType[attackerArmyData.troops.category as TroopType].toLowerCase()}.svg")`,
+                              backgroundSize: "contain",
+                              backgroundPosition: "center",
+                              backgroundRepeat: "no-repeat",
+                            }}
+                          />
+                        ),
+                      )}
+
+                      {normalizedAttackerWidth > 20 && (
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gold-900">
+                          {Math.floor(remainingTroops.attackerTroops)} remaining
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="absolute right-0 h-full bg-order-giants/60 transition-all duration-300 flex items-center justify-end"
+                      style={{ width: `${100 - normalizedAttackerWidth}%` }}
+                    >
+                      {/* Combat Icons */}
+                      {Array.from({ length: Math.min(5, Math.ceil(remainingTroops.defenderTroops / 5)) }).map(
+                        (_, i) => (
+                          <div
+                            key={`defender-icon-${i}`}
+                            className="w-5 h-5 mx-1 opacity-80"
+                            style={{
+                              backgroundImage: `url("/assets/ui/icons/${TroopType[targetArmyData.troops.category as TroopType].toLowerCase()}.svg")`,
+                              backgroundSize: "contain",
+                              backgroundPosition: "center",
+                              backgroundRepeat: "no-repeat",
+                            }}
+                          />
+                        ),
+                      )}
+
+                      {100 - normalizedAttackerWidth > 20 && (
+                        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-white">
+                          {Math.floor(remainingTroops.defenderTroops)} remaining
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Middle Divider */}
+                    <div className="absolute h-full" style={{ left: `${normalizedAttackerWidth}%`, width: "2px" }}>
+                      <div className="h-full w-full bg-white/30 animate-pulse"></div>
+                    </div>
+
+                    {winner && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span
+                          className={`px-3 py-0.5 rounded-full text-xs font-bold ${
+                            winner === attackerEntityId ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"
+                          }`}
+                        >
+                          {winner === attackerEntityId ? "VICTORY" : "DEFEAT"}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Battle Stats Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
+              <div className="text-xs text-gold/70 mb-1">Attacker Casualties</div>
+              <div className="text-lg font-bold text-order-giants">
+                {battleSimulation ? Math.ceil(battleSimulation.attackerDamage) : 0}
+                <span className="text-xs ml-1">
+                  (
+                  {battleSimulation
+                    ? Math.round(
+                        (battleSimulation.attackerDamage / divideByPrecision(attackerArmyData.troops.count)) * 100,
+                      )
+                    : 0}
+                  %)
+                </span>
+              </div>
+            </div>
+            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
+              <div className="text-xs text-gold/70 mb-1">Defender Casualties</div>
+              <div className="text-lg font-bold text-order-giants">
+                {battleSimulation ? Math.ceil(battleSimulation.defenderDamage) : 0}
+                <span className="text-xs ml-1">
+                  (
+                  {battleSimulation
+                    ? Math.round(
+                        (battleSimulation.defenderDamage / divideByPrecision(targetArmyData.troops.count)) * 100,
+                      )
+                    : 0}
+                  %)
+                </span>
+              </div>
+            </div>
+            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
+              <div className="text-xs text-gold/70 mb-1">Stamina Change</div>
+              <div className="text-lg font-bold text-gold">
+                {winner === attackerEntityId ? "+" : "-"}
+                {battleSimulation ? Math.abs(battleSimulation.newAttackerStamina - Number(attackerStamina)) : 0}
+              </div>
+            </div>
+            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
+              <div className="text-xs text-gold/70 mb-1">Battle Outcome</div>
+              <div className={`text-lg font-bold ${winner === attackerEntityId ? "text-green-400" : "text-red-400"}`}>
+                {winner === attackerEntityId ? "Victory" : winner === null ? "Draw" : "Defeat"}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
               {
-                label: "Attacker",
+                label: "Attacker Forces (You)",
                 troops: remainingTroops.attackerTroops,
                 isWinner: winner === attackerEntityId,
                 originalTroops: attackerArmyData.troops,
@@ -523,7 +690,7 @@ export const CombatContainer = ({
                 newStamina: battleSimulation?.newAttackerStamina || 0,
               },
               {
-                label: "Defender",
+                label: "Defender Forces",
                 troops: remainingTroops.defenderTroops,
                 isWinner: winner !== null && winner !== attackerEntityId,
                 originalTroops: targetArmyData.troops,
@@ -547,47 +714,38 @@ export const CombatContainer = ({
                 newStamina: battleSimulation?.newDefenderStamina || 0,
               },
             ].map(({ label, troops, isWinner, originalTroops, currentStamina, newStamina }) => (
-              <div
-                key={label}
-                className="relative p-3 sm:p-4 rounded-lg border border-gold/10 overflow-hidden"
-                style={{
-                  backgroundImage: originalTroops
-                    ? `linear-gradient(rgba(20, 16, 13, 0.7), rgba(20, 16, 13, 0.7)), url(/images/resources/${getTroopResourceId(
-                        originalTroops.category as TroopType,
-                        originalTroops.tier as TroopTier,
-                      )}.png)`
-                    : undefined,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
-                <div className="relative z-10 space-y-3 sm:space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h4 className="font-bold text-lg sm:text-xl text-gold">{label}</h4>
-                    {isWinner && (
-                      <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs sm:text-sm font-medium rounded border border-green-400/30">
-                        Victory!
+              <div key={label} className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg">
+                <h4 className="font-bold text-lg">{label}</h4>
+                <div className="space-y-4">
+                  <div className="p-3 border border-gold/10 rounded">
+                    <h4 className="text-sm font-medium text-gold/90 mb-2">
+                      {TroopType[originalTroops.category as TroopType]}
+                      <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
+                        Terrain Bonus: {formatBiomeBonus(combatSimulator.getBiomeBonus(originalTroops.category, biome))}
                       </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div className="text-gold/80">
-                      <div className="text-sm font-medium mb-1">Remaining Forces</div>
-                      <div className="text-xl font-bold flex items-baseline">
-                        {troops > 0 ? Math.floor(troops) : 0}
-                        <span className="text-xs ml-2 text-gold/50">
-                          / {Math.floor(divideByPrecision(originalTroops.count))}
-                        </span>
-                      </div>
+                    </h4>
+                    <div className="text-2xl font-bold text-gold">
+                      {troops > 0 ? Math.floor(troops) : 0} / {Math.floor(divideByPrecision(originalTroops.count))}{" "}
+                      troops
                     </div>
-
-                    {getStaminaDisplay(currentStamina, newStamina, isWinner, combatConfig.stamina_bonus_value)}
                   </div>
 
-                  <div className="text-gold/80">
-                    <div className="text-sm font-medium mb-1">Biome Bonus</div>
-                    <div>{formatBiomeBonus(combatSimulator.getBiomeBonus(originalTroops.category, biome))}</div>
+                  <div className="p-3 border border-gold/10 rounded">
+                    <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Result</h4>
+                    <div className="flex items-center gap-2">
+                      {isWinner ? (
+                        <div className="text-xl font-bold text-green-400 bg-green-900/20 rounded-md px-2 py-1">
+                          Victory!
+                        </div>
+                      ) : (
+                        <div className="text-xl font-bold text-red-400 bg-red-900/20 rounded-md px-2 py-1">Defeat</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 border border-gold/10 rounded">
+                    <h4 className="text-sm font-medium text-gold/90 mb-2">Stamina</h4>
+                    {getStaminaDisplay(currentStamina, newStamina, isWinner, combatConfig.stamina_bonus_value)}
                   </div>
                 </div>
               </div>
@@ -598,7 +756,7 @@ export const CombatContainer = ({
 
       {/* No Troops Message */}
       {!targetArmyData && attackerArmyData && (
-        <div className="mt-2 p-6 border border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm shadow-lg">
+        <div className="mt-2 p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg">
           <h3 className="text-2xl font-bold mb-6 text-gold border-b border-gold/20 pb-4">Claim Opportunity</h3>
           <div className="text-center py-4">
             <div className="text-xl font-bold text-green-400 mb-2">No Defending Troops Present!</div>
