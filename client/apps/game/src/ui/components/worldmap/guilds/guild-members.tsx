@@ -101,53 +101,60 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
       : undefined;
 
   return (
-    <div className="flex flex-col min-h-72 h-full w-full p-2 overflow-hidden">
+    <div className="flex flex-col min-h-72 h-full w-full p-4 overflow-hidden">
       {editName ? (
-        <div className="flex flex-row space-x-2">
-          <TextInput placeholder="New Name" className="h-full" onChange={(name) => setNaming(name)} />
-          <Button
-            variant="default"
-            isLoading={isLoading}
-            onClick={async () => {
-              setIsLoading(true);
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mb-4">
+          <TextInput placeholder="New Name" className="w-full" onChange={(name) => setNaming(name)} />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              isLoading={isLoading}
+              onClick={async () => {
+                setIsLoading(true);
 
-              try {
-                await set_entity_name({ signer: account, entity_id: selectedGuildEntityId, name: naming });
-              } catch (e) {
-                console.error(e);
-              }
+                try {
+                  await set_entity_name({ signer: account, entity_id: selectedGuildEntityId, name: naming });
+                } catch (e) {
+                  console.error(e);
+                }
 
-              setIsLoading(false);
-              setEditName(false);
-            }}
-          >
-            Change Name
-          </Button>
-          <Pen
-            className="ml-2 self-center m-auto w-12 h-12 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all"
-            onClick={() => setEditName(!editName)}
-          />
+                setIsLoading(false);
+                setEditName(false);
+              }}
+              className="min-w-24"
+            >
+              Change Name
+            </Button>
+            <Pen
+              className="self-center w-6 h-6 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all p-1 border border-gold/30 rounded-md"
+              onClick={() => setEditName(!editName)}
+            />
+          </div>
         </div>
       ) : (
-        <div className="flex flex-row">
-          <h3 className="truncate font-bold ">{selectedGuild?.name}</h3>
+        <div className="flex items-center mb-4">
+          <h3 className="truncate font-semibold text-gold/90 text-lg">{selectedGuild?.name}</h3>
           {userIsGuildMaster && (
             <Pen
-              className="ml-2 self-center m-auto w-6 h-6 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all"
+              className="ml-2 w-6 h-6 fill-gold hover:scale-125 hover:animate-pulse duration-300 transition-all cursor-pointer"
               onClick={() => setEditName(!editName)}
             />
           )}
-          {socialsText && <TwitterShareButton text={socialsText} />}
+          {socialsText && (
+            <div className="ml-2">
+              <TwitterShareButton text={socialsText} />
+            </div>
+          )}
         </div>
       )}
 
       {userIsGuildMaster && (
-        <Button className="my-2" variant="primary" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
+        <Button className="w-full mb-4" variant="outline" onClick={() => setViewGuildInvites(!viewGuildInvites)}>
           {viewGuildInvites ? "Tribe Members" : "Tribe Invites"}
         </Button>
       )}
 
-      <div className="flex-1 min-h-0 ">
+      <div className="flex-1 min-h-0">
         {viewGuildInvites ? (
           <GuildInviteList
             invitedPlayers={invitedPlayers}
@@ -166,7 +173,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
         )}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-2">
         {userGuild?.entityId === selectedGuildEntityId && (
           <Button
             className="w-full"

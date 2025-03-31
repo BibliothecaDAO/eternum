@@ -130,7 +130,7 @@ SecondaryPopup.Head = ({
     }}
     tabIndex={0}
   >
-    <div>{children}</div>
+    <h4>{children}</h4>
     <div className="flex flex-row">
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
 
