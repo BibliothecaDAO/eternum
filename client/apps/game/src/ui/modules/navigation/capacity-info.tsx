@@ -110,7 +110,9 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
   const populationPercentage = realmInfo?.capacity
     ? Math.min(
         100,
-        Math.round((realmInfo.population / (realmInfo.capacity + configManager.getBasePopulationCapacity())) * 100),
+        Math.round(
+          ((realmInfo.population || 0) / (realmInfo.capacity + configManager.getBasePopulationCapacity())) * 100,
+        ),
       )
     : 0;
 
