@@ -25,7 +25,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { formatBiomeBonus, getStaminaDisplay } from "./combat-utils";
+import { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
   Village,
@@ -390,7 +390,7 @@ export const CombatContainer = ({
               />
               <div className="flex flex-col">
                 <span className="text-xs text-gold/90 font-medium">
-                  {TroopType[guard.troops.category as TroopType]} (Slot {guard.slot})
+                  {TroopType[guard.troops.category as TroopType]} {guard.troops.tier as TroopTier} (Slot {guard.slot})
                 </span>
                 <span className="text-sm text-gold font-bold">
                   {currencyFormat(Number(guard.troops.count || 0), 0)}
@@ -438,13 +438,13 @@ export const CombatContainer = ({
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
               <div className="p-3 border border-gold/10 rounded">
-                <h4 className="text-sm font-medium text-gold/90 mb-2">
-                  {TroopType[attackerArmyData.troops.category as TroopType]}
-                  <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
-                    Terrain Bonus:{" "}
-                    {formatBiomeBonus(combatSimulator.getBiomeBonus(attackerArmyData.troops.category, biome))}
-                  </span>
-                </h4>
+                {formatTypeAndBonuses(
+                  attackerArmyData.troops.category as TroopType,
+                  attackerArmyData.troops.tier as TroopTier,
+                  combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
+                  combatSimulator.calculateStaminaModifier(Number(attackerStamina), true),
+                  true,
+                )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(attackerArmyData.troops.count)} troops
                 </div>
@@ -453,10 +453,10 @@ export const CombatContainer = ({
               {/* Battle Simulation Results */}
               {battleSimulation && (
                 <div className="p-3 border border-gold/10 rounded ">
-                  <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Projection</h4>
+                  <h4 className="text-sm font-medium text-gold/90 mb-2">Losses</h4>
                   <div className="flex items-center gap-2">
                     <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(battleSimulation.attackerDamage)}
+                      {-Math.ceil(battleSimulation.defenderDamage)}
                     </div>
                     <div className="uppercase text-xs text-red-400">dead</div>
                   </div>
@@ -473,13 +473,13 @@ export const CombatContainer = ({
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
               <div className="p-3 border border-gold/10 rounded ">
-                <h4 className="text-sm font-medium text-gold/90 mb-2">
-                  {TroopType[targetArmyData.troops.category as TroopType]}
-                  <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
-                    Terrain Bonus:{" "}
-                    {formatBiomeBonus(combatSimulator.getBiomeBonus(targetArmyData.troops.category, biome))}
-                  </span>
-                </h4>
+                {formatTypeAndBonuses(
+                  targetArmyData.troops.category as TroopType,
+                  targetArmyData.troops.tier as TroopTier,
+                  combatSimulator.getBiomeBonus(targetArmyData.troops.category as TroopType, biome),
+                  combatSimulator.calculateStaminaModifier(Number(defenderStamina), false),
+                  false,
+                )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(targetArmyData.troops.count)} troops
                 </div>
@@ -488,10 +488,10 @@ export const CombatContainer = ({
               {/* Battle Simulation Results */}
               {battleSimulation && (
                 <div className="p-3 border border-gold/10 rounded">
-                  <h4 className="text-sm font-medium text-gold/90 mb-2">Combat Projection</h4>
+                  <h4 className="text-sm font-medium text-gold/90 mb-2">Losses</h4>
                   <div className="flex items-center gap-2">
                     <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(battleSimulation.defenderDamage)}
+                      {-Math.ceil(battleSimulation.attackerDamage)}
                     </div>
                     <div className="uppercase text-xs text-red-400">dead</div>
                   </div>
@@ -688,6 +688,7 @@ export const CombatContainer = ({
                   ).amount,
                 ),
                 newStamina: battleSimulation?.newAttackerStamina || 0,
+                isAttacker: true,
               },
               {
                 label: "Defender Forces",
@@ -712,18 +713,20 @@ export const CombatContainer = ({
                   ).amount,
                 ),
                 newStamina: battleSimulation?.newDefenderStamina || 0,
+                isAttacker: false,
               },
-            ].map(({ label, troops, isWinner, originalTroops, currentStamina, newStamina }) => (
+            ].map(({ label, troops, isWinner, originalTroops, currentStamina, newStamina, isAttacker }) => (
               <div key={label} className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg">
                 <h4 className="font-bold text-lg">{label}</h4>
                 <div className="space-y-4">
                   <div className="p-3 border border-gold/10 rounded">
-                    <h4 className="text-sm font-medium text-gold/90 mb-2">
-                      {TroopType[originalTroops.category as TroopType]}
-                      <span className="ml-2 text-xs px-2 py-0.5 bg-gold/10 rounded">
-                        Terrain Bonus: {formatBiomeBonus(combatSimulator.getBiomeBonus(originalTroops.category, biome))}
-                      </span>
-                    </h4>
+                    {formatTypeAndBonuses(
+                      originalTroops.category as TroopType,
+                      originalTroops.tier as TroopTier,
+                      combatSimulator.getBiomeBonus(originalTroops.category as TroopType, biome),
+                      combatSimulator.calculateStaminaModifier(currentStamina, isAttacker),
+                      isAttacker,
+                    )}
                     <div className="text-2xl font-bold text-gold">
                       {troops > 0 ? Math.floor(troops) : 0} / {Math.floor(divideByPrecision(originalTroops.count))}{" "}
                       troops
@@ -736,6 +739,10 @@ export const CombatContainer = ({
                       {isWinner ? (
                         <div className="text-xl font-bold text-green-400 bg-green-900/20 rounded-md px-2 py-1">
                           Victory!
+                        </div>
+                      ) : winner === null ? (
+                        <div className="text-xl font-bold text-yellow-400 bg-yellow-900/20 rounded-md px-2 py-1">
+                          Draw
                         </div>
                       ) : (
                         <div className="text-xl font-bold text-red-400 bg-red-900/20 rounded-md px-2 py-1">Defeat</div>

@@ -132,10 +132,7 @@ export class ContainerLogStreamer {
       this.isConnecting = false;
       this.options.onDisconnect();
 
-      if (
-        this.options.autoReconnect &&
-        this.reconnectAttempts < this.options.maxReconnectAttempts
-      ) {
+      if (this.options.autoReconnect && this.reconnectAttempts < this.options.maxReconnectAttempts) {
         this.reconnectAttempts++;
         this.reconnectTimeout = setTimeout(() => {
           this.connect();
@@ -152,10 +149,7 @@ export class ContainerLogStreamer {
     this.isConnecting = false;
     this.options.onError(error);
 
-    if (
-      this.options.autoReconnect &&
-      this.reconnectAttempts < this.options.maxReconnectAttempts
-    ) {
+    if (this.options.autoReconnect && this.reconnectAttempts < this.options.maxReconnectAttempts) {
       this.reconnectAttempts++;
       this.reconnectTimeout = setTimeout(() => {
         this.connect();

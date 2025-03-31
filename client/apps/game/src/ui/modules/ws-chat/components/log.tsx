@@ -5,9 +5,7 @@ interface ContainerLogsProps {
   containerId: string;
 }
 
-export const ContainerLogs: React.FC<ContainerLogsProps> = ({
-  containerId,
-}) => {
+export const ContainerLogs: React.FC<ContainerLogsProps> = ({ containerId }) => {
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [isConnected, setIsConnected] = useState(false);

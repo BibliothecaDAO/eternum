@@ -31,9 +31,9 @@ export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Knight]: 5000,
   [ResourcesIds.KnightT2]: 5000,
   [ResourcesIds.KnightT3]: 5000,
-  [ResourcesIds.Crossbowman]: 3000,
-  [ResourcesIds.CrossbowmanT2]: 3000,
-  [ResourcesIds.CrossbowmanT3]: 3000,
+  [ResourcesIds.Crossbowman]: 5000,
+  [ResourcesIds.CrossbowmanT2]: 5000,
+  [ResourcesIds.CrossbowmanT3]: 5000,
   [ResourcesIds.Paladin]: 5000,
   [ResourcesIds.PaladinT2]: 5000,
   [ResourcesIds.PaladinT3]: 5000,
@@ -459,14 +459,14 @@ export const multiplyStartingResources = (multiplier: number): ResourceCost[] =>
 };
 
 /**
- * Returns all resources with a specified amount
+ * Returns all resources with a specified amount, excluding Lords
  * @param amount The amount to assign to each resource
- * @returns Array of ResourceCost objects for all resources
+ * @returns Array of ResourceCost objects for all resources except Lords
  */
 export const getAllResourcesWithAmount = (amount: number): ResourceCost[] => {
-  // Filter out string keys and only keep numeric resource IDs
+  // Filter out string keys and only keep numeric resource IDs, excluding Lords
   return Object.values(ResourcesIds)
-    .filter((resource): resource is ResourcesIds => typeof resource === "number")
+    .filter((resource): resource is ResourcesIds => typeof resource === "number" && resource !== ResourcesIds.Lords)
     .map((resource) => ({
       resource,
       amount,
