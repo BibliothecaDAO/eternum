@@ -13,12 +13,12 @@ const ELEVATION_OCTAVES = [
 const ELEVATION_OCTAVES_SUM = ELEVATION_OCTAVES.reduce((a, b) => a.add(b), FixedTrait.ZERO);
 
 const LEVEL = {
-  DEEP_OCEAN: FixedTrait.fromRatio(25n, 100n), // 0.25
-  OCEAN: FixedTrait.fromRatio(50n, 100n), // 0.5
-  SAND: FixedTrait.fromRatio(53n, 100n), // 0.53
-  FOREST: FixedTrait.fromRatio(60n, 100n), // 0.6
-  DESERT: FixedTrait.fromRatio(72n, 100n), // 0.72
-  MOUNTAIN: FixedTrait.fromRatio(80n, 100n), // 0.8
+  DEEP_OCEAN: FixedTrait.fromRatio(20n, 100n), // 0.2
+  OCEAN: FixedTrait.fromRatio(30n, 100n), // 0.3
+  SAND: FixedTrait.fromRatio(35n, 100n), // 0.35
+  FOREST: FixedTrait.fromRatio(45n, 100n), // 0.45
+  DESERT: FixedTrait.fromRatio(53n, 100n), // 0.53
+  MOUNTAIN: FixedTrait.fromRatio(60n, 100n), // 0.6
 };
 
 export class Biome {
@@ -66,25 +66,25 @@ export class Biome {
     if (elevation.value < level.SAND.value) return BiomeType.Beach;
 
     if (elevation.value > level.MOUNTAIN.value) {
-      if (moisture.value < FixedTrait.fromRatio(10n, 100n).value) return BiomeType.Scorched;
-      if (moisture.value < FixedTrait.fromRatio(40n, 100n).value) return BiomeType.Bare;
-      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Tundra;
+      if (moisture.value < FixedTrait.fromRatio(35n, 100n).value) return BiomeType.Scorched;
+      if (moisture.value < FixedTrait.fromRatio(45n, 100n).value) return BiomeType.Bare;
+      if (moisture.value < FixedTrait.fromRatio(60n, 100n).value) return BiomeType.Tundra;
       return BiomeType.Snow;
     }
     if (elevation.value > level.DESERT.value) {
-      if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.TemperateDesert;
-      if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.Shrubland;
+      if (moisture.value < FixedTrait.fromRatio(40n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(60n, 100n).value) return BiomeType.Shrubland;
       return BiomeType.Taiga;
     }
     if (elevation.value > level.FOREST.value) {
-      if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.TemperateDesert;
-      if (moisture.value < FixedTrait.fromRatio(50n, 100n).value) return BiomeType.Grassland;
-      if (moisture.value < FixedTrait.fromRatio(83n, 100n).value) return BiomeType.TemperateDeciduousForest;
+      if (moisture.value < FixedTrait.fromRatio(30n, 100n).value) return BiomeType.TemperateDesert;
+      if (moisture.value < FixedTrait.fromRatio(45n, 100n).value) return BiomeType.Grassland;
+      if (moisture.value < FixedTrait.fromRatio(60n, 100n).value) return BiomeType.TemperateDeciduousForest;
       return BiomeType.TemperateRainForest;
     }
-    if (moisture.value < FixedTrait.fromRatio(16n, 100n).value) return BiomeType.SubtropicalDesert;
-    if (moisture.value < FixedTrait.fromRatio(33n, 100n).value) return BiomeType.Grassland;
-    if (moisture.value < FixedTrait.fromRatio(66n, 100n).value) return BiomeType.TropicalSeasonalForest;
+    if (moisture.value < FixedTrait.fromRatio(40n, 100n).value) return BiomeType.SubtropicalDesert;
+    if (moisture.value < FixedTrait.fromRatio(45n, 100n).value) return BiomeType.Grassland;
+    if (moisture.value < FixedTrait.fromRatio(62n, 100n).value) return BiomeType.TropicalSeasonalForest;
     return BiomeType.TropicalRainForest;
   }
 }

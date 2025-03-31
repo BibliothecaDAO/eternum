@@ -127,27 +127,27 @@ mod LEVEL {
     use s1_eternum::utils::map::constants::fixed_constants as fc;
 
     pub fn DEEP_OCEAN() -> Fixed {
-        fc::_0_25()
+        fc::_0_2()
     }
 
     pub fn OCEAN() -> Fixed {
-        fc::_0_5()
+        fc::_0_3()
     }
 
     pub fn SAND() -> Fixed {
-        fc::_0_53()
+        fc::_0_35()
     }
 
     pub fn FOREST() -> Fixed {
-        fc::_0_6()
+        fc::_0_45()
     }
 
     pub fn DESERT() -> Fixed {
-        fc::_0_72()
+        fc::_0_53()
     }
 
     pub fn MOUNTAIN() -> Fixed {
-        fc::_0_8()
+        fc::_0_6()
     }
 }
 
@@ -231,39 +231,39 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
     } else if elevation < LEVEL::SAND() {
         Biome::Beach
     } else if elevation > LEVEL::MOUNTAIN() {
-        if moisture < fc::_0_1() {
+        if moisture < fc::_0_35() {
             Biome::Scorched
-        } else if moisture < fc::_0_4() {
+        } else if moisture < fc::_0_45() {
             Biome::Bare
-        } else if moisture < fc::_0_5() {
+        } else if moisture < fc::_0_6() {
             Biome::Tundra
         } else {
             Biome::Snow
         }
     } else if elevation > LEVEL::DESERT() {
-        if moisture < fc::_0_33() {
+        if moisture < fc::_0_4() {
             Biome::TemperateDesert
-        } else if moisture < fc::_0_66() {
+        } else if moisture < fc::_0_6() {
             Biome::Shrubland
         } else {
             Biome::Taiga
         }
     } else if elevation > LEVEL::FOREST() {
-        if moisture < fc::_0_16() {
+        if moisture < fc::_0_3() {
             Biome::TemperateDesert
-        } else if moisture < fc::_0_5() {
+        } else if moisture < fc::_0_45() {
             Biome::Grassland
-        } else if moisture < fc::_0_83() {
+        } else if moisture < fc::_0_6() {
             Biome::TemperateDeciduousForest
         } else {
             Biome::TemperateRainForest
         }
     } else {
-        if moisture < fc::_0_16() {
+        if moisture < fc::_0_4() {
             Biome::SubtropicalDesert
-        } else if moisture < fc::_0_33() {
+        } else if moisture < fc::_0_45() {
             Biome::Grassland
-        } else if moisture < fc::_0_66() {
+        } else if moisture < fc::_0_62() {
             Biome::TropicalSeasonalForest
         } else {
             Biome::TropicalRainForest
