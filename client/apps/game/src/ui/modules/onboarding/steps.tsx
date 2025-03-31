@@ -254,7 +254,7 @@ export const StepOne = () => {
 
 export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
   return (
-    <Button variant="outline" className="w-full" onClick={onClick} size="lg">
+    <Button className="w-full" onClick={onClick} size="lg">
       <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
     </Button>
   );

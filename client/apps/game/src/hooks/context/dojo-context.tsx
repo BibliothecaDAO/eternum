@@ -1,10 +1,11 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
-import { OnboardingButton } from "@/ui/layouts/onboarding-button";
+import Button from "@/ui/elements/button";
+import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
@@ -219,17 +220,21 @@ const DojoContextProvider = ({
         <CountdownTimer backgroundImage={backgroundImage} />
         <OnboardingContainer backgroundImage={backgroundImage}>
           <StepContainer>
-            <div className="flex justify-center space-x-8 mt-2 md:mt-4">
+            <div className="flex flex-col justify-wrap space-y-4 mt-2">
               {!isConnected && (
                 <>
-                  <SpectateButton onClick={onSpectatorModeClick} />
-                  <OnboardingButton
-                    onClick={connectWallet}
-                    className="!bg-[#FCB843] !text-black border-none hover:!bg-[#FCB843]/80"
-                  >
+                  <Button size="lg" variant="gold" onClick={connectWallet} className="w-full">
                     <CartridgeSmall className="w-5 md:w-6 mr-1 md:mr-2 fill-black" />
                     Log In
-                  </OnboardingButton>
+                  </Button>
+                  <SpectateButton onClick={onSpectatorModeClick} />
+
+                  <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full" size="lg">
+                      <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
+                      Mint Season Pass
+                    </Button>
+                  </a>
                 </>
               )}
             </div>
