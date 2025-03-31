@@ -940,9 +940,9 @@
       "26": 5000,
       "27": 5000,
       "28": 5000,
-      "29": 3000,
-      "30": 3000,
-      "31": 3000,
+      "29": 5000,
+      "30": 5000,
+      "31": 5000,
       "32": 5000,
       "33": 5000,
       "34": 5000,
@@ -1883,53 +1883,11 @@
     "hyperstructureCreationCosts": [
       {
         "resource_tier": 1,
-        "min_amount": 30,
-        "max_amount": 30
+        "min_amount": 3000000,
+        "max_amount": 3000000
       }
     ],
     "hyperstructureConstructionCosts": [
-      {
-        "resource_tier": 2,
-        "min_amount": 0,
-        "max_amount": 0
-      },
-      {
-        "resource_tier": 3,
-        "min_amount": 0,
-        "max_amount": 0
-      },
-      {
-        "resource_tier": 4,
-        "min_amount": 0,
-        "max_amount": 0
-      },
-      {
-        "resource_tier": 5,
-        "min_amount": 1200,
-        "max_amount": 2400
-      },
-      {
-        "resource_tier": 6,
-        "min_amount": 900,
-        "max_amount": 1800
-      },
-      {
-        "resource_tier": 7,
-        "min_amount": 400,
-        "max_amount": 800
-      },
-      {
-        "resource_tier": 8,
-        "min_amount": 200,
-        "max_amount": 400
-      },
-      {
-        "resource_tier": 9,
-        "min_amount": 70,
-        "max_amount": 140
-      }
-    ],
-    "hyperstructureTotalCosts": [
       {
         "resource_tier": 2,
         "min_amount": 0,
@@ -1969,11 +1927,53 @@
         "resource_tier": 9,
         "min_amount": 7000000,
         "max_amount": 14000000
+      }
+    ],
+    "hyperstructureTotalCosts": [
+      {
+        "resource_tier": 2,
+        "min_amount": 0,
+        "max_amount": 0
+      },
+      {
+        "resource_tier": 3,
+        "min_amount": 0,
+        "max_amount": 0
+      },
+      {
+        "resource_tier": 4,
+        "min_amount": 0,
+        "max_amount": 0
+      },
+      {
+        "resource_tier": 5,
+        "min_amount": 1200,
+        "max_amount": 2400
+      },
+      {
+        "resource_tier": 6,
+        "min_amount": 900,
+        "max_amount": 1800
+      },
+      {
+        "resource_tier": 7,
+        "min_amount": 400,
+        "max_amount": 800
+      },
+      {
+        "resource_tier": 8,
+        "min_amount": 200,
+        "max_amount": 400
+      },
+      {
+        "resource_tier": 9,
+        "min_amount": 70,
+        "max_amount": 140
       },
       {
         "resource_tier": 1,
-        "min_amount": 3000000,
-        "max_amount": 3000000
+        "min_amount": 30,
+        "max_amount": 30
       }
     ],
     "hyperstructurePointsPerCycle": 7,
@@ -7871,7 +7871,7 @@
         },
         {
           "address": "0x32263b5ee54112732e960f70551f0d364bfc6285d79f1c4f5e098875e73717e",
-          "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
+          "class_hash": "0x15c0e82c727bfb6e35dae6c3801fecf2d46aa8821ca4ff956a25ec09e1a1667",
           "abi": [
             {
               "type": "impl",
@@ -8028,6 +8028,26 @@
                 },
                 {
                   "type": "function",
+                  "name": "troop_troop_adjacent_transfer",
+                  "inputs": [
+                    {
+                      "name": "from_explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "to_explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
                   "name": "troop_structure_adjacent_transfer",
                   "inputs": [
                     {
@@ -8056,6 +8076,22 @@
                     },
                     {
                       "name": "to_troop_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "troop_burn",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -8191,8 +8227,10 @@
             "send",
             "pickup",
             "arrivals_offload",
+            "troop_troop_adjacent_transfer",
             "troop_structure_adjacent_transfer",
             "structure_troop_adjacent_transfer",
+            "troop_burn",
             "upgrade"
           ]
         },
