@@ -83,6 +83,10 @@ pub mod season {
     mod tests;
 }
 
+pub mod quest {
+    pub mod contracts;
+}
+
 pub mod utils {
     pub mod bridge;
     pub mod distance;

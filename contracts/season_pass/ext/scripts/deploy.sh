@@ -77,6 +77,7 @@ cd - > /dev/null
 
 # Navigate to deployment directory
 echo -e "${GREEN}► Installing season pass deployment dependencies...${NC}"
+echo -e "${GREEN}► New working directory: $(pwd)${NC}"
 cd deployment
 bun install
 
