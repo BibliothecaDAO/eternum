@@ -159,7 +159,7 @@ export class CombatSimulator {
     }
   }
 
-  private calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
+  public calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
     if (isAttacker) {
       if (stamina < this.staminaAttackThreshold) return 0;
       // max stamina bonus is 30%

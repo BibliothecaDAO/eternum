@@ -940,9 +940,9 @@
       "26": 5000,
       "27": 5000,
       "28": 5000,
-      "29": 3000,
-      "30": 3000,
-      "31": 3000,
+      "29": 5000,
+      "30": 5000,
+      "31": 5000,
       "32": 5000,
       "33": 5000,
       "34": 5000,
@@ -1968,62 +1968,294 @@
   },
   "startingResources": [
     {
-      "resource": 35,
-      "amount": 3000000000
+      "resource": 1,
+      "amount": 1000000
     },
     {
-      "resource": 36,
-      "amount": 3000000000
+      "resource": 2,
+      "amount": 1000000
+    },
+    {
+      "resource": 3,
+      "amount": 1000000
+    },
+    {
+      "resource": 4,
+      "amount": 1000000
+    },
+    {
+      "resource": 5,
+      "amount": 1000000
+    },
+    {
+      "resource": 6,
+      "amount": 1000000
+    },
+    {
+      "resource": 7,
+      "amount": 1000000
+    },
+    {
+      "resource": 8,
+      "amount": 1000000
+    },
+    {
+      "resource": 9,
+      "amount": 1000000
+    },
+    {
+      "resource": 10,
+      "amount": 1000000
+    },
+    {
+      "resource": 11,
+      "amount": 1000000
+    },
+    {
+      "resource": 12,
+      "amount": 1000000
+    },
+    {
+      "resource": 13,
+      "amount": 1000000
+    },
+    {
+      "resource": 14,
+      "amount": 1000000
+    },
+    {
+      "resource": 15,
+      "amount": 1000000
+    },
+    {
+      "resource": 16,
+      "amount": 1000000
+    },
+    {
+      "resource": 17,
+      "amount": 1000000
+    },
+    {
+      "resource": 18,
+      "amount": 1000000
+    },
+    {
+      "resource": 19,
+      "amount": 1000000
+    },
+    {
+      "resource": 20,
+      "amount": 1000000
+    },
+    {
+      "resource": 21,
+      "amount": 1000000
+    },
+    {
+      "resource": 22,
+      "amount": 1000000
     },
     {
       "resource": 23,
-      "amount": 300000000
+      "amount": 1000000
+    },
+    {
+      "resource": 24,
+      "amount": 1000000
     },
     {
       "resource": 25,
-      "amount": 2000000
+      "amount": 1000000
     },
     {
       "resource": 26,
-      "amount": 833000
+      "amount": 1000000
+    },
+    {
+      "resource": 27,
+      "amount": 1000000
+    },
+    {
+      "resource": 28,
+      "amount": 1000000
     },
     {
       "resource": 29,
-      "amount": 833000
+      "amount": 1000000
+    },
+    {
+      "resource": 30,
+      "amount": 1000000
+    },
+    {
+      "resource": 31,
+      "amount": 1000000
     },
     {
       "resource": 32,
-      "amount": 833000
+      "amount": 1000000
+    },
+    {
+      "resource": 33,
+      "amount": 1000000
+    },
+    {
+      "resource": 34,
+      "amount": 1000000
+    },
+    {
+      "resource": 35,
+      "amount": 1000000
+    },
+    {
+      "resource": 36,
+      "amount": 1000000
     }
   ],
   "villageStartingResources": [
     {
-      "resource": 35,
-      "amount": 2000000000
+      "resource": 1,
+      "amount": 1000000
     },
     {
-      "resource": 36,
-      "amount": 2000000000
+      "resource": 2,
+      "amount": 1000000
+    },
+    {
+      "resource": 3,
+      "amount": 1000000
+    },
+    {
+      "resource": 4,
+      "amount": 1000000
+    },
+    {
+      "resource": 5,
+      "amount": 1000000
+    },
+    {
+      "resource": 6,
+      "amount": 1000000
+    },
+    {
+      "resource": 7,
+      "amount": 1000000
+    },
+    {
+      "resource": 8,
+      "amount": 1000000
+    },
+    {
+      "resource": 9,
+      "amount": 1000000
+    },
+    {
+      "resource": 10,
+      "amount": 1000000
+    },
+    {
+      "resource": 11,
+      "amount": 1000000
+    },
+    {
+      "resource": 12,
+      "amount": 1000000
+    },
+    {
+      "resource": 13,
+      "amount": 1000000
+    },
+    {
+      "resource": 14,
+      "amount": 1000000
+    },
+    {
+      "resource": 15,
+      "amount": 1000000
+    },
+    {
+      "resource": 16,
+      "amount": 1000000
+    },
+    {
+      "resource": 17,
+      "amount": 1000000
+    },
+    {
+      "resource": 18,
+      "amount": 1000000
+    },
+    {
+      "resource": 19,
+      "amount": 1000000
+    },
+    {
+      "resource": 20,
+      "amount": 1000000
+    },
+    {
+      "resource": 21,
+      "amount": 1000000
+    },
+    {
+      "resource": 22,
+      "amount": 1000000
     },
     {
       "resource": 23,
-      "amount": 200000000
+      "amount": 1000000
+    },
+    {
+      "resource": 24,
+      "amount": 1000000
     },
     {
       "resource": 25,
-      "amount": 500000
+      "amount": 1000000
     },
     {
       "resource": 26,
-      "amount": 133000
+      "amount": 1000000
+    },
+    {
+      "resource": 27,
+      "amount": 1000000
+    },
+    {
+      "resource": 28,
+      "amount": 1000000
     },
     {
       "resource": 29,
-      "amount": 133000
+      "amount": 1000000
+    },
+    {
+      "resource": 30,
+      "amount": 1000000
+    },
+    {
+      "resource": 31,
+      "amount": 1000000
     },
     {
       "resource": 32,
-      "amount": 133000
+      "amount": 1000000
+    },
+    {
+      "resource": 33,
+      "amount": 1000000
+    },
+    {
+      "resource": 34,
+      "amount": 1000000
+    },
+    {
+      "resource": 35,
+      "amount": 1000000
+    },
+    {
+      "resource": 36,
+      "amount": 1000000
     }
   ],
   "realmUpgradeCosts": {
