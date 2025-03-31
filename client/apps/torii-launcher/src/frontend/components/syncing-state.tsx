@@ -1,90 +1,29 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { RpcProvider } from "starknet";
-import { IpcMethod, ToriiConfig } from "../../types";
+import React, { useEffect, useState } from "react";
+import { ProgressUpdatePayload } from "../../types";
 import { useAppContext } from "../context";
 
-const SYNC_INTERVAL = 4000;
-
 export const SyncingState = React.memo(() => {
-  const { reset, currentConfig } = useAppContext();
+  const { reset } = useAppContext();
 
   const [gameSynced, setGameSynced] = useState(false);
-  const [initialToriiBlock, setInitialToriiBlock] = useState<number | null>(null);
-  const [receivedFirstBlock, setReceivedFirstBlock] = useState<number | null>(null);
-
-  const [currentChainBlock, setCurrentChainBlock] = useState<number>(0);
-  const [currentToriiBlock, setCurrentToriiBlock] = useState<number>(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const requestStoredStateFirstBlock = async (receivedFirstBlock: number) => {
-      console.log("requesting stored state first block");
-      const firstBlock = await window.electronAPI.invoke<number>(IpcMethod.RequestFirstBlock, null);
-      if (!firstBlock) {
-        setInitialToriiBlock(receivedFirstBlock);
-        await window.electronAPI.sendMessage(IpcMethod.SetFirstBlock, receivedFirstBlock);
-      } else {
-        setInitialToriiBlock(firstBlock);
-      }
-    };
+    const removeListener = window.electronAPI.onProgressUpdate((payload: ProgressUpdatePayload) => {
+      setProgress(payload.progress);
+      setGameSynced(payload.progress >= 1);
+    });
 
-    console.log("receivedFirstBlock", receivedFirstBlock);
-    if (receivedFirstBlock) {
-      requestStoredStateFirstBlock(receivedFirstBlock);
-    }
-  }, [receivedFirstBlock]);
+    return () => {
+      removeListener();
+    };
+  }, []);
 
   useEffect(() => {
     if (reset) {
       setGameSynced(false);
-      setInitialToriiBlock(null);
-      setReceivedFirstBlock(null);
-      setCurrentChainBlock(0);
-      setCurrentToriiBlock(0);
+      setProgress(0);
     }
-  }, [reset]);
-
-  const progress = useMemo(() => {
-    if (initialToriiBlock === undefined || currentChainBlock === 0) {
-      return 0;
-    }
-    if (currentChainBlock === initialToriiBlock) {
-      setGameSynced(true);
-      return 1;
-    }
-
-    const progress = (currentToriiBlock - initialToriiBlock) / (currentChainBlock - initialToriiBlock);
-    if (Math.ceil(progress * 100) === 100) {
-      setGameSynced(true);
-    }
-    console.log(progress);
-    return progress;
-  }, [currentToriiBlock, currentChainBlock, initialToriiBlock, reset]);
-
-  useEffect(() => {
-    if (!currentConfig) return;
-
-    const interval = setInterval(async () => {
-      let currentBlock = await getChainCurrentBlock(currentConfig);
-      setCurrentChainBlock(currentBlock);
-    }, SYNC_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [currentConfig]);
-
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        let currentBlock = await getToriiCurrentBlock();
-        console.log("currentBlock", currentBlock);
-        setReceivedFirstBlock((prev) => (prev === null ? currentBlock : prev));
-        setCurrentToriiBlock(currentBlock);
-      } catch (error) {
-        console.error("Error getting torii current block", error);
-      }
-    }, SYNC_INTERVAL);
-    return () => {
-      clearInterval(interval);
-    };
   }, [reset]);
 
   return gameSynced ? (
@@ -107,23 +46,3 @@ export const SyncingState = React.memo(() => {
     </div>
   );
 });
-
-const getChainCurrentBlock = async (currentConfig: ToriiConfig) => {
-  const provider = new RpcProvider({
-    nodeUrl: currentConfig.rpc,
-  });
-  const block = await provider.getBlockNumber();
-  return block;
-};
-
-const getToriiCurrentBlock = async () => {
-  const sqlQuery = "SELECT head FROM contracts WHERE contract_type = 'WORLD' LIMIT 1;";
-  const url = new URL("sql", "http://localhost:8080");
-  url.searchParams.set("query", sqlQuery);
-
-  const response = await fetch(url, {
-    method: "GET",
-  });
-  const data = await response.json();
-  return data[0].head;
-};

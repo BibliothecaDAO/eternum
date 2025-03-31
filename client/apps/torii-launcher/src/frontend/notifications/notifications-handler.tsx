@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { IpcMethod, Notification } from "../../types";
+import { Notification } from "../../types";
 
 export const NotificationsHandler = (): null => {
   useEffect(() => {
-    const sub = window.electronAPI.onMessage(IpcMethod.Notification, (notification: Notification) => {
+    const removeListener = window.electronAPI.onNotification((notification: Notification) => {
       console.log("Notification received: " + JSON.stringify(notification));
       toast(
         <div className="text-xs text-gold m-auto text-center w-full p-4">
@@ -15,7 +15,7 @@ export const NotificationsHandler = (): null => {
     });
 
     return () => {
-      sub.remove();
+      removeListener();
     };
   }, []);
   return null;

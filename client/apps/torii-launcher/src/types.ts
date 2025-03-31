@@ -1,11 +1,10 @@
 export enum IpcMethod {
-  ResetDatabase = "resetDatabase",
-  KillTorii = "killTorii",
-  RequestFirstBlock = "requestFirstBlock",
-  SetFirstBlock = "setFirstBlock",
-  ChangeConfigType = "changeConfigType",
+  ResetDatabase = "reset-database",
+  KillTorii = "kill-torii",
+  ChangeConfigType = "change-config-type",
   Notification = "notification",
-  ConfigWasChanged = "configWasChanged",
+  ConfigWasChanged = "config-was-changed",
+  ProgressUpdate = "progress-update",
 }
 
 export type Notification = {
@@ -20,4 +19,11 @@ export type ToriiConfig = {
   world_address: string;
   rpc: string;
   world_block: number;
+};
+
+export type ProgressUpdatePayload = {
+  progress: number;
+  initialToriiBlock: number | null;
+  currentToriiBlock: number;
+  currentChainBlock: number;
 };

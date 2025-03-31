@@ -29,12 +29,12 @@ export const Launcher = () => {
   }, []);
 
   useEffect(() => {
-    const sub = window.electronAPI.onMessage(IpcMethod.ConfigWasChanged, (config: ToriiConfig) => {
+    const removeListener = window.electronAPI.onConfigChanged((config: ToriiConfig) => {
       console.log("Current config changed to ", JSON.stringify(config, null, 2));
       setCurrentConfig(config);
     });
     return () => {
-      sub.remove();
+      removeListener();
     };
   }, []);
 
