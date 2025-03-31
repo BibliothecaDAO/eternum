@@ -1,6 +1,6 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
 import {
   useBuildings,
   useDojo,
@@ -9,7 +9,6 @@ import {
   useResourceManager,
 } from "@bibliothecadao/react";
 import { useCallback, useMemo } from "react";
-import { getLaborConfig } from "../lib/labor";
 import { LaborProductionCalldata, ResourceProductionCalldata } from "./types";
 
 export const useProduction = () => {
@@ -143,7 +142,7 @@ export const useProduction = () => {
     pauseProduction,
     resumeProduction,
     destroyProduction,
-    getLaborConfig,
+    getLaborConfig: configManager.getLaborConfig,
     selectedRealm,
   };
 };
