@@ -44,12 +44,12 @@ interface SeasonPassButtonProps {
 
 const SEASON_PASS_MARKET_URL = "0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80";
 
-const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
-  const mintUrl =
-    env.VITE_PUBLIC_CHAIN === "mainnet"
-      ? "https://empire.realms.world/season-passes"
-      : "https://next-empire.realms.world/season-passes";
+export const mintUrl =
+  env.VITE_PUBLIC_CHAIN === "mainnet"
+    ? "https://empire.realms.world/season-passes"
+    : "https://next-empire.realms.world/season-passes";
 
+const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
   return (
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
@@ -149,7 +149,7 @@ export const OnboardingContainer = ({ children, backgroundImage, controller = tr
       alt="Cover"
     />
     <div className="absolute z-10 w-screen h-screen">
-      <OnboardingOverlay controller={controller} />
+      {/* <OnboardingOverlay controller={controller} /> */}
       {children}
     </div>
   </div>

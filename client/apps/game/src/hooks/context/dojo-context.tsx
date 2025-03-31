@@ -1,10 +1,11 @@
 import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
+import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import Button from "@/ui/elements/button";
-import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
+import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
@@ -227,6 +228,13 @@ const DojoContextProvider = ({
                     Log In
                   </Button>
                   <SpectateButton onClick={onSpectatorModeClick} />
+
+                  <a className="cursor-pointer mt-auto w-full" href={mintUrl} target="_blank" rel="noopener noreferrer">
+                    <Button className="w-full" size="lg">
+                      <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
+                      Mint Season Pass
+                    </Button>
+                  </a>
                 </>
               )}
             </div>
