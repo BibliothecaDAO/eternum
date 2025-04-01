@@ -88,3 +88,32 @@ export class Biome {
     return BiomeType.TropicalRainForest;
   }
 }
+
+// Test biome generation
+// export function testBiomeGeneration() {
+//   console.log("[");
+//   const start = 7785456456650;
+//   const end = start + 50000;
+//   let i = start;
+  
+//   while (true) {
+//     if (i > end) {
+//       break;
+//     }
+//     const x = i - 5;
+//     const z = i + 10;
+//     const biome = Biome.getBiome(x, z);
+  
+//     // Print JSON object with comma for all entries except the last one
+//     if (i !== end) {
+//       console.log(`  { "x": "${x}", "z": "${z}", "biome": "${biome}" },`);
+//     } else {
+//       console.log(`  { "x": "${x}", "z": "${z}", "biome": "${biome}" }`);
+//     }
+    
+//     i += 1;
+//   }
+  
+//   console.log("]");
+// }
+// testBiomeGeneration();

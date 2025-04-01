@@ -279,6 +279,31 @@ mod tests {
     // use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use super::get_biome;
 
+    // #[test]
+    // #[available_gas(9000000000000000000)]
+    // fn test_biome_generation() {
+    //     println!("[");
+    //     let start = 7785456456650;
+    //     let end = start + 50_000;
+    //     let mut i = start;
+    //     loop {
+    //         if i > end {
+    //             break;
+    //         }
+    //         let x = i - 5;
+    //         let z = i + 10;
+    //         let biome = get_biome(x, z);
+    //         // Print JSON object with comma for all entries except the last one
+    //         if i != end {
+    //             println!("  {{ \"x\": \"{:?}\", \"z\": \"{:?}\", \"biome\": \"{:?}\" }},", x, z, biome);
+    //         } else {
+    //             println!("  {{ \"x\": \"{:?}\", \"z\": \"{:?}\", \"biome\": \"{:?}\" }}", x, z, biome);
+    //         }
+    //         i += 1;
+    //     };
+    //     println!("]");
+    // }
+
     #[test]
     fn test_noisy() {
         get_biome(1128, 389);
