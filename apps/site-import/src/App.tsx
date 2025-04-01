@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Game, games } from "@/data/games";
 import { getProposalsQueryOptions } from "./lib/getProposals";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { Proposal } from "./gql/graphql";
+import { ProposalQuery } from "./gql/graphql";
 import { getTreasuryBalance } from "./lib/getTreasuryBalance";
 import { EthplorerToken, getLordsInfo } from "./lib/getLordsPrice";
 import { getLordsBalance } from "./lib/getLordsBalance";
@@ -227,7 +227,13 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
   );
 }
 
-function TopBar({ onTitleClick, lordsPrice }: { onTitleClick: () => void, lordsPrice: string | undefined }) {
+function TopBar({
+  onTitleClick,
+  lordsPrice,
+}: {
+  onTitleClick: () => void;
+  lordsPrice: string | undefined;
+}) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -265,14 +271,14 @@ function TopBar({ onTitleClick, lordsPrice }: { onTitleClick: () => void, lordsP
                     transition={{ delay: 0.5 }}
                   >
                     <span className="text-sm">LORDS:</span>
-                    <span className="text-sm">${lordsPrice?.toLocaleString()}</span>
-                     {/* className={`text-sm ${
+                    <span className="text-sm">
+                      ${lordsPrice?.toLocaleString()}
+                    </span>
+                    {/* className={`text-sm ${
                         lordsPrice.startsWith("+")
                           ? "text-green-400"
                           : "text-red-400"
                       }`}*/}
-                  
-
                   </motion.div>
                 </div>
               </div>
@@ -514,38 +520,40 @@ function TokenomicsSection() {
 }
 
 function TreasurySection() {
-
   const { data: proposalsQuery } = useQuery(
     getProposalsQueryOptions({
       limit: 5,
       skip: 0,
       current: 1,
       searchQuery: "",
-    }),
+    })
   );
 
-  const isActive = (proposal: Proposal) => proposal.max_end * 1000 > Date.now();
+  const isActive = (proposal: ProposalQuery["proposal"]) =>
+    proposal && proposal.max_end * 1000 > Date.now();
 
   const { data: treasuryBalance } = useQuery(
     queryOptions({
       queryKey: ["treasuryBalance"],
       queryFn: getTreasuryBalance,
-    }),
+    })
   );
 
-  const totalTreasuryBalance = (treasuryBalance?.LORDS.usdValue ?? 0) + (treasuryBalance?.ETH.usdValue ?? 0) + (treasuryBalance?.WETH.usdValue ?? 0) + (treasuryBalance?.USDC.usdValue ?? 0);
-  const getProposalStatus = (proposal: Proposal) => {
-
+  const totalTreasuryBalance =
+    (treasuryBalance?.LORDS.usdValue ?? 0) +
+    (treasuryBalance?.ETH.usdValue ?? 0) +
+    (treasuryBalance?.WETH.usdValue ?? 0) +
+    (treasuryBalance?.USDC.usdValue ?? 0);
+  const getProposalStatus = (proposal: ProposalQuery["proposal"]) => {
     if (
-      (proposal.scores_total ?? 0) >= 1500 &&
-      Number(proposal.scores_1 ?? 0) > Number(proposal.scores_2 ?? 0)
+      (proposal?.scores_total ?? 0) >= 1500 &&
+      Number(proposal?.scores_1 ?? 0) > Number(proposal?.scores_2 ?? 0)
     ) {
-      return   "Passed";
-      
-    } else if ((proposal.scores_total ?? 0) < 1500) {
+      return "Passed";
+    } else if ((proposal?.scores_total ?? 0) < 1500) {
       return "Quorum not met";
     } else {
-      return "Failed"
+      return "Failed";
     }
   };
   return (
@@ -620,10 +628,21 @@ function TreasurySection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">LORDS</span>
-                    <span>{treasuryBalance?.LORDS.amount.toLocaleString()}</span>
+                    <span>
+                      {treasuryBalance?.LORDS.amount.toLocaleString()}
+                    </span>
                   </div>
                   <div className="w-full bg-white/5">
-                    <div className="bg-primary h-2" style={{ width: `${(treasuryBalance?.LORDS.usdValue ?? 0) / totalTreasuryBalance * 100}%` }} />
+                    <div
+                      className="bg-primary h-2"
+                      style={{
+                        width: `${
+                          ((treasuryBalance?.LORDS.usdValue ?? 0) /
+                            totalTreasuryBalance) *
+                          100
+                        }%`,
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -631,10 +650,25 @@ function TreasurySection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">ETH + WETH</span>
-                    <span>{((treasuryBalance?.ETH.amount ?? 0) + (treasuryBalance?.WETH.amount ?? 0)).toLocaleString()}</span>
+                    <span>
+                      {(
+                        (treasuryBalance?.ETH.amount ?? 0) +
+                        (treasuryBalance?.WETH.amount ?? 0)
+                      ).toLocaleString()}
+                    </span>
                   </div>
                   <div className="w-full bg-white/5">
-                    <div className="bg-blue-500 h-2" style={{ width: `${((treasuryBalance?.ETH.usdValue ?? 0) + (treasuryBalance?.WETH.usdValue ?? 0)) / totalTreasuryBalance * 100}%` }} />
+                    <div
+                      className="bg-blue-500 h-2"
+                      style={{
+                        width: `${
+                          (((treasuryBalance?.ETH.usdValue ?? 0) +
+                            (treasuryBalance?.WETH.usdValue ?? 0)) /
+                            totalTreasuryBalance) *
+                          100
+                        }%`,
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -647,7 +681,13 @@ function TreasurySection() {
                   <div className="w-full bg-white/5">
                     <div
                       className="bg-green-500 h-2"
-                      style={{ width: `${(treasuryBalance?.USDC.usdValue ?? 0) / totalTreasuryBalance * 100}%` }}
+                      style={{
+                        width: `${
+                          ((treasuryBalance?.USDC.usdValue ?? 0) /
+                            totalTreasuryBalance) *
+                          100
+                        }%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -657,7 +697,9 @@ function TreasurySection() {
               <div className="mt-6 pt-6 border-t border-white/10">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total Value</span>
-                  <span className="text-2xl font-bold">${totalTreasuryBalance.toLocaleString()}</span>
+                  <span className="text-2xl font-bold">
+                    ${totalTreasuryBalance.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -677,13 +719,21 @@ function TreasurySection() {
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-medium">{proposal?.metadata?.title}</div>
+                      <div className="font-medium">
+                        {proposal?.metadata?.title}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {proposal ? isActive(proposal) ? "Active" : getProposalStatus(proposal) : null}
+                        {proposal
+                          ? isActive(proposal)
+                            ? "Active"
+                            : getProposalStatus(proposal)
+                          : null}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">{proposal?.scores_total}</div>
+                      <div className="font-medium">
+                        {proposal?.scores_total}
+                      </div>
                       <div className="text-sm text-muted-foreground">Votes</div>
                     </div>
                   </div>
@@ -697,11 +747,17 @@ function TreasurySection() {
   );
 }
 
-function IntroSection({ lordsInfo }: { lordsInfo: EthplorerToken | undefined }) {
-  const {data: veLordsSupply} = useQuery(queryOptions({
-    queryKey: ["veLordsSupply"],
-    queryFn: getLordsBalance,
-  }));
+function IntroSection({
+  lordsInfo,
+}: {
+  lordsInfo: EthplorerToken | undefined;
+}) {
+  const { data: veLordsSupply } = useQuery(
+    queryOptions({
+      queryKey: ["veLordsSupply"],
+      queryFn: getLordsBalance,
+    })
+  );
   return (
     <motion.div
       className="min-h-[70vh] container mx-auto px-4 py-20 grid grid-cols-2 gap-16 items-start"
@@ -759,7 +815,9 @@ function IntroSection({ lordsInfo }: { lordsInfo: EthplorerToken | undefined }) 
           // Calculate market cap if this is the market cap stat
           if (stat.id === "marketCap" && lordsInfo?.price?.marketCapUsd) {
             stat.value = parseFloat(lordsInfo.price.marketCapUsd);
-            stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
+            stat.trend = lordsInfo.price.diff7d
+              ? `${lordsInfo.price.diff7d}%`
+              : "";
           }
           if (stat.id === "staked" && veLordsSupply) {
             stat.value = veLordsSupply;
@@ -837,10 +895,12 @@ function App() {
       scrollContainerRef.current.scrollLeft -= 424; // 400px (card width) + 24px (spacing)
     }
   };
-  const { data: lordsInfo } = useQuery(queryOptions({
-    queryKey: ["lordsPrice"],
-    queryFn: getLordsInfo,
-  }));
+  const { data: lordsInfo } = useQuery(
+    queryOptions({
+      queryKey: ["lordsPrice"],
+      queryFn: getLordsInfo,
+    })
+  );
   return (
     <motion.div className="font-body text-foreground bg-background/95 relative">
       {/* Fixed position background */}
@@ -871,7 +931,10 @@ function App() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
       >
-        <TopBar lordsPrice={lordsInfo?.price?.rate} onTitleClick={handleTitleClick} />
+        <TopBar
+          lordsPrice={lordsInfo?.price?.rate}
+          onTitleClick={handleTitleClick}
+        />
 
         <div className="min-h-screen pt-24 mx-4">
           {/* Intro Section */}
@@ -899,10 +962,10 @@ function App() {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <div className="relative">
-                <div 
-                  className="flex space-x-6 overflow-x-auto scrollbar-hide py-4 px-4 scroll-smooth" 
+                <div
+                  className="flex space-x-6 overflow-x-auto scrollbar-hide py-4 px-4 scroll-smooth"
                   ref={scrollContainerRef}
-                  style={{ scrollBehavior: 'smooth' }}
+                  style={{ scrollBehavior: "smooth" }}
                 >
                   {games.map((game, index) => (
                     <motion.div
@@ -1078,9 +1141,23 @@ function App() {
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
                           >
-                            <Button onClick={() => window.open(selectedGame.links?.homepage, "_blank")} >Play Now</Button>
+                            <Button
+                              onClick={() =>
+                                window.open(
+                                  selectedGame.links?.homepage,
+                                  "_blank"
+                                )
+                              }
+                            >
+                              Play Now
+                            </Button>
                             {selectedGame.whitepaper && (
-                              <Button variant="outline" onClick={() => window.open(selectedGame.whitepaper, "_blank")}>
+                              <Button
+                                variant="outline"
+                                onClick={() =>
+                                  window.open(selectedGame.whitepaper, "_blank")
+                                }
+                              >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   className="w-4 h-4 mr-2"

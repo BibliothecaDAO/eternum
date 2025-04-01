@@ -14,21 +14,6 @@ export interface EthplorerAddressInfoResponse {
     tokens: EthplorerToken[];
   }
   
-  interface TotalStakedRealmsData {
-    wallets?: {
-      realmsHeld: string;
-    }[];
-  }
-  
-  interface TotalValueLocked {
-    exchange: string;
-    valueUsd: number;
-  }
-  
-  interface ExchangeValue {
-    exchange: string;
-    value: number;
-  }
 
 interface EthplorerToken {
   tokenInfo: {

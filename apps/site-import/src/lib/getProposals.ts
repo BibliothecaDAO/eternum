@@ -174,7 +174,6 @@ export const getProposalsQueryOptions = (
   queryOptions({
     queryKey: [
       "loadProposals",
-      input.spaceIds,
       input.limit,
       input.skip,
       input.current,
