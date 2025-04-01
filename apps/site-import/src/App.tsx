@@ -14,33 +14,13 @@ import { WaveformBackground } from "@/components/WaveformBackground";
 import { TokenomicsChart } from "@/components/TokenomicsChart";
 import { stats } from "./data/stats";
 import { Badge } from "@/components/ui/badge";
-import { games } from "@/data/games";
-import { getProposals, getProposalsQueryOptions } from "./lib/getProposals";
-import { useQuery } from "@tanstack/react-query";
+import { Game, games } from "@/data/games";
+import { getProposalsQueryOptions } from "./lib/getProposals";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { Proposal } from "./gql/graphql";
-
-interface Game {
-  id: number;
-  title: string;
-  image: string;
-  backgroundImage: string;
-  backgroundImages?: string[];
-  genre?: string[];
-  description: string;
-  status: "mainnet" | "testnet" | "development";
-  isLive: boolean;
-  studio: string;
-  whitepaper?: string;
-  players?: number;
-  tvl?: number;
-  links?: {
-    homepage?: string;
-    discord?: string;
-    twitter?: string;
-    telegram?: string;
-    github?: string;
-  };
-}
+import { getTreasuryBalance } from "./lib/getTreasuryBalance";
+import { EthplorerToken, getLordsInfo } from "./lib/getLordsPrice";
+import { getLordsBalance } from "./lib/getLordsBalance";
 
 function useCountAnimation(end: number, duration: number = 2) {
   const [count, setCount] = useState(0);
@@ -247,9 +227,8 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
   );
 }
 
-function TopBar({ onTitleClick }: { onTitleClick: () => void }) {
+function TopBar({ onTitleClick, lordsPrice }: { onTitleClick: () => void, lordsPrice: string | undefined }) {
   const [time, setTime] = useState(new Date());
-  const [tokenPrice] = useState("$0.42");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -285,16 +264,15 @@ function TopBar({ onTitleClick }: { onTitleClick: () => void }) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <span className="text-sm">TOKEN:</span>
-                    <span
-                      className={`text-sm ${
-                        tokenPrice.startsWith("+")
+                    <span className="text-sm">LORDS:</span>
+                    <span className="text-sm">${lordsPrice?.toLocaleString()}</span>
+                     {/* className={`text-sm ${
+                        lordsPrice.startsWith("+")
                           ? "text-green-400"
                           : "text-red-400"
-                      }`}
-                    >
-                      {tokenPrice}
-                    </span>
+                      }`}*/}
+                  
+
                   </motion.div>
                 </div>
               </div>
@@ -502,7 +480,7 @@ function TokenomicsSection() {
             </Card>
           </motion.div>
 
-          {/* Token Distribution Summary */}
+          {/* Token Distribution Summary 
           <motion.div
             className="flex flex-col gap-6"
             initial={{ opacity: 0, x: 20 }}
@@ -523,14 +501,12 @@ function TokenomicsSection() {
                 transition={{ delay: 0.8 + index * 0.1 }}
               >
                 <div className="text-lg text-muted-foreground">
-                  {item.label}
-                </div>
-                <div className="text-3xl font-bold text-primary">
+                  {item.label}total
                   {item.value}
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+          </motion.div>*/}
         </div>
       </motion.div>
     </section>
@@ -550,6 +526,14 @@ function TreasurySection() {
 
   const isActive = (proposal: Proposal) => proposal.max_end * 1000 > Date.now();
 
+  const { data: treasuryBalance } = useQuery(
+    queryOptions({
+      queryKey: ["treasuryBalance"],
+      queryFn: getTreasuryBalance,
+    }),
+  );
+
+  const totalTreasuryBalance = (treasuryBalance?.LORDS.usdValue ?? 0) + (treasuryBalance?.ETH.usdValue ?? 0) + (treasuryBalance?.WETH.usdValue ?? 0) + (treasuryBalance?.USDC.usdValue ?? 0);
   const getProposalStatus = (proposal: Proposal) => {
 
     if (
@@ -636,21 +620,21 @@ function TreasurySection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">LORDS</span>
-                    <span>10,000,000</span>
+                    <span>{treasuryBalance?.LORDS.amount.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-white/5">
-                    <div className="bg-primary h-2" style={{ width: "60%" }} />
+                    <div className="bg-primary h-2" style={{ width: `${(treasuryBalance?.LORDS.usdValue ?? 0) / totalTreasuryBalance * 100}%` }} />
                   </div>
                 </div>
 
                 {/* ETH Balance */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">ETH</span>
-                    <span>150.5</span>
+                    <span className="text-muted-foreground">ETH + WETH</span>
+                    <span>{((treasuryBalance?.ETH.amount ?? 0) + (treasuryBalance?.WETH.amount ?? 0)).toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-white/5">
-                    <div className="bg-blue-500 h-2" style={{ width: "25%" }} />
+                    <div className="bg-blue-500 h-2" style={{ width: `${((treasuryBalance?.ETH.usdValue ?? 0) + (treasuryBalance?.WETH.usdValue ?? 0)) / totalTreasuryBalance * 100}%` }} />
                   </div>
                 </div>
 
@@ -658,12 +642,12 @@ function TreasurySection() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">USDC</span>
-                    <span>500,000</span>
+                    <span>{treasuryBalance?.USDC.amount.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-white/5">
                     <div
                       className="bg-green-500 h-2"
-                      style={{ width: "15%" }}
+                      style={{ width: `${(treasuryBalance?.USDC.usdValue ?? 0) / totalTreasuryBalance * 100}%` }}
                     />
                   </div>
                 </div>
@@ -673,7 +657,7 @@ function TreasurySection() {
               <div className="mt-6 pt-6 border-t border-white/10">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total Value</span>
-                  <span className="text-2xl font-bold">$2,450,000</span>
+                  <span className="text-2xl font-bold">${totalTreasuryBalance.toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>
@@ -695,7 +679,7 @@ function TreasurySection() {
                     <div>
                       <div className="font-medium">{proposal?.metadata?.title}</div>
                       <div className="text-sm text-muted-foreground">
-                        {proposal && isActive(proposal) ? "Active" : getProposalStatus(proposal)}
+                        {proposal ? isActive(proposal) ? "Active" : getProposalStatus(proposal) : null}
                       </div>
                     </div>
                     <div className="text-right">
@@ -713,7 +697,11 @@ function TreasurySection() {
   );
 }
 
-function IntroSection() {
+function IntroSection({ lordsInfo }: { lordsInfo: EthplorerToken | undefined }) {
+  const {data: veLordsSupply} = useQuery(queryOptions({
+    queryKey: ["veLordsSupply"],
+    queryFn: getLordsBalance,
+  }));
   return (
     <motion.div
       className="min-h-[70vh] container mx-auto px-4 py-20 grid grid-cols-2 gap-16 items-start"
@@ -750,64 +738,6 @@ function IntroSection() {
             Onchain gaming, powered by LORDS.
           </motion.p>
         </div>
-
-        {/* Leading Players Section */}
-        <motion.div
-          className="space-y-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <h3 className="text-lg font-semibold">Leading Players</h3>
-          <motion.div
-            className="space-y-2"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: {
-                transition: {
-                  staggerChildren: 0.1,
-                },
-              },
-            }}
-          >
-            {[
-              { rank: 1, name: "CryptoWarrior", score: "2,345" },
-              { rank: 2, name: "BlockchainKing", score: "2,156" },
-              { rank: 3, name: "NFTHunter", score: "1,987" },
-              { rank: 4, name: "MetaGamer", score: "1,876" },
-              { rank: 5, name: "ChainMaster", score: "1,654" },
-              { rank: 6, name: "TokenSlayer", score: "1,543" },
-              { rank: 7, name: "Web3Player", score: "1,432" },
-              { rank: 8, name: "DeFiGamer", score: "1,321" },
-              { rank: 9, name: "DAOChampion", score: "1,234" },
-              { rank: 10, name: "CoinLegend", score: "1,123" },
-            ].map((player) => (
-              <motion.div
-                key={player.rank}
-                variants={{
-                  hidden: { opacity: 0, x: -20 },
-                  visible: { opacity: 1, x: 0 },
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 24,
-                }}
-              >
-                <Card className="backdrop-blur-md bg-transparent border-none text-white">
-                  <CardContent className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-primary w-8">#{player.rank}</span>
-                      <span className="font-medium">{player.name}</span>
-                    </div>
-                    <span>{player.score} LORDS</span>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
       </div>
 
       {/* Right Column - Stats */}
@@ -825,32 +755,50 @@ function IntroSection() {
         initial="hidden"
         animate="show"
       >
-        {stats.map((stat) => (
-          <motion.div
-            key={stat.id}
-            variants={{
-              hidden: { opacity: 0, y: 20 },
-              show: {
-                opacity: 1,
-                y: 0,
-                transition: {
-                  type: "spring",
-                  duration: 0.8,
-                  bounce: 0.4,
+        {stats.map((stat) => {
+          // Calculate market cap if this is the market cap stat
+          if (stat.id === "marketCap" && lordsInfo?.price?.marketCapUsd) {
+            stat.value = parseFloat(lordsInfo.price.marketCapUsd);
+            stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
+          }
+          if (stat.id === "staked" && veLordsSupply) {
+            stat.value = veLordsSupply;
+            //stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
+          }
+          if (stat.id === "volume24h" && lordsInfo?.price?.volume24h) {
+            stat.value = parseFloat(lordsInfo.price.volume24h);
+          }
+          if (stat.id === "priceChange7d" && lordsInfo?.price?.diff7d) {
+            stat.value = parseFloat(lordsInfo.price.diff7d);
+            //stat.trend = lordsInfo.price.diff7d ? `${lordsInfo.price.diff7d}%` : "";
+          }
+          return (
+            <motion.div
+              key={stat.id}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                show: {
+                  opacity: 1,
+                  y: 0,
+                  transition: {
+                    type: "spring",
+                    duration: 0.8,
+                    bounce: 0.4,
+                  },
                 },
-              },
-            }}
-          >
-            <AnimatedStat
-              value={stat.value}
-              label={stat.label}
-              prefix={stat.prefix}
-              suffix={stat.suffix}
-              icon={stat.icon}
-              trend={stat.trend}
-            />
-          </motion.div>
-        ))}
+              }}
+            >
+              <AnimatedStat
+                value={stat.value}
+                label={stat.label}
+                prefix={stat.prefix}
+                suffix={stat.suffix}
+                icon={stat.icon}
+                trend={stat.trend}
+              />
+            </motion.div>
+          );
+        })}
       </motion.div>
     </motion.div>
   );
@@ -872,11 +820,27 @@ function LiveIndicator() {
 
 function App() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleTitleClick = () => {
     setSelectedGame(null);
   };
 
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft += 424; // 400px (card width) + 24px (spacing)
+    }
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft -= 424; // 400px (card width) + 24px (spacing)
+    }
+  };
+  const { data: lordsInfo } = useQuery(queryOptions({
+    queryKey: ["lordsPrice"],
+    queryFn: getLordsInfo,
+  }));
   return (
     <motion.div className="font-body text-foreground bg-background/95 relative">
       {/* Fixed position background */}
@@ -907,11 +871,11 @@ function App() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
       >
-        <TopBar onTitleClick={handleTitleClick} />
+        <TopBar lordsPrice={lordsInfo?.price?.rate} onTitleClick={handleTitleClick} />
 
         <div className="min-h-screen pt-24 mx-4">
           {/* Intro Section */}
-          {!selectedGame && <IntroSection />}
+          {!selectedGame && <IntroSection lordsInfo={lordsInfo} />}
           {/* Games Section */}
           <section
             className={`relative z-10 transition-all duration-500 ${
@@ -934,88 +898,132 @@ function App() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <div className="flex space-x-6 overflow-x-auto scrollbar-hide py-4 px-4">
-                {games.map((game, index) => (
-                  <motion.div
-                    key={game.id}
-                    layoutId={`game-${game.id}`}
-                    className={`game-tile flex-shrink-0 w-[400px] relative aspect-video bg-card overflow-hidden 
-                      hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-lg
-                      ${
-                        selectedGame?.id === game.id
-                          ? "ring-2 ring-primary scale-105"
-                          : ""
-                      }`}
-                    onClick={() => setSelectedGame(game)}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.5,
-                      delay: index * 0.1,
-                      type: "spring",
-                      damping: 20,
-                      stiffness: 100,
-                    }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <motion.img
-                      src={game.image}
-                      alt={game.title}
-                      className="w-full h-full object-cover"
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.5 }}
-                    />
-                    {/* Status and Player Count Overlay - Top */}
-                    {game.isLive && (
-                      <div className="absolute top-4 left-4 flex items-center space-x-2">
+              <div className="relative">
+                <div 
+                  className="flex space-x-6 overflow-x-auto scrollbar-hide py-4 px-4 scroll-smooth" 
+                  ref={scrollContainerRef}
+                  style={{ scrollBehavior: 'smooth' }}
+                >
+                  {games.map((game, index) => (
+                    <motion.div
+                      key={game.id}
+                      layoutId={`game-${game.id}`}
+                      className={`game-tile flex-shrink-0 w-[400px] relative aspect-video bg-card overflow-hidden 
+                        hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-lg
+                        ${
+                          selectedGame?.id === game.id
+                            ? "ring-2 ring-primary scale-105"
+                            : ""
+                        }`}
+                      onClick={() => setSelectedGame(game)}
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.5,
+                        delay: index * 0.1,
+                        type: "spring",
+                        damping: 20,
+                        stiffness: 100,
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <motion.img
+                        src={game.image}
+                        alt={game.title}
+                        className="w-full h-full object-cover"
+                        initial={{ scale: 1.2 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                      {/* Status and Player Count Overlay - Top */}
+                      {game.isLive && (
+                        <div className="absolute top-4 left-4 flex items-center space-x-2">
+                          <motion.div
+                            className="flex items-center bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 + 0.3 }}
+                          >
+                            <motion.div
+                              className="w-2 h-2 rounded-full bg-emerald-500 mr-2"
+                              animate={{ opacity: [1, 0.5, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                            <span className="text-sm font-medium text-foreground">
+                              Live
+                            </span>
+                          </motion.div>
+                        </div>
+                      )}
+
+                      {/* Title and Player Count Overlay - Bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background/90 to-transparent">
                         <motion.div
-                          className="flex items-center bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
+                          className="space-y-2"
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
                           transition={{ delay: index * 0.1 + 0.3 }}
                         >
-                          <motion.div
-                            className="w-2 h-2 rounded-full bg-emerald-500 mr-2"
-                            animate={{ opacity: [1, 0.5, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          />
-                          <span className="text-sm font-medium text-foreground">
-                            Live
-                          </span>
+                          <h2 className="text-lg font-semibold text-foreground">
+                            {game.title}
+                          </h2>
+                          {game.players && (
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className="w-4 h-4 mr-1"
+                              >
+                                <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
+                              </svg>
+                              {game.players.toLocaleString()} players
+                            </div>
+                          )}
                         </motion.div>
                       </div>
-                    )}
-
-                    {/* Title and Player Count Overlay - Bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background/90 to-transparent">
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.3 }}
-                      >
-                        <h2 className="text-lg font-semibold text-foreground">
-                          {game.title}
-                        </h2>
-                        {game.players && (
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              className="w-4 h-4 mr-1"
-                            >
-                              <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
-                            </svg>
-                            {game.players.toLocaleString()} players
-                          </div>
-                        )}
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
+                <button
+                  onClick={scrollLeft}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 19.5L8.25 12l7.5-7.5"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={scrollRight}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                    />
+                  </svg>
+                </button>
               </div>
             </motion.div>
           </section>
@@ -1070,9 +1078,9 @@ function App() {
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
                           >
-                            <Button>Play Now</Button>
+                            <Button onClick={() => window.open(selectedGame.links?.homepage, "_blank")} >Play Now</Button>
                             {selectedGame.whitepaper && (
-                              <Button variant="outline">
+                              <Button variant="outline" onClick={() => window.open(selectedGame.whitepaper, "_blank")}>
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   className="w-4 h-4 mr-2"

@@ -23,44 +23,27 @@ export interface Game {
 
 export const games: Game[] = [
   {
-    id: 1,
-    title: "Blob Arena",
-    image: "/games/blob-arena/cover.webp",
-    backgroundImage: "/games/blob-arena/cover.webp",
+    id: 9,
+    title: "Realms: Eternum",
+    image: "/games/realms-eternum/cover.webp",
+    backgroundImage: "/games/realms-eternum/cover.webp",
     backgroundImages: [
-      "/games/blob-arena/screenshots/1.png",
-      "/games/blob-arena/screenshots/2.png",
-      "/games/blob-arena/screenshots/3.png",
+      "/games/realms-eternum/screenshots/1.jpg",
+      "/games/realms-eternum/screenshots/2.jpg",
+      "/games/realms-eternum/screenshots/3.jpg",
+      "/games/realms-eternum/screenshots/4.jpg"
     ],
-    genre: ["Turn-Based Combat", "Strategy"],
-    description: "Aiming to deliver a high-quality gaming experience, Blob Arena stands out for its gameplay dynamics and strategic focus. Players will navigate through exciting encounters, against other players or against AI, using their Bloberts' distinctive traits to outsmart and defeat opponents. The game's core mechanic revolves around an enhanced rock-paper-scissors style combat modified by each character's attributes such as Attack, Defence, Speed, and Strength, which are crucial for mastering the game.",
+    genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
+    description: "Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.",
     status: "development",
     isLive: true,
-    studio: "grugs-lair",
+    studio: "biblio-dao",
+    whitepaper: "https://github.com/BibliothecaDAO/world-guide",
     links: {
-      homepage: "https://www.blobarena.xyz/",
-      discord: "https://discord.gg/Aa43XBgYvh",
-      twitter: "https://x.com/Blobarena",
-      github: "https://github.com/grugslair/Blob-arena"
-    }
-  },
-  {
-    id: 2,
-    title: "Call the Banners",
-    image: "/games/call-the-banners/cover.webp",
-    backgroundImage: "/games/call-the-banners/cover.webp",
-    backgroundImages: [
-      "/games/call-the-banners/screenshots/1.png"
-    ],
-    genre: ["Social", "Strategy", "PvP"],
-    description: "Call the Banners is a game where mercenaries navigate blurred lines between loyalty and betrayal in a medieval siege. Choose a side, manage resources, and strategize to destroy the opposing castle, with victory bringing rewards. Which side will you lend your sword?",
-    status: "development",
-    isLive: false,
-    studio: "banners-for-adventurers",
-    links: {
-      homepage: "https://www.bannersnft.com/",
-      discord: "https://discord.gg/8WybFeKn",
-      twitter: "https://twitter.com/callthe_banners"
+      homepage: "https://eternum.realms.world/",
+      discord: "https://discord.gg/realmsworld",
+      twitter: "https://twitter.com/RealmsEternum",
+      github: "https://github.com/BibliothecaDAO/eternum"
     }
   },
   {
@@ -122,101 +105,35 @@ export const games: Game[] = [
     description: "Survivors is the first Loot adventure game exploring the Play2Die mechanic. It is a game of onchain survival where you must defeat beasts and collect gear in the fight to stay alive and make it to the top of the leaderboard.",
     status: "development",
     isLive: true,
-    studio: "Realm Studios",
+    studio: "Provable Games",
     links: {
       homepage: "https://survivor.realms.world/",
       discord: "https://discord.gg/realmsworld",
       twitter: "https://twitter.com/LootRealms"
     }
   },
-  {
-    id: 6,
-    title: "Loot Underworld",
-    image: "/games/loot-underworld/cover.webp",
-    backgroundImage: "/games/loot-underworld/cover.webp",
-    backgroundImages: [
-      "/games/loot-underworld/screenshots/1.png",
-      "/games/loot-underworld/screenshots/2.png",
-      "/games/loot-underworld/screenshots/3.png",
-      "/games/loot-underworld/screenshots/4.png",
-      "/games/loot-underworld/screenshots/5.png",
-      "/games/loot-underworld/screenshots/6.png"
-    ],
-    genre: ["Play to Die", "Roguelike", "RPG", "Dungeon Crawler"],
-    description: "Explore the endless mysteries of The Underworld. A living autonomous (under)world of drama, story and danger, waiting to be explored and shaped by its inhabitants, and occupying the liminal space between and underneath. Underworld is an extension to Eternum & Realms, built on Starknet and Dojo, adding composable building blocks, and enabling a range of interoperable game experiences. The flagship game will be a retro narrative dungeon crawler.",
-    status: "development",
-    isLive: false,
-    studio: "underware",
-    links: {
-      homepage: "https://lootunder.world",
-      twitter: "https://x.com/LootUnderworld"
-    }
-  },
-  {
-    id: 7,
-    title: "Paved",
-    image: "/games/paved/cover.webp",
-    backgroundImage: "/games/paved/cover.webp",
-    backgroundImages: [
-      "/games/paved/screenshots/1.png",
-      "/games/paved/screenshots/2.png",
-    ],
-    genre: ["Tile-matching", "Puzzle", "Strategy"],
-    description: "In PAVED, players compete for high scores and rewards by laying tiles to form an expanding medieval landscape. Inspired by the board game Carcassonne, solo and multiplayer modes offer unique, strategic experiences that test both planning and decisiveness. Think you've got what it takes? Pave your way to victory in a fully onchain strategy game like no other.",
-    status: "development",
-    isLive: true,
-    studio: "paved-studios",
-    links: {
-      homepage: "https://sepolia.paved.gg/",
-      discord: "https://discord.gg/uQnjZhZPfu",
-      twitter: "https://twitter.com/pavedgame"
-    }
-  },
+  
   {
     id: 8,
     title: "Pistols at Ten Blocks",
-    image: "/games/pistols-at-ten-blocks/cover.webp",
-    backgroundImage: "/games/pistols-at-ten-blocks/cover.webp",
+    image: "/games/pistols/cover.webp",
+    backgroundImage: "/games/pistols/cover.webp",
     backgroundImages: [
-      "/games/pistols-at-ten-blocks/screenshots/1.png",
-      "/games/pistols-at-ten-blocks/screenshots/2.png",
-      "/games/pistols-at-ten-blocks/screenshots/3.png",
-      "/games/pistols-at-ten-blocks/screenshots/4.png",
-      "/games/pistols-at-ten-blocks/screenshots/5.png",
-      "/games/pistols-at-ten-blocks/screenshots/6.png",
+      "/games/pistols/screenshots/1.png",
+      "/games/pistols/screenshots/2.png",
+      "/games/pistols/screenshots/3.png",
+      "/games/pistols/screenshots/4.png",
+      "/games/pistols/screenshots/5.png",
+      "/games/pistols/screenshots/6.png",
     ],
     genre: ["Social", "Casual", "Strategy", "PVP"],
     description: "Thou art an offence to all that is decent, dog. I challenge you... to a duel! In Pistols at Ten Blocks, you face off against your opponent for honour or profit, in a pistol duel at '10' paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself glory on the leaderboard, or a shallow grave behind the Fool & Flintlock tavern.",
     status: "development",
     isLive: true,
-    studio: "underware",
+    studio: "Underware",
     links: {
       homepage: "https://lootunder.world/pistols",
       twitter: "https://x.com/underware_gg"
-    }
-  },
-  {
-    id: 9,
-    title: "Realms: Eternum",
-    image: "/games/realms-eternum/cover.webp",
-    backgroundImage: "/games/realms-eternum/cover.webp",
-    backgroundImages: [
-      "/games/realms-eternum/screenshots/1.jpg",
-      "/games/realms-eternum/screenshots/2.jpg",
-      "/games/realms-eternum/screenshots/3.jpg",
-      "/games/realms-eternum/screenshots/4.jpg"
-    ],
-    genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
-    description: "Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.",
-    status: "development",
-    isLive: true,
-    studio: "biblio-dao",
-    whitepaper: "https://github.com/BibliothecaDAO/world-guide",
-    links: {
-      homepage: "https://eternum.realms.world/",
-      discord: "https://discord.gg/realmsworld",
-      twitter: "https://twitter.com/RealmsEternum",
-      github: "https://github.com/BibliothecaDAO/eternum"
     }
   },
   {
@@ -234,7 +151,7 @@ export const games: Game[] = [
     description: "Rising Revenant is an immersive last man standing strategy game built on Starknet and powered by Dojo. The game unfolds in two distinct stages. In the preparation phase, players meticulously plan their strategies, allocate resources, and invest in critical upgrades. Once preparations are complete, the game transitions into the action-packed game phase, where players unleash their reinforcements, trade and engage in intense events. Success in Rising Revenant hinges on strategic planning and tactical prowess, with performance in both phases determining the rewards. The ultimate objective: to be the last Revenant standing.",
     status: "development",
     isLive: true,
-    studio: "grugs-lair",
+    studio: "Grugs Lair",
     links: {
       twitter: "https://twitter.com/RRisingRevenant",
       github: "https://github.com/GrugLikesRocks/Rising-Revenant"
@@ -304,5 +221,89 @@ export const games: Game[] = [
       homepage: "https://app.zkube.xyz/",
       twitter: "https://twitter.com/zKube_game"
     }
-  }
+  },
+  {
+    id: 1,
+    title: "Blob Arena",
+    image: "/games/blob-arena/cover.webp",
+    backgroundImage: "/games/blob-arena/cover.webp",
+    backgroundImages: [
+      "/games/blob-arena/screenshots/1.png",
+      "/games/blob-arena/screenshots/2.png",
+      "/games/blob-arena/screenshots/3.png",
+    ],
+    genre: ["Turn-Based Combat", "Strategy"],
+    description: "Aiming to deliver a high-quality gaming experience, Blob Arena stands out for its gameplay dynamics and strategic focus. Players will navigate through exciting encounters, against other players or against AI, using their Bloberts' distinctive traits to outsmart and defeat opponents. The game's core mechanic revolves around an enhanced rock-paper-scissors style combat modified by each character's attributes such as Attack, Defence, Speed, and Strength, which are crucial for mastering the game.",
+    status: "development",
+    isLive: true,
+    studio: "Grugs Lair",
+    links: {
+      homepage: "https://www.blobarena.xyz/",
+      discord: "https://discord.gg/Aa43XBgYvh",
+      twitter: "https://x.com/Blobarena",
+      github: "https://github.com/grugslair/Blob-arena"
+    }
+  },
+  {
+    id: 2,
+    title: "Call the Banners",
+    image: "/games/call-the-banners/cover.webp",
+    backgroundImage: "/games/call-the-banners/cover.webp",
+    backgroundImages: [
+      "/games/call-the-banners/screenshots/1.png"
+    ],
+    genre: ["Social", "Strategy", "PvP"],
+    description: "Call the Banners is a game where mercenaries navigate blurred lines between loyalty and betrayal in a medieval siege. Choose a side, manage resources, and strategize to destroy the opposing castle, with victory bringing rewards. Which side will you lend your sword?",
+    status: "development",
+    isLive: false,
+    studio: "Banners for Adventurers",
+    links: {
+      homepage: "https://www.bannersnft.com/",
+      discord: "https://discord.gg/8WybFeKn",
+      twitter: "https://twitter.com/callthe_banners"
+    }
+  },
+  {
+    id: 6,
+    title: "Loot Underworld",
+    image: "/games/loot-underworld/cover.webp",
+    backgroundImage: "/games/loot-underworld/cover.webp",
+    backgroundImages: [
+      "/games/loot-underworld/screenshots/1.png",
+      "/games/loot-underworld/screenshots/2.png",
+      "/games/loot-underworld/screenshots/3.png",
+      "/games/loot-underworld/screenshots/4.png",
+      "/games/loot-underworld/screenshots/5.png",
+      "/games/loot-underworld/screenshots/6.png"
+    ],
+    genre: ["Play to Die", "Roguelike", "RPG", "Dungeon Crawler"],
+    description: "Explore the endless mysteries of The Underworld. A living autonomous (under)world of drama, story and danger, waiting to be explored and shaped by its inhabitants, and occupying the liminal space between and underneath. Underworld is an extension to Eternum & Realms, built on Starknet and Dojo, adding composable building blocks, and enabling a range of interoperable game experiences. The flagship game will be a retro narrative dungeon crawler.",
+    status: "development",
+    isLive: false,
+    studio: "Underware",
+    links: {
+      homepage: "https://lootunder.world",
+      twitter: "https://x.com/LootUnderworld"
+    }
+  },
+  {
+    id: 7,
+    title: "Paved",
+    image: "/games/paved/cover.webp",
+    backgroundImage: "/games/paved/cover.webp",
+    backgroundImages: [
+      "/games/paved/screenshots/1.png",
+      "/games/paved/screenshots/2.png",
+    ],
+    genre: ["Tile-matching", "Puzzle", "Strategy"],
+    description: "In PAVED, players compete for high scores and rewards by laying tiles to form an expanding medieval landscape. Inspired by the board game Carcassonne, solo and multiplayer modes offer unique, strategic experiences that test both planning and decisiveness. Think you've got what it takes? Pave your way to victory in a fully onchain strategy game like no other.",
+    status: "development",
+    isLive: true,
+    studio: "Paved Studios",
+    links: {
+      homepage: "https://sepolia.paved.gg/",
+      discord: "https://discord.gg/uQnjZhZPfu",
+      twitter: "https://twitter.com/pavedgame"
+    }
+  },
 ]; 

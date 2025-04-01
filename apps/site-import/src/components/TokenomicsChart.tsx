@@ -21,7 +21,7 @@ export function TokenomicsChart() {
     <Card className="backdrop-blur-md bg-black/20 border-white/10">
       <CardHeader className="items-center pb-0">
         <CardTitle>Token Distribution</CardTitle>
-        <CardDescription>Total Supply: 100,000,000 LORDS</CardDescription>
+        <CardDescription>Total Supply: 500,000,000 LORDS</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <div className="mx-auto aspect-square max-h-[250px]">
