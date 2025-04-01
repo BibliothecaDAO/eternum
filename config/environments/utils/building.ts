@@ -291,9 +291,9 @@ export const SIMPLE_BUILDING_COSTS: ResourceInputs = {
   [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 600_000 }],
 
   // T2 Military Buildings - include Rare resources
-  [BuildingType.ResourceKnightT2]: [{ resource: ResourcesIds.Labor, amount: 560_000 }],
-  [BuildingType.ResourceCrossbowmanT2]: [{ resource: ResourcesIds.Labor, amount: 590_000 }],
-  [BuildingType.ResourcePaladinT2]: [{ resource: ResourcesIds.Labor, amount: 590_000 }],
+  [BuildingType.ResourceKnightT2]: [],
+  [BuildingType.ResourceCrossbowmanT2]: [],
+  [BuildingType.ResourcePaladinT2]: [],
 
   // T3 Military Buildings - include Epic and Legendary resources
   [BuildingType.ResourceKnightT3]: [],
