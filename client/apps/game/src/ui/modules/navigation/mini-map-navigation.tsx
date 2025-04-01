@@ -34,6 +34,7 @@ export const MiniMapNavigation = () => {
         isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
       }`}
     >
+      {/* <EventStream hideChat={false} /> */}
       {showMinimap && (
         <div onClick={toggleExpand} className="cursor-pointer absolute right-2 top-2 hover:opacity-80 z-10">
           {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
