@@ -25,7 +25,7 @@ export const formatNumber = (num: number, decimals: number): string => {
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {
-  const formattedDecimals = formatNumber(divideByPrecision(num), decimals);
+  const formattedDecimals = formatNumber(divideByPrecision(num, false), decimals);
   return Number(formattedDecimals).toLocaleString();
 };
 
