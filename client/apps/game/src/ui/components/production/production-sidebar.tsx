@@ -42,7 +42,7 @@ const SidebarRealm = ({
   return (
     <div
       onClick={onSelect}
-      className={`p-4 rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-gold/20" : "hover:bg-gold/10"}`}
+      className={`p-4 rounded-lg cursor-pointer transition-colors ${isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-50"}`}
     >
       <div className="flex justify-between items-start">
         <h3 className="text-xl font-bold mb-2">{realm.name}</h3>
