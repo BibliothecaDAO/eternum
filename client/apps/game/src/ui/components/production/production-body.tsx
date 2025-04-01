@@ -14,7 +14,7 @@ export const ProductionBody = ({
   const [selectedResource, setSelectedResource] = useState<ResourcesIds | null>(preSelectedResource || null);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <RealmInfo realm={realm} />
       <BuildingsList realm={realm} onSelectProduction={setSelectedResource} selectedResource={selectedResource} />
       {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} />}

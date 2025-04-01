@@ -109,7 +109,7 @@ export default {
       backgroundImage: {
         map: "url(/images/map.svg)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
-        "dark-wood": "url(public/images/textures/dark-wood.png)",
+        "dark-wood": "url(/images/textures/dark-wood.png)",
       },
       fontSize: {
         xs: ".975rem",

@@ -117,7 +117,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
   const isPopulationNearCapacity = populationPercentage >= 80;
 
   return (
-    <div className={clsx("flex gap-2", className)}>
+    <div className={clsx("flex", className)}>
       {realmInfo?.storehouses && (
         <div
           onMouseEnter={() => {
@@ -129,7 +129,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseLeave={() => {
             setTooltip(null);
           }}
-          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center  md:text-sm  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
+          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center   hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
           <div className="self-center font-medium">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
@@ -147,13 +147,13 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           setTooltip(null);
         }}
         className={clsx(
-          "population-selector px-3 py-1 flex gap-2 justify-start items-center text-xs md:text-sm  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
+          "population-selector px-3 py-1 flex gap-2 justify-start items-center  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
           isPopulationNearCapacity && "ring-1 ring-red-500",
         )}
       >
         <ResourceIcon withTooltip={false} resource="House" size="sm" />
         <div className="flex flex-col">
-          <div className={clsx("self-center font-medium", isPopulationNearCapacity && "text-red-400")}>
+          <div className={clsx("self-center", isPopulationNearCapacity && "text-red-400")}>
             {realmInfo?.population || 0} / {(realmInfo?.capacity || 0) + configManager.getBasePopulationCapacity()}
           </div>
           <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
