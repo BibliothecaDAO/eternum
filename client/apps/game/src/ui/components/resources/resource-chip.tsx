@@ -11,7 +11,6 @@ import {
   multiplyByPrecision,
   ResourceManager,
   TickIds,
-  TimeFormat,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -118,9 +117,7 @@ export const ResourceChip = ({
         <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
 
         <div className="self-center m-y-auto font-bold col-span-4 text-center">
-          {timeUntilValueReached !== 0
-            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
-            : ""}
+          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
         </div>
 
         {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (

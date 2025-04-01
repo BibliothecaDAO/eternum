@@ -34,35 +34,9 @@ export const SepoliaEternumGlobalConfig: Config = {
     ...CommonEternumGlobalConfig.exploration,
     agentFindProbability: 1,
     agentFindFailProbability: 5,
+    shardsMinesFailProbability: 1,
+    shardsMinesWinProbability: 20,
   },
-  // startingResources: [
-  //   ...CommonEternumGlobalConfig.startingResources,
-  //   { resource: 27, amount: 100_000 },
-  //   { resource: 30, amount: 100_000 },
-  //   { resource: 33, amount: 100_000 },
-  // ],
-  // villageStartingResources: [
-  //   ...CommonEternumGlobalConfig.villageStartingResources,
-  //   { resource: 27, amount: 50_000 },
-  //   { resource: 30, amount: 50_000 },
-  //   { resource: 33, amount: 50_000 },
-  // ],
-  // buildings: {
-  //   ...CommonEternumGlobalConfig.buildings,
-  //   complexBuildingCosts: Object.fromEntries(
-  //     Object.entries(CommonEternumGlobalConfig.buildings.complexBuildingCosts).map(([key, value]) => [
-  //       key,
-  //       value.map((cost: ResourceCost) => ({
-  //         resource: cost.resource,
-  //         amount: cost.amount / 10,
-  //       })),
-  //     ]),
-  //   ) as ResourceInputs,
-  // },
-  // carryCapacityGram: {
-  //   ...CommonEternumGlobalConfig.carryCapacityGram,
-  //   [CapacityConfig.Structure]: 4_000_000_000_000, // 4b kg
-  // },
   resources: {
     ...CommonEternumGlobalConfig.resources,
     productionByComplexRecipeOutputs: Object.fromEntries(

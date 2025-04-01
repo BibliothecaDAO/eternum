@@ -138,29 +138,6 @@ export enum TimeFormat {
   S = 8,
 }
 
-export const formatTime = (
-  seconds: number,
-  format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
-  abbreviate: boolean = false,
-): string => {
-  const days = Math.floor(seconds / (3600 * 24));
-  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  const parts = [];
-  if (days > 0 && format & TimeFormat.D) parts.push(`${days}d`);
-  if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}h`);
-  if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}m`);
-  if (remainingSeconds > 0 && format & TimeFormat.S) parts.push(`${remainingSeconds}s`);
-
-  if (abbreviate) {
-    return parts[0] || "0s";
-  }
-
-  return parts.join(" ");
-};
-
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
     .writeText(address.toString())

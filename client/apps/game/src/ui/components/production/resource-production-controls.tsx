@@ -5,29 +5,17 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
+  formatTime,
   getBuildingFromResource,
   getBuildingQuantity,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
-
-const formatProductionTime = (ticks: number) => {
-  const days = Math.floor(ticks / (24 * 60 * 60));
-  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-  const seconds = ticks % 60;
-
-  return [
-    days > 0 ? `${days}d ` : "",
-    hours > 0 ? `${hours}h ` : "",
-    minutes > 0 ? `${minutes}m ` : "",
-    `${seconds}s`,
-  ].join("");
-};
 
 export const ResourceProductionControls = ({
   selectedResource,
@@ -221,7 +209,11 @@ export const ResourceProductionControls = ({
         </div>
         <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
           <span className="text-gold/80">Production Time:</span>
-          <span className="font-medium">{ticks ? formatProductionTime(Math.floor(ticks / buildingCount)) : "0s"}</span>
+          <span className="font-medium">
+            {ticks
+              ? formatTime(Math.floor((ticks / buildingCount) * (realm.category === StructureType.Village ? 2 : 1)))
+              : "0s"}
+          </span>
         </div>
       </div>
 

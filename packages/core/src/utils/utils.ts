@@ -16,34 +16,18 @@ export enum TimeFormat {
   S = 8,
 }
 
-export const formatTime = (
-  seconds: number,
-  format: TimeFormat = TimeFormat.D | TimeFormat.H | TimeFormat.M | TimeFormat.S,
-  abbreviate: boolean = true,
-  clock: boolean = false,
-): string => {
-  const days = Math.floor(seconds / (3600 * 24));
-  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
+export const formatTime = (seconds: number) => {
+  const days = Math.floor(seconds / (24 * 60 * 60));
+  const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((seconds % (60 * 60)) / 60);
   const remainingSeconds = Math.floor(seconds % 60);
 
-  const parts = [];
-
-  if (days > 0 && format & TimeFormat.D) parts.push(`${days}${abbreviate ? "d" : " day(s)"}`);
-
-  if (clock) {
-    const formattedHours = hours.toString().padStart(2, "0");
-    const formattedMinutes = minutes.toString().padStart(2, "0");
-    const formattedSeconds = remainingSeconds.toString().padStart(2, "0");
-    parts.push(`${formattedHours}:${formattedMinutes}:${formattedSeconds}`);
-  } else {
-    if (hours > 0 && format & TimeFormat.H) parts.push(`${hours}${abbreviate ? "h" : " hour(s)"}`);
-    if (minutes > 0 && format & TimeFormat.M) parts.push(`${minutes}${abbreviate ? "m" : " minute(s)"}`);
-    if (remainingSeconds > 0 && format & TimeFormat.S)
-      parts.push(`${remainingSeconds}${abbreviate ? "s" : " second(s)"}`);
-  }
-
-  return parts.join(" ");
+  return [
+    days > 0 ? `${days}d ` : "",
+    hours > 0 ? `${hours}h ` : "",
+    minutes > 0 ? `${minutes}m ` : "",
+    `${remainingSeconds}s`,
+  ].join("");
 };
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {

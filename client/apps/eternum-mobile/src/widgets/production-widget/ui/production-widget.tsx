@@ -4,15 +4,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  ID,
-  resources,
-  TickIds,
-  TimeFormat,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, ID, resources, TickIds } from "@bibliothecadao/eternum";
 import { Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LaborBuildingProps } from "../model/types";
@@ -110,7 +102,7 @@ export const ProductionWidget = ({ building, resourceManager, realm }: LaborBuil
                   </Button>
                   {timeUntilValueReached !== 0 && (
                     <Badge variant="secondary" className="h-6 text-xs bg-white/10 text-white/90">
-                      {formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)}
+                      {formatTime(timeUntilValueReached)}
                     </Badge>
                   )}
                 </div>

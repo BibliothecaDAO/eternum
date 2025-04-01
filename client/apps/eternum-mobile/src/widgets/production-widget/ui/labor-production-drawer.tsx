@@ -13,6 +13,7 @@ import {
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
@@ -207,7 +208,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
                   <ResourceIcon resourceId={ResourcesIds.Labor} size={16} />
                   <span>Total Labor Generated: {laborAmount}</span>
                 </div>
-                <div>Time Required: {formatTime(ticks)}</div>
+                <div>Time Required: {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}</div>
               </div>
             </CardContent>
           </Card>
