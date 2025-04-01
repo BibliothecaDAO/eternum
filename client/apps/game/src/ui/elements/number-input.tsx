@@ -64,7 +64,7 @@ export const NumberInput = ({
       )}
       <input
         min={min}
-        className="w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
+        className="button-wood w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
         onFocus={onFocus}
         onBlur={onBlur}
