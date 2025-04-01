@@ -82,10 +82,6 @@ export const STAMINA_START_BOOST_TICK_COUNT = 2;
 export const STAMINA_TRAVEL_COST = 10;
 export const STAMINA_EXPLORE_COST = 20;
 
-// ----- Resources ----- //
-export const RESOURCE_AMOUNT_PER_TICK = 10;
-export const STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR = 6;
-
 // ----- Banks ----- //
 export const BANK_NAME = "Central Bank";
 export const BANK_LORDS_COST = 1000;

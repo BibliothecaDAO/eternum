@@ -14,6 +14,7 @@ import {
   RealmInfo,
   resources,
   ResourcesIds,
+  StructureType,
   TileManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
@@ -40,6 +41,8 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       components,
     },
   } = useDojo();
+
+  const isVillage = realm.category === StructureType.Village;
 
   const [activeTab, setActiveTab] = useState<"raw" | "labor">("raw");
   const [isLoading, setIsLoading] = useState(false);
@@ -155,8 +158,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
       }));
 
       // Calculate new output based on this input
-      const newOutputAmount =
-        Math.round(value / laborConfig.laborBurnPerResourceOutput) * laborConfig.resourceOutputPerInputResources;
+      const newOutputAmount = Math.round(value / resourceConfig.amount) * laborConfig.resourceOutputPerInputResources;
       setOutputAmount(newOutputAmount);
 
       // Update other inputs proportionally with rounding
@@ -164,7 +166,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
         if (input.resource === resourceId) {
           return { ...acc, [input.resource]: Math.round(value) };
         }
-        const inputAmount = Math.round(input.amount * newOutputAmount);
+        const inputAmount = Math.round((input.amount * newOutputAmount) / laborConfig.resourceOutputPerInputResources);
         return { ...acc, [input.resource]: inputAmount };
       }, {});
       setLaborInputAmounts(newInputs);
@@ -260,7 +262,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     return getBuildingQuantity(realm.entityId, getBuildingFromResource(building.produced.resource), components);
   }, [realm.entityId, building.produced.resource, components]);
 
-  const ticks = Math.floor(outputAmount / configManager.complexSystemResourceOutput[building.produced.resource].amount);
+  const ticks = Math.floor(outputAmount / configManager.simpleSystemResourceOutput[building.produced.resource].amount);
 
   const renderResourceRow = (resourceId: ResourcesIds, amount: number, isLabor: boolean = false) => {
     const resource = resources.find((r) => r.id === resourceId);
@@ -352,20 +354,6 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     );
   };
 
-  const formatProductionTime = (ticks: number) => {
-    const days = Math.floor(ticks / (24 * 60 * 60));
-    const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-    const minutes = Math.floor((ticks % (60 * 60)) / 60);
-    const seconds = ticks % 60;
-
-    return [
-      days > 0 ? `${days}d ` : "",
-      hours > 0 ? `${hours}h ` : "",
-      minutes > 0 ? `${minutes}m ` : "",
-      `${seconds}s`,
-    ].join("");
-  };
-
   const { currentBlockTimestamp } = getBlockTimestamp();
   const timeLeft = resourceManager.timeUntilValueReached(currentBlockTimestamp, building.produced.resource);
 
@@ -398,7 +386,9 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
 
               <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
                 <span className="text-gold/80">Production Time:</span>
-                <span className="font-medium">{formatProductionTime(Math.floor(ticks / buildingCount))}</span>
+                <span className="font-medium">
+                  {formatTime(Math.floor((ticks / buildingCount) * (isVillage ? 2 : 1)))}
+                </span>
               </div>
 
               {isActive && timeLeft > 0 && (
