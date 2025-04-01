@@ -14,52 +14,50 @@ const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) 
   const maxTroops = Math.floor(capacity / troopWeight);
 
   return (
-    <div className="text-xs text-gray-200 p-2 max-w-xs z-50 bg-black/80 rounded-md border border-gold/30">
+    <div className=" text-gray-200 p-2 max-w-xs z-50 ">
       <p className="font-bold text-gold mb-1">Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-1 my-1">
         <div className="flex items-center bg-white/5 p-1 rounded">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
-          <span className="text-white text-xxs">
+          <span className="">
             {(capacity / configManager.getResourceWeightKg(ResourcesIds.Lords)).toLocaleString()} Lords
           </span>
         </div>
         <div className="flex items-center bg-white/5 p-1 rounded">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="xs" className="mr-1" />
-          <span className="text-white text-xxs">
+          <span className=" ">
             {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wheat)).toLocaleString()} Food
           </span>
         </div>
         <div className="flex items-center bg-white/5 p-1 rounded">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" className="mr-1" />
-          <span className="text-white text-xxs">
+          <span className=" ">
             {(capacity / configManager.getResourceWeightKg(ResourcesIds.Wood)).toLocaleString()} Resources
           </span>
         </div>
         <div className="flex items-center bg-white/5 p-1 rounded">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="xs" className="mr-1" />
-          <span className="text-white text-xxs">
+          <span className=" ">
             {(capacity / configManager.getResourceWeightKg(ResourcesIds.Labor)).toLocaleString()} Labor
           </span>
         </div>
       </div>
 
       <div className="bg-white/5 p-2 rounded mt-2 mb-2">
-        <p className="text-xxs text-gold mb-1">Troop Capacity</p>
+        <p className=" text-gold mb-1">Troop Capacity</p>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="xs" className="mr-1" />
-            <span className="text-white text-xxs font-semibold">{maxTroops.toLocaleString()} troops</span>
+            <span className="  font-semibold">{maxTroops.toLocaleString()} troops</span>
           </div>
           <div className="flex items-center">
-            <span className="text-xxs text-gray-300 italic px-1 py-0.5 bg-black/30 rounded">
-              Per troop type and tier
-            </span>
+            <span className=" text-gray-300 italic px-1 py-0.5 bg-black/30 rounded">Per troop type and tier</span>
           </div>
         </div>
       </div>
 
       <div className="mt-1 pt-1 border-t border-white/10">
-        <p className="italic text-xxs flex items-center">
+        <p className="italic  flex items-center">
           <span className="text-green mr-1">+</span> Build Storehouses to increase capacity
         </p>
       </div>
@@ -72,12 +70,12 @@ const WorkersHutInfo = () => {
   const baseCapacity = configManager.getBasePopulationCapacity();
 
   return (
-    <div className="text-xs text-gray-200 p-2 max-w-xs z-50 bg-black/80 rounded-md border border-gold/30">
+    <div className="text-xs text-gray-200 p-2 max-w-xs z-50">
       <p className="font-bold text-gold mb-2">Population Capacity</p>
       <div className="bg-white/5 p-2 rounded mb-2">
         <div className="flex justify-between items-center mb-1">
           <span>Base Capacity:</span>
-          <span className="font-semibold text-white">{baseCapacity}</span>
+          <span className="font-semibold ">{baseCapacity}</span>
         </div>
         <div className="flex justify-between items-center">
           <span>Per Workers Hut:</span>
@@ -131,7 +129,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseLeave={() => {
             setTooltip(null);
           }}
-          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center text-xxs md:text-sm bg-black/40 hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
+          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center  md:text-sm  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
           <div className="self-center font-medium">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
@@ -149,7 +147,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           setTooltip(null);
         }}
         className={clsx(
-          "population-selector px-3 py-1 flex gap-2 justify-start items-center text-xs md:text-sm bg-black/40 hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
+          "population-selector px-3 py-1 flex gap-2 justify-start items-center text-xs md:text-sm  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
           isPopulationNearCapacity && "ring-1 ring-red-500",
         )}
       >

@@ -123,9 +123,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   }, [currentBlockTimestamp]);
 
   return (
-    <div className="pointer-events-auto w-screen flex justify-between md:pl-2">
+    <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
-        className="top-left-navigation-selector flex flex-wrap  gap-2"
+        className="top-left-navigation-selector flex flex-wrap"
         variants={slideDown}
         initial="hidden"
         animate="visible"
