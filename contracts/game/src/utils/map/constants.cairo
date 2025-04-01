@@ -41,7 +41,7 @@ pub mod fixed_constants {
 
     #[inline(always)]
     pub fn _0_35() -> Fixed {
-        FixedTrait::new(6456360425559056516, false)
+        FixedTrait::new(6456360425798343065, false)
     }
 
 
@@ -53,7 +53,7 @@ pub mod fixed_constants {
 
     #[inline(always)]
     pub fn _0_45() -> Fixed {
-        FixedTrait::new(8301034833408584807, false)
+        FixedTrait::new(8301034833169298227, false)
     }
 
 
@@ -74,7 +74,7 @@ pub mod fixed_constants {
 
     #[inline(always)]
     pub fn _0_62() -> Fixed {
-        FixedTrait::new(11437381325699922001, false)
+        FixedTrait::new(11436981325699922001, false)
     }
 
     #[inline(always)]
