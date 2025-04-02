@@ -306,13 +306,7 @@ function TopBar({
                   ))}
                 </div>
 
-                <span className="h-6 w-px bg-border" />
-
-                {/* Auth Buttons */}
-                <div className="flex items-center space-x-4">
-                  <Button variant="ghost">Sign In</Button>
-                  <Button>Join Now</Button>
-                </div>
+    
               </div>
             </div>
           </CardContent>
@@ -365,7 +359,7 @@ function FooterSection() {
                 </div>
               </div>
 
-              {/* Quick Links */}
+              {/* Quick Links 
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Quick Links</h3>
                 <ul className="space-y-3">
@@ -380,25 +374,63 @@ function FooterSection() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </div>*/}
 
               {/* Resources */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Resources</h3>
                 <ul className="space-y-3">
-                  {["Whitepaper", "Token", "FAQ", "Support"].map((item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ))}
+                  <li>
+                    <a
+                      href="https://bibliothecadao.xyz/"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Bibliotheca DAO
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://www.coingecko.com/en/coins/lords"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Coin Gecko
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Frontinus House
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://shop.realms.world"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Realms World Shop
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://dev.realms.world"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Developer Docs
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://drive.google.com/drive/folders/17vrwIjwqifxBVTkHmxoK1VhQ31hVSbDH"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Brand Assets
+                    </a>
+                  </li>
                 </ul>
               </div>
-
+              <div></div>
               {/* Newsletter */}
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Stay Updated</h3>
