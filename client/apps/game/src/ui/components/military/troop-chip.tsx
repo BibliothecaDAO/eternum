@@ -18,7 +18,7 @@ export const TroopChip = ({
   if (!troops) return null;
 
   return (
-    <div className={`relative w-full text-gold font-bold ${className}`}>
+    <div className={`relative w-full ${className}`}>
       <div
         className={`px-2 py-1 bg-gold/10 h-full flex ${
           direction === "row" ? "flex-row" : "flex-col"

@@ -116,7 +116,7 @@ export const ResourceBar = memo(
 
           {!disableInput && (
             <div
-              className="flex text-xs text-gold/70 mt-1 justify-center items-center relative text-center self-center mx-auto w-full cursor-pointer"
+              className="flex text-xs  mt-1 justify-center items-center relative text-center self-center mx-auto w-full cursor-pointer"
               onClick={() => handleAmountChange(finalResourceBalance)}
             >
               Max: {isNaN(selectedResourceBalance) ? "0" : selectedResourceBalance.toLocaleString()}
