@@ -33,7 +33,7 @@ export const SelectEntityFromList = memo(
             <div
               key={entity.entityId}
               className={clsx(
-                "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
+                "flex w-full justify-between hover:bg-gold/5 items-center p-1 text-xs pl-2",
                 isSelected && "border-gold/10 border",
               )}
               onClick={() => onSelect(entity.name, entity.entityId)}

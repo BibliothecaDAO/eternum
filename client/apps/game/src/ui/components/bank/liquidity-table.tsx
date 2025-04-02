@@ -8,7 +8,7 @@ type LiquidityTableProps = {
 };
 
 export const LiquidityTableHeader = () => (
-  <div className="grid grid-cols-7 gap-4 mb-4 px-2 border-b">
+  <div className="grid grid-cols-7 gap-4 px-2 h6">
     <div className="uppercase">Pair</div>
     <div className="uppercase">
       <p>Price</p>
@@ -41,7 +41,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
 
   return (
-    <div className="amm-liquidity-selector p-4 h-full bg-gold/10 overflow-x-auto relative">
+    <div className="amm-liquidity-selector p-4 h-full panel-wood overflow-x-auto relative">
       <input
         type="text"
         placeholder="Search resources..."

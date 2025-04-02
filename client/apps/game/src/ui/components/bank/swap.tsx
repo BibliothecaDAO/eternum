@@ -249,7 +249,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
               <ResourceIcon resource={positiveResource} size="md" />
             </div>
           </div>
-          <div className="amm-swap-donkey-selector bg-gold/10 p-2 rounded-lg h-auto">
+          <div className="amm-swap-donkey-selector p-2 rounded-lg h-auto">
             <div className="flex flex-col p-2 items-center">
               <TravelInfo
                 entityId={entityId}
@@ -280,7 +280,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
   return (
     <div>
-      <div className="amm-swap-selector mx-auto bg-gold/10 px-3 py-1">
+      <div className="amm-swap-selector mx-auto  px-3 py-1">
         <div className="relative my-2 space-y-1">
           {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
           <div className="absolute left-1/2 top-[94px]">
