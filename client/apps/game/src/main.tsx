@@ -147,7 +147,7 @@ async function init() {
 		{ ...dojoConfig },
 		{
 			vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-			useBurner: env.VITE_PUBLIC_CHAIN === "local",
+			useBurner: false,
 		},
 		{
 			onNoAccount: () => {

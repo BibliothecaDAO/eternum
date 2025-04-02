@@ -1,7 +1,7 @@
 import { getResourceAddresses } from "@/utils/addresses";
 import { ControllerConnector } from "@cartridge/connector";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
+import { Connector, StarknetConfig, jsonRpcProvider, voyager } from "@starknet-react/core";
 import type React from "react";
 import { useCallback } from "react";
 import { shortString } from "starknet";
@@ -54,7 +54,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     <StarknetConfig
       chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
-      connectors={[nonLocalController]}
+      connectors={[nonLocalController as unknown as Connector]}
       explorer={voyager}
       autoConnect
     >

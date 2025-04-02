@@ -15,9 +15,6 @@ catalogs:
     '@dojoengine/core':
       specifier: 1.2.4
       version: 1.2.4
-    '@dojoengine/create-burner':
-      specifier: 1.2.4
-      version: 1.2.4
     '@dojoengine/predeployed-connector':
       specifier: 1.2.4
       version: 1.2.4
@@ -42,6 +39,9 @@ catalogs:
     '@dojoengine/utils':
       specifier: 1.2.4
       version: 1.2.4
+    '@starknet-react/chains':
+      specifier: 3.1.2
+      version: 3.1.2
     '@starknet-react/core':
       specifier: 3.7.2
       version: 3.7.2
@@ -65,9 +65,6 @@ importers:
       '@cartridge/controller':
         specifier: 'catalog:'
         version: 0.7.8(@metamask/sdk@0.32.1(bufferutil@4.0.9)(encoding@0.1.13)(utf-8-validate@5.0.10))(@phantom/wallet-sdk@0.0.23)(open@8.4.2)(starknet@6.23.1(encoding@0.1.13))(starknetkit@2.10.4(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2))
-      '@dojoengine/create-burner':
-        specifier: 'catalog:'
-        version: 1.2.4(bufferutil@4.0.9)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@dojoengine/react':
         specifier: 'catalog:'
         version: 1.2.4(@types/node@20.17.30)(@types/react@18.3.20)(bufferutil@4.0.9)(immer@10.1.1)(lightningcss@1.29.3)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
@@ -411,6 +408,12 @@ importers:
       '@latticexyz/utils':
         specifier: ^2.0.0-next.12
         version: 2.2.20
+      '@starknet-react/chains':
+        specifier: 'catalog:'
+        version: 3.1.2
+      '@starknet-react/core':
+        specifier: 'catalog:'
+        version: 3.7.2(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@vercel/analytics':
         specifier: ^1.2.2
         version: 1.5.0(react@19.1.0)
@@ -1526,13 +1529,6 @@ packages:
   '@dojoengine/core@1.2.4':
     resolution: {integrity: sha512-JgpajrQ81b5z+cWv+cI1TYxHQpDGdmzsqkBj9J/aP1F2iXhVeZGKOLvNcoxIcM++28EjNfFOct/nvyyu12+5eA==}
     hasBin: true
-
-  '@dojoengine/create-burner@1.2.4':
-    resolution: {integrity: sha512-YHMEai+vgIg6qfUF/Tw02SqitWDpszFaS3+4+25tOJutV1Ow1yn8PE8zu+J+pNd1YVM1wDOPKsmvsHBuGtJmUw==}
-    peerDependencies:
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      starknet: 6.23.1
 
   '@dojoengine/predeployed-connector@1.2.4':
     resolution: {integrity: sha512-c9LOneHCA93Dj24rGkTkMS4XAfRtJOOF5VDcpja+wxiDw8nLAjGIyjVsgXOHTuEvtYqoOiDO2+MgoIEzDoIuWg==}
@@ -12121,21 +12117,6 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - encoding
-      - typescript
-      - utf-8-validate
-
-  '@dojoengine/create-burner@1.2.4(bufferutil@4.0.9)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@dojoengine/core': 1.2.4(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
-      '@scure/bip32': 1.6.2
-      '@starknet-react/core': 3.7.2(bufferutil@4.0.9)(get-starknet-core@4.0.0)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)
-      encoding: 0.1.13
-      get-starknet-core: 4.0.0
-      js-cookie: 3.0.5
-      react: 19.1.0
-      starknet: 6.23.1(encoding@0.1.13)
-    transitivePeerDependencies:
-      - bufferutil
       - typescript
       - utf-8-validate
 

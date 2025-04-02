@@ -1,4 +1,4 @@
-import ControllerConnector from "@cartridge/connector/controller";
+import { ControllerConnector } from "@cartridge/connector";
 import { Account, AccountInterface } from "starknet";
 import { create } from "zustand";
 
