@@ -1,8 +1,7 @@
-import { OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
+import { OnboardingContainer } from "@/ui/layouts/onboarding";
 import { useSeasonStart } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import "../../index.css";
-
 export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) => {
   const statements = [
     "Syncing Eternum...",
@@ -28,26 +27,28 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   const [currentStatement, setCurrentStatement] = useState(0);
 
   useEffect(() => {
-    const timestamp = Math.floor(Date.now() / (1000 * 60));
+    // Set initial statement
+    setCurrentStatement(Math.floor(Math.random() * statements.length));
 
-    const statementIndex = timestamp % statements.length;
-    setCurrentStatement(statementIndex);
-
+    // Cycle through statements every 3 seconds
     const statementInterval = setInterval(() => {
-      const newTimestamp = Math.floor(Date.now() / (1000 * 60));
-      setCurrentStatement(newTimestamp % statements.length);
-    }, 60000); // Check every minute
+      setCurrentStatement((prevStatement) => (prevStatement + 1) % statements.length);
+    }, 3000);
 
     return () => {
       clearInterval(statementInterval);
     };
-  }, []);
+  }, [statements.length]);
 
   return (
     <OnboardingContainer backgroundImage={backgroundImage} controller={false}>
-      <StepContainer tos={false} transition={false} loading={true}>
-        <div className="mt-10 relative bottom-1 text-center text-xl">{`${statements[currentStatement]}`}</div>
-      </StepContainer>
+      <div className="h-screen w-screen flex justify-center align-middle">
+        <div className="mt-10 relative bottom-1 text-center text-xl self-center panel-wood bg-dark-wood p-4 px-12">
+          {" "}
+          <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
+          {`${statements[currentStatement]}`}
+        </div>
+      </div>
     </OnboardingContainer>
   );
 };
