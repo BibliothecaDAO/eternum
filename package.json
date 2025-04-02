@@ -83,7 +83,6 @@
   "dependencies": {
     "@cartridge/connector": "catalog:",
     "@cartridge/controller": "catalog:",
-    "@dojoengine/create-burner": "catalog:",
     "@dojoengine/react": "catalog:",
     "@dojoengine/recs": "catalog:",
     "@dojoengine/sdk": "catalog:",
