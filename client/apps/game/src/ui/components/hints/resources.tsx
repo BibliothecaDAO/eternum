@@ -7,7 +7,6 @@ import {
   configManager,
   findResourceById,
   multiplyByPrecision,
-  RESOURCE_PRECISION,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -84,13 +83,12 @@ const ResourceTable = () => {
         </thead>
         <tbody>
           {resourceTable.map((resource) => {
-            const decimals = resource.amount > RESOURCE_PRECISION ? 0 : 2;
             return (
               <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors" key={resource.resource_type}>
                 <td className="p-4">
                   <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
                 </td>
-                <td className="text-xl text-center p-4">{currencyFormat(resource.amount, decimals)}</td>
+                <td className="text-xl text-center p-4">{currencyFormat(resource.amount, 2)}</td>
                 <td className="p-4">
                   <div className="gap-3 flex flex-col">
                     {resource.cost.map((cost, index) => {
@@ -98,7 +96,7 @@ const ResourceTable = () => {
                         <div key={index}>
                           <ResourceCost
                             resourceId={cost.resource}
-                            amount={Number(currencyFormat(Number(cost.amount), 1))}
+                            amount={Number(currencyFormat(Number(cost.amount), 2))}
                             size="lg"
                           />
                         </div>
