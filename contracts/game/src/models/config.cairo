@@ -161,11 +161,12 @@ pub struct SeasonAddressesConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-pub struct HyperstructureResourceConfig {
+pub struct HyperstructureConstructConfig {
     #[key]
-    pub resource_tier: u8,
-    pub min_amount: u128,
-    pub max_amount: u128,
+    pub resource_type: u8,
+    pub resource_points: u16,
+    pub min_amount: u32,
+    pub max_amount: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -529,31 +530,6 @@ pub struct BattleConfig {
 pub impl BattleConfigImpl of BattleConfigTrait {
     fn get(ref world: WorldStorage) -> BattleConfig {
         WorldConfigUtilImpl::get_member(world, selector!("battle_config"))
-    }
-}
-
-#[generate_trait]
-pub impl HyperstructureResourceConfigImpl of HyperstructureResourceConfigTrait {
-    fn get_all(world: WorldStorage) -> Span<HyperstructureResourceConfig> {
-        let mut all_tier_configs: Array<HyperstructureResourceConfig> = array![];
-        let mut tier = ResourceTiers::LORDS; // lords is the first tier == 1
-        while (tier <= ResourceTiers::MYTHIC) { // mythic is the last tier == 9
-            let hyperstructure_resource_config: HyperstructureResourceConfig = world.read_model(tier);
-            all_tier_configs.append(hyperstructure_resource_config);
-            tier += 1;
-        };
-        return all_tier_configs.span();
-    }
-
-
-    fn get_required_amount(self: @HyperstructureResourceConfig, randomness: u256) -> u128 {
-        if *self.min_amount == *self.max_amount {
-            return *self.min_amount;
-        }
-        let min_amount: u256 = (*self.min_amount).into();
-        let max_amount: u256 = (*self.max_amount).into();
-        let additional_amount = randomness % (max_amount - min_amount);
-        return (min_amount + additional_amount).try_into().unwrap();
     }
 }
 
