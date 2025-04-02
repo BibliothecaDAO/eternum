@@ -4,9 +4,11 @@ import { ID } from "@bibliothecadao/eternum";
 import { Suspense, useState } from "react";
 import { CombatContainer } from "./combat-container";
 import { HelpContainer } from "./help-container";
+import { RaidContainer } from "./raid-container";
 
 enum ModalTab {
   Combat = "Combat",
+  Raid = "Raid",
   Transfer = "Transfer",
 }
 
@@ -44,6 +46,8 @@ export const CombatModal = ({
           <Suspense fallback={<LoadingAnimation />}>
             {activeTab === ModalTab.Combat ? (
               <CombatContainer attackerEntityId={attackerEntityId} targetHex={targetHex} />
+            ) : activeTab === ModalTab.Raid ? (
+              <RaidContainer attackerEntityId={attackerEntityId} targetHex={targetHex} />
             ) : (
               <HelpContainer selectedEntityId={attackerEntityId} targetHex={targetHex} />
             )}
