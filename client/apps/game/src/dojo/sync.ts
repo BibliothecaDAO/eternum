@@ -36,7 +36,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 	let isProcessing = false;
 
 	const {
-		network: { contractComponents: components },
+		network: { contractComponents: components, world },
 	} = setupResult;
 
 	// Function to process the next item in the queue
@@ -66,6 +66,14 @@ const syncEntitiesDebounced = async <S extends Schema>(
 		if (Object.keys(batch).length > 0) {
 			try {
 				if (logging) console.log("Applying batch update", batch);
+
+				for (const entityId in batch) {
+					const value = batch[entityId];
+					// this is an entity that has been deleted
+					if (Object.keys(value).length === 0) {
+						world.deleteEntity(entityId);
+					}
+				}
 
 				handleExplorerTroopsIfDeletion(batch, components, logging);
 				setEntities(batch, components as any, logging);
