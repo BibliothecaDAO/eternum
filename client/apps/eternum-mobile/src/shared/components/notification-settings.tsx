@@ -2,6 +2,7 @@ import { Button } from "@/shared/ui/button";
 import { Switch } from "@/shared/ui/switch";
 import { AlertTriangle, Bell, BellOff, Info } from "lucide-react";
 import { useEffect, useState } from "react";
+import { showDirectNotification } from "../../register-sw";
 import { usePushNotifications } from "../hooks/use-push-notifications";
 import { testPushNotification } from "../lib/push-notification-api";
 
@@ -65,31 +66,8 @@ export function NotificationSettings({ onClose }: NotificationSettingsProps) {
   const handleDirectNotification = async () => {
     setIsDirectTesting(true);
     try {
-      // First check permission
-      if (Notification.permission !== "granted") {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          throw new Error("Notification permission not granted");
-        }
-      }
-
-      // This creates a notification directly in the browser
-      // Note: This bypasses the service worker and doesn't use the push service
-      const notification = new Notification("Direct Test Notification", {
-        body: "This is a direct test notification (not using push service) at " + new Date().toLocaleTimeString(),
-        icon: "/game-pwa-192x192.png",
-        tag: "direct-test-" + Date.now(),
-        requireInteraction: true,
-      });
-
-      console.log("Direct notification created:", notification);
-
-      // Handle notification click
-      notification.onclick = () => {
-        console.log("Direct notification clicked");
-        window.focus();
-        notification.close();
-      };
+      await showDirectNotification();
+      console.log("Direct notification displayed");
     } catch (error) {
       console.error("Error showing direct notification:", error);
     } finally {
