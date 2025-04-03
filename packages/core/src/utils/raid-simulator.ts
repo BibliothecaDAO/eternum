@@ -83,6 +83,11 @@ export class RaidSimulator {
       };
     }
 
+    const dividedRaider: Army = {
+      ...raider,
+      troopCount: raider.troopCount / defenders.length,
+    };
+
     // Calculate total damage from all defenders and damage from raider
     let totalAttackerDamage = 0;
     let totalDefenderDamage = 0;
@@ -92,7 +97,7 @@ export class RaidSimulator {
     // and damage to each defender
     for (const defender of defenders) {
       if (defender.troopCount > 0) {
-        const combat = this.combatSimulator.simulateBattle(raider, defender, biome);
+        const combat = this.combatSimulator.simulateBattle(dividedRaider, defender, biome);
         const attackerDamage = Math.floor((combat.attackerDamage * this.params.damage_raid_percent_num) / 10_000);
         const defenderDamage = Math.floor((combat.defenderDamage * this.params.damage_raid_percent_num) / 10_000);
 

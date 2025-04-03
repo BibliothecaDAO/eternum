@@ -767,6 +767,20 @@ export interface AttackGuardVsExplorerProps extends SystemSigner {
 }
 
 /**
+ * Properties for raid explorer vs guard
+ */
+export interface RaidExplorerVsGuardProps extends SystemSigner {
+  /** ID of the raiding explorer */
+  explorer_id: number;
+  /** ID of the structure being raided */
+  structure_id: number;
+  /** Direction to the structure */
+  structure_direction: number;
+  /** Resources to steal */
+  steal_resources: Resource[];
+}
+
+/**
  * Properties for adding troops to a guard
  */
 export interface GuardAddProps extends SystemSigner {

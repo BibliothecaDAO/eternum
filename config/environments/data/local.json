@@ -1129,7 +1129,7 @@
       "22": 0,
       "23": 0,
       "24": 0,
-      "25": 5,
+      "25": 0,
       "26": 0,
       "27": 0,
       "28": 0,
@@ -1173,15 +1173,15 @@
       "25": 0,
       "26": 2,
       "27": 3,
-      "28": 2,
-      "29": 2,
-      "30": 2,
-      "31": 2,
-      "32": 2,
-      "33": 2,
-      "34": 2,
-      "35": 2,
-      "36": 2,
+      "28": 3,
+      "29": 3,
+      "30": 3,
+      "31": 3,
+      "32": 3,
+      "33": 3,
+      "34": 3,
+      "35": 3,
+      "36": 3,
       "37": 0,
       "38": 1
     },
@@ -1831,12 +1831,7 @@
           "amount": 250000
         }
       ],
-      "29": [
-        {
-          "resource": 23,
-          "amount": 560000
-        }
-      ],
+      "29": [],
       "30": [],
       "31": [
         {
@@ -1844,12 +1839,7 @@
           "amount": 300000
         }
       ],
-      "32": [
-        {
-          "resource": 23,
-          "amount": 590000
-        }
-      ],
+      "32": [],
       "33": [],
       "34": [
         {
@@ -1857,12 +1847,7 @@
           "amount": 600000
         }
       ],
-      "35": [
-        {
-          "resource": 23,
-          "amount": 590000
-        }
-      ],
+      "35": [],
       "36": [],
       "37": [
         {
@@ -1905,28 +1890,28 @@
       },
       {
         "resource_tier": 5,
-        "min_amount": 120000000,
-        "max_amount": 240000000
+        "min_amount": 175000000,
+        "max_amount": 400000000
       },
       {
         "resource_tier": 6,
-        "min_amount": 90000000,
-        "max_amount": 180000000
+        "min_amount": 75000000,
+        "max_amount": 125000000
       },
       {
         "resource_tier": 7,
-        "min_amount": 40000000,
-        "max_amount": 80000000
+        "min_amount": 45000000,
+        "max_amount": 60000000
       },
       {
         "resource_tier": 8,
-        "min_amount": 20000000,
-        "max_amount": 40000000
+        "min_amount": 30000000,
+        "max_amount": 45000000
       },
       {
         "resource_tier": 9,
-        "min_amount": 7000000,
-        "max_amount": 14000000
+        "min_amount": 25000000,
+        "max_amount": 30000000
       }
     ],
     "hyperstructureTotalCosts": [
@@ -2332,129 +2317,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x28d970cf6a445af803b133dd0b6e9061c8f5e2f69a4e5e66354fffd8c0522e4",
-      "realms": "0x6d94c83adafddc88fd981a24b9b51c33da09fd62f3641c5a249fff402e944e4",
-      "lords": "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e",
+      "seasonPass": "0x5b62b1e030bf39c9d2ce4f17f09b8ee8cde0d254622ff9368c0ca613b5b4089",
+      "realms": "0x6889c48cecb9dc5719ddd0722db9d915972822b2919f4e5bbbab5e365792814",
+      "lords": "0x73660cacc20eda6297ae20142baae71641bebdd03372ec3758298d61d3e6877",
       "resources": {
         "STONE": [
           1,
-          "0x74388ef13f12692b4e16c7d6694dd08aca8f37dcc61254488645bd6ac565564"
+          "0x2ed2d6ba77fbe8f19b4e5b92a0164c557d9f7e97008f305cafe032aea7f65ec"
         ],
         "COAL": [
           2,
-          "0x3770b73eb6984d5c8290b5067cb4671c97ef135a06d20c1cf063f99b95fb793"
+          "0x367c036183479a72bba86fda4470af6fe7ece527b063180a9fa9b9779ba8c5"
         ],
         "WOOD": [
           3,
-          "0x4364e863adebebccb0a8c579d1785dca2736f83dd7c08b4d0afbb206f191ec4"
+          "0x4182128df3dbabddc9198c8e3f9e26eee496eaeb9e480e7bca6009cecb334e4"
         ],
         "COPPER": [
           4,
-          "0x44c8d975a805e3e61467e3052eaf4afa8f557a0af4f6fa40fa54fd0690b3e70"
+          "0x78b751709beb27b3b7e35799bb016238c69d8488d1374be58927dc8227ff472"
         ],
         "IRONWOOD": [
           5,
-          "0x6583a2dfe0c441bd270937409554ff4d6ba49a9153fb73f016ef8f06f34b923"
+          "0x2e5a2ceb0c48e2ab6e73177e27d646da483866760de80676d3f7696e5c186c0"
         ],
         "OBSIDIAN": [
           6,
-          "0x54cdfe5d36345637db8a41024bebabb830f467f4c7e6f3f928c0b53f071ec08"
+          "0x59c4f4b43331cdf842853cdaca70b5a37da18d117df50db3b1394951bb6a7eb"
         ],
         "GOLD": [
           7,
-          "0x160aabbeb1510f7c14235554934ebe747b62f8beb8e6d2a3e9bac65515527a4"
+          "0x645cf49dff3d9189b1cf6b1f7b5afec46bf2a66406b55b05f608f1def83cc7f"
         ],
         "SILVER": [
           8,
-          "0x16f38b3945dccf9bbb4c32590187417546993570a0747ee911ed62a882b68ca"
+          "0x76c72935aa0e5192c2ed36f02f6c3ae1b37b0a1de05078123ef84b197477ad3"
         ],
         "MITHRAL": [
           9,
-          "0x351ae477ad741e03b5804abc3835584b3550164cbfa426762bbeb2b3183cb77"
+          "0x333ec2366a2b5c74180f5ea9cb43878c01ab2d50b5d60211f82064718a3b488"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x37a4b6210bff7b620e18f0bd79a368d2996adbe307774a982b377fbdaf20afe"
+          "0x1ad4a3063e65656c891e6b93f0f7eb800144de3df9580e5b1e6726d2117a34e"
         ],
         "COLDIRON": [
           11,
-          "0x1f4316d9d7eb6040351689edf4da14be53f35e13512d559b056a245b1c69bb8"
+          "0x4b162b6705cd3e68f66f32c4b03b86b41b155c9de3b1b8cc046d1b708150979"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x4aa25fe0ee843adcacc7591fade53af6afb47a831f44748551fe215903af9d"
+          "0x4b4c04d9e0e1a96960a15235e74a5886da4d5103de8e6db911a637ec0418fb"
         ],
         "RUBY": [
           13,
-          "0xd0b113be9d645fe7b89ffc698cd7b51cfae63ad854ce86af1c3f7e87fa7941"
+          "0x1887cbf0c078718aa5d7618a305f79dea49a31096ce1b587bef420b324a2949"
         ],
         "DIAMONDS": [
           14,
-          "0x6ca428727a752fea4501d68c84c692eb614d0cab50b6065ed9d75fe23390cfe"
+          "0x4f9790aa6bcd1f6d862657b70293b5fdda26edeaf6b454b82c5ebf35698dfa5"
         ],
         "HARTWOOD": [
           15,
-          "0x52ab39eeefb6386cd1abbc38cbcede080db15924ac80637cfd2fa6b2a6e3f0e"
+          "0x6901081e45407e1e393d5f5a8b031a132d90d8e1be89a4fc0759d66702d9e3b"
         ],
         "IGNIUM": [
           16,
-          "0x329e2f1edc9e734eeeb80ed9641261612ad561909713134d876b67472a1970f"
+          "0x4647aba2ccbad8ca1dca737b0531b87fd5c7f9e609377264feaa0b0e7af5d26"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x482695d3490e28078d7c915d6cedea5f433d52f765de93ef1f9aa7924fd692c"
+          "0xa40a41d043109f89fdcf58e746a4d519fc07698949c4c7fbdd21b22b663fcb"
         ],
         "TRUEICE": [
           18,
-          "0x15c745ee2fdea9cec7110a837295aa26274815024cc899a12c7ca0a6803d6ba"
+          "0x3a0da2c69930821afce76e3c8557978087bdb53a2ebad6163f64c3cd0fe7753"
         ],
         "ADAMANTINE": [
           19,
-          "0x72f0fb40e9d2f1d6d3ec3e658b26df63967f8b537441c1b41f8bd44154bf74b"
+          "0x44dfe8de1ad0db8295463620255374201475459ae02d8de9dd750bcd8fd435e"
         ],
         "SAPPHIRE": [
           20,
-          "0x170156186ee475299f8420073ca20524e5bc9c7f16ae659e64b154283818df9"
+          "0x373c27d09a39dd7afdecea86335e5db4a018bb0d118cb4eb8c2bc92a4f58436"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x1a8d260970254258a0dd7a322bb6ad3e693844be6c88f1d4a3ceb951535ca11"
+          "0x1be9ed4c1b4e5e794cdf00d7b6142af5d6671f8c15d1489510d6c2b7906399f"
         ],
         "DRAGONHIDE": [
           22,
-          "0xeef0ad9a8bc8b7effa1dc4d97519d1025ece137929fe0cfb59e90e33c27a74"
+          "0x6ac60fe2a81195c288b2aec3fd38d2a0ea43e0e9ddcc4ece91db0eb968ff398"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x1cafde2ae3a3a5080986871e0a39cb09d746c2a99ba9540488ea6758d1a3f3b"
+          "0xe4f5a466ba9bae6ba242cead2f66a4adc89d1866d9b684e8415de9382e3d49"
         ],
         "DONKEY": [
           25,
-          "0x5d455cc4bec7530f67a75ea3406dd1d85ba1fd69b77119f1e8d74ce1344611d"
+          "0x7913dd426349bb47f5696b6746da283050650cce6c1075ec2e16cd5f7b75dd2"
         ],
         "KNIGHT": [
           26,
-          "0x6de2f74af194ea4af6527bad35b4b6f4725d475da7168d2470ac0dda4020bd"
+          "0x7a50ffb4ff4b7df82e21b2517f84603725035a80f084bbfe6292a84821604dd"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x7d01fd5ef8e6cb95ea0f6f93788532727a6bf37a85d841b64f18b39e6b0942d"
+          "0xc70981e39c72b7041fdce416fe96321c1dc4c21bd9581f4f3893203252d67f"
         ],
         "PALADIN": [
           32,
-          "0x504cda2f28d47141e1140bd5562e0c53295009983a6729bdeaa6ca330f8819c"
+          "0x70e0a36dee5408f84405d27228b1b8ce20a5890e20e18bf139dcbade6533c06"
         ],
         "WHEAT": [
           35,
-          "0x79fa48eac2fc709a501c18ecffd1d1f91c04f39fcb6faf650edfa720346c81e"
+          "0x44274e7c8c605c2ccfda883c50bf860c4768f1ca9b40f8bc0f067c95a59a489"
         ],
         "FISH": [
           36,
-          "0x7fb0185574ab8aaa29654fb9bc620ae125f00122273800905187719ccab6583"
+          "0x53553e091b24a1e889090e6d2393d543d680772bc6372d326cdfe591a96761e"
         ],
         "LORDS": [
           37,
-          "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e"
+          "0x73660cacc20eda6297ae20142baae71641bebdd03372ec3758298d61d3e6877"
         ]
       }
     },
@@ -3772,8 +3757,8 @@
       },
       "contracts": [
         {
-          "address": "0x308436495d8afc982df66016df09391706aabacdff031cbea6bc329608c08b8",
-          "class_hash": "0x60f805be74fdda65d60f10b412607c0c6e5646f1556ebed383d0cbe920e4cf5",
+          "address": "0x2c4d50e2b12d12ebdec21ce28b95f32574549134226282761dfe00bac8bb855",
+          "class_hash": "0x75385c6032455d8169cbb2e8666a4f89661aa59e0599b7ac6c2069145f5d2b1",
           "abi": [
             {
               "type": "impl",
@@ -7578,8 +7563,8 @@
           ]
         },
         {
-          "address": "0x2610004641d7d98d99646ab839290bdc76dc4fdd1d5cdd4115dd06dff9cc3e8",
-          "class_hash": "0x24f2ecbe449d136cd9237fc03ff4fdd503bf4b68c0f256ceec8c03dd072696",
+          "address": "0x3674b450a8621bf5ea7dbf71fd2823574deb5f5d4e97530003ac29a5a76882c",
+          "class_hash": "0x73014adf88cde02927c7c69f9000e18bcf67fd9c30c4bc3c98ea4d89f5d1ffa",
           "abi": [
             {
               "type": "impl",
@@ -8067,8 +8052,8 @@
           ]
         },
         {
-          "address": "0x55b7eefcfaa8e96e78304cbb1294f9f18528ce86ecc4605eaba7f7e2e325e1e",
-          "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
+          "address": "0x5668072d35d5ae84055cafdee27dd48d4944a66b703cbda5b2646f943d20383",
+          "class_hash": "0x15c0e82c727bfb6e35dae6c3801fecf2d46aa8821ca4ff956a25ec09e1a1667",
           "abi": [
             {
               "type": "impl",
@@ -8225,6 +8210,26 @@
                 },
                 {
                   "type": "function",
+                  "name": "troop_troop_adjacent_transfer",
+                  "inputs": [
+                    {
+                      "name": "from_explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "to_explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
                   "name": "troop_structure_adjacent_transfer",
                   "inputs": [
                     {
@@ -8253,6 +8258,22 @@
                     },
                     {
                       "name": "to_troop_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "troop_burn",
+                  "inputs": [
+                    {
+                      "name": "explorer_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -8388,8 +8409,10 @@
             "send",
             "pickup",
             "arrivals_offload",
+            "troop_troop_adjacent_transfer",
             "troop_structure_adjacent_transfer",
             "structure_troop_adjacent_transfer",
+            "troop_burn",
             "upgrade"
           ]
         },
@@ -9334,8 +9357,8 @@
           ]
         },
         {
-          "address": "0x74042a1e1435b381a9ce6b6285badd05a02300051a7648fbc766af89d302ff",
-          "class_hash": "0x6731a138dd8bbbaafe01b83b2d69eec7dec9b8582c7d51bfd11076201b7d7b1",
+          "address": "0x641fdb52676297abc0246d6356b095bf635f0a0d8982c8c4af101e438e586c6",
+          "class_hash": "0x46e61209b02ed1459ff296b061bdd913f5714f6b3b708c7027ffbf29ca9b136",
           "abi": [
             {
               "type": "impl",
@@ -9423,6 +9446,16 @@
               ]
             },
             {
+              "type": "struct",
+              "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+                }
+              ]
+            },
+            {
               "type": "enum",
               "name": "s1_eternum::models::troop::GuardSlot",
               "variants": [
@@ -9463,6 +9496,10 @@
                     {
                       "name": "defender_direction",
                       "type": "s1_eternum::models::position::Direction"
+                    },
+                    {
+                      "name": "steal_resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
                   "outputs": [],
@@ -10111,8 +10148,8 @@
           ]
         },
         {
-          "address": "0x5e767af64f707b83dee6908ffc0161fa4f7e6a5b2439badc53c30097fdfc036",
-          "class_hash": "0x22a9961f94a718a66563b42fdb57ee9d2ff43c2329da8c68c9c5b47e32126f2",
+          "address": "0x6b58958ab2b3c914c443e76d8d291be4ab3fc1231a1d52501878262beeebe2e",
+          "class_hash": "0x789b26a09a0b35ca0acf249f468220a4c03e38a0ba51b960d57a2c30a24cfbc",
           "abi": [
             {
               "type": "impl",
@@ -10373,8 +10410,8 @@
           ]
         },
         {
-          "address": "0x21fa1894447a964a2112a1797d0786cdbe881e2eda7a0649a6545f25080b07f",
-          "class_hash": "0x615708f36836a38c334e5ed956203d3c98186a46635fda8ae587af94b4cb322",
+          "address": "0x755a621e3275177b3bbb32c6a8e6eae098efed6ff8d56c42334f10d71546e44",
+          "class_hash": "0x409927866464caf83f229228ca7a8b11dd1e32a46a7b7246cac1d8303f84b7a",
           "abi": [
             {
               "type": "impl",
@@ -10636,6 +10673,28 @@
               ]
             },
             {
+              "type": "enum",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "Hyperstructure",
+                  "type": "()"
+                },
+                {
+                  "name": "Mine",
+                  "type": "()"
+                },
+                {
+                  "name": "Agent",
+                  "type": "()"
+                }
+              ]
+            },
+            {
               "type": "interface",
               "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
               "items": [
@@ -10674,7 +10733,7 @@
                   ],
                   "outputs": [
                     {
-                      "type": "core::bool"
+                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
                     }
                   ],
                   "state_mutability": "view"
@@ -10804,8 +10863,8 @@
           ]
         },
         {
-          "address": "0x7e3f9bd840b6138acae43d0fd68aca99d49fa291a5fa679978eb7d0152c188c",
-          "class_hash": "0x4fe6408fc860aaedd9fc4e71a23f6596cb7f40dfb3a6a233083d9451873dd9c",
+          "address": "0x791ac6ed1f83b33cb809fd5603d0ed98e9f4534f552f57f5de5ae73a4323c38",
+          "class_hash": "0x48fc0885ee606d26cb39a6e225bcd399e0e1f675752153f3f239da20934fa0",
           "abi": [
             {
               "type": "impl",
@@ -11056,8 +11115,8 @@
           ]
         },
         {
-          "address": "0x4c5455c2016d99e1fc54ac1f50d976a0e6eb0515a149475075a44615e81be5d",
-          "class_hash": "0x748691abda89e7a103b8a655d8cf369e8cd7af7c7978a5d11aa0d0a50e9a07a",
+          "address": "0x6d4b4e04f61ccad89004f7771576d35ebb501a019cb4cb8b66012624c02e0e3",
+          "class_hash": "0x6b1dd3238bf108618a1825a0f6d9919fb84af5fdc9f64e346f7fc6e46c6409b",
           "abi": [
             {
               "type": "impl",
@@ -11573,6 +11632,18 @@
           "class_hash": "0x33de225fdde51454f22ec0f0d92accdafd4b275020b00e4e89cdfebab36f82f",
           "tag": "s1_eternum-CreateOrder",
           "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
+        },
+        {
+          "members": [],
+          "class_hash": "0x7856c46affd32b14572eec475de4c3fb532e8b48cf89be488bba8ecdab488a1",
+          "tag": "s1_eternum-ExplorerMoveEvent",
+          "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
+        },
+        {
+          "members": [],
+          "class_hash": "0x60d2f43d01923dc5a12cb0fc4da680dadf1967e995438e1ba853c720c3bb9e",
+          "tag": "s1_eternum-ExplorerRaidEvent",
+          "selector": "0x524ff0171e1bb2aaf232b86a14fcf1f3dc78c1149bab1e87ead801ba9203c0a"
         },
         {
           "members": [],

@@ -16,8 +16,8 @@ import {
   getGuardsByStructure,
   ID,
   isMilitaryResource,
+  multiplyByPrecision,
   RaidSimulator,
-  RESOURCE_PRECISION,
   RESOURCE_RARITY,
   ResourceManager,
   resources,
@@ -52,6 +52,7 @@ export const RaidContainer = ({
   const {
     account: { account },
     setup: {
+      systemCalls: { raid_explorer_vs_guard },
       components,
       components: { Structure, Tile },
     },
@@ -219,30 +220,27 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    return getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0);
+    return Number(getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0));
   }, [raidSimulation]);
 
   const stealableResources = useMemo(() => {
-    // let remainingCapacity = Number(getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0));
-    let remainingCapacity = 10000000000000000000;
+    let capacity = remainingCapacity;
+    // let remainingCapacity = 10000000000000000000;
     let stealableResources: Array<{ resourceId: number; amount: number }> = [];
     structureResourcesByRarity
       .filter((resource) => resource.resourceId !== ResourcesIds.Lords)
       .forEach((resource) => {
         const availableAmount = divideByPrecision(resource.amount);
         const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
-        if (remainingCapacity > 0) {
-          const maxStealableAmount = Math.min(
-            Math.floor(Number(remainingCapacity) / Number(resourceWeight)),
-            availableAmount,
-          );
+        if (capacity > 0) {
+          const maxStealableAmount = Math.min(Math.floor(Number(capacity) / Number(resourceWeight)), availableAmount);
           if (maxStealableAmount > 0) {
             stealableResources.push({
               ...resource,
               amount: maxStealableAmount,
             });
           }
-          remainingCapacity -= maxStealableAmount * Number(resourceWeight);
+          capacity -= maxStealableAmount * Number(resourceWeight);
         }
       });
     return stealableResources;
@@ -263,21 +261,22 @@ export const RaidContainer = ({
 
     // Convert resources to the format expected by the contract
     const resources = stealableResources
-      .filter((r) => r.resourceId > 0 && r.amount > 0)
-      .map((r) => [r.resourceId, BigInt(r.amount * RESOURCE_PRECISION)]);
+      .filter((r) => r.amount > 0)
+      .map((r) => ({ ...r, amount: multiplyByPrecision(r.amount) }));
+
+    const calldata = {
+      explorer_id: attackerEntityId,
+      structure_id: target?.id || 0,
+      structure_direction: direction,
+      steal_resources: resources,
+    };
 
     try {
       setLoading(true);
       // Using the general provider approach since raid_explorer_vs_guard is not defined in systemCalls
-      await account.callContract({
-        contractAddress: "YOUR_CONTRACT_ADDRESS", // Replace with actual contract address
-        entrypoint: "raid_explorer_vs_guard",
-        calldata: [
-          attackerEntityId.toString(),
-          (target?.id || 0).toString(),
-          direction.toString(),
-          resources.flat().map(String),
-        ],
+      await raid_explorer_vs_guard({
+        signer: account,
+        ...calldata,
       });
     } catch (error) {
       console.error(error);
@@ -456,7 +455,7 @@ export const RaidContainer = ({
             <h4 className="text-lg font-medium text-gold/90 mb-4">Resources Pillaged if Raid Succeeds</h4>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center text-lg font-bold text-gold">
-                <span className="">Remaining Capacity:</span>
+                <span className="">Remaining Capacity After Raid:</span>
                 <span className="">{Number(remainingCapacity)} kg</span>
               </div>
             </div>
