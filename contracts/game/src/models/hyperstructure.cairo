@@ -73,6 +73,7 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
         construction_cost_config.resource_contribution_points.into()
     }
 
+    // Formula for each resource is = randomness / resource_type % (max - min)
     fn get_amount_needed(ref world: WorldStorage, hyperstructure: Hyperstructure, resource_type: u8) -> u128 {
         let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
         let min_amount = construction_cost_config.min_amount;

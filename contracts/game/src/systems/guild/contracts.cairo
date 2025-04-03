@@ -1,12 +1,60 @@
 use starknet::ContractAddress;
 
+/// Interface defining the core functionality for guild management within the Eternum game
 #[starknet::interface]
 pub trait IGuildSystems<T> {
+    /// Creates a new guild with the specified visibility and name
+    ///
+    /// # Arguments
+    /// * `public` - Boolean flag determining if the guild is open to all players (true) or requires whitelist (false)
+    /// * `name` - The name of the guild (must be non-zero)
+    ///
+    /// # Requirements
+    /// * Season must be active
+    /// * Guild name must be non-zero
+    /// * Caller must be a registered player
+    /// * Caller must not already own a guild
     fn create_guild(ref self: T, public: bool, name: felt252);
+
+    /// Allows a player to join an existing guild
+    ///
+    /// # Arguments
+    /// * `guild_id` - The contract address of the guild to join
+    ///
+    /// # Requirements
+    /// * Season must be active
+    /// * Target guild must exist
+    /// * If guild is private, player must be whitelisted
     fn join_guild(ref self: T, guild_id: ContractAddress);
-    fn leave_guild(ref self: T, guild_id: ContractAddress);
+
+    /// Allows a player to leave their current guild
+    ///
+    /// # Requirements
+    /// * Season must be active
+    /// * Player must be a member of a guild
+    fn leave_guild(ref self: T);
+
+    /// Allows a guild owner to whitelist/de-whitelist a player for guild membership
+    ///
+    /// # Arguments
+    /// * `address` - The contract address of the player to update whitelist status
+    /// * `whitelist` - Boolean flag to add (true) or remove (false) from whitelist
+    ///
+    /// # Requirements
+    /// * Season must be active
+    /// * Caller must own a guild
+    /// * Target address must be a registered player
     fn update_whitelist(ref self: T, address: ContractAddress, whitelist: bool);
-    fn update_member(ref self: T, address: ContractAddress);
+
+    /// Allows a guild owner to remove a member from their guild
+    ///
+    /// # Arguments
+    /// * `address` - The contract address of the member to remove
+    ///
+    /// # Requirements
+    /// * Season must be active
+    /// * Target address must be a member of the caller's guild
+    fn remove_member(ref self: T, address: ContractAddress);
 }
 
 #[dojo::contract]
@@ -41,6 +89,7 @@ pub mod guild_systems {
             // create guild
             guild.member_count = 1;
             guild.public = public;
+            guild.name = name;
             world.write_model(@guild);
             world.write_model(@GuildMember { member: caller_address, guild_id: caller_address });
         }
@@ -80,7 +129,7 @@ pub mod guild_systems {
             world.write_model(@guild_member);
         }
 
-        fn leave_guild(ref self: ContractState, guild_id: ContractAddress) {
+        fn leave_guild(ref self: ContractState) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
@@ -97,6 +146,7 @@ pub mod guild_systems {
             } else {
                 world.write_model(@guild);
             }
+            world.erase_model(@guild_member);
         }
 
 
@@ -115,7 +165,7 @@ pub mod guild_systems {
             world.write_model(@GuildWhitelist { guild_id: caller_address, address, whitelisted: whitelist });
         }
 
-        fn update_member(ref self: ContractState, address: ContractAddress) {
+        fn remove_member(ref self: ContractState, address: ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 

@@ -6,6 +6,7 @@ pub struct Guild {
     #[key]
     pub guild_id: ContractAddress,
     pub public: bool,
+    pub name: felt252,
     pub member_count: u16,
 }
 

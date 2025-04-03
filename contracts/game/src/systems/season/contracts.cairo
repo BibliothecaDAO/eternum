@@ -1,6 +1,49 @@
+/// Interface for interacting with the season functionality within the game.
+/// This trait provides functions to manage the game's seasons, including
+/// closing the current season and claiming season prizes.
 #[starknet::interface]
 pub trait ISeasonSystems<T> {
+    /// Closes the current game season and assigns the caller as the winner.
+    ///
+    /// This function can only be called when the following conditions are met:
+    /// - The season has started and is not yet over
+    /// - The calling player has accumulated enough registered points to end the game
+    ///   (based on the 'points_for_win' threshold defined in hyperstructure_config)
+    ///
+    /// # Effects:
+    /// - Marks the season as ended
+    /// - Records the caller as the winner by emitting a SeasonEnded event
+    /// - Grants the 'Warlord' achievement to the winner
+    ///
+    /// # Errors:
+    /// - Fails if the season has not started or is already over
+    /// - Fails if the player does not have enough points to end the game
     fn season_close(ref self: T);
+
+    /// Allows players to claim their proportion of the prize pool after a season has ended.
+    ///
+    /// This function can only be called when the following conditions are met:
+    /// - The season has ended
+    /// - The claiming period has started (after the registration grace period)
+    /// - The caller has not already claimed their reward
+    /// - The caller has registered points
+    ///
+    /// The reward amount is calculated proportionally based on the player's registered points
+    /// relative to the total registered points across all players.
+    ///
+    /// # Formula:
+    /// player_reward = (player_registered_points / total_registered_points) * total_lords_pool
+    ///
+    /// # Effects:
+    /// - Transfers LORDS tokens to the player from the season pool
+    /// - Marks the player's prize as claimed to prevent double claiming
+    ///
+    /// # Errors:
+    /// - Fails if the season has not ended yet
+    /// - Fails if the claiming period has not started yet
+    /// - Fails if the player has already claimed their reward
+    /// - Fails if the player has no registered points
+    /// - Fails if the token transfer fails
     fn season_prize_claim(ref self: T);
 }
 
