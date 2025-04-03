@@ -2,11 +2,80 @@ import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { defineConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
+import { VitePWA } from "vite-plugin-pwa";
 import wasm from "vite-plugin-wasm";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), wasm(), mkcert()],
+  plugins: [
+    react(),
+    wasm(),
+    mkcert(),
+    VitePWA({
+      registerType: "autoUpdate",
+      devOptions: {
+        enabled: true,
+        type: "module",
+        navigateFallback: "index.html",
+      },
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
+      includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
+      manifest: {
+        name: "Eternum Mobile",
+        short_name: "Eternum",
+        description: "Eternum Mobile Companion App",
+        theme_color: "#000000",
+        background_color: "#000000",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          {
+            src: "/game-pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/game-pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/game-pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

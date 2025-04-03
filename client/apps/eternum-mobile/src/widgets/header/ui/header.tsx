@@ -1,3 +1,4 @@
+import { NotificationToggle } from "@/shared/components/notification-toggle";
 import { ROUTES } from "@/shared/consts/routes";
 import { Button } from "@/shared/ui/button";
 import { ModeToggle } from "@/shared/ui/mode-toggle";
@@ -92,7 +93,10 @@ export function Header() {
         <div className="flex-1">
           <h1 className="text-lg font-semibold">Eternum</h1>
         </div>
-        <ModeToggle />
+        <div className="flex items-center gap-2">
+          <NotificationToggle />
+          <ModeToggle />
+        </div>
       </div>
     </header>
   );
