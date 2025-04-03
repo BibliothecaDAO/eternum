@@ -1,9 +1,23 @@
 /// <reference lib="webworker" />
 declare const self: ServiceWorkerGlobalScope;
 
+// TypeScript declaration for the Workbox manifest
+declare global {
+  interface ServiceWorkerGlobalScope {
+    __WB_MANIFEST: Array<{
+      url: string;
+      revision: string | null;
+    }>;
+  }
+}
+
 // Basic variable to cache the assets
 const CACHE_NAME = "eternum-mobile-cache-v1";
 const urlsToCache = ["/", "/index.html"];
+
+// This line is needed for the injectManifest strategy of workbox
+// It will be replaced with the precache manifest at build time
+self.__WB_MANIFEST;
 
 // Install event
 self.addEventListener("install", (event) => {
