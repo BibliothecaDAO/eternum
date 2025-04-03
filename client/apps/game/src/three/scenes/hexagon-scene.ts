@@ -19,6 +19,13 @@ import { type MapControls } from "three/examples/jsm/controls/MapControls";
 import { env } from "../../../env";
 import { SceneName } from "../types";
 import { getWorldPositionForHex } from "../utils";
+
+export enum CameraView {
+  Close = 1,
+  Medium = 2,
+  Far = 3,
+}
+
 export abstract class HexagonScene {
   protected scene!: THREE.Scene;
   protected camera!: THREE.PerspectiveCamera;
@@ -33,11 +40,16 @@ export abstract class HexagonScene {
   protected state!: AppStore;
   protected fog!: THREE.Fog;
 
-  private mainDirectionalLight!: THREE.DirectionalLight;
-  private hemisphereLight!: THREE.HemisphereLight;
-  private lightHelper!: THREE.DirectionalLightHelper;
+  protected mainDirectionalLight!: THREE.DirectionalLight;
+  protected hemisphereLight!: THREE.HemisphereLight;
+  protected lightHelper!: THREE.DirectionalLightHelper;
 
   private groundMesh!: THREE.Mesh;
+  private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
+
+  protected cameraDistance = 10; // Maintain the same distance
+  protected cameraAngle = Math.PI / 3;
+  protected currentCameraView = CameraView.Medium; // Track current camera view position
 
   constructor(
     protected sceneName: SceneName,
@@ -66,7 +78,7 @@ export abstract class HexagonScene {
     this.state = useUIStore.getState();
     this.fog = new THREE.Fog(0xffffff, 21, 42);
     if (!IS_FLAT_MODE && GRAPHICS_SETTING === GraphicsSettings.HIGH) {
-      this.scene.fog = this.fog;
+      //this.scene.fog = this.fog;
     }
 
     // subscribe to state changes
@@ -481,4 +493,50 @@ export abstract class HexagonScene {
   public abstract setup(): void;
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(): void;
+
+  public getCurrentCameraView(): CameraView {
+    return this.currentCameraView;
+  }
+
+  public addCameraViewListener(listener: (view: CameraView) => void) {
+    this.cameraViewListeners.add(listener);
+    // Immediately notify the listener of the current view
+    listener(this.currentCameraView);
+  }
+
+  public removeCameraViewListener(listener: (view: CameraView) => void) {
+    this.cameraViewListeners.delete(listener);
+  }
+
+  public changeCameraView(position: CameraView) {
+    const target = this.controls.target;
+    this.currentCameraView = position;
+
+    switch (position) {
+      case CameraView.Close: // Close view
+        this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 10;
+        this.cameraAngle = Math.PI / 6; // 30 degrees
+        break;
+      case CameraView.Medium: // Medium view
+        this.mainDirectionalLight.castShadow = true;
+        this.cameraDistance = 20;
+        this.cameraAngle = Math.PI / 3; // 60 degrees
+        break;
+      case CameraView.Far: // Far view
+        this.mainDirectionalLight.castShadow = false;
+        this.cameraDistance = 40;
+        this.cameraAngle = (50 * Math.PI) / 180; // 50 degrees
+        break;
+    }
+
+    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+
+    const newPosition = new THREE.Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
+    this.cameraAnimate(newPosition, target, 1);
+
+    // Notify all listeners of the camera view change
+    this.cameraViewListeners.forEach((listener) => listener(position));
+  }
 }

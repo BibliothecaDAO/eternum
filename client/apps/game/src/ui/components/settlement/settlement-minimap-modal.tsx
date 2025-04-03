@@ -1,6 +1,6 @@
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import { ModalContainer } from "../modal-container";
-import SettlementMinimap from "./settlement-minimap";
+import { SettlementMinimap } from "./settlement-minimap";
 
 interface SettlementMinimapModalProps {
   onSelectLocation: (location: SettlementLocation) => void;
@@ -34,5 +34,3 @@ export const SettlementMinimapModal = ({
     </ModalContainer>
   );
 };
-
-export default SettlementMinimapModal;

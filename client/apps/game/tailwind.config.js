@@ -44,7 +44,7 @@ export default {
         },
       }),
       colors: {
-        gold: "#F6C297",
+        gold: "#dfaa54",
         crimson: "#582C4D",
         brilliance: "#7DFFBA",
         orange: "#FE993C",
@@ -108,11 +108,12 @@ export default {
       },
       backgroundImage: {
         map: "url(/images/map.svg)",
-        // "hex-bg": "url(/hex-bg.png)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
+        "dark-wood": "url(/images/textures/dark-wood.png)",
       },
       fontSize: {
-        xxs: ".625rem",
+        xs: ".975rem",
+        xxs: ".825rem",
       },
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",

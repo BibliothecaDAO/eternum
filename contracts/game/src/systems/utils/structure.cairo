@@ -1,14 +1,17 @@
+use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION};
-use s1_eternum::models::config::{CapacityConfig, WorldConfigUtilImpl};
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST};
+use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
-use s1_eternum::models::resource::resource::{ResourceImpl};
+use s1_eternum::models::resource::resource::{
+    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+};
 use s1_eternum::models::structure::{
-    Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureOwnerStoreImpl,
-    StructureResourcesImpl,
+    Structure, StructureBase, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
+    StructureOwnerStoreImpl, StructureResourcesImpl,
 };
 use s1_eternum::models::troop::{ExplorerTroops};
 use s1_eternum::models::weight::{Weight};
@@ -23,7 +26,6 @@ pub impl iStructureImpl of IStructureTrait {
         owner: starknet::ContractAddress,
         structure_id: ID,
         category: StructureCategory,
-        assert_tile_explored: bool,
         resources: Span<u8>,
         metadata: StructureMetadata,
         tile_occupier: TileOccupier,
@@ -32,14 +34,8 @@ pub impl iStructureImpl of IStructureTrait {
         let mut tile: Tile = world.read_model((coord.x, coord.y));
         assert!(tile.not_occupied(), "something exists on this coords");
 
-        if assert_tile_explored {
-            // ensure tile is explored
-            assert!(tile.discovered(), "tile not explored");
-        } else {
-            // ensure tile is not explored
-            assert!(!tile.discovered(), "tile already explored");
-
-            // explore the tile
+        // explore the tile if biome is not set
+        if tile.biome == Biome::None.into() {
             let biome: Biome = get_biome(coord.x.into(), coord.y.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
@@ -92,6 +88,35 @@ pub impl iStructureImpl of IStructureTrait {
                 StructureOwnerStoreImpl::store(explorer_owner, ref world, structure_id);
             }
         }
+    }
+
+
+    fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
+        let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
+            WorldConfigUtilImpl::get_member(world, selector!("village_start_resources_config"))
+        } else {
+            WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
+        };
+
+        for i in 0..starting_resources.resources_list_count {
+            let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));
+            assert!(resource.resource_type != ResourceTypes::LORDS, "invalid start resource");
+
+            let mut resource_type = resource.resource_type;
+            let mut resource_amount = resource.amount;
+            if structure_metadata.has_wonder {
+                resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
+            }
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut realm_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
+            );
+            realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+            realm_resource.store(ref world);
+        };
+        structure_weight.store(ref world, structure_id);
     }
 }
 

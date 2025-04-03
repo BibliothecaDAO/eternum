@@ -46,7 +46,7 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new THREE.Vector3(0, 0, 0);
   private readonly normalScale = new THREE.Vector3(1, 1, 1);
-  private readonly boatScale = new THREE.Vector3(0.3, 0.3, 0.3);
+  private readonly boatScale = new THREE.Vector3(1, 1, 1);
 
   constructor(scene: THREE.Scene, labelsGroup?: THREE.Group) {
     this.scene = scene;
@@ -504,13 +504,11 @@ export class ArmyModel {
     if (!movement) return;
 
     const direction = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
-    const modelType = this.entityModelMap.get(entityId);
-    const baseAngle = Math.atan2(direction.x, direction.z) + Math.PI / 6;
-    const targetAngle = baseAngle + (modelType === ModelType.Boat ? Math.PI / 3 : 0);
+    const baseAngle = Math.atan2(direction.x, direction.z);
 
-    movement.targetRotation = targetAngle;
+    movement.targetRotation = baseAngle;
     if (movement.currentRotation === 0) {
-      movement.currentRotation = targetAngle;
+      movement.currentRotation = baseAngle;
     }
   }
 
@@ -570,13 +568,8 @@ export class ArmyModel {
   }
 
   // Label Management Methods
-  public addLabel(entityId: number, labelElement: HTMLElement, position: THREE.Vector3): void {
+  public addLabel(entityId: number, label: CSS2DObject): void {
     this.removeLabel(entityId);
-
-    const label = new CSS2DObject(labelElement);
-    label.position.copy(position);
-    label.position.y += 1.5;
-
     this.labels.set(entityId, { label, entityId });
     this.labelsGroup.add(label);
   }
@@ -585,7 +578,26 @@ export class ArmyModel {
     const labelData = this.labels.get(entityId);
     if (labelData) {
       this.labelsGroup.remove(labelData.label);
+      if (labelData.label.element && labelData.label.element.parentNode) {
+        labelData.label.element.parentNode.removeChild(labelData.label.element);
+      }
       this.labels.delete(entityId);
+    }
+  }
+
+  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
+    const labelData = this.labels.get(entityId);
+    if (labelData?.label.element) {
+      const textContainer = labelData.label.element.querySelector(".flex.flex-col");
+      if (textContainer) {
+        if (isCompact) {
+          textContainer.classList.add("max-w-0", "ml-0");
+          textContainer.classList.remove("max-w-[200px]", "ml-2");
+        } else {
+          textContainer.classList.remove("max-w-0", "ml-0");
+          textContainer.classList.add("max-w-[200px]", "ml-2");
+        }
+      }
     }
   }
 

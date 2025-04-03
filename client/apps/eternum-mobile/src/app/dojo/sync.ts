@@ -330,9 +330,8 @@ const configModels = [
   "s1_eternum-WorldConfig",
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
-  "s1_eternum-ProductionConfig",
+  "s1_eternum-ResourceFactoryConfig",
   "s1_eternum-BuildingCategoryConfig",
-  "s1_eternum-StartingResourcesConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
   "s1_eternum-ResourceList",
@@ -366,7 +365,7 @@ const eventModels = [
 const hyperstructureModels = [
   "s1_eternum-HyperstructureResourceConfig",
   "s1_eternum-WeightConfig",
-  "s1_eternum-ProductionConfig",
+  "s1_eternum-ResourceFactoryConfig",
 ];
 
 export const syncStructureData = async (

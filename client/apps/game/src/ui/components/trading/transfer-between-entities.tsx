@@ -97,9 +97,7 @@ const SelectEntitiesStep = memo(
     return (
       <>
         <div className="w-full flex flex-col justify-center items-center">
-          {formattedArrivalTime && (
-            <div className="text-gold font-semibold">Estimated Arrival: {formattedArrivalTime}</div>
-          )}
+          {formattedArrivalTime && <div className="">Estimated Arrival: {formattedArrivalTime}</div>}
         </div>
         <div className="grid grid-cols-2 gap-6 mt-3">
           {/* From column */}
@@ -189,7 +187,6 @@ export const TransferBetweenEntities = ({
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(true);
-  const [isOriginDonkeys, setIsOriginDonkeys] = useState(true);
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
@@ -201,7 +198,7 @@ export const TransferBetweenEntities = ({
     account: { account },
     setup: {
       components,
-      systemCalls: { send_resources, pickup_resources },
+      systemCalls: { send_resources },
     },
   } = useDojo();
 
@@ -224,20 +221,12 @@ export const TransferBetweenEntities = ({
       resource: Number(id),
       amount: multiplyByPrecision(selectedResourceAmounts[Number(id)]),
     }));
-    const systemCall = !isOriginDonkeys
-      ? pickup_resources({
-          signer: account,
-          owner_entity_id: selectedEntityIdFrom?.entityId!,
-          recipient_entity_id: selectedEntityIdTo?.entityId!,
-          resources: resourcesList || [],
-        })
-      : send_resources({
-          // pickup_resources is not defined in the snippet
-          signer: account,
-          sender_entity_id: selectedEntityIdFrom?.entityId!,
-          recipient_entity_id: selectedEntityIdTo?.entityId!,
-          resources: resourcesList || [],
-        });
+    const systemCall = send_resources({
+      signer: account,
+      sender_entity_id: selectedEntityIdFrom?.entityId!,
+      recipient_entity_id: selectedEntityIdTo?.entityId!,
+      resources: resourcesList || [],
+    });
 
     playDonkeyScreaming();
 
@@ -310,6 +299,7 @@ export const TransferBetweenEntities = ({
               selectedResourceAmounts={selectedResourceAmounts}
               setSelectedResourceAmounts={setSelectedResourceAmounts}
               entity_id={selectedEntityIdFrom?.entityId!}
+              toEntityId={selectedEntityIdTo?.entityId!}
             />
           </div>
 
@@ -317,7 +307,7 @@ export const TransferBetweenEntities = ({
             <div className="p-10 bg-gold/10  h-auto rounded-lg border border-gold/40">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
-                  entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}
+                  entityId={selectedEntityIdTo?.entityId!}
                   resources={selectedResourceIds.map((resourceId: number) => ({
                     resourceId,
                     amount: selectedResourceAmounts[resourceId],

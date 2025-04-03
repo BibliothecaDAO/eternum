@@ -1,3 +1,4 @@
+import { FELT_CENTER as SETTLEMENT_CENTER } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MAX_ZOOM_LEVEL,
@@ -6,7 +7,6 @@ import {
   MIN_ZOOM_RANGE,
   MINIMAP_HEIGHT,
   MINIMAP_WIDTH,
-  SETTLEMENT_CENTER,
 } from "./settlement-constants";
 import { MapViewState, SettlementLocation } from "./settlement-types";
 import { normalizedToContractCoords } from "./settlement-utils";

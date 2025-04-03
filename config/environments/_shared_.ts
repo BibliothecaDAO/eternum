@@ -9,7 +9,13 @@ import {
 } from "@bibliothecadao/eternum";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
-import { BUILDING_CAPACITY, BUILDING_COSTS, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED } from "./utils/building";
+import {
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  BUILDING_RESOURCE_PRODUCED,
+  COMPLEX_BUILDING_COSTS,
+  SIMPLE_BUILDING_COSTS,
+} from "./utils/building";
 import {
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
@@ -17,11 +23,14 @@ import {
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
+  LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
   RESOURCE_PRODUCTION_INPUT_RESOURCES,
+  RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-  RESOURCE_PRODUCTION_THROUGH_LABOR,
+  RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
   RESOURCES_WEIGHTS_NANOGRAM,
   STARTING_RESOURCES,
+  VILLAGE_STARTING_RESOURCES,
 } from "./utils/resource";
 import {
   TROOP_AGENTS_TROOP_LOWER_BOUND,
@@ -72,10 +81,6 @@ export const STAMINA_REFILL_PER_TICK = 20;
 export const STAMINA_START_BOOST_TICK_COUNT = 2;
 export const STAMINA_TRAVEL_COST = 10;
 export const STAMINA_EXPLORE_COST = 20;
-
-// ----- Resources ----- //
-export const RESOURCE_AMOUNT_PER_TICK = 10;
-export const STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR = 6;
 
 // ----- Banks ----- //
 export const BANK_NAME = "Central Bank";
@@ -191,12 +196,11 @@ export const EternumGlobalConfig: Config = {
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
-    resourceMultiplier: RESOURCE_PRECISION,
-    resourceAmountPerTick: RESOURCE_AMOUNT_PER_TICK,
-    startingResourcesInputProductionFactor: STARTING_RESOURCES_INPUT_PRODUCTION_FACTOR,
-    resourceInputs: RESOURCE_PRODUCTION_INPUT_RESOURCES,
-    resourceOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
-    resourceProductionByLaborParams: RESOURCE_PRODUCTION_THROUGH_LABOR,
+    productionByComplexRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES,
+    productionByComplexRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
+    productionBySimpleRecipe: RESOURCE_PRODUCTION_INPUT_RESOURCES_SIMPLE_SYSTEM,
+    productionBySimpleRecipeOutputs: RESOURCE_PRODUCTION_OUTPUT_AMOUNTS_SIMPLE_SYSTEM,
+    laborOutputPerResource: LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES,
     resourceWeightsGrams: RESOURCES_WEIGHTS_NANOGRAM,
     resourceRarity: RESOURCE_RARITY,
   },
@@ -300,7 +304,8 @@ export const EternumGlobalConfig: Config = {
     buildingCapacity: BUILDING_CAPACITY,
     buildingPopulation: BUILDING_POPULATION,
     buildingResourceProduced: BUILDING_RESOURCE_PRODUCED,
-    buildingCosts: BUILDING_COSTS,
+    complexBuildingCosts: COMPLEX_BUILDING_COSTS,
+    simpleBuildingCost: SIMPLE_BUILDING_COSTS,
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
@@ -333,6 +338,7 @@ export const EternumGlobalConfig: Config = {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
   },
   startingResources: STARTING_RESOURCES,
+  villageStartingResources: VILLAGE_STARTING_RESOURCES,
   realmUpgradeCosts: REALM_UPGRADE_COSTS,
   realmMaxLevel: REALM_MAX_LEVEL,
   villageMaxLevel: VILLAGE_MAX_LEVEL,

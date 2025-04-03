@@ -1,7 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  BUILDING_COSTS_SCALED,
-  RESOURCE_BUILDING_COSTS,
+  COMPLEX_BUILDING_COSTS_SCALED,
+  RESOURCE_COMPLEX_BUILDING_COSTS,
   RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED,
   RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
   RESOURCE_RARITY,
@@ -52,13 +52,13 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
       })) || []
     );
   };
-  // Sum up how many times each resource is used as an input based on RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED and BUILDING_COSTS_SCALED
+  // Sum up how many times each resource is used as an input based on RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED and COMPLEX_BUILDING_COSTS_SCALED
   const resourceUsageCount = resources.reduce(
     (acc, resource) => {
       const inputUsageCount = Object.values(RESOURCE_PRODUCTION_INPUT_RESOURCES_SCALED).reduce((count, inputs) => {
         return count + inputs.filter((input: any) => input.resource === resource.id).length;
       }, 0);
-      const buildingUsageCount = Object.values(BUILDING_COSTS_SCALED).reduce((count, costs) => {
+      const buildingUsageCount = Object.values(COMPLEX_BUILDING_COSTS_SCALED).reduce((count, costs) => {
         return count + costs.filter((cost: any) => cost.resource === resource.id).length;
       }, 0);
 
@@ -139,7 +139,7 @@ export const ResourceTable = ({ resources }: { resources: Resources[] }) => {
 
             <TableCell className="text-center">{resourceUsageCount[resource.id]}</TableCell>
             <TableCell className="rounded flex gap-2 justify-center">
-              {RESOURCE_BUILDING_COSTS[resource.id]?.map((input, idx) => (
+              {RESOURCE_COMPLEX_BUILDING_COSTS[resource.id]?.map((input, idx) => (
                 <Badge className={`border p-1`} key={idx} style={{ borderColor: resourceColor(input.resource) }}>
                   <img src={getResourceImage(input.resource)} alt={resource.trait} className="w-6 h-6 mx-auto" /> x{" "}
                   {input.amount}

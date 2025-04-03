@@ -6,12 +6,12 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { Chat } from "@/ui/modules/chat/chat";
 import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
+import ChatModule from "../ws-chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -210,12 +210,12 @@ export const LeftNavigationModule = memo(() => {
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex gap-2 z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold left-10 md:pt-20 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[88%]" : ""
+          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
+            isOffscreen(view) ? "-translate-x-[89%]" : ""
           }`}
         >
           <BaseContainer
-            className={`w-full pointer-events-auto rounded-r-2xl overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] border-r-2 border-y-2 border-gold/20`}
+            className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] `}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === LeftView.EntityView && <EntityDetails />}
@@ -233,7 +233,7 @@ export const LeftNavigationModule = memo(() => {
             animate="visible"
             className="flex flex-col justify-center pointer-events-auto"
           >
-            <div className="flex flex-col gap-1 md:gap-2 mb-auto">
+            <div className="flex flex-col mb-auto">
               {navigation.map((item, index) => (
                 <div key={index}>{item.button}</div>
               ))}
@@ -242,7 +242,8 @@ export const LeftNavigationModule = memo(() => {
         </div>
       </div>
       <div className="flex">
-        <Chat />
+        {/* <Chat /> */}
+        <ChatModule />
       </div>
     </div>
   );

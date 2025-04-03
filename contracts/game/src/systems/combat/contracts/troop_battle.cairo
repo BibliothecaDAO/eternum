@@ -5,7 +5,13 @@ use s1_eternum::models::troop::GuardSlot;
 
 #[starknet::interface]
 pub trait ITroopBattleSystems<T> {
-    fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
+    fn attack_explorer_vs_explorer(
+        ref self: T,
+        aggressor_id: ID,
+        defender_id: ID,
+        defender_direction: Direction,
+        steal_resources: Span<(u8, u128)>,
+    );
     fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
     fn attack_guard_vs_explorer(
         ref self: T, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID, explorer_direction: Direction,
@@ -32,6 +38,7 @@ pub mod troop_battle_systems {
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::{
         resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
     };
@@ -43,7 +50,11 @@ pub mod troop_battle_systems {
     #[abi(embed_v0)]
     pub impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
-            ref self: ContractState, aggressor_id: ID, defender_id: ID, defender_direction: Direction,
+            ref self: ContractState,
+            aggressor_id: ID,
+            defender_id: ID,
+            defender_direction: Direction,
+            steal_resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
 
@@ -117,6 +128,21 @@ pub mod troop_battle_systems {
             }
 
             if explorer_defender_troops.count.is_zero() {
+                // steal resources from defender if dead
+                let mut explorer_aggressor_weight: Weight = WeightStoreImpl::retrieve(ref world, aggressor_id);
+                let mut explorer_defender_weight: Weight = WeightStoreImpl::retrieve(ref world, defender_id);
+                iResourceTransferImpl::troop_to_troop_instant(
+                    ref world,
+                    explorer_defender,
+                    ref explorer_defender_weight,
+                    explorer_aggressor,
+                    ref explorer_aggressor_weight,
+                    steal_resources,
+                );
+                explorer_aggressor_weight.store(ref world, aggressor_id);
+                explorer_defender_weight.store(ref world, defender_id);
+
+                // delete defender
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
                 } else {

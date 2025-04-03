@@ -74,6 +74,17 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         );
     }
 
+
+    #[inline(always)]
+    fn troop_burn_instant(
+        ref world: WorldStorage,
+        from_troop: ExplorerTroops,
+        ref from_troop_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        Self::_instant_burn(ref world, from_troop.explorer_id, ref from_troop_weight, resources);
+    }
+
     #[inline(always)]
     fn troop_to_structure_instant(
         ref world: WorldStorage,
@@ -83,8 +94,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_structure_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::_instant_transfer(
-            ref world, from_troop_id, ref from_troop_weight, to_structure_id, ref to_structure_weight, resources, false,
+        Self::_instant_arrivals_transfer(
+            ref world, from_troop_id, ref from_troop_weight, to_structure_id, resources, false,
         );
     }
 
@@ -183,8 +194,8 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
                         from_resource.store(ref world);
                     }
 
-                    // add resource to balance
-                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::arrival_slot(ref world, 0);
+                    // add resource to balance to the last open slot so it arrives immediately
+                    let (arrival_day, arrival_slot) = ResourceArrivalImpl::previous_arrival_slot(ref world, 0);
                     let mut realm_resources_array = ResourceArrivalImpl::read_slot(
                         ref world, to_id, arrival_day, arrival_slot,
                     );
@@ -311,6 +322,30 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         // update both structures weights
         from_weight.store(ref world, from_id);
         to_weight.store(ref world, to_id);
+    }
+
+    fn _instant_burn(ref world: WorldStorage, from_id: ID, ref from_weight: Weight, mut resources: Span<(u8, u128)>) {
+        let mut resources_clone = resources.clone();
+        loop {
+            match resources_clone.pop_front() {
+                Option::Some((
+                    resource_type, resource_amount,
+                )) => {
+                    // spend from from entity resource balance
+                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+                    let mut from_resource = SingleResourceStoreImpl::retrieve(
+                        ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
+                    );
+                    from_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
+                    from_resource.store(ref world);
+                },
+                Option::None => { break; },
+            }
+        };
+
+        // update from entity resource weight
+        from_weight.store(ref world, from_id);
     }
 
     fn deliver_arrivals(

@@ -36,9 +36,9 @@ export const GuildMemberList = ({
   });
 
   return (
-    <div className="flex flex-col p-2 border rounded-xl h-full">
+    <div className="flex flex-col rounded-xl h-full bg-brown-900/50 backdrop-blur-sm">
       <GuildMemberListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="space-y-2 overflow-y-auto">
+      <div className="mt-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         {sortItems(guildMembers, activeSort, { sortKey: "name", sort: "asc" }).map((guildMember) => (
           <GuildMemberRow
             key={guildMember.address}
@@ -49,6 +49,7 @@ export const GuildMemberList = ({
             removeGuildMember={removeGuildMember}
           />
         ))}
+        {!guildMembers.length && <p className="text-center italic text-gold/70 py-4">No Tribe Members</p>}
       </div>
     </div>
   );
@@ -68,15 +69,15 @@ const GuildMemberListHeader = ({
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-2 pb-3 border-b border-gold/20">
+    <SortPanel className="grid grid-cols-2">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
-          className={`${className} ${textStyle}`}
-          classNameCaret="w-2.5 h-2.5 ml-1"
+          className={className + " " + textStyle}
+          classNameCaret="w-2"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -101,7 +102,7 @@ const GuildMemberRow = ({
   return (
     <div
       className={clsx(
-        "grid grid-cols-2 w-full py-1 cursor-pointer items-center hover:bg-gold/5 rounded-lg transition-colors duration-200 mb-1",
+        "grid grid-cols-2 w-full py-1 px-2 cursor-pointer items-center hover:bg-gold/10 rounded transition-colors duration-200 mb-1",
         {
           "bg-blueish/20 hover:bg-blueish/30": guildMember.isUser,
         },
@@ -114,7 +115,7 @@ const GuildMemberRow = ({
         }}
       >
         <p className="col-span-2 flex flex-row items-center truncate font-semibold text-gold/90 px-1">
-          {guildMember.isGuildMaster && <Crown className="w-6 fill-gold" />}
+          {guildMember.isGuildMaster && <Crown className="w-6 fill-gold mr-2" />}
           <span className="truncate">{guildMember.name}</span>
         </p>
       </div>

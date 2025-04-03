@@ -25,6 +25,7 @@ const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
 export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
   private material: THREE.ShaderMaterial;
+  private yOffset: number = 0;
 
   constructor(private scene: THREE.Scene) {
     this.material = highlightHexMaterial;
@@ -43,7 +44,7 @@ export class HighlightHexManager {
       const position = getWorldPositionForHex(hex.hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       highlightMesh.material.uniforms.color.value = getHighlightColorForAction(hex.actionType);
-      highlightMesh.position.set(position.x, 0.3, position.z);
+      highlightMesh.position.set(position.x, 0.175 + this.yOffset, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
 
       // Disable raycasting for this mesh
@@ -60,5 +61,9 @@ export class HighlightHexManager {
         mesh.material.uniforms.opacity.value = pulseFactor;
       }
     });
+  }
+
+  setYOffset(yOffset: number) {
+    this.yOffset = yOffset;
   }
 }

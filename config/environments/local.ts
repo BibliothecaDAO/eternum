@@ -8,7 +8,7 @@
 
 import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
-import { multiplyStartingResources } from "./utils/resource";
+import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the local development environment.
@@ -33,15 +33,18 @@ export const LocalEternumGlobalConfig: Config = {
       ...CommonEternumGlobalConfig.troop.stamina,
       staminaTravelStaminaCost: 0,
       staminaExploreStaminaCost: 0,
+      staminaBonusValue: 0,
     },
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    shardsMinesWinProbability: 2_000,
-    shardsMinesFailProbability: 10_000,
+    shardsMinesWinProbability: 1_000,
+    shardsMinesFailProbability: 15_000,
     hyperstructureWinProbAtCenter: 20_000,
     hyperstructureFailProbAtCenter: 100_000,
     hyperstructureFailProbIncreasePerHexDistance: 20,
+    agentFindProbability: 3_000,
+    agentFindFailProbability: 10_000,
   },
   // cheap hyperstructures
   hyperstructures: {
@@ -59,7 +62,8 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: multiplyStartingResources(1000),
+  startingResources: getAllResourcesWithAmount(1000000),
+  villageStartingResources: getAllResourcesWithAmount(1000000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
@@ -97,8 +101,8 @@ export const LocalEternumGlobalConfig: Config = {
   },
   buildings: {
     ...CommonEternumGlobalConfig.buildings,
-    buildingCosts: {
-      ...CommonEternumGlobalConfig.buildings.buildingCosts,
+    complexBuildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
       [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
     },
     buildingPopulation: {

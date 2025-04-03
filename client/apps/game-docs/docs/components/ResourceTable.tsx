@@ -10,13 +10,15 @@ const eternumConfig = ETERNUM_CONFIG();
 export default function ResourceTable() {
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(eternumConfig.resources.resourceInputs) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(
+      eternumConfig.resources.productionByComplexRecipe,
+    ) as unknown as ResourcesIds[]) {
       if (resourceId === ResourcesIds.Lords) continue;
       const calldata = {
         resource: findResourceById(Number(resourceId)),
-        amount: eternumConfig.resources.resourceInputs[resourceId],
+        amount: eternumConfig.resources.productionByComplexRecipe[resourceId],
         resource_type: resourceId,
-        cost: eternumConfig.resources.resourceInputs[resourceId].map((cost: any) => ({
+        cost: eternumConfig.resources.productionByComplexRecipe[resourceId].map((cost: any) => ({
           ...cost,
           amount: cost.amount * RESOURCE_PRECISION,
           name: findResourceById(cost.resource)?.trait || "",

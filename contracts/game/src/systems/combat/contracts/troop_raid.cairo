@@ -15,10 +15,11 @@ pub trait ITroopRaidSystems<T> {
 #[dojo::contract]
 pub mod troop_raid_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
 
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION};
+    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
@@ -43,6 +44,17 @@ pub mod troop_raid_systems {
 
     use super::super::super::super::super::models::troop::GuardTrait;
 
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerRaidEvent {
+        #[key]
+        pub explorer_id: ID,
+        #[key]
+        pub structure_id: ID,
+        pub success: bool,
+        pub timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     pub impl TroopRaidSystemsImpl of super::ITroopRaidSystems<ContractState> {
@@ -253,6 +265,14 @@ pub mod troop_raid_systems {
 
             // steal resources
             if raid_success {
+                // ensure lords are not raidable
+                for i in 0..steal_resources.len() {
+                    let (resource_type, _) = *steal_resources.at(i);
+                    if resource_type == ResourceTypes::LORDS {
+                        panic!("$LORDS are not raidable. Attack and conquer the realm");
+                    }
+                };
+
                 let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
                 iResourceTransferImpl::structure_to_troop_instant(
@@ -261,6 +281,13 @@ pub mod troop_raid_systems {
                 structure_weight.store(ref world, structure_id);
                 explorer_weight.store(ref world, explorer_id);
             };
+
+            world
+                .emit_event(
+                    @ExplorerRaidEvent {
+                        explorer_id, structure_id, success: raid_success, timestamp: starknet::get_block_timestamp(),
+                    },
+                )
         }
     }
 }

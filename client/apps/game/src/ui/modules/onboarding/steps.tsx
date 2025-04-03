@@ -12,11 +12,10 @@ import {
   queryRealmCount,
   SeasonPassRealm,
 } from "@/ui/components/cityview/realm/settle-realm-component";
-import MintVillagePassModal from "@/ui/components/settlement/mint-village-pass-modal";
-import SettlementMinimapModal from "@/ui/components/settlement/settlement-minimap-modal";
+import { MintVillagePassModal } from "@/ui/components/settlement/mint-village-pass-modal";
+import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-minimap-modal";
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
-import { OnboardingButton } from "@/ui/layouts/onboarding-button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
 import { getRandomRealmEntity } from "@/utils/realms";
 import { getMaxLayer } from "@/utils/settlement";
@@ -232,32 +231,32 @@ export const StepOne = () => {
   };
 
   return (
-    <div className="flex flex-row justify-center space-x-8 items-center">
-      <SpectateButton onClick={onSpectatorModeClick} />
+    <div className="flex flex-row justify-center space-y-4 items-center flex-wrap">
       {hasAcceptedToS ? (
-        <OnboardingButton
+        <Button
+          size="lg"
+          variant="gold"
           disabled={!hasRealmsOrVillages}
-          className={`!bg-gold border-none ${
-            !hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""
-          }`}
+          className={` w-full ${!hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
           onClick={onPlayModeClick}
         >
           <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
-        </OnboardingButton>
+        </Button>
       ) : (
-        <OnboardingButton className="!bg-gold border-none" onClick={() => setShowToS(true)}>
+        <Button size="lg" className="!bg-gold border-none" onClick={() => setShowToS(true)}>
           <div className="text-black">Accept ToS</div>
-        </OnboardingButton>
+        </Button>
       )}
+      <SpectateButton onClick={onSpectatorModeClick} />
     </div>
   );
 };
 
 export const SpectateButton = ({ onClick }: { onClick: () => void }) => {
   return (
-    <OnboardingButton onClick={onClick} className="hover:!bg-gold/20">
+    <Button className="w-full" onClick={onClick} size="lg">
       <Eye className="w-4 fill-current mr-2" /> <div>Spectate</div>
-    </OnboardingButton>
+    </Button>
   );
 };
 

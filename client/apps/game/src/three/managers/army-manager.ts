@@ -2,12 +2,14 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GUIManager } from "@/three/helpers/gui-manager";
 import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
 import {
   Biome,
   BiomeType,
   configManager,
   ContractAddress,
+  getTroopName,
   HexEntityInfo,
   ID,
   orders,
@@ -24,6 +26,11 @@ import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
+const TIERS_TO_STARS = {
+  [TroopTier.T1]: "⭐",
+  [TroopTier.T2]: "⭐⭐",
+  [TroopTier.T3]: "⭐⭐⭐",
+};
 
 export class ArmyManager {
   private scene: THREE.Scene;
@@ -36,8 +43,15 @@ export class ArmyManager {
   private armyPaths: Map<ID, Position[]> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelsGroup: THREE.Group;
+  private currentCameraView: CameraView;
+  private hexagonScene?: HexagonScene;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
+  constructor(
+    scene: THREE.Scene,
+    renderChunkSize: { width: number; height: number },
+    labelsGroup?: THREE.Group,
+    hexagonScene?: HexagonScene,
+  ) {
     this.scene = scene;
     this.armyModel = new ArmyModel(scene, labelsGroup);
     this.scale = new THREE.Vector3(0.3, 0.3, 0.3);
@@ -45,6 +59,13 @@ export class ArmyManager {
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
     this.labelsGroup = labelsGroup || new THREE.Group();
+    this.hexagonScene = hexagonScene;
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+
+    // Subscribe to camera view changes if scene is provided
+    if (hexagonScene) {
+      hexagonScene.addCameraViewListener(this.handleCameraViewChange);
+    }
 
     const createArmyFolder = GUIManager.addFolder("Create Army");
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -314,7 +335,11 @@ export class ArmyManager {
 
     const path = findShortestPath(armyData.hexCoords, hexCoords, exploredTiles, structureHexes, armyHexes, maxHex);
 
-    if (!path || path.length === 0) return;
+    if (!path || path.length === 0) {
+      // If no path is found, just teleport the army to the target position
+      this.armies.set(entityId, { ...armyData, hexCoords });
+      return;
+    }
 
     // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPosition(entityId, pos));
@@ -364,34 +389,71 @@ export class ArmyManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
-      "text-gold",
+      "hover:bg-brown/90",
+      "pointer-events-auto",
+      army.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
       "text-xs",
       "flex",
       "items-center",
     );
-    const orderName = army.order.toLowerCase();
+    // Prevent right click
+    labelDiv.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
-    img.src = `/images/orders/${orderName}.png`;
-    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "mr-2", "object-contain");
+    img.src = isDaydreamsAgent
+      ? "/images/logos/daydreams.png"
+      : `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
+    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
     labelDiv.appendChild(img);
 
+    // Create text container with transition
     const textContainer = document.createElement("div");
-    textContainer.classList.add("flex", "flex-col");
-
-    const line1 = document.createTextNode(
-      `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`,
+    textContainer.classList.add(
+      "flex",
+      "flex-col",
+      "transition-all",
+      "duration-700",
+      "ease-in-out",
+      "overflow-hidden",
+      "whitespace-nowrap",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
+
+    const line1 = document.createElement("span");
+    line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
+    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
     const line2 = document.createElement("strong");
-    line2.textContent = `${army.category} ${army.tier}`;
+    line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
-
     labelDiv.appendChild(textContainer);
 
-    this.armyModel.addLabel(army.entityId, labelDiv, position);
+    const label = new CSS2DObject(labelDiv);
+    label.position.copy(position);
+    label.position.y += 1.5;
+
+    // Store original renderOrder
+    const originalRenderOrder = label.renderOrder;
+
+    // Set renderOrder to Infinity on hover
+    labelDiv.addEventListener("mouseenter", () => {
+      label.renderOrder = Infinity;
+    });
+
+    // Restore original renderOrder when mouse leaves
+    labelDiv.addEventListener("mouseleave", () => {
+      label.renderOrder = originalRenderOrder;
+    });
+
+    this.armyModel.addLabel(army.entityId, label);
   }
 
   removeLabelsFromScene() {
@@ -404,5 +466,23 @@ export class ArmyManager {
 
   private removeEntityIdLabel(entityId: ID) {
     this.armyModel.removeLabel(entityId);
+  }
+
+  private handleCameraViewChange = (view: CameraView) => {
+    if (this.currentCameraView === view) return;
+    this.currentCameraView = view;
+
+    // Update all existing labels to reflect the new view
+    this.visibleArmies.forEach((army) => {
+      this.armyModel.updateLabelVisibility(army.entityId, view === CameraView.Far);
+    });
+  };
+
+  public destroy() {
+    // Clean up camera view listener
+    if (this.hexagonScene) {
+      this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
+    // Clean up any other resources...
   }
 }

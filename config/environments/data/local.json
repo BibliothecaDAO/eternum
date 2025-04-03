@@ -7,10 +7,7 @@
   },
   "resources": {
     "resourcePrecision": 1000000000,
-    "resourceMultiplier": 1000000000,
-    "resourceAmountPerTick": 10,
-    "startingResourcesInputProductionFactor": 6,
-    "resourceInputs": {
+    "productionByComplexRecipe": {
       "1": [
         {
           "resource": 3,
@@ -63,7 +60,7 @@
           "amount": 3
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -78,7 +75,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "6": [
@@ -91,7 +88,7 @@
           "amount": 3.3
         },
         {
-          "resource": 35,
+          "resource": 36,
           "amount": 5
         }
       ],
@@ -106,7 +103,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "8": [
@@ -120,7 +117,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "9": [
@@ -134,7 +131,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "10": [
@@ -148,7 +145,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "11": [
@@ -162,7 +159,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "12": [
@@ -176,7 +173,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "13": [
@@ -190,7 +187,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "14": [
@@ -204,7 +201,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "15": [
@@ -218,7 +215,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "16": [
@@ -232,7 +229,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "17": [
@@ -246,7 +243,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "18": [
@@ -260,7 +257,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "19": [
@@ -274,7 +271,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "20": [
@@ -288,7 +285,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "21": [
@@ -302,7 +299,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "22": [
@@ -316,7 +313,7 @@
         },
         {
           "resource": 36,
-          "amount": 4
+          "amount": 5
         }
       ],
       "23": [],
@@ -341,20 +338,16 @@
           "amount": 50
         },
         {
-          "resource": 8,
-          "amount": 2
+          "resource": 6,
+          "amount": 5.3
         },
         {
-          "resource": 5,
-          "amount": 5
+          "resource": 11,
+          "amount": 2.7
         }
       ],
       "27": [
         {
-          "resource": 26,
-          "amount": 0.08
-        },
-        {
           "resource": 35,
           "amount": 75
         },
@@ -363,24 +356,20 @@
           "amount": 75
         },
         {
-          "resource": 15,
-          "amount": 3
-        },
-        {
           "resource": 13,
-          "amount": 2
+          "amount": 3.1
         },
         {
           "resource": 12,
-          "amount": 1
+          "amount": 3.9
+        },
+        {
+          "resource": 26,
+          "amount": 0.1
         }
       ],
       "28": [
         {
-          "resource": 27,
-          "amount": 0.08
-        },
-        {
           "resource": 35,
           "amount": 100
         },
@@ -389,16 +378,16 @@
           "amount": 100
         },
         {
-          "resource": 18,
-          "amount": 3
+          "resource": 17,
+          "amount": 4
         },
         {
-          "resource": 10,
+          "resource": 9,
           "amount": 2
         },
         {
-          "resource": 19,
-          "amount": 1
+          "resource": 27,
+          "amount": 0.1
         }
       ],
       "29": [
@@ -411,19 +400,15 @@
           "amount": 50
         },
         {
-          "resource": 6,
-          "amount": 2
+          "resource": 8,
+          "amount": 4.4
         },
         {
-          "resource": 11,
-          "amount": 5
+          "resource": 5,
+          "amount": 3.6
         }
       ],
       "30": [
-        {
-          "resource": 29,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 75
@@ -434,22 +419,18 @@
         },
         {
           "resource": 14,
-          "amount": 3
+          "amount": 3.9
         },
         {
-          "resource": 20,
-          "amount": 2
+          "resource": 21,
+          "amount": 3.1
         },
         {
-          "resource": 16,
-          "amount": 1
+          "resource": 29,
+          "amount": 0.1
         }
       ],
       "31": [
-        {
-          "resource": 30,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 100
@@ -459,16 +440,16 @@
           "amount": 100
         },
         {
-          "resource": 17,
-          "amount": 3
-        },
-        {
           "resource": 18,
-          "amount": 2
+          "amount": 4.8
         },
         {
-          "resource": 9,
-          "amount": 1
+          "resource": 22,
+          "amount": 1.2
+        },
+        {
+          "resource": 30,
+          "amount": 0.1
         }
       ],
       "32": [
@@ -482,18 +463,14 @@
         },
         {
           "resource": 4,
-          "amount": 2
+          "amount": 5.4
         },
         {
           "resource": 7,
-          "amount": 5
+          "amount": 2.6
         }
       ],
       "33": [
-        {
-          "resource": 32,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 75
@@ -503,23 +480,19 @@
           "amount": 75
         },
         {
-          "resource": 13,
-          "amount": 3
+          "resource": 20,
+          "amount": 3.5
         },
         {
-          "resource": 15,
-          "amount": 2
+          "resource": 16,
+          "amount": 3.5
         },
         {
-          "resource": 21,
-          "amount": 1
+          "resource": 32,
+          "amount": 0.1
         }
       ],
       "34": [
-        {
-          "resource": 33,
-          "amount": 0.08
-        },
         {
           "resource": 35,
           "amount": 100
@@ -530,22 +503,22 @@
         },
         {
           "resource": 10,
-          "amount": 3
+          "amount": 3.1
         },
         {
-          "resource": 17,
-          "amount": 2
+          "resource": 19,
+          "amount": 2.9
         },
         {
-          "resource": 22,
-          "amount": 1
+          "resource": 33,
+          "amount": 0.1
         }
       ],
       "35": [],
       "36": [],
       "37": []
     },
-    "resourceOutputs": {
+    "productionByComplexRecipeOutputs": {
       "1": 30,
       "2": 30,
       "3": 30,
@@ -584,266 +557,359 @@
       "36": 50,
       "37": 0
     },
-    "resourceProductionByLaborParams": {
-      "1": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "2": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "3": {
-        "resource_rarity": 1,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "4": {
-        "resource_rarity": 2,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "5": {
-        "resource_rarity": 4,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "6": {
-        "resource_rarity": 2,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "7": {
-        "resource_rarity": 5,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "8": {
-        "resource_rarity": 3,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "9": {
-        "resource_rarity": 136,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "10": {
-        "resource_rarity": 54,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "11": {
-        "resource_rarity": 5,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "12": {
-        "resource_rarity": 21,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "13": {
-        "resource_rarity": 21,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "14": {
-        "resource_rarity": 17,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "15": {
-        "resource_rarity": 8,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "16": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "17": {
-        "resource_rarity": 45,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "18": {
-        "resource_rarity": 36,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "19": {
-        "resource_rarity": 91,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "20": {
-        "resource_rarity": 20,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "21": {
-        "resource_rarity": 31,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "22": {
-        "resource_rarity": 218,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 25,
-        "fish_burn_per_labor": 30
-      },
-      "23": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "24": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "25": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "26": {
-        "resource_rarity": 26,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "27": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "28": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "29": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "30": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "31": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "32": {
-        "resource_rarity": 29,
-        "depreciation_percent_num": 10,
-        "depreciation_percent_denom": 100,
-        "wheat_burn_per_labor": 50,
-        "fish_burn_per_labor": 50
-      },
-      "33": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "34": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "35": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "36": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      },
-      "37": {
-        "resource_rarity": 0,
-        "depreciation_percent_num": 0,
-        "depreciation_percent_denom": 0,
-        "wheat_burn_per_labor": 0,
-        "fish_burn_per_labor": 0
-      }
+    "productionBySimpleRecipe": {
+      "1": [
+        {
+          "resource": 23,
+          "amount": 10.4
+        },
+        {
+          "resource": 35,
+          "amount": 5
+        }
+      ],
+      "2": [
+        {
+          "resource": 23,
+          "amount": 13.1
+        },
+        {
+          "resource": 35,
+          "amount": 5
+        }
+      ],
+      "3": [
+        {
+          "resource": 23,
+          "amount": 10.4
+        },
+        {
+          "resource": 35,
+          "amount": 5
+        }
+      ],
+      "4": [
+        {
+          "resource": 23,
+          "amount": 16.35
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "5": [
+        {
+          "resource": 23,
+          "amount": 39.91
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "6": [
+        {
+          "resource": 23,
+          "amount": 25.61
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "7": [
+        {
+          "resource": 23,
+          "amount": 62.92
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "8": [
+        {
+          "resource": 23,
+          "amount": 29.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "9": [
+        {
+          "resource": 23,
+          "amount": 1075.75
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "10": [
+        {
+          "resource": 23,
+          "amount": 504.01
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "11": [
+        {
+          "resource": 23,
+          "amount": 48.49
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "12": [
+        {
+          "resource": 23,
+          "amount": 213.98
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "13": [
+        {
+          "resource": 23,
+          "amount": 185.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "14": [
+        {
+          "resource": 23,
+          "amount": 121.18
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "15": [
+        {
+          "resource": 23,
+          "amount": 79.82
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "16": [
+        {
+          "resource": 23,
+          "amount": 222.95
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "17": [
+        {
+          "resource": 23,
+          "amount": 367.25
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "18": [
+        {
+          "resource": 23,
+          "amount": 319.54
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "19": [
+        {
+          "resource": 23,
+          "amount": 652.08
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "20": [
+        {
+          "resource": 23,
+          "amount": 172.12
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "21": [
+        {
+          "resource": 23,
+          "amount": 281.58
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "22": [
+        {
+          "resource": 23,
+          "amount": 1199
+        },
+        {
+          "resource": 36,
+          "amount": 5
+        }
+      ],
+      "23": [],
+      "24": [],
+      "25": [],
+      "26": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 26
+        }
+      ],
+      "27": [],
+      "28": [],
+      "29": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 30
+        }
+      ],
+      "30": [],
+      "31": [],
+      "32": [
+        {
+          "resource": 35,
+          "amount": 50
+        },
+        {
+          "resource": 36,
+          "amount": 50
+        },
+        {
+          "resource": 23,
+          "amount": 26
+        }
+      ],
+      "33": [],
+      "34": [],
+      "35": [],
+      "36": [],
+      "37": []
+    },
+    "productionBySimpleRecipeOutputs": {
+      "1": 30,
+      "2": 30,
+      "3": 30,
+      "4": 30,
+      "5": 30,
+      "6": 30,
+      "7": 30,
+      "8": 30,
+      "9": 30,
+      "10": 30,
+      "11": 30,
+      "12": 30,
+      "13": 30,
+      "14": 30,
+      "15": 30,
+      "16": 30,
+      "17": 30,
+      "18": 30,
+      "19": 30,
+      "20": 30,
+      "21": 30,
+      "22": 30,
+      "23": 30,
+      "24": 1,
+      "25": 0.5,
+      "26": 0.04,
+      "27": 0.04,
+      "28": 0.04,
+      "29": 0.04,
+      "30": 0.04,
+      "31": 0.04,
+      "32": 0.04,
+      "33": 0.04,
+      "34": 0.04,
+      "35": 50,
+      "36": 50,
+      "37": 0
+    },
+    "laborOutputPerResource": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 2,
+      "5": 4,
+      "6": 2,
+      "7": 5,
+      "8": 3,
+      "9": 84,
+      "10": 37,
+      "11": 5,
+      "12": 16,
+      "13": 16,
+      "14": 14,
+      "15": 7,
+      "16": 22,
+      "17": 32,
+      "18": 26,
+      "19": 59,
+      "20": 16,
+      "21": 23,
+      "22": 128,
+      "23": 0,
+      "24": 0,
+      "25": 0,
+      "26": 0,
+      "27": 0,
+      "28": 0,
+      "29": 0,
+      "30": 0,
+      "31": 0,
+      "32": 0,
+      "33": 0,
+      "34": 0,
+      "35": 0,
+      "36": 0,
+      "37": 0
     },
     "resourceWeightsGrams": {
       "1": 1000,
@@ -874,9 +940,9 @@
       "26": 5000,
       "27": 5000,
       "28": 5000,
-      "29": 3000,
-      "30": 3000,
-      "31": 3000,
+      "29": 5000,
+      "30": 5000,
+      "31": 5000,
       "32": 5000,
       "33": 5000,
       "34": 5000,
@@ -961,10 +1027,10 @@
   },
   "exploration": {
     "reward": 750,
-    "shardsMinesFailProbability": 10000,
-    "shardsMinesWinProbability": 2000,
-    "agentFindProbability": 100,
-    "agentFindFailProbability": 500,
+    "shardsMinesFailProbability": 15000,
+    "shardsMinesWinProbability": 1000,
+    "agentFindProbability": 3000,
+    "agentFindFailProbability": 10000,
     "hyperstructureWinProbAtCenter": 20000,
     "hyperstructureFailProbAtCenter": 100000,
     "hyperstructureFailProbIncreasePerHexDistance": 20,
@@ -1008,7 +1074,7 @@
     "stamina": {
       "staminaGainPerTick": 20,
       "staminaInitial": 20,
-      "staminaBonusValue": 10,
+      "staminaBonusValue": 0,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 140,
       "staminaCrossbowmanMax": 120,
@@ -1160,27 +1226,35 @@
       "37": 35,
       "38": 36
     },
-    "buildingCosts": {
+    "complexBuildingCosts": {
       "0": [],
       "1": [
         {
+          "resource": 23,
+          "amount": 25000
+        },
+        {
           "resource": 3,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 1,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 2,
-          "amount": 75000
+          "amount": 50000
         },
         {
           "resource": 4,
-          "amount": 50000
+          "amount": 25000
         }
       ],
       "2": [
+        {
+          "resource": 23,
+          "amount": 25000
+        },
         {
           "resource": 6,
           "amount": 50000
@@ -1191,148 +1265,148 @@
         },
         {
           "resource": 14,
-          "amount": 10000
-        },
-        {
-          "resource": 12,
           "amount": 5000
         }
       ],
       "3": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "4": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "5": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "6": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "7": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "8": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "9": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "10": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "11": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "12": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "13": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "14": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "15": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "16": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "17": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "18": [
         {
           "resource": 35,
-          "amount": 75
+          "amount": 750000
         }
       ],
       "19": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "20": [
         {
           "resource": 35,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "21": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "22": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "23": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "24": [
         {
           "resource": 36,
-          "amount": 75000
+          "amount": 750000
         }
       ],
       "25": [],
       "26": [],
       "27": [
+        {
+          "resource": 23,
+          "amount": 50000
+        },
         {
           "resource": 8,
           "amount": 50000
@@ -1343,14 +1417,18 @@
         },
         {
           "resource": 20,
-          "amount": 10000
+          "amount": 5000
         },
         {
           "resource": 13,
-          "amount": 10000
+          "amount": 5000
         }
       ],
       "28": [
+        {
+          "resource": 23,
+          "amount": 75000
+        },
         {
           "resource": 1,
           "amount": 75000
@@ -1374,6 +1452,10 @@
       ],
       "29": [
         {
+          "resource": 23,
+          "amount": 250000
+        },
+        {
           "resource": 1,
           "amount": 250000
         },
@@ -1387,14 +1469,18 @@
         },
         {
           "resource": 13,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 12,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "30": [
+        {
+          "resource": 23,
+          "amount": 750000
+        },
         {
           "resource": 1,
           "amount": 500000
@@ -1409,14 +1495,18 @@
         },
         {
           "resource": 17,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 9,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "31": [
+        {
+          "resource": 23,
+          "amount": 75000
+        },
         {
           "resource": 3,
           "amount": 75000
@@ -1440,6 +1530,10 @@
       ],
       "32": [
         {
+          "resource": 23,
+          "amount": 250000
+        },
+        {
           "resource": 3,
           "amount": 250000
         },
@@ -1453,14 +1547,18 @@
         },
         {
           "resource": 14,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 21,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "33": [
+        {
+          "resource": 23,
+          "amount": 750000
+        },
         {
           "resource": 3,
           "amount": 500000
@@ -1475,14 +1573,18 @@
         },
         {
           "resource": 18,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 22,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "34": [
+        {
+          "resource": 23,
+          "amount": 75000
+        },
         {
           "resource": 3,
           "amount": 75000
@@ -1506,6 +1608,10 @@
       ],
       "35": [
         {
+          "resource": 23,
+          "amount": 250000
+        },
+        {
           "resource": 3,
           "amount": 250000
         },
@@ -1519,14 +1625,18 @@
         },
         {
           "resource": 20,
-          "amount": 50000
+          "amount": 75000
         },
         {
           "resource": 16,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "36": [
+        {
+          "resource": 23,
+          "amount": 750000
+        },
         {
           "resource": 3,
           "amount": 500000
@@ -1541,11 +1651,11 @@
         },
         {
           "resource": 10,
-          "amount": 50000
+          "amount": 100000
         },
         {
           "resource": 19,
-          "amount": 25000
+          "amount": 50000
         }
       ],
       "37": [
@@ -1557,7 +1667,213 @@
       "38": [
         {
           "resource": 35,
-          "amount": 50000
+          "amount": 500000
+        }
+      ]
+    },
+    "simpleBuildingCost": {
+      "0": [],
+      "1": [
+        {
+          "resource": 23,
+          "amount": 250000
+        }
+      ],
+      "2": [
+        {
+          "resource": 23,
+          "amount": 300000
+        }
+      ],
+      "3": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "4": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "5": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "6": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "7": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "8": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "9": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "10": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "11": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "12": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "13": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "14": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "15": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "16": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "17": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "18": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "19": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "20": [
+        {
+          "resource": 35,
+          "amount": 750000
+        }
+      ],
+      "21": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "22": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "23": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "24": [
+        {
+          "resource": 36,
+          "amount": 750000
+        }
+      ],
+      "25": [],
+      "26": [],
+      "27": [
+        {
+          "resource": 23,
+          "amount": 600000
+        }
+      ],
+      "28": [
+        {
+          "resource": 23,
+          "amount": 250000
+        }
+      ],
+      "29": [
+        {
+          "resource": 23,
+          "amount": 560000
+        }
+      ],
+      "30": [],
+      "31": [
+        {
+          "resource": 23,
+          "amount": 300000
+        }
+      ],
+      "32": [
+        {
+          "resource": 23,
+          "amount": 590000
+        }
+      ],
+      "33": [],
+      "34": [
+        {
+          "resource": 23,
+          "amount": 600000
+        }
+      ],
+      "35": [
+        {
+          "resource": 23,
+          "amount": 590000
+        }
+      ],
+      "36": [],
+      "37": [
+        {
+          "resource": 36,
+          "amount": 500000
+        }
+      ],
+      "38": [
+        {
+          "resource": 35,
+          "amount": 500000
         }
       ]
     },
@@ -1643,7 +1959,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x3fc0b20d1ebaadd82d8105f56346e85c9f0ac5fd7879e2c037085be61c04ac3",
+    "season_pool_fee_recipient": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -1652,120 +1968,294 @@
   },
   "startingResources": [
     {
-      "resource": 35,
-      "amount": 1200000000
-    },
-    {
-      "resource": 36,
-      "amount": 1200000000
-    },
-    {
-      "resource": 3,
-      "amount": 5000000
-    },
-    {
       "resource": 1,
-      "amount": 5000000
+      "amount": 1000000
     },
     {
       "resource": 2,
-      "amount": 5000000
+      "amount": 1000000
+    },
+    {
+      "resource": 3,
+      "amount": 1000000
     },
     {
       "resource": 4,
-      "amount": 5000000
-    },
-    {
-      "resource": 6,
-      "amount": 5000000
-    },
-    {
-      "resource": 8,
-      "amount": 5000000
+      "amount": 1000000
     },
     {
       "resource": 5,
-      "amount": 5000000
+      "amount": 1000000
     },
     {
-      "resource": 11,
-      "amount": 5000000
+      "resource": 6,
+      "amount": 1000000
     },
     {
       "resource": 7,
-      "amount": 5000000
+      "amount": 1000000
     },
     {
-      "resource": 15,
-      "amount": 5000000
-    },
-    {
-      "resource": 14,
-      "amount": 5000000
-    },
-    {
-      "resource": 20,
-      "amount": 5000000
-    },
-    {
-      "resource": 13,
-      "amount": 5000000
-    },
-    {
-      "resource": 12,
-      "amount": 5000000
-    },
-    {
-      "resource": 16,
-      "amount": 5000000
-    },
-    {
-      "resource": 21,
-      "amount": 5000000
-    },
-    {
-      "resource": 18,
-      "amount": 5000000
-    },
-    {
-      "resource": 17,
-      "amount": 5000000
-    },
-    {
-      "resource": 10,
-      "amount": 5000000
-    },
-    {
-      "resource": 19,
-      "amount": 5000000
+      "resource": 8,
+      "amount": 1000000
     },
     {
       "resource": 9,
-      "amount": 5000000
+      "amount": 1000000
+    },
+    {
+      "resource": 10,
+      "amount": 1000000
+    },
+    {
+      "resource": 11,
+      "amount": 1000000
+    },
+    {
+      "resource": 12,
+      "amount": 1000000
+    },
+    {
+      "resource": 13,
+      "amount": 1000000
+    },
+    {
+      "resource": 14,
+      "amount": 1000000
+    },
+    {
+      "resource": 15,
+      "amount": 1000000
+    },
+    {
+      "resource": 16,
+      "amount": 1000000
+    },
+    {
+      "resource": 17,
+      "amount": 1000000
+    },
+    {
+      "resource": 18,
+      "amount": 1000000
+    },
+    {
+      "resource": 19,
+      "amount": 1000000
+    },
+    {
+      "resource": 20,
+      "amount": 1000000
+    },
+    {
+      "resource": 21,
+      "amount": 1000000
     },
     {
       "resource": 22,
-      "amount": 5000000
+      "amount": 1000000
     },
     {
-      "resource": 25,
-      "amount": 800000
-    },
-    {
-      "resource": 26,
-      "amount": 1200000
-    },
-    {
-      "resource": 29,
-      "amount": 1200000
-    },
-    {
-      "resource": 32,
-      "amount": 1200000
+      "resource": 23,
+      "amount": 1000000
     },
     {
       "resource": 24,
-      "amount": 200000
+      "amount": 1000000
+    },
+    {
+      "resource": 25,
+      "amount": 1000000
+    },
+    {
+      "resource": 26,
+      "amount": 1000000
+    },
+    {
+      "resource": 27,
+      "amount": 1000000
+    },
+    {
+      "resource": 28,
+      "amount": 1000000
+    },
+    {
+      "resource": 29,
+      "amount": 1000000
+    },
+    {
+      "resource": 30,
+      "amount": 1000000
+    },
+    {
+      "resource": 31,
+      "amount": 1000000
+    },
+    {
+      "resource": 32,
+      "amount": 1000000
+    },
+    {
+      "resource": 33,
+      "amount": 1000000
+    },
+    {
+      "resource": 34,
+      "amount": 1000000
+    },
+    {
+      "resource": 35,
+      "amount": 1000000
+    },
+    {
+      "resource": 36,
+      "amount": 1000000
+    }
+  ],
+  "villageStartingResources": [
+    {
+      "resource": 1,
+      "amount": 1000000
+    },
+    {
+      "resource": 2,
+      "amount": 1000000
+    },
+    {
+      "resource": 3,
+      "amount": 1000000
+    },
+    {
+      "resource": 4,
+      "amount": 1000000
+    },
+    {
+      "resource": 5,
+      "amount": 1000000
+    },
+    {
+      "resource": 6,
+      "amount": 1000000
+    },
+    {
+      "resource": 7,
+      "amount": 1000000
+    },
+    {
+      "resource": 8,
+      "amount": 1000000
+    },
+    {
+      "resource": 9,
+      "amount": 1000000
+    },
+    {
+      "resource": 10,
+      "amount": 1000000
+    },
+    {
+      "resource": 11,
+      "amount": 1000000
+    },
+    {
+      "resource": 12,
+      "amount": 1000000
+    },
+    {
+      "resource": 13,
+      "amount": 1000000
+    },
+    {
+      "resource": 14,
+      "amount": 1000000
+    },
+    {
+      "resource": 15,
+      "amount": 1000000
+    },
+    {
+      "resource": 16,
+      "amount": 1000000
+    },
+    {
+      "resource": 17,
+      "amount": 1000000
+    },
+    {
+      "resource": 18,
+      "amount": 1000000
+    },
+    {
+      "resource": 19,
+      "amount": 1000000
+    },
+    {
+      "resource": 20,
+      "amount": 1000000
+    },
+    {
+      "resource": 21,
+      "amount": 1000000
+    },
+    {
+      "resource": 22,
+      "amount": 1000000
+    },
+    {
+      "resource": 23,
+      "amount": 1000000
+    },
+    {
+      "resource": 24,
+      "amount": 1000000
+    },
+    {
+      "resource": 25,
+      "amount": 1000000
+    },
+    {
+      "resource": 26,
+      "amount": 1000000
+    },
+    {
+      "resource": 27,
+      "amount": 1000000
+    },
+    {
+      "resource": 28,
+      "amount": 1000000
+    },
+    {
+      "resource": 29,
+      "amount": 1000000
+    },
+    {
+      "resource": 30,
+      "amount": 1000000
+    },
+    {
+      "resource": 31,
+      "amount": 1000000
+    },
+    {
+      "resource": 32,
+      "amount": 1000000
+    },
+    {
+      "resource": 33,
+      "amount": 1000000
+    },
+    {
+      "resource": 34,
+      "amount": 1000000
+    },
+    {
+      "resource": 35,
+      "amount": 1000000
+    },
+    {
+      "resource": 36,
+      "amount": 1000000
     }
   ],
   "realmUpgradeCosts": {
@@ -1842,129 +2332,129 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x7a9f473a7576372b37338f088bab124a491f4a41ae9f4698dd13cdc87e5afb4",
-      "realms": "0x78d5516731c24a9af7847a45b20115ed8b0c41b3ff1e5196edc1474298c16ab",
-      "lords": "0x74fbdd470ac2414fdbd2d6cf467437bc45f02159c20fe0afd00a2126053800b",
+      "seasonPass": "0x28d970cf6a445af803b133dd0b6e9061c8f5e2f69a4e5e66354fffd8c0522e4",
+      "realms": "0x6d94c83adafddc88fd981a24b9b51c33da09fd62f3641c5a249fff402e944e4",
+      "lords": "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e",
       "resources": {
         "STONE": [
           1,
-          "0x6e6afb87c8a77de0134d2ee412f8c2599398fde4107aa59462e5a5b67aac25f"
+          "0x74388ef13f12692b4e16c7d6694dd08aca8f37dcc61254488645bd6ac565564"
         ],
         "COAL": [
           2,
-          "0xe11c9d405b4dfcda5afb553828e606c6a727f31a0854c72bbc5a9d52537667"
+          "0x3770b73eb6984d5c8290b5067cb4671c97ef135a06d20c1cf063f99b95fb793"
         ],
         "WOOD": [
           3,
-          "0x12be5b7320926ce4d8d1c3a989c7c455ce5d15f26896cefc6a47571a20d31d5"
+          "0x4364e863adebebccb0a8c579d1785dca2736f83dd7c08b4d0afbb206f191ec4"
         ],
         "COPPER": [
           4,
-          "0x4e5feaf33519e2b93cbcb0017ed6a4ee85e20a12d6eddbbb77a65bb7ccc4131"
+          "0x44c8d975a805e3e61467e3052eaf4afa8f557a0af4f6fa40fa54fd0690b3e70"
         ],
         "IRONWOOD": [
           5,
-          "0xfa66fac9ed8f459bb3d1ce161461c7bcaa4e2ba641753da539e0afb3215aa0"
+          "0x6583a2dfe0c441bd270937409554ff4d6ba49a9153fb73f016ef8f06f34b923"
         ],
         "OBSIDIAN": [
           6,
-          "0x1647c6eca451c075005e2b9726110acde3566b3f51c5c23c1dfd65bb2650b9b"
+          "0x54cdfe5d36345637db8a41024bebabb830f467f4c7e6f3f928c0b53f071ec08"
         ],
         "GOLD": [
           7,
-          "0x134c0af7341e10ce495b4203eefbecb30dc21db409ab9eb6c25d71408d7ccb3"
+          "0x160aabbeb1510f7c14235554934ebe747b62f8beb8e6d2a3e9bac65515527a4"
         ],
         "SILVER": [
           8,
-          "0x4132d7f1a81eb1ae1a1278fdbadf72ecafa11ed03b307b518216320a834785d"
+          "0x16f38b3945dccf9bbb4c32590187417546993570a0747ee911ed62a882b68ca"
         ],
         "MITHRAL": [
           9,
-          "0x2000ec78cffdc2ff60c54351a87084c1610334ab0abce2666fe4af25e2e715f"
+          "0x351ae477ad741e03b5804abc3835584b3550164cbfa426762bbeb2b3183cb77"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x2940d30ae2c868aca84f75d6666692601bb24de62d15f3a2f85b77341f767f5"
+          "0x37a4b6210bff7b620e18f0bd79a368d2996adbe307774a982b377fbdaf20afe"
         ],
         "COLDIRON": [
           11,
-          "0x58fd65209cc4b5c98509bcfba8ffb9eec46a8c2015a1d2f64eae17cdc468b02"
+          "0x1f4316d9d7eb6040351689edf4da14be53f35e13512d559b056a245b1c69bb8"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x3d720094744c205157030457229cb940887e01b50180c5e20b0461efc58247"
+          "0x4aa25fe0ee843adcacc7591fade53af6afb47a831f44748551fe215903af9d"
         ],
         "RUBY": [
           13,
-          "0x5bce83c07a2c0653d4d0e673bfdecb4300f29cfd9a0648cdae5215f1757ee7c"
+          "0xd0b113be9d645fe7b89ffc698cd7b51cfae63ad854ce86af1c3f7e87fa7941"
         ],
         "DIAMONDS": [
           14,
-          "0x6a7afa1e2bb2bf1a39c3346f3826c12ba991ae65daafa308ac51af1e98888b2"
+          "0x6ca428727a752fea4501d68c84c692eb614d0cab50b6065ed9d75fe23390cfe"
         ],
         "HARTWOOD": [
           15,
-          "0xdd8953eb713094999bab795dd053d3fca7c8731a618e7b468ee3486531ef8a"
+          "0x52ab39eeefb6386cd1abbc38cbcede080db15924ac80637cfd2fa6b2a6e3f0e"
         ],
         "IGNIUM": [
           16,
-          "0x10a01c4d531fd6e5ec9093304d453c1a54ee19a8b2bad31cd4e609f4f157e2a"
+          "0x329e2f1edc9e734eeeb80ed9641261612ad561909713134d876b67472a1970f"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x6059049028d090df27ac3096e2b6098702a7e6c0f213a257e2960fa810c928a"
+          "0x482695d3490e28078d7c915d6cedea5f433d52f765de93ef1f9aa7924fd692c"
         ],
         "TRUEICE": [
           18,
-          "0x160bbaa41ddcb1c29c17f45398561df4f3a66dc916f7cb002cad18954fa6547"
+          "0x15c745ee2fdea9cec7110a837295aa26274815024cc899a12c7ca0a6803d6ba"
         ],
         "ADAMANTINE": [
           19,
-          "0x62451e800435570e27ef7263f4c3c13071fece1beeec4efd8328728fd3d7662"
+          "0x72f0fb40e9d2f1d6d3ec3e658b26df63967f8b537441c1b41f8bd44154bf74b"
         ],
         "SAPPHIRE": [
           20,
-          "0x323bc18bf6369d5443800819b2f5a4e5d68c8b29b9b19dd2737da66a102cafd"
+          "0x170156186ee475299f8420073ca20524e5bc9c7f16ae659e64b154283818df9"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x464abf80e412131f4e62fed979a948f15b3d3aa555a6af05b2755a418f0f3c9"
+          "0x1a8d260970254258a0dd7a322bb6ad3e693844be6c88f1d4a3ceb951535ca11"
         ],
         "DRAGONHIDE": [
           22,
-          "0x1aaa79e1325d8ae471dd7ccaffc75302c060a20d42214b4da612a5b20d3054d"
+          "0xeef0ad9a8bc8b7effa1dc4d97519d1025ece137929fe0cfb59e90e33c27a74"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0xd4a9674bd5c1eba5dfb2347831a6b6c84f4249c31b782ff552715cccdffeea"
+          "0x1cafde2ae3a3a5080986871e0a39cb09d746c2a99ba9540488ea6758d1a3f3b"
         ],
         "DONKEY": [
           25,
-          "0x1e982beca4fca994494910498591c7d15346cc1b7886bf6aff26e4aa63f8469"
+          "0x5d455cc4bec7530f67a75ea3406dd1d85ba1fd69b77119f1e8d74ce1344611d"
         ],
         "KNIGHT": [
           26,
-          "0x218a1e4b6cf5c16a24f3fa74aa92db567dc258a21d971bb90188fc4c189934b"
+          "0x6de2f74af194ea4af6527bad35b4b6f4725d475da7168d2470ac0dda4020bd"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x693373ac72986bfa50165d6619f1313c056034911e236b7ede2afa0b3ea783b"
+          "0x7d01fd5ef8e6cb95ea0f6f93788532727a6bf37a85d841b64f18b39e6b0942d"
         ],
         "PALADIN": [
           32,
-          "0x3b72aac2de38e225934299d4f83bbbfa8daf89f312af742fad88c6c0dfb47d"
+          "0x504cda2f28d47141e1140bd5562e0c53295009983a6729bdeaa6ca330f8819c"
         ],
         "WHEAT": [
           35,
-          "0x4e86198f74721c8c6f5d00b58187e7b3be237abec4592d6f807f6865c27483d"
+          "0x79fa48eac2fc709a501c18ecffd1d1f91c04f39fcb6faf650edfa720346c81e"
         ],
         "FISH": [
           36,
-          "0x6f05d296deb1604f542a71cebac421cf80f048c08bf06c2629cf63a98d1b82c"
+          "0x7fb0185574ab8aaa29654fb9bc620ae125f00122273800905187719ccab6583"
         ],
         "LORDS": [
           37,
-          "0x74fbdd470ac2414fdbd2d6cf467437bc45f02159c20fe0afd00a2126053800b"
+          "0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e"
         ]
       }
     },
@@ -3282,8 +3772,8 @@
       },
       "contracts": [
         {
-          "address": "0x52769184af06cf34e16f027bf2411db63fb491aab8f67e4444c30f195052e54",
-          "class_hash": "0x7c9b9b65d6835d163b59e32f0f34d29e288aa75df5961f5d21c8fb81d41f028",
+          "address": "0x308436495d8afc982df66016df09391706aabacdff031cbea6bc329608c08b8",
+          "class_hash": "0x60f805be74fdda65d60f10b412607c0c6e5646f1556ebed383d0cbe920e4cf5",
           "abi": [
             {
               "type": "impl",
@@ -3604,8 +4094,8 @@
           ]
         },
         {
-          "address": "0x7b8d4ae23a9a5b7dfddddbfc8dc5e0f0cfff71c220857ce1eb3e20302a63634",
-          "class_hash": "0x17d3ff802c56ee45ee26af9fd381045d26131f1765cef186c9e549bac8ea57f",
+          "address": "0x23231d63352e9fc2336d4b168d199325a7afed5337cba3bea52f315d693782c",
+          "class_hash": "0x1106605ab129f7277e8dfa4ca8b3615646787e04a810931eaf79083af40d9e2",
           "abi": [
             {
               "type": "impl",
@@ -3712,6 +4202,29 @@
             },
             {
               "type": "impl",
+              "name": "MercenariesConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_mercenaries_name_config",
+                  "inputs": [
+                    {
+                      "name": "name",
+                      "type": "core::felt252"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
               "name": "SeasonConfigImpl",
               "interface_name": "s1_eternum::systems::config::contracts::ISeasonConfig"
             },
@@ -3800,7 +4313,11 @@
                   "name": "set_starting_resources_config",
                   "inputs": [
                     {
-                      "name": "resources",
+                      "name": "realm_starting_resources",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "village_starting_resources",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
@@ -3979,61 +4496,47 @@
             },
             {
               "type": "impl",
-              "name": "ProductionConfigImpl",
-              "interface_name": "s1_eternum::systems::config::contracts::IProductionConfig"
-            },
-            {
-              "type": "struct",
-              "name": "s1_eternum::models::config::LaborBurnPrStrategy",
-              "members": [
-                {
-                  "name": "resource_rarity",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "wheat_burn_per_labor",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "fish_burn_per_labor",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "depreciation_percent_num",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "depreciation_percent_denom",
-                  "type": "core::integer::u16"
-                }
-              ]
+              "name": "ResourceFactoryConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig"
             },
             {
               "type": "interface",
-              "name": "s1_eternum::systems::config::contracts::IProductionConfig",
+              "name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig",
               "items": [
                 {
                   "type": "function",
-                  "name": "set_production_config",
+                  "name": "set_resource_factory_config",
                   "inputs": [
                     {
                       "name": "resource_type",
                       "type": "core::integer::u8"
                     },
                     {
-                      "name": "realm_output_per_tick",
+                      "name": "realm_output_per_second",
                       "type": "core::integer::u64"
                     },
                     {
-                      "name": "village_output_per_tick",
+                      "name": "village_output_per_second",
                       "type": "core::integer::u64"
                     },
                     {
-                      "name": "labor_burn_strategy",
-                      "type": "s1_eternum::models::config::LaborBurnPrStrategy"
+                      "name": "labor_output_per_resource",
+                      "type": "core::integer::u64"
                     },
                     {
-                      "name": "predefined_resource_burn_cost",
+                      "name": "output_per_simple_input",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "simple_input_list",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "output_per_complex_input",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "complex_input_list",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
@@ -4555,16 +5058,20 @@
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                     },
                     {
-                      "name": "cost_of_building",
+                      "name": "complex_building_cost",
+                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                    },
+                    {
+                      "name": "simple_building_cost",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     },
                     {
                       "name": "population_cost",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u8"
                     },
                     {
                       "name": "capacity_grant",
-                      "type": "core::integer::u32"
+                      "type": "core::integer::u8"
                     }
                   ],
                   "outputs": [],
@@ -4939,6 +5446,7 @@
           "systems": [
             "set_agent_controller",
             "set_world_config",
+            "set_mercenaries_name_config",
             "set_season_config",
             "set_vrf_config",
             "set_starting_resources_config",
@@ -4946,7 +5454,7 @@
             "set_capacity_config",
             "set_resource_weight_config",
             "set_tick_config",
-            "set_production_config",
+            "set_resource_factory_config",
             "set_donkey_speed_config",
             "set_battle_config",
             "set_hyperstructure_config",
@@ -4965,8 +5473,8 @@
           ]
         },
         {
-          "address": "0x4514dcdfb77c7a21c8fca08f6310dea05f55385807525d4f445c71505ebdd43",
-          "class_hash": "0x32a69d71f8f31fc57dcfbc3b4fb54314eaa97d1875bfe5b186e822f377edde0",
+          "address": "0x599541cbcfb037659be5445d32c3c094c71acb4d0555cf5dcabd079a924a8e1",
+          "class_hash": "0x49b8c821dbe2eaa735eef86e52180981048815126efc1270191e1c9be485acd",
           "abi": [
             {
               "type": "impl",
@@ -5179,8 +5687,8 @@
           ]
         },
         {
-          "address": "0x2a1b2b9cd3bbc3fd75dba80b7f27fc6f609d3da4e13a8a5b23a076dd916487c",
-          "class_hash": "0x5f9c455657ff912886aedddd93487ba9c61abecd268ae70d14e71a8e874587",
+          "address": "0x22c37ace384c10e8c1a44f4efaa4a604c303c226b055fdb781753575381ccb6",
+          "class_hash": "0x475541ea665d855869963217202ccb74e0f3bca0cc98a7fdd8919d922f73217",
           "abi": [
             {
               "type": "impl",
@@ -5478,8 +5986,8 @@
           ]
         },
         {
-          "address": "0x661bc75ea6719d673f01247a2e32aec185d8e4bf61468a10b6af95146d900df",
-          "class_hash": "0x63cbd31d144f1cad8ba5a3fb8470919247493f9126e77b91eaf1c2281d1c9a1",
+          "address": "0xe5f18340404983e990dda7e18fbba418faa984ecf4ca1ccb2fefd0760fb6e3",
+          "class_hash": "0x3fbea94ad69a12990f173ec7e52935325049087d0555cf2f21609800b9c135c",
           "abi": [
             {
               "type": "impl",
@@ -5832,8 +6340,8 @@
           ]
         },
         {
-          "address": "0xe021d71627bd3cac826c91e91e226e1ba59be99b5bcc442955a1fe63b50519",
-          "class_hash": "0x2a8fafcab4d67af977a60374d8a8e80e1ba072a4d08099a8f8a3faa2ba0c813",
+          "address": "0x31b5fdd3dafbdea53d6548a175616ed56e392b6a54cc7848a23d123fb11b7f2",
+          "class_hash": "0x6fea985f1bf091020996f7c3bdf03311fc9e7384561dfdefe26fccd4be20b77",
           "abi": [
             {
               "type": "impl",
@@ -6073,8 +6581,8 @@
           ]
         },
         {
-          "address": "0x303cef23269357900a88cd03a0ed15f93656c455447fa21f83f7b3dc94d6b6d",
-          "class_hash": "0x3ebce84a448717f5de567319355b18092d2b1baa19bcc254800aed97249c557",
+          "address": "0xea0affaf8b107d9493cb7eea6bf049f37cd7b28d5ca454f36a0e43028d93bb",
+          "class_hash": "0x398d0511919674d0a834c3d055dc4abf96c1425d205b801c36a71f95f372f57",
           "abi": [
             {
               "type": "impl",
@@ -6273,8 +6781,8 @@
           ]
         },
         {
-          "address": "0x1c7a7b310c83c1bb44437a95d8ed6402443679062fc48521f5a647a46f15c88",
-          "class_hash": "0x7b40d5decf79a0dbafab87b2860d3d647e44415201c5b3c20d20d13b035db37",
+          "address": "0x5773ce41b4b5c4812c374eb6d7d4d7900c67eca12736b867e3018d6d75a9b34",
+          "class_hash": "0x765552772870cc5165d9d20f9e6714f7cbcba638300aa86b38436e2a5a988f3",
           "abi": [
             {
               "type": "impl",
@@ -6494,8 +7002,8 @@
           ]
         },
         {
-          "address": "0x1076365f529b7522737be3a64c6106b38bbc233543109dd531fa7ae0020ba0b",
-          "class_hash": "0x3a73dae12b752feff7b99629a6dab04747d068d990e5a27aeed32c83aee9fa3",
+          "address": "0x2c958151c74275448cf99f3a1116b9c4857ad9b14a2df3ae6f6501933c074ed",
+          "class_hash": "0x52fc96e1120c8ab1e2467f7173467ab5e021e5b96bb603ba05fc3e8130d7d55",
           "abi": [
             {
               "type": "impl",
@@ -6823,7 +7331,7 @@
                       "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                     },
                     {
-                      "name": "pay_labor",
+                      "name": "use_simple",
                       "type": "core::bool"
                     }
                   ],
@@ -6880,7 +7388,7 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_other_resources_for_labor_production",
+                  "name": "burn_resource_for_labor_production",
                   "inputs": [
                     {
                       "name": "structure_id",
@@ -6900,14 +7408,14 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_labor_resources_for_other_production",
+                  "name": "burn_labor_for_resource_production",
                   "inputs": [
                     {
                       "name": "from_structure_id",
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "labor_amounts",
+                      "name": "production_cycles",
                       "type": "core::array::Span::<core::integer::u128>"
                     },
                     {
@@ -6920,7 +7428,7 @@
                 },
                 {
                   "type": "function",
-                  "name": "burn_other_predefined_resources_for_resources",
+                  "name": "burn_resource_for_resource_production",
                   "inputs": [
                     {
                       "name": "from_structure_id",
@@ -6931,7 +7439,7 @@
                       "type": "core::array::Span::<core::integer::u8>"
                     },
                     {
-                      "name": "production_tick_counts",
+                      "name": "production_cycles",
                       "type": "core::array::Span::<core::integer::u128>"
                     }
                   ],
@@ -7063,15 +7571,15 @@
             "destroy_building",
             "pause_building_production",
             "resume_building_production",
-            "burn_other_resources_for_labor_production",
-            "burn_labor_resources_for_other_production",
-            "burn_other_predefined_resources_for_resources",
+            "burn_resource_for_labor_production",
+            "burn_labor_for_resource_production",
+            "burn_resource_for_resource_production",
             "upgrade"
           ]
         },
         {
-          "address": "0x7f9216fd0c3fa6d6350af75809b587ab1d6c1bcbbcf97ce083ef17cd03707c9",
-          "class_hash": "0x3acadbc5e32211b3e40e55e916f7ba8d303370f2f31b6e6ac8a8f4be31ef256",
+          "address": "0x2610004641d7d98d99646ab839290bdc76dc4fdd1d5cdd4115dd06dff9cc3e8",
+          "class_hash": "0x24f2ecbe449d136cd9237fc03ff4fdd503bf4b68c0f256ceec8c03dd072696",
           "abi": [
             {
               "type": "impl",
@@ -7304,8 +7812,8 @@
           ]
         },
         {
-          "address": "0x2b5f40ea85cb8b09493655e166bf3646e583d95b3be502dd5c8919b3bac6e7f",
-          "class_hash": "0x10d9c6825e8e03877bf919c464d52873cd3a9e9317223d156825deaa360a584",
+          "address": "0x2c86de5f1c7f2536d2ce1906ef0a07983406b027a7d7b891e09aed0355c7a90",
+          "class_hash": "0x76dd68e4060372047c60d6c64a48eba56ae5eaac41b6992f1edebb7bb6e928e",
           "abi": [
             {
               "type": "impl",
@@ -7559,8 +8067,8 @@
           ]
         },
         {
-          "address": "0x25dec73f44ec0122f02a58bbcbee91559957ad8b0ee160a5b52bb586ae90ba0",
-          "class_hash": "0x4f56b10d4988fa790c372e0b2df5bb0d2a78ad78bc1e00dd543f10505439dd0",
+          "address": "0x55b7eefcfaa8e96e78304cbb1294f9f18528ce86ecc4605eaba7f7e2e325e1e",
+          "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
           "abi": [
             {
               "type": "impl",
@@ -7886,8 +8394,8 @@
           ]
         },
         {
-          "address": "0x3fc0b20d1ebaadd82d8105f56346e85c9f0ac5fd7879e2c037085be61c04ac3",
-          "class_hash": "0x600b668110ee177e4ddac3fb6cece3d85635d7bca66b958d69a57fb9413d87e",
+          "address": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
+          "class_hash": "0x3e372338ca4ad7a94e0753e2ed4c1cfed2625915374ffa12274c7dc16c82ab",
           "abi": [
             {
               "type": "impl",
@@ -8123,8 +8631,8 @@
           ]
         },
         {
-          "address": "0x6a6c2c17c04f94fb5fdaf4bf6a4f5c6ffb1b0e74ffe86627e5f395311227771",
-          "class_hash": "0x49121007a6870f8ab2dccc9e0d2fde515cb453a1f0835bbf0f034d70025e11",
+          "address": "0x2762db2bd8a71a67910142cf7bc5fc1fe3126299ca9f2ee340a64b15e6de49e",
+          "class_hash": "0x7bf254700d0654b563783dd2b69c7772afbad7640bfea5be42ba2b0556e24d3",
           "abi": [
             {
               "type": "impl",
@@ -8323,8 +8831,8 @@
           ]
         },
         {
-          "address": "0x1692f38dbdf8b89bf446a13e91c71c5befe516350e9a7371703db0fb3441ebf",
-          "class_hash": "0x32dc029c4e914b09f49e7c462f95b2b6f25b61592053a02d0619a125f175cda",
+          "address": "0xdf177fc98b6170116377b28e22aa9ead622397bc9f6e13804b17878f74fddf",
+          "class_hash": "0x67087bf51e717af506ae5a8bcd8e9e3a701635433edcdb5fac892f0d48b8030",
           "abi": [
             {
               "type": "impl",
@@ -8560,8 +9068,8 @@
           ]
         },
         {
-          "address": "0x64dc8319b067d5a02f4be4f7c32d809638ae66df22a95e179b8b1248564c16f",
-          "class_hash": "0x5c7784b6ff709f23d1cbf79cf955bb1147f2ae607009f0017a0f776d7c781bc",
+          "address": "0x6e068fca029199887c748e0c268e81d56be44d7f26d2dbbde38939172732a7c",
+          "class_hash": "0x21688e9838f4b27ec34ee3de294694dccaadf5e72cc4fde296e1fa3897d09ef",
           "abi": [
             {
               "type": "impl",
@@ -8826,8 +9334,8 @@
           ]
         },
         {
-          "address": "0x6a61aaa77b707c5a7e4042cfadbb1ca316e7fabf663744dea275759c1bd4193",
-          "class_hash": "0xda0bda8f2be3bd8cfffe11887f29254406863b1701a1eb7152818e0b044dee",
+          "address": "0x74042a1e1435b381a9ce6b6285badd05a02300051a7648fbc766af89d302ff",
+          "class_hash": "0x6731a138dd8bbbaafe01b83b2d69eec7dec9b8582c7d51bfd11076201b7d7b1",
           "abi": [
             {
               "type": "impl",
@@ -9132,8 +9640,8 @@
           ]
         },
         {
-          "address": "0x1d4a8ecc66b65892e0bf650106239b277b60bcc9c04689c0294326ae57c778d",
-          "class_hash": "0x418e9547981491a5c0be4a70cf079dd8bb15a460036d57f74bc8e56a79ed84a",
+          "address": "0x443bd71b617d42a07f66d4da33060e56904e1baafb562593853247aabf255af",
+          "class_hash": "0x71e6d5d18472afd2fd7ece930b02817fc6c3b51950bf2335a5a02fb5ac41601",
           "abi": [
             {
               "type": "impl",
@@ -9603,8 +10111,8 @@
           ]
         },
         {
-          "address": "0xb74ea8e94f9f6c65f912e2047b9b5489ba036fff10f6c49b7b4250f788cc0f",
-          "class_hash": "0x55e9691bf69d5771f36c9c865924e0e0cb3c7c7a3a3622fe808ab380fbb2752",
+          "address": "0x5e767af64f707b83dee6908ffc0161fa4f7e6a5b2439badc53c30097fdfc036",
+          "class_hash": "0x22a9961f94a718a66563b42fdb57ee9d2ff43c2329da8c68c9c5b47e32126f2",
           "abi": [
             {
               "type": "impl",
@@ -9865,8 +10373,8 @@
           ]
         },
         {
-          "address": "0xb62bd2f4b36eab79023bdfc45c3b784894cf4432bfe5610356433990cf27d1",
-          "class_hash": "0x6d8ac13efc245d97ad8b2971e998850f50ae6a2d3844628f9e45667541a13d",
+          "address": "0x21fa1894447a964a2112a1797d0786cdbe881e2eda7a0649a6545f25080b07f",
+          "class_hash": "0x615708f36836a38c334e5ed956203d3c98186a46635fda8ae587af94b4cb322",
           "abi": [
             {
               "type": "impl",
@@ -10296,8 +10804,8 @@
           ]
         },
         {
-          "address": "0x5718c0e48b6a96034d01355d25990887a88c051d5fdcaf97e85d92363543b6e",
-          "class_hash": "0x5c9c84ad6732e1598a410134422d26daf9736153e05b366e3388d79d57ce8f5",
+          "address": "0x7e3f9bd840b6138acae43d0fd68aca99d49fa291a5fa679978eb7d0152c188c",
+          "class_hash": "0x4fe6408fc860aaedd9fc4e71a23f6596cb7f40dfb3a6a233083d9451873dd9c",
           "abi": [
             {
               "type": "impl",
@@ -10548,8 +11056,8 @@
           ]
         },
         {
-          "address": "0x18a1713d4c3509cc4d18f1218f0939f945e9c332ec1d6169c41488bc93e487",
-          "class_hash": "0x2c637c833d5049e027b10ad2e4e884379091977f78ec315be79481ae746619c",
+          "address": "0x4c5455c2016d99e1fc54ac1f50d976a0e6eb0515a149475075a44615e81be5d",
+          "class_hash": "0x748691abda89e7a103b8a655d8cf369e8cd7af7c7978a5d11aa0d0a50e9a07a",
           "abi": [
             {
               "type": "impl",
@@ -10814,7 +11322,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x7ab6a16673c8e6903354fc4399e7e6e881590bc26f5743a3a90e2c79e44d843",
+          "class_hash": "0xec3259519f9c316eb71e3df81a799de4812564833ce811fc122b74d72c181c",
           "tag": "s1_eternum-BuildingCategoryConfig",
           "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
         },
@@ -10928,12 +11436,6 @@
         },
         {
           "members": [],
-          "class_hash": "0x481bdfa909868943c90592ee6edf1c26801179318aa11fdd7cd4bd04324b171",
-          "tag": "s1_eternum-ProductionConfig",
-          "selector": "0x38bacafc2ceed54f95033f7529efa9559f877aea41db072b797235cee383a06"
-        },
-        {
-          "members": [],
           "class_hash": "0x7702a9475dce2ccca23022565d543a88e3ec30c1a7be38f2eef4cadf479bd27",
           "tag": "s1_eternum-Progress",
           "selector": "0x510024ae0ff452228a083d9fb3aba5e3521c107ab7a84246efcac7bcdfddcb5"
@@ -10976,15 +11478,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
-          "tag": "s1_eternum-ResourceList",
-          "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
+          "class_hash": "0x354f632e875ed2d123834ffd88984292f3150ac2745e150e93b379742e48927",
+          "tag": "s1_eternum-ResourceFactoryConfig",
+          "selector": "0xadf4631a88b08d514ef767cfcec55f85ec9fb9bdd4392e441763958bdf612c"
         },
         {
           "members": [],
-          "class_hash": "0x2ad4e1df7cc008980f3ae5088a285c551829f8afaac2f5802661fdf46923b68",
-          "tag": "s1_eternum-StartingResourcesConfig",
-          "selector": "0x6068016cd230b9788ea055b9c8512081ba653a83cb11229cb54b9aa78289d2c"
+          "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
+          "tag": "s1_eternum-ResourceList",
+          "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
         },
         {
           "members": [],
@@ -11030,7 +11532,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x51cf2b77839f23a380659936e48c7fab4a8075d971a7d67d1ffee52220f960b",
+          "class_hash": "0x3e74a07618c145066993d51a48df0bc067370560b5aa5b07f233dad50b5892f",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }

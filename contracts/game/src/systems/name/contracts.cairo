@@ -15,6 +15,7 @@ pub mod name_systems {
     #[abi(embed_v0)]
     pub impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(ref self: ContractState, name: felt252) {
+            // todo: limit this to only realm/village owners else it can be spammed
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 

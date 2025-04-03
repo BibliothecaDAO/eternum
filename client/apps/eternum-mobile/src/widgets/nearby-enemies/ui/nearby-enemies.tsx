@@ -1,10 +1,12 @@
+import { useArmiesInRadius } from "@/features/armies";
 import { cn } from "@/shared/lib/utils";
+import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent, CardFooter, CardTitle } from "@/shared/ui/card";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
+import { useMemo } from "react";
 
 interface NearbyEnemiesProps {
-  entityId: number;
   onView: () => void;
 }
 
@@ -31,20 +33,18 @@ const getDangerLevel = (distance: number) => {
   };
 };
 
-// Dummy data generator for demo purposes
-const generateDummyData = () => {
-  const enemiesCount = Math.floor(Math.random() * 10) + 1;
-  const distance = Math.floor(Math.random() * 20) + 1;
-  return { enemiesCount, distance };
-};
+export const NearbyEnemies = ({ onView }: NearbyEnemiesProps) => {
+  const { selectedRealm } = useStore();
 
-// @ts-ignore
-export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
-  const { enemiesCount, distance } = generateDummyData();
-  const { color, bgColor, icon: Icon } = getDangerLevel(distance);
+  const { armies, count, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
+
+  const closestEnemy = useMemo(() => {
+    return armies.sort((a, b) => a.distance - b.distance)[0];
+  }, [armies]);
+  const { color, bgColor, icon: Icon } = getDangerLevel(closestEnemy ? closestEnemy.distance : 100);
 
   return (
-    <Card className={cn(bgColor)}>
+    <Card className={cn(bgColor, "flex flex-col justify-between")}>
       <CardContent className="space-y-3 p-4">
         <CardTitle className={cn("text-sm flex w-full items-center gap-2", color)}>
           <Icon className="w-4 h-4" />
@@ -52,17 +52,27 @@ export const NearbyEnemies = ({ entityId, onView }: NearbyEnemiesProps) => {
         </CardTitle>
         <div className="text-xs space-y-1">
           <div>
-            <span className="font-bold">{enemiesCount}</span> enemies around
+            {isLoading ? (
+              "Loading..."
+            ) : (
+              <>
+                <span className="font-bold">{count}</span> enemies around
+              </>
+            )}
           </div>
-          <div>
-            <span className="font-semibold">{distance}</span> Hexes Away
-          </div>
+          {closestEnemy && (
+            <div>
+              <span className="font-semibold">{closestEnemy.distance}</span> Hexes Away
+            </div>
+          )}
         </div>
+      </CardContent>
+      <CardFooter className="p-4">
         <Button variant="secondary" size="sm" className="w-full font-semibold" onClick={onView}>
           View Details
           <Eye className="w-4 h-4 ml-2" />
         </Button>
-      </CardContent>
+      </CardFooter>
     </Card>
   );
 };

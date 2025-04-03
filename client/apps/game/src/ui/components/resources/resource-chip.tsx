@@ -11,7 +11,6 @@ import {
   multiplyByPrecision,
   ResourceManager,
   TickIds,
-  TimeFormat,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -19,10 +18,12 @@ export const ResourceChip = ({
   resourceId,
   resourceManager,
   maxCapacityKg,
+  size = "default",
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   maxCapacityKg: number;
+  size?: "default" | "large";
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -82,11 +83,11 @@ export const ResourceChip = ({
       <ResourceIcon
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait as string}
-        size="sm"
+        size={size === "large" ? "md" : "sm"}
         className="mr-3 self-center"
       />
     );
-  }, [resourceId]);
+  }, [resourceId, size]);
 
   const reachedMaxCap = useMemo(() => {
     return maxAmountStorable <= balance;
@@ -109,25 +110,27 @@ export const ResourceChip = ({
 
   return (
     <div
-      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20`}
+      className={`flex relative group items-center ${
+        size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
+      } hover:bg-gold/20`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {icon}
       <div className="grid grid-cols-10 w-full">
-        <div className="self-center font-bold col-span-3">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        <div className={`self-center font-bold col-span-3 ${size === "large" ? "text-lg" : ""}`}>
+          {currencyFormat(balance ? Number(balance) : 0, 2)}
+        </div>
 
-        <div className="self-center m-y-auto font-bold col-span-4 text-center">
-          {timeUntilValueReached !== 0
-            ? formatTime(timeUntilValueReached, TimeFormat.D | TimeFormat.H | TimeFormat.M)
-            : ""}
+        <div className={`self-center m-y-auto font-bold col-span-4 text-center ${size === "large" ? "text-lg" : ""}`}>
+          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) : ""}
         </div>
 
         {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
           <div
             className={`${
               productionRate < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold text-[10px] col-span-3 text-center mx-auto`}
+            } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-3 text-center mx-auto`}
           >
             <div className={`self-center`}>
               +
@@ -153,7 +156,7 @@ export const ResourceChip = ({
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="self-center px-2 col-span-3 mx-auto"
+            className={`self-center px-2 col-span-3 mx-auto ${size === "large" ? "text-base" : "text-sm"} font-medium`}
           >
             {reachedMaxCap ? "MaxCap" : ""}
           </div>
@@ -162,7 +165,7 @@ export const ResourceChip = ({
       <button onClick={() => togglePopup(resourceId.toString())} className="ml-2 p-1 hover:bg-gold/20 rounded">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4 text-gold"
+          className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

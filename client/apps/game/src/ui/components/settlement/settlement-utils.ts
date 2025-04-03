@@ -1,24 +1,24 @@
 import { Position } from "@/types/position";
-import { ClientComponents, ContractAddress, Coord, Direction, StructureType } from "@bibliothecadao/eternum";
+import {
+  ClientComponents,
+  ContractAddress,
+  Coord,
+  Direction,
+  FELT_CENTER as SETTLEMENT_CENTER,
+  StructureType,
+} from "@bibliothecadao/eternum";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_CENTER, SETTLEMENT_SUBSEQUENT_DISTANCE } from "./settlement-constants";
+import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_SUBSEQUENT_DISTANCE } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
-
-/**
- * Calculate the distance from center for a given layer
- */
-export const layerDistanceFromCenter = (layer: number): number => {
-  return SETTLEMENT_BASE_DISTANCE + (layer - 1) * SETTLEMENT_SUBSEQUENT_DISTANCE;
-};
 
 /**
  * Calculate the maximum number of points on a side for a given layer
  */
-export const maxPointsInLayer = (layer: number): number => {
+const maxPointsInLayer = (layer: number): number => {
   return layer - 1;
 };
 
-export const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
+const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
   const start_direction = sideDirections(side)[0];
   let side_first_coord_layer_0 = sideLayerOneFirstCoord(side);
   let side_first_coord_layer_x = side_first_coord_layer_0;
@@ -29,7 +29,7 @@ export const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
   return side_first_coord_layer_x;
 };
 
-export const sideLayerOneFirstCoord = (side: number): Coord => {
+const sideLayerOneFirstCoord = (side: number): Coord => {
   const center = new Coord(SETTLEMENT_CENTER, SETTLEMENT_CENTER);
   const start_direction = sideDirections(side)[0];
   const triangle_direction = sideDirections(side)[1];
@@ -44,7 +44,7 @@ export const sideLayerOneFirstCoord = (side: number): Coord => {
   return side_first_coord_layer_0;
 };
 
-export const sideDirections = (side: number): Direction[] => {
+const sideDirections = (side: number): Direction[] => {
   const start_directions = [
     [Direction.EAST, Direction.NORTH_WEST],
     [Direction.EAST, Direction.SOUTH_WEST],
@@ -134,30 +134,11 @@ export const getOccupiedLocations = (
 };
 
 /**
- * Gets all bank locations from the game state
- */
-export const getBanksLocations = (components: ClientComponents) => {
-  const bankEntities = runQuery([HasValue(components.Structure, { category: StructureType.Bank })]);
-  const bankPositions = Array.from(bankEntities).map((entity) => {
-    const structure = getComponentValue(components.Structure, entity);
-    if (structure) {
-      const x = structure?.base.coord_x;
-      const y = structure?.base.coord_y;
-
-      // Use the improved reverse calculation function
-      return coordinatesToSettlementLocation(x, y);
-    }
-    return null;
-  });
-  return bankPositions.filter((position) => position !== null) as SettlementLocation[];
-};
-
-/**
  * Converts coordinates to settlement location (layer, side, point)
  * This is the reverse of the forward calculation in generateSettlementLocations
  * and matches the backend implementation more closely
  */
-export const coordinatesToSettlementLocation = (x: number, y: number): SettlementLocation => {
+const coordinatesToSettlementLocation = (x: number, y: number): SettlementLocation => {
   // Calculate distance from center
   const dx = x - SETTLEMENT_CENTER;
   const dy = y - SETTLEMENT_CENTER;
@@ -184,4 +165,23 @@ export const coordinatesToSettlementLocation = (x: number, y: number): Settlemen
     x,
     y,
   };
+};
+
+/**
+ * Gets all bank locations from the game state
+ */
+export const getBanksLocations = (components: ClientComponents) => {
+  const bankEntities = runQuery([HasValue(components.Structure, { category: StructureType.Bank })]);
+  const bankPositions = Array.from(bankEntities).map((entity) => {
+    const structure = getComponentValue(components.Structure, entity);
+    if (structure) {
+      const x = structure?.base.coord_x;
+      const y = structure?.base.coord_y;
+
+      // Use the improved reverse calculation function
+      return coordinatesToSettlementLocation(x, y);
+    }
+    return null;
+  });
+  return bankPositions.filter((position) => position !== null) as SettlementLocation[];
 };

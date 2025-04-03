@@ -55,8 +55,8 @@ export const EntityArmyList = ({
 
   const armyManager = useMemo(() => {
     if (!structure.entity_id) return null;
-    return new ArmyManager(dojo.network.provider, dojo.setup.components, structure.entity_id);
-  }, [structure.entity_id, dojo.network.provider, dojo.setup.components]);
+    return new ArmyManager(dojo.setup.systemCalls, dojo.setup.components, structure.entity_id);
+  }, [structure.entity_id, dojo.setup.systemCalls, dojo.setup.components]);
 
   const name = useMemo(
     () => getEntityName(structure.entity_id, dojo.setup.components),
@@ -64,7 +64,7 @@ export const EntityArmyList = ({
   );
 
   return (
-    <div className="military-panel-selector p-4 bg-brown/90 rounded-lg">
+    <div className="military-panel-selector p-4">
       <Headline>
         <div className="flex items-center gap-3 mb-4">
           <div className="text-xl font-bold text-gold">{name}</div>

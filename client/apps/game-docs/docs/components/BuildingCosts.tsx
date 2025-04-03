@@ -5,7 +5,7 @@ type Props = {
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
-  // const costs = ETERNUM_CONFIG().buildings.buildingCosts[buildingType] || [];
+  // const costs = ETERNUM_CONFIG().buildings.complexBuildingCosts[buildingType] || [];
   // const resourceCostsWheat = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Wood] || [];
   // const resourceCostsFish = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Stone] || [];
 

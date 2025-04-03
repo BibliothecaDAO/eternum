@@ -13,13 +13,17 @@ import {
   EntityType,
   findResourceById,
   getAddressNameFromEntity,
+  getEntityIdFromKeys,
   getTotalResourceWeightKg,
+  isMilitaryResource,
   multiplyByPrecision,
   ResourcesIds,
+  StructureType,
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const ONE_MONTH = 2628000;
@@ -63,7 +67,7 @@ export const MarketResource = memo(
           onClick(resourceId);
         }}
         className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
-          active ? "bg-gold/10" : ""
+          active ? "panel-gold" : ""
         }`}
       >
         <div className="flex items-center gap-2 col-span-2">
@@ -74,11 +78,9 @@ export const MarketResource = memo(
           </div>
         </div>
 
-        <div className="text-green font-bold flex items-center justify-center text-xs">{formatNumber(bidPrice, 4)}</div>
-        <div className="text-red font-bold flex items-center justify-center text-xs">{formatNumber(askPrice, 4)}</div>
-        <div className="text-blueish font-bold flex items-center justify-center text-xs">
-          {formatNumber(ammPrice, 4)}
-        </div>
+        <div className="text-green  flex items-center justify-center text-xs">{formatNumber(bidPrice, 4)}</div>
+        <div className="text-red  flex items-center justify-center text-xs">{formatNumber(askPrice, 4)}</div>
+        <div className="text-blueish  flex items-center justify-center text-xs">{formatNumber(ammPrice, 4)}</div>
       </div>
     );
   },
@@ -109,7 +111,7 @@ export const MarketOrderPanel = memo(
     }, [resourceAskOffers, resourceId]);
 
     return (
-      <div className="order-book-selector grid grid-cols-2 gap-4 p-4 h-full">
+      <div className="order-book-selector grid grid-cols-2 p-4 h-full">
         <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
         <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
@@ -137,18 +139,18 @@ const MarketOrders = memo(
     }, [offers]);
 
     return (
-      <div className="h-full flex flex-col gap-4">
+      <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-2xl flex  font-bold  justify-between py-4 px-8 border-gold/10 border rounded-xl ${
-            !isBuy ? "bg-green/20 text-green" : "bg-red/20 text-red"
+          className={`text-4xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
+            !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
           }`}
         >
-          <div className="self-center flex gap-4">
+          <div className="self-center flex">
             <div className="flex flex-col">
-              <div className="uppercase text-sm text-opacity-80">{findResourceById(resourceId)?.trait || ""}</div>
-              <div className="flex gap-3">
-                <ResourceIcon withTooltip={false} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
+              {/* <h5 className="">{findResourceById(resourceId)?.trait || ""}</h5> */}
+              <div className="flex gap-3 self-center">
+                <ResourceIcon withTooltip={true} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
                 <div className="self-center">{formatNumber(lowestPrice, 4)}</div>
               </div>
             </div>
@@ -159,13 +161,13 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 bg-brown  flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
+          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
             isBuy ? "order-buy-selector" : "order-sell-selector"
           }`}
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
-          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative`}>
+          <div className={`flex-col flex gap-1 flex-grow overflow-y-auto h-96 relative `}>
             {offers.map((offer, index) => (
               <OrderRow
                 key={offer.tradeId}
@@ -187,7 +189,7 @@ const MarketOrders = memo(
 
 const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
-    <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
+    <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs">
       <div>qty.</div>
       <div>dist.</div>
       <div className="flex">
@@ -248,10 +250,6 @@ const OrderRow = memo(
         ),
       [entityId, offer],
     );
-
-    const returnResources = useMemo(() => {
-      return [offer.takerGets[0].resourceId, offer.takerGets[0].amount];
-    }, [offer]);
 
     const [loading, setLoading] = useState(false);
 
@@ -365,6 +363,79 @@ const OrderRow = memo(
       }
     };
 
+    const renderConfirmationPopup = useCallback(() => {
+      const isVillageAndMilitaryResource =
+        getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+          StructureType.Village &&
+        (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId));
+
+      return (
+        <ConfirmationPopup
+          title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
+          onConfirm={isSelf ? onCancel : onAccept}
+          onCancel={() => setConfirmOrderModal(false)}
+          isLoading={loading}
+          disabled={
+            isSelf
+              ? false
+              : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0 || isVillageAndMilitaryResource
+          }
+        >
+          {isSelf ? (
+            <div className="p-4 text-center">
+              <p>Are you sure you want to cancel this order?</p>
+            </div>
+          ) : (
+            <div className="p-4 text-center">
+              <div className="flex gap-3 mb-4">
+                <NumberInput
+                  value={inputValue}
+                  className="w-full"
+                  onChange={setInputValue}
+                  max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+                />
+                <Button
+                  onClick={() =>
+                    setInputValue(
+                      divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
+                    )
+                  }
+                >
+                  Max
+                </Button>
+              </div>
+              <p className="mb-2">
+                <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
+                <span className="">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
+                <span className="">{currencyFormat(calculatedLords, 2)}</span> Lords
+              </p>
+              <div className="flex justify-between mt-4">
+                <div>Donkeys Required</div>
+                <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
+                  {donkeysNeeded} [{donkeyBalance}]
+                </div>
+              </div>
+            </div>
+          )}
+        </ConfirmationPopup>
+      );
+    }, [
+      isSelf,
+      isBuy,
+      donkeysNeeded,
+      donkeyBalance,
+      loading,
+      inputValue,
+      getsDisplayNumber,
+      resourceBalanceRatio,
+      lordsBalanceRatio,
+      getDisplayResource,
+      calculatedLords,
+      calculatedResourceAmount,
+      onCancel,
+      onAccept,
+    ]);
+
     return (
       <div
         key={offer.tradeId}
@@ -373,7 +444,7 @@ const OrderRow = memo(
         }`}
       >
         <div className="grid grid-cols-5 gap-1">
-          <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
+          <div className={`flex gap-1  ${isBuy ? "text-red" : "text-green"} `}>
             <ResourceIcon withTooltip={false} size="sm" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
             {getsDisplay}
           </div>
@@ -385,7 +456,7 @@ const OrderRow = memo(
             </div>
           )}
           <div className="flex gap-1 text-green">{formatNumber(offer.perLords, 4)}</div>
-          <div className={`flex gap-1 font-bold ${isBuy ? "text-green" : "text-red"}`}>
+          <div className={`flex gap-1  ${isBuy ? "text-green" : "text-red"}`}>
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
             {currencyFormat(getTotalLords, 0)}
           </div>
@@ -415,52 +486,7 @@ const OrderRow = memo(
             {accountName} ({offer.originName})
           </div>
         </div>
-        {confirmOrderModal && (
-          <ConfirmationPopup
-            title={isSelf ? "Confirm Cancel Order" : `Confirm ${isBuy ? "Sell" : "Buy"}`}
-            onConfirm={isSelf ? onCancel : onAccept}
-            onCancel={() => setConfirmOrderModal(false)}
-            isLoading={loading}
-            disabled={isSelf ? false : (!isBuy && donkeysNeeded > donkeyBalance) || inputValue === 0}
-          >
-            {isSelf ? (
-              <div className="p-4 text-center">
-                <p>Are you sure you want to cancel this order?</p>
-              </div>
-            ) : (
-              <div className="p-4 text-center">
-                <div className="flex gap-3 mb-4">
-                  <NumberInput
-                    value={inputValue}
-                    className="w-full"
-                    onChange={setInputValue}
-                    max={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
-                  />
-                  <Button
-                    onClick={() =>
-                      setInputValue(
-                        divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio),
-                      )
-                    }
-                  >
-                    Max
-                  </Button>
-                </div>
-                <p className="mb-2">
-                  <span className={isBuy ? "text-red" : "text-green"}>{isBuy ? "Sell" : "Buy"}</span>{" "}
-                  <span className="font-bold">{inputValue} </span> {findResourceById(getDisplayResource)?.trait} for{" "}
-                  <span className="font-bold">{currencyFormat(calculatedLords, 2)}</span> Lords
-                </p>
-                <div className="flex justify-between mt-4">
-                  <div>Donkeys Required</div>
-                  <div className={donkeysNeeded > donkeyBalance ? "text-red" : "text-green"}>
-                    {donkeysNeeded} [{donkeyBalance}]
-                  </div>
-                </div>
-              </div>
-            )}
-          </ConfirmationPopup>
-        )}
+        {confirmOrderModal && renderConfirmationPopup()}
       </div>
     );
   },
@@ -480,9 +506,11 @@ const OrderCreation = memo(
     const {
       account: { account },
       setup: {
+        components,
         systemCalls: { create_order },
       },
     } = useDojo();
+
     useEffect(() => {
       setBid(String(lords / resource));
     }, [resource, lords]);
@@ -585,15 +613,46 @@ const OrderCreation = memo(
       return donkeyBalance >= donkeysNeeded;
     }, [donkeyBalance, donkeysNeeded, resourceId]);
 
+    const renderConfirmationPopupCreateOrder = useCallback(() => {
+      const isVillageAndMilitaryResource =
+        getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+          StructureType.Village && isMilitaryResource(resourceId);
+
+      return (
+        <ConfirmationPopup
+          title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
+          onConfirm={createOrder}
+          onCancel={() => setShowConfirmation(false)}
+          isLoading={loading}
+          disabled={isVillageAndMilitaryResource}
+        >
+          <div className="p-4 text-center">
+            <p className="mb-4">
+              Villages cannot buy or sell military resources. You can only transfer them with your connected realm.
+            </p>
+            <div className="flex flex-col gap-2">
+              <div>
+                Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+              </div>
+              <div>Price: {lords.toLocaleString()} Lords</div>
+              <div>
+                Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
+              </div>
+            </div>
+          </div>
+        </ConfirmationPopup>
+      );
+    }, [isBuy, createOrder, loading, setShowConfirmation]);
+
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto bg-gold/5 border-gold/10 border rounded-xl ${
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  border-gold/10 panel-wood  ${
           isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
         }`}
       >
         <div className="flex w-full gap-8">
           <div className="w-1/3 gap-1 flex flex-col">
-            <div className="uppercase text-sm flex gap-2 font-bold">
+            <div className="uppercase text-sm flex gap-2 ">
               <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
               {isBuy ? "Buy" : "Sell"}
             </div>
@@ -606,28 +665,32 @@ const OrderCreation = memo(
               max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
             />
 
-            <div className="text-sm font-bold text-gold/70">
+            <div className="text-sm  text-gold/70">
               {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
             </div>
           </div>
-          <div className="flex w-1/3 justify-center px-3 text-center font-bold self-center">
-            <div className="uppercase text-2xl">
-              <NumberInput
-                allowDecimals={true}
-                value={Number(bid)}
-                onChange={handleBidChange}
-                className="w-full text-center"
-                max={Infinity}
-              />
-              <div className="uppercase text-xs flex gap-1 mt-1 ">
+          <div className="flex flex-col w-1/3 justify-center text-center  self-center">
+            <div className="">
+              <div className="uppercase text-sm flex gap-2">
                 <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
                 per /{" "}
                 <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
               </div>
+              <NumberInput
+                allowDecimals={true}
+                value={Number(bid)}
+                onChange={handleBidChange}
+                className="w-full"
+                max={Infinity}
+              />
+            </div>
+            <div className="text-sm  text-gold/70 flex mt-1">
+              {isBuy ? "Cost " : "Gain "}
+              {Number(bid).toFixed(0)} Lords/{findResourceById(resourceId)?.trait}
             </div>
           </div>
           <div className="w-1/3 gap-1 flex flex-col">
-            <div className="uppercase text-sm flex gap-2 font-bold">
+            <div className="uppercase text-sm flex gap-2 ">
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> {isBuy ? "Cost" : "Gain"}
             </div>
             <NumberInput
@@ -639,15 +702,15 @@ const OrderCreation = memo(
               max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
             />
 
-            <div className="text-sm font-bold text-gold/70">
+            <div className="text-sm  text-gold/70">
               {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
             </div>
           </div>
         </div>
-        <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
+        <div className="mt-8 ml-auto text-right w-auto  text-lg">
           <div>
             <div className="donkeys-used-selector flex justify-between gap-8">
-              <div>Donkeys Used</div>
+              <h6>Donkeys Used</h6>
               <div className="flex gap-2">
                 {donkeysNeeded.toLocaleString()}{" "}
                 <div className="text-green text-xs self-center">
@@ -657,7 +720,7 @@ const OrderCreation = memo(
             </div>
 
             <div className="flex justify-between">
-              <div>Weight</div>
+              <h6>Weight</h6>
               <div className="flex gap-2">
                 <div>{orderWeightKg.toLocaleString()} kgs</div>
               </div>
@@ -675,28 +738,7 @@ const OrderCreation = memo(
             Create {isBuy ? "Buy " : "Sell "} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
           </Button>
         </div>
-
-        {showConfirmation && (
-          <ConfirmationPopup
-            title={`Confirm ${isBuy ? "Buy" : "Sell"} Order`}
-            onConfirm={createOrder}
-            onCancel={() => setShowConfirmation(false)}
-            isLoading={loading}
-          >
-            <div className="p-4 text-center">
-              <p className="mb-4">Are you sure you want to create this order?</p>
-              <div className="flex flex-col gap-2">
-                <div>
-                  Amount: {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
-                </div>
-                <div>Price: {lords.toLocaleString()} Lords</div>
-                <div>
-                  Rate: {Number(bid).toFixed(4)} Lords/{findResourceById(resourceId)?.trait}
-                </div>
-              </div>
-            </div>
-          </ConfirmationPopup>
-        )}
+        {showConfirmation && renderConfirmationPopupCreateOrder()}
       </div>
     );
   },

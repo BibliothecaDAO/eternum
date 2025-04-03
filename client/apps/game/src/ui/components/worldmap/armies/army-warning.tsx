@@ -21,7 +21,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   const dojo = useDojo();
   const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
   const armyManager = useMemo(() => {
-    return new ArmyActionManager(dojo.setup.components, dojo.network.provider, army.entityId);
+    return new ArmyActionManager(dojo.setup.components, dojo.setup.systemCalls, army.entityId);
   }, [army]);
   const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
 
@@ -60,7 +60,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   return (
     <div className="flex flex-col gap-0.5 mt-1 mb-1">
       {stamina.amount < minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore/travel</span>
@@ -68,7 +68,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
         </div>
       )}
       {stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded && (
-        <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
@@ -76,7 +76,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
         </div>
       )}
       {remainingCapacity < configManager.getExploreReward() && (
-        <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>Too heavy to explore</span>
@@ -84,7 +84,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
         </div>
       )}
       {notEnoughFood && (
-        <div className="text-xxs font-semibold text-center bg-red rounded px-1 py-0.5">
+        <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
           <div className="flex">
             <span className="w-5">⚠️</span>
             <span>

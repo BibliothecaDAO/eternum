@@ -77,11 +77,13 @@ pub mod village_systems {
                 village_owner,
                 village_id,
                 StructureCategory::Village,
-                false,
                 village_resources,
                 villiage_metadata,
                 TileOccupier::Village,
             );
+
+            // grant starting resources
+            iStructureImpl::grant_starting_resources(ref world, village_id);
 
             // place castle building
             BuildingImpl::create(

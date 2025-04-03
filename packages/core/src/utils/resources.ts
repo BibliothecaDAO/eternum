@@ -1,9 +1,9 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { RESOURCE_PRECISION, resources, ResourcesIds } from "../constants";
+import { RESOURCE_PRECISION, resources, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
-import { ID, ProductionByLaborParams, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
+import { ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 import { unpackValue } from "./packed-data";
 
 // used for entities that don't have any production
@@ -149,15 +149,35 @@ export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplie
   return multipliedCosts;
 };
 
-export const scaleResourceProductionByLaborParams = (config: ProductionByLaborParams, multiplier: number) => {
-  let multipliedValues: ProductionByLaborParams = {};
+export const isMilitaryResource = (resourceId: ResourcesIds) => {
+  return (
+    resourceId === ResourcesIds.Knight ||
+    resourceId === ResourcesIds.KnightT2 ||
+    resourceId === ResourcesIds.KnightT3 ||
+    resourceId === ResourcesIds.Paladin ||
+    resourceId === ResourcesIds.PaladinT2 ||
+    resourceId === ResourcesIds.PaladinT3 ||
+    resourceId === ResourcesIds.Crossbowman ||
+    resourceId === ResourcesIds.CrossbowmanT2 ||
+    resourceId === ResourcesIds.CrossbowmanT3
+  );
+};
 
-  for (let buildingType in config) {
-    multipliedValues[buildingType] = {
-      ...config[buildingType],
-      wheat_burn_per_labor: config[buildingType].wheat_burn_per_labor * multiplier,
-      fish_burn_per_labor: config[buildingType].fish_burn_per_labor * multiplier,
-    };
+export const canTransferMilitaryResources = (fromEntityId: ID, toEntityId: ID, components: ClientComponents) => {
+  const fromStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(fromEntityId)]));
+
+  const toStructure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(toEntityId)]));
+
+  // If from structure is a village, can only transfer to its connected realm
+  if (fromStructure?.category === StructureType.Village) {
+    return toStructure?.entity_id === fromStructure.metadata.village_realm;
   }
-  return multipliedValues;
+
+  // If to structure is a village, can only transfer from its connected realm
+  if (toStructure?.category === StructureType.Village) {
+    return fromStructure?.entity_id === toStructure.metadata.village_realm;
+  }
+
+  // Otherwise, transfer is allowed
+  return true;
 };

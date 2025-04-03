@@ -3,14 +3,16 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getLaborConfig } from "@/utils/labor";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  configManager,
   divideByPrecision,
   findResourceById,
+  formatTime,
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
@@ -19,7 +21,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   const {
     setup: {
       account: { account },
-      systemCalls: { burn_other_resources_for_labor_production },
+      systemCalls: { burn_resource_for_labor_production },
     },
   } = useDojo();
 
@@ -39,7 +41,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
     };
 
     try {
-      await burn_other_resources_for_labor_production(calldata);
+      await burn_resource_for_labor_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
@@ -48,7 +50,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   };
 
   const laborConfig = useMemo(() => {
-    return selectedResources.map((r) => getLaborConfig(r.id));
+    return selectedResources.map((r) => configManager.getLaborConfig(r.id));
   }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {
@@ -194,19 +196,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
             <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
               <span>Time Required:</span>
               <span className="font-medium">
-                {(() => {
-                  const days = Math.floor(ticks / (24 * 60 * 60));
-                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-                  const seconds = ticks % 60;
-
-                  return [
-                    days > 0 ? `${days}d ` : "",
-                    hours > 0 ? `${hours}h ` : "",
-                    minutes > 0 ? `${minutes}m ` : "",
-                    `${seconds}s`,
-                  ].join("");
-                })()}
+                {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}
               </span>
             </div>
           </div>

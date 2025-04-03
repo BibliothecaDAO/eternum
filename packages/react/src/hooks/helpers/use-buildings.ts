@@ -29,8 +29,8 @@ export const useBuildings = (outerCol: number, outerRow: number) => {
         const producedResource = getProducedResource(building?.category as BuildingType);
         if (!building || !producedResource) return;
 
-        const produced = configManager.resourceOutput[producedResource];
-        const consumed = configManager.resourceInputs[producedResource];
+        const produced = configManager.complexSystemResourceOutput[producedResource];
+        const consumed = configManager.complexSystemResourceInputs[producedResource];
 
         let name = BuildingTypeToString[building.category as keyof typeof BuildingTypeToString];
 

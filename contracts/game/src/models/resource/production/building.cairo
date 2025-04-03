@@ -6,9 +6,8 @@ use dojo::world::{IWorldDispatcherTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    BuildingCategoryConfig, BuildingConfig, CapacityConfig, ProductionConfig, TickImpl, WorldConfigUtilImpl,
+    BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::config::{LaborBurnPrStrategy};
 use s1_eternum::models::position::{Coord, CoordTrait, Direction};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
 use s1_eternum::models::resource::resource::{ResourceList};
@@ -534,7 +533,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             true => {
                 // ensure production amount is gotten BEFORE updating
                 // bonus received percent so production rate is decreased correctly
-                let production_amount = self.production_amount(structure_category, ref world);
+                let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
 
                 // update bonus received percent
                 self.update_bonus_received_percent(ref world, delete: true);
@@ -543,7 +542,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
                 production.decrease_building_count();
 
                 // decrease production rate
-                production.decrease_production_rate(production_amount.try_into().unwrap());
+                production.decrease_production_rate(produced_amount_every_second.try_into().unwrap());
             },
             false => {
                 // update bonus received percent
@@ -551,14 +550,14 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
 
                 // ensure production amount is gotten AFTER updating
                 // bonus received percent so production rate is increased correctly
-                let production_amount = self.production_amount(structure_category, ref world);
-                assert!(production_amount.is_non_zero(), "resource cannot be produced");
+                let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
+                assert!(produced_amount_every_second.is_non_zero(), "resource cannot be produced");
 
                 // increase building count
                 production.increase_building_count();
 
                 // increase production rate
-                production.increase_production_rate(production_amount.try_into().unwrap());
+                production.increase_production_rate(produced_amount_every_second.try_into().unwrap());
             },
         }
         // save production
@@ -605,23 +604,23 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         world.write_model(@self);
     }
 
-    fn production_amount(self: @Building, structure_category: u8, ref world: WorldStorage) -> u128 {
+    fn produced_amount_every_second(self: @Building, structure_category: u8, ref world: WorldStorage) -> u128 {
         if (*self).exists() == false {
             return 0;
         }
 
         let produced_resource_type = (*self).produced_resource();
-        let production_config: ProductionConfig = world.read_model(produced_resource_type);
-        let production_amount: u128 = if structure_category == StructureCategory::Village.into() {
-            production_config.village_output_per_tick.into()
+        let resource_factory_config: ResourceFactoryConfig = world.read_model(produced_resource_type);
+        let produced_amount_every_second: u128 = if structure_category == StructureCategory::Village.into() {
+            resource_factory_config.village_output_per_second.into()
         } else {
-            production_config.realm_output_per_tick.into()
+            resource_factory_config.realm_output_per_second.into()
         };
 
-        let bonus_amount: u128 = (production_amount * (*self.bonus_percent).into())
+        let bonus_amount_every_second: u128 = (produced_amount_every_second * (*self.bonus_percent).into())
             / PercentageValueImpl::_100().into();
 
-        production_amount + bonus_amount
+        produced_amount_every_second + bonus_amount_every_second
     }
 
 
@@ -737,11 +736,11 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
 
             // remove the recipient building's contribution from global resource production
             // first so that we can recalculate and add the new production rate
-            let recipient_building_resource_production_amount: u128 = recipient_building
-                .production_amount(structure_category, ref world);
+            let recipient_building_resource_produced_amount_every_second: u128 = recipient_building
+                .produced_amount_every_second(structure_category, ref world);
             let mut recipient_building_resource_production: Production = recipient_building_resource.production;
             recipient_building_resource_production
-                .decrease_production_rate(recipient_building_resource_production_amount.try_into().unwrap());
+                .decrease_production_rate(recipient_building_resource_produced_amount_every_second.try_into().unwrap());
 
             // update the recipient building's bonus percent
             if delete {
@@ -754,7 +753,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             // update the global resource production to reflect the new production rate
             recipient_building_resource_production
                 .increase_production_rate(
-                    recipient_building.production_amount(structure_category, ref world).try_into().unwrap(),
+                    recipient_building.produced_amount_every_second(structure_category, ref world).try_into().unwrap(),
                 );
             recipient_building_resource.production = recipient_building_resource_production;
             recipient_building_resource.store(ref world);
@@ -811,8 +810,8 @@ pub impl BuildingImpl of BuildingTrait {
 
         // increase population
         let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
-        population.increase_population(building_category_config.population_cost);
-        population.increase_capacity(building_category_config.capacity_grant);
+        population.increase_population(building_category_config.population_cost.into());
+        population.increase_capacity(building_category_config.capacity_grant.into());
         population.assert_within_capacity(building_config.base_population);
 
         // set population
@@ -896,8 +895,8 @@ pub impl BuildingImpl of BuildingTrait {
         let mut population: Population = structure_buildings.population;
         let building_category_config: BuildingCategoryConfig = world.read_model(building.category);
         let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
-        population.decrease_capacity(building_category_config.capacity_grant);
-        population.decrease_population(building_category_config.population_cost);
+        population.decrease_capacity(building_category_config.capacity_grant.into());
+        population.decrease_population(building_category_config.population_cost.into());
         population.assert_within_capacity(building_config.base_population);
 
         // set population
@@ -912,27 +911,27 @@ pub impl BuildingImpl of BuildingTrait {
         destroyed_building_category.into()
     }
 
-    fn make_payment(self: Building, building_count: u8, ref world: WorldStorage, use_labor: bool) {
-        if use_labor {
-            Self::_make_payment_using_labor(self, building_count, ref world);
-        } else {
-            Self::_make_payment_using_resources(self, building_count, ref world);
-        }
-    }
-
-    fn _make_payment_using_resources(self: Building, building_count: u8, ref world: WorldStorage) {
+    fn make_payment(self: Building, building_count: u8, ref world: WorldStorage, use_simple: bool) {
         let building_category_config: BuildingCategoryConfig = world.read_model(self.category);
         let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
         let mut index = 0;
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
+        let mut erection_cost_id = building_category_config.complex_erection_cost_id;
+        let mut erection_cost_count = building_category_config.complex_erection_cost_count;
+        if use_simple {
+            erection_cost_id = building_category_config.simple_erection_cost_id;
+            erection_cost_count = building_category_config.simple_erection_cost_count;
+        }
+        assert!(erection_cost_count.is_non_zero(), "no cost set for creating building");
         loop {
-            if index == building_category_config.erection_cost_count {
+            if index == erection_cost_count {
                 break;
             }
-            let erection_cost: ResourceList = world.read_model((building_category_config.erection_cost_id, index));
+            let erection_cost: ResourceList = world.read_model((erection_cost_id, index));
             let resource_amount = Self::_erection_cost_scaled(
                 building_count, erection_cost, building_config.base_cost_percent_increase.into(),
             );
+            assert!(resource_amount.is_non_zero(), "zero amount cost for building creation");
 
             // spend resource
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, erection_cost.resource_type);
@@ -949,97 +948,6 @@ pub impl BuildingImpl of BuildingTrait {
 
             index += 1;
         };
-
-        // update structure weight
-        structure_weight.store(ref world, self.outer_entity_id);
-    }
-
-
-    fn _make_payment_using_labor(self: Building, building_count: u8, ref world: WorldStorage) {
-        let building_category_config: BuildingCategoryConfig = world.read_model(self.category);
-        let building_config: BuildingConfig = WorldConfigUtilImpl::get_member(world, selector!("building_config"));
-        let mut total_labor_cost = 0;
-        let mut total_wheat_cost = 0;
-        let mut total_fish_cost = 0;
-        let mut index = 0;
-        loop {
-            if index == building_category_config.erection_cost_count {
-                break;
-            }
-            let erection_cost: ResourceList = world.read_model((building_category_config.erection_cost_id, index));
-            let total_resource_amount = Self::_erection_cost_scaled(
-                building_count, erection_cost, building_config.base_cost_percent_increase.into(),
-            );
-            //
-            // here, we want to convert the regular resource to labor
-            //
-            let erection_resource_production_config: ProductionConfig = world.read_model(erection_cost.resource_type);
-            let erection_resource_labor_burn_strategy: LaborBurnPrStrategy = erection_resource_production_config
-                .labor_burn_strategy;
-            // ensure rarity has been set for resource
-            assert!(
-                erection_resource_labor_burn_strategy.resource_rarity.is_non_zero(),
-                "Resource {} can't be converted to labor",
-                erection_cost.resource_type,
-            );
-            let initial_labor_amount = total_resource_amount * erection_resource_labor_burn_strategy.resource_rarity;
-
-            //
-            // here, we want to apply and ADD the labor depreciation to labor cost
-            // e.g if depreciation is 10%, the player would pay, {sum_resources_converted_to_labor + 10%}
-            //
-            let erection_resource_depreciation_num: u128 = erection_resource_labor_burn_strategy
-                .depreciation_percent_num
-                .into();
-            let erection_resource_depreciation_denom: u128 = erection_resource_labor_burn_strategy
-                .depreciation_percent_denom
-                .into();
-            let erection_resource_depreciation_sum: u128 = (erection_resource_depreciation_denom
-                + erection_resource_depreciation_num);
-            total_labor_cost +=
-                (initial_labor_amount * erection_resource_depreciation_sum / erection_resource_depreciation_denom);
-
-            // calculate wheat and fish burn amounts
-            total_wheat_cost += total_labor_cost
-                / RESOURCE_PRECISION
-                * erection_resource_labor_burn_strategy.wheat_burn_per_labor;
-
-            total_fish_cost += total_labor_cost
-                / RESOURCE_PRECISION
-                * erection_resource_labor_burn_strategy.fish_burn_per_labor;
-
-            index += 1;
-        };
-
-        // spend labor
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, self.outer_entity_id);
-        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-        let mut labor_resource = SingleResourceStoreImpl::retrieve(
-            ref world,
-            self.outer_entity_id,
-            ResourceTypes::LABOR,
-            ref structure_weight,
-            labor_resource_weight_grams,
-            true,
-        );
-        labor_resource.spend(total_labor_cost, ref structure_weight, labor_resource_weight_grams);
-        labor_resource.store(ref world);
-
-        // spend wheat resource
-        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-            ref world, self.outer_entity_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
-        );
-        wheat_resource.spend(total_wheat_cost, ref structure_weight, wheat_weight_grams);
-        wheat_resource.store(ref world);
-
-        // spend fish resource
-        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleResourceStoreImpl::retrieve(
-            ref world, self.outer_entity_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
-        );
-        fish_resource.spend(total_fish_cost, ref structure_weight, fish_weight_grams);
-        fish_resource.store(ref world);
 
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);

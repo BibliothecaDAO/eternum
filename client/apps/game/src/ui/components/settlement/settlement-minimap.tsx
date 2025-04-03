@@ -91,5 +91,3 @@ export const SettlementMinimap = ({
     </div>
   );
 };
-
-export default SettlementMinimap;

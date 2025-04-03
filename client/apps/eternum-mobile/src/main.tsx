@@ -1,15 +1,15 @@
 import App from "@/app/app.tsx";
+import { DojoProvider } from "@/app/dojo/context/dojo-context";
+import { StarknetProvider } from "@/app/dojo/context/starknet-provider";
 import "@/app/index.css";
 import { ThemeProvider } from "@/app/providers/theme-provider";
-import { DojoProvider } from "@/shared/hooks/context/dojo-context";
-import { StarknetProvider } from "@/shared/hooks/context/starknet-provider";
 import { configManager, setup } from "@bibliothecadao/eternum";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
+import { ETERNUM_CONFIG } from "./app/config/config";
 import { initialSync } from "./app/dojo/sync";
-import { ETERNUM_CONFIG } from "./shared/config/config";
 import { useStore } from "./shared/store";
 import { WorldSlice } from "./shared/store/slices/world-loading-slice";
 

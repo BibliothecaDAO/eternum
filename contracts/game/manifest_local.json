@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x52769184af06cf34e16f027bf2411db63fb491aab8f67e4444c30f195052e54",
-      "class_hash": "0x7c9b9b65d6835d163b59e32f0f34d29e288aa75df5961f5d21c8fb81d41f028",
+      "address": "0x308436495d8afc982df66016df09391706aabacdff031cbea6bc329608c08b8",
+      "class_hash": "0x60f805be74fdda65d60f10b412607c0c6e5646f1556ebed383d0cbe920e4cf5",
       "abi": [
         {
           "type": "impl",
@@ -1634,8 +1634,8 @@
       ]
     },
     {
-      "address": "0x7b8d4ae23a9a5b7dfddddbfc8dc5e0f0cfff71c220857ce1eb3e20302a63634",
-      "class_hash": "0x17d3ff802c56ee45ee26af9fd381045d26131f1765cef186c9e549bac8ea57f",
+      "address": "0x23231d63352e9fc2336d4b168d199325a7afed5337cba3bea52f315d693782c",
+      "class_hash": "0x1106605ab129f7277e8dfa4ca8b3615646787e04a810931eaf79083af40d9e2",
       "abi": [
         {
           "type": "impl",
@@ -1742,6 +1742,29 @@
         },
         {
           "type": "impl",
+          "name": "MercenariesConfigImpl",
+          "interface_name": "s1_eternum::systems::config::contracts::IMercenariesConfig"
+        },
+        {
+          "type": "interface",
+          "name": "s1_eternum::systems::config::contracts::IMercenariesConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_mercenaries_name_config",
+              "inputs": [
+                {
+                  "name": "name",
+                  "type": "core::felt252"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
           "name": "SeasonConfigImpl",
           "interface_name": "s1_eternum::systems::config::contracts::ISeasonConfig"
         },
@@ -1830,7 +1853,11 @@
               "name": "set_starting_resources_config",
               "inputs": [
                 {
-                  "name": "resources",
+                  "name": "realm_starting_resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "village_starting_resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -2009,61 +2036,47 @@
         },
         {
           "type": "impl",
-          "name": "ProductionConfigImpl",
-          "interface_name": "s1_eternum::systems::config::contracts::IProductionConfig"
-        },
-        {
-          "type": "struct",
-          "name": "s1_eternum::models::config::LaborBurnPrStrategy",
-          "members": [
-            {
-              "name": "resource_rarity",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "wheat_burn_per_labor",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "fish_burn_per_labor",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "depreciation_percent_num",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "depreciation_percent_denom",
-              "type": "core::integer::u16"
-            }
-          ]
+          "name": "ResourceFactoryConfigImpl",
+          "interface_name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig"
         },
         {
           "type": "interface",
-          "name": "s1_eternum::systems::config::contracts::IProductionConfig",
+          "name": "s1_eternum::systems::config::contracts::IResourceFactoryConfig",
           "items": [
             {
               "type": "function",
-              "name": "set_production_config",
+              "name": "set_resource_factory_config",
               "inputs": [
                 {
                   "name": "resource_type",
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "realm_output_per_tick",
+                  "name": "realm_output_per_second",
                   "type": "core::integer::u64"
                 },
                 {
-                  "name": "village_output_per_tick",
+                  "name": "village_output_per_second",
                   "type": "core::integer::u64"
                 },
                 {
-                  "name": "labor_burn_strategy",
-                  "type": "s1_eternum::models::config::LaborBurnPrStrategy"
+                  "name": "labor_output_per_resource",
+                  "type": "core::integer::u64"
                 },
                 {
-                  "name": "predefined_resource_burn_cost",
+                  "name": "output_per_simple_input",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "simple_input_list",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "output_per_complex_input",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "complex_input_list",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -2585,16 +2598,20 @@
                   "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
-                  "name": "cost_of_building",
+                  "name": "complex_building_cost",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "simple_building_cost",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 },
                 {
                   "name": "population_cost",
-                  "type": "core::integer::u32"
+                  "type": "core::integer::u8"
                 },
                 {
                   "name": "capacity_grant",
-                  "type": "core::integer::u32"
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -2969,6 +2986,7 @@
       "systems": [
         "set_agent_controller",
         "set_world_config",
+        "set_mercenaries_name_config",
         "set_season_config",
         "set_vrf_config",
         "set_starting_resources_config",
@@ -2976,7 +2994,7 @@
         "set_capacity_config",
         "set_resource_weight_config",
         "set_tick_config",
-        "set_production_config",
+        "set_resource_factory_config",
         "set_donkey_speed_config",
         "set_battle_config",
         "set_hyperstructure_config",
@@ -2995,8 +3013,8 @@
       ]
     },
     {
-      "address": "0x4514dcdfb77c7a21c8fca08f6310dea05f55385807525d4f445c71505ebdd43",
-      "class_hash": "0x32a69d71f8f31fc57dcfbc3b4fb54314eaa97d1875bfe5b186e822f377edde0",
+      "address": "0x599541cbcfb037659be5445d32c3c094c71acb4d0555cf5dcabd079a924a8e1",
+      "class_hash": "0x49b8c821dbe2eaa735eef86e52180981048815126efc1270191e1c9be485acd",
       "abi": [
         {
           "type": "impl",
@@ -3209,8 +3227,8 @@
       ]
     },
     {
-      "address": "0x2a1b2b9cd3bbc3fd75dba80b7f27fc6f609d3da4e13a8a5b23a076dd916487c",
-      "class_hash": "0x5f9c455657ff912886aedddd93487ba9c61abecd268ae70d14e71a8e874587",
+      "address": "0x22c37ace384c10e8c1a44f4efaa4a604c303c226b055fdb781753575381ccb6",
+      "class_hash": "0x475541ea665d855869963217202ccb74e0f3bca0cc98a7fdd8919d922f73217",
       "abi": [
         {
           "type": "impl",
@@ -3508,8 +3526,8 @@
       ]
     },
     {
-      "address": "0x661bc75ea6719d673f01247a2e32aec185d8e4bf61468a10b6af95146d900df",
-      "class_hash": "0x63cbd31d144f1cad8ba5a3fb8470919247493f9126e77b91eaf1c2281d1c9a1",
+      "address": "0xe5f18340404983e990dda7e18fbba418faa984ecf4ca1ccb2fefd0760fb6e3",
+      "class_hash": "0x3fbea94ad69a12990f173ec7e52935325049087d0555cf2f21609800b9c135c",
       "abi": [
         {
           "type": "impl",
@@ -3862,8 +3880,8 @@
       ]
     },
     {
-      "address": "0xe021d71627bd3cac826c91e91e226e1ba59be99b5bcc442955a1fe63b50519",
-      "class_hash": "0x2a8fafcab4d67af977a60374d8a8e80e1ba072a4d08099a8f8a3faa2ba0c813",
+      "address": "0x31b5fdd3dafbdea53d6548a175616ed56e392b6a54cc7848a23d123fb11b7f2",
+      "class_hash": "0x6fea985f1bf091020996f7c3bdf03311fc9e7384561dfdefe26fccd4be20b77",
       "abi": [
         {
           "type": "impl",
@@ -4103,8 +4121,8 @@
       ]
     },
     {
-      "address": "0x303cef23269357900a88cd03a0ed15f93656c455447fa21f83f7b3dc94d6b6d",
-      "class_hash": "0x3ebce84a448717f5de567319355b18092d2b1baa19bcc254800aed97249c557",
+      "address": "0xea0affaf8b107d9493cb7eea6bf049f37cd7b28d5ca454f36a0e43028d93bb",
+      "class_hash": "0x398d0511919674d0a834c3d055dc4abf96c1425d205b801c36a71f95f372f57",
       "abi": [
         {
           "type": "impl",
@@ -4303,8 +4321,8 @@
       ]
     },
     {
-      "address": "0x1c7a7b310c83c1bb44437a95d8ed6402443679062fc48521f5a647a46f15c88",
-      "class_hash": "0x7b40d5decf79a0dbafab87b2860d3d647e44415201c5b3c20d20d13b035db37",
+      "address": "0x5773ce41b4b5c4812c374eb6d7d4d7900c67eca12736b867e3018d6d75a9b34",
+      "class_hash": "0x765552772870cc5165d9d20f9e6714f7cbcba638300aa86b38436e2a5a988f3",
       "abi": [
         {
           "type": "impl",
@@ -4524,8 +4542,8 @@
       ]
     },
     {
-      "address": "0x1076365f529b7522737be3a64c6106b38bbc233543109dd531fa7ae0020ba0b",
-      "class_hash": "0x3a73dae12b752feff7b99629a6dab04747d068d990e5a27aeed32c83aee9fa3",
+      "address": "0x2c958151c74275448cf99f3a1116b9c4857ad9b14a2df3ae6f6501933c074ed",
+      "class_hash": "0x52fc96e1120c8ab1e2467f7173467ab5e021e5b96bb603ba05fc3e8130d7d55",
       "abi": [
         {
           "type": "impl",
@@ -4853,7 +4871,7 @@
                   "type": "s1_eternum::models::resource::production::building::BuildingCategory"
                 },
                 {
-                  "name": "pay_labor",
+                  "name": "use_simple",
                   "type": "core::bool"
                 }
               ],
@@ -4910,7 +4928,7 @@
             },
             {
               "type": "function",
-              "name": "burn_other_resources_for_labor_production",
+              "name": "burn_resource_for_labor_production",
               "inputs": [
                 {
                   "name": "structure_id",
@@ -4930,14 +4948,14 @@
             },
             {
               "type": "function",
-              "name": "burn_labor_resources_for_other_production",
+              "name": "burn_labor_for_resource_production",
               "inputs": [
                 {
                   "name": "from_structure_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "labor_amounts",
+                  "name": "production_cycles",
                   "type": "core::array::Span::<core::integer::u128>"
                 },
                 {
@@ -4950,7 +4968,7 @@
             },
             {
               "type": "function",
-              "name": "burn_other_predefined_resources_for_resources",
+              "name": "burn_resource_for_resource_production",
               "inputs": [
                 {
                   "name": "from_structure_id",
@@ -4961,7 +4979,7 @@
                   "type": "core::array::Span::<core::integer::u8>"
                 },
                 {
-                  "name": "production_tick_counts",
+                  "name": "production_cycles",
                   "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
@@ -5093,15 +5111,15 @@
         "destroy_building",
         "pause_building_production",
         "resume_building_production",
-        "burn_other_resources_for_labor_production",
-        "burn_labor_resources_for_other_production",
-        "burn_other_predefined_resources_for_resources",
+        "burn_resource_for_labor_production",
+        "burn_labor_for_resource_production",
+        "burn_resource_for_resource_production",
         "upgrade"
       ]
     },
     {
-      "address": "0x7f9216fd0c3fa6d6350af75809b587ab1d6c1bcbbcf97ce083ef17cd03707c9",
-      "class_hash": "0x3acadbc5e32211b3e40e55e916f7ba8d303370f2f31b6e6ac8a8f4be31ef256",
+      "address": "0x2610004641d7d98d99646ab839290bdc76dc4fdd1d5cdd4115dd06dff9cc3e8",
+      "class_hash": "0x24f2ecbe449d136cd9237fc03ff4fdd503bf4b68c0f256ceec8c03dd072696",
       "abi": [
         {
           "type": "impl",
@@ -5334,8 +5352,8 @@
       ]
     },
     {
-      "address": "0x2b5f40ea85cb8b09493655e166bf3646e583d95b3be502dd5c8919b3bac6e7f",
-      "class_hash": "0x10d9c6825e8e03877bf919c464d52873cd3a9e9317223d156825deaa360a584",
+      "address": "0x2c86de5f1c7f2536d2ce1906ef0a07983406b027a7d7b891e09aed0355c7a90",
+      "class_hash": "0x76dd68e4060372047c60d6c64a48eba56ae5eaac41b6992f1edebb7bb6e928e",
       "abi": [
         {
           "type": "impl",
@@ -5589,8 +5607,8 @@
       ]
     },
     {
-      "address": "0x25dec73f44ec0122f02a58bbcbee91559957ad8b0ee160a5b52bb586ae90ba0",
-      "class_hash": "0x4f56b10d4988fa790c372e0b2df5bb0d2a78ad78bc1e00dd543f10505439dd0",
+      "address": "0x55b7eefcfaa8e96e78304cbb1294f9f18528ce86ecc4605eaba7f7e2e325e1e",
+      "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
       "abi": [
         {
           "type": "impl",
@@ -5916,8 +5934,8 @@
       ]
     },
     {
-      "address": "0x3fc0b20d1ebaadd82d8105f56346e85c9f0ac5fd7879e2c037085be61c04ac3",
-      "class_hash": "0x600b668110ee177e4ddac3fb6cece3d85635d7bca66b958d69a57fb9413d87e",
+      "address": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
+      "class_hash": "0x3e372338ca4ad7a94e0753e2ed4c1cfed2625915374ffa12274c7dc16c82ab",
       "abi": [
         {
           "type": "impl",
@@ -6153,8 +6171,8 @@
       ]
     },
     {
-      "address": "0x6a6c2c17c04f94fb5fdaf4bf6a4f5c6ffb1b0e74ffe86627e5f395311227771",
-      "class_hash": "0x49121007a6870f8ab2dccc9e0d2fde515cb453a1f0835bbf0f034d70025e11",
+      "address": "0x2762db2bd8a71a67910142cf7bc5fc1fe3126299ca9f2ee340a64b15e6de49e",
+      "class_hash": "0x7bf254700d0654b563783dd2b69c7772afbad7640bfea5be42ba2b0556e24d3",
       "abi": [
         {
           "type": "impl",
@@ -6353,8 +6371,8 @@
       ]
     },
     {
-      "address": "0x1692f38dbdf8b89bf446a13e91c71c5befe516350e9a7371703db0fb3441ebf",
-      "class_hash": "0x32dc029c4e914b09f49e7c462f95b2b6f25b61592053a02d0619a125f175cda",
+      "address": "0xdf177fc98b6170116377b28e22aa9ead622397bc9f6e13804b17878f74fddf",
+      "class_hash": "0x67087bf51e717af506ae5a8bcd8e9e3a701635433edcdb5fac892f0d48b8030",
       "abi": [
         {
           "type": "impl",
@@ -6590,8 +6608,8 @@
       ]
     },
     {
-      "address": "0x64dc8319b067d5a02f4be4f7c32d809638ae66df22a95e179b8b1248564c16f",
-      "class_hash": "0x5c7784b6ff709f23d1cbf79cf955bb1147f2ae607009f0017a0f776d7c781bc",
+      "address": "0x6e068fca029199887c748e0c268e81d56be44d7f26d2dbbde38939172732a7c",
+      "class_hash": "0x21688e9838f4b27ec34ee3de294694dccaadf5e72cc4fde296e1fa3897d09ef",
       "abi": [
         {
           "type": "impl",
@@ -6856,8 +6874,8 @@
       ]
     },
     {
-      "address": "0x6a61aaa77b707c5a7e4042cfadbb1ca316e7fabf663744dea275759c1bd4193",
-      "class_hash": "0xda0bda8f2be3bd8cfffe11887f29254406863b1701a1eb7152818e0b044dee",
+      "address": "0x74042a1e1435b381a9ce6b6285badd05a02300051a7648fbc766af89d302ff",
+      "class_hash": "0x6731a138dd8bbbaafe01b83b2d69eec7dec9b8582c7d51bfd11076201b7d7b1",
       "abi": [
         {
           "type": "impl",
@@ -7162,8 +7180,8 @@
       ]
     },
     {
-      "address": "0x1d4a8ecc66b65892e0bf650106239b277b60bcc9c04689c0294326ae57c778d",
-      "class_hash": "0x418e9547981491a5c0be4a70cf079dd8bb15a460036d57f74bc8e56a79ed84a",
+      "address": "0x443bd71b617d42a07f66d4da33060e56904e1baafb562593853247aabf255af",
+      "class_hash": "0x71e6d5d18472afd2fd7ece930b02817fc6c3b51950bf2335a5a02fb5ac41601",
       "abi": [
         {
           "type": "impl",
@@ -7633,8 +7651,8 @@
       ]
     },
     {
-      "address": "0xb74ea8e94f9f6c65f912e2047b9b5489ba036fff10f6c49b7b4250f788cc0f",
-      "class_hash": "0x55e9691bf69d5771f36c9c865924e0e0cb3c7c7a3a3622fe808ab380fbb2752",
+      "address": "0x5e767af64f707b83dee6908ffc0161fa4f7e6a5b2439badc53c30097fdfc036",
+      "class_hash": "0x22a9961f94a718a66563b42fdb57ee9d2ff43c2329da8c68c9c5b47e32126f2",
       "abi": [
         {
           "type": "impl",
@@ -7895,8 +7913,8 @@
       ]
     },
     {
-      "address": "0xb62bd2f4b36eab79023bdfc45c3b784894cf4432bfe5610356433990cf27d1",
-      "class_hash": "0x6d8ac13efc245d97ad8b2971e998850f50ae6a2d3844628f9e45667541a13d",
+      "address": "0x21fa1894447a964a2112a1797d0786cdbe881e2eda7a0649a6545f25080b07f",
+      "class_hash": "0x615708f36836a38c334e5ed956203d3c98186a46635fda8ae587af94b4cb322",
       "abi": [
         {
           "type": "impl",
@@ -8326,8 +8344,8 @@
       ]
     },
     {
-      "address": "0x5718c0e48b6a96034d01355d25990887a88c051d5fdcaf97e85d92363543b6e",
-      "class_hash": "0x5c9c84ad6732e1598a410134422d26daf9736153e05b366e3388d79d57ce8f5",
+      "address": "0x7e3f9bd840b6138acae43d0fd68aca99d49fa291a5fa679978eb7d0152c188c",
+      "class_hash": "0x4fe6408fc860aaedd9fc4e71a23f6596cb7f40dfb3a6a233083d9451873dd9c",
       "abi": [
         {
           "type": "impl",
@@ -8578,8 +8596,8 @@
       ]
     },
     {
-      "address": "0x18a1713d4c3509cc4d18f1218f0939f945e9c332ec1d6169c41488bc93e487",
-      "class_hash": "0x2c637c833d5049e027b10ad2e4e884379091977f78ec315be79481ae746619c",
+      "address": "0x4c5455c2016d99e1fc54ac1f50d976a0e6eb0515a149475075a44615e81be5d",
+      "class_hash": "0x748691abda89e7a103b8a655d8cf369e8cd7af7c7978a5d11aa0d0a50e9a07a",
       "abi": [
         {
           "type": "impl",
@@ -8844,7 +8862,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x7ab6a16673c8e6903354fc4399e7e6e881590bc26f5743a3a90e2c79e44d843",
+      "class_hash": "0xec3259519f9c316eb71e3df81a799de4812564833ce811fc122b74d72c181c",
       "tag": "s1_eternum-BuildingCategoryConfig",
       "selector": "0x437f17d96443d609b2b0172248b6a0f49b80fecaa831cf1d8c2d842cb3865c6"
     },
@@ -8958,12 +8976,6 @@
     },
     {
       "members": [],
-      "class_hash": "0x481bdfa909868943c90592ee6edf1c26801179318aa11fdd7cd4bd04324b171",
-      "tag": "s1_eternum-ProductionConfig",
-      "selector": "0x38bacafc2ceed54f95033f7529efa9559f877aea41db072b797235cee383a06"
-    },
-    {
-      "members": [],
       "class_hash": "0x7702a9475dce2ccca23022565d543a88e3ec30c1a7be38f2eef4cadf479bd27",
       "tag": "s1_eternum-Progress",
       "selector": "0x510024ae0ff452228a083d9fb3aba5e3521c107ab7a84246efcac7bcdfddcb5"
@@ -9006,15 +9018,15 @@
     },
     {
       "members": [],
-      "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
-      "tag": "s1_eternum-ResourceList",
-      "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
+      "class_hash": "0x354f632e875ed2d123834ffd88984292f3150ac2745e150e93b379742e48927",
+      "tag": "s1_eternum-ResourceFactoryConfig",
+      "selector": "0xadf4631a88b08d514ef767cfcec55f85ec9fb9bdd4392e441763958bdf612c"
     },
     {
       "members": [],
-      "class_hash": "0x2ad4e1df7cc008980f3ae5088a285c551829f8afaac2f5802661fdf46923b68",
-      "tag": "s1_eternum-StartingResourcesConfig",
-      "selector": "0x6068016cd230b9788ea055b9c8512081ba653a83cb11229cb54b9aa78289d2c"
+      "class_hash": "0x2b7b2dc8adab9b63176bec21a5dd55da857ea2bc6b6a391a44f23fb68fb7a57",
+      "tag": "s1_eternum-ResourceList",
+      "selector": "0x644963f1cd303a578dcf600e9f63b2149323097a827d0db46378260fc12fd44"
     },
     {
       "members": [],
@@ -9060,7 +9072,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x51cf2b77839f23a380659936e48c7fab4a8075d971a7d67d1ffee52220f960b",
+      "class_hash": "0x3e74a07618c145066993d51a48df0bc067370560b5aa5b07f233dad50b5892f",
       "tag": "s1_eternum-WorldConfig",
       "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
     }

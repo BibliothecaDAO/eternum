@@ -10,19 +10,23 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
+  getEntityIdFromKeys,
   ID,
+  isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
   resources,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { useEffect, useMemo, useState } from "react";
+import { getComponentValue } from "@dojoengine/recs";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
     account: { account },
-    setup,
+    setup: { components, systemCalls },
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
@@ -37,8 +41,8 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
-    () => new MarketManager(setup.components, ContractAddress(account.address), resourceId),
-    [setup, resourceId, account.address],
+    () => new MarketManager(components, ContractAddress(account.address), resourceId),
+    [components, resourceId, account.address],
   );
 
   useEffect(() => {
@@ -61,8 +65,8 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, setup.components).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, setup.components).balance;
+  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, components).balance;
+  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, components).balance;
   const hasEnough =
     lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
 
@@ -70,12 +74,12 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
-    const closestBank = getClosestBank(entityId, setup.components);
+    const closestBank = getClosestBank(entityId, components);
 
     if (!closestBank) return;
 
     setIsLoading(true);
-    setup.systemCalls
+    systemCalls
       .add_liquidity({
         signer: account,
         bank_entity_id: closestBank.bankId,
@@ -94,7 +98,11 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
       });
   };
 
-  const renderConfirmationPopup = useMemo(() => {
+  const renderConfirmationPopup = useCallback(() => {
+    const isVillageAndMilitaryResource =
+      getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
+        StructureType.Village && isMilitaryResource(resourceId);
+
     const resourcesToConfirm = [
       { amount: resourceAmount, resourceId: Number(resourceId) },
       { amount: lordsAmount, resourceId: ResourcesIds.Lords },
@@ -106,8 +114,14 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
         isLoading={isLoading}
         onConfirm={onAddLiquidity}
         onCancel={() => setOpenConfirmation(false)}
+        disabled={isVillageAndMilitaryResource}
       >
         <div className="flex items-center justify-center space-x-2">
+          {isVillageAndMilitaryResource && (
+            <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
+              Military resources cannot be traded from village structures.
+            </div>
+          )}
           {resourcesToConfirm.map((resource, index) => (
             <div key={index} className="flex items-center justify-center">
               <ResourceCost withTooltip amount={resource.amount} resourceId={resource.resourceId} />
@@ -120,7 +134,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
 
   return (
     <>
-      <div className="bg-gold/10 p-1 ">
+      <div className=" p-1 ">
         <div className="p-2 mb-2 relative space-y-1">
           <ResourceBar
             entityId={entityId}
@@ -166,7 +180,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           </div>
         </div>
       </div>
-      {openConfirmation && renderConfirmationPopup}
+      {openConfirmation && renderConfirmationPopup()}
     </>
   );
 };

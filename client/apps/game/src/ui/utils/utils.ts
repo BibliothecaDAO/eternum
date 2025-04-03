@@ -25,7 +25,7 @@ export const formatNumber = (num: number, decimals: number): string => {
 };
 
 export const currencyFormat = (num: number, decimals: number): string => {
-  const formattedDecimals = formatNumber(divideByPrecision(num), decimals);
+  const formattedDecimals = formatNumber(divideByPrecision(num, false), decimals);
   return Number(formattedDecimals).toLocaleString();
 };
 
@@ -198,7 +198,7 @@ function timeStringToSeconds(timeStr: string): number {
 
 export const getRandomBackgroundImage = () => {
   const timestamp = Math.floor(Date.now() / 1000);
-  const imageNumber = (timestamp % 7) + 1;
+  const imageNumber = (timestamp % 9) + 1;
   const paddedNumber = imageNumber.toString().padStart(2, "0");
   return paddedNumber;
 };

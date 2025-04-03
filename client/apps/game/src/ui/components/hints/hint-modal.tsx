@@ -90,14 +90,14 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
 
   return (
     <ModalContainer>
-      <div className="flex container mx-auto bg-brown/90 bg-hex-bg my-10 rounded-xl border border-gold/40">
-        <div className="w-1/4 border-r border-gold/10 p-4">
+      <div className="flex container mx-auto bg-brown/90 my-10 rounded-xl border border-gold/40 panel-wood">
+        <div className="w-1/4 border-r border-gold/10 p-4 panel-wood-right">
           <h3 className="text-center mb-4">The Lordpedia</h3>
           <div className="space-y-1">
             {sections.map((section) => (
               <div
-                className={`p-2 px-4 hover:bg-gold/20 border border-gold/10 shadow-xl duration-300 cursor-pointer rounded ${
-                  activeSection.name === section.name ? "bg-gold/20" : ""
+                className={`p-2 px-4 duration-300 cursor-pointer  ${
+                  activeSection.name === section.name ? " button-gold text-brown" : "panel-wood"
                 }`}
                 key={section.name}
                 onClick={() => setActiveSection(section)}
@@ -107,7 +107,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
             ))}
           </div>
         </div>
-        <div className="w-3/4 p-8 prose prose-pink overflow-auto max-h-[calc(80vh)]">{activeSection.content}</div>
+        <div className="p-8 w-3/4  overflow-auto max-h-[calc(80vh)]">{activeSection.content}</div>
       </div>
     </ModalContainer>
   );

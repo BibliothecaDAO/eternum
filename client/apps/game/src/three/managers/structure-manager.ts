@@ -2,13 +2,14 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/helpers/utils";
 import InstancedModel from "@/three/managers/instanced-model";
 import { StructureModelPaths } from "@/three/scenes/constants";
+import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { FELT_CENTER } from "@/ui/config";
 import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { StructureInfo, StructureSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex } from "../utils";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -23,6 +24,7 @@ const ICONS = {
   MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
   REALM_WONDER: "/textures/realm_wonder_label.png",
   STRUCTURES: {
+    [StructureType.Village]: "/images/buildings/construction/castleZero.png",
     [StructureType.Realm]: "/textures/realm_label.png",
     [StructureType.Hyperstructure]: "/textures/hyper_label.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
@@ -42,18 +44,60 @@ export class StructureManager {
   private currentChunk: string = "";
   private renderChunkSize: RenderChunkSize;
   private labelsGroup: THREE.Group;
+  private currentCameraView: CameraView;
+  private hexagonScene?: HexagonScene;
 
-  constructor(scene: THREE.Scene, renderChunkSize: { width: number; height: number }, labelsGroup?: THREE.Group) {
+  constructor(
+    scene: THREE.Scene,
+    renderChunkSize: { width: number; height: number },
+    labelsGroup?: THREE.Group,
+    hexagonScene?: HexagonScene,
+  ) {
     this.scene = scene;
     this.renderChunkSize = renderChunkSize;
     this.labelsGroup = labelsGroup || new THREE.Group();
+    this.hexagonScene = hexagonScene;
+    this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.loadModels();
+
+    // Subscribe to camera view changes if scene is provided
+    if (hexagonScene) {
+      hexagonScene.addCameraViewListener(this.handleCameraViewChange);
+    }
 
     useAccountStore.subscribe(() => {
       this.structures.recheckOwnership();
       // Update labels when ownership changes
       this.updateVisibleStructures();
     });
+  }
+
+  private handleCameraViewChange = (view: CameraView) => {
+    if (this.currentCameraView === view) return;
+    this.currentCameraView = view;
+
+    // Update all existing labels to reflect the new view
+    this.entityIdLabels.forEach((label, entityId) => {
+      if (label.element) {
+        const contentContainer = label.element.querySelector(".flex.flex-col");
+        if (contentContainer) {
+          if (view === CameraView.Far) {
+            contentContainer.classList.add("max-w-0", "ml-0");
+            contentContainer.classList.remove("max-w-[200px]", "ml-2");
+          } else {
+            contentContainer.classList.remove("max-w-0", "ml-0");
+            contentContainer.classList.add("max-w-[200px]", "ml-2");
+          }
+        }
+      }
+    });
+  };
+
+  public destroy() {
+    // Clean up camera view listener
+    if (this.hexagonScene) {
+      this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
   }
 
   getTotalStructures() {
@@ -179,18 +223,22 @@ export class StructureManager {
           visibleStructureIds.add(structure.entityId);
           const position = getWorldPositionForHex(structure.hexCoords);
           position.y += 0.05;
+
+          // Always recreate the label to ensure it matches current camera view
           if (this.entityIdLabels.has(structure.entityId)) {
-            const label = this.entityIdLabels.get(structure.entityId)!;
-            label.position.copy(position);
-            label.position.y += 1.5;
-          } else {
-            this.addEntityIdLabel(structure, position);
+            this.removeEntityIdLabel(structure.entityId);
           }
+          this.addEntityIdLabel(structure, position);
 
           this.dummy.position.copy(position);
 
           if (structureType === StructureType.Bank) {
             this.dummy.rotation.y = (4 * Math.PI) / 6;
+          } else {
+            const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
+            const rotationIndex = Math.floor(rotationSeed * 6);
+            const randomRotation = (rotationIndex * Math.PI) / 3;
+            this.dummy.rotation.y = randomRotation;
           }
           this.dummy.updateMatrix();
           let modelType = models[structure.stage];
@@ -265,13 +313,14 @@ export class StructureManager {
     labelDiv.classList.add(
       "rounded-md",
       "bg-brown/50",
-      "text-gold",
+      "hover:bg-brown/90",
+      "pointer-events-auto",
+      structure.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
       "text-xs",
       "flex",
       "items-center",
-      "gap-2",
     );
 
     // Create icon container
@@ -280,7 +329,7 @@ export class StructureManager {
 
     // Select appropriate icon
     let iconPath = ICONS.STRUCTURES[structure.structureType];
-    if (structure.structureType === StructureType.Realm) {
+    if (structure.structureType === StructureType.Realm || structure.structureType === StructureType.Village) {
       if (structure.hasWonder) {
         iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
       } else {
@@ -293,10 +342,21 @@ export class StructureManager {
     iconImg.src = iconPath;
     iconImg.classList.add("w-full", "h-full", "object-contain");
     iconContainer.appendChild(iconImg);
+    labelDiv.appendChild(iconContainer);
 
-    // Create content container
+    // Create content container with transition
     const contentContainer = document.createElement("div");
-    contentContainer.classList.add("flex", "flex-col");
+    contentContainer.classList.add(
+      "flex",
+      "flex-col",
+      "transition-all",
+      "duration-700",
+      "ease-in-out",
+      "overflow-hidden",
+      "whitespace-nowrap",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
+    );
 
     // Add owner name and address
     const ownerText = document.createElement("span");
@@ -318,20 +378,31 @@ export class StructureManager {
       structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
-          : "(Uninitialized)"
+          : "Foundation"
         : ""
     }`;
     typeText.classList.add("text-xs");
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);
-
-    labelDiv.appendChild(iconContainer);
     labelDiv.appendChild(contentContainer);
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
     label.position.y += 1.5;
+
+    // Store original renderOrder
+    const originalRenderOrder = label.renderOrder;
+
+    // Set renderOrder to Infinity on hover
+    labelDiv.addEventListener("mouseenter", () => {
+      label.renderOrder = Infinity;
+    });
+
+    // Restore original renderOrder when mouse leaves
+    labelDiv.addEventListener("mouseleave", () => {
+      label.renderOrder = originalRenderOrder;
+    });
 
     this.entityIdLabels.set(structure.entityId, label);
     this.labelsGroup.add(label);
@@ -362,9 +433,7 @@ export class StructureManager {
     // Additional verification
     const remainingLabels = this.labelsGroup.children.filter((child) => child instanceof CSS2DObject);
     if (remainingLabels.length > 0) {
-      console.warn(`[StructureManager] Found ${remainingLabels.length} remaining labels in group after cleanup!`);
       remainingLabels.forEach((label) => {
-        console.warn("[StructureManager] Forcefully removing remaining label");
         this.labelsGroup.remove(label);
       });
     }

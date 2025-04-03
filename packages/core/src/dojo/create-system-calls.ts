@@ -110,10 +110,6 @@ export function createSystemCalls({
     await provider.arrivals_offload(props);
   };
 
-  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
-    await provider.transfer_resources(props);
-  };
-
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
@@ -231,22 +227,18 @@ export function createSystemCalls({
     }
   };
 
-  const burn_other_resources_for_labor_production = async (
-    props: SystemProps.BurnOtherResourcesForLaborProductionProps,
-  ) => {
-    await provider.burn_other_resources_for_labor_production(props);
+  const burn_resource_for_labor_production = async (props: SystemProps.BurnOtherResourcesForLaborProductionProps) => {
+    await provider.burn_resource_for_labor_production(props);
   };
 
-  const burn_labor_resources_for_other_production = async (
-    props: SystemProps.BurnLaborResourcesForOtherProductionProps,
-  ) => {
-    await provider.burn_labor_resources_for_other_production(props);
+  const burn_labor_for_resource_production = async (props: SystemProps.BurnLaborResourcesForOtherProductionProps) => {
+    await provider.burn_labor_for_resource_production(props);
   };
 
-  const burn_other_predefined_resources_for_resources = async (
+  const burn_resource_for_resource_production = async (
     props: SystemProps.BurnOtherPredefinedResourcesForResourcesProps,
   ) => {
-    await provider.burn_other_predefined_resources_for_resources(props);
+    await provider.burn_resource_for_resource_production(props);
   };
 
   const guard_add = async (props: SystemProps.GuardAddProps) => {
@@ -297,6 +289,10 @@ export function createSystemCalls({
     await provider.attack_guard_vs_explorer(props);
   };
 
+  const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps) => {
+    await provider.troop_troop_adjacent_transfer(props);
+  };
+
   const troop_structure_adjacent_transfer = async (props: SystemProps.TroopStructureAdjacentTransferProps) => {
     await provider.troop_structure_adjacent_transfer(props);
   };
@@ -328,7 +324,6 @@ export function createSystemCalls({
     upgrade_realm: withAuth(upgrade_realm),
     create_multiple_realms: withAuth(create_multiple_realms),
     create_village: withAuth(create_village),
-    transfer_resources: withAuth(transfer_resources),
     destroy_building: withAuth(destroy_building),
     pause_production: withAuth(pause_production),
     resume_production: withAuth(resume_production),
@@ -364,9 +359,9 @@ export function createSystemCalls({
     bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
     bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),
 
-    burn_other_resources_for_labor_production: withAuth(burn_other_resources_for_labor_production),
-    burn_labor_resources_for_other_production: withAuth(burn_labor_resources_for_other_production),
-    burn_other_predefined_resources_for_resources: withAuth(burn_other_predefined_resources_for_resources),
+    burn_resource_for_labor_production: withAuth(burn_resource_for_labor_production),
+    burn_labor_for_resource_production: withAuth(burn_labor_for_resource_production),
+    burn_resource_for_resource_production: withAuth(burn_resource_for_resource_production),
 
     guard_add: withAuth(guard_add),
     guard_delete: withAuth(guard_delete),
@@ -381,6 +376,7 @@ export function createSystemCalls({
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
 
+    troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
   };

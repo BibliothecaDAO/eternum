@@ -282,29 +282,19 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
-export interface ProductionByLaborParams {
-  [key: number]: {
-    resource_rarity: number;
-    depreciation_percent_num: number;
-    depreciation_percent_denom: number;
-    wheat_burn_per_labor: number;
-    fish_burn_per_labor: number;
-  };
-}
-
 export interface Config {
   agent: {
     controller_address: string;
   };
   resources: {
     resourcePrecision: number;
-    resourceMultiplier: number;
-    resourceAmountPerTick: number;
-    startingResourcesInputProductionFactor: number;
-    resourceInputs: ResourceInputs;
-    resourceOutputs: ResourceOutputs;
+    productionByComplexRecipe: ResourceInputs;
+    productionByComplexRecipeOutputs: ResourceOutputs;
+    productionBySimpleRecipe: ResourceInputs;
+    productionBySimpleRecipeOutputs: ResourceOutputs;
+    laborOutputPerResource: ResourceOutputs;
+
     resourceWeightsGrams: { [key in ResourcesIds]: number };
-    resourceProductionByLaborParams: ProductionByLaborParams;
     resourceRarity: { [key in ResourcesIds]?: number };
   };
   trade: {
@@ -420,7 +410,8 @@ export interface Config {
     buildingCapacity: Partial<{ [key in BuildingType]: number }>;
     buildingPopulation: Partial<{ [key in BuildingType]: number }>;
     buildingResourceProduced: Partial<{ [key in BuildingType]: number }>;
-    buildingCosts: ResourceInputs;
+    complexBuildingCosts: ResourceInputs;
+    simpleBuildingCost: ResourceInputs;
     buildingFixedCostScalePercent: number;
   };
 
@@ -434,6 +425,7 @@ export interface Config {
     hyperstructurePointsForWin: number;
   };
   startingResources: ResourceCost[];
+  villageStartingResources: ResourceCost[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;

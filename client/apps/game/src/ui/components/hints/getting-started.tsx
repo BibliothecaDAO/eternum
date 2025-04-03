@@ -35,16 +35,16 @@ export const GettingStarted = () => {
   const chapterTitles = chapters.map((chapter) => chapter.title);
 
   return (
-    <>
+    <div className="space-y-8">
       <Headline>Key Concepts</Headline>
       {tableOfContents(chapterTitles)}
 
       {chapters.map((chapter) => (
         <div key={chapter.title} className="my-4" id={chapter.title}>
-          <h2>{chapter.title}</h2>
+          <h4>{chapter.title}</h4>
           <div>{chapter.content}</div>
         </div>
       ))}
-    </>
+    </div>
   );
 };

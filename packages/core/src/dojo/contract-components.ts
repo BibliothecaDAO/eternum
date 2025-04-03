@@ -49,8 +49,10 @@ export function defineContractComponents(world: World) {
         world,
         {
           category: RecsType.Number,
-          erection_cost_id: RecsType.Number,
-          erection_cost_count: RecsType.Number,
+          complex_erection_cost_id: RecsType.Number,
+          complex_erection_cost_count: RecsType.Number,
+          simple_erection_cost_id: RecsType.Number,
+          simple_erection_cost_count: RecsType.Number,
           population_cost: RecsType.Number,
           capacity_grant: RecsType.Number,
         },
@@ -58,7 +60,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             namespace: "s1_eternum",
             name: "BuildingCategoryConfig",
-            types: ["u8", "u32", "u32", "u32", "u32"],
+            types: ["u8", "u32", "u8", "u32", "u8", "u8", "u8"],
             customTypes: [],
           },
         },
@@ -387,31 +389,27 @@ export function defineContractComponents(world: World) {
       );
     })(),
 
-    ProductionConfig: (() => {
+    ResourceFactoryConfig: (() => {
       return defineComponent(
         world,
         {
           resource_type: RecsType.Number,
-          realm_output_per_tick: RecsType.BigInt,
-          village_output_per_tick: RecsType.BigInt,
-          labor_burn_strategy: {
-            resource_rarity: RecsType.BigInt,
-            wheat_burn_per_labor: RecsType.BigInt,
-            fish_burn_per_labor: RecsType.BigInt,
-            depreciation_percent_num: RecsType.Number,
-            depreciation_percent_denom: RecsType.Number,
-          },
-          multiple_resource_burn_strategy: {
-            required_resources_id: RecsType.Number,
-            required_resources_count: RecsType.Number,
-          },
+          realm_output_per_second: RecsType.BigInt,
+          village_output_per_second: RecsType.BigInt,
+          labor_output_per_resource: RecsType.BigInt,
+          output_per_simple_input: RecsType.BigInt,
+          output_per_complex_input: RecsType.BigInt,
+          simple_input_list_id: RecsType.Number,
+          complex_input_list_id: RecsType.Number,
+          simple_input_list_count: RecsType.Number,
+          complex_input_list_count: RecsType.Number,
         },
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "ProductionConfig",
-            types: ["u8", "u64", "u64", "u128", "u128", "u128", "u16", "u16", "u32", "u8"],
-            customTypes: ["LaborBurnPrStrategy", "MultipleResourceBurnPrStrategy"],
+            name: "ResourceFactoryConfig",
+            types: ["u8", "u64", "u64", "u64", "u64", "u64", "u32", "u32", "u8", "u8"],
+            customTypes: [],
           },
         },
       );
@@ -454,20 +452,6 @@ export function defineContractComponents(world: World) {
             namespace: "s1_eternum",
             name: "QuantityTracker",
             types: ["felt252", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    StartingResourcesConfig: (() => {
-      return defineComponent(
-        world,
-        { resource_type: RecsType.Number, resource_amount: RecsType.BigInt },
-        {
-          metadata: {
-            namespace: "s1_eternum",
-            name: "StartingResourcesConfig",
-            types: ["u8", "u128"],
             customTypes: [],
           },
         },
@@ -1244,7 +1228,7 @@ export function defineContractComponents(world: World) {
             regular_immunity_ticks: RecsType.Number,
             hyperstructure_immunity_ticks: RecsType.Number,
           },
-          realm_count: {
+          realm_count_config: {
             count: RecsType.Number,
           },
           season_config: {
@@ -1254,6 +1238,14 @@ export function defineContractComponents(world: World) {
             end_grace_seconds: RecsType.Number,
           },
           agent_controller_config: RecsType.BigInt,
+          realm_start_resources_config: {
+            resources_list_id: RecsType.Number,
+            resources_list_count: RecsType.Number,
+          },
+          village_start_resources_config: {
+            resources_list_id: RecsType.Number,
+            resources_list_count: RecsType.Number,
+          },
         },
         {
           metadata: {
@@ -1350,6 +1342,10 @@ export function defineContractComponents(world: World) {
               "u64", // SeasonConfig end_at
               "u32", // SeasonConfig end_grace_seconds
               "ContractAddress", // AgentControllerConfig address
+              "u32", // realm StartingResourcesConfig resources_list_id
+              "u8", // realm StartingResourcesConfig resources_list_count
+              "u32", // village StartingResourcesConfig resources_list_id
+              "u8", // village StartingResourcesConfig resources_list_count
             ],
             customTypes: [],
           },

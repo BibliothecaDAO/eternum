@@ -49,12 +49,12 @@ export const RealmVillageDetails = () => {
     () => [
       {
         key: "Castle",
-        label: <div className="castle-tab-selector">Castle</div>,
+        label: <div className="castle-tab-selector">Overview</div>,
         component: <Castle />,
       },
       {
         key: "Buildings",
-        label: <div className="buildings-tab-selector">Buildings</div>,
+        label: <div className="buildings-tab-selector"> Buildings</div>,
         component: <Buildings structure={structure} />,
       },
     ],
@@ -72,11 +72,23 @@ export const RealmVillageDetails = () => {
 
   return (
     structure && (
-      <div className="p-2">
-        <div className="flex justify-between">
-          <h3 className="text-4xl flex justify-between">
-            {structure.name} <HintModalButton section={HintSection.Realm} />
-          </h3>
+      <div className="p-3 space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div>
+              <h3 className="text-2xl font-bold">{structure.name}</h3>
+            </div>
+            <HintModalButton section={HintSection.Realm} />
+          </div>
+          <div className="flex justify-between items-center text-xs space-x-4 px-1 py-0.5 bg-black/50 rounded-lg px-3">
+            <div className="uppercase font-medium">{structure.ownerName}</div>
+            <span
+              className="uppercase hover:text-white cursor-pointer transition-colors"
+              onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
+            >
+              {displayAddress(address)}
+            </span>
+          </div>
 
           {isImmune && (
             <div
@@ -93,25 +105,11 @@ export const RealmVillageDetails = () => {
                 });
               }}
               onMouseLeave={() => setTooltip(null)}
-              className="font-bold text-lg animate-pulse text-green"
+              className="font-bold text-lg text-green bg-green/10 px-4 py-1.5 rounded-lg animate-pulse"
             >
               Immune for: {formatTime(timer)}
             </div>
           )}
-        </div>
-
-        <div className="font-bold flex justify-between my-2">
-          <div>
-            <div> {structure.ownerName}</div>
-          </div>
-          <div>
-            <span
-              className="ml-1 hover:text-white cursor-pointer"
-              onClick={() => copyPlayerAddressToClipboard(structure.owner, structure.ownerName || "")}
-            >
-              {displayAddress(address)}
-            </span>
-          </div>
         </div>
 
         {(isRealm || isVillage) && (
@@ -121,9 +119,11 @@ export const RealmVillageDetails = () => {
             variant="default"
             className="h-full"
           >
-            <Tabs.List className="border border-gold/20 rounded-lg p-1">
+            <Tabs.List className="mb-3">
               {tabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+                <Tabs.Tab key={index} className="px-6 py-2">
+                  {tab.label}
+                </Tabs.Tab>
               ))}
             </Tabs.List>
             <Tabs.Panels>

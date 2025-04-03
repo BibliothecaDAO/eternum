@@ -67,6 +67,7 @@ enum BuildingFilenames {
   Realm1 = "castle1.glb",
   Realm2 = "castle2.glb",
   Realm3 = "castle3.glb",
+  Village = "village.glb",
   WonderAnimated = "wonder2.glb",
 }
 
@@ -142,8 +143,8 @@ export const buildingModelPaths = {
     [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
   },
   [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
-    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    [HyperstructureTypesNames.STAGE_2]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
     [HyperstructureTypesNames.STAGE_3]: BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   },
   [BUILDINGS_GROUPS.WONDER]: {
@@ -184,21 +185,13 @@ export const StructureModelPaths: Record<StructureType, string[]> = {
     BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
   ],
   [StructureType.Hyperstructure]: [
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
-    BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureHalf,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
+    BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
     BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
   ],
   [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
   [StructureType.FragmentMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0],
-};
-
-export const StructureLabelPaths: Record<StructureType, string> = {
-  [StructureType.Realm]: "textures/realm_label.png",
-  [StructureType.Hyperstructure]: "textures/hyper_label.png",
-  [StructureType.FragmentMine]: "textures/fragment_mine_label.png",
-  [StructureType.Bank]: "",
-  [StructureType.Village]: "",
+  [StructureType.Village]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
 };
 
 export const MinesMaterialsParams: Record<

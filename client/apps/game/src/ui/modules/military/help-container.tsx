@@ -114,7 +114,7 @@ export const HelpContainer = ({
 
   return (
     <div className="flex h-full flex-col items-center justify-center p-6 max-w-4xl mx-auto">
-      <div className="p-6 border h-full border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm w-full">
+      <div className="p-6 border h-full border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm w-full flex flex-col">
         {/* Transfer Type Selection */}
         <div className="flex justify-center mb-6">
           <div className="flex rounded-md overflow-hidden border border-gold/30">
@@ -144,8 +144,8 @@ export const HelpContainer = ({
         {/* Transfer Direction Selection */}
         {renderTransferDirectionOptions()}
 
-        {/* Transfer Content */}
-        <div className="mt-4 mb-6 overflow-y-auto max-h-[50vh]">
+        {/* Transfer Content - Use flex-grow to fill available space */}
+        <div className="flex-grow overflow-y-auto">
           {transferType === TransferType.Resources ? (
             <TransferResourcesContainer
               selectedEntityId={selectedEntityId}
