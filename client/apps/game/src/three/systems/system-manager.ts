@@ -36,7 +36,7 @@ import {
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private setup: SetupResult) {}
+  constructor(private setup: SetupResult) { }
 
   private setupSystem<T>(
     component: Component,
@@ -81,7 +81,23 @@ export class SystemManager {
           callback,
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              const [currentState, prevState] = update.value;
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+              if (!explorer && !prevState) return;
+              if (!explorer && (undefined === currentState && prevState)) {
+                // when explorer_troop is removed, torii streams an empty object which is removed from components in setEntities.
+                // we need to catch that update update.value[currentState, prevState];
+                // if explorer is undefined && prevState has values, that means component has been removed
+                return {
+                  entityId: prevState.explorer_id,
+                  hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
+                  owner: { address: BigInt(prevState.owner) || 0n },
+                  troopType: prevState.troops.category as TroopType,
+                  troopTier: prevState.troops.tier as TroopTier,
+                  deleted: true,
+                }
+              }
+              // leaving this condition here so that typescript is happy.
               if (!explorer) return;
 
               const structure = getComponentValue(
@@ -300,11 +316,11 @@ export class SystemManager {
     const allProgresses = configManager
       .getHyperstructureRequiredAmounts(hyperstructureEntityId)
       .map(({ resource, amount: resourceCost }) => {
-        let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+        const foundProgress = progresses.find((progress) => progress!.resource_type === resource);
         const resourcePercentage = !foundProgress
           ? 0
           : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100);
-        let progress = {
+        const progress = {
           hyperstructure_entity_id: hyperstructureEntityId,
           resource_type: resource,
           amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),

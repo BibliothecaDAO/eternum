@@ -28,8 +28,8 @@ catalogs:
       specifier: 1.2.4
       version: 1.2.4
     '@dojoengine/state':
-      specifier: 1.2.4
-      version: 1.2.4
+      specifier: 1.4.2
+      version: 1.4.2
     '@dojoengine/torii-client':
       specifier: 1.2.4
       version: 1.2.4
@@ -82,7 +82,7 @@ importers:
         version: 1.2.4(@tanstack/react-query@5.67.2(react@19.1.0))(@types/react-dom@18.3.5(@types/react@18.3.20))(@types/react@18.3.20)(bufferutil@4.0.9)(encoding@0.1.13)(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.2.4(@types/node@20.17.30)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+        version: 1.4.2(@types/node@20.17.30)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.2.4
@@ -410,7 +410,7 @@ importers:
         version: 1.2.4(@tanstack/react-query@5.67.2(react@19.1.0))(@types/react-dom@18.3.5(@types/react@19.0.12))(@types/react@19.0.12)(bufferutil@4.0.9)(encoding@0.1.13)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.2.4(@types/node@20.17.24)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+        version: 1.4.2(@types/node@20.17.24)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.2.4
@@ -1590,11 +1590,22 @@ packages:
     peerDependencies:
       starknet: 6.23.1
 
+  '@dojoengine/state@1.4.2':
+    resolution: {integrity: sha512-zljuGWdQMBAu7ju6PycfYu1WNrwJsI1QsQ/SkitY6h5TamAJHbsx0GaAljtlq9THQha3W58UYWmez8MiGLLkkg==}
+    peerDependencies:
+      starknet: 6.23.1
+
   '@dojoengine/torii-client@1.2.4':
     resolution: {integrity: sha512-QNAFABv4cFabysGnGbKQioeGiPNLkjm+QeeKT3/tLhAYh7MSyt0Vn7xSBFInPWgEswnCJZJyElabWThAb23Jkw==}
 
+  '@dojoengine/torii-client@1.4.1':
+    resolution: {integrity: sha512-o9kwvXsL+hLoLLX8lNUkH+loflW1DnV+3A9JUsZLzx+6rNdjceOvFQs04bPWux7yXvnH1qGk8lwpAD/1P2E4nw==}
+
   '@dojoengine/torii-wasm@1.2.4':
     resolution: {integrity: sha512-3ExiLYZAoU76IVMCM6Nf1FBZyZgFCpciR0ewQ51viDo12a1rK9BW3OkDYf6qCaPIU77PGxfumipOeiJLoYhe1A==}
+
+  '@dojoengine/torii-wasm@1.4.1':
+    resolution: {integrity: sha512-tBsLSkGmhseZ2sJUoT3c1vSdie5Xp2VzuxiJ59V+AdBAJVpFe0IYkhjNPpV1oL/+qfyi7WOa2M8pQsN1n5Ou6Q==}
 
   '@dojoengine/utils@1.2.4':
     resolution: {integrity: sha512-mHUGwupDjUcTmeCEPv/Ubd5S4ltZg2dMRpbV4dSP9Tw6WqaCOTykbUuiCKa3taN+3OsRNZ7HmyEDDZKoR5W2Nw==}
@@ -2773,8 +2784,8 @@ packages:
   '@metamask/sdk@0.32.1':
     resolution: {integrity: sha512-ulvScxyuX+A8VYgQ9FGugtpH5l2U8AF0lOjaw6XyqwnL7I/U0Lk9yyz9pns4Zyq356Z4+nIBzxmb6czWLzp8UQ==}
 
-  '@metamask/superstruct@3.1.0':
-    resolution: {integrity: sha512-N08M56HdOgBfRKkrgCMZvQppkZGcArEop3kixNEtVbJKm6P9Cfg0YkI6X0s1g78sNrj2fWUwvJADdZuzJgFttA==}
+  '@metamask/superstruct@3.2.1':
+    resolution: {integrity: sha512-fLgJnDOXFmuVlB38rUN5SmU7hAFQcCjrg3Vrxz67KTY7YHFnSNEKvX4avmEBdOI0yTCxZjwMCFEqsC8k2+Wd3g==}
     engines: {node: '>=16.0.0'}
 
   '@metamask/utils@8.5.0':
@@ -6173,8 +6184,8 @@ packages:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
 
-  destr@2.0.3:
-    resolution: {integrity: sha512-2N3BOUU4gYMpTP24s5rF5iP7BDr7uNTCs4ozw3kf/eKfvWSIu93GEBi5m427YoyJoeOzQ5smuu4nNAPGb8idSQ==}
+  destr@2.0.5:
+    resolution: {integrity: sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA==}
 
   destroy@1.2.0:
     resolution: {integrity: sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==}
@@ -10756,7 +10767,7 @@ snapshots:
 
   '@babel/helper-annotate-as-pure@7.25.9':
     dependencies:
-      '@babel/types': 7.26.9
+      '@babel/types': 7.27.0
 
   '@babel/helper-compilation-targets@7.26.5':
     dependencies:
@@ -10838,15 +10849,15 @@ snapshots:
 
   '@babel/helper-member-expression-to-functions@7.25.9':
     dependencies:
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/traverse': 7.27.0
+      '@babel/types': 7.27.0
     transitivePeerDependencies:
       - supports-color
 
   '@babel/helper-module-imports@7.25.9':
     dependencies:
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/traverse': 7.27.0
+      '@babel/types': 7.27.0
     transitivePeerDependencies:
       - supports-color
 
@@ -10870,7 +10881,7 @@ snapshots:
 
   '@babel/helper-optimise-call-expression@7.25.9':
     dependencies:
-      '@babel/types': 7.26.9
+      '@babel/types': 7.27.0
 
   '@babel/helper-plugin-utils@7.26.5': {}
 
@@ -10912,8 +10923,8 @@ snapshots:
 
   '@babel/helper-skip-transparent-expression-wrappers@7.25.9':
     dependencies:
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/traverse': 7.27.0
+      '@babel/types': 7.27.0
     transitivePeerDependencies:
       - supports-color
 
@@ -10925,9 +10936,9 @@ snapshots:
 
   '@babel/helper-wrap-function@7.25.9':
     dependencies:
-      '@babel/template': 7.26.9
-      '@babel/traverse': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/template': 7.27.0
+      '@babel/traverse': 7.27.0
+      '@babel/types': 7.27.0
     transitivePeerDependencies:
       - supports-color
 
@@ -12297,32 +12308,6 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.2.4(@types/node@20.17.24)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)':
-    dependencies:
-      '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
-      '@dojoengine/torii-client': 1.2.4
-      starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.24)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
-    transitivePeerDependencies:
-      - '@edge-runtime/vm'
-      - '@types/node'
-      - '@vitest/browser'
-      - '@vitest/ui'
-      - bufferutil
-      - happy-dom
-      - jsdom
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - typescript
-      - utf-8-validate
-      - zod
-
   '@dojoengine/state@1.2.4(@types/node@20.17.30)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
@@ -12375,11 +12360,69 @@ snapshots:
       - utf-8-validate
       - zod
 
+  '@dojoengine/state@1.4.2(@types/node@20.17.24)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+      '@dojoengine/torii-client': 1.4.1
+      starknet: 6.23.1(encoding@0.1.13)
+      vitest: 1.6.1(@types/node@20.17.24)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
+    transitivePeerDependencies:
+      - '@edge-runtime/vm'
+      - '@types/node'
+      - '@vitest/browser'
+      - '@vitest/ui'
+      - bufferutil
+      - happy-dom
+      - jsdom
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@dojoengine/state@1.4.2(@types/node@20.17.30)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)':
+    dependencies:
+      '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+      '@dojoengine/torii-client': 1.4.1
+      starknet: 6.23.1(encoding@0.1.13)
+      vitest: 1.6.1(@types/node@20.17.30)(lightningcss@1.29.3)(terser@5.39.0)
+    transitivePeerDependencies:
+      - '@edge-runtime/vm'
+      - '@types/node'
+      - '@vitest/browser'
+      - '@vitest/ui'
+      - bufferutil
+      - happy-dom
+      - jsdom
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - typescript
+      - utf-8-validate
+      - zod
+
   '@dojoengine/torii-client@1.2.4':
     dependencies:
       '@dojoengine/torii-wasm': 1.2.4
 
+  '@dojoengine/torii-client@1.4.1':
+    dependencies:
+      '@dojoengine/torii-wasm': 1.4.1
+
   '@dojoengine/torii-wasm@1.2.4': {}
+
+  '@dojoengine/torii-wasm@1.4.1': {}
 
   '@dojoengine/utils@1.2.4(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)':
     dependencies:
@@ -13694,12 +13737,12 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metamask/superstruct@3.1.0': {}
+  '@metamask/superstruct@3.2.1': {}
 
   '@metamask/utils@8.5.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.1.0
+      '@metamask/superstruct': 3.2.1
       '@noble/hashes': 1.7.1
       '@scure/base': 1.2.4
       '@types/debug': 4.1.12
@@ -13713,7 +13756,7 @@ snapshots:
   '@metamask/utils@9.3.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.1.0
+      '@metamask/superstruct': 3.2.1
       '@noble/hashes': 1.7.1
       '@scure/base': 1.2.4
       '@types/debug': 4.1.12
@@ -15801,7 +15844,7 @@ snapshots:
   '@scure/bip32@1.3.2':
     dependencies:
       '@noble/curves': 1.2.0
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip32@1.4.0':
@@ -15818,7 +15861,7 @@ snapshots:
 
   '@scure/bip39@1.2.1':
     dependencies:
-      '@noble/hashes': 1.3.2
+      '@noble/hashes': 1.3.3
       '@scure/base': 1.1.9
 
   '@scure/bip39@1.3.0':
@@ -16680,24 +16723,24 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/parser': 7.27.0
+      '@babel/types': 7.27.0
       '@types/babel__generator': 7.6.8
       '@types/babel__template': 7.4.4
       '@types/babel__traverse': 7.20.6
 
   '@types/babel__generator@7.6.8':
     dependencies:
-      '@babel/types': 7.26.9
+      '@babel/types': 7.27.0
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.26.9
-      '@babel/types': 7.26.9
+      '@babel/parser': 7.27.0
+      '@babel/types': 7.27.0
 
   '@types/babel__traverse@7.20.6':
     dependencies:
-      '@babel/types': 7.26.9
+      '@babel/types': 7.27.0
 
   '@types/bun@1.2.8':
     dependencies:
@@ -18497,7 +18540,7 @@ snapshots:
 
   dequal@2.0.3: {}
 
-  destr@2.0.3: {}
+  destr@2.0.5: {}
 
   destroy@1.2.0: {}
 
@@ -19589,7 +19632,7 @@ snapshots:
       cookie-es: 1.2.2
       crossws: 0.3.4
       defu: 6.1.4
-      destr: 2.0.3
+      destr: 2.0.5
       iron-webcrypto: 1.2.1
       node-mock-http: 1.0.0
       radix3: 1.1.2
@@ -21136,7 +21179,7 @@ snapshots:
 
   ofetch@1.4.1:
     dependencies:
-      destr: 2.0.3
+      destr: 2.0.5
       node-fetch-native: 1.6.6
       ufo: 1.5.4
 
@@ -22986,7 +23029,7 @@ snapshots:
 
   tsx@4.19.3:
     dependencies:
-      esbuild: 0.25.1
+      esbuild: 0.25.2
       get-tsconfig: 4.10.0
     optionalDependencies:
       fsevents: 2.3.3
@@ -23198,7 +23241,7 @@ snapshots:
     dependencies:
       anymatch: 3.1.3
       chokidar: 4.0.3
-      destr: 2.0.3
+      destr: 2.0.5
       h3: 1.15.1
       lru-cache: 10.4.3
       node-fetch-native: 1.6.6
