@@ -21,7 +21,7 @@ pub struct Hyperstructure {
     pub hyperstructure_id: ID,
     pub initialized: bool,
     pub completed: bool,
-    pub access: HyperstructureAccess,
+    pub access: ConstructionAccess,
     pub randomness: felt252,
 }
 
@@ -69,9 +69,9 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
 
     fn get_resource_points(ref world: WorldStorage, resource_type: u8) -> u128 {
         let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
-        construction_cost_config.resource_points.into()
+        construction_cost_config.resource_contribution_points.into()
     }
-    
+
     fn get_amount_needed(ref world: WorldStorage, hyperstructure: Hyperstructure, resource_type: u8) -> u128 {
         let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
         let min_amount = construction_cost_config.min_amount;
@@ -187,36 +187,40 @@ pub struct PlayerConstructionPoints {
     #[key]
     pub hyperstructure_id: ID,
     pub points: u128,
-    pub claimed: bool
+    pub claimed: bool,
 }
 
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct PlayerTotalPoints {
+pub struct PlayerSeasonPoints {
     #[key]
     pub address: ContractAddress,
-    pub points: u128,
+    pub unregistered_points: u128,
+    pub registered_points: u128,
+    pub prize_claimed: bool,
 }
 
 
 #[derive(PartialEq, Copy, Drop, Serde, IntrospectPacked)]
-pub enum HyperstructureAccess {
+pub enum ConstructionAccess {
     Public,
     Private,
     GuildOnly,
 }
 
 #[generate_trait]
-pub impl HyperstructureImpl of HyperstructureTrait {
-    fn assert_access(self: Hyperstructure, ref world: WorldStorage, owner_address: ContractAddress) {
+pub impl HyperstructureConstructionAccessImpl of HyperstructureConstructionAccessTrait {
+    fn assert_caller_construction_access(
+        self: Hyperstructure, ref world: WorldStorage, owner_address: ContractAddress,
+    ) {
         let contributor_address = starknet::get_caller_address();
         match self.access {
-            HyperstructureAccess::Public => {},
-            HyperstructureAccess::Private => {
+            ConstructionAccess::Public => {},
+            ConstructionAccess::Private => {
                 assert!(contributor_address == owner_address, "Hyperstructure is private");
             },
-            HyperstructureAccess::GuildOnly => {
+            ConstructionAccess::GuildOnly => {
                 let guild_member: GuildMember = world.read_model(contributor_address);
                 let owner_guild_member: GuildMember = world.read_model(owner_address);
                 assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");

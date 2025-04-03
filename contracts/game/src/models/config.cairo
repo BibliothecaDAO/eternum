@@ -2,7 +2,7 @@ use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTiers, WORLD_CONFIG_ID};
+use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::utils::random::VRFImpl;
 use starknet::ContractAddress;
@@ -53,6 +53,7 @@ pub struct SeasonConfig {
     pub start_main_at: u64,
     pub end_at: u64,
     pub end_grace_seconds: u32,
+    pub registration_grace_seconds: u32,
 }
 
 #[generate_trait]
@@ -164,17 +165,16 @@ pub struct SeasonAddressesConfig {
 pub struct HyperstructureConstructConfig {
     #[key]
     pub resource_type: u8,
-    pub resource_points: u16,
+    pub resource_contribution_points: u64,
     pub min_amount: u32,
     pub max_amount: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct HyperstructureConfig {
-    pub points_per_cycle: u128,
+    pub initialize_shards_amount: u128,
+    pub points_per_second: u128,
     pub points_for_win: u128,
-    pub points_on_completion: u128,
-    pub time_between_shares_change: u64,
 }
 
 
