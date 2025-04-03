@@ -1,6 +1,5 @@
-import { IpcMethod } from "../types";
-
 export type WarningType = {
-  method: IpcMethod;
+  callback: () => void;
   alertMessage: string;
+  name?: string;
 };

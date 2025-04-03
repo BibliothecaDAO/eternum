@@ -29,7 +29,6 @@ export const loadConfig = async (): Promise<ToriiConfig> => {
   await osUtils.ensureDirectoryExists(getNetworkPath(configType));
   await fsPromises.writeFile(configPath, config);
 
-  console.log("saving config at", configPath);
   const configJson = tomlJson({ data: config });
   return {
     configType,

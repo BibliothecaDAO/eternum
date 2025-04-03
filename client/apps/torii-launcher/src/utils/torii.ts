@@ -1,7 +1,8 @@
+const ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL =
+  "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/";
+
 export const getToriiVersion = async () => {
-  const response = await fetch(
-    "https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/Scarb.toml",
-  );
+  const response = await fetch(`${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}Scarb.toml`);
   const data = await response.text();
 
   const dojoTagMatch = data.match(/dojo\s*=\s*{\s*git\s*=\s*"[^"]+"\s*,\s*tag\s*=\s*"([^"]+)"\s*}/);
@@ -12,9 +13,7 @@ export const getToriiVersion = async () => {
 };
 
 export const getToriiConfig = async (configType: "local" | "mainnet" | "sepolia" | "slot") => {
-  const response = await fetch(
-    `https://raw.githubusercontent.com/BibliothecaDAO/eternum/refs/heads/next/contracts/game/torii-${configType}.toml`,
-  );
+  const response = await fetch(`${ETERNUM_GITHUB_RAW_CONTENT_GAME_CONTRACTS_URL}torii-${configType}.toml`);
 
   const data = await response.text();
 

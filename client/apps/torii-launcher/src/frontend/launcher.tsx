@@ -6,22 +6,46 @@ import cover05 from "@public/covers/05.png";
 import cover06 from "@public/covers/06.png";
 import cover07 from "@public/covers/07.png";
 
-import EternumLogo from "@public/eternum-new.svg?react";
-import Refresh from "@public/icons/refresh.svg?react";
-import SettingsIcon from "@public/icons/settings.svg?react";
-import TrashCan from "@public/icons/trashcan.svg?react";
-import XMark from "@public/icons/x-mark.svg?react";
+// import Refresh from "@public/icons/refresh.svg?react";
 import { useEffect, useMemo } from "react";
 import styled from "styled-components";
-import { IpcMethod, ToriiConfig } from "../types";
-import { Settings } from "./components/settings";
-import { SyncingState } from "./components/syncing-state";
+import { ToriiConfig } from "../types";
+import { DeleteButton } from "./components/delete";
+import { Logs } from "./components/logs";
 import { Warning } from "./components/warning";
-import { useAppContext } from "./context";
+import { Page, useAppContext } from "./context";
+import { useProgress } from "./hooks/use-progress";
+import { ErrorPage } from "./pages/error-page";
+import { StartPage } from "./pages/start-page";
+import { SyncingPage } from "./pages/syncing-page";
+
+const DraggableArea = styled.div`
+  -webkit-app-region: drag;
+  width: 100vw;
+  min-height: 30px;
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  padding: 4px 6px 4px 6px;
+`;
+
+const ClickableArea = styled.div`
+  -webkit-app-region: no-drag;
+`;
 
 export const Launcher = () => {
-  const { currentConfig, setCurrentConfig, newConfig, showSettings, setShowSettings, showWarning, setShowWarning } =
-    useAppContext();
+  const { setCurrentConfig, page, progress, reset, setProgress, setReset } = useAppContext();
+
+  useProgress();
+
+  useEffect(() => {
+    if (reset) {
+      setProgress(0);
+      setReset(false);
+    }
+  }, [reset, setProgress, setReset]);
 
   const backgroundImage = useMemo(() => {
     const img = getRandomBackgroundImage();
@@ -30,7 +54,7 @@ export const Launcher = () => {
 
   useEffect(() => {
     const removeListener = window.electronAPI.onConfigChanged((config: ToriiConfig) => {
-      console.log("Current config changed to ", JSON.stringify(config, null, 2));
+      console.log("config changed", config);
       setCurrentConfig(config);
     });
     return () => {
@@ -38,94 +62,30 @@ export const Launcher = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (newConfig) {
-      window.electronAPI.sendMessage(IpcMethod.ChangeConfigType, newConfig);
-      console.log("New config set to ", newConfig);
-    }
-  }, [newConfig]);
-
-  const DraggableArea = styled.div`
-    -webkit-app-region: drag;
-    width: 100vw;
-    min-height: 30px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 999;
-  `;
-
   return (
     <>
       <img className="z-1 absolute h-screen w-screen object-cover" src={`${backgroundImage}`} alt="Cover" />
-      <div className="relative top-0 left-0 right-0 bottom-0 w-[100vw] h-[100vh] overflow-hidden flex flex-col justify-center items-center z-100">
-        <DraggableArea />
-        {!showSettings && currentConfig && (
-          <div className="flex flex-row justify-center items-center gap-4 w-6 h-6 z-1000 fixed top-6 left-6">
-            <SettingsIcon
-              onClick={() => {
-                setShowSettings(true);
-              }}
-              className="w-4 h-4 fill-gold z-index-1000 transition-all duration-300 ease-in-out hover:scale-125"
-            />
-          </div>
-        )}
-
-        <div className="flex flex-col justify-center items-center max-w-[50vw] bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-4 text-gold w-full overflow-hidden relative z-0 backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] transition-all duration-300 ease-in-out">
-          {showWarning ? (
-            <Warning />
-          ) : (
-            <>
-              <EternumLogo className="w-16 h-16 fill-gold mb-4" />
-              <SyncingState />
-              <div className="flex flex-row items-center gap-4 mt-4">
-                <Refresh
-                  className="hover:bg-brown/10 w-3 h-3 fill-gold transition-all duration-300 ease-in-out hover:scale-125"
-                  onClick={() =>
-                    setShowWarning({
-                      method: IpcMethod.KillTorii,
-                      alertMessage: killToriiAlertMessage,
-                    })
-                  }
-                />
-                <TrashCan
-                  className="hover:bg-brown/10 fill-red w-3 h-3 transition-all duration-300 ease-in-out hover:scale-125"
-                  onClick={() =>
-                    setShowWarning({
-                      method: IpcMethod.ResetDatabase,
-                      alertMessage: resetDatabaseAlertMessage,
-                    })
-                  }
-                />
-              </div>
-            </>
+      <div className="relative top-0 left-0 right-0 bottom-0 w-[100vw] h-[100vh] overflow-hidden flex flex-col justify-center items-center z-20">
+        <DraggableArea className="h-fit flex flex-row justify-between items-center">
+          <div className="text-white text-xs">Eternum Launcher</div>
+          {page === Page.Syncing && (
+            <ClickableArea className="flex flex-row gap-4 items-center justify-center">
+              <DeleteButton />
+              <div className="text-white text-xs select-none">{Math.ceil(progress)}%</div>
+            </ClickableArea>
           )}
-        </div>
+        </DraggableArea>
 
-        {showSettings && (
-          <div className="fixed inset-0 z-[999] flex items-center justify-center">
-            <img className="absolute h-screen w-screen object-cover" src={`${backgroundImage}`} alt="Cover" />
-            <div className="absolute top-6 left-6 z-[1000]">
-              <XMark
-                onClick={() => {
-                  setShowSettings(false);
-                }}
-                className="w-4 h-4 fill-gold transition-all duration-300 ease-in-out hover:scale-125"
-              />
-            </div>
-            <div className="relative z-10 flex flex-col justify-center items-center max-w-[50vw] bg-black/20 self-center border-[0.5px] border-gradient rounded-lg p-4 text-gold w-full backdrop-filter backdrop-blur-[24px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]">
-              <Settings />
-            </div>
-          </div>
-        )}
+        <div className="relative flex flex-col h-full justify-center items-center transition-all duration-300 ease-in-out">
+          {page === Page.Start ? <StartPage /> : page === Page.Syncing ? <SyncingPage /> : <ErrorPage />}
+        </div>
+        <Warning />
+        <Logs />
       </div>
     </>
   );
 };
 
-const resetDatabaseAlertMessage =
-  "Careful, this will reset the database and restart the syncing process from the beginning.";
 const killToriiAlertMessage = "Careful, if you are in the process of syncing, this could cause issues with the data";
 
 export const getRandomBackgroundImage = () => {

@@ -4,10 +4,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        gold: "#F6C297",
         red: "#FC4C4C",
-        grey: "#121212",
-        brown: "#14100D",
+        similiBlack: "#323232",
+        deepRed: "#FF0000",
       },
       keyframes: {
         "fade-in": {
@@ -35,6 +34,18 @@ module.exports = {
           "-moz-user-select": "none",
           "-ms-user-select": "none",
           "user-select": "none",
+        },
+        ".no-scrollbar": {
+          /* IE and Edge */
+          "-ms-overflow-style": "none",
+
+          /* Firefox */
+          "scrollbar-width": "none",
+
+          /* Safari and Chrome */
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
         },
         ".border-gradient": {
           borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",

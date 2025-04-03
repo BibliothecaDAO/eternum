@@ -1,6 +1,6 @@
 import { ChildProcessWithoutNullStreams } from "child_process";
 import * as spawn from "cross-spawn";
-import { app, BrowserWindow, ipcMain, Menu, Tray } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, Menu, Tray } from "electron";
 import started from "electron-squirrel-startup";
 import * as fs from "fs";
 import { mkdirSync } from "fs";
@@ -8,8 +8,9 @@ import * as fsPromises from "fs/promises";
 import hasbin from "hasbin";
 import path from "path";
 import { RpcProvider } from "starknet";
+import { updateElectronApp } from "update-electron-app";
 import { APP_PATH, DOJO_PATH } from "./constants";
-import { ConfigType, IpcMethod, Notification, ProgressUpdatePayload, ToriiConfig } from "./types";
+import { ConfigType, IpcMethod, Notification, NotificationType, ProgressUpdatePayload, ToriiConfig } from "./types";
 import { loadConfig, saveConfigType } from "./utils/config";
 import {
   errorLog,
@@ -35,14 +36,8 @@ app.dock.setIcon(path.join(__dirname, "icon.png"));
 let child: ChildProcessWithoutNullStreams | null = null;
 export let config: ToriiConfig | null = null;
 
-let loadingProgress: ProgressUpdatePayload | null = null;
+updateElectronApp();
 
-// updateElectronApp({
-//   updateSource: {
-//     type: UpdateSourceType.StaticStorage,
-//     baseUrl: `https://my-bucket.s3.amazonaws.com/my-app-updates/${process.platform}/${process.arch}`,
-//   },
-// });
 let window: BrowserWindow | null = null;
 
 let tray: Tray | null = null;
@@ -51,6 +46,8 @@ let currentToriiBlock: number = 0;
 let currentChainBlock: number = 0;
 let progressInterval: NodeJS.Timeout | null = null;
 const SYNC_INTERVAL = 4000;
+
+let toriiVersion: string | null = null;
 
 app.whenReady().then(() => {
   tray = new Tray(path.join(__dirname, "tray-icon@2x.png"));
@@ -71,7 +68,6 @@ app.whenReady().then(() => {
     { label: "Quit", type: "normal", click: () => app.quit() },
   ]);
   tray.setToolTip("Eternum Launcher");
-  setTrayProgress(loadingProgress?.progress ?? 0);
   tray.setContextMenu(contextMenu);
 });
 
@@ -82,8 +78,8 @@ const createWindow = () => {
   }
 
   window = new BrowserWindow({
-    width: 456,
-    height: 316,
+    width: 842,
+    height: 585,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
@@ -110,13 +106,11 @@ const createWindow = () => {
 };
 
 const runApp = async () => {
-  const toriiVersion = await getToriiVersion();
+  toriiVersion = await getToriiVersion();
   config = await loadConfig();
-
   await timeout(2000);
-  sendNotification({ type: "Info", message: "Starting Torii" });
+
   window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-  handleTorii(toriiVersion);
 };
 
 app.on("quit", () => {
@@ -139,12 +133,27 @@ app.on("activate", () => {
   createWindow();
 });
 
+ipcMain.on(IpcMethod.StartTorii, async (event, arg) => {
+  if (child) {
+    sendNotification({ type: NotificationType.Error, message: "Torii is already running", timestampMs: Date.now() });
+    return;
+  }
+
+  await saveConfigType(arg);
+  config = await loadConfig();
+  initialToriiBlock = await readFirstBlock();
+
+  sendNotification({ type: NotificationType.Info, message: "Starting Torii", timestampMs: Date.now() });
+  window?.webContents.send(IpcMethod.ConfigWasChanged, config);
+  handleTorii(toriiVersion);
+});
+
 ipcMain.on(IpcMethod.KillTorii, (event, arg) => {
   try {
     killTorii();
-    sendNotification({ type: "Info", message: "Torii successfully killed" });
+    sendNotification({ type: NotificationType.Info, message: "Torii successfully killed", timestampMs: Date.now() });
   } catch (e) {
-    sendNotification({ type: "Error", message: "Failed to kill Torii: " + e });
+    sendNotification({ type: NotificationType.Error, message: "Failed to kill Torii: " + e, timestampMs: Date.now() });
   }
 });
 
@@ -158,15 +167,21 @@ ipcMain.on(IpcMethod.ResetDatabase, async (event, arg) => {
     await resetFirstBlock(null, true);
     initialToriiBlock = null;
 
-    sendNotification({ type: "Info", message: "Database successfully reset" });
+    currentChainBlock = 0;
+    currentToriiBlock = 0;
+    sendNotification({ type: NotificationType.Info, message: "Database successfully reset", timestampMs: Date.now() });
   } catch (e) {
-    sendNotification({ type: "Error", message: "Failed to reset database: " + e });
+    sendNotification({
+      type: NotificationType.Error,
+      message: "Failed to reset database: " + e,
+      timestampMs: Date.now(),
+    });
   }
 });
 
 ipcMain.on(IpcMethod.ChangeConfigType, async (event, arg: ConfigType) => {
   try {
-    killTorii();
+    console.log("Changing configuration to", arg);
 
     normalLog("Waiting 2 seconds for ports to release after killing Torii...");
     await timeout(2000);
@@ -175,10 +190,20 @@ ipcMain.on(IpcMethod.ChangeConfigType, async (event, arg: ConfigType) => {
     config = await loadConfig();
     initialToriiBlock = await readFirstBlock();
 
+    killTorii();
+
     window?.webContents.send(IpcMethod.ConfigWasChanged, config);
-    sendNotification({ type: "Info", message: "Config type successfully changed" });
+    sendNotification({
+      type: NotificationType.Info,
+      message: "Config type successfully changed",
+      timestampMs: Date.now(),
+    });
   } catch (e) {
-    sendNotification({ type: "Error", message: "Failed to change config type: " + e });
+    sendNotification({
+      type: NotificationType.Error,
+      message: "Failed to change config type: " + e,
+      timestampMs: Date.now(),
+    });
   }
 });
 
@@ -200,8 +225,9 @@ async function handleTorii(toriiVersion: string) {
     } catch (error) {
       errorLog(`Failed to install Torii: ${error.message}`);
       sendNotification({
-        type: "Error",
+        type: NotificationType.Error,
         message: `Torii installation failed: ${error.message}`,
+        timestampMs: Date.now(),
       });
 
       await timeout(10000);
@@ -248,12 +274,12 @@ async function handleTorii(toriiVersion: string) {
       });
 
       child.stdout.on("data", (data: Buffer) => {
-        normalLog(`Torii stdout: ${data.toString()}`);
+        // normalLog(`Torii stdout: ${data.toString()}`);
       });
 
       child.stderr.on("data", (data: Buffer) => {
-        errorLog(`Torii stderr: ${data.toString()}`);
-        sendNotification({ type: "Error", message: data.toString() });
+        // errorLog(`Torii stderr: ${data.toString()}`);
+        sendNotification({ type: NotificationType.Error, message: data.toString(), timestampMs: Date.now() });
       });
 
       let firstPass = true;
@@ -272,7 +298,11 @@ async function handleTorii(toriiVersion: string) {
       if (child) {
         if (firstPass) {
           normalLog("Torii is running");
-          sendNotification({ type: "Info", message: "Torii on " + config.configType });
+          sendNotification({
+            type: NotificationType.Info,
+            message: "Torii on " + config.configType,
+            timestampMs: Date.now(),
+          });
           firstPass = false;
         }
 
@@ -282,8 +312,9 @@ async function handleTorii(toriiVersion: string) {
         if (exitCode !== 0 && exitCode !== 137) {
           errorLog(`Torii exited with code ${exitCode}`);
           sendNotification({
-            type: "Error",
+            type: NotificationType.Error,
             message: `Torii exited with code ${exitCode}. Check console for details.`,
+            timestampMs: Date.now(),
           });
         }
       }
@@ -292,7 +323,7 @@ async function handleTorii(toriiVersion: string) {
       await timeout(5000);
     } catch (error) {
       errorLog(`Error in handleTorii: ${error}`);
-      sendNotification({ type: "Error", message: `Torii error: ${error}` });
+      sendNotification({ type: NotificationType.Error, message: `Torii error: ${error}`, timestampMs: Date.now() });
       await timeout(3000);
     } finally {
       stopSyncLoop();
@@ -351,7 +382,11 @@ async function installTorii(toriiPath: string, toriiVersion: string) {
   }
 
   normalLog("Torii installation completed successfully");
-  sendNotification({ type: "Info", message: `Torii ${toriiVersion} installed successfully` });
+  sendNotification({
+    type: NotificationType.Info,
+    message: `Torii ${toriiVersion} installed successfully`,
+    timestampMs: Date.now(),
+  });
 }
 
 function killTorii() {
@@ -376,7 +411,11 @@ function killTorii() {
     }
   } catch (error) {
     errorLog(`Error killing Torii processes: ${error}`);
-    sendNotification({ type: "Error", message: `Failed to kill Torii processes: ${error}` });
+    sendNotification({
+      type: NotificationType.Error,
+      message: `Failed to kill Torii processes: ${error}`,
+      timestampMs: Date.now(),
+    });
   } finally {
     child = null;
     warningLog("Torii processes killed");
@@ -410,7 +449,6 @@ async function readFirstBlock() {
 }
 
 async function sendNotification(notification: Notification) {
-  console.log("Sending notification:", notification);
   window?.webContents.send(IpcMethod.Notification, notification);
 }
 
@@ -428,7 +466,11 @@ const getChainCurrentBlock = async (currentConfig: ToriiConfig): Promise<number>
     return block;
   } catch (error) {
     errorLog(`Error fetching chain current block: ${error}`);
-    sendNotification({ type: "Error", message: `Failed to get chain block: ${error.message || error}` });
+    sendNotification({
+      type: NotificationType.Error,
+      message: `Failed to get chain block: ${error.message || error}`,
+      timestampMs: Date.now(),
+    });
     return currentChainBlock;
   }
 };
@@ -492,7 +534,6 @@ async function syncAndSendProgress() {
       currentToriiBlock,
       currentChainBlock,
     };
-    loadingProgress = payload;
     setTrayProgress(payload.progress);
     if (window) {
       window.webContents.send(IpcMethod.ProgressUpdate, payload);
@@ -506,7 +547,6 @@ function startSyncLoop() {
   if (progressInterval) {
     clearInterval(progressInterval);
   }
-  normalLog("Starting progress sync loop");
   syncAndSendProgress();
   progressInterval = setInterval(syncAndSendProgress, SYNC_INTERVAL);
 }
@@ -524,3 +564,17 @@ const setTrayProgress = (progress: number) => {
     tray.setTitle(`${Math.ceil(progress * 100).toString() ?? "0"}%`);
   }
 };
+
+app.on("browser-window-focus", function () {
+  globalShortcut.register("CommandOrControl+R", () => {
+    console.log("CommandOrControl+R is pressed: Shortcut Disabled");
+  });
+  globalShortcut.register("F5", () => {
+    console.log("F5 is pressed: Shortcut Disabled");
+  });
+});
+
+app.on("browser-window-blur", function () {
+  globalShortcut.unregister("CommandOrControl+R");
+  globalShortcut.unregister("F5");
+});

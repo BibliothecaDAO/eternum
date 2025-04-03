@@ -9,5 +9,6 @@ export default defineConfig({
     alias: {
       "@public": resolve(__dirname, "public"),
     },
+    dedupe: ["react", "react-dom"],
   },
 });

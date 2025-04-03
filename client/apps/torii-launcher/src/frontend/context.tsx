@@ -1,6 +1,11 @@
 import { createContext, ReactNode, useContext, useState } from "react";
-import { ConfigType, ToriiConfig } from "../types";
+import { ToriiConfig } from "../types";
 import { WarningType } from "./types";
+
+export enum Page {
+  Start,
+  Syncing,
+}
 
 interface AppContextType {
   currentConfig: ToriiConfig | null;
@@ -11,8 +16,10 @@ interface AppContextType {
   setShowWarning: (warning: WarningType | null) => void;
   showSettings: boolean;
   setShowSettings: (showSettings: boolean) => void;
-  newConfig: ConfigType | null;
-  setNewConfig: (config: ConfigType) => void;
+  progress: number;
+  setProgress: (progress: number) => void;
+  page: Page;
+  setPage: (page: Page) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -22,7 +29,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reset, setReset] = useState(false);
   const [showWarning, setShowWarning] = useState<WarningType | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [newConfig, setNewConfig] = useState<ConfigType | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [page, setPage] = useState(Page.Start);
 
   const value = {
     currentConfig,
@@ -33,8 +41,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setShowWarning,
     showSettings,
     setShowSettings,
-    newConfig,
-    setNewConfig,
+    progress,
+    setProgress,
+    page,
+    setPage,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
