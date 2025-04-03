@@ -1,6 +1,8 @@
-rpc = "https://api.cartridge.gg/x/starknet/sepolia"
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
 
-world_address = "0x4b8dd8a29839edc832089096d8c3882d1d74aea28b2da14f5ade3c08c08b4e"
+rpc = "https://api.cartridge.gg/x/eternum-sepolia/torii"
+
+world_address = "0x4726e48f50c7bfcb4eb7d89790fdf2718911207f3e8d90ada0caf36c4ff2c23"
 
 db_dir = "torii-sepolia"
 

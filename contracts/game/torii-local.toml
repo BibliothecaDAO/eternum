@@ -1,3 +1,5 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
 rpc = "http://127.0.0.1:5050"
 
 world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
@@ -17,9 +19,9 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-      "erc721:0x28d970cf6a445af803b133dd0b6e9061c8f5e2f69a4e5e66354fffd8c0522e4",
-      "erc721:0x6d94c83adafddc88fd981a24b9b51c33da09fd62f3641c5a249fff402e944e4",
-      "erc20:0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e",
+      "erc721:0x5bd57ccecb1caea3e7bccd3e4d1dc1b8f94682e7452e4ff8d6748e06714af10",
+      "erc721:0x12056d2d96de8ab018bfb3c4ccaef761a6c15ed8dfc534d16fad5640ae0a94c",
+      "erc20:0x318bca085e0d6823fe9ce69f0506c1c9f55c88d37b6929ee258418dae4fb685",
 ]
 
 namespaces = ["s1_eternum"]
