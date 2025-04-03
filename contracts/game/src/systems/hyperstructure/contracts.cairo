@@ -205,7 +205,10 @@ pub mod hyperstructure_systems {
                         @HyperstructureShareholders {
                             hyperstructure_id,
                             start_at: starknet::get_block_timestamp(),
-                            shareholders: array![(hyperstructure_owner, PercentageValueImpl::_100())].span(),
+                            shareholders: array![
+                                (hyperstructure_owner, PercentageValueImpl::_100().try_into().unwrap()),
+                            ]
+                                .span(),
                         },
                     );
             }
@@ -350,9 +353,8 @@ pub mod hyperstructure_systems {
             // update access
             hyperstructure.access = access;
             if (access == ConstructionAccess::GuildOnly) {
-                let caller_address = starknet::get_caller_address();
-                let caller_guild_member: GuildMember = world.read_model(caller_address);
-                assert!(caller_guild_member.guild_entity_id.is_non_zero(), "caller is not in a guild");
+                let structure_owner_guild_member: GuildMember = world.read_model(structure_owner);
+                assert!(structure_owner_guild_member.guild_id.is_non_zero(), "you are not a member of any guild");
             }
 
             world.write_model(@hyperstructure);

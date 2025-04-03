@@ -1,3 +1,4 @@
+use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::model::{Model};
 use dojo::world::WorldStorage;
@@ -223,7 +224,11 @@ pub impl HyperstructureConstructionAccessImpl of HyperstructureConstructionAcces
             ConstructionAccess::GuildOnly => {
                 let guild_member: GuildMember = world.read_model(contributor_address);
                 let owner_guild_member: GuildMember = world.read_model(owner_address);
-                assert!(guild_member.guild_entity_id == owner_guild_member.guild_entity_id, "not in the same guild");
+                assert!(
+                    owner_guild_member.guild_id.is_non_zero(),
+                    "hyperstructure owner needs to join a guild or change hyperstructure construction permissions",
+                );
+                assert!(guild_member.guild_id == owner_guild_member.guild_id, "not in the same guild");
             },
         }
     }
