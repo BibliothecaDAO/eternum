@@ -20,6 +20,7 @@ pub struct WorldConfig {
     pub vrf_provider_address: ContractAddress,
     pub season_addresses_config: SeasonAddressesConfig,
     pub hyperstructure_config: HyperstructureConfig,
+    pub hyperstructure_cost_config: HyperstructureCostConfig,
     pub speed_config: SpeedConfig,
     pub map_config: MapConfig,
     pub settlement_config: SettlementConfig,
@@ -123,7 +124,15 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
         }
     }
-
+    fn assert_main_game_started_and_point_registration_grace_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(
+                now <= self.end_at + self.registration_grace_seconds.into(), "The registration grace period is over",
+            );
+        }
+    }
     fn end_season(ref world: WorldStorage) {
         let season_config_selector = selector!("season_config");
         let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, season_config_selector);
@@ -170,13 +179,17 @@ pub struct HyperstructureConstructConfig {
     pub max_amount: u32,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Introspect, Copy, Drop, Serde)]
 pub struct HyperstructureConfig {
     pub initialize_shards_amount: u128,
     pub points_per_second: u128,
     pub points_for_win: u128,
 }
 
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct HyperstructureCostConfig {
+    pub construction_resources_ids: Span<u8>,
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct CapacityConfig {

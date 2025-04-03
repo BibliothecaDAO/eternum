@@ -182,7 +182,7 @@ pub mod config_systems {
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
+        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, ResourceBridgeConfig,
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
         StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
@@ -533,16 +533,29 @@ pub mod config_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
+            // save resources needed for construction
+            let mut construction_resources_ids = array![];
+            for construction_resource in construction_resources {
+                assert!(construction_resource.min_amount.is_non_zero(), "zero min amount");
+                assert!(construction_resource.max_amount.is_non_zero(), "zero max amount");
+                assert!(construction_resource.max_amount >= construction_resource.min_amount, "max less than min");
+                construction_resources_ids.append(*construction_resource.resource_type);
+                world.write_model(@(*construction_resource));
+            };
+
             // save general hyperstructure config
             let hyperstructure_config = HyperstructureConfig {
                 initialize_shards_amount, points_per_second, points_for_win,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("hyperstructure_config"), hyperstructure_config);
 
-            // save resources needed for construction
-            for construction_resource in construction_resources {
-                world.write_model(@(*construction_resource));
-            }
+            // save hyperstructure construction cost resource types
+            let hyperstructure_cost_config = HyperstructureCostConfig {
+                construction_resources_ids: construction_resources_ids.span(),
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("hyperstructure_cost_config"), hyperstructure_cost_config,
+            );
         }
     }
 

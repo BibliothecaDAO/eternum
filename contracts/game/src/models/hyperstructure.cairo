@@ -187,17 +187,15 @@ pub struct PlayerConstructionPoints {
     pub address: ContractAddress,
     #[key]
     pub hyperstructure_id: ID,
-    pub points: u128,
-    pub claimed: bool,
+    pub unregistered_points: u128,
 }
 
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-pub struct PlayerSeasonPoints {
+pub struct PlayerRegisteredPoints {
     #[key]
     pub address: ContractAddress,
-    pub unregistered_points: u128,
     pub registered_points: u128,
     pub prize_claimed: bool,
 }

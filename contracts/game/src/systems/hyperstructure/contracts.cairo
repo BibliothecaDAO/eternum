@@ -8,8 +8,8 @@ trait IHyperstructureSystems<T> {
     fn contribute(ref self: T, hyperstructure_id: ID, from_structure_id: ID, contribution: Span<(u8, u128)>);
     fn allocate_shares(ref self: T, hyperstructure_id: ID, shareholders: Span<(ContractAddress, u16)>);
     fn update_construction_access(ref self: T, hyperstructure_id: ID, access: ConstructionAccess);
-    fn claim_construction_points(ref self: T, hyperstructure_id: ID, player: ContractAddress);
-    fn claim_share_points(ref self: T, hyperstructure_id: ID);
+    fn claim_construction_points(ref self: T, hyperstructure_ids: Span<ID>, player: ContractAddress);
+    fn claim_share_points(ref self: T, hyperstructure_ids: Span<ID>);
 }
 
 
@@ -20,7 +20,7 @@ pub mod hyperstructure_systems {
     use dojo::model::ModelStorage;
 
     use dojo::world::WorldStorage;
-    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use s1_eternum::models::owner::OwnerAddressImpl;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -32,13 +32,14 @@ pub mod hyperstructure_systems {
     use s1_eternum::{
         alias::ID, constants::{RESOURCE_PRECISION, ResourceTypes},
         models::{
-            config::{HyperstructureConfig, SeasonConfigImpl, WorldConfigUtilImpl}, guild::{GuildMember},
+            config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl},
+            guild::{GuildMember},
             hyperstructure::{
                 ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl,
                 HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerConstructionPoints,
-                PlayerSeasonPoints,
+                PlayerRegisteredPoints,
             },
-            owner::{OwnerAddressTrait}, resource::resource::{},
+            owner::{OwnerAddressTrait}, resource::resource::{}, season::{SeasonPrize},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
         },
         utils::math::PercentageValueImpl,
@@ -60,7 +61,7 @@ pub mod hyperstructure_systems {
             let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
             assert!(structure.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
-            // ensure hyperstructure is not initialized
+            // ensure hyperstructure has not been initialized
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
             assert!(hyperstructure.initialized == false, "hyperstructure is already initialized");
 
@@ -87,11 +88,14 @@ pub mod hyperstructure_systems {
             hyperstructure_weight.store(ref world, hyperstructure_id);
 
             // set total needed amount
-            // note: we assume that only the first 23 resources are used
             let mut construction_total_needed_amount = 0;
-            for i in 1_u8..(23 + 1) {
+            let hyperstructure_cost_config: HyperstructureCostConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("hyperstructure_cost_config"),
+            );
+            for i in 0..hyperstructure_cost_config.construction_resources_ids.len() {
+                let resource_type = *hyperstructure_cost_config.construction_resources_ids.at(i);
                 construction_total_needed_amount +=
-                    HyperstructureRequirementsImpl::get_amount_needed(ref world, hyperstructure, i);
+                    HyperstructureRequirementsImpl::get_amount_needed(ref world, hyperstructure, resource_type);
             };
             HyperstructureRequirementsImpl::initialize(ref world, hyperstructure_id);
             HyperstructureRequirementsImpl::write_needed_resource_total(
@@ -123,11 +127,9 @@ pub mod hyperstructure_systems {
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, hyperstructure_id);
             assert!(structure_base.category == StructureCategory::Hyperstructure.into(), "not a hyperstructure");
 
-            // ensure hyperstructure is initialized
+            // ensure hyperstructure is initialized and not completed
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
-
-            // ensure hyperstructure is not completed
+            assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
             assert!(hyperstructure.completed == false, "hyperstructure has been completed");
 
             // ensure contributor has access to contribute to the hyperstructure
@@ -149,12 +151,15 @@ pub mod hyperstructure_systems {
                     ref world, hyperstructure, resource_type,
                 );
                 let max_contributable_amount = needed_contribution_amount - current_contributed_amount;
-                assert!(max_contributable_amount.is_non_zero(), "contribution for a specified resource is complete");
+                assert!(
+                    max_contributable_amount.is_non_zero(), "contribution for resource ({})is complete", resource_type,
+                );
 
-                // burn caller structure's resource
+                // ensure resource amount is a multiplier of RESOURCE_PRECISION
                 let resource_amount = core::cmp::min(max_contributable_amount, resource_amount);
                 assert!(resource_amount % RESOURCE_PRECISION == 0, "amount not multiplier of RESOURCE_PRECISION");
 
+                // burn caller structure's resource
                 let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
                 let mut from_structure_resource: SingleResource = SingleResourceStoreImpl::retrieve(
                     ref world, from_structure_id, resource_type, ref from_structure_weight, resource_weight_grams, true,
@@ -171,7 +176,7 @@ pub mod hyperstructure_systems {
                 // add points to from_structure_owner
                 let mut player_construction_points: PlayerConstructionPoints = world
                     .read_model((from_structure_owner, hyperstructure_id));
-                player_construction_points.points += (resource_amount / RESOURCE_PRECISION)
+                player_construction_points.unregistered_points += (resource_amount / RESOURCE_PRECISION)
                     * HyperstructureRequirementsImpl::get_resource_points(ref world, resource_type)
                     / (needed_contribution_amount / RESOURCE_PRECISION);
                 world.write_model(@player_construction_points);
@@ -189,13 +194,13 @@ pub mod hyperstructure_systems {
             HyperstructureRequirementsImpl::write_current_resource_total(
                 ref world, hyperstructure_id, new_total_resource_amount_contributed_by_all,
             );
-            let neeeded_total_resource_amount_contributed_by_all =
+            let needed_total_resource_amount_contributed_by_all =
                 HyperstructureRequirementsImpl::read_needed_resource_total(
                 ref world, hyperstructure_id,
             );
 
             // mark hyperstructure as completed, if completed
-            if new_total_resource_amount_contributed_by_all == neeeded_total_resource_amount_contributed_by_all {
+            if new_total_resource_amount_contributed_by_all == needed_total_resource_amount_contributed_by_all {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
 
@@ -225,8 +230,9 @@ pub mod hyperstructure_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // ensure there are never more than 10 shareholders at a time
-            assert!(shareholders.len() <= 10, "too many shareholders, maximum of 10");
+            // todo: test gas for 20 shareholders
+            // ensure there are never more than 20 shareholders at a time
+            assert!(shareholders.len() <= 20, "too many shareholders, maximum of 20");
 
             // ensure the structure is owned by caller
             let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, hyperstructure_id);
@@ -238,7 +244,7 @@ pub mod hyperstructure_systems {
 
             // ensure hyperstructure is initialized and completed
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
+            assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
             assert!(hyperstructure.completed, "hyperstructure has not been completed");
 
             // ensure the allocated percentage does not exceed 100%
@@ -255,7 +261,7 @@ pub mod hyperstructure_systems {
             );
 
             // claim points for current shareholders
-            self.claim_share_points(hyperstructure_id);
+            self.claim_share_points(array![hyperstructure_id].span());
 
             let hyperstructure_shareholders = HyperstructureShareholders {
                 hyperstructure_id, start_at: starknet::get_block_timestamp(), shareholders,
@@ -263,76 +269,98 @@ pub mod hyperstructure_systems {
             world.write_model(@hyperstructure_shareholders);
         }
 
-        // claim construction points for the player
-        fn claim_construction_points(ref self: ContractState, hyperstructure_id: ID, player: ContractAddress) {
+        // claim construction points for any player
+        fn claim_construction_points(ref self: ContractState, hyperstructure_ids: Span<ID>, player: ContractAddress) {
+            // ensure function can only be called before point registration grace ends
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_started_and_not_over(); //?????????? todo
+            SeasonConfigImpl::get(world).assert_main_game_started_and_point_registration_grace_not_elapsed();
 
-            // ensure hyperstructure is initialized and completed
-            let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
-            assert!(hyperstructure.completed, "hyperstructure has not been completed");
+            assert!(player.is_non_zero(), "zero player address");
 
-            let mut player_construction_points: PlayerConstructionPoints = world
-                .read_model((player, hyperstructure_id));
-            if !player_construction_points.claimed {
-                let mut player_points: PlayerSeasonPoints = world.read_model(player);
-                player_points.unregistered_points += player_construction_points.points;
-                world.write_model(@player_points);
+            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+            let mut player_points: PlayerRegisteredPoints = world.read_model(player);
+            for hyperstructure_id in hyperstructure_ids {
+                // ensure hyperstructure is initialized and completed
+                let hyperstructure_id = *hyperstructure_id;
+                let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
+                assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
+                assert!(hyperstructure.completed, "hyperstructure has not been completed");
 
-                player_construction_points.claimed = true;
-                world.write_model(@player_construction_points);
-            }
+                let mut player_construction_points: PlayerConstructionPoints = world
+                    .read_model((player, hyperstructure_id));
+                assert!(player_construction_points.unregistered_points.is_non_zero(), "no points to register");
+
+                // add points to player's registered points
+                player_points.registered_points += player_construction_points.unregistered_points;
+                season_prize.total_registered_points += player_construction_points.unregistered_points;
+
+                world.erase_model(@player_construction_points);
+            };
+
+            world.write_model(@player_points);
+            world.write_model(@season_prize);
         }
 
-        // can be called by anyone
-        fn claim_share_points(ref self: ContractState, hyperstructure_id: ID) {
+        // claim share points for any player
+        fn claim_share_points(ref self: ContractState, hyperstructure_ids: Span<ID>) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            // ensure function can only be called before point registration grace ends
             let season_config = SeasonConfigImpl::get(world);
-            // todo: ensure registration period has not ended
+            season_config.assert_main_game_started_and_point_registration_grace_not_elapsed();
 
-            // ensure hyperstructure is initialized and completed
-            let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
-            assert!(hyperstructure.completed, "hyperstructure has not been completed");
+            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
 
-            let hyperstructure_shareholders: HyperstructureShareholders = world.read_model(hyperstructure_id);
-            let ts = starknet::get_block_timestamp();
-            let time_elapsed = if season_config.has_ended() {
-                season_config.end_at - hyperstructure_shareholders.start_at
-            } else {
-                ts - hyperstructure_shareholders.start_at
-            };
-            assert!(time_elapsed.is_non_zero(), "zero time elapsed");
+            for hyperstructure_id in hyperstructure_ids {
+                // ensure hyperstructure is initialized and completed
+                let hyperstructure_id = *hyperstructure_id;
+                let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
+                assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
+                assert!(hyperstructure.completed, "hyperstructure has not been completed");
 
-            let current_shareholders = hyperstructure_shareholders.shareholders;
-            let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("hyperstructure_config"),
-            );
-            for i in 0..current_shareholders.len() {
-                let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
-                if shareholder_address.is_non_zero() {
-                    let mut shareholder_points: PlayerSeasonPoints = world.read_model(*shareholder_address);
-                    // todo: ensure generated points is non zero. not by panicking though
-                    // we just want to make sure that when shareholder_percentage is taken into account,
-                    // generated points does not round out to zero.
-                    let generated_points: u128 = time_elapsed.into()
-                        * hyperstructure_config.points_per_second.into()
-                        * (*shareholder_percentage).into()
-                        / PercentageValueImpl::_100().into();
-                    shareholder_points.unregistered_points += generated_points;
-                    world.write_model(@shareholder_points);
-                }
-            };
+                let mut hyperstructure_shareholders: HyperstructureShareholders = world.read_model(hyperstructure_id);
+                let ts = starknet::get_block_timestamp();
+                let time_elapsed = if season_config.has_ended() {
+                    season_config.end_at - hyperstructure_shareholders.start_at
+                } else {
+                    ts - hyperstructure_shareholders.start_at
+                };
+                assert!(time_elapsed.is_non_zero(), "zero time elapsed");
 
-            let mut start_at = ts;
-            if season_config.has_ended() {
-                start_at = season_config.end_at
-            };
-            let hyperstructure_shareholders = HyperstructureShareholders {
-                hyperstructure_id, start_at, shareholders: current_shareholders,
-            };
-            world.write_model(@hyperstructure_shareholders);
+                let current_shareholders = hyperstructure_shareholders.shareholders;
+                let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("hyperstructure_config"),
+                );
+                for i in 0..current_shareholders.len() {
+                    let (shareholder_address, shareholder_percentage) = current_shareholders.at(i);
+                    if shareholder_address.is_non_zero() {
+                        let mut shareholder_points: PlayerRegisteredPoints = world.read_model(*shareholder_address);
+                        // todo: ensure generated points is non zero. not by panicking though
+                        // we just want to make sure that when shareholder_percentage is taken into account,
+                        // generated points does not round out to zero.
+                        let generated_points: u128 = time_elapsed.into()
+                            * hyperstructure_config.points_per_second.into()
+                            * (*shareholder_percentage).into()
+                            / PercentageValueImpl::_100().into();
+                        shareholder_points.registered_points += generated_points;
+                        world.write_model(@shareholder_points);
+
+                        // increase global total registered points
+                        season_prize.total_registered_points += generated_points;
+                    }
+                };
+
+                // update global total registered points
+                world.write_model(@season_prize);
+
+                // reset hyperstructure shareholding start time
+                let mut start_at = ts;
+                if season_config.has_ended() {
+                    start_at = season_config.end_at
+                };
+                hyperstructure_shareholders.start_at = start_at;
+                world.write_model(@hyperstructure_shareholders);
+            }
         }
 
         fn update_construction_access(ref self: ContractState, hyperstructure_id: ID, access: ConstructionAccess) {
@@ -348,15 +376,16 @@ pub mod hyperstructure_systems {
 
             // ensure hyperstructure is initialized
             let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-            assert!(hyperstructure.initialized, "hyperstructure is not initialized");
+            assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
 
-            // update access
-            hyperstructure.access = access;
+            // ensure owner has a guild if set to guild only
             if (access == ConstructionAccess::GuildOnly) {
                 let structure_owner_guild_member: GuildMember = world.read_model(structure_owner);
                 assert!(structure_owner_guild_member.guild_id.is_non_zero(), "you are not a member of any guild");
             }
 
+            // update construction access
+            hyperstructure.access = access;
             world.write_model(@hyperstructure);
         }
     }

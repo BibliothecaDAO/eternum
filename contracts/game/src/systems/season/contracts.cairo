@@ -1,7 +1,6 @@
 #[starknet::interface]
 pub trait ISeasonSystems<T> {
     fn season_close(ref self: T);
-    fn season_points_register(ref self: T);
     fn season_prize_claim(ref self: T);
 }
 
@@ -21,7 +20,7 @@ pub mod season_systems {
                 HyperstructureConfig, ResourceBridgeFeeSplitConfig, SeasonAddressesConfig, SeasonConfigImpl,
                 WorldConfigUtilImpl,
             },
-            hyperstructure::{PlayerSeasonPoints}, season::{SeasonPrize},
+            hyperstructure::{PlayerRegisteredPoints}, season::{SeasonPrize},
         },
     };
 
@@ -43,12 +42,12 @@ pub mod season_systems {
 
             // ensure the the caller's points are enough to end the game
             let player_address = starknet::get_caller_address();
-            let player_points: PlayerSeasonPoints = world.read_model(player_address);
+            let player_points: PlayerRegisteredPoints = world.read_model(player_address);
             let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("hyperstructure_config"),
             );
             assert!(
-                player_points.unregistered_points >= hyperstructure_config.points_for_win,
+                player_points.registered_points >= hyperstructure_config.points_for_win,
                 "Not enough points to end the game",
             );
 
@@ -66,38 +65,13 @@ pub mod season_systems {
             store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
         }
 
-        fn season_points_register(ref self: ContractState) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-
-            // ensure the season has ended
-            let season_config = SeasonConfigImpl::get(world);
-            assert!(season_config.has_ended(), "Season has not ended");
-
-            // ensure time is still within registration period
-            let season_prize_registration_end_at = season_config.end_at
-                + season_config.registration_grace_seconds.into();
-            assert!(season_prize_registration_end_at > starknet::get_block_timestamp(), "Registration period is over");
-
-            // register unregistered points
-            let player_address = starknet::get_caller_address();
-            let mut player_points: PlayerSeasonPoints = world.read_model(player_address);
-            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
-            season_prize.total_registered_points = player_points.unregistered_points;
-            world.write_model(@season_prize);
-
-            // update player registered points
-            player_points.registered_points += player_points.unregistered_points;
-            player_points.unregistered_points = 0;
-            world.write_model(@player_points)
-        }
-
         fn season_prize_claim(ref self: ContractState) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
-            // ensure caller has not already claimed their reward
-            let player_address = starknet::get_caller_address();
-            let mut player_points: PlayerSeasonPoints = world.read_model(player_address);
-            assert!(player_points.prize_claimed == false, "Reward already claimed by caller");
+            // ensure the season has ended
+            // note: season.end_at must to set to avoid fatal bug
+            let season_config = SeasonConfigImpl::get(world);
+            assert!(season_config.has_ended(), "Season has not ended");
 
             // ensure claiming period has started
             let season_config = SeasonConfigImpl::get(world);
@@ -107,6 +81,11 @@ pub mod season_systems {
                 season_prize_registration_end_at < starknet::get_block_timestamp(),
                 "claiming period hasn't started yet",
             );
+
+            // ensure caller has not already claimed their reward
+            let player_address = starknet::get_caller_address();
+            let mut player_points: PlayerRegisteredPoints = world.read_model(player_address);
+            assert!(player_points.prize_claimed == false, "Reward already claimed by caller");
 
             let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("season_addresses_config"),
@@ -120,9 +99,9 @@ pub mod season_systems {
             );
             let lords_address = season_addresses_config.lords_address;
             if season_prize.total_lords_pool.is_zero() {
-                let total_price_pool: u256 = ERC20ABIDispatcher { contract_address: lords_address }
+                let total_prize_pool: u256 = ERC20ABIDispatcher { contract_address: lords_address }
                     .balance_of(res_bridge_fee_split_config.season_pool_fee_recipient);
-                season_prize.total_lords_pool = total_price_pool;
+                season_prize.total_lords_pool = total_prize_pool;
                 world.write_model(@season_prize);
             }
 
