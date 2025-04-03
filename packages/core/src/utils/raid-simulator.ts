@@ -9,8 +9,9 @@ export enum RaidOutcome {
 
 export class RaidSimulator {
   public readonly combatSimulator: CombatSimulator;
-
+  public readonly params: CombatParameters;
   constructor(params: CombatParameters) {
+    this.params = params;
     this.combatSimulator = new CombatSimulator(params);
   }
 
@@ -52,18 +53,6 @@ export class RaidSimulator {
   }
 
   /**
-   * Determines if a raid is successful when the outcome is "Chance" using random probability
-   * @param attackerDamage - Damage dealt by the raiding army
-   * @param defenderDamage - Combined damage from all defender troops
-   * @param randomValue - A random value between 0 and 1 for probability checking
-   * @returns Whether the raid succeeds
-   */
-  public determineRaidSuccess(attackerDamage: number, defenderDamage: number, randomValue: number): boolean {
-    const successChance = this.calculateRaidSuccessChance(attackerDamage, defenderDamage);
-    return randomValue * 100 < successChance;
-  }
-
-  /**
    * Simulates a raid between a raiding army and multiple defending armies
    * @param raider - The raiding army
    * @param defenders - Array of defending armies
@@ -76,73 +65,54 @@ export class RaidSimulator {
     raider: Army,
     defenders: Army[],
     biome: BiomeType,
-    raidDamageMultiplier: number = 0.1,
-    randomValue: number = Math.random(),
   ): {
-    isSuccessful: boolean;
     raiderDamageTaken: number;
     defenderDamageTaken: number;
+    damageTakenPerDefender: number[];
     outcomeType: RaidOutcome;
     successChance: number;
   } {
     // If no defenders, raid is automatically successful with no damage
     if (defenders.length === 0 || defenders.every((d) => d.troopCount === 0)) {
       return {
-        isSuccessful: true,
         raiderDamageTaken: 0,
         defenderDamageTaken: 0,
+        damageTakenPerDefender: [],
         outcomeType: RaidOutcome.Success,
         successChance: 100,
       };
     }
 
     // Calculate total damage from all defenders and damage from raider
+    let totalAttackerDamage = 0;
     let totalDefenderDamage = 0;
-    let damageToRaider = 0;
-    let damageToFirstDefender = 0;
-
-    // Only the first defender actually deals damage in the raid
-    if (defenders.length > 0 && defenders[0].troopCount > 0) {
-      const firstDefender = defenders[0];
-      const combat = this.combatSimulator.simulateBattle(raider, firstDefender, biome);
-      damageToFirstDefender = combat.attackerDamage;
-      damageToRaider = combat.defenderDamage;
-    }
+    const damageTakenPerDefender = [];
 
     // Calculate combined defensive damage for outcome determination
+    // and damage to each defender
     for (const defender of defenders) {
       if (defender.troopCount > 0) {
         const combat = this.combatSimulator.simulateBattle(raider, defender, biome);
-        totalDefenderDamage += combat.defenderDamage;
+        const attackerDamage = Math.floor((combat.attackerDamage * this.params.damage_raid_percent_num) / 10_000);
+        const defenderDamage = Math.floor((combat.defenderDamage * this.params.damage_raid_percent_num) / 10_000);
+
+        totalAttackerDamage += attackerDamage;
+        totalDefenderDamage += defenderDamage;
+
+        // Accumulate damage to raider from all defenders
+        damageTakenPerDefender.push(attackerDamage);
       }
     }
 
     // Determine raid outcome
-    const outcomeType = this.raidOutcome(damageToFirstDefender, totalDefenderDamage);
-    let isSuccessful = false;
-
-    switch (outcomeType) {
-      case RaidOutcome.Success:
-        isSuccessful = true;
-        break;
-      case RaidOutcome.Failure:
-        isSuccessful = false;
-        break;
-      case RaidOutcome.Chance:
-        isSuccessful = this.determineRaidSuccess(damageToFirstDefender, totalDefenderDamage, randomValue);
-        break;
-    }
-
-    // Apply raid damage reduction
-    const raiderDamageTaken = Math.floor(damageToRaider * raidDamageMultiplier);
-    const defenderDamageTaken = Math.floor(damageToFirstDefender * raidDamageMultiplier);
+    const outcomeType = this.raidOutcome(totalAttackerDamage, totalDefenderDamage);
 
     return {
-      isSuccessful,
-      raiderDamageTaken,
-      defenderDamageTaken,
+      raiderDamageTaken: totalDefenderDamage,
+      defenderDamageTaken: totalAttackerDamage,
+      damageTakenPerDefender,
       outcomeType,
-      successChance: this.calculateRaidSuccessChance(damageToFirstDefender, totalDefenderDamage),
+      successChance: this.calculateRaidSuccessChance(totalAttackerDamage, totalDefenderDamage),
     };
   }
 

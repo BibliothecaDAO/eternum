@@ -18,6 +18,7 @@ export const HelpModal = ({
           <Suspense fallback={<LoadingAnimation />}>
             {/* <HelpContainer selectedEntityId={selectedEntityId} targetHex={targetHex} /> */}
             <RaidContainer attackerEntityId={selectedEntityId} targetHex={targetHex} />
+            {/* {<CombatContainer attackerEntityId={selectedEntityId} targetHex={targetHex} />} */}
           </Suspense>
         </div>
       </div>

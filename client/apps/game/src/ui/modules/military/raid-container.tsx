@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { SelectResource } from "@/ui/elements/select-resource";
-import { currencyFormat } from "@/ui/utils/utils";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   Biome,
@@ -10,15 +10,19 @@ import {
   ContractAddress,
   divideByPrecision,
   getArmy,
+  getArmyTotalCapacityInKg,
   getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
   getGuardsByStructure,
   ID,
+  isMilitaryResource,
+  RaidSimulator,
   RESOURCE_PRECISION,
+  RESOURCE_RARITY,
   ResourceManager,
+  resources,
   ResourcesIds,
   StaminaManager,
-  StructureType,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/eternum";
@@ -26,7 +30,6 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { formatBiomeBonus, formatTypeAndBonuses } from "./combat-utils";
-
 // Mock RaidOutcome enum and RaidSimulator interface until properly implemented
 enum RaidOutcome {
   Success = "Success",
@@ -34,70 +37,9 @@ enum RaidOutcome {
   Chance = "Chance",
 }
 
-interface RaidResult {
-  isSuccessful: boolean;
-  raiderDamageTaken: number;
-  defenderDamageTaken: number;
-  outcomeType: RaidOutcome;
-  successChance: number;
-}
-
-// Simple implementation to simulate raid outcomes
-class MockRaidSimulator {
-  constructor(private params: any) {}
-
-  getBiomeBonus(troopType: TroopType, biome: string): number {
-    return 1.0; // Default bonus
-  }
-
-  calculateStaminaModifier(stamina: number, isAttacker: boolean): number {
-    return 1.0; // Default modifier
-  }
-
-  simulateRaid(attacker: any, defenders: any[], biome: string, damageMultiplier: number): RaidResult {
-    // Simple simulation logic - to be replaced with actual implementation
-    const hasDefenders = defenders.length > 0 && defenders[0].troopCount > 0;
-    const attackerStrength = attacker.troopCount * 100;
-    let defenderStrength = 0;
-
-    if (hasDefenders) {
-      defenderStrength = defenders[0].troopCount * 80;
-    }
-
-    const successChance = hasDefenders
-      ? Math.min(100, Math.max(0, (attackerStrength / (defenderStrength + 1)) * 50))
-      : 100;
-
-    const isSuccessful = Math.random() * 100 < successChance;
-
-    let outcomeType = RaidOutcome.Chance;
-    if (successChance >= 95) outcomeType = RaidOutcome.Success;
-    if (successChance <= 5) outcomeType = RaidOutcome.Failure;
-
-    // Calculate damage
-    const raiderDamageTaken = hasDefenders ? Math.round(defenderStrength * 0.1 * RESOURCE_PRECISION) : 0;
-
-    const defenderDamageTaken = hasDefenders ? Math.round(attackerStrength * 0.1 * RESOURCE_PRECISION) : 0;
-
-    return {
-      isSuccessful,
-      raiderDamageTaken,
-      defenderDamageTaken,
-      outcomeType,
-      successChance,
-    };
-  }
-}
-
 enum TargetType {
   Village,
   Structure,
-  Army,
-}
-
-enum AttackerType {
-  Structure,
-  Army,
 }
 
 export const RaidContainer = ({
@@ -110,16 +52,12 @@ export const RaidContainer = ({
   const {
     account: { account },
     setup: {
-      systemCalls,
       components,
-      components: { Structure, ExplorerTroops, Tile },
+      components: { Structure, Tile },
     },
   } = useDojo();
 
   const [loading, setLoading] = useState(false);
-  const [selectedResources, setSelectedResources] = useState<Array<{ resourceId: number; amount: number }>>([
-    { resourceId: 0, amount: 0 },
-  ]);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -135,17 +73,8 @@ export const RaidContainer = ({
     return Biome.getBiome(targetHex.x, targetHex.y);
   }, [targetHex]);
 
-  // Only explorers can raid
-  const attackerType = AttackerType.Army;
-
-  const attackerStamina = useMemo(() => {
-    return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
-  }, [attackerEntityId, components]);
-
   const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]);
-    const structure = getComponentValue(Structure, occupierId);
-    const explorer = getComponentValue(ExplorerTroops, occupierId);
+    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]));
 
     if (structure) {
       return {
@@ -157,92 +86,89 @@ export const RaidContainer = ({
       };
     }
 
-    if (explorer) {
-      return {
-        info: getArmy(occupierId, ContractAddress(account.address), components)?.troops,
-        id: targetEntity?.occupier_id,
-        targetType: TargetType.Army,
-        structureCategory: null,
-      };
-    }
-
     return null;
   }, [targetEntity, account, components]);
 
   // Get the available resources in the target structure
-  const structureResources = useMemo(() => {
+  const structureResourcesByRarity = useMemo(() => {
     if (!target?.structure) return [];
 
     // Get all non-zero resource balances from the structure
     const structureId = target.id;
     const availableResources: Array<{ resourceId: number; amount: number }> = [];
+    const { currentDefaultTick } = getBlockTimestamp();
 
-    Object.values(ResourcesIds)
-      .filter((id) => typeof id === "number")
+    // Iterate through all resource IDs in the game
+    Object.keys(RESOURCE_RARITY)
+      .map(Number)
+      .filter((id) => !isNaN(id))
       .forEach((resourceId) => {
-        if (typeof resourceId === "number") {
-          // Skip Lords - they can't be raided
-          if (resourceId === ResourcesIds.Lords) return;
+        // Skip Lords - they can't be raided
+        if (resourceId === ResourcesIds.Lords || isMilitaryResource(resourceId)) return;
 
-          // Use a resource manager to get the balance
-          const resourceManager = new ResourceManager(components, structureId as ID);
-          const amount = resourceManager.balance(resourceId);
-          if (amount > 0) {
-            availableResources.push({
-              resourceId,
-              amount: Number(amount),
-            });
-          }
+        // Use a resource manager to get the balance
+        const resourceManager = new ResourceManager(components, structureId as ID);
+        const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+
+        if (amount > 0) {
+          availableResources.push({
+            resourceId,
+            amount: Number(amount),
+          });
         }
       });
 
     return availableResources;
   }, [target, components]);
 
+  // Get all troops defending the structure
+  const defenderTroops = useMemo(() => {
+    if (!target?.structure) return [];
+
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    // Get all troops with non-zero count
+    return getGuardsByStructure(target.structure)
+      .filter((guard) => guard.troops.count > 0n)
+      .map((guard) => {
+        const stamina = StaminaManager.getStamina(
+          guard.troops.stamina,
+          StaminaManager.getMaxStamina(guard.troops),
+          currentArmiesTick,
+          components,
+        );
+        return {
+          count: Number(guard.troops.count),
+          category: guard.troops.category as TroopType,
+          tier: guard.troops.tier as TroopTier,
+          stamina: Number(stamina.amount),
+        };
+      });
+  }, [target]);
+
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
-    const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
+    const { currentArmiesTick } = getBlockTimestamp();
     return {
+      capacity: army?.totalCapacity,
       troops: {
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
-        stamina: army?.troops.stamina,
+        stamina: StaminaManager.getStamina(
+          army?.troops.stamina || { amount: 0n, updated_tick: 0n },
+          StaminaManager.getMaxStamina(army?.troops),
+          currentArmiesTick,
+          components,
+        ),
       },
     };
   }, [attackerEntityId]);
 
-  const targetArmyData = useMemo(() => {
-    if (!target?.info) return null;
-
-    return {
-      troops: {
-        count: Number(target.info.count || 0),
-        category: target.info.category as TroopType,
-        tier: target.info.tier as TroopTier,
-        stamina: target.info.stamina,
-      },
-    };
-  }, [target]);
-
-  const defenderStamina = useMemo(() => {
-    if (!target?.info?.stamina) return 0;
-    const maxStamina = StaminaManager.getMaxStamina(target?.info);
-    return StaminaManager.getStamina(
-      target?.info?.stamina,
-      maxStamina,
-      getBlockTimestamp().currentArmiesTick,
-      components,
-    ).amount;
-  }, [target, components]);
-
-  const isVillageWithoutTroops = useMemo(() => {
-    return target?.structureCategory === StructureType.Village && !target?.info;
-  }, [target]);
-
   const params = configManager.getCombatConfig();
-  const raidSimulator = useMemo(() => new MockRaidSimulator(params), [params]);
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
+  const raidSimulator = useMemo(() => new RaidSimulator(params), [params]);
 
   // Simulate raid outcome
   const raidSimulation = useMemo(() => {
@@ -251,64 +177,92 @@ export const RaidContainer = ({
     // Convert game armies to simulator armies
     const attackerArmy = {
       entity_id: attackerEntityId,
-      stamina: Number(attackerStamina),
-      troopCount: Number(attackerArmyData.troops.count) / RESOURCE_PRECISION,
+      stamina: Number(attackerArmyData.troops.stamina.amount),
+      troopCount: divideByPrecision(Number(attackerArmyData.troops.count)),
       troopType: attackerArmyData.troops.category as TroopType,
       tier: attackerArmyData.troops.tier as TroopTier,
     };
 
-    const defenders = targetArmyData
-      ? [
-          {
-            entity_id: target?.id || 0,
-            stamina: Number(defenderStamina),
-            troopCount: Number(targetArmyData.troops.count) / RESOURCE_PRECISION,
-            troopType: targetArmyData.troops.category as TroopType,
-            tier: targetArmyData.troops.tier as TroopTier,
-          },
-        ]
-      : [];
+    // Convert all defender troops into simulator armies
+    const defenders = defenderTroops.map((troop) => ({
+      entity_id: target?.id || 0,
+      stamina: Number(troop.stamina || 0),
+      troopCount: divideByPrecision(Number(troop.count)),
+      troopType: troop.category as TroopType,
+      tier: troop.tier as TroopTier,
+    }));
 
     // Use the raid simulator to predict the outcome
-    const result = raidSimulator.simulateRaid(attackerArmy, defenders, biome, 0.1);
+    const result = raidSimulator.simulateRaid(attackerArmy, defenders, biome);
+
+    // Calculate total defender troops for percentages
+    const totalDefenderTroops = defenderTroops.reduce((total, troop) => total + divideByPrecision(troop.count), 0);
 
     return {
       ...result,
-      attackerTroopsLeft: attackerArmy.troopCount - result.raiderDamageTaken / RESOURCE_PRECISION,
-      defenderTroopsLeft:
-        defenders.length > 0 ? defenders[0].troopCount - result.defenderDamageTaken / RESOURCE_PRECISION : 0,
-      newAttackerStamina: Number(attackerStamina) - combatConfig.stamina_attack_req,
-      newDefenderStamina: Number(defenderStamina) - (defenders.length > 0 ? combatConfig.stamina_attack_req : 0),
+      attackerTroopsLeft: attackerArmy.troopCount - result.raiderDamageTaken,
+      defenderTroopsLeft: defenders.map((troop) => troop.troopCount - result.defenderDamageTaken),
+      newAttackerStamina: Number(attackerArmyData.troops.stamina.amount) - combatConfig.stamina_attack_req,
+      newDefendersStamina: defenders.map((troop) => troop.stamina - result.defenderDamageTaken),
+      totalDefenderTroops,
     };
   }, [
     attackerEntityId,
     target,
     account,
     components,
-    attackerStamina,
-    defenderStamina,
     attackerArmyData,
-    targetArmyData,
     biome,
     combatConfig,
     raidSimulator,
+    defenderTroops,
   ]);
+
+  const remainingCapacity = useMemo(() => {
+    return getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0);
+  }, [raidSimulation]);
+
+  const stealableResources = useMemo(() => {
+    // let remainingCapacity = Number(getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0));
+    let remainingCapacity = 10000000000000000000;
+    let stealableResources: Array<{ resourceId: number; amount: number }> = [];
+    structureResourcesByRarity
+      .filter((resource) => resource.resourceId !== ResourcesIds.Lords)
+      .forEach((resource) => {
+        const availableAmount = divideByPrecision(resource.amount);
+        const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
+        if (remainingCapacity > 0) {
+          const maxStealableAmount = Math.min(
+            Math.floor(Number(remainingCapacity) / Number(resourceWeight)),
+            availableAmount,
+          );
+          if (maxStealableAmount > 0) {
+            stealableResources.push({
+              ...resource,
+              amount: maxStealableAmount,
+            });
+          }
+          remainingCapacity -= maxStealableAmount * Number(resourceWeight);
+        }
+      });
+    return stealableResources;
+  }, [structureResourcesByRarity, remainingCapacity]);
 
   const onRaid = async () => {
     if (!selectedHex) return;
-    await onExplorerVsGuardRaid();
+    await onExplorerVsStructureRaid();
     // Close modal after raid
     updateSelectedEntityId(null);
     toggleModal(null);
   };
 
-  const onExplorerVsGuardRaid = async () => {
-    if (!selectedHex || selectedResources.length === 0) return;
+  const onExplorerVsStructureRaid = async () => {
+    if (!selectedHex || stealableResources.length === 0) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
     if (direction === null) return;
 
     // Convert resources to the format expected by the contract
-    const resources = selectedResources
+    const resources = stealableResources
       .filter((r) => r.resourceId > 0 && r.amount > 0)
       .map((r) => [r.resourceId, BigInt(r.amount * RESOURCE_PRECISION)]);
 
@@ -332,52 +286,23 @@ export const RaidContainer = ({
     }
   };
 
-  const addResourceField = () => {
-    setSelectedResources([...selectedResources, { resourceId: 0, amount: 0 }]);
-  };
-
-  const removeResourceField = (index: number) => {
-    const newResources = [...selectedResources];
-    newResources.splice(index, 1);
-    setSelectedResources(newResources);
-  };
-
-  const updateResourceId = (index: number, resourceId: number | null) => {
-    const newResources = [...selectedResources];
-    newResources[index].resourceId = resourceId || 0;
-    setSelectedResources(newResources);
-  };
-
-  const updateResourceAmount = (index: number, amount: number) => {
-    const newResources = [...selectedResources];
-    newResources[index].amount = amount;
-    setSelectedResources(newResources);
-  };
-
   const buttonMessage = useMemo(() => {
-    if (isVillageWithoutTroops) return "Villages cannot be raided without defenders";
-    if (attackerStamina < combatConfig.stamina_attack_req)
+    if (attackerArmyData?.troops.stamina.amount < combatConfig.stamina_attack_req)
       return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
-    if (!selectedResources.some((r) => r.resourceId > 0 && r.amount > 0)) return "Select resources to raid";
+    if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
-  }, [isVillageWithoutTroops, attackerStamina, attackerArmyData, combatConfig, target, selectedResources]);
-
-  const getMaxResourceAmount = (resourceId: number) => {
-    const resource = structureResources.find((r) => r.resourceId === resourceId);
-    return resource ? divideByPrecision(resource.amount) : 0;
-  };
+  }, [attackerArmyData, combatConfig, target, stealableResources]);
 
   const canRaid = useMemo(() => {
     return (
-      attackerStamina >= combatConfig.stamina_attack_req &&
+      attackerArmyData?.troops.stamina.amount >= combatConfig.stamina_attack_req &&
       attackerArmyData &&
       target?.targetType === TargetType.Structure &&
-      selectedResources.some((r) => r.resourceId > 0 && r.amount > 0) &&
-      !isVillageWithoutTroops
+      stealableResources.some((r) => r.resourceId > 0 && r.amount > 0)
     );
-  }, [attackerStamina, combatConfig, attackerArmyData, target, selectedResources, isVillageWithoutTroops]);
+  }, [attackerArmyData, combatConfig, target, stealableResources]);
 
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
@@ -407,11 +332,14 @@ export const RaidContainer = ({
                   attackerArmyData.troops.category as TroopType,
                   attackerArmyData.troops.tier as TroopTier,
                   combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
-                  combatSimulator.calculateStaminaModifier(Number(attackerStamina), true),
+                  combatSimulator.calculateStaminaModifier(Number(attackerArmyData.troops.stamina.amount), true),
                   true,
                 )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(attackerArmyData.troops.count)} troops
+                </div>
+                <div className="text-lg text-gold/80 mt-1">
+                  Stamina: {Number(attackerArmyData.troops.stamina.amount)} / {combatConfig.stamina_attack_req} required
                 </div>
               </div>
 
@@ -421,7 +349,7 @@ export const RaidContainer = ({
                   <h4 className="text-sm font-medium text-gold/90 mb-2">Potential Raid Losses</h4>
                   <div className="flex items-center gap-2">
                     <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(raidSimulation.raiderDamageTaken / RESOURCE_PRECISION)}
+                      {-Math.floor(raidSimulation.raiderDamageTaken)}
                     </div>
                     <div className="uppercase text-xs text-red-400">troops lost</div>
                   </div>
@@ -433,22 +361,26 @@ export const RaidContainer = ({
 
         {/* Defender Panel */}
         <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
-          <h4>Defender Forces</h4>
-          {targetArmyData ? (
+          <h4>Combined Defender Forces</h4>
+          {defenderTroops.length > 0 ? (
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
-              <div className="p-3 border border-gold/10 rounded">
-                {formatTypeAndBonuses(
-                  targetArmyData.troops.category as TroopType,
-                  targetArmyData.troops.tier as TroopTier,
-                  combatSimulator.getBiomeBonus(targetArmyData.troops.category as TroopType, biome),
-                  combatSimulator.calculateStaminaModifier(Number(defenderStamina), false),
-                  false,
-                )}
-                <div className="text-2xl font-bold text-gold">
-                  {divideByPrecision(targetArmyData.troops.count)} troops
+              {defenderTroops.map((troops, index) => (
+                <div key={index} className="p-3 border border-gold/10 rounded">
+                  {formatTypeAndBonuses(
+                    troops.category as TroopType,
+                    troops.tier as TroopTier,
+                    combatSimulator.getBiomeBonus(troops.category as TroopType, biome),
+                    combatSimulator.calculateStaminaModifier(Number(troops.stamina || 0), false),
+                    false,
+                  )}
+                  <div className="text-2xl font-bold text-gold">{divideByPrecision(troops.count)} troops</div>
+                  <div className="text-2xl font-bold text-gold">
+                    -{raidSimulation?.damageTakenPerDefender[index]} troops lost
+                  </div>
+                  <div className="text-lg text-gold/80 mt-1">Current Stamina: {Number(troops.stamina || 0)}</div>
                 </div>
-              </div>
+              ))}
 
               {/* Raid Simulation Results */}
               {raidSimulation && (
@@ -456,7 +388,7 @@ export const RaidContainer = ({
                   <h4 className="text-sm font-medium text-gold/90 mb-2">Potential Raid Losses</h4>
                   <div className="flex items-center gap-2">
                     <div className="text-2xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
-                      {-Math.ceil(raidSimulation.defenderDamageTaken / RESOURCE_PRECISION)}
+                      {-Math.floor(raidSimulation.defenderDamageTaken)}
                     </div>
                     <div className="uppercase text-xs text-red-400">troops lost</div>
                   </div>
@@ -521,58 +453,25 @@ export const RaidContainer = ({
 
           {/* Resource Selection */}
           <div className="p-4 border border-gold/10 rounded mb-6">
-            <h4 className="text-lg font-medium text-gold/90 mb-4">Resources to Raid</h4>
+            <h4 className="text-lg font-medium text-gold/90 mb-4">Resources Pillaged if Raid Succeeds</h4>
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between items-center text-lg font-bold text-gold">
+                <span className="">Remaining Capacity:</span>
+                <span className="">{Number(remainingCapacity)} kg</span>
+              </div>
+            </div>
 
-            {structureResources.length > 0 ? (
-              <div className="space-y-4">
-                {selectedResources.map((resource, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <SelectResource
-                      onSelect={(resourceId) => updateResourceId(index, resourceId)}
-                      defaultValue={resource.resourceId}
-                      className="flex-1"
-                      excludeResourceIds={[ResourcesIds.Lords]} // LORDS can't be raided
+            {stealableResources.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {stealableResources.map((resource) => (
+                  <div key={resource.resourceId} className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gold">{formatStringNumber(resource.amount, 0)}</span>
+                    <ResourceIcon
+                      resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                      size="lg"
                     />
-
-                    <div className="flex flex-col items-center">
-                      <div className="text-xs text-gold/60 mb-1">Available</div>
-                      <div className="text-sm text-gold/80">
-                        {currencyFormat(getMaxResourceAmount(resource.resourceId), 2)}
-                      </div>
-                    </div>
-
-                    <input
-                      type="number"
-                      value={resource.amount}
-                      onChange={(e) => updateResourceAmount(index, Number(e.target.value))}
-                      min={0}
-                      max={getMaxResourceAmount(resource.resourceId)}
-                      className="px-2 py-1 w-24 bg-brown-900/50 border border-gold/20 rounded text-gold/90"
-                    />
-
-                    <button onClick={() => removeResourceField(index)} className="p-2 text-red-400 hover:text-red-300">
-                      X
-                    </button>
                   </div>
                 ))}
-
-                <div className="flex justify-between mt-4">
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    onClick={addResourceField}
-                    className="text-gold/80 border-gold/30"
-                  >
-                    + Add Resource
-                  </Button>
-
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm text-gold/60">Total Resources:</div>
-                    <div className="text-lg font-bold text-gold">
-                      {selectedResources.reduce((sum, r) => sum + r.amount, 0)}
-                    </div>
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="text-center py-4 text-gold/60">No resources available to raid in this structure.</div>
@@ -580,19 +479,16 @@ export const RaidContainer = ({
           </div>
 
           {/* Battle Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
             <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
               <div className="text-xs text-gold/70 mb-1">Attacker Casualties</div>
               <div className="text-lg font-bold text-order-giants">
-                {raidSimulation ? Math.ceil(raidSimulation.raiderDamageTaken / RESOURCE_PRECISION) : 0}
+                {raidSimulation ? Math.floor(raidSimulation.raiderDamageTaken) : 0}
                 <span className="text-xs ml-1">
                   (
                   {raidSimulation && attackerArmyData && attackerArmyData.troops.count
-                    ? Math.round(
-                        (raidSimulation.raiderDamageTaken /
-                          RESOURCE_PRECISION /
-                          divideByPrecision(attackerArmyData.troops.count)) *
-                          100,
+                    ? Math.floor(
+                        (raidSimulation.raiderDamageTaken / divideByPrecision(attackerArmyData.troops.count)) * 100,
                       )
                     : 0}
                   %)
@@ -602,18 +498,11 @@ export const RaidContainer = ({
             <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
               <div className="text-xs text-gold/70 mb-1">Defender Casualties</div>
               <div className="text-lg font-bold text-order-giants">
-                {raidSimulation && targetArmyData
-                  ? Math.ceil(raidSimulation.defenderDamageTaken / RESOURCE_PRECISION)
-                  : 0}
+                {raidSimulation ? Math.floor(raidSimulation.defenderDamageTaken) : 0}
                 <span className="text-xs ml-1">
                   (
-                  {raidSimulation && targetArmyData && targetArmyData.troops.count
-                    ? Math.round(
-                        (raidSimulation.defenderDamageTaken /
-                          RESOURCE_PRECISION /
-                          divideByPrecision(targetArmyData.troops.count)) *
-                          100,
-                      )
+                  {raidSimulation && raidSimulation.totalDefenderTroops
+                    ? Math.floor((raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100)
                     : 0}
                   %)
                 </span>
@@ -631,12 +520,6 @@ export const RaidContainer = ({
                 }`}
               >
                 {raidSimulation ? raidSimulation.successChance.toFixed(2) : 0}%
-              </div>
-            </div>
-            <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-              <div className="text-xs text-gold/70 mb-1">Raid Outcome</div>
-              <div className={`text-lg font-bold ${raidSimulation?.isSuccessful ? "text-green-400" : "text-red-400"}`}>
-                {raidSimulation ? (raidSimulation.isSuccessful ? "Success" : "Failure") : "Unknown"}
               </div>
             </div>
           </div>

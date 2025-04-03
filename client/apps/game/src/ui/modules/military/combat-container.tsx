@@ -448,6 +448,9 @@ export const CombatContainer = ({
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(attackerArmyData.troops.count)} troops
                 </div>
+                <div className="text-lg text-gold/80 mt-1">
+                  Stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
+                </div>
               </div>
 
               {/* Battle Simulation Results */}
@@ -483,6 +486,7 @@ export const CombatContainer = ({
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(targetArmyData.troops.count)} troops
                 </div>
+                <div className="text-lg text-gold/80 mt-1"> Current Stamina: {Number(defenderStamina)}</div>
               </div>
 
               {/* Battle Simulation Results */}
