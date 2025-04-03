@@ -8,7 +8,7 @@ import {
 	type SetupResult,
 	WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import type { Schema } from "@dojoengine/recs";
+import type { Entity, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import type {
 	Clause,
@@ -20,7 +20,6 @@ import {
 	debouncedGetEntitiesFromTorii,
 	debouncedGetMarketFromTorii,
 } from "./debounced-queries";
-import { handleExplorerTroopsIfDeletion } from "./utils";
 
 const syncEntitiesDebounced = async <S extends Schema>(
 	client: ToriiClient,
@@ -71,12 +70,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
 					const value = batch[entityId];
 					// this is an entity that has been deleted
 					if (Object.keys(value).length === 0) {
-						world.deleteEntity(entityId);
+						world.deleteEntity(entityId as Entity);
 					}
 				}
 
-				handleExplorerTroopsIfDeletion(batch, components, logging);
-				setEntities(batch, components as any, logging);
+				setEntities(batch, world.components, logging);
 			} catch (error) {
 				console.error("Error processing entity batch:", error);
 			}
@@ -177,7 +175,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
 				[],
 				configModels,
 				40_000,
-				true,
+				false,
 			);
 			const end = performance.now();
 			console.log("[sync] big config query", end - start);
