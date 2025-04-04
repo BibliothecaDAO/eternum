@@ -56,7 +56,7 @@ export const ExpandableOSWindow = ({
               </div>
 
               <motion.div
-                className="border-l border-gray-gold"
+                className="border-l"
                 initial={{ width: 0, opacity: 0 }}
                 animate={{
                   width: isExpanded ? parseInt(widthExpanded) : 0,
