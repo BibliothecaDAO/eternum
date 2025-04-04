@@ -926,3 +926,14 @@ export interface EditMarketplaceOrderProps {
   new_price: num.BigNumberish;
   signer: AccountInterface;
 }
+
+export interface StartQuestProps extends SystemSigner {
+  details_id: number;
+  explorer_id: number;
+  player_name: num.BigNumberish;
+  to_address: string;
+}
+
+export interface ClaimRewardProps extends SystemSigner {
+  quest_id: number;
+}

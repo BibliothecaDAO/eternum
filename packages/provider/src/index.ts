@@ -2704,4 +2704,22 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue(call);
   }
+
+  public async start_quest(props: SystemProps.StartQuestProps) {
+    const { details_id, explorer_id, player_name, to_address, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "start_quest",
+      calldata: [details_id, explorer_id, player_name, to_address],
+    });
+  }
+
+  public async claim_reward(props: SystemProps.ClaimRewardProps) {
+    const { quest_id, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+      entrypoint: "claim_reward",
+      calldata: [quest_id],
+    });
+  }
 }

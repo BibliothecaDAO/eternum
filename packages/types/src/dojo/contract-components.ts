@@ -473,6 +473,56 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Quest: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          details_id: RecsType.Number,
+          explorer_id: RecsType.Number,
+          game_token_id: RecsType.Number,
+          completed: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "Quest",
+            types: ["u64", "u64", "u32", "u64", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestDetails: (() => {
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+          coord: {
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
+          reward: {
+            resource_type: RecsType.Number,
+            amount: RecsType.BigInt,
+          },
+          capacity: RecsType.Number,
+          participant_count: RecsType.Number,
+          settings_id: RecsType.Number,
+          target_score: RecsType.Number,
+          expires_at: RecsType.BigInt,
+          game_address: RecsType.String,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "QuestDetails",
+            types: ["u64", "u32", "u32", "u8", "u128", "u16", "u16", "u32", "u32", "u64", "ContractAddress"],
+            customTypes: ["Coord", "Reward"],
+          },
+        },
+      );
+    })(),
     StructureLevelConfig: (() => {
       return defineComponent(
         world,

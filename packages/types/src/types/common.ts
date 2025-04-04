@@ -124,6 +124,32 @@ export type Structure = {
   position: Position;
 };
 
+export type Quest = {
+  id: number;
+  details_id: number;
+  explorer_id: number;
+  game_token_id: number;
+  completed: boolean;
+};
+
+export type QuestDetails = {
+  id: number;
+  coord: {
+    x: number;
+    y: number;
+  };
+  reward: {
+    resource_type: number;
+    amount: bigint;
+  };
+  capacity: number;
+  participant_count: number;
+  settings_id: number;
+  target_score: number;
+  expires_at: bigint;
+  game_address: string;
+};
+
 export type TroopFoodConsumption = {
   explore_wheat_burn_amount: number;
   explore_fish_burn_amount: number;

@@ -43,6 +43,18 @@ export interface ArmyData {
   isDaydreamsAgent: boolean;
 }
 
+export interface QuestData {
+  entityId: ID;
+  hexCoords: Position;
+  id: number;
+  reward: number;
+  capacity: number;
+  participantCount: number;
+  targetScore: number;
+  expiresAt: number;
+  gameAddress: string;
+}
+
 export interface RenderChunkSize {
   width: number;
   height: number;

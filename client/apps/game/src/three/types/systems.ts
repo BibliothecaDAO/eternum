@@ -39,3 +39,15 @@ export type RealmSystemUpdate = {
   level: number;
   hexCoords: HexPosition;
 };
+
+export type QuestSystemUpdate = {
+  entityId: ID;
+  hexCoords: HexPosition;
+  id: number;
+  reward: number;
+  capacity: number;
+  participantCount: number;
+  targetScore: number;
+  expiresAt: number;
+  gameAddress: string;
+};

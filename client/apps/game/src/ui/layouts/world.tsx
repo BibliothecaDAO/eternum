@@ -291,6 +291,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           <Tooltip />
           <VersionDisplay />
           <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
+
+          {/* TODO: some way of rendering the quest details on screen */}
+          {/* {selectedQuestId && (
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+              <QuestDetails questId={selectedQuestId} onClose={() => setSelectedQuestId(null)} />
+            </div>
+          )} */}
         </Suspense>
       </div>
     </>

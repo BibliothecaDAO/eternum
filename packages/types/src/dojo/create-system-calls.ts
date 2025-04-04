@@ -308,6 +308,14 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.edit_marketplace_order(props);
   };
 
+  const start_quest = async (props: SystemProps.StartQuestProps) => {
+    await provider.start_quest(props);
+  };
+
+  const claim_reward = async (props: SystemProps.ClaimRewardProps) => {
+    await provider.claim_reward(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -385,6 +393,9 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     accept_marketplace_order: withAuth(accept_marketplace_order),
     cancel_marketplace_order: withAuth(cancel_marketplace_order),
     edit_marketplace_order: withAuth(edit_marketplace_order),
+
+    start_quest: withAuth(start_quest),
+    claim_reward: withAuth(claim_reward),
   };
 
   return systemCalls;
