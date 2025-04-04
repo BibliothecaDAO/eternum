@@ -44,7 +44,7 @@ export const NavigateToPositionIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: tooltipContent,
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {
