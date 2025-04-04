@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ProductionModal } from "@/ui/components/production/production-modal";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
@@ -12,17 +13,19 @@ import {
   getStructure,
   LEVEL_DESCRIPTIONS,
   RealmLevels,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon, PlusIcon } from "lucide-react";
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -120,6 +123,21 @@ export const Castle = () => {
               <RealmResourcesIO size="md" titleClassName="uppercase" realmEntityId={structure.entityId} />
             )}
           </div>
+
+          {isOwner && (
+            <div className="flex justify-center mt-4">
+              <Button
+                onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
+                variant="primary"
+                withoutSound
+              >
+                <div className="flex items-center gap-2">
+                  <PlusIcon className="w-4 h-4" />
+                  Produce Labor
+                </div>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     )

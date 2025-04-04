@@ -25,8 +25,7 @@ export const CompactDefenseDisplay = ({ troops, className = "" }: CompactDefense
                   r.id === getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier),
               )?.trait || ""
             }
-            size="xs"
-            className="w-3 h-3"
+            size="md"
           />
           <span className="text-[10px] text-gold/90 font-medium ml-1">
             {currencyFormat(Number(defense.troops.count || 0), 0)}

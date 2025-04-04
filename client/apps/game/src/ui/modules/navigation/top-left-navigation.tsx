@@ -5,6 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import Button from "@/ui/elements/button";
+import { cn } from "@/ui/elements/lib/utils";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
@@ -215,7 +216,6 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               />
             </div>
           </div>
-          <ProgressBar progress={progress} />
         </div>
       </motion.div>
       <div className="relative">
@@ -227,9 +227,66 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
 
 TopLeftNavigation.displayName = "TopLeftNavigation";
 
+const CircularProgress = ({
+  progress,
+  size = "sm",
+  children,
+  className,
+}: {
+  progress: number;
+  size?: "sm" | "md" | "lg";
+  children?: React.ReactNode;
+  className?: string;
+}) => {
+  const normalizedProgress = Math.min(100, Math.max(0, progress));
+  const strokeWidth = size === "sm" ? 2 : size === "md" ? 3 : 4;
+  const radius = size === "sm" ? 12 : size === "md" ? 18 : 24;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (normalizedProgress / 100) * circumference;
+
+  const sizeClasses = {
+    sm: "w-8 h-8",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
+  };
+
+  const textSizeClasses = {
+    sm: "text-xs",
+    md: "text-sm",
+    lg: "text-base",
+  };
+
+  return (
+    <div className={cn("relative inline-flex items-center justify-center", sizeClasses[size], className)}>
+      <svg className="w-full h-full -rotate-90">
+        {/* Background circle */}
+        <circle
+          cx="50%"
+          cy="50%"
+          r={radius}
+          className="fill-none stroke-gray-700 opacity-25"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress circle */}
+        <circle
+          cx="50%"
+          cy="50%"
+          r={radius}
+          className="fill-none stroke-gold transition-all duration-300 ease-in-out"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className={cn("absolute inset-0 flex items-center justify-center", textSizeClasses[size])}>{children}</div>
+    </div>
+  );
+};
+
 const ProgressBar = memo(({ progress }: { progress: number }) => {
   return (
-    <div className="absolute bottom-0 left-0 h-1 bg-gold to-transparent  mx-1" style={{ width: `${progress}%` }}></div>
+    <div className="absolute bottom-0 left-0 h-1 bg-gold to-transparent mx-1" style={{ width: `${progress}%` }}></div>
   );
 });
 
@@ -293,10 +350,12 @@ const TickProgress = memo(() => {
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="self-center text-center px-1 py-1 flex gap-1 text-xl "
+      className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
     >
-      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" className="self-center" />
-      {progress.toFixed()}%
+      <CircularProgress progress={progress} size="sm" className="text-gold">
+        <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
+      </CircularProgress>
+      <span className="text-sm">{progress.toFixed()}%</span>
     </div>
   );
 });

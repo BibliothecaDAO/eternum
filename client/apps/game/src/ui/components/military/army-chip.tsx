@@ -19,7 +19,7 @@ export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
   className = "",
-  tooltipContent = "Navigate to Army",
+  tooltipContent = "Navigate to Position",
 }: {
   position: Position;
   hideTooltip?: boolean;
@@ -44,7 +44,7 @@ export const NavigateToPositionIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: tooltipContent,
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {
