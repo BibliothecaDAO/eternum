@@ -423,7 +423,7 @@ export default class HexceptionScene extends HexagonScene {
             </div>
           </div>
         ),
-        position: "top",
+        position: "bottom",
       });
     }
   }
