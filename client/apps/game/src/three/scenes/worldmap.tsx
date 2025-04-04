@@ -306,8 +306,7 @@ export default class WorldmapScene extends HexagonScene {
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Help) {
-          // this.onArmyHelp(actionPath, selectedEntityId);
-          this.onArmyAttack(actionPath, selectedEntityId);
+          this.onArmyHelp(actionPath, selectedEntityId);
         }
       }
     }

@@ -76,7 +76,7 @@ pub mod troop_raid_systems {
             let mut guarded_structure_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
                 ref world, structure_id,
             );
-            // guarded_structure_owner.assert_caller_not_owner();
+            guarded_structure_owner.assert_caller_not_owner();
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
