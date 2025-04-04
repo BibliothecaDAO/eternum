@@ -9,16 +9,17 @@ import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {
-  ARMY: "/textures/army_label.png",
-  MY_ARMY: "/textures/my_army_label.png",
-  MY_REALM: "/textures/my_realm_label.png",
-  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
-  REALM_WONDER: "/textures/realm_wonder_label.png",
+  ARMY: "/images/labels/enemy_army.png",
+  MY_ARMY: "/images/labels/army.png",
+  MY_REALM: "/images/labels/realm.png",
+  MY_REALM_WONDER: "/images/labels/realm.png",
+  REALM_WONDER: "/images/labels/realm.png",
   STRUCTURES: {
-    [StructureType.Realm]: "/textures/realm_label.png",
-    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
   },
 };
 

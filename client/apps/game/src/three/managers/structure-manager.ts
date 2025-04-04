@@ -18,17 +18,21 @@ const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
 
 const ICONS = {
-  ARMY: "/textures/army_label.png",
-  MY_ARMY: "/textures/my_army_label.png",
-  MY_REALM: "/textures/my_realm_label.png",
-  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
-  REALM_WONDER: "/textures/realm_wonder_label.png",
+  ARMY: "/images/labels/enemy_army.png",
+  MY_ARMY: "/images/labels/army.png",
+  MY_REALM: "/images/labels/realm.png",
+  MY_REALM_WONDER: "/images/labels/realm.png",
+  REALM_WONDER: "/images/labels/realm.png",
   STRUCTURES: {
-    [StructureType.Village]: "/images/buildings/construction/castleZero.png",
-    [StructureType.Realm]: "/textures/realm_label.png",
-    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+  } as Record<StructureType, string>,
+  MY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
 };
 
@@ -334,7 +338,9 @@ export class StructureManager {
       if (structure.hasWonder) {
         iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
       } else {
-        iconPath = structure.isMine ? ICONS.MY_REALM : ICONS.STRUCTURES[StructureType.Realm];
+        iconPath = structure.isMine
+          ? ICONS.MY_STRUCTURES[structure.structureType]
+          : ICONS.STRUCTURES[structure.structureType];
       }
     }
 
