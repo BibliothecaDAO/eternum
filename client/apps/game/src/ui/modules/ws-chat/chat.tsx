@@ -483,7 +483,7 @@ function ChatModule() {
 
   return (
     <div
-      className={`flex flex-col panel-wood md:flex-row overflow-hidden bg-brown z-100 pointer-events-auto ${
+      className={`flex flex-col panel-wood md:flex-row overflow-hidden bg-brown z-100 pointer-events-auto panel-wood-corners ${
         isExpanded ? "h-[600px]" : "h-72"
       } border-gold/20 border-2 transition-all duration-300`}
     >
