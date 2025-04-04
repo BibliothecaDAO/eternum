@@ -398,6 +398,7 @@ export class ArmyManager {
       "h-10",
       "flex",
       "items-center",
+      "group",
     );
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
@@ -415,14 +416,21 @@ export class ArmyManager {
 
     // Create text container with transition
     const textContainer = document.createElement("div");
+
+    const spacerDiv = document.createElement("div");
+    spacerDiv.classList.add("w-2");
+    textContainer.appendChild(spacerDiv);
+
     textContainer.classList.add(
       "flex",
       "flex-col",
-      "transition-all",
+      "transition-width",
       "duration-700",
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
+      "group-hover:max-w-[250px]",
+      "group-hover:ml-2",
       this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );

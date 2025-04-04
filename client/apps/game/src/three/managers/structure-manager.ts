@@ -326,6 +326,7 @@ export class StructureManager {
       "text-xxs",
       "flex",
       "items-center",
+      "group",
     );
 
     // Create icon container
@@ -353,14 +354,22 @@ export class StructureManager {
 
     // Create content container with transition
     const contentContainer = document.createElement("div");
+
+    // Add empty div with w-2 for spacing
+    const spacerDiv = document.createElement("div");
+    spacerDiv.classList.add("w-2");
+    contentContainer.appendChild(spacerDiv);
+
     contentContainer.classList.add(
       "flex",
       "flex-col",
-      "transition-all",
+      "transition-width",
       "duration-700",
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
+      "group-hover:max-w-[250px]",
+      "group-hover:ml-2",
       this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
