@@ -285,7 +285,7 @@ export const RaidContainer = ({
     await onExplorerVsStructureRaid();
     // Close modal after raid
     updateSelectedEntityId(null);
-    toggleModal(null);
+    // toggleModal(null);
   };
 
   const onExplorerVsStructureRaid = async () => {
