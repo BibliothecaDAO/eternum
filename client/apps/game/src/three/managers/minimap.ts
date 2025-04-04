@@ -190,7 +190,12 @@ class Minimap {
 
     // Scale from 0.5 (at max zoom) to 2.0 (at min zoom)
     // This will make icons twice as large when zoomed out while keeping them at current size when zoomed in
-    const zoomScaleFactor = 0.5 + zoomRatio * 1.5;
+    let zoomScaleFactor = 1;
+    if (this.canvas.width > 400) {
+      zoomScaleFactor = 0.25 + zoomRatio * 0.5;
+    } else {
+      zoomScaleFactor = 0.5 + zoomRatio * 1.5;
+    }
 
     // Precompute sizes with zoom scaling
     this.structureSize = {
