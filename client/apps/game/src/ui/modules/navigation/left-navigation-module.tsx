@@ -215,7 +215,7 @@ export const LeftNavigationModule = memo(() => {
           }`}
         >
           <BaseContainer
-            className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] `}
+            className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] panel-wood-corners overflow-x-hidden`}
           >
             <Suspense fallback={<div className="p-8">Loading...</div>}>
               {view === LeftView.EntityView && <EntityDetails />}

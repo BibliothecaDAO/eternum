@@ -129,7 +129,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseLeave={() => {
             setTooltip(null);
           }}
-          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center   hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
+          className="storehouse-selector text-xl px-3 py-1 flex gap-2 justify-start items-center   hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
           <div className="self-center font-medium">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
@@ -147,8 +147,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           setTooltip(null);
         }}
         className={clsx(
-          "population-selector px-3 py-1 flex gap-2 justify-start items-center  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
-          isPopulationNearCapacity && "ring-1 ring-red-500",
+          "population-selector px-3 py-1 flex gap-2 justify-start items-center  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help text-xl ",
         )}
       >
         <ResourceIcon withTooltip={false} resource="House" size="sm" />
