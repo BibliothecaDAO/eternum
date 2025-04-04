@@ -118,7 +118,7 @@ export const MiniMapNavigation = () => {
       {/* <EventStream hideChat={false} /> */}
       {showMinimap && (
         <>
-          <div className="flex flex-wrap p-1 justify-center gap-1 bg-black/70">
+          <div className="flex flex-wrap p-1 justify-center gap-2 bg-black/70 border-b border-amber-900/50">
             {ENTITY_TOGGLES.map((entity) => (
               <div
                 key={entity.id}
@@ -131,17 +131,47 @@ export const MiniMapNavigation = () => {
                 }
                 onMouseLeave={() => setTooltip(null)}
               >
-                <input
-                  type="checkbox"
-                  id={`toggle-${entity.id}`}
-                  checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
-                  onChange={(e) => handleToggle(entity.id, e.target.checked)}
-                  className="cursor-pointer"
-                />
-                <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer">
-                  <img src={entity.imagePath} alt={entity.label} className="w-4 h-4 mr-1" />
-                  {isExpanded && <span className="text-white">{entity.label}</span>}
-                </label>
+                <div className="relative inline-block">
+                  <input
+                    type="checkbox"
+                    id={`toggle-${entity.id}`}
+                    checked={visibilityStates[entity.id as keyof typeof visibilityStates]}
+                    onChange={(e) => handleToggle(entity.id, e.target.checked)}
+                    className="sr-only peer" // Hidden but accessible
+                  />
+                  <label htmlFor={`toggle-${entity.id}`} className="flex items-center cursor-pointer group">
+                    {/* Custom checkbox */}
+                    <div className="relative w-4 h-4 mr-1.5 bg-gray-900/90 border border-amber-800/90 hover:border-amber-600 rounded-sm overflow-hidden shadow-inner shadow-black/50">
+                      {visibilityStates[entity.id as keyof typeof visibilityStates] && (
+                        <div className="absolute inset-0 bg-gradient-to-b from-amber-600/80 to-amber-800/90 flex items-center justify-center shadow-md">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#FFF"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-3 h-3 drop-shadow-md"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <img
+                      src={entity.imagePath}
+                      alt={entity.label}
+                      className={`w-4 h-4 mr-1 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                    />
+                    {isExpanded && (
+                      <span
+                        className={`text-white text-opacity-90 ${visibilityStates[entity.id as keyof typeof visibilityStates] ? "brightness-100" : "brightness-50"}`}
+                      >
+                        {entity.label}
+                      </span>
+                    )}
+                  </label>
+                </div>
               </div>
             ))}
           </div>
