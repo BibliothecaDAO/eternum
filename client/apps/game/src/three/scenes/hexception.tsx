@@ -715,7 +715,7 @@ export default class HexceptionScene extends HexagonScene {
         }
 
         if (!withBuilding) {
-          biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
+          biomeHexes[buildableAreaBiome as BiomeType].push(dummy.matrix.clone());
         }
       });
     }
