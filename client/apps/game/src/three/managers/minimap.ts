@@ -15,8 +15,8 @@ const LABELS = {
   MY_REALM_WONDER: "/images/labels/realm.png",
   REALM_WONDER: "/images/labels/realm.png",
   STRUCTURES: {
-    [StructureType.Village]: "/images/labels/village.png",
-    [StructureType.Realm]: "/images/labels/realm.png",
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
