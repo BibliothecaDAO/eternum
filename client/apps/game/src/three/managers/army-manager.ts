@@ -394,7 +394,8 @@ export class ArmyManager {
       army.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
-      "text-xs",
+      "text-xxs",
+      "h-10",
       "flex",
       "items-center",
     );
@@ -409,7 +410,7 @@ export class ArmyManager {
     img.src = isDaydreamsAgent
       ? "/images/logos/daydreams.png"
       : `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
-    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
     // Create text container with transition
@@ -422,7 +423,7 @@ export class ArmyManager {
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
 

@@ -83,10 +83,10 @@ export class StructureManager {
         if (contentContainer) {
           if (view === CameraView.Far) {
             contentContainer.classList.add("max-w-0", "ml-0");
-            contentContainer.classList.remove("max-w-[200px]", "ml-2");
+            contentContainer.classList.remove("max-w-[250px]", "ml-2");
           } else {
             contentContainer.classList.remove("max-w-0", "ml-0");
-            contentContainer.classList.add("max-w-[200px]", "ml-2");
+            contentContainer.classList.add("max-w-[250px]", "ml-2");
           }
         }
       }
@@ -315,17 +315,18 @@ export class StructureManager {
       "bg-brown/50",
       "hover:bg-brown/90",
       "pointer-events-auto",
+      "h-10",
       structure.isMine ? "text-order-brilliance" : "text-gold",
       "p-1",
       "-translate-x-1/2",
-      "text-xs",
+      "text-xxs",
       "flex",
       "items-center",
     );
 
     // Create icon container
     const iconContainer = document.createElement("div");
-    iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+    iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
 
     // Select appropriate icon
     let iconPath = ICONS.STRUCTURES[structure.structureType];
@@ -354,23 +355,14 @@ export class StructureManager {
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
 
-    // Add owner name and address
     const ownerText = document.createElement("span");
     const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
-    ownerText.textContent = displayName;
-    ownerText.classList.add("text-xs", "opacity-80");
-
-    // Add guild name if available
-    if (structure.owner.guildName) {
-      const guildText = document.createElement("span");
-      guildText.textContent = structure.owner.guildName;
-      guildText.classList.add("text-xs", "text-gold/70", "italic");
-      contentContainer.appendChild(guildText);
-    }
+    ownerText.textContent = structure.owner.guildName ? `${displayName} [${structure.owner.guildName}]` : displayName;
+    ownerText.classList.add("opacity-80");
 
     // Add structure type and level
     const typeText = document.createElement("strong");
@@ -381,7 +373,6 @@ export class StructureManager {
           : "Foundation"
         : ""
     }`;
-    typeText.classList.add("text-xs");
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);
