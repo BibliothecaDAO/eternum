@@ -5,15 +5,16 @@ import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   Biome,
+  CapacityConfig,
   CombatSimulator,
   configManager,
   ContractAddress,
   divideByPrecision,
   getArmy,
-  getArmyTotalCapacityInKg,
   getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
   getGuardsByStructure,
+  getRemainingCapacityInKg,
   ID,
   isMilitaryResource,
   multiplyByPrecision,
@@ -220,27 +221,33 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    return Number(getArmyTotalCapacityInKg(raidSimulation?.attackerTroopsLeft || 0));
+    const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
+    const remainingCapacityAfterRaid =
+      remainingCapacity -
+      (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
+    return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
   }, [raidSimulation]);
 
   const stealableResources = useMemo(() => {
-    let capacity = remainingCapacity;
-    // let remainingCapacity = 10000000000000000000;
+    let capacityAfterRaid = remainingCapacity.afterRaid;
     let stealableResources: Array<{ resourceId: number; amount: number }> = [];
     structureResourcesByRarity
       .filter((resource) => resource.resourceId !== ResourcesIds.Lords)
       .forEach((resource) => {
         const availableAmount = divideByPrecision(resource.amount);
         const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
-        if (capacity > 0) {
-          const maxStealableAmount = Math.min(Math.floor(Number(capacity) / Number(resourceWeight)), availableAmount);
+        if (capacityAfterRaid > 0) {
+          const maxStealableAmount = Math.min(
+            Math.floor(Number(capacityAfterRaid) / Number(resourceWeight)),
+            availableAmount,
+          );
           if (maxStealableAmount > 0) {
             stealableResources.push({
               ...resource,
               amount: maxStealableAmount,
             });
           }
-          capacity -= maxStealableAmount * Number(resourceWeight);
+          capacityAfterRaid -= maxStealableAmount * Number(resourceWeight);
         }
       });
     return stealableResources;
@@ -315,10 +322,6 @@ export const RaidContainer = ({
             <div className="mt-4 space-y-4">
               {/* Troop Information */}
               <div className="p-4 border border-gold/10 rounded relative">
-                <div className="absolute top-0 right-0 bg-brown-800/90 text-gold px-2 py-0.5 text-xs rounded-bl-md rounded-tr-md">
-                  Your Army
-                </div>
-
                 <div className="mt-2">
                   {formatTypeAndBonuses(
                     attackerArmyData.troops.category as TroopType,
@@ -361,8 +364,8 @@ export const RaidContainer = ({
                   </div>
 
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-gold/70">Carrying Capacity:</span>
-                    <span className="text-gold font-medium">{Number(remainingCapacity)} kg</span>
+                    <span className="text-gold/70">Current Remaining Carrying Capacity:</span>
+                    <span className="text-gold font-medium">{Number(remainingCapacity.beforeRaid)} kg</span>
                   </div>
                 </div>
               </div>
@@ -614,8 +617,8 @@ export const RaidContainer = ({
                 </h4>
 
                 <div className="flex justify-between items-center text-base font-medium text-gold border-b border-gold/20 pb-2 mb-3">
-                  <span className="">Carrying Capacity:</span>
-                  <span className="">{Number(remainingCapacity)} kg</span>
+                  <span className="">Remaining Carrying Capacity After Raid:</span>
+                  <span className="">{Number(remainingCapacity.afterRaid)} kg</span>
                 </div>
 
                 {stealableResources.length > 0 ? (
