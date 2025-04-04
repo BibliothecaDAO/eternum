@@ -78,7 +78,7 @@ export class SystemManager {
 				this.setupSystem(
 					this.setup.components.ExplorerTroops,
 					callback,
-					(update: any) => {
+					(update: any): ArmySystemUpdate | undefined => {
 						if (
 							isComponentUpdate(update, this.setup.components.ExplorerTroops)
 						) {
@@ -95,7 +95,12 @@ export class SystemManager {
 								return {
 									entityId: prevState.explorer_id,
 									hexCoords: { col: prevState.coord.x, row: prevState.coord.y },
-									owner: { address: BigInt(prevState.owner) || 0n },
+									order: 0,
+									owner: {
+										address: BigInt(prevState.owner) || 0n,
+										ownerName: "",
+										guildName: "",
+									},
 									troopType: prevState.troops.category as TroopType,
 									troopTier: prevState.troops.tier as TroopTier,
 									deleted: true,
