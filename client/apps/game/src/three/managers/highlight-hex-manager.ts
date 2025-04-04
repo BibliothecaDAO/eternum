@@ -1,4 +1,4 @@
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
@@ -37,7 +37,7 @@ export class HighlightHexManager {
     this.highlightedHexes = [];
 
     // Create new highlight meshes
-    const bigHexagonShape = createHexagonShape(HEX_SIZE * 0.975);
+    const bigHexagonShape = createRoundedHexagonShape(HEX_SIZE * 0.975);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 
     actionPaths.forEach((hex) => {
