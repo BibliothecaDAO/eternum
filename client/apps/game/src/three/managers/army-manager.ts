@@ -410,7 +410,7 @@ export class ArmyManager {
     const img = document.createElement("img");
     img.src = isDaydreamsAgent
       ? "/images/logos/daydreams.png"
-      : `/images/labels/${army.isMine ? "army.png" : "enemy_army"}.png`;
+      : `/images/labels/${army.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
