@@ -118,9 +118,19 @@ export const MiniMapNavigation = () => {
       {/* <EventStream hideChat={false} /> */}
       {showMinimap && (
         <>
-          <div className="flex flex-wrap p-1 justify-center gap-1 bg-black/30">
+          <div className="flex flex-wrap p-1 justify-center gap-1 bg-black/70">
             {ENTITY_TOGGLES.map((entity) => (
-              <div key={entity.id} className="flex items-center gap-1">
+              <div
+                key={entity.id}
+                className="flex items-center gap-1"
+                onMouseEnter={() =>
+                  setTooltip({
+                    content: `Toggle ${entity.label}`,
+                    position: "bottom",
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
                 <input
                   type="checkbox"
                   id={`toggle-${entity.id}`}
