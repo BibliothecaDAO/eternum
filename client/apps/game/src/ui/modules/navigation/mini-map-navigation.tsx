@@ -126,7 +126,7 @@ export const MiniMapNavigation = () => {
                 onMouseEnter={() =>
                   setTooltip({
                     content: `Toggle ${entity.label}`,
-                    position: "bottom",
+                    position: "top",
                   })
                 }
                 onMouseLeave={() => setTooltip(null)}

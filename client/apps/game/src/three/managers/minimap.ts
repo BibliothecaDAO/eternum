@@ -45,8 +45,8 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
-    STRUCTURE: 10,
-    ARMY: 10,
+    STRUCTURE: 14,
+    ARMY: 14,
     CAMERA: {
       TOP_SIDE_WIDTH_FACTOR: 105,
       BOTTOM_SIDE_WIDTH_FACTOR: 170,
@@ -179,14 +179,27 @@ class Minimap {
     if (this.canvas.width > 300) {
       modifier = MINIMAP_CONFIG.EXPANDED_MODIFIER;
     }
-    // Precompute sizes
+
+    // Add zoom-based scaling for icons
+    // As we get closer to MIN_ZOOM_RANGE, we want icons to get smaller
+    const zoomRatio = Math.min(
+      1,
+      (this.mapSize.width - MINIMAP_CONFIG.MIN_ZOOM_RANGE) /
+        (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
+    );
+
+    // Scale from 0.5 (at max zoom) to 2.0 (at min zoom)
+    // This will make icons twice as large when zoomed out while keeping them at current size when zoomed in
+    const zoomScaleFactor = 0.5 + zoomRatio * 1.5;
+
+    // Precompute sizes with zoom scaling
     this.structureSize = {
-      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
+      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier * zoomScaleFactor,
     };
     this.armySize = {
-      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
