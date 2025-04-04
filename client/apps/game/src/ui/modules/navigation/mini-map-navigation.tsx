@@ -31,6 +31,32 @@ export const MiniMapNavigation = () => {
     setIsExpanded(!isExpanded);
   };
 
+  // Handle screenshot
+  const handleScreenshot = () => {
+    if (!canvasRef.current) return;
+
+    // Get the minimap instance
+    const minimap = (window as any).minimapInstance;
+    if (!minimap) return;
+
+    // Set to max distance before taking screenshot
+    //minimap.setMaxDistance();
+
+    // Center the map at 0,0
+    //minimap.centerAtOrigin();
+
+    // Allow time for the minimap to update
+    setTimeout(() => {
+      if (!canvasRef.current) return;
+
+      // Create a temporary link for downloading
+      const link = document.createElement("a");
+      link.download = `eternum-world-map-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = canvasRef.current.toDataURL("image/png");
+      link.click();
+    }, 200);
+  };
+
   useEffect(() => {
     if (canvasRef.current) {
       canvasRef.current.width = isExpanded ? window.innerWidth * 0.6 : 350;
@@ -60,6 +86,7 @@ export const MiniMapNavigation = () => {
 
         // Initial sync of minimap with our component state
         minimap.syncVisibilityStates(visibilityStates);
+
         return true;
       }
       return false;
@@ -175,8 +202,50 @@ export const MiniMapNavigation = () => {
               </div>
             ))}
           </div>
-          <div onClick={toggleExpand} className="cursor-pointer absolute right-2 top-2 hover:opacity-80 z-10">
-            {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+
+          <div className="absolute right-2 top-2 flex items-center gap-2 z-10">
+            {isExpanded && (
+              <div
+                onClick={handleScreenshot}
+                className="cursor-pointer hover:opacity-80"
+                onMouseEnter={() => setTooltip({ content: "Save World Map", position: "top" })}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4"
+                >
+                  <path
+                    d="M12 16L12 8M12 16L8 12M12 16L16 12"
+                    stroke="#E0AF65"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3 15L3 16C3 18.2091 4.79086 20 7 20L17 20C19.2091 20 21 18.2091 21 16L21 15"
+                    stroke="#E0AF65"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            )}
+            <div
+              onClick={toggleExpand}
+              className="cursor-pointer hover:opacity-80"
+              onMouseEnter={() =>
+                setTooltip({ content: isExpanded ? "Collapse Minimap" : "Expand Minimap", position: "top" })
+              }
+              onMouseLeave={() => setTooltip(null)}
+            >
+              {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+            </div>
           </div>
         </>
       )}

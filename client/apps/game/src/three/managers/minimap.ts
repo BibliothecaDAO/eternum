@@ -362,6 +362,24 @@ class Minimap {
     this.recomputeScales();
   }
 
+  // Set the map to maximum distance for screenshots
+  setMaxDistance() {
+    // Set to maximum distance
+    this.mapSize = {
+      width: MINIMAP_CONFIG.MAX_ZOOM_RANGE,
+      height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT * 3,
+    };
+    this.recomputeScales();
+    this.draw();
+  }
+
+  // Center the map at the origin (0,0) for screenshots
+  centerAtOrigin() {
+    this.mapCenter = { col: 0, row: 0 };
+    this.recomputeScales();
+    this.draw();
+  }
+
   update() {
     // Only call draw if we have completed initialization
     if (this.context) {
