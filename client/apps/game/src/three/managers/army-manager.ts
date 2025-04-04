@@ -392,7 +392,7 @@ export class ArmyManager {
       "hover:bg-brown/90",
       "pointer-events-auto",
       army.isMine ? "text-order-brilliance" : "text-gold",
-      "p-1",
+      "p-0.5",
       "-translate-x-1/2",
       "text-xxs",
       "h-10",
@@ -439,7 +439,7 @@ export class ArmyManager {
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
-    label.position.y += 1.5;
+    label.position.y += 2.1;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;

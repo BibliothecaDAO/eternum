@@ -321,7 +321,7 @@ export class StructureManager {
       "pointer-events-auto",
       "h-10",
       structure.isMine ? "text-order-brilliance" : "text-gold",
-      "p-1",
+      "p-0.5",
       "-translate-x-1/2",
       "text-xxs",
       "flex",
@@ -386,7 +386,7 @@ export class StructureManager {
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
-    label.position.y += 1.5;
+    label.position.y += 2;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;
