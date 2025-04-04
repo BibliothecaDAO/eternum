@@ -142,7 +142,7 @@ const MarketOrders = memo(
       <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-4xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
+          className={`text-2xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
             !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
           }`}
         >

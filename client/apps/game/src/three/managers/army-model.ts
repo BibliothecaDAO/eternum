@@ -592,10 +592,10 @@ export class ArmyModel {
       if (textContainer) {
         if (isCompact) {
           textContainer.classList.add("max-w-0", "ml-0");
-          textContainer.classList.remove("max-w-[200px]", "ml-2");
+          textContainer.classList.remove("max-w-[250px]", "ml-2");
         } else {
           textContainer.classList.remove("max-w-0", "ml-0");
-          textContainer.classList.add("max-w-[200px]", "ml-2");
+          textContainer.classList.add("max-w-[250px]", "ml-2");
         }
       }
     }

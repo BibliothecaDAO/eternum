@@ -1,7 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
-import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyManagementCard } from "@/ui/components/military/army-management-card";
@@ -20,7 +19,7 @@ export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
   className = "",
-  tooltipContent = "Navigate to Army",
+  tooltipContent = "Navigate to Position",
 }: {
   position: Position;
   hideTooltip?: boolean;
@@ -31,7 +30,8 @@ export const NavigateToPositionIcon = ({
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
-    <Compass
+    <img
+      src="/image-icons/compass.png"
       className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
@@ -44,7 +44,7 @@ export const NavigateToPositionIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: tooltipContent,
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {

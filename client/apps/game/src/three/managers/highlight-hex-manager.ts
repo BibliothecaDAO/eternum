@@ -1,4 +1,4 @@
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { HEX_SIZE } from "@/three/scenes/constants";
 import { highlightHexMaterial } from "@/three/shaders/highlight-hex-material";
 import { ActionPath, ActionType } from "@bibliothecadao/eternum";
@@ -8,17 +8,17 @@ import { getWorldPositionForHex } from "../utils";
 const getHighlightColorForAction = (actionType: ActionType): THREE.Vector3 => {
   switch (actionType) {
     case ActionType.Explore:
-      return new THREE.Vector3(0.0, 1.5, 1.5); // More intense cyan
+      return new THREE.Vector3(0.0, 1.2, 2.0); // Arcane blue glow
     case ActionType.Move:
-      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
+      return new THREE.Vector3(0.5, 2.0, 0.0); // Emerald green
     case ActionType.Attack:
-      return new THREE.Vector3(2.0, 0.0, 0.0); // More intense red
+      return new THREE.Vector3(2.5, 0.5, 0.0); // Fiery orange-red
     case ActionType.Help:
-      return new THREE.Vector3(1.5, 0.0, 1.5); // More intense purple
+      return new THREE.Vector3(1.8, 0.3, 2.0); // Holy purple-pink
     case ActionType.Build:
-      return new THREE.Vector3(0.0, 1.5, 0.0); // More intense green
+      return new THREE.Vector3(1.5, 1.2, 0.0); // Golden amber
     default:
-      return new THREE.Vector3(1.5, 1.5, 1.5); // More intense white
+      return new THREE.Vector3(1.0, 1.5, 2.0); // Ethereal blue-white
   }
 };
 
@@ -37,7 +37,7 @@ export class HighlightHexManager {
     this.highlightedHexes = [];
 
     // Create new highlight meshes
-    const bigHexagonShape = createHexagonShape(HEX_SIZE * 0.975);
+    const bigHexagonShape = createRoundedHexagonShape(HEX_SIZE * 0.975);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 
     actionPaths.forEach((hex) => {

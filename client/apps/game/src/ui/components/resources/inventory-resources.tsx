@@ -32,7 +32,7 @@ export const InventoryResources = ({
   let currentCount = 0;
 
   return sortedResources.length > 0 ? (
-    <div className={`p-2 bg-gold/10 ${className}`}>
+    <div className={`p-1 bg-gold/10 ${className}`}>
       {sortedResources.map((resource) => {
         if (!resource || currentCount >= updatedMax) return null;
         currentCount++;
@@ -45,6 +45,7 @@ export const InventoryResources = ({
             color="text-green"
             resourceId={resource.resourceId}
             amount={divideByPrecision(Number(resource.amount))}
+            className="!p-1"
           />
         );
       })}
