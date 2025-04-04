@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { BuildingType, RealmLevels, ResourcesIds, ResourceTier, type Config } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 import { getAllResourcesWithAmount } from "./utils/resource";
 
@@ -49,10 +49,15 @@ export const LocalEternumGlobalConfig: Config = {
   // cheap hyperstructures
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureTotalCosts: [
-      { resource_tier: ResourceTier.Lords, min_amount: 500, max_amount: 500 },
-      { resource_tier: ResourceTier.Common, min_amount: 120_000, max_amount: 120_000 },
-    ],
+    hyperstructureInitializationShardsCost: {
+      resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
+      amount: 500,
+     },
+      hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map((cost) => ({
+      ...cost,
+      min_amount: 120_000,
+      max_amount: 120_000,
+    })),
   },
   // no grace period
   battle: {

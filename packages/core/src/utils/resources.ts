@@ -3,7 +3,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { RESOURCE_PRECISION, resources, ResourcesIds, StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ResourceManager } from "../managers";
-import { ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
+import { HyperstructureResourceCostMinMax, ID, Resource, ResourceCostMinMax, ResourceInputs, ResourceOutputs } from "../types";
 import { unpackValue } from "./packed-data";
 
 // used for entities that don't have any production
@@ -133,6 +133,17 @@ export const scaleResourceCostMinMax = (
   resourceCost: ResourceCostMinMax[],
   multiplier: number,
 ): ResourceCostMinMax[] => {
+  return resourceCost.map((resource) => ({
+    ...resource,
+    min_amount: resource.min_amount * multiplier,
+    max_amount: resource.max_amount * multiplier,
+  }));
+};
+
+export const scaleHyperstructureConstructionCostMinMax = (
+  resourceCost: HyperstructureResourceCostMinMax[],
+  multiplier: number,
+): HyperstructureResourceCostMinMax[] => {
   return resourceCost.map((resource) => ({
     ...resource,
     min_amount: resource.min_amount * multiplier,

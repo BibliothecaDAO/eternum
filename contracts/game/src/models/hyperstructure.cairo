@@ -78,10 +78,14 @@ pub impl HyperstructureRequirementsImpl of HyperstructureRequirementsTrait {
         let construction_cost_config: HyperstructureConstructConfig = world.read_model(resource_type);
         let min_amount = construction_cost_config.min_amount;
         let max_amount = construction_cost_config.max_amount;
-        let randomness: u256 = hyperstructure.randomness.into();
-        let unique_resource_randomness = randomness / resource_type.into();
-        let additional = (unique_resource_randomness % (max_amount - min_amount).into());
-        let needed_amount = min_amount + additional.try_into().unwrap();
+        let needed_amount = if min_amount == max_amount {
+            max_amount
+        } else {
+            let randomness: u256 = hyperstructure.randomness.into();
+            let unique_resource_randomness = randomness / resource_type.into();
+            let additional = (unique_resource_randomness % (max_amount - min_amount).into());
+            min_amount + additional.try_into().unwrap()
+        };
         needed_amount.into() * RESOURCE_PRECISION
     }
 
