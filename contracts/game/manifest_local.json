@@ -1312,8 +1312,8 @@
   },
   "contracts": [
     {
-      "address": "0x308436495d8afc982df66016df09391706aabacdff031cbea6bc329608c08b8",
-      "class_hash": "0x60f805be74fdda65d60f10b412607c0c6e5646f1556ebed383d0cbe920e4cf5",
+      "address": "0x2c4d50e2b12d12ebdec21ce28b95f32574549134226282761dfe00bac8bb855",
+      "class_hash": "0x75385c6032455d8169cbb2e8666a4f89661aa59e0599b7ac6c2069145f5d2b1",
       "abi": [
         {
           "type": "impl",
@@ -5118,8 +5118,8 @@
       ]
     },
     {
-      "address": "0x2610004641d7d98d99646ab839290bdc76dc4fdd1d5cdd4115dd06dff9cc3e8",
-      "class_hash": "0x24f2ecbe449d136cd9237fc03ff4fdd503bf4b68c0f256ceec8c03dd072696",
+      "address": "0x3674b450a8621bf5ea7dbf71fd2823574deb5f5d4e97530003ac29a5a76882c",
+      "class_hash": "0x73014adf88cde02927c7c69f9000e18bcf67fd9c30c4bc3c98ea4d89f5d1ffa",
       "abi": [
         {
           "type": "impl",
@@ -5607,8 +5607,8 @@
       ]
     },
     {
-      "address": "0x55b7eefcfaa8e96e78304cbb1294f9f18528ce86ecc4605eaba7f7e2e325e1e",
-      "class_hash": "0x1dfefc9458acb86b68a3e0cdbedf1f25d6894ea90ce8e2a45e87e170ca84223",
+      "address": "0x5668072d35d5ae84055cafdee27dd48d4944a66b703cbda5b2646f943d20383",
+      "class_hash": "0x15c0e82c727bfb6e35dae6c3801fecf2d46aa8821ca4ff956a25ec09e1a1667",
       "abi": [
         {
           "type": "impl",
@@ -5765,6 +5765,26 @@
             },
             {
               "type": "function",
+              "name": "troop_troop_adjacent_transfer",
+              "inputs": [
+                {
+                  "name": "from_explorer_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "to_explorer_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
               "name": "troop_structure_adjacent_transfer",
               "inputs": [
                 {
@@ -5793,6 +5813,22 @@
                 },
                 {
                   "name": "to_troop_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "troop_burn",
+              "inputs": [
+                {
+                  "name": "explorer_id",
                   "type": "core::integer::u32"
                 },
                 {
@@ -5928,8 +5964,10 @@
         "send",
         "pickup",
         "arrivals_offload",
+        "troop_troop_adjacent_transfer",
         "troop_structure_adjacent_transfer",
         "structure_troop_adjacent_transfer",
+        "troop_burn",
         "upgrade"
       ]
     },
@@ -6874,8 +6912,8 @@
       ]
     },
     {
-      "address": "0x74042a1e1435b381a9ce6b6285badd05a02300051a7648fbc766af89d302ff",
-      "class_hash": "0x6731a138dd8bbbaafe01b83b2d69eec7dec9b8582c7d51bfd11076201b7d7b1",
+      "address": "0x641fdb52676297abc0246d6356b095bf635f0a0d8982c8c4af101e438e586c6",
+      "class_hash": "0x46e61209b02ed1459ff296b061bdd913f5714f6b3b708c7027ffbf29ca9b136",
       "abi": [
         {
           "type": "impl",
@@ -6963,6 +7001,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
+        },
+        {
           "type": "enum",
           "name": "s1_eternum::models::troop::GuardSlot",
           "variants": [
@@ -7003,6 +7051,10 @@
                 {
                   "name": "defender_direction",
                   "type": "s1_eternum::models::position::Direction"
+                },
+                {
+                  "name": "steal_resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
               "outputs": [],
@@ -7651,8 +7703,8 @@
       ]
     },
     {
-      "address": "0x5e767af64f707b83dee6908ffc0161fa4f7e6a5b2439badc53c30097fdfc036",
-      "class_hash": "0x22a9961f94a718a66563b42fdb57ee9d2ff43c2329da8c68c9c5b47e32126f2",
+      "address": "0x6b58958ab2b3c914c443e76d8d291be4ab3fc1231a1d52501878262beeebe2e",
+      "class_hash": "0x789b26a09a0b35ca0acf249f468220a4c03e38a0ba51b960d57a2c30a24cfbc",
       "abi": [
         {
           "type": "impl",
@@ -7913,8 +7965,8 @@
       ]
     },
     {
-      "address": "0x21fa1894447a964a2112a1797d0786cdbe881e2eda7a0649a6545f25080b07f",
-      "class_hash": "0x615708f36836a38c334e5ed956203d3c98186a46635fda8ae587af94b4cb322",
+      "address": "0x755a621e3275177b3bbb32c6a8e6eae098efed6ff8d56c42334f10d71546e44",
+      "class_hash": "0x409927866464caf83f229228ca7a8b11dd1e32a46a7b7246cac1d8303f84b7a",
       "abi": [
         {
           "type": "impl",
@@ -8176,6 +8228,28 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Hyperstructure",
+              "type": "()"
+            },
+            {
+              "name": "Mine",
+              "type": "()"
+            },
+            {
+              "name": "Agent",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
           "items": [
@@ -8214,7 +8288,7 @@
               ],
               "outputs": [
                 {
-                  "type": "core::bool"
+                  "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
                 }
               ],
               "state_mutability": "view"
@@ -8344,8 +8418,8 @@
       ]
     },
     {
-      "address": "0x7e3f9bd840b6138acae43d0fd68aca99d49fa291a5fa679978eb7d0152c188c",
-      "class_hash": "0x4fe6408fc860aaedd9fc4e71a23f6596cb7f40dfb3a6a233083d9451873dd9c",
+      "address": "0x791ac6ed1f83b33cb809fd5603d0ed98e9f4534f552f57f5de5ae73a4323c38",
+      "class_hash": "0x48fc0885ee606d26cb39a6e225bcd399e0e1f675752153f3f239da20934fa0",
       "abi": [
         {
           "type": "impl",
@@ -8596,8 +8670,8 @@
       ]
     },
     {
-      "address": "0x4c5455c2016d99e1fc54ac1f50d976a0e6eb0515a149475075a44615e81be5d",
-      "class_hash": "0x748691abda89e7a103b8a655d8cf369e8cd7af7c7978a5d11aa0d0a50e9a07a",
+      "address": "0x6d4b4e04f61ccad89004f7771576d35ebb501a019cb4cb8b66012624c02e0e3",
+      "class_hash": "0x6b1dd3238bf108618a1825a0f6d9919fb84af5fdc9f64e346f7fc6e46c6409b",
       "abi": [
         {
           "type": "impl",
@@ -9113,6 +9187,18 @@
       "class_hash": "0x33de225fdde51454f22ec0f0d92accdafd4b275020b00e4e89cdfebab36f82f",
       "tag": "s1_eternum-CreateOrder",
       "selector": "0x10edec58284a982448a15b0f37a3abc65944a16091efed6a39389b5064a6319"
+    },
+    {
+      "members": [],
+      "class_hash": "0x7856c46affd32b14572eec475de4c3fb532e8b48cf89be488bba8ecdab488a1",
+      "tag": "s1_eternum-ExplorerMoveEvent",
+      "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
+    },
+    {
+      "members": [],
+      "class_hash": "0x60d2f43d01923dc5a12cb0fc4da680dadf1967e995438e1ba853c720c3bb9e",
+      "tag": "s1_eternum-ExplorerRaidEvent",
+      "selector": "0x524ff0171e1bb2aaf232b86a14fcf1f3dc78c1149bab1e87ead801ba9203c0a"
     },
     {
       "members": [],
