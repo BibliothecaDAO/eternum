@@ -42,7 +42,7 @@ export const useArmiesInRadius = (center: Position | null, radius = 40) => {
           ]).build(),
         };
 
-        const results = await toriiClient.getEntities(query);
+        const results = await toriiClient.getEntities(query, false);
         let armies = Object.values(results).map((army) => {
           const owner = army["s1_eternum-ExplorerTroops"]["owner"]["value"];
           const isEnemy = owner !== selectedRealm?.entityId;

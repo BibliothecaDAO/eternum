@@ -138,7 +138,6 @@ const syncEntitiesDebounced = async <S extends Schema>(
   // Handle event message updates
   const eventSub = await client.onEventMessageUpdated(
     entityKeyClause,
-    historical,
     (fetchedEntities: any, data: any) => {
       if (logging) console.log("Event message updated", fetchedEntities);
 
