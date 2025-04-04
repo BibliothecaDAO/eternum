@@ -40,6 +40,7 @@ enum BiomeFilenames {
   SubtropicalDesert = "subtropicalDesert.glb",
   TropicalRainForest = "tropicalRainforest.glb",
   TropicalSeasonalForest = "tropicalSeasonalForest.glb",
+  Empty = "empty.glb",
 }
 
 enum BuildingFilenames {
@@ -152,7 +153,7 @@ export const buildingModelPaths = {
   },
 };
 
-export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
+export const biomeModelPaths: Record<BiomeType | "Outline" | "Empty", string> = {
   None: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Bare: BIOMES_MODELS_PATH + BiomeFilenames.Bare,
   Beach: BIOMES_MODELS_PATH + BiomeFilenames.Beach,
@@ -171,6 +172,7 @@ export const biomeModelPaths: Record<BiomeType | "Outline", string> = {
   SubtropicalDesert: BIOMES_MODELS_PATH + BiomeFilenames.SubtropicalDesert,
   TropicalRainForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalRainForest,
   TropicalSeasonalForest: BIOMES_MODELS_PATH + BiomeFilenames.TropicalSeasonalForest,
+  Empty: BIOMES_MODELS_PATH + BiomeFilenames.Empty,
 };
 
 export const PROGRESS_HALF_THRESHOLD = 50;

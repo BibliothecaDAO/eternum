@@ -449,7 +449,7 @@ export default class HexceptionScene extends HexagonScene {
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
     this.updateCastleLevel();
-    const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+    const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -467,6 +467,7 @@ export default class HexceptionScene extends HexagonScene {
       SubtropicalDesert: [],
       TropicalSeasonalForest: [],
       TropicalRainForest: [],
+      Empty: [],
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
@@ -542,18 +543,28 @@ export default class HexceptionScene extends HexagonScene {
                 }
               });
             }
-            // if (buildingType === ResourceMiningTypes.Mine) {
-            //   const crystalMesh1 = instance.children[1] as THREE.Mesh;
-            //   const crystalMesh2 = instance.children[2] as THREE.Mesh;
-            //   if (!this.minesMaterials.has(building.resource)) {
-            //     const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-            //     this.minesMaterials.set(building.resource, material);
-            //   }
-            //   // @ts-ignoreq
-            //   crystalMesh1.material = this.minesMaterials.get(building.resource);
-            //   // @ts-ignore
-            //   crystalMesh2.material = this.minesMaterials.get(building.resource);
-            // }
+            if (buildingType === ResourceMiningTypes.Mine) {
+              instance.traverse((child) => {
+                // @ts-ignore
+                if (child?.material?.name === "crystal" && child instanceof THREE.Mesh) {
+                  if (!this.minesMaterials.has(building.resource)) {
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.EtherealSilica]);
+                    this.minesMaterials.set(building.resource, material);
+                  }
+                  child.material = this.minesMaterials.get(building.resource);
+                }
+              });
+              // const crystalMesh1 = instance.children[1] as THREE.Mesh;
+              // const crystalMesh2 = instance.children[2] as THREE.Mesh;
+              // if (!this.minesMaterials.has(building.resource)) {
+              //   const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+              //   this.minesMaterials.set(building.resource, material);
+              // }
+              // // @ts-ignoreq
+              // crystalMesh1.material = this.minesMaterials.get(building.resource);
+              // // @ts-ignore
+              // crystalMesh2.material = this.minesMaterials.get(building.resource);
+            }
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
 
@@ -636,7 +647,7 @@ export default class HexceptionScene extends HexagonScene {
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
     const biome = Biome.getBiome(targetHex.col, targetHex.row);
-    const buildableAreaBiome = "Grassland";
+    const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
     // reset buildings
