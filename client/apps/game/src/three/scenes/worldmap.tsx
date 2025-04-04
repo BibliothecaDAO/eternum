@@ -217,7 +217,11 @@ export default class WorldmapScene extends HexagonScene {
       { leading: true, trailing: false },
     );
 
-    window.addEventListener("wheel", this.wheelHandler, { passive: true });
+    // Get the main canvas by its ID
+    const canvas = document.getElementById("main-canvas");
+    if (canvas) {
+      canvas.addEventListener("wheel", this.wheelHandler, { passive: true });
+    }
   }
 
   public moveCameraToURLLocation() {
@@ -438,7 +442,10 @@ export default class WorldmapScene extends HexagonScene {
 
     // Clean up wheel event listener
     if (this.wheelHandler) {
-      window.removeEventListener("wheel", this.wheelHandler);
+      const canvas = document.getElementById("main-canvas");
+      if (canvas) {
+        canvas.removeEventListener("wheel", this.wheelHandler);
+      }
       this.wheelHandler = null;
     }
   }
