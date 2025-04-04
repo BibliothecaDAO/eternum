@@ -125,12 +125,12 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
       <motion.div
-        className="top-left-navigation-selector flex flex-wrap"
+        className="top-left-navigation-selector flex flex-wrap bg-dark-wood panel-wood panel-wood-corners"
         variants={slideDown}
         initial="hidden"
         animate="visible"
       >
-        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center border text-center panel-wood bg-brown border-gold/30 relative">
+        <div className="flex max-w-[150px] w-24 md:min-w-72 gap-1 text-gold justify-center  text-center  relative">
           <div className="structure-name-selector self-center flex justify-between w-full">
             {structure.isMine ? (
               <Select
@@ -139,10 +139,10 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                   isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
                 }}
               >
-                <SelectTrigger className="truncate">
+                <SelectTrigger className="truncate ">
                   <SelectValue placeholder="Select Structure" />
                 </SelectTrigger>
-                <SelectContent className="bg-brown">
+                <SelectContent className=" panel-wood bg-dark-wood">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
                       <button
@@ -181,9 +181,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
         </div>
         <CapacityInfo
           structureEntityId={structureEntityId}
-          className="storage-selector bg-brown/90 rounded-b-lg py-1 flex flex-col md:flex-row gap-1 border border-gold/30 panel-wood"
+          className="storage-selector  py-1 flex flex-col md:flex-row gap-1  "
         />
-        <div className="world-navigation-selector bg-brown/90 bg-hex-bg rounded-b-lg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative border border-gold/30 panel-wood">
+        <div className="world-navigation-selector  bg-hex-bg text-xs md:text-base flex md:flex-row gap-2 md:gap-4 justify-between p-1 md:px-4 relative ">
           <div className="cycle-selector flex justify-center md:justify-start">
             <TickProgress />
           </div>
@@ -229,10 +229,7 @@ TopLeftNavigation.displayName = "TopLeftNavigation";
 
 const ProgressBar = memo(({ progress }: { progress: number }) => {
   return (
-    <div
-      className="absolute bottom-0 left-0 h-1 bg-gold to-transparent rounded-bl-2xl rounded-tr-2xl mx-1"
-      style={{ width: `${progress}%` }}
-    ></div>
+    <div className="absolute bottom-0 left-0 h-1 bg-gold to-transparent  mx-1" style={{ width: `${progress}%` }}></div>
   );
 });
 
@@ -296,9 +293,9 @@ const TickProgress = memo(() => {
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="self-center text-center px-1 py-1 flex gap-1"
+      className="self-center text-center px-1 py-1 flex gap-1 text-xl "
     >
-      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" />
+      <ResourceIcon withTooltip={false} resource="Timeglass" size="sm" className="self-center" />
       {progress.toFixed()}%
     </div>
   );

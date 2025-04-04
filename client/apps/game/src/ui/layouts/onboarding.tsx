@@ -54,7 +54,7 @@ const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
     <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
       <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
         <Button variant="default">
-          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
+          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 self-center" />
           Mint Season Pass
         </Button>
       </a>
@@ -89,7 +89,7 @@ export const StepContainer = ({
   return (
     <motion.div className="flex h-screen z-50" {...motionProps}>
       <div
-        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] panel-wood-right ${
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[32px] my-16 ml-16 panel-wood panel-wood-corners ${
           showToS ? "w-[800px]" : width
         } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
@@ -117,21 +117,21 @@ export const StepContainer = ({
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-48 stroke-current mx-auto" />
+                  <EternumWordsLogo className="fill-brown w-32 sm:w-40 lg:w-72 mx-auto" />
                 )}
               </div>
             </div>
             <div className="flex-grow overflow-auto">{children}</div>
             {tos && (
               <div className="mt-auto pt-4 flex-shrink-0">
+                <div className="relative w-full">{bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg p-2">
-                  <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+                  <Lock className="w-6 h-6 fill-current relative bottom-0.45 mr-3" />
                   <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing to Eternum's{" "}
+                    By continuing you are agreeing to Eternum's <br />{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
-                <div className="relative w-full">{bottomChildren}</div>
               </div>
             )}
           </div>
