@@ -140,7 +140,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {

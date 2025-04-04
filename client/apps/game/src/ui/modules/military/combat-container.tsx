@@ -25,7 +25,7 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+import { BiomeInfoPanel, formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
 
 enum TargetType {
   Village,
@@ -414,18 +414,7 @@ export const CombatContainer = ({
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
-      <div className="p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2>Terrain: {biome}</h2>
-            <div className="flex gap-4 mt-4 text-xl">
-              <div>Melee: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
-              <div>Ranged: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
-              <div>Paladins: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Paladin, biome))}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BiomeInfoPanel combatSimulator={combatSimulator} biome={biome} />
 
       {/* Troop Selector for Structure */}
       {TroopSelector()}
@@ -447,6 +436,9 @@ export const CombatContainer = ({
                 )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(attackerArmyData.troops.count)} troops
+                </div>
+                <div className="text-lg text-gold/80 mt-1">
+                  Stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
                 </div>
               </div>
 
@@ -483,6 +475,7 @@ export const CombatContainer = ({
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(targetArmyData.troops.count)} troops
                 </div>
+                <div className="text-lg text-gold/80 mt-1"> Current Stamina: {Number(defenderStamina)}</div>
               </div>
 
               {/* Battle Simulation Results */}
@@ -511,8 +504,8 @@ export const CombatContainer = ({
       {/* Battle Results */}
       {targetArmyData && remainingTroops && attackerArmyData && (
         <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
-          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4">
-            Battle Prediction
+          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
+            <span className="mr-2">📜</span> Battle Prediction
           </h3>
 
           {/* Battle Outcome Bar */}

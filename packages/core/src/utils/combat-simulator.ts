@@ -177,6 +177,16 @@ export class CombatSimulator {
     );
   }
 
+  /**
+   * Simulates a battle between two armies in a specific biome
+   *
+   * @param attacker - The attacking army with troopCount, tier, troopType, and stamina
+   * @param defender - The defending army with troopCount, tier, troopType, and stamina
+   * @param biome - The biome type where the battle takes place, affecting troop bonuses
+   * @returns An object containing the damage dealt by each side:
+   *          - attackerDamage: Amount of damage dealt by the attacker
+   *          - defenderDamage: Amount of damage dealt by the defender
+   */
   public simulateBattle(
     attacker: Army,
     defender: Army,

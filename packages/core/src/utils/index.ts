@@ -9,6 +9,7 @@ export * from "./guild";
 export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
+export * from "./raid-simulator";
 export * from "./realm";
 export * from "./resources";
 export * from "./structure";
