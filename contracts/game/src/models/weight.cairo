@@ -53,6 +53,10 @@ pub impl WeightImpl of WeightTrait {
 
     fn unused(ref self: Weight) -> u128 {
         if self.capacity != Bounded::MAX {
+            if self.weight > self.capacity {
+                // condition for overweight troops
+                return 0;
+            }
             return self.capacity - self.weight;
         }
         return Bounded::MAX;
