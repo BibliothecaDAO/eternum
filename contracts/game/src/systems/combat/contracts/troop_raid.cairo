@@ -16,7 +16,6 @@ pub trait ITroopRaidSystems<T> {
 pub mod troop_raid_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
-
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
@@ -26,7 +25,9 @@ pub mod troop_raid_systems {
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
@@ -265,17 +266,9 @@ pub mod troop_raid_systems {
 
             // steal resources
             if raid_success {
-                // ensure lords are not raidable
-                for i in 0..steal_resources.len() {
-                    let (resource_type, _) = *steal_resources.at(i);
-                    if resource_type == ResourceTypes::LORDS {
-                        panic!("$LORDS are not raidable. Attack and conquer the realm");
-                    }
-                };
-
                 let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-                iResourceTransferImpl::structure_to_troop_instant(
+                iResourceTransferImpl::structure_to_troop_raid_instant(
                     ref world, structure_id, ref structure_weight, explorer_id, ref explorer_weight, steal_resources,
                 );
                 structure_weight.store(ref world, structure_id);
