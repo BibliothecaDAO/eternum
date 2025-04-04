@@ -16,10 +16,8 @@ import {
   getGuardsByStructure,
   getRemainingCapacityInKg,
   ID,
-  isMilitaryResource,
   multiplyByPrecision,
   RaidSimulator,
-  RESOURCE_RARITY,
   ResourceManager,
   resources,
   ResourcesIds,
@@ -31,6 +29,33 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { BiomeInfoPanel, formatTypeAndBonuses } from "./combat-utils";
+
+const RAIDABLE_RESOURCES = [
+  ResourcesIds.Wood,
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Copper,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Silver,
+  ResourcesIds.Ironwood,
+  ResourcesIds.ColdIron,
+  ResourcesIds.Gold,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Sapphire,
+  ResourcesIds.Ruby,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ignium,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.TrueIce,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Mithral,
+  ResourcesIds.Dragonhide,
+  ResourcesIds.AncientFragment,
+  ResourcesIds.Donkey,
+];
 
 enum RaidOutcome {
   Success = "Success",
@@ -101,24 +126,18 @@ export const RaidContainer = ({
     const { currentDefaultTick } = getBlockTimestamp();
 
     // Iterate through all resource IDs in the game
-    Object.keys(RESOURCE_RARITY)
-      .map(Number)
-      .filter((id) => !isNaN(id))
-      .forEach((resourceId) => {
-        // Skip Lords - they can't be raided
-        if (resourceId === ResourcesIds.Lords || isMilitaryResource(resourceId)) return;
+    RAIDABLE_RESOURCES.sort((a, b) => b - a).forEach((resourceId) => {
+      // Use a resource manager to get the balance
+      const resourceManager = new ResourceManager(components, structureId as ID);
+      const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
 
-        // Use a resource manager to get the balance
-        const resourceManager = new ResourceManager(components, structureId as ID);
-        const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
-
-        if (amount > 0) {
-          availableResources.push({
-            resourceId,
-            amount: Number(amount),
-          });
-        }
-      });
+      if (amount > 0) {
+        availableResources.push({
+          resourceId,
+          amount: Number(amount),
+        });
+      }
+    });
 
     return availableResources;
   }, [target, components]);
@@ -231,8 +250,14 @@ export const RaidContainer = ({
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;
     let stealableResources: Array<{ resourceId: number; amount: number }> = [];
+
+    // If no capacity, return empty array immediately
+    if (capacityAfterRaid <= 0) {
+      return stealableResources;
+    }
+
     structureResourcesByRarity
-      .filter((resource) => resource.resourceId !== ResourcesIds.Lords)
+      .sort((a, b) => b.amount - a.amount)
       .forEach((resource) => {
         const availableAmount = divideByPrecision(resource.amount);
         const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
@@ -248,6 +273,8 @@ export const RaidContainer = ({
             });
           }
           capacityAfterRaid -= maxStealableAmount * Number(resourceWeight);
+        } else {
+          return; // Exit the forEach loop if no more capacity
         }
       });
     return stealableResources;
