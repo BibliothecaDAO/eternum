@@ -23,12 +23,19 @@ pub impl WeightZeroableImpl of Zero<Weight> {
 
 #[generate_trait]
 pub impl WeightImpl of WeightTrait {
-    fn deduct_capacity(ref self: Weight, amount: u128) {
+    fn deduct_capacity(ref self: Weight, amount: u128, is_troop: bool) {
         if self.capacity != Bounded::MAX {
             self.capacity -= amount;
-            assert!(self.weight <= self.capacity, "{} - {} capacity < {} weight", self.capacity, amount, self.weight);
+
+            // allow troops to be overweight incase they lose troops in battle
+            if !is_troop {
+                assert!(
+                    self.weight <= self.capacity, "{} - {} capacity < {} weight", self.capacity, amount, self.weight,
+                );
+            }
         }
     }
+
 
     fn add_capacity(ref self: Weight, amount: u128) {
         if self.capacity != Bounded::MAX {

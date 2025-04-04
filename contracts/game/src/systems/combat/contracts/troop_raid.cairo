@@ -206,8 +206,10 @@ pub mod troop_raid_systems {
                     / PercentageValueImpl::_100().into();
                 // add one and make sure it is precise
                 explorer_damage_applied += RESOURCE_PRECISION - (explorer_damage_applied % RESOURCE_PRECISION);
-                explorer_aggressor_troops
-                    .count -= core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
+                let explorer_troops_lost = core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
+                explorer_aggressor_troops.count -= explorer_troops_lost;
+                // update explorer capacity
+                iExplorerImpl::update_capacity(ref world, explorer_id, explorer_troops_lost, false);
 
                 // deduct stamina spent by explorer
                 explorer_aggressor_troops

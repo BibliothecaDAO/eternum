@@ -344,7 +344,7 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
         if add {
             structure_weight.add_capacity(capacity);
         } else {
-            structure_weight.deduct_capacity(capacity);
+            structure_weight.deduct_capacity(capacity, false);
         }
         structure_weight.store(ref world, self.outer_entity_id);
     }

@@ -157,7 +157,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         // initialize explorer resource model
         ResourceImpl::initialize(ref world, explorer_id);
         // increase troop capacity
-        Self::update_capacity(ref world, explorer_id, explorer, troop_amount, true);
+        Self::update_capacity(ref world, explorer_id, troop_amount, true);
         return explorer;
     }
 
@@ -271,9 +271,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         explorer_weight.store(ref world, explorer.owner);
     }
 
-    fn update_capacity(
-        ref world: WorldStorage, explorer_id: ID, explorer: ExplorerTroops, troop_amount: u128, add: bool,
-    ) {
+    fn update_capacity(ref world: WorldStorage, explorer_id: ID, troop_amount: u128, add: bool) {
         // set structure capacity
         let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
         let capacity: u128 = capacity_config.troop_capacity.into() * troop_amount;
@@ -282,7 +280,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         if add {
             troop_weight.add_capacity(capacity);
         } else {
-            troop_weight.deduct_capacity(capacity);
+            troop_weight.deduct_capacity(capacity, true);
         }
         troop_weight.store(ref world, explorer_id);
     }
