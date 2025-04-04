@@ -285,6 +285,8 @@ export default class WorldmapScene extends HexagonScene {
         col: contractHexPosition.x,
         row: contractHexPosition.y,
       });
+      this.armyManager.removeLabelsFromScene();
+      this.structureManager.removeLabelsFromScene();
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
     }
@@ -397,6 +399,8 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
     this.state.setSelectedHex(null);
+    this.armyManager.addLabelsToScene();
+    this.structureManager.showLabels();
   }
 
   setup() {
