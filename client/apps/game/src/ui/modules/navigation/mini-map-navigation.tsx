@@ -29,6 +29,7 @@ export const MiniMapNavigation = () => {
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
+    setTooltip(null);
   };
 
   // Handle screenshot
