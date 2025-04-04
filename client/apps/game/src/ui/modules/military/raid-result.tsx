@@ -100,7 +100,7 @@ export const RaidResult = ({
 
   useEffect(() => {
     if (latestRaidResult) {
-      // Finish spinning after 3 seconds
+      // Finish spinning after 1 seconds
       spinTimeout.current = setTimeout(() => {
         setSpinComplete(true);
 
