@@ -64,14 +64,38 @@ export const ResourceCost = ({
         size={size}
       />
       <div className={contentClasses}>
-        <div onClick={onClick} className={clsx(`relative text-${textSize} font-bold`, color)}>
+        <div
+          onClick={onClick}
+          className={clsx(
+            `relative`,
+            {
+              "text-xxs": textSize === "xxs",
+              "text-xs": textSize === "xs",
+              "text-sm": textSize === "sm",
+              "text-md": textSize === "md",
+              "text-lg": textSize === "lg",
+            },
+            "font-bold",
+            color,
+          )}
+        >
           {formatAmount(amount)}
           <span className={clsx(balanceColor, "font-normal")}>
             {balance !== undefined && !isNaN(balance) && ` (${currencyFormat(balance, 0)})`}
           </span>
         </div>
         {type === "horizontal" && trait && (
-          <div className={clsx(`text-${textSize} leading-[10px] self-start relative mt-1 font-normal`)}>{trait}</div>
+          <div
+            className={clsx("relative mt-1 font-normal self-start leading-[10px]", {
+              "text-xxs": textSize === "xxs",
+              "text-xs": textSize === "xs",
+              "text-sm": textSize === "sm",
+              "text-md": textSize === "md",
+              "text-lg": textSize === "lg",
+            })}
+          >
+            {trait}
+          </div>
         )}
       </div>
     </div>

@@ -14,7 +14,7 @@ export class Aura {
 
   private createAuraMesh(): THREE.Mesh {
     const textureLoader = new THREE.TextureLoader();
-    const auraTexture = textureLoader.load("/textures/aura.png");
+    const auraTexture = textureLoader.load("/textures/aura2.png");
     const auraMaterial = new THREE.MeshBasicMaterial({
       map: auraTexture,
       transparent: true,

@@ -53,9 +53,14 @@ export const BaseThreeTooltip = ({
   return (
     <div
       ref={ref}
-      className={clsx("min-w-[215px] ml-3 mt-3 p-1 rounded-xl relative bg-brown/90 panel-wood", position, className, {
-        hidden: !visible,
-      })}
+      className={clsx(
+        "min-w-[215px] z-50 isolate ml-3 mt-3 p-1 rounded-xl relative bg-brown/90 panel-wood",
+        position,
+        className,
+        {
+          hidden: !visible,
+        },
+      )}
     >
       {children}
       <svg

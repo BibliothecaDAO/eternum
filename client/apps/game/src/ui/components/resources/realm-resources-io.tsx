@@ -32,14 +32,14 @@ export const RealmResourcesIO = ({
   return (
     realm && (
       <div className={`${className}`}>
-        <h6 className={`mb-2 ${titleClassName}`}>Produces</h6>
+        <div className={`mb-2 ${titleClassName}`}>Produces</div>
         <div className="flex flex-row flex-wrap mb-4 gap-2">
           {resourcesProduced.map((resourceId) => (
             <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />
           ))}
         </div>
 
-        <h6 className={` mb-2   ${titleClassName}`}>Consumes</h6>
+        <div className={` mb-2   ${titleClassName}`}>Consumes</div>
         <div className="flex flex-row flex-wrap  gap-2">
           {resourcesConsumed.map((resourceId) => (
             <ResourceIcon resource={ResourcesIds[resourceId]} size={size} key={resourceId} />

@@ -206,6 +206,7 @@ export default class GameRenderer {
     this.setupListeners();
 
     document.body.style.background = "black";
+    this.renderer.domElement.id = "main-canvas";
     document.body.appendChild(this.renderer.domElement);
 
     // Adjust OrbitControls for new camera angle

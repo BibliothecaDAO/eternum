@@ -30,7 +30,7 @@ export const ViewOnMapIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: "View on Map",
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {
