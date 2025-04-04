@@ -268,30 +268,28 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     │  ${chalk.gray(`${chalk.white(`${inGameAmount(calldata.labor_output_per_resource, config.config)}`)}  ${chalk.yellow(`Labor`)} is produced, for every ${chalk.white(`1`)} ${chalk.yellow(`${ResourcesIds[calldata.resource_type]}`)} given`)} 
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Complex Burn Production Strategy:`)}
-    │  ${
-      calldata.complex_input_resources_list.length > 0
-        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
+    │  ${calldata.complex_input_resources_list.length > 0
+          ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.complex_input_resources_list
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : `    ${chalk.blue("Can't be produced with complex strategy")}`
-    }
+          : `    ${chalk.blue("Can't be produced with complex strategy")}`
+        }
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
-    │  ${
-      calldata.simple_input_resources_list.length > 0
-        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
+    │  ${calldata.simple_input_resources_list.length > 0
+          ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.simple_input_resources_list
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-        : `    ${chalk.blue("Can't be produced using labor")}`
-    }
+          : `    ${chalk.blue("Can't be produced using labor")}`
+        }
     └────────────────────────────────`),
     );
   }
@@ -322,12 +320,12 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
 
     console.log(
       chalk.yellow("     ➔ ") +
-        chalk.white(resourceName.padEnd(12)) +
-        chalk.gray("[") +
-        chalk.cyan(`#${data.resource_type}`.padEnd(4)) +
-        chalk.gray("]") +
-        chalk.gray(" ⟶  ") +
-        chalk.white(shortHexAddress(data.token)),
+      chalk.white(resourceName.padEnd(12)) +
+      chalk.gray("[") +
+      chalk.cyan(`#${data.resource_type}`.padEnd(4)) +
+      chalk.gray("]") +
+      chalk.gray(" ⟶  ") +
+      chalk.white(shortHexAddress(data.token)),
     );
   }
 
@@ -398,19 +396,19 @@ export const setBuildingConfig = async (config: Config) => {
     │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
     │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
-      { length: BUILDING_COST_DISPLAY_ROWS },
-      (_, i) => {
-        const buildingNum = i + 1;
-        const costsStr = costs
-          .map((c) => {
-            const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
-            return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
-          })
-          .join("");
-        return `
+        { length: BUILDING_COST_DISPLAY_ROWS },
+        (_, i) => {
+          const buildingNum = i + 1;
+          const costsStr = costs
+            .map((c) => {
+              const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+              return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+            })
+            .join("");
+          return `
     │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
-      },
-    ).join("")}
+        },
+      ).join("")}
     │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     └────────────────────────────────`),
     );
@@ -436,19 +434,19 @@ export const setBuildingConfig = async (config: Config) => {
         │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
         │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
         │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
-          { length: BUILDING_COST_DISPLAY_ROWS },
-          (_, i) => {
-            const buildingNum = i + 1;
-            const costsStr = costs
-              .map((c) => {
-                const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
-                return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
-              })
-              .join("");
-            return `
+        { length: BUILDING_COST_DISPLAY_ROWS },
+        (_, i) => {
+          const buildingNum = i + 1;
+          const costsStr = costs
+            .map((c) => {
+              const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+              return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+            })
+            .join("");
+          return `
         │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
-          },
-        ).join("")}
+        },
+      ).join("")}
         │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
         └────────────────────────────────`),
     );
@@ -500,11 +498,11 @@ export const setRealmUpgradeConfig = async (config: Config) => {
         chalk.cyan(`
     ┌─ ${chalk.yellow(`Level ${calldata.level}`)}
     │  ${chalk.gray("Upgrade Costs:")}${calldata.cost_of_level
-      .map(
-        (c) => `
+            .map(
+              (c) => `
     │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
-      )
-      .join("")}
+            )
+            .join("")}
     └────────────────────────────────`),
       );
 
@@ -876,12 +874,12 @@ export const setCapacityConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Max Weight Per Category")}${capacities
-      .map(
-        ({ name, value }) => `
+        .map(
+          ({ name, value }) => `
     │  ${chalk.gray(name.padEnd(12))} ${chalk.white(addCommas(BigInt(value)))} ${chalk.gray("grams")} 
     │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(value) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")}`,
-      )
-      .join("")}
+        )
+        .join("")}
     └────────────────────────────────`),
   );
 
@@ -1035,18 +1033,18 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Deposit Fee Structure")}${Object.entries(fees.deposits)
-      .map(
-        ([name, value]) => `
+        .map(
+          ([name, value]) => `
     │  ${chalk.gray(name.padEnd(20))} ${chalk.white(value)}`,
-      )
-      .join("")}
+        )
+        .join("")}
     │
     │  ${chalk.yellow("Withdrawal Fee Structure")}${Object.entries(fees.withdrawals)
-      .map(
-        ([name, value]) => `
+        .map(
+          ([name, value]) => `
     │  ${chalk.gray(name.padEnd(20))} ${chalk.white(value)}`,
-      )
-      .join("")}
+        )
+        .join("")}
     │
     │  ${chalk.yellow("Recipients")}
     │  ${chalk.gray("veLORDS:")}          ${chalk.white(shortHexAddress(config.config.bridge.velords_fee_recipient.toString()))}
@@ -1119,11 +1117,11 @@ export const setHyperstructureConfig = async (config: Config) => {
     │  ${chalk.gray("Minimum Time Between Share Changes:")}     ${chalk.white(hourMinutesSeconds(hyperstructureCalldata.time_between_shares_change))}
     │
     │  ${chalk.yellow("Resource Tier")}${hyperstructureCalldata.resources_for_completion
-      .map(
-        (c) => `
+        .map(
+          (c) => `
     │  ${chalk.gray(ResourceTier[c.resource_tier].padEnd(12))} ${chalk.white(inGameAmount(c.min_amount, config.config))} ${chalk.gray("to")} ${chalk.white(inGameAmount(c.max_amount, config.config))}`,
-      )
-      .join("")}
+        )
+        .join("")}
     └────────────────────────────────`),
   );
   const tx = await config.provider.set_hyperstructure_config(hyperstructureCalldata);

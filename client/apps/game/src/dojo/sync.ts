@@ -1,29 +1,32 @@
-import { AppStore } from "@/hooks/store/use-ui-store";
+import type { AppStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   HYPERSTRUCTURE_CONFIG_ID,
-  PlayerStructure,
-  SetupResult,
+  type PlayerStructure,
+  type SetupResult,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/eternum";
-import { Schema } from "@dojoengine/recs";
+import type { Entity, Schema } from "@dojoengine/recs";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
-import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import type {
+  Clause,
+  EntityKeysClause,
+  ToriiClient,
+} from "@dojoengine/torii-client";
 import {
   debouncedGetDonkeysAndArmiesFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetMarketFromTorii,
 } from "./debounced-queries";
-import { handleExplorerTroopsIfDeletion } from "./utils";
 
 const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
-  logging: boolean = true,
-  historical: boolean = false,
+  logging = true,
+  historical = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -32,7 +35,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   let isProcessing = false;
 
   const {
-    network: { contractComponents: components },
+    network: { contractComponents: components, world },
   } = setupResult;
 
   // Function to process the next item in the queue
@@ -46,7 +49,8 @@ const syncEntitiesDebounced = async <S extends Schema>(
     // Take up to batchSize items from the queue
     const itemsToProcess = updateQueue.splice(0, batchSize);
 
-    if (logging) console.log(`Processing batch of ${itemsToProcess.length} updates`);
+    if (logging)
+      console.log(`Processing batch of ${itemsToProcess.length} updates`);
 
     // Prepare the batch
     itemsToProcess.forEach(({ entityId, data }) => {
@@ -62,8 +66,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
       try {
         if (logging) console.log("Applying batch update", batch);
 
-        handleExplorerTroopsIfDeletion(batch, components, logging);
-        setEntities(batch, components as any, logging);
+        for (const entityId in batch) {
+          const value = batch[entityId];
+          // this is an entity that has been deleted
+          if (Object.keys(value).length === 0) {
+            world.deleteEntity(entityId as Entity);
+          }
+        }
+
+        setEntities(batch, world.components, logging);
       } catch (error) {
         console.error("Error processing entity batch:", error);
       }
@@ -111,20 +122,22 @@ const syncEntitiesDebounced = async <S extends Schema>(
   };
 
   // Handle entity updates
-  const entitySub = await client.onEntityUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
-    if (logging) console.log("Entity updated", fetchedEntities, data);
+  const entitySub = await client.onEntityUpdated(
+    entityKeyClause,
+    (fetchedEntities: any, data: any) => {
+      if (logging) console.log("Entity updated", fetchedEntities, data);
 
-    try {
-      queueUpdate(fetchedEntities, data);
-    } catch (error) {
-      console.error("Error queuing entity update:", error);
-    }
-  });
+      try {
+        queueUpdate(fetchedEntities, data);
+      } catch (error) {
+        console.error("Error queuing entity update:", error);
+      }
+    },
+  );
 
   // Handle event message updates
   const eventSub = await client.onEventMessageUpdated(
     entityKeyClause,
-    historical,
     (fetchedEntities: any, data: any) => {
       if (logging) console.log("Event message updated", fetchedEntities);
 
@@ -152,20 +165,18 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
 
   setLoading(LoadingStateKey.Config, true);
   try {
-    let start = performance.now();
+    const start = performance.now();
     try {
-      await Promise.all([
-        await getEntities(
-          setup.network.toriiClient,
-          { Composite: { operator: "Or", clauses: configClauses } },
-          setup.network.contractComponents as any,
-          [],
-          configModels,
-          40_000,
-          false,
-        ),
-      ]);
-      let end = performance.now();
+      await getEntities(
+        setup.network.toriiClient,
+        { Composite: { operator: "Or", clauses: configClauses } },
+        setup.network.contractComponents as any,
+        [],
+        configModels,
+        40_000,
+        false,
+      );
+      const end = performance.now();
       console.log("[sync] big config query", end - start);
     } catch (error) {
       console.error("[sync] Error fetching config entities:", error);
@@ -384,16 +395,21 @@ export const syncStructureData = async (
 ) => {
   setLoading(LoadingStateKey.SelectedStructure, true);
   try {
-    let start = performance.now();
+    const start = performance.now();
     await debouncedGetEntitiesFromTorii(
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
       [structureEntityId],
-      ["s1_eternum-Hyperstructure", "s1_eternum-Resource", "s1_eternum-Building", "s1_eternum-StructureBuildings"],
+      [
+        "s1_eternum-Hyperstructure",
+        "s1_eternum-Resource",
+        "s1_eternum-Building",
+        "s1_eternum-StructureBuildings",
+      ],
       position ? [position] : undefined,
       () => setLoading(LoadingStateKey.SelectedStructure, false),
     );
-    let end = performance.now();
+    const end = performance.now();
     console.log("[composite] structure query", end - start);
   } catch (error) {
     console.error("Fetch failed", error);
@@ -424,13 +440,16 @@ export const syncPlayerStructuresData = async (
           "s1_eternum-StructureBuildings",
           "s1_eternum-ResourceArrival",
         ],
-        structures.map((structure) => ({ x: structure.position.x, y: structure.position.y })),
+        structures.map((structure) => ({
+          x: structure.position.x,
+          y: structure.position.y,
+        })),
         () => {
           setLoading(LoadingStateKey.PlayerStructuresOneKey, false);
           setLoading(LoadingStateKey.PlayerStructuresTwoKey, false);
         },
       );
-      let end = performance.now();
+      const end = performance.now();
       console.log("[composite] buildings query", end - start);
     } catch (error) {
       console.error("Failed to fetch structure entities:", error);
@@ -475,20 +494,26 @@ export const syncMarketAndBankData = async (
   setLoading(LoadingStateKey.Bank, true);
 
   try {
-    let start = performance.now();
+    const start = performance.now();
     await debouncedGetEntitiesFromTorii(
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
       [ADMIN_BANK_ENTITY_ID.toString()],
-      ["s1_eternum-Hyperstructure", "s1_eternum-Resource", "s1_eternum-Building"],
+      [
+        "s1_eternum-Hyperstructure",
+        "s1_eternum-Resource",
+        "s1_eternum-Building",
+      ],
       undefined,
       () => setLoading(LoadingStateKey.Bank, false),
     );
-    let end = performance.now();
+    const end = performance.now();
     console.log("[keys] bank query", end - start);
 
-    await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
-      setLoading(LoadingStateKey.Market, false),
+    await debouncedGetMarketFromTorii(
+      dojo.network.toriiClient,
+      dojo.network.contractComponents as any,
+      () => setLoading(LoadingStateKey.Market, false),
     );
   } catch (error) {
     console.error("Fetch failed", error);
