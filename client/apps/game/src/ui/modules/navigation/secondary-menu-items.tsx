@@ -107,7 +107,7 @@ export const SecondaryMenuItems = () => {
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
-          label={"Support"}
+          label={"Settings"}
           size="md"
           onClick={() => togglePopup(settings)}
         />

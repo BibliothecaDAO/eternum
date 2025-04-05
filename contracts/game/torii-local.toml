@@ -1,19 +1,42 @@
-# db_dir = "./torii-db"
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "http://127.0.0.1:5050"
+
+world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
+
+db_dir = "torii-local"
 
 [indexing]
-
-events_chunk_size = 1024 # Size of events page to fetch
+events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
+
 pending = true # Enable indexing pending blocks
+
 polling_interval = 500 # Polling interval in milliseconds
+
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
-world_block = 0
+
+transactions = true
+
 contracts = [
-      "erc721:0x28d970cf6a445af803b133dd0b6e9061c8f5e2f69a4e5e66354fffd8c0522e4",
-      "erc721:0x6d94c83adafddc88fd981a24b9b51c33da09fd62f3641c5a249fff402e944e4",
-      "erc20:0x77e1cf2ef3e357e2e9899beb717dbe5973460081281c08123fdc80e5aef868e",
+      "erc721:0x52aea4ccdabb8921f13ba504a6965d4a32488a4e8e03dc57ded9f171a6e4747",
+      "erc721:0x19f7e8887742735e2ec35a098c453a491a46a0ecdfbb64ed27a4e7d2ea32263",
+      "erc20:0x75516853728329b7da7bd7ad4235a68a604ef2ba14a15828cb7c39b5538c096",
 ]
+
+namespaces = ["s1_eternum"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -500_000 # 512MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
 
 [events]
 raw = false
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]

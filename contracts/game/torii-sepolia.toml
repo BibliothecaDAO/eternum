@@ -1,18 +1,42 @@
-# db_dir = "./torii-db"
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/starknet/sepolia"
+
+world_address = "0x4726e48f50c7bfcb4eb7d89790fdf2718911207f3e8d90ada0caf36c4ff2c23"
+
+db_dir = "torii-sepolia"
 
 [indexing]
-events_chunk_size = 1024 # Size of events page to fetch
+events_chunk_size = 1024  # Size of events page to fetch
 blocks_chunk_size = 10240 # Blocks to process before DB commit
-index_pending = true # Enable indexing pending blocks
+
+pending = true # Enable indexing pending blocks
+
 polling_interval = 500 # Polling interval in milliseconds
+
 max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
-index_transactions = true
+
+transactions = true
+
 contracts = [
     "erc721:0x10e102ef6b51d7f9926fdb9be1590b05856f5dddc14abadebd29e84ea5bf73a",
     "erc721:0x26f7b8d707200c91024f9e562e728c31e66a0987b35148bc9efd368ed1f1b4d",
     "erc20:0x61e21253139085b01e19ece9c0498aa2e65fa43cdbbbf62921ad06f07e11720",
 ]
 
+namespaces = ["s1_eternum"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
+cache_size = -1_000_000 # 1024MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
+
 [events]
 raw = false
-historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
