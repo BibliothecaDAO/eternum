@@ -229,7 +229,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   return (
     <div className="flex flex-col justify-between h-full">
-      <div className="flex flex-col bg-blueish/10 p-2">
+      <div className="flex flex-col p-2">
         <div className="flex">
           {/* Owner Column */}
           <div className="flex flex-col min-w-[120px] mr-4">
@@ -287,7 +287,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                           setAccess(BigInt(Access[access]));
                         }}
                       >
-                        <SelectTrigger className="w-[140px] text-gold h-8 text-sm border border-gold/20">
+                        <SelectTrigger className="w-[140px] h-8 text-sm border border-gold/20">
                           <SelectValue
                             placeholder={DisplayedAccess[hyperstructure.access as keyof typeof DisplayedAccess]}
                           />
@@ -311,7 +311,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="text-gold text-sm">Loading...</div>
+                      <div className="text-sm">Loading...</div>
                     )}
 
                     {account.address === entity.owner && (
@@ -331,10 +331,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
       {!hyperstructure?.initialized && (
         <div className="mt-2 mb-2 p-2 bg-gold/10 rounded">
           <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center">
+            <h6 className="flex items-center">
               <ResourceIcon resource="Ancient Fragment" size="sm" className="mr-1" />
               <span className="text-sm font-medium">Ancient Fragment</span>
-            </div>
+            </h6>
             <div className="flex items-center gap-2">
               <span className="text-sm">{currencyIntlFormat(ancientFragmentBalance)}</span>
               <span className="text-xs text-gold/70">/ {formatStringNumber(costNeeded, 0)} needed</span>
