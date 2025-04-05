@@ -58,7 +58,7 @@ export const PlayersPanel = ({
       if (userGuild) {
         isInvited =
           getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
-            ?.is_whitelisted ?? false;
+            ?.whitelisted ?? false;
       }
       return {
         ...player,

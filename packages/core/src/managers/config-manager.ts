@@ -8,7 +8,6 @@ import {
   HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
-  ResourceTier,
   StructureType,
   WORLD_CONFIG_ID,
 } from "../constants";
@@ -40,7 +39,7 @@ export class ClientConfigManager {
   simpleSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   laborOutputPerResource: Record<number, { resource: ResourcesIds; amount: number }> = {};
 
-  hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
+  hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -151,19 +150,19 @@ export class ClientConfigManager {
   }
 
   private initializeHyperstructureTotalCosts() {
-    const hyperstructureTotalCosts: { resource: ResourceTier; min_amount: number; max_amount: number }[] = [];
+    const hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
 
-    for (const resourceTier of Object.values(ResourceTier).filter(Number.isInteger)) {
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
         this.components.HyperstructureConstructConfig,
-        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
+        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceType)]),
       );
 
       const min_amount = Number(hyperstructureResourceConfig?.min_amount ?? 0) / RESOURCE_PRECISION;
 
       const max_amount = Number(hyperstructureResourceConfig?.max_amount ?? 0) / RESOURCE_PRECISION;
 
-      hyperstructureTotalCosts.push({ resource: resourceTier as ResourceTier, min_amount, max_amount });
+      hyperstructureTotalCosts.push({ resource: resourceType as ResourcesIds, min_amount, max_amount });
     }
 
     this.hyperstructureTotalCosts = hyperstructureTotalCosts;
@@ -266,7 +265,7 @@ export class ClientConfigManager {
     return 0;
   }
 
-  private getHyperstructureConstructionCosts() {
+  public getHyperstructureConstructionCosts() {
     const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
     return {
@@ -669,15 +668,41 @@ export class ClientConfigManager {
     );
   }
 
-  getHyperstructureTotalContributableAmount(hyperstructureId: number) {
-    const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
-    return requiredAmounts.reduce(
-      (total, { amount, resource }) => total + amount * this.getResourceRarity(resource),
-      0,
+  getHyperstructureTotalContributableAmounts(hyperstructureId: number): { resource: ResourcesIds; amount: number }[] {
+    const hyperstructure = getComponentValue(
+      this.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(hyperstructureId)]),
     );
+
+    if (!hyperstructure?.randomness) {
+      return [];
+    }
+
+    const result: { resource: ResourcesIds; amount: number }[] = [];
+    const randomness = BigInt(hyperstructure.randomness);
+
+    for (const resourceConfig of this.hyperstructureTotalCosts) {
+      const { resource, min_amount, max_amount } = resourceConfig;
+
+      let neededAmount;
+      if (min_amount === max_amount) {
+        neededAmount = max_amount;
+      } else {
+        const uniqueResourceRandomness = randomness / BigInt(resource);
+        const additional = Number(uniqueResourceRandomness % BigInt(max_amount - min_amount));
+        neededAmount = min_amount + additional;
+      }
+
+      result.push({
+        resource,
+        amount: neededAmount * RESOURCE_PRECISION,
+      });
+    }
+
+    return result;
   }
 
-  getHyperstructureRequiredAmounts(hyperstructureId: number) {
+  getHyperstructureCurrentAmounts(hyperstructureId: number) {
     const hyperstructureRequirements = getComponentValue(
       this.components.HyperstructureRequirements,
       getEntityIdFromKeys([BigInt(hyperstructureId)]),

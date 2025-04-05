@@ -21,7 +21,7 @@ export const getPlayerInfo = (
       const isAlive = runQuery([HasValue(Structure, { owner: player.address })]).size > 0;
 
       const guildMember = getComponentValue(GuildMember, player.entity);
-      const guild = getGuild(Number(guildMember?.guild_id ?? 0), player.address, components);
+      const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, components);
 
       return {
         entity: player.entity,

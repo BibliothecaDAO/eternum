@@ -5,14 +5,14 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, getGuild, getGuildFromPlayerAddress, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, getGuild, getGuildFromPlayerAddress, PlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo, useGuildMembers, useGuildWhitelist, usePlayerWhitelist } from "@bibliothecadao/react";
 import { useCallback, useMemo, useState } from "react";
 import { env } from "../../../../../env";
 
 interface GuildMembersProps {
   players: PlayerInfo[];
-  selectedGuildEntityId: number;
+  selectedGuildEntityId: ContractAddress;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   setIsExpanded: (isExpanded: boolean) => void;
   isOwner?: boolean;
@@ -37,7 +37,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   );
 
   const selectedGuild = useMemo(
-    () => getGuild(selectedGuildEntityId, ContractAddress(account.address), components),
+    () => getGuild(Number(selectedGuildEntityId), ContractAddress(account.address), components),
     [selectedGuildEntityId, account.address, components],
   );
 
@@ -77,7 +77,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
     });
   };
 
-  const joinGuild = useCallback((guildEntityId: ID) => {
+  const joinGuild = useCallback((guildEntityId: ContractAddress) => {
     setIsLoading(true);
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
   }, []);

@@ -1,4 +1,3 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/elements/button";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
@@ -21,14 +20,9 @@ export const Leaderboard = ({
     setup: { components },
   } = dojo;
 
-  const { currentBlockTimestamp } = useBlockTimestamp();
-
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank(
-      currentBlockTimestamp || 0,
-      hyperstructureEntityId,
-    );
-  }, [hyperstructureEntityId, currentBlockTimestamp]);
+    return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank();
+  }, [hyperstructureEntityId]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);
 

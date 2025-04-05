@@ -1,15 +1,14 @@
 import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../dojo/create-client-components";
-import { ContractAddress, ID, Resource } from "../types";
-import { divideByPrecision, getGuildFromPlayerAddress } from "../utils";
-import { configManager } from "./config-manager";
+import { ContractAddress, ID } from "../types";
+import { getGuildFromPlayerAddress } from "../utils";
 
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();
-  public pointsPerGuild: Map<ID, number> = new Map();
-  public guildsByRank: [ID, number][] = [];
+  public pointsPerGuild: Map<ContractAddress, number> = new Map();
+  public guildsByRank: [ContractAddress, number][] = [];
 
   constructor(private readonly components: ClientComponents) {}
 
@@ -60,8 +59,8 @@ export class LeaderboardManager {
     return pointsPerPlayer;
   }
 
-  private getGuildsPoints(): Map<ID, number> {
-    const pointsPerGuild = new Map<ID, number>();
+  private getGuildsPoints(): Map<ContractAddress, number> {
+    const pointsPerGuild = new Map<ContractAddress, number>();
 
     this.pointsPerPlayer.forEach((points, address) => {
       const guildId = getGuildFromPlayerAddress(address, this.components)?.entityId;
@@ -74,12 +73,12 @@ export class LeaderboardManager {
     return pointsPerGuild;
   }
 
-  public getGuildsByRank(): [ID, number][] {
-    return Array.from(this.pointsPerGuild).sort(([_A, guildA], [_B, guildB]) => guildB - guildA);
+  public getGuildsByRank(): [ContractAddress, number][] {
+    return Array.from(this.pointsPerGuild).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
   public getPlayersByRank(): [ContractAddress, number][] {
-    return Array.from(this.pointsPerPlayer).sort(([_A, playerA], [_B, playerB]) => playerB - playerA);
+    return Array.from(this.pointsPerPlayer).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
   public getPlayerShares(playerAddress: ContractAddress, hyperstructureEntityId: ID) {
@@ -112,24 +111,12 @@ export class LeaderboardManager {
     return [];
   };
 
-  public getContributionsTotalPercentage = (hyperstructureId: number, contributions: Resource[]) => {
-    const totalPlayerContribution = divideByPrecision(
-      contributions.reduce((acc, { amount, resourceId }) => {
-        return acc + amount * configManager.getResourceRarity(resourceId);
-      }, 0),
-    );
-
-    const totalHyperstructureContribution = configManager.getHyperstructureTotalContributableAmount(hyperstructureId);
-
-    return totalPlayerContribution / totalHyperstructureContribution;
-  };
-
   public getCompletionPoints = (address: ContractAddress, hyperstructureId: number) => {
     const playerContribution = getComponentValue(
       this.components.PlayerConstructionPoints,
       getEntityIdFromKeys([address, BigInt(hyperstructureId)]),
     );
 
-    return playerContribution?.unregistered_points ?? 0;
+    return Number(playerContribution?.unregistered_points) ?? 0;
   };
 }

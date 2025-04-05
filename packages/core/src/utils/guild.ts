@@ -1,4 +1,4 @@
-import { ContractAddress, GuildMemberInfo, ID } from "../types";
+import { ContractAddress, GuildMemberInfo } from "../types";
 
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -21,7 +21,7 @@ export const formatGuilds = (
 
       return {
         // guild id is address of the owner
-        entityId: Number(guild.guild_id),
+        entityId: guild.guild_id,
         name: shortString.decodeShortString(guild.name.toString()),
         isOwner: guild.guild_id === playerAddress,
         memberCount: guild.member_count,
@@ -33,7 +33,7 @@ export const formatGuilds = (
 };
 
 export const getGuild = (
-  guildEntityId: ID,
+  guildEntityId: ContractAddress,
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildInfo | undefined => {
@@ -77,7 +77,7 @@ export const getGuildFromPlayerAddress = (
   const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
   if (!guildMember) return;
 
-  return getGuild(Number(guildMember.guild_id), playerAddress, components);
+  return getGuild(guildMember.guild_id, playerAddress, components);
 };
 
 export const getGuildMembersFromPlayerAddress = (playerAddress: ContractAddress, components: ClientComponents) => {

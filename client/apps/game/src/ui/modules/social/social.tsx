@@ -8,7 +8,7 @@ import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, getPlayerInfo, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, getPlayerInfo, PlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
@@ -25,7 +25,7 @@ export const Social = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<ID>(0);
+  const [selectedGuild, setSelectedGuild] = useState<ContractAddress>(0n);
   const [selectedPlayer, setSelectedPlayer] = useState<ContractAddress>(0n);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -53,7 +53,7 @@ export const Social = () => {
     setIsLoading(false);
   }, [playersByRank]);
 
-  const viewGuildMembers = (guildEntityId: ID) => {
+  const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {
       setSelectedPlayer(0n);
       setIsExpanded(!isExpanded);

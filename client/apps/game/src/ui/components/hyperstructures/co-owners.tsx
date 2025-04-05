@@ -7,14 +7,7 @@ import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  formatTime,
-  getAddressName,
-  getStructure,
-  ID,
-  WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
+import { ContractAddress, getAddressName, getStructure, ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -72,18 +65,6 @@ const CoOwnersRows = ({
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
 
-  const canUpdate = useMemo(() => {
-    if (!hyperstructureConfig || !currentBlockTimestamp) return false;
-    if (!hyperstructure) return true;
-    if (ContractAddress(hyperstructure.last_updated_by) === ContractAddress(account.address)) {
-      return (
-        currentBlockTimestamp > hyperstructure.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
-      );
-    } else {
-      return true;
-    }
-  }, [hyperstructure, hyperstructureConfig, currentBlockTimestamp]);
-
   const structure = useMemo(
     () => getStructure(hyperstructureEntityId, ContractAddress(account.address), components),
     [hyperstructureEntityId, account.address, components],
@@ -140,25 +121,12 @@ const CoOwnersRows = ({
         );
       })}
       {structure?.isMine && (
-        <div
-          onMouseEnter={() => {
-            if (!canUpdate)
-              setTooltip({
-                content: `Wait ${formatTime(
-                  Number(hyperstructureConfig?.time_between_shares_change) -
-                    Number((currentBlockTimestamp || 0) - (hyperstructure?.last_updated_timestamp ?? 0)),
-                )} to change`,
-                position: "top",
-              });
-          }}
-          onMouseLeave={() => setTooltip(null)}
-        >
+        <div>
           <Button
             onClick={() => {
               setIsChangingCoOwners(true);
             }}
             variant="primary"
-            disabled={!canUpdate}
             className="w-full mt-4 bg-gold/20"
           >
             Change Co-Owners
