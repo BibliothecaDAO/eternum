@@ -87,13 +87,13 @@ export const EntityList = ({
             onKeyDown={(e) => {
               e.stopPropagation();
             }}
-            className="w-full p-2 mb-2 bg-gold/10 border border-gold/20 rounded text-gold placeholder-gold/50 focus:outline-none focus:border-gold/40"
+            className="w-full p-2 mb-2 button-wood bg-dark-wood rounded text-gold placeholder-gold/50 focus:outline-none focus:border-gold/40"
           />
           <div>
             <ul>
               {displayedItems.map((entity) => (
                 <li
-                  className={clsx("py-2 px-2 bg-gold/20 hover:bg-crimson/40 my-1 rounded border border-gold/10", {
+                  className={clsx("p-2 hover:bg-crimson/5 my-3 rounded border panel-wood", {
                     "animate-pulse pointer-events-none":
                       questing || entity.id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
                   })}
@@ -104,9 +104,7 @@ export const EntityList = ({
                     {entityHeader(entity.id)}
 
                     {entity.id !== Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID) && (
-                      <div className="border border-gold/20 bg-gold/10 rounded p-2">
-                        {entityContent && entityContent(entity.id)}
-                      </div>
+                      <div>{entityContent && entityContent(entity.id)}</div>
                     )}
                   </div>
                 </li>

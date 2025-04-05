@@ -34,6 +34,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
+import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -532,6 +533,10 @@ export default class HexceptionScene extends HexagonScene {
             const instance = buildingData.model.clone();
 
             instance.applyMatrix4(building.matrix);
+
+            // Set initial scale for animation
+            instance.scale.set(0.01, 0.01, 0.01);
+
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
                 if (child.name === "Grassland003_1" && child instanceof THREE.Mesh) {
@@ -565,8 +570,19 @@ export default class HexceptionScene extends HexagonScene {
               // // @ts-ignore
               // crystalMesh2.material = this.minesMaterials.get(building.resource);
             }
+
+            // Add instance to scene BEFORE starting animation
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
+
+            // Animate scale using gsap
+            gsap.to(instance.scale, {
+              duration: 0.5,
+              x: 1,
+              y: 1,
+              z: 1,
+              ease: "power2.out",
+            });
 
             // Check if the model has animations and start them
             const animations = buildingData.animations;
@@ -688,26 +704,13 @@ export default class HexceptionScene extends HexagonScene {
         if (building) {
           withBuilding = true;
           const buildingObj = dummy.clone();
-          const rotation = Math.PI / 3;
-          buildingObj.rotation.y = rotation * 3;
-          if (building.category === BuildingType.ResourceLabor) {
-            buildingObj.rotation.y = rotation * 3;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill) {
-            buildingObj.rotation.y = rotation * 2;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide) {
-            buildingObj.rotation.y = rotation * 2;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge) {
-            buildingObj.rotation.y = rotation * 6;
-          }
-          if (building.resource && building.resource === ResourcesIds.Crossbowman) {
-            buildingObj.rotation.y = rotation;
-          }
-          if (building.resource && building.resource === ResourcesIds.Paladin) {
-            buildingObj.rotation.y = rotation * 3;
-          }
+          // --- Deterministic Rotation ---
+          const rotationSeed = this.hashCoordinates(position.col, position.row);
+          const rotationIndex = Math.floor(rotationSeed * 6); // Map 0-1 to 0-5
+          const deterministicRotation = (rotationIndex * Math.PI) / 3; // Convert index to radians (0, pi/3, 2pi/3, ...)
+          buildingObj.rotation.y = deterministicRotation;
+          // --- End Deterministic Rotation ---
+
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
         } else if (isMainHex) {
