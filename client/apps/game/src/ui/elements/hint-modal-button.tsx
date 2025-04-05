@@ -15,9 +15,8 @@ export const HintModalButton = ({ className, section }: HintModalButtonProps) =>
     <CircleButton
       className={className}
       onClick={() => toggleModal(<HintModal initialActiveSection={section} />)}
-      size={"xs"}
-    >
-      <img src={BuildingThumbs.question} alt="hint" />
-    </CircleButton>
+      size={"sm"}
+      image={BuildingThumbs.question}
+    />
   );
 };

@@ -67,29 +67,31 @@ export const EntityArmyList = ({
     <div className="military-panel-selector p-4">
       <Headline>
         <div className="flex items-center gap-3 mb-4">
-          <div className="text-xl font-bold text-gold">{name}</div>
+          <h5>{name}</h5>
           <HintModalButton section={HintSection.Combat} />
         </div>
       </Headline>
 
-      <div className="grid grid-cols-2 gap-4 p-3 bg-brown/90 rounded-md">
+      <div className="grid grid-cols-2 gap-4 p-3  rounded-md">
         <div className="text-center">
-          <div className="text-sm text-gold">Explorers</div>
-          <div className="text-lg font-bold text-gold/90">
+          <h6>Explorers</h6>
+          <h5>
             {totalExplorersCount} / {structure.base.troop_max_explorer_count}
-          </div>
+          </h5>
         </div>
         <div className="text-center">
-          <div className="text-sm text-gold">Guards</div>
-          <div className="text-lg font-bold text-gold/90">
+          <h6>Guards</h6>
+          <h5>
             {totalGuards} / {structure.base.troop_max_guard_count}
-          </div>
+          </h5>
         </div>
       </div>
 
-      <div className="">
-        {showTroopSelection && armyManager ? (
-          <div className="border-2 border-gold/50 rounded-lg p-4">
+      <div className="space-y-4">
+        <Headline>Armies</Headline>
+
+        <div className="">
+          {showTroopSelection && armyManager ? (
             <ArmyCreate
               owner_entity={structure.entity_id || 0}
               army={undefined}
@@ -97,44 +99,36 @@ export const EntityArmyList = ({
               isExplorer={true}
               onCancel={() => setShowTroopSelection(false)}
             />
-          </div>
-        ) : (
-          <div
-            className="flex justify-center items-center p-4"
-            onMouseEnter={() => {
-              if (!isRealmOrVillage) {
-                setTooltip({
-                  content: "Can only create attacking armies on realms",
-                  position: "top",
-                });
-              } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
-                setTooltip({
-                  content: "Maximum number of armies reached",
-                  position: "top",
-                });
-              }
-            }}
-            onMouseLeave={() => setTooltip(null)}
-          >
-            <Button
-              variant="primary"
-              disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
-              className="attack-army-selector px-6 py-2 text-lg flex items-center gap-2"
-              onClick={() => setShowTroopSelection(true)}
+          ) : (
+            <div
+              className="flex justify-center items-center p-4"
+              onMouseEnter={() => {
+                if (!isRealmOrVillage) {
+                  setTooltip({
+                    content: "Can only create attacking armies on realms",
+                    position: "top",
+                  });
+                } else if (totalExplorersCount >= structure.base.troop_max_explorer_count) {
+                  setTooltip({
+                    content: "Maximum number of armies reached",
+                    position: "top",
+                  });
+                }
+              }}
+              onMouseLeave={() => setTooltip(null)}
             >
-              <PlusIcon className="h-5 w-5" />
-              <span>Create Attack Army</span>
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <Headline>
-          <div className="flex items-center gap-3">
-            <div className="text-lg font-bold text-gold">Armies</div>
-          </div>
-        </Headline>
+              <Button
+                variant="primary"
+                disabled={!isRealmOrVillage || totalExplorersCount >= structure.base.troop_max_explorer_count}
+                className="attack-army-selector px-6 py-2 text-lg flex items-center gap-2"
+                onClick={() => setShowTroopSelection(true)}
+              >
+                <PlusIcon className="h-5 w-5" />
+                <span>Create Attack Army</span>
+              </Button>
+            </div>
+          )}
+        </div>
 
         <div className="space-y-3">
           {explorers.map((army) => (
@@ -144,11 +138,7 @@ export const EntityArmyList = ({
       </div>
 
       <div className="mt-6 space-y-4">
-        <Headline>
-          <div className="flex items-center gap-3">
-            <div className="text-lg font-bold text-gold">Structure Defenses</div>
-          </div>
-        </Headline>
+        <Headline>Defenses</Headline>
 
         <StructureDefence
           structureId={structure.entity_id || 0}
