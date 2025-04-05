@@ -1,3 +1,4 @@
+/// <reference types="vite-plugin-pwa/client" />
 import App from "@/app/app.tsx";
 import { DojoProvider } from "@/app/dojo/context/dojo-context";
 import { StarknetProvider } from "@/app/dojo/context/starknet-provider";
@@ -10,8 +11,15 @@ import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import { ETERNUM_CONFIG } from "./app/config/config";
 import { initialSync } from "./app/dojo/sync";
+import { registerServiceWorker } from "./register-sw";
 import { useStore } from "./shared/store";
 import { WorldSlice } from "./shared/store/slices/world-loading-slice";
+
+// Register the service worker
+registerServiceWorker();
+
+// Start the app
+main();
 
 async function main() {
   const setupResult = await setup(
@@ -49,5 +57,3 @@ async function main() {
     </StrictMode>,
   );
 }
-
-main();

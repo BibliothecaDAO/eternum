@@ -1,0 +1,19 @@
+{
+  "name": "eternum-push-notification-server",
+  "version": "1.0.0",
+  "description": "Push notification server for Eternum Mobile app",
+  "main": "push-server.js",
+  "scripts": {
+    "start": "node push-server.js",
+    "dev": "nodemon push-server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "web-push": "^3.6.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+} 
