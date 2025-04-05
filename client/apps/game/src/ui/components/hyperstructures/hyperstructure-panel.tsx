@@ -10,7 +10,6 @@ import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
   Access,
-  calculateCompletionPoints,
   configManager,
   ContractAddress,
   divideByPrecision,
@@ -27,7 +26,6 @@ import {
   useDojo,
   useHyperstructureProgress,
   useHyperstructureUpdates,
-  usePlayerContributions,
 } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
@@ -76,8 +74,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const progresses = useHyperstructureProgress(entity.entity_id);
-
-  const myContributions = usePlayerContributions(BigInt(account.address), entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
 
@@ -179,7 +175,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           />
         );
       });
-  }, [progresses, myContributions]);
+  }, [progresses]);
 
   const canContribute = useMemo(() => {
     const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
@@ -196,15 +192,18 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [newContributions]);
 
   const initialPoints = useMemo(() => {
-    return calculateCompletionPoints(myContributions);
-  }, [myContributions, updates]);
+    return LeaderboardManager.instance(dojo.setup.components).getCompletionPoints(
+      ContractAddress(account.address),
+      entity.entity_id,
+    );
+  }, [updates]);
 
   const myShares = useMemo(() => {
     return LeaderboardManager.instance(dojo.setup.components).getAddressShares(
       ContractAddress(account.address),
       entity.entity_id,
     );
-  }, [myContributions, updates]);
+  }, [updates]);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);

@@ -1,7 +1,6 @@
 export * from "./use-armies";
 export * from "./use-bank";
 export * from "./use-buildings";
-export * from "./use-contributions";
 export * from "./use-fragment-mines";
 export * from "./use-guilds";
 export * from "./use-hyperstructures";

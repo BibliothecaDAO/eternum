@@ -1,9 +1,7 @@
 import {
   BiomeIdToType,
   BiomeType,
-  ClientComponents,
-  configManager,
-  divideByPrecision,
+  getHyperstructureProgress,
   ID,
   RealmLevels,
   SetupResult,
@@ -12,16 +10,7 @@ import {
   TroopType,
   type HexPosition,
 } from "@bibliothecadao/eternum";
-import {
-  Component,
-  ComponentValue,
-  defineComponentSystem,
-  getComponentValue,
-  Has,
-  HasValue,
-  isComponentUpdate,
-  runQuery,
-} from "@dojoengine/recs";
+import { Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
@@ -268,18 +257,12 @@ export class SystemManager {
 
   public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
-      const progressQueryResult = Array.from(
-        runQuery([
-          Has(this.setup.components.Progress),
-          HasValue(this.setup.components.Progress, { hyperstructure_entity_id: entityId }),
-        ]),
-      );
+      const { initialized, percentage } = getHyperstructureProgress(entityId, this.setup.components);
 
-      const progresses = progressQueryResult.map((progressEntityId) => {
-        return getComponentValue(this.setup.components.Progress, progressEntityId);
-      });
+      if (!initialized) {
+        return StructureProgress.STAGE_1;
+      }
 
-      const { percentage } = this.getAllProgressesAndTotalPercentage(progresses, entityId);
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
       }
@@ -291,30 +274,4 @@ export class SystemManager {
 
     return StructureProgress.STAGE_1;
   }
-
-  private getAllProgressesAndTotalPercentage = (
-    progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
-    hyperstructureEntityId: ID,
-  ) => {
-    let percentage = 0;
-    const allProgresses = configManager
-      .getHyperstructureRequiredAmounts(hyperstructureEntityId)
-      .map(({ resource, amount: resourceCost }) => {
-        let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
-        const resourcePercentage = !foundProgress
-          ? 0
-          : Math.floor((divideByPrecision(Number(foundProgress.amount)) / resourceCost!) * 100);
-        let progress = {
-          hyperstructure_entity_id: hyperstructureEntityId,
-          resource_type: resource,
-          amount: !foundProgress ? 0 : divideByPrecision(Number(foundProgress.amount)),
-          percentage: resourcePercentage,
-          costNeeded: resourceCost,
-        };
-        percentage += resourcePercentage;
-        return progress;
-      });
-    const totalPercentage = percentage / allProgresses.length;
-    return { allProgresses, percentage: totalPercentage };
-  };
 }

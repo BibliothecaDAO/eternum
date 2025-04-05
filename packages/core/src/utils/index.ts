@@ -6,6 +6,7 @@ export * from "./buildings";
 export * from "./combat-simulator";
 export * from "./entities";
 export * from "./guild";
+export * from "./hyperstructure";
 export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";
