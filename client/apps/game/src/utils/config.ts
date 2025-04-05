@@ -9,7 +9,7 @@ export const ETERNUM_CONFIG = () => {
 
 export const TORII_SETTING = async (): Promise<string> => {
   let toriiSetting = localStorage.getItem("TORII_SETTING") as ToriiSetting;
-  if (!toriiSetting) {
+  if (!toriiSetting && !env.VITE_PUBLIC_TORII) {
     localStorage.setItem("TORII_SETTING", DEFAULT_TORII_SETTING);
     toriiSetting = DEFAULT_TORII_SETTING;
   }
