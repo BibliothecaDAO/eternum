@@ -216,7 +216,7 @@ mod tests {
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
     use s1_eternum::models::{
-        config::{m_ProductionConfig, m_WeightConfig, m_WorldConfig}, map::{m_Tile},
+        config::{m_WeightConfig, m_WorldConfig}, map::{m_Tile},
         quest::{Quest, m_Quest, m_QuestCounter, m_QuestDetails, m_QuestDetailsCounter, m_RealmRegistrations},
         resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
         structure::{m_Structure}, troop::{m_ExplorerTroops}, weight::{Weight},
@@ -247,9 +247,7 @@ mod tests {
             resources: [
                 // world config
                 TestResource::Model(m_WorldConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_WeightConfig::TEST_CLASS_HASH),
-                TestResource::Model(m_ProductionConfig::TEST_CLASS_HASH),
-                // structure, realm and buildings
+                TestResource::Model(m_WeightConfig::TEST_CLASS_HASH), // structure, realm and buildings
                 TestResource::Model(m_Structure::TEST_CLASS_HASH),
                 TestResource::Model(m_StructureBuildings::TEST_CLASS_HASH),
                 TestResource::Model(m_Building::TEST_CLASS_HASH), TestResource::Model(m_Tile::TEST_CLASS_HASH),
@@ -441,8 +439,8 @@ mod tests {
         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        // let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-        // let (resource_system_addr, _) = world.dns(@"resource_systems").unwrap();
+        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
+        let (resource_system_addr, _) = world.dns(@"resource_systems").unwrap();
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
 
@@ -450,8 +448,7 @@ mod tests {
         let realm_owner = starknet::contract_address_const::<'realm_owner'>();
         let realm_coord = Coord { x: 80, y: 80 };
         let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
-
-        // grant basic resources to the realm
+        // // grant basic resources to the realm
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
         let wheat_amount: u128 = 1000000000000000;
         let fish_amount: u128 = 500000000000000;

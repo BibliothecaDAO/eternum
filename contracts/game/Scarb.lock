@@ -140,7 +140,7 @@ dependencies = [
 [[package]]
 name = "tournaments"
 version = "0.0.1"
-source = "git+https://github.com/Provable-Games/tournaments.git?branch=feat%2Fmake-tests-pub#ab526b6fd66b5e26449a1cd8f50729458009b301"
+source = "git+https://github.com/Provable-Games/tournaments.git?branch=feat%2Fmake-tests-pub#17956af00af1cdf5cdf1cee3f3629360e388b3a6"
 dependencies = [
  "dojo",
  "openzeppelin_introspection",

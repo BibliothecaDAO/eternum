@@ -5,10 +5,9 @@ use dojo::world::{WorldStorage};
 use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
 
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{ResourceTypes};
 use s1_eternum::models::config::{
-    CapacityConfig, LaborBurnPrStrategy, MapConfig, MultipleResourceBurnPrStrategy, ProductionConfig, TickConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfigUtilImpl,
+    CapacityConfig, MapConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig,
+    WorldConfigUtilImpl,
 };
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::resource::{
@@ -28,6 +27,8 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         hyps_fail_prob_increase_p_fnd: 5000,
         mine_wheat_grant_amount: 0,
         mine_fish_grant_amount: 1,
+        agent_discovery_prob: 5000,
+        agent_discovery_fail_prob: 5000,
     }
 }
 
@@ -42,6 +43,7 @@ pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
         damage_beta_large: 2213609288845146193, // 0.12
         damage_c0: 100_000 * FixedTrait::ONE().mag,
         damage_delta: 50_000 * FixedTrait::ONE().mag,
+        damage_raid_percent_num: 5 // Added default value
     }
 }
 
@@ -70,7 +72,9 @@ pub fn MOCK_TROOP_LIMIT_CONFIG() -> TroopLimitConfig {
         explorer_guard_max_troop_count: 500_000, // hard max of troops per party
         guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
         mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-        mercenaries_troop_upper_bound: 500_000 // max of troops per mercenary
+        mercenaries_troop_upper_bound: 500_000, // max of troops per mercenary
+        agents_troop_lower_bound: 0_u32, // Added default value
+        agents_troop_upper_bound: 100_000 // Added default value
     }
 }
 
@@ -90,56 +94,6 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
     TickConfig { armies_tick_in_seconds: 1 }
 }
-
-pub fn MOCK_LABOR_BURN_STRATEGY() -> LaborBurnPrStrategy {
-    LaborBurnPrStrategy {
-        resource_rarity: 0,
-        wheat_burn_per_labor: 0,
-        fish_burn_per_labor: 0,
-        depreciation_percent_num: 0,
-        depreciation_percent_denom: 0,
-    }
-}
-
-
-pub fn MOCK_MULTIPLE_RESOURCE_BURN_STRATEGY() -> MultipleResourceBurnPrStrategy {
-    MultipleResourceBurnPrStrategy { required_resources_id: 0, required_resources_count: 0 }
-}
-
-pub fn MOCK_PRODUCTION_CONFIG(
-    resource_type: u8,
-    realm_output_per_tick: u64,
-    village_output_per_tick: u64,
-    labor_burn_strategy: LaborBurnPrStrategy,
-    multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy,
-) -> ProductionConfig {
-    ProductionConfig {
-        resource_type,
-        realm_output_per_tick,
-        village_output_per_tick,
-        labor_burn_strategy,
-        multiple_resource_burn_strategy,
-    }
-}
-
-pub fn MOCK_DEFAULT_PRODUCTION_CONFIG(resource_type: u8) -> ProductionConfig {
-    ProductionConfig {
-        resource_type,
-        realm_output_per_tick: 100,
-        village_output_per_tick: 100,
-        labor_burn_strategy: LaborBurnPrStrategy {
-            resource_rarity: 0,
-            wheat_burn_per_labor: 0,
-            fish_burn_per_labor: 0,
-            depreciation_percent_num: 0,
-            depreciation_percent_denom: 0,
-        },
-        multiple_resource_burn_strategy: MultipleResourceBurnPrStrategy {
-            required_resources_id: 0, required_resources_count: 0,
-        },
-    }
-}
-
 
 pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("map_config"), config);
@@ -195,21 +149,9 @@ pub fn tspawn_world(namespace_def: NamespaceDef, contract_defs: Span<ContractDef
     world
 }
 
-
-pub fn tstore_production_config(ref world: WorldStorage, production_config: ProductionConfig) {
-    world.write_model_test(@production_config);
-}
-
-
 pub fn tspawn_simple_realm(
     ref world: WorldStorage, realm_id: ID, owner: starknet::ContractAddress, coord: Coord,
 ) -> ID {
-    // set labor production config
-    tstore_production_config(ref world, MOCK_DEFAULT_PRODUCTION_CONFIG(ResourceTypes::LABOR));
-
-    // set earthen shard production config
-    tstore_production_config(ref world, MOCK_DEFAULT_PRODUCTION_CONFIG(ResourceTypes::EARTHEN_SHARD));
-
     // create realm
     let realm_entity_id = InternalRealmLogicImpl::create_realm(
         ref world, owner, realm_id, array![], 1, 0, 1, coord.into(),

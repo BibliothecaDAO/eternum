@@ -32,7 +32,6 @@
 //         tstore_troop_limit_config, tstore_troop_stamina_config, tstore_weight_config,
 //     };
 
-
 //     fn namespace_def() -> NamespaceDef {
 //         let ndef = NamespaceDef {
 //             namespace: DEFAULT_NS_STR(),
@@ -96,7 +95,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -123,7 +123,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         let troop_movement_directions = array![
@@ -157,7 +158,8 @@
 //         // starknet::testing::set_block_timestamp(current_tick * 5);
 
 //         // travel to target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, false);
 
 //         // ensure start tile has been unoccupied
@@ -227,7 +229,6 @@
 //         assert_eq!(explorer_weight.weight, explorer_wheat_weight + explorer_fish_weight);
 //     }
 
-
 //     #[test]
 //     #[should_panic(expected: ("one of the tiles in path is not explored", 'ENTRYPOINT_FAILED'))]
 //     fn test_explorer_travel__fails_tile_not_explored() {
@@ -256,7 +257,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -283,7 +285,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // explore all tiles in path except the 3rd tile
@@ -316,7 +319,8 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // travel to target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, false);
 //     }
 
@@ -348,7 +352,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -375,7 +380,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         let troop_movement_directions = array![
@@ -413,10 +419,10 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // travel to target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, false);
 //     }
-
 
 //     #[test]
 //     fn test_explorer_explore_no_mine() {
@@ -445,7 +451,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -472,14 +479,16 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set caller address back to owner
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::NorthWest].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 
@@ -533,7 +542,6 @@
 //         assert_eq!(explorer_weight.weight, explorer_wheat_weight + explorer_fish_weight);
 //     }
 
-
 //     #[test]
 //     fn test_explorer_explore_mine_found() {
 //         // spawn world
@@ -566,7 +574,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -593,7 +602,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set caller address back to owner
@@ -604,7 +614,8 @@
 
 //         // explore target coordinate
 //         let fragment_mine_id: u32 = world.dispatcher.uuid() + 1;
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::NorthWest].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 
@@ -670,7 +681,6 @@
 //         assert_eq!(explorer_weight.weight, explorer_wheat_weight + explorer_fish_weight);
 //     }
 
-
 //     #[test]
 //     #[should_panic(expected: ("explorer can only move one direction when exploring", 'ENTRYPOINT_FAILED'))]
 //     fn test_explorer_explore__fails_more_than_one_direction() {
@@ -699,7 +709,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -726,18 +737,19 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set caller address back to owner
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::NorthWest, Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
-
 
 //     #[test]
 //     #[should_panic(expected: ("tile is already explored", 'ENTRYPOINT_FAILED'))]
@@ -767,7 +779,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -794,7 +807,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set tile as explored
@@ -808,7 +822,8 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
 
@@ -840,7 +855,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -867,18 +883,19 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set caller address to an unknown address
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<'unknown'>());
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
-
 
 //     #[test]
 //     #[should_panic(expected: ("explorer is dead", 'ENTRYPOINT_FAILED'))]
@@ -908,7 +925,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -935,7 +953,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set explorer as dead
@@ -947,11 +966,11 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
-
 
 //     #[test]
 //     #[should_panic(expected: ("insufficient stamina, you need: 10, and have: 0", 'ENTRYPOINT_FAILED'))]
@@ -981,7 +1000,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -1008,7 +1028,8 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set explorer as dead
@@ -1020,11 +1041,11 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
-
 
 //     #[test]
 //     #[should_panic(
@@ -1056,7 +1077,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -1092,13 +1114,15 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
 
 //     #[test]
-//     #[should_panic(expected: ("Insufficient Balance: FISH (id: 3, balance: 0) < 500000000000000", 'ENTRYPOINT_FAILED'))]
+//     #[should_panic(expected: ("Insufficient Balance: FISH (id: 3, balance: 0) < 500000000000000",
+//     'ENTRYPOINT_FAILED'))]
 //     fn test_explorer_move__fails_insufficient_fish() {
 //         // spawn world
 //         let mut world = tspawn_world(namespace_def(), contract_defs());
@@ -1125,7 +1149,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -1160,11 +1185,11 @@
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![Direction::East].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
-
 
 //     #[test]
 //     #[should_panic(expected: ("directions must be more than 0", 'ENTRYPOINT_FAILED'))]
@@ -1194,7 +1219,8 @@
 //         let realm_entity_id = tspawn_simple_realm(ref world, 1, owner, realm_coord);
 //         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
 //         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+//         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() *
+//         RESOURCE_PRECISION;
 
 //         // grant troop resources to the structure to be able to create troops
 //         tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::KNIGHT_T1, troop_amount)].span());
@@ -1221,14 +1247,16 @@
 //         tgrant_resources(
 //             ref world,
 //             explorer_id,
-//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH, explorer_fish_amount)].span(),
+//             array![(ResourceTypes::WHEAT, explorer_wheat_amount), (ResourceTypes::FISH,
+//             explorer_fish_amount)].span(),
 //         );
 
 //         // set caller address to owner
 //         starknet::testing::set_contract_address(owner);
 
 //         // explore target coordinate
-//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr };
+//         let troop_movement_systems = ITroopMovementSystemsDispatcher { contract_address: troop_movement_system_addr
+//         };
 //         let troop_movement_directions = array![].span();
 //         troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, true);
 //     }
