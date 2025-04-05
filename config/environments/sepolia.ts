@@ -24,7 +24,11 @@ export const SepoliaEternumGlobalConfig: Config = {
   },
   hyperstructures: {
     ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureTotalCosts: CommonEternumGlobalConfig.hyperstructures.hyperstructureTotalCosts.map((cost) => ({
+    hyperstructureInitializationShardsCost: {
+      resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
+      amount: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.amount / 100_000,
+     },
+      hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map((cost) => ({
       ...cost,
       min_amount: cost.min_amount / 100_000,
       max_amount: cost.max_amount / 100_000,

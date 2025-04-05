@@ -533,15 +533,15 @@ export interface SetResourceBridgeFeesConfigProps extends SystemSigner {
 }
 
 export interface SetHyperstructureConfig extends SystemSigner {
-  resources_for_completion: {
-    resource_tier: number;
+  initialize_shards_amount: num.BigNumberish;
+  construction_resources: {
+    resource_type: num.BigNumberish;
+    resource_completion_points: number;
     min_amount: number;
     max_amount: number;
   }[];
-  time_between_shares_change: num.BigNumberish;
-  points_per_cycle: num.BigNumberish;
+  points_per_second: num.BigNumberish;
   points_for_win: num.BigNumberish;
-  points_on_completion: num.BigNumberish;
 }
 
 export interface InitializeHyperstructureProps extends SystemSigner {
