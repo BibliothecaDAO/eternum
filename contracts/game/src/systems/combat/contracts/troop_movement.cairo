@@ -43,6 +43,7 @@ pub mod troop_movement_systems {
         Hyperstructure,
         Mine,
         Agent,
+        Quest,
     }
 
     #[derive(Copy, Drop, Serde)]
@@ -83,6 +84,7 @@ pub mod troop_movement_systems {
             let mut explore_reward_amount = 0;
 
             let caller = starknet::get_caller_address();
+
             let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
@@ -234,6 +236,7 @@ pub mod troop_movement_util_systems {
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::quest::contracts::iQuestDiscoveryImpl;
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
@@ -286,6 +289,11 @@ pub mod troop_movement_util_systems {
                         );
                         return (true, ExploreFind::Agent);
                     } else {
+                        let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(map_config, vrf_seed);
+                        if quest_lottery_won {
+                            iQuestDiscoveryImpl::create(ref world, ref tile, vrf_seed);
+                            return (true, ExploreFind::Quest);
+                        }
                         return (false, ExploreFind::None);
                     }
                 }

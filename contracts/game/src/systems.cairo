@@ -99,5 +99,6 @@ pub mod utils {
 }
 
 pub mod quest {
+    pub mod constants;
     pub mod contracts;
 }

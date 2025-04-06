@@ -29,6 +29,8 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         mine_fish_grant_amount: 1,
         agent_discovery_prob: 5000,
         agent_discovery_fail_prob: 5000,
+        quest_discovery_prob: 25000,
+        quest_discovery_fail_prob: 25000,
     }
 }
 

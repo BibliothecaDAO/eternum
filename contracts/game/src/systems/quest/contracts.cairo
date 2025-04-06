@@ -1,105 +1,72 @@
+use dojo::model::ModelStorage;
+use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
+use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
+use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::Coord;
-use s1_eternum::models::quest::{Quest, QuestDetails};
+use s1_eternum::models::quest::{Quest, QuestDetails, QuestGame, QuestGameRegistry};
+use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER, VERSION};
+use s1_eternum::systems::utils::map::IMapImpl;
+use s1_eternum::systems::utils::troop::{iExplorerImpl};
+use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::random;
 use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IQuestSystems<T> {
-    fn create_quest(
-        ref self: T,
-        game_address: ContractAddress,
-        coord: Coord,
-        reward_resource_type: u8,
-        reward_amount: u128,
-        settings_id: u32,
-        target_score: u32,
-        capacity: u16,
-        expires_at: u64,
-    ) -> u64;
     fn start_quest(
-        ref self: T, details_id: u64, explorer_id: ID, player_name: felt252, to_address: ContractAddress,
-    ) -> u64;
-    fn claim_reward(ref self: T, quest_id: u64);
-    fn get_quest_details(ref self: T, details_id: u64) -> QuestDetails;
-    fn get_quest(ref self: T, quest_id: u64) -> Quest;
+        ref self: T, details_id: u32, explorer_id: ID, player_name: felt252, to_address: ContractAddress,
+    ) -> u32;
+    fn claim_reward(ref self: T, quest_id: u32);
+    fn get_quest_details(ref self: T, details_id: u32) -> QuestDetails;
+    fn get_quest(ref self: T, quest_id: u32) -> Quest;
 }
 
 
 #[dojo::contract]
 pub mod quest_systems {
+    use core::array::ArrayTrait;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::position::Coord;
-    use s1_eternum::models::quest::{Quest, QuestCounter, QuestDetails, QuestDetailsCounter, RealmRegistrations, Reward};
+    use s1_eternum::models::quest::{
+        LevelConfig, Quest, QuestCounter, QuestDetails, QuestGame, QuestGameRegistry, RealmRegistrations,
+    };
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
     use s1_eternum::models::troop::ExplorerTroops;
     use s1_eternum::models::weight::Weight;
+    use s1_eternum::systems::quest::constants::{VERSION};
     use starknet::ContractAddress;
     use tournaments::components::interfaces::{
         IGameDetailsDispatcher, IGameDetailsDispatcherTrait, IGameTokenDispatcher, IGameTokenDispatcherTrait,
-        ISettingsDispatcher, ISettingsDispatcherTrait,
     };
 
+    fn dojo_init(self: @ContractState, game_list: Span<QuestGame>) {
+        let mut world = self.world(DEFAULT_NS());
 
-    const VERSION: felt252 = '0.0.1';
+        // TODO: Add validation
+        // - Check that provided games exist and implement required src5 interfaces
+        // - Check that settings_id is valid for each game
+
+        // Now game_list is already the correct type, no need to deserialize here.
+        let game_registry = QuestGameRegistry { key: VERSION, game_list };
+        world.write_model(@game_registry);
+    }
 
 
     #[abi(embed_v0)]
     pub impl QuestSystemsImpl of super::IQuestSystems<ContractState> {
-        fn create_quest(
-            ref self: ContractState,
-            game_address: ContractAddress,
-            coord: Coord,
-            reward_resource_type: u8,
-            reward_amount: u128,
-            settings_id: u32,
-            target_score: u32,
-            capacity: u16,
-            expires_at: u64,
-        ) -> u64 {
-            let mut world = self.world(DEFAULT_NS());
-
-            let settings_dispatcher = ISettingsDispatcher { contract_address: game_address };
-            let settings_exist = settings_dispatcher.setting_exists(settings_id);
-            let game_address_felt: felt252 = game_address.into();
-            assert!(
-                settings_exist, "Quests: game address {} does not have settings id {}", game_address_felt, settings_id,
-            );
-
-            // TODO: Add additional validation such as resource type exist, etc
-
-            let mut quest_details_counter: QuestDetailsCounter = world.read_model(VERSION);
-            quest_details_counter.count += 1;
-
-            let quest_details = @QuestDetails {
-                id: quest_details_counter.count,
-                coord,
-                game_address,
-                reward: Reward { resource_type: reward_resource_type, amount: reward_amount },
-                settings_id,
-                target_score,
-                capacity,
-                participant_count: 0,
-                expires_at,
-            };
-
-            world.write_model(@quest_details_counter);
-            world.write_model(quest_details);
-            *quest_details.id
-        }
-
         fn start_quest(
             ref self: ContractState,
-            details_id: u64,
+            details_id: u32,
             explorer_id: ID,
             player_name: felt252,
             to_address: ContractAddress,
-        ) -> u64 {
+        ) -> u32 {
             let mut world = self.world(DEFAULT_NS());
             let mut quest_details: QuestDetails = world.read_model(details_id);
             assert(quest_details.id > 0, 'Quest details not found');
@@ -124,15 +91,27 @@ pub mod quest_systems {
             quest_counter.count += 1;
             world.write_model(@quest_counter);
 
-            let game_dispatcher = IGameTokenDispatcher { contract_address: quest_details.game_address };
+            let game_index_id: u8 = quest_details.game_index_id;
+            let game_registry: QuestGameRegistry = world.read_model(VERSION);
+
+            let game: QuestGame = *game_registry.game_list.at(game_index_id.into());
+            let config: LevelConfig = *game.levels.at(quest_details.level.into());
+
+            // we don't currently use start delay but could be used as part of future, multi-player raid feature
+            let game_start_delay: Option<u64> = Option::None;
+
+            // use optional expiration if set on level config
+            let game_expiration: Option<u64> = if config.time_limit > 0 {
+                let current_time = starknet::get_block_timestamp();
+                Option::Some(current_time + config.time_limit)
+            } else {
+                Option::None
+            };
+
+            let game_address: ContractAddress = game.game_address;
+            let game_dispatcher = IGameTokenDispatcher { contract_address: game_address };
             let game_token_id: u64 = game_dispatcher
-                .mint(
-                    player_name,
-                    quest_details.settings_id,
-                    Option::None,
-                    Option::Some(quest_details.expires_at),
-                    to_address,
-                );
+                .mint(player_name, config.settings_id, game_start_delay, game_expiration, to_address);
 
             let quest = Quest { id: quest_counter.count, details_id, explorer_id, game_token_id, completed: false };
             world.write_model(@quest);
@@ -148,21 +127,26 @@ pub mod quest_systems {
             quest.id
         }
 
-        fn claim_reward(ref self: ContractState, quest_id: u64) {
+        fn claim_reward(ref self: ContractState, quest_id: u32) {
             let mut world = self.world(DEFAULT_NS());
             let mut quest: Quest = world.read_model(quest_id);
             let quest_details: QuestDetails = world.read_model(quest.details_id);
 
             // get score for the token id
-            let game_dispatcher = IGameDetailsDispatcher { contract_address: quest_details.game_address };
+            let game_registry: QuestGameRegistry = world.read_model(VERSION);
+            let game_list: Span<QuestGame> = game_registry.game_list;
+            let game: QuestGame = *game_list.at(quest_details.game_index_id.into());
+            let config: LevelConfig = *game.levels.at(quest_details.level.into());
+
+            let game_dispatcher = IGameDetailsDispatcher { contract_address: game.game_address };
             let score: u32 = game_dispatcher.score(quest.game_token_id);
 
             // check if the score is greater than or equal to the target score
             assert!(
-                score >= quest_details.target_score,
+                score >= config.target_score,
                 "Quest {} is not completed. Target score: {}, Current score: {}",
                 quest_id,
-                quest_details.target_score,
+                config.target_score,
                 score,
             );
 
@@ -170,30 +154,115 @@ pub mod quest_systems {
             quest.completed = true;
             world.write_model(@quest);
 
-            // issue reward
-
-            // grant resource reward for exploration
-            let explore_reward_id: u8 = quest_details.reward.resource_type;
-            let explore_reward_amount: u128 = quest_details.reward.amount;
+            // grant resource reward for completing quest
             let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, quest.explorer_id);
-            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_id);
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_details.resource_type);
             let mut resource = SingleResourceStoreImpl::retrieve(
-                ref world, quest.explorer_id, explore_reward_id, ref explorer_weight, resource_weight_grams, false,
+                ref world,
+                quest.explorer_id,
+                quest_details.resource_type,
+                ref explorer_weight,
+                resource_weight_grams,
+                false,
             );
-            resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
+            resource.add(quest_details.amount, ref explorer_weight, resource_weight_grams);
             resource.store(ref world);
             explorer_weight.store(ref world, quest.explorer_id);
         }
 
-        fn get_quest(ref self: ContractState, quest_id: u64) -> Quest {
+        fn get_quest(ref self: ContractState, quest_id: u32) -> Quest {
             let mut world = self.world(DEFAULT_NS());
             world.read_model(quest_id)
         }
 
-        fn get_quest_details(ref self: ContractState, details_id: u64) -> QuestDetails {
+        fn get_quest_details(ref self: ContractState, details_id: u32) -> QuestDetails {
             let mut world = self.world(DEFAULT_NS());
             world.read_model(details_id)
         }
+    }
+}
+
+#[generate_trait]
+pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
+    fn create(ref world: WorldStorage, ref tile: Tile, seed: u256) -> @QuestDetails {
+        assert!(tile.not_occupied(), "Can't create quest on occupied tile");
+
+        // explore the tile if biome is not set
+        if tile.biome == Biome::None.into() {
+            let biome: Biome = get_biome(tile.col.into(), tile.row.into());
+            IMapImpl::explore(ref world, ref tile, biome);
+        }
+
+        // get game registry
+        let game_registry: QuestGameRegistry = world.read_model(VERSION);
+        let game_list: Span<QuestGame> = game_registry.game_list;
+
+        // get a random game from the list
+        let game_selector_salt: u128 = 125;
+        let random_index: u8 = random::random(seed.clone(), game_selector_salt, game_list.len().into())
+            .try_into()
+            .unwrap();
+        let random_game: QuestGame = *game_list.at(random_index.into());
+
+        // get a random level from the game
+        let level_selector_salt: u128 = 126;
+        let random_level: u8 = random::random(seed.clone(), level_selector_salt, random_game.levels.len().into())
+            .try_into()
+            .unwrap();
+
+        // get a random capacity between 100 and 1000
+        let capacity_selector_salt: u128 = 127;
+        let minimum_capacity: u16 = 100;
+        let maximum_capacity: u16 = 1000;
+        let random_capacity: u16 = (random::random(
+            seed.clone(), capacity_selector_salt, (maximum_capacity - minimum_capacity).into(),
+        )
+            + minimum_capacity.into())
+            .try_into()
+            .unwrap();
+
+        // use exploration reward system to get a random resource type and amount
+        let map_config: MapConfig = WorldConfigUtilImpl::get_member(world, selector!("map_config"));
+        let (reward_type, base_reward_amount) = iExplorerImpl::exploration_reward(ref world, map_config, seed.clone());
+
+        // take the base reward amount from explorer code and then multiply by a base multiplier and then the quest
+        // level
+        let quest_reward_amount: u128 = base_reward_amount
+            * QUEST_REWARD_BASE_MULTIPLIER.into()
+            * (random_level.into() + 1);
+
+        let id = world.dispatcher.uuid();
+
+        let quest_details = @QuestDetails {
+            id,
+            coord: Coord { x: tile.col, y: tile.row },
+            game_index_id: random_index,
+            level: random_level,
+            resource_type: reward_type,
+            amount: quest_reward_amount,
+            capacity: random_capacity,
+            participant_count: 0,
+        };
+
+        // set tile occupier
+        IMapImpl::occupy(ref world, ref tile, TileOccupier::Quest, id);
+
+        world.write_model(quest_details);
+
+        quest_details
+    }
+
+
+    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+        let success: bool = *random::choices(
+            array![true, false].span(),
+            array![map_config.quest_discovery_prob.into(), map_config.quest_discovery_fail_prob.into()].span(),
+            array![].span(),
+            1,
+            true,
+            vrf_seed,
+        )[0];
+        return success;
     }
 }
 
@@ -206,7 +275,7 @@ mod tests {
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{TileImpl};
+    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -217,7 +286,10 @@ mod tests {
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
     use s1_eternum::models::{
         config::{m_WeightConfig, m_WorldConfig}, map::{m_Tile},
-        quest::{Quest, m_Quest, m_QuestCounter, m_QuestDetails, m_QuestDetailsCounter, m_RealmRegistrations},
+        quest::{
+            LevelConfig, Quest, QuestDetails, QuestGame, QuestGameRegistry, m_Quest, m_QuestCounter, m_QuestDetails,
+            m_QuestGameRegistry, m_RealmRegistrations,
+        },
         resource::production::building::{m_Building, m_StructureBuildings}, resource::resource::{m_Resource},
         structure::{m_Structure}, troop::{m_ExplorerTroops}, weight::{Weight},
     };
@@ -225,7 +297,10 @@ mod tests {
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{troop_movement_systems};
-    use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, quest_systems};
+    use s1_eternum::systems::quest::constants::{VERSION};
+    use s1_eternum::systems::quest::contracts::{
+        IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl, quest_systems,
+    };
     use s1_eternum::systems::resources::contracts::resource_systems::{resource_systems};
     use s1_eternum::utils::testing::helpers::{
         MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
@@ -255,10 +330,10 @@ mod tests {
                 // other models
                 TestResource::Model(m_ExplorerTroops::TEST_CLASS_HASH),
                 // quest models
-                TestResource::Model(m_QuestDetails::TEST_CLASS_HASH),
-                TestResource::Model(m_QuestDetailsCounter::TEST_CLASS_HASH),
-                TestResource::Model(m_Quest::TEST_CLASS_HASH), TestResource::Model(m_QuestCounter::TEST_CLASS_HASH),
+                TestResource::Model(m_QuestDetails::TEST_CLASS_HASH), TestResource::Model(m_Quest::TEST_CLASS_HASH),
+                TestResource::Model(m_QuestCounter::TEST_CLASS_HASH),
                 TestResource::Model(m_RealmRegistrations::TEST_CLASS_HASH),
+                TestResource::Model(m_QuestGameRegistry::TEST_CLASS_HASH),
                 // game mock models
                 TestResource::Model(m_GameMetadata::TEST_CLASS_HASH),
                 TestResource::Model(m_GameCounter::TEST_CLASS_HASH),
@@ -280,6 +355,30 @@ mod tests {
         ndef
     }
 
+    fn get_quest_systems_init_calldata() -> Span<felt252> {
+        let level1 = LevelConfig { target_score: 100, settings_id: 1, time_limit: 600 };
+        let level2 = LevelConfig { target_score: 200, settings_id: 2, time_limit: 1200 };
+
+        let game1 = QuestGame {
+            game_address: starknet::contract_address_const::<0x1>(), levels: array![level1, level2].span(),
+        };
+        let game2 = QuestGame {
+            game_address: starknet::contract_address_const::<0x2>(), levels: array![level1].span(),
+        };
+
+        let game_list_array = array![game1, game2];
+        let game_list_span: Span<QuestGame> = game_list_array.span();
+
+        // Create an empty array to store the serialized data
+        let mut serialized_data: Array<felt252> = array![];
+
+        // Serialize the Span<QuestGame> into the Array<felt252>
+        game_list_span.serialize(ref serialized_data);
+
+        // Now get the span from the populated array
+        serialized_data.span()
+    }
+
     fn contract_defs() -> Span<ContractDef> {
         [
             ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
@@ -289,7 +388,8 @@ mod tests {
             ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"quest_systems")
-                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span())
+                .with_init_calldata(get_quest_systems_init_calldata()),
             ContractDefTrait::new(DEFAULT_NS(), @"game_mock")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ]
@@ -358,23 +458,13 @@ mod tests {
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         // place quest to the 1 tile east of the Realm which is where explorer spawns
         let quest_coord = Coord { x: 81, y: 80 };
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity = 100;
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+
+        // Use a mock seed for testing
+        let seed: u256 = 0x12345;
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
 
         // start quest
         let quest_id = quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
@@ -386,13 +476,21 @@ mod tests {
 
         // end game with high enough score to claim reward
         let game_mock_dispatcher = IGameTokenMockDispatcher { contract_address: game_mock_addr };
-        game_mock_dispatcher.end_game(quest_id, target_score);
+        let quest: Quest = quest_system.get_quest(quest_id);
+        let quest_details_data: QuestDetails = quest_system.get_quest_details(quest.details_id);
+        let game_registry: QuestGameRegistry = world.read_model(VERSION);
+        let game_list: Span<QuestGame> = game_registry.game_list;
+        let game: QuestGame = *game_list.at(quest_details_data.game_index_id.into());
+        let config: LevelConfig = *game.levels.at(quest_details_data.level.into());
+        let target_score = config.target_score;
+
+        game_mock_dispatcher.end_game(quest_id.into(), target_score);
 
         // get resource amount prior to claiming quest reward
         let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-        let mut resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
+        let mut resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_details_data.resource_type);
         let resource = SingleResourceStoreImpl::retrieve(
-            ref world, explorer_id, reward_resource_type, ref explorer_weight, resource_weight_grams, false,
+            ref world, explorer_id, quest_details_data.resource_type, ref explorer_weight, resource_weight_grams, false,
         );
         let resource_balance_before_claim = resource.balance;
 
@@ -406,13 +504,21 @@ mod tests {
 
         // get updated resource amount
         let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, quest.explorer_id);
-        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, reward_resource_type);
+        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, quest_details_data.resource_type);
         let mut resource = SingleResourceStoreImpl::retrieve(
-            ref world, quest.explorer_id, reward_resource_type, ref explorer_weight, resource_weight_grams, false,
+            ref world,
+            quest.explorer_id,
+            quest_details_data.resource_type,
+            ref explorer_weight,
+            resource_weight_grams,
+            false,
         );
 
         // assert explorer received reward
-        assert(resource.balance == reward_amount + resource_balance_before_claim, 'Explorer did not receive reward');
+        assert(
+            resource.balance == quest_details_data.amount + resource_balance_before_claim,
+            'Explorer did not receive reward',
+        );
     }
 
     #[test]
@@ -854,7 +960,100 @@ mod tests {
         let reward_amount: u128 = 1000000000000000;
         let settings_id = 0;
         let target_score = 300;
-        let capacity: u16 = 2; // Set capacity to 2 to ensure the failure is due to same realm constraint, not capacity
+        let capacity: u16 = 2; // Set capacity to 2 to ensure the failure is due to same realm constraint, not
+        capacity
+        let expires_at = 0;
+        let details_id = quest_system
+            .create_quest(
+                game_mock_addr,
+                quest_coord,
+                reward_resource_type,
+                reward_amount,
+                settings_id,
+                target_score,
+                capacity,
+                expires_at,
+            );
+
+        // Start quest with the explorer
+        let quest_id = quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
+
+        // Verify the game was minted to the player
+        let erc721_dispatcher = IERC721Dispatcher { contract_address: game_mock_addr };
+        let quest_owner = erc721_dispatcher.owner_of(quest_id.into());
+        assert(quest_owner == realm_owner, 'Game was not minted to quester');
+
+        // Try to start the same quest with the same explorer
+        // This should fail because a realm can only have one participant per quest
+        quest_system.start_quest(details_id, explorer_id, 'player2', realm_owner);
+    }
+
+    #[test]
+    #[should_panic(expected: ("Realm has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    fn fail_attempt_quest_from_same_realm_twice() {
+        // spawn world
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+
+        // set weight config
+        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
+        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
+        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
+        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
+        tstore_weight_config(
+            ref world,
+            array![
+                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
+                MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
+            ]
+                .span(),
+        );
+        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+
+        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
+        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
+        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
+
+        // Create a realm
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_coord = Coord { x: 80, y: 80 };
+        let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
+
+        // Grant resources to realm for the explorer
+        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());
+
+        // Add wheat for food costs
+        let wheat_amount: u128 = 1000000000000000;
+        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::WHEAT, wheat_amount)].span());
+
+        // Set current tick
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // Create explorer for the realm
+        starknet::testing::set_contract_address(realm_owner);
+        let troop_management_systems = ITroopManagementSystemsDispatcher {
+            contract_address: troop_management_system_addr,
+        };
+        let explorer_id = troop_management_systems
+            .explorer_create(realm_entity_id, TroopType::Crossbowman, TroopTier::T2, troop_amount, Direction::East);
+
+        // Set up game mock
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
+        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
+
+        // Create quest at the explorer's location
+        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
+        let quest_coord = Coord { x: 81, y: 80 }; // Where the explorer is
+        let reward_resource_type: u8 = ResourceTypes::WHEAT;
+        let reward_amount: u128 = 1000000000000000;
+        let settings_id = 0;
+        let target_score = 300;
+        let capacity: u16 = 2; // Set capacity to 2 to ensure the failure is due to same realm constraint, not
+        capacity
         let expires_at = 0;
         let details_id = quest_system
             .create_quest(
