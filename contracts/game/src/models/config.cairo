@@ -301,34 +301,20 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
 
         let mut start_coord: Coord = CoordImpl::center();
         let start_directions: Array<(Direction, Direction)> = array![
-            // (Direction::East, Direction::SouthWest),
-            // (Direction::East, Direction::NorthWest),
-            // (Direction::West, Direction::SouthEast),
-            // (Direction::West, Direction::NorthEast),
-            // (Direction::NorthWest, Direction::East),
-            // (Direction::SouthEast, Direction::West),
-
-            // note: the values on top are actually correct but need to be inverted
-            // because ui is inverted. so northeast and southeast are swapped.
-            // as well as northwest and southwest
             (Direction::East, Direction::NorthWest),
             (Direction::East, Direction::SouthWest),
             (Direction::West, Direction::NorthEast),
             (Direction::West, Direction::SouthEast),
-            (Direction::SouthWest, Direction::East),
+            (Direction::SouthEast, Direction::West),
             (Direction::NorthEast, Direction::West),
         ];
         let (start_direction, triangle_direction) = *start_directions.at(side);
         assert!(self.base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
-        assert!(
-            self.subsequent_distance % 2 == 0,
-            "subsequent distance must be exactly divisble by 2 so the map isnt skewed",
-        );
 
         // get the coord of the first structure on layer 1 of the selected side
         let side_first_structure__layer_one: Coord = start_coord
             .neighbor_after_distance(start_direction, self.base_distance)
-            .neighbor_after_distance(triangle_direction, (self.base_distance / 2) + (self.subsequent_distance / 2));
+            .neighbor_after_distance(triangle_direction, self.base_distance / 2);
 
         // get the coord of the first structure on selected layer of the selected side
         let side_first_structure__layer_x = side_first_structure__layer_one
