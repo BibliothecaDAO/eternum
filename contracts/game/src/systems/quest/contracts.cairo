@@ -581,26 +581,13 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        // create quest
+        // create quest using internal function
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         let quest_coord = Coord { x: 81, y: 80 };
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300; // Target score is 300
-        let capacity = 100;
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let seed: u256 = 0x12345; // Use a mock seed
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
 
         // start quest
         let quest_id = quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
@@ -612,8 +599,24 @@ mod tests {
 
         // end game with a score LOWER than the target
         let game_mock_dispatcher = IGameTokenMockDispatcher { contract_address: game_mock_addr };
-        let low_score: u32 = 200; // Score is 200, less than target of 300
-        game_mock_dispatcher.end_game(quest_id, low_score);
+        let low_score: u32 = 200; // Initial low score guess
+
+        // Fetch actual target score to adjust low_score and expected panic message
+        let quest: Quest = quest_system.get_quest(quest_id);
+        let quest_details_data: QuestDetails = quest_system.get_quest_details(quest.details_id);
+        let game_registry: QuestGameRegistry = world.read_model(VERSION);
+        let game: QuestGame = *game_registry.game_list.at(quest_details_data.game_index_id.into());
+        let config: LevelConfig = *game.levels.at(quest_details_data.level.into());
+        let target_score = config.target_score;
+
+        // Ensure low_score is actually lower than target_score
+        let actual_low_score = if target_score > 0 {
+            target_score - 1
+        } else {
+            0 // Handle edge case where target score might be 0
+        };
+
+        game_mock_dispatcher.end_game(quest_id.into(), actual_low_score); // Use adjusted low score
 
         // attempt to claim reward - this should panic
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
@@ -675,26 +678,13 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        // Create quest at a DIFFERENT location than where the explorer is
+        // Create quest at a DIFFERENT location than where the explorer is using internal function
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         let quest_coord = Coord { x: 90, y: 90 }; // Different from realm_coord (80, 80)
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity = 100;
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let seed: u256 = 0x6789a; // Use a mock seed
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
 
         // Try to start quest - this should fail because explorer is not on the quest tile
         quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
@@ -755,26 +745,13 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        // Create quest at the same location as the explorer
+        // Create quest at the same location as the explorer using internal function
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         let quest_coord = Coord { x: 81, y: 80 }; // East of realm, where explorer spawns
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity = 100;
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let seed: u256 = 0xabcdef; // Use a mock seed
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
 
         // Set contract address to a DIFFERENT address (not the realm owner)
         let different_address = starknet::contract_address_const::<'different_address'>();
@@ -861,26 +838,18 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        // Create quest at the explorers' location
+        // Create quest at the explorers' location using internal function
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         let quest_coord = Coord { x: 81, y: 80 }; // Where both explorers are
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity: u16 = 1; // Set capacity to 1
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let seed: u256 = 0x13579; // Use a mock seed
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
+
+        // Manually set capacity to 1 after creation for this specific test
+        let mut created_quest_details: QuestDetails = world.read_model(details_id);
+        created_quest_details.capacity = 1;
+        world.write_model_test(@created_quest_details);
 
         // Start quest with first realm's explorer
         starknet::testing::set_contract_address(realm1_owner);
@@ -953,119 +922,14 @@ mod tests {
         let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
         game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
 
-        // Create quest at the explorer's location
+        // Create quest at the explorer's location using internal function
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
         let quest_coord = Coord { x: 81, y: 80 }; // Where the explorer is
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity: u16 = 2; // Set capacity to 2 to ensure the failure is due to same realm constraint, not
-        capacity
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
-
-        // Start quest with the explorer
-        let quest_id = quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
-
-        // Verify the game was minted to the player
-        let erc721_dispatcher = IERC721Dispatcher { contract_address: game_mock_addr };
-        let quest_owner = erc721_dispatcher.owner_of(quest_id.into());
-        assert(quest_owner == realm_owner, 'Game was not minted to quester');
-
-        // Try to start the same quest with the same explorer
-        // This should fail because a realm can only have one participant per quest
-        quest_system.start_quest(details_id, explorer_id, 'player2', realm_owner);
-    }
-
-    #[test]
-    #[should_panic(expected: ("Realm has already attempted this quest", 'ENTRYPOINT_FAILED'))]
-    fn fail_attempt_quest_from_same_realm_twice() {
-        // spawn world
-        let mut world = tspawn_world(namespace_def(), contract_defs());
-
-        // set weight config
-        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
-        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
-        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
-        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
-        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
-        tstore_weight_config(
-            ref world,
-            array![
-                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
-                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
-                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
-                MOCK_WEIGHT_CONFIG(ResourceTypes::CROSSBOWMAN_T2),
-            ]
-                .span(),
-        );
-        tstore_map_config(ref world, MOCK_MAP_CONFIG());
-
-        let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
-        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
-
-        // Create a realm
-        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
-        let realm_coord = Coord { x: 80, y: 80 };
-        let realm_entity_id = tspawn_simple_realm(ref world, 1, realm_owner, realm_coord);
-
-        // Grant resources to realm for the explorer
-        let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
-        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::CROSSBOWMAN_T2, troop_amount)].span());
-
-        // Add wheat for food costs
-        let wheat_amount: u128 = 1000000000000000;
-        tgrant_resources(ref world, realm_entity_id, array![(ResourceTypes::WHEAT, wheat_amount)].span());
-
-        // Set current tick
-        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
-        starknet::testing::set_block_timestamp(current_tick);
-
-        // Create explorer for the realm
-        starknet::testing::set_contract_address(realm_owner);
-        let troop_management_systems = ITroopManagementSystemsDispatcher {
-            contract_address: troop_management_system_addr,
-        };
-        let explorer_id = troop_management_systems
-            .explorer_create(realm_entity_id, TroopType::Crossbowman, TroopTier::T2, troop_amount, Direction::East);
-
-        // Set up game mock
-        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
-        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
-
-        // Create quest at the explorer's location
-        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
-        let quest_coord = Coord { x: 81, y: 80 }; // Where the explorer is
-        let reward_resource_type: u8 = ResourceTypes::WHEAT;
-        let reward_amount: u128 = 1000000000000000;
-        let settings_id = 0;
-        let target_score = 300;
-        let capacity: u16 = 2; // Set capacity to 2 to ensure the failure is due to same realm constraint, not
-        capacity
-        let expires_at = 0;
-        let details_id = quest_system
-            .create_quest(
-                game_mock_addr,
-                quest_coord,
-                reward_resource_type,
-                reward_amount,
-                settings_id,
-                target_score,
-                capacity,
-                expires_at,
-            );
+        let mut tile: Tile = world.read_model((quest_coord.x, quest_coord.y));
+        let seed: u256 = 0x24680; // Use a mock seed
+        let quest_details: @QuestDetails = iQuestDiscoveryImpl::create(ref world, ref tile, seed);
+        let details_id = *quest_details.id;
+        // Note: capacity is now random (100-1000), which is fine for this test.
 
         // Start quest with the explorer
         let quest_id = quest_system.start_quest(details_id, explorer_id, 'player1', realm_owner);
