@@ -275,7 +275,7 @@ mod tests {
     use openzeppelin_token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::map::{Tile, TileImpl};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -545,8 +545,6 @@ mod tests {
         tstore_map_config(ref world, MOCK_MAP_CONFIG());
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
-        let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();
-        let (resource_system_addr, _) = world.dns(@"resource_systems").unwrap();
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
         let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
 
@@ -599,7 +597,6 @@ mod tests {
 
         // end game with a score LOWER than the target
         let game_mock_dispatcher = IGameTokenMockDispatcher { contract_address: game_mock_addr };
-        let low_score: u32 = 200; // Initial low score guess
 
         // Fetch actual target score to adjust low_score and expected panic message
         let quest: Quest = quest_system.get_quest(quest_id);
@@ -607,16 +604,8 @@ mod tests {
         let game_registry: QuestGameRegistry = world.read_model(VERSION);
         let game: QuestGame = *game_registry.game_list.at(quest_details_data.game_index_id.into());
         let config: LevelConfig = *game.levels.at(quest_details_data.level.into());
-        let target_score = config.target_score;
 
-        // Ensure low_score is actually lower than target_score
-        let actual_low_score = if target_score > 0 {
-            target_score - 1
-        } else {
-            0 // Handle edge case where target score might be 0
-        };
-
-        game_mock_dispatcher.end_game(quest_id.into(), actual_low_score); // Use adjusted low score
+        game_mock_dispatcher.end_game(quest_id.into(), config.target_score - 1); // Use adjusted low score
 
         // attempt to claim reward - this should panic
         let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
