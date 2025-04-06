@@ -460,7 +460,7 @@ mod tests {
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{CombatConfigImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
+    use s1_eternum::models::map::{Tile, TileImpl};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::resource::{
