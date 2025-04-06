@@ -87,8 +87,7 @@ pub mod resource_bridge_systems {
             let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
                 ref world, resource_bridge_token_whitelist.resource_type,
             );
-            let amount_lost_to_inefficiency = amount
-                * inefficiency_percentage_num.into()
+            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
                 / inefficiency_percentage_denom.into();
             let amount = amount - amount_lost_to_inefficiency;
 
@@ -178,8 +177,7 @@ pub mod resource_bridge_systems {
             let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
                 ref world, resource_bridge_token_whitelist.resource_type,
             );
-            let amount_lost_to_inefficiency = amount
-                * inefficiency_percentage_num.into()
+            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
                 / inefficiency_percentage_denom.into();
             let amount = amount - amount_lost_to_inefficiency;
 
