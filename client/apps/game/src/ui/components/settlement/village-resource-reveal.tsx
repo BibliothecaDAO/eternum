@@ -120,9 +120,9 @@ export const VillageResourceReveal = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full relative">
-      <div className="text-xl font-bold mb-4 text-center text-gold">Resource Discovery</div>
+      <h4 className="mb-8">Resource Discovery</h4>
 
-      <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-gold/30 bg-dark-brown/80 backdrop-blur-sm shadow-xl">
+      <div className="relative w-64 h-64 overflow-hidden rounded-2xl panel-wood border-gold/5 bg-brown/5 backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90">
           <AnimatePresence>
@@ -163,7 +163,7 @@ export const VillageResourceReveal = ({
             }}
             className="absolute inset-0 flex flex-col items-center justify-center p-4"
           >
-            <div className="text-lg font-bold mb-2 text-gold">You minted:</div>
+            <h6>You minted:</h6>
             <div className="p-6 bg-dark-brown/80 rounded-xl shadow-inner flex flex-col items-center justify-center">
               <ResourceIcon
                 resource={
@@ -174,11 +174,11 @@ export const VillageResourceReveal = ({
                 size="xxl"
                 className="mb-2"
               />
-              <div className="text-xl font-bold text-gold mt-2">
+              <h5>
                 {Object.keys(ResourcesIds).find(
                   (key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource,
                 ) + " Village"}
-              </div>
+              </h5>
             </div>
           </motion.div>
         )}
@@ -368,16 +368,11 @@ export const VillageResourceReveal = ({
 
       {/* Close and restart buttons */}
       <div className="flex gap-4 justify-center mt-8">
-        <Button
-          variant="primary"
-          disabled={isSpinning}
-          onClick={onRestart}
-          className="px-8 py-4 text-base font-semibold"
-        >
+        <Button variant="gold" disabled={isSpinning} onClick={onRestart} className="px-8 py-4 text-base font-semibold">
           Mint New Village
         </Button>
         <Button variant="outline" disabled={isSpinning} onClick={onClose} className="px-8 py-4 text-base">
-          Close
+          Continue to your Village
         </Button>
       </div>
     </div>
