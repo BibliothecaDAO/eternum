@@ -18,7 +18,7 @@ pub mod troop_raid_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
-    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
+    use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION};
     use s1_eternum::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
