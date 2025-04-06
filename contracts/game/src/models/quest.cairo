@@ -122,4 +122,3 @@ pub struct QuestFeatureFlag {
     /// Boolean flag indicating if the quest feature is currently enabled.
     pub enabled: bool,
 }
-
