@@ -1,4 +1,3 @@
-import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
@@ -8,7 +7,7 @@ import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, getPlayerInfo, PlayerInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, getPlayerInfo, LeaderboardManager, PlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
@@ -31,22 +30,19 @@ export const Social = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
-  const gameEnded = useEntityQuery([Has(components.events.GameEnded)]);
+  const gameEnded = useEntityQuery([Has(components.events.SeasonEnded)]);
 
   const players = usePlayers();
 
-  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
+  const playersByRank = useMemo(() => {
+    return LeaderboardManager.instance(components).getPlayersByRank();
+  }, [components]);
 
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
     getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
   );
 
-  const updateLeaderboard = useHyperstructureData();
-
-  const handleUpdatePoints = () => {
-    setIsLoading(true);
-    updateLeaderboard();
-  };
+  const handleUpdatePoints = () => {};
 
   useEffect(() => {
     setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));

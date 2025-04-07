@@ -7,26 +7,21 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has } from "@dojoengine/recs";
-import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
 
 export const SecondaryMenuItems = () => {
   const {
     setup: {
-      components: {
-        events: { GameEnded },
-      },
+      components: {},
     },
   } = useDojo();
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { connector } = useAccountStore();
 
-  const gameEnded = useEntityQuery([Has(GameEnded)]);
-  const { isConnected } = useAccount();
+  // todo: fix this
+  const gameEnded = false;
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -56,7 +51,7 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-    if (gameEnded.length !== 0) {
+    if (gameEnded) {
       buttons.push({
         button: (
           <CircleButton
@@ -114,20 +109,6 @@ export const SecondaryMenuItems = () => {
         <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
         <HomeButton />
       </div>
-      {/* {isConnected && (
-        <div className="absolute top-16 right-0 bg-brown/90 mx-2">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer")}
-          >
-            <div className="flex items-center gap-2">
-              <ResourceIcon resource="Lords" size="xs" />
-              Bridge Lords & Resources
-            </div>
-          </Button>
-        </div>
-      )} */}
     </div>
   );
 };

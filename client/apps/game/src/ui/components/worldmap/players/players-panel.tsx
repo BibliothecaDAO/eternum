@@ -23,7 +23,7 @@ export const PlayersPanel = ({
   const {
     setup: {
       components,
-      systemCalls: { whitelist_player, remove_player_from_whitelist },
+      systemCalls: { update_whitelist },
     },
     account: { account },
   } = useDojo();
@@ -93,18 +93,18 @@ export const PlayersPanel = ({
 
   const whitelistPlayer = (address: ContractAddress) => {
     setIsLoading(true);
-    whitelist_player({
-      player_address_to_whitelist: address,
-      guild_entity_id: userGuild?.entityId!,
+    update_whitelist({
+      address,
+      whitelist: true,
       signer: account,
     }).finally(() => setIsLoading(false));
   };
 
   const removePlayerFromWhitelist = (address: ContractAddress) => {
     setIsLoading(true);
-    remove_player_from_whitelist({
-      player_address_to_remove: address,
-      guild_entity_id: userGuild?.entityId!,
+    update_whitelist({
+      address,
+      whitelist: false,
       signer: account,
     }).finally(() => setIsLoading(false));
   };

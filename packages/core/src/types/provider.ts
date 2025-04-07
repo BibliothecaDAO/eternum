@@ -302,9 +302,9 @@ export interface CreateGuildProps extends SystemSigner {
 export interface JoinGuildProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
-export interface WhitelistPlayerProps extends SystemSigner {
-  player_address_to_whitelist: num.BigNumberish;
-  guild_entity_id: num.BigNumberish;
+export interface UpdateWhitelist extends SystemSigner {
+  address: num.BigNumberish;
+  whitelist: boolean;
 }
 
 export interface TransferGuildOwnership extends SystemSigner {
@@ -564,23 +564,27 @@ export interface GetPointsProps extends SystemSigner {
   hyperstructure_contributed_to: number[];
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
-export interface EndGameProps extends SystemSigner {
-  hyperstructure_contributed_to: number[];
-  hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
-}
+export interface EndGameProps extends SystemSigner {}
 
 export interface RegisterToLeaderboardProps extends SystemSigner {
   hyperstructure_contributed_to: number[];
   hyperstructure_shareholder_epochs: { hyperstructure_entity_id: number; epoch: number }[];
 }
 
-export interface ClaimLeaderboardRewardsProps extends SystemSigner {
-  token: num.BigNumberish;
-}
+export interface ClaimLeaderboardRewardsProps extends SystemSigner {}
 
 export interface SetCoOwnersProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   co_owners: Record<number, BigNumberish>[];
+}
+
+export interface ClaimConstructionPointsProps extends SystemSigner {
+  hyperstructure_ids: num.BigNumberish[];
+  player: num.BigNumberish;
+}
+
+export interface ClaimSharePointsProps extends SystemSigner {
+  hyperstructure_ids: num.BigNumberish[];
 }
 
 export interface SetStaminaConfigProps extends SystemSigner {

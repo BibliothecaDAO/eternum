@@ -147,7 +147,7 @@ const ChangeCoOwners = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { set_co_owners },
+      systemCalls: { allocate_shares },
     },
   } = useDojo();
 
@@ -178,7 +178,7 @@ const ChangeCoOwners = ({
   const setCoOwners = async () => {
     setIsLoading(true);
     // percentage is in precision 10_000
-    await set_co_owners({
+    await allocate_shares({
       signer: account,
       hyperstructure_entity_id: hyperstructureEntityId,
       co_owners: newCoOwners

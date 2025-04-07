@@ -23,7 +23,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const {
     setup: {
       components,
-      systemCalls: { join_guild, remove_guild_member, disband_guild, remove_player_from_whitelist, set_entity_name },
+      systemCalls: { join_guild, remove_guild_member, disband_guild, update_whitelist, set_entity_name },
     },
     account: { account },
   } = useDojo();
@@ -37,7 +37,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   );
 
   const selectedGuild = useMemo(
-    () => getGuild(Number(selectedGuildEntityId), ContractAddress(account.address), components),
+    () => getGuild(selectedGuildEntityId, ContractAddress(account.address), components),
     [selectedGuildEntityId, account.address, components],
   );
 
@@ -84,9 +84,9 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
 
   const removePlayerFromWhitelist = (address: ContractAddress) => {
     setIsLoading(true);
-    remove_player_from_whitelist({
-      player_address_to_remove: address,
-      guild_entity_id: selectedGuildEntityId,
+    update_whitelist({
+      address,
+      whitelist: false,
       signer: account,
     }).finally(() => setIsLoading(false));
   };

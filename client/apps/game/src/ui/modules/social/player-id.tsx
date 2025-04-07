@@ -57,7 +57,7 @@ export const PlayerId = ({
   back,
 }: {
   selectedPlayer: ContractAddress;
-  selectedGuild?: number;
+  selectedGuild?: ContractAddress;
   back?: () => void;
 }) => {
   const {
@@ -120,7 +120,7 @@ export const PlayerId = ({
 
   return (
     <div className="pointer-events-auto">
-      {selectedGuild && (
+      {!!selectedGuild && (
         <Button variant={"outline"} className={"mt-2 ml-2"} onClick={back}>
           <ArrowLeft className="w-2 mr-2" /> Back
         </Button>

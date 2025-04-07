@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { LoadingStateKey } from "@/shared/store/slices/world-loading-slice";
+import { AppStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,

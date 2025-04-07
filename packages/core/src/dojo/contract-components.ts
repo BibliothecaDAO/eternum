@@ -1358,6 +1358,23 @@ export function defineContractComponents(world: World) {
 const eventsComponents = (world: World) => {
   return {
     events: {
+      SeasonEnded: (() => {
+        return defineComponent(
+          world,
+          {
+            winner_address: RecsType.BigInt,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "SeasonEnded",
+              types: ["ContractAddress", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
       AcceptOrder: (() => {
         return defineComponent(
           world,

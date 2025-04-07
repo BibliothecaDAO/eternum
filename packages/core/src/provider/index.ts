@@ -1735,25 +1735,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async whitelist_player(props: SystemProps.WhitelistPlayerProps) {
-    const { player_address_to_whitelist, guild_entity_id, signer } = props;
+  public async update_whitelist(props: SystemProps.UpdateWhitelist) {
+    const { address, whitelist, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "whitelist_player",
-      calldata: [player_address_to_whitelist, guild_entity_id],
-    });
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  public async transfer_guild_ownership(props: SystemProps.TransferGuildOwnership) {
-    const { guild_entity_id, to_player_address, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "transfer_guild_ownership",
-      calldata: [guild_entity_id, to_player_address],
+      entrypoint: "update_whitelist",
+      calldata: [address, whitelist],
     });
 
     return await this.promiseQueue.enqueue(call);
@@ -1764,7 +1752,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "remove_guild_member",
+      entrypoint: "remove_member",
       calldata: [player_address_to_remove],
     });
 
@@ -1779,23 +1767,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       calls.map((call) => {
         return {
           contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-          entrypoint: "remove_guild_member",
+          entrypoint: "remove_member",
           calldata: [call.address],
         };
       }),
     );
-
-    return await this.promiseQueue.enqueue(call);
-  }
-
-  public async remove_player_from_whitelist(props: SystemProps.RemovePlayerFromWhitelist) {
-    const { player_address_to_remove, guild_entity_id, signer } = props;
-
-    const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
-      entrypoint: "remove_player_from_whitelist",
-      calldata: [player_address_to_remove, guild_entity_id],
-    });
 
     return await this.promiseQueue.enqueue(call);
   }
@@ -2190,20 +2166,15 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
-    const {
-      initialize_shards_amount,
-      construction_resources,
-      points_per_second,
-      points_for_win,
-      signer,
-    } = props;
+    const { initialize_shards_amount, construction_resources, points_per_second, points_for_win, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
       calldata: [
         initialize_shards_amount,
-        construction_resources.length, ...construction_resources,
+        construction_resources.length,
+        ...construction_resources,
         points_per_second,
         points_for_win,
       ],
@@ -2227,7 +2198,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "contribute_to_construction",
+      entrypoint: "contribute",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
 
@@ -2239,7 +2210,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "set_access",
+      entrypoint: "update_construction_access",
       calldata: [hyperstructure_entity_id, access],
     });
 
@@ -2247,57 +2218,60 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async end_game(props: SystemProps.EndGameProps) {
-    const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
+    const { signer } = props;
 
     const call = this.createProviderCall(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "end_game",
-      calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
+      entrypoint: "season_close",
+      calldata: [],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async register_to_leaderboard(props: SystemProps.RegisterToLeaderboardProps) {
-    const { signer, hyperstructure_contributed_to, hyperstructure_shareholder_epochs } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
-      entrypoint: "register_to_leaderboard",
-      calldata: [hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
-    });
-  }
-
-  public async claim_leaderboard_rewards(props: SystemProps.ClaimLeaderboardRewardsProps) {
-    const { signer, token } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
-      entrypoint: "claim_leaderboard_rewards",
-      calldata: [token],
-    });
-  }
-
-  public async set_co_owners(props: SystemProps.SetCoOwnersProps) {
+  public async allocate_shares(props: SystemProps.SetCoOwnersProps) {
     const { hyperstructure_entity_id, co_owners, signer } = props;
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "set_co_owners",
+      entrypoint: "allocate_shares",
       calldata: [hyperstructure_entity_id, co_owners],
     });
 
     return await this.promiseQueue.enqueue(call);
   }
 
-  public async get_points(props: SystemProps.GetPointsProps) {
-    const { player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs, signer } = props;
+  public async season_prize_claim(props: SystemProps.ClaimLeaderboardRewardsProps) {
+    const { signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-season_systems`),
+      entrypoint: "season_prize_claim",
+      calldata: [],
+    });
+  }
 
-    const call = await this.callAndReturnResult(signer, {
+  public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
+    const { hyperstructure_ids, player, signer } = props;
+
+    const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
-      entrypoint: "get_points",
-      calldata: [player_address, hyperstructure_contributed_to, hyperstructure_shareholder_epochs],
+      entrypoint: "claim_construction_points",
+      calldata: [hyperstructure_ids.length, ...hyperstructure_ids, player],
     });
 
-    return call;
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  public async claim_share_points(props: SystemProps.ClaimSharePointsProps) {
+    const { hyperstructure_ids, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
+      entrypoint: "claim_share_points",
+      calldata: [hyperstructure_ids.length, ...hyperstructure_ids],
+    });
+
+    return await this.promiseQueue.enqueue(call);
   }
 
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {

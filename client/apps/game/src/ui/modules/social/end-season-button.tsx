@@ -1,9 +1,8 @@
-import { useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useGetPlayerEpochs } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useCallback, useMemo } from "react";
 
@@ -14,17 +13,14 @@ export const EndSeasonButton = () => {
     account: { account },
   } = dojo;
 
-  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
-
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
-  const getEpochs = useGetPlayerEpochs();
-
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
   const { playerPoints, percentageOfPoints } = useMemo(() => {
+    const playersByRank = LeaderboardManager.instance(setup.components).getPlayersByRank();
     const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
     const playerPoints = player?.[1] ?? 0;
 
@@ -47,17 +43,8 @@ export const EndSeasonButton = () => {
     if (!hasReachedFinalPoints) {
       return;
     }
-    const contributions = Array.from(
-      LeaderboardManager.instance(setup.components).getHyperstructuresWithContributionsFromPlayer(
-        ContractAddress(account.address),
-      ),
-    );
-    const epochs = getEpochs();
-
     await setup.systemCalls.end_game({
       signer: account,
-      hyperstructure_contributed_to: contributions,
-      hyperstructure_shareholder_epochs: epochs,
     });
   }, [hasReachedFinalPoints]);
 
