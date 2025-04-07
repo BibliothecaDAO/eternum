@@ -21,7 +21,7 @@ export const Leaderboard = ({
   } = dojo;
 
   const playerPointsLeaderboard = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getPlayersByRank();
+    return LeaderboardManager.instance(dojo.setup.components).playersByRank;
   }, [hyperstructureEntityId]);
 
   const hyperstructure = useHyperstructureUpdates(hyperstructureEntityId);

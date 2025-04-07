@@ -9,8 +9,7 @@ import Button from "@/ui/elements/button";
 import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, getPlayerInfo, LeaderboardManager, PlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has } from "@dojoengine/recs";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./end-season-button";
 import { PlayerId } from "./player-id";
@@ -18,31 +17,80 @@ import { PlayerId } from "./player-id";
 export const Social = () => {
   const {
     account: { account },
-    setup: { components },
+    setup: {
+      components,
+      systemCalls: { claim_construction_points, claim_share_points },
+    },
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUpdateLoading, setIsUpdateLoading] = useState(false);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
+  const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
+  const [isUpdatePointsLoading, setIsUpdatePointsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<ContractAddress>(0n);
   const [selectedPlayer, setSelectedPlayer] = useState<ContractAddress>(0n);
+  const [playersByRank, setPlayersByRank] = useState<[ContractAddress, number][]>([]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
-  const gameEnded = useEntityQuery([Has(components.events.SeasonEnded)]);
-
   const players = usePlayers();
 
-  const playersByRank = useMemo(() => {
-    return LeaderboardManager.instance(components).getPlayersByRank();
+  useEffect(() => {
+    // update first time
+    LeaderboardManager.instance(components).updatePoints();
+    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
   }, [components]);
 
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
     getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
   );
 
-  const handleUpdatePoints = () => {};
+  const hyperstructuresEntityIds = useMemo(() => {
+    return Array.from(runQuery([Has(components.Hyperstructure)]))
+      .map((entity) => getComponentValue(components.Hyperstructure, entity))
+      .filter((hyperstructure) => hyperstructure !== undefined)
+      .map((hyperstructure) => hyperstructure.hyperstructure_id);
+  }, [components.Hyperstructure]);
+
+  const handleUpdatePoints = async () => {
+    setIsUpdatePointsLoading(true);
+    LeaderboardManager.instance(components).updatePoints();
+    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
+    setIsUpdatePointsLoading(false);
+  };
+
+  const claimConstructionPoints = async () => {
+    setIsRegisterLoading(true);
+    try {
+      await claim_construction_points({
+        signer: account,
+        hyperstructure_ids: hyperstructuresEntityIds,
+        player: ContractAddress(account.address),
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsRegisterLoading(false);
+    }
+  };
+
+  const claimSharePoints = async () => {
+    setIsSharePointsLoading(true);
+    try {
+      await claim_share_points({
+        signer: account,
+        hyperstructure_ids: hyperstructuresEntityIds,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSharePointsLoading(false);
+    }
+  };
 
   useEffect(() => {
     setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
@@ -77,7 +125,7 @@ export const Social = () => {
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
       {
-        key: "Guild",
+        key: "Tribes",
         label: <div>Tribes</div>,
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
@@ -123,8 +171,18 @@ export const Social = () => {
         </Tabs.List>
 
         <div className="flex justify-center gap-8 mt-8">
-          {gameEnded.length === 0 && <EndSeasonButton />}
-          <Button isLoading={isLoading} variant="secondary" onClick={handleUpdatePoints}>
+          <EndSeasonButton />
+          <Button
+            isLoading={isRegisterLoading || isSharePointsLoading}
+            variant="secondary"
+            onClick={() => {
+              claimConstructionPoints();
+              claimSharePoints();
+            }}
+          >
+            Claim All Points
+          </Button>
+          <Button isLoading={isUpdatePointsLoading} variant="secondary" onClick={handleUpdatePoints}>
             Update Points
           </Button>
         </div>

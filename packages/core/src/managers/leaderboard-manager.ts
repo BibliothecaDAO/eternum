@@ -4,9 +4,30 @@ import { ClientComponents } from "../dojo/create-client-components";
 import { ContractAddress, ID } from "../types";
 import { getGuildFromPlayerAddress } from "../utils";
 
+interface ContractAddressAndAmount {
+  key: false;
+  type: "tuple";
+  type_name: "(ContractAddress, u16)";
+  value: [
+    {
+      key: false;
+      type: "primitive";
+      type_name: "ContractAddress";
+      value: string;
+    },
+    {
+      key: false;
+      type: "primitive";
+      type_name: "u16";
+      value: number;
+    },
+  ];
+}
+
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();
+  public playersByRank: [ContractAddress, number][] = [];
   public pointsPerGuild: Map<ContractAddress, number> = new Map();
   public guildsByRank: [ContractAddress, number][] = [];
 
@@ -22,6 +43,22 @@ export class LeaderboardManager {
   public initialize() {
     this.pointsPerPlayer = this.getPlayerPoints();
     this.pointsPerGuild = this.getGuildsPoints();
+    this.playersByRank = this.getPlayersByRank();
+    this.guildsByRank = this.getGuildsByRank();
+  }
+
+  public updatePoints() {
+    // Refresh player points
+    this.pointsPerPlayer = this.getPlayerPoints();
+
+    // Refresh guild points
+    this.pointsPerGuild = this.getGuildsPoints();
+
+    // Update guild rankings
+    this.guildsByRank = this.getGuildsByRank();
+
+    // Update player rankings
+    this.playersByRank = this.getPlayersByRank();
   }
 
   public getCurrentCoOwners(
@@ -48,6 +85,7 @@ export class LeaderboardManager {
 
     for (const entityId of registredPoints) {
       const playerRegisteredPoints = getComponentValue(this.components.PlayerRegisteredPoints, entityId);
+      console.log({ playerRegisteredPoints });
       if (!playerRegisteredPoints) continue;
 
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
@@ -73,11 +111,11 @@ export class LeaderboardManager {
     return pointsPerGuild;
   }
 
-  public getGuildsByRank(): [ContractAddress, number][] {
+  private getGuildsByRank(): [ContractAddress, number][] {
     return Array.from(this.pointsPerGuild).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
-  public getPlayersByRank(): [ContractAddress, number][] {
+  private getPlayersByRank(): [ContractAddress, number][] {
     return Array.from(this.pointsPerPlayer).sort(([_A, pointsA], [_B, pointsB]) => pointsB - pointsA);
   }
 
@@ -88,18 +126,14 @@ export class LeaderboardManager {
     );
     if (!hyperstructureShareholders) return 0;
 
-    console.log({ hyperstructureShareholders });
+    const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
 
-    const shareholders = hyperstructureShareholders.shareholders as any;
+    const playerShare = shareholders.find(
+      (share: ContractAddressAndAmount) => ContractAddress(share.value[0].value) === playerAddress,
+    );
 
-    const playerShare = shareholders.find((share: any) => share[0] === playerAddress);
-
-    return playerShare ? Number(playerShare[1]) : 0;
+    return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
   }
-
-  public getContributions = (hyperstructureEntityId: ID) => {
-    return [];
-  };
 
   public getHyperstructuresWithContributionsFromPlayer = (address: ContractAddress) => {
     const playerConstructionPoints = runQuery([HasValue(this.components.PlayerConstructionPoints, { address })]);
@@ -109,10 +143,6 @@ export class LeaderboardManager {
     return new Set(hyperstructureEntityIds);
   };
 
-  public getPlayerUnregistredContributions = (address: ContractAddress) => {
-    return [];
-  };
-
   public getCompletionPoints = (address: ContractAddress, hyperstructureId: number) => {
     const playerContribution = getComponentValue(
       this.components.PlayerConstructionPoints,
@@ -120,5 +150,15 @@ export class LeaderboardManager {
     );
 
     return Number(playerContribution?.unregistered_points) ?? 0;
+  };
+
+  public isSeasonOver = () => {
+    const seasonEnded = runQuery([Has(this.components.events.SeasonEnded)]);
+
+    if (seasonEnded.size > 0) {
+      return true;
+    }
+
+    return false;
   };
 }

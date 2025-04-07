@@ -213,10 +213,6 @@ const ChangeCoOwners = ({
   return (
     <div className="h-full flex flex-col justify-between">
       <div>
-        <div className="text-red text-center p-4 bg-red/10 mb-4">
-          ⚠️ Important: You must set co-owners to start earning points. No points will be earned until co-owners are
-          set!
-        </div>
         {newCoOwners.map((coOwner) => {
           const coOwnersExceptForThis = newCoOwners.filter((co) => co.id !== coOwner.id);
           const maxValue = 100 - coOwnersExceptForThis.reduce((acc, curr) => acc + curr.percentage, 0);
@@ -246,7 +242,7 @@ const ChangeCoOwners = ({
                 }}
               />
               <Trash
-                className="col-span-1 m-auto self-center w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                className="col-span-1 m-auto self-center w-5 h-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
                 onClick={() => removeCoOwner(coOwner.id)}
               />
             </div>

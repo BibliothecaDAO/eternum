@@ -71,6 +71,7 @@ export const GuildRow = ({
     mines: number;
     hyperstructures: number;
     rank: number;
+    points: number;
   };
   onClick: () => void;
 }) => {
@@ -90,7 +91,7 @@ export const GuildRow = ({
       <p className="col-span-1 text-center font-medium px-1">{guild.mines}</p>
       <p className="col-span-1 text-center font-medium px-1">{guild.hyperstructures}</p>
       <p className="col-span-1 text-center font-medium px-1">{guild.memberCount}</p>
-      <p className="col-span-2 font-medium text-amber-200/90 px-1 text-center">{0}</p>
+      <p className="col-span-2 font-medium text-amber-200/90 px-1 text-center">{currencyIntlFormat(guild.points)}</p>
       <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1 justify-center">
         {currencyIntlFormat(guild.lords)}
         <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />

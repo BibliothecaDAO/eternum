@@ -3,8 +3,7 @@ import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import clsx from "clsx";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export const EndSeasonButton = () => {
   const dojo = useDojo();
@@ -13,14 +12,19 @@ export const EndSeasonButton = () => {
     account: { account },
   } = dojo;
 
+  const [isLoading, setIsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;
 
   const pointsForWin = configManager.getHyperstructureConfig().pointsForWin;
 
+  const isSeasonOver = useMemo(() => {
+    return LeaderboardManager.instance(setup.components).isSeasonOver();
+  }, []);
+
   const { playerPoints, percentageOfPoints } = useMemo(() => {
-    const playersByRank = LeaderboardManager.instance(setup.components).getPlayersByRank();
+    const playersByRank = LeaderboardManager.instance(setup.components).playersByRank;
     const player = playersByRank.find(([player, _]) => ContractAddress(player) === ContractAddress(account.address));
     const playerPoints = player?.[1] ?? 0;
 
@@ -40,18 +44,24 @@ export const EndSeasonButton = () => {
   }, [percentageOfPoints]);
 
   const endGame = useCallback(async () => {
-    if (!hasReachedFinalPoints) {
+    if (!hasReachedFinalPoints || isSeasonOver) {
       return;
     }
-    await setup.systemCalls.end_game({
-      signer: account,
-    });
-  }, [hasReachedFinalPoints]);
+    setIsLoading(true);
+    try {
+      await setup.systemCalls.end_game({
+        signer: account,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasReachedFinalPoints, isSeasonOver]);
 
   return (
     <Button
       variant="primary"
-      className={clsx("self-center")}
+      isLoading={isLoading}
+      disabled={!hasReachedFinalPoints || isSeasonOver}
       onMouseOver={() => {
         setTooltip({
           position: "bottom",
@@ -61,6 +71,7 @@ export const EndSeasonButton = () => {
                 {playerPoints.toLocaleString()} / {pointsForWin.toLocaleString()}
               </span>
               {!hasReachedFinalPoints && <span>Not enough points to end the season</span>}
+              {isSeasonOver && <span>Season is already over</span>}
             </span>
           ),
         });
@@ -68,7 +79,6 @@ export const EndSeasonButton = () => {
       onMouseOut={() => {
         setTooltip(null);
       }}
-      style={{ background: gradient }}
       onClick={endGame}
     >
       End season

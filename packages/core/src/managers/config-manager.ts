@@ -648,7 +648,7 @@ export class ClientConfigManager {
       () => {
         const hyperstructureConfig = getComponentValue(
           this.components.WorldConfig,
-          getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]),
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
         )?.hyperstructure_config;
 
         return {

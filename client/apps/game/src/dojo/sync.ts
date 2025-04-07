@@ -365,7 +365,12 @@ const singleKeyModels = [
   "s1_eternum-GuildMember",
 ];
 
-const eventModels = ["s1_eternum-AcceptOrder", "s1_eternum-SwapEvent", "s1_eternum-LiquidityEvent"];
+const eventModels = [
+  "s1_eternum-SeasonEnded",
+  "s1_eternum-AcceptOrder",
+  "s1_eternum-SwapEvent",
+  "s1_eternum-LiquidityEvent",
+];
 
 const hyperstructureModels = [
   // Hyperstructure
