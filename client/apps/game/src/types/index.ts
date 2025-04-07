@@ -4,6 +4,7 @@ export enum RightView {
   None,
   ResourceTable,
   Production,
+  Bridge,
 }
 
 export enum LeftView {

@@ -1,8 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
+import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
+import { PlayerStructure } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -11,11 +13,13 @@ const EntityResourceTable = lazy(() =>
   import("@/ui/components/resources/entity-resource-table").then((module) => ({ default: module.EntityResourceTable })),
 );
 
-export const RightNavigationModule = () => {
+export const RightNavigationModule = ({ structures }: { structures: PlayerStructure[] }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
+
+  console.log("structures", structures);
 
   const navigation = useMemo(
     () => [
@@ -46,6 +50,20 @@ export const RightNavigationModule = () => {
             onClick={() => {
               toggleModal(<ProductionModal />);
             }}
+          />
+        ),
+      },
+      {
+        name: MenuEnum.bridge,
+        button: (
+          <CircleButton
+            className="bridge-selector"
+            image={BuildingThumbs.bridge}
+            size="xl"
+            tooltipLocation="top"
+            label="Bridge"
+            active={view === RightView.Bridge}
+            onClick={() => setView(view === RightView.Bridge ? RightView.None : RightView.Bridge)}
           />
         ),
       },
@@ -84,6 +102,11 @@ export const RightNavigationModule = () => {
           {view === RightView.ResourceTable && !!structureEntityId && (
             <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
               <EntityResourceTable entityId={structureEntityId} />
+            </div>
+          )}
+          {view === RightView.Bridge && (
+            <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+              <Bridge structures={structures} />
             </div>
           )}
         </Suspense>
