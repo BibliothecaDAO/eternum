@@ -205,6 +205,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             <BottomRightContainer>
               <MiniMapNavigation />
             </BottomRightContainer>
+
             <RightMiddleContainer>
               <RightNavigationModule structures={playerStructures} />
             </RightMiddleContainer>

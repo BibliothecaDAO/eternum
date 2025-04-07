@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { MarketModal } from "@/ui/components/trading/market-modal";
@@ -206,6 +207,8 @@ export const LeftNavigationModule = memo(() => {
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
 
+  const { account: ConnectedAccount } = useAccountStore();
+
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
@@ -227,18 +230,20 @@ export const LeftNavigationModule = memo(() => {
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
             </Suspense>
           </BaseContainer>
-          <motion.div
-            variants={slideLeft}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col justify-center pointer-events-auto"
-          >
-            <div className="flex flex-col mb-auto">
-              {navigation.map((item, index) => (
-                <div key={index}>{item.button}</div>
-              ))}
-            </div>
-          </motion.div>
+          {ConnectedAccount && (
+            <motion.div
+              variants={slideLeft}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-col justify-center pointer-events-auto"
+            >
+              <div className="flex flex-col mb-auto">
+                {navigation.map((item, index) => (
+                  <div key={index}>{item.button}</div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
       <div className="flex">

@@ -5,6 +5,7 @@ import LoginForm from "./components/chat/LoginForm";
 import MessageGroupComponent from "./components/chat/MessageGroup";
 import MessageInput from "./components/chat/MessageInput";
 
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import Button from "@/ui/elements/button";
 import CircleButton from "@/ui/elements/circle-button";
 import {
@@ -33,6 +34,8 @@ function ChatModule() {
 
   // Use a ref to hold the chat client instance to ensure stability across renders
   const chatClientRef = useRef<ChatClient | null>(null);
+
+  const { connector } = useAccountStore();
 
   // Initialize chat client after username is set
   const chatClient = useMemo(() => {
@@ -289,6 +292,14 @@ function ChatModule() {
     setUsername(newUsername);
     setIsUsernameSet(true);
   };
+
+  useEffect(() => {
+    if (!connector || !connector!.controller) return;
+
+    try {
+      connector.controller.username()?.then((name) => handleLogin(name));
+    } catch (error) {}
+  }, [connector]);
 
   // Setup chat event handlers
   useInitialDataEvents(
