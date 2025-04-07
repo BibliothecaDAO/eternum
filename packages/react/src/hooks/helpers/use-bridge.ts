@@ -34,7 +34,7 @@ export const useBridgeAsset = () => {
     [account, bridge_deposit_into_realm],
   );
 
-  const _bridgeStartWithdrawFromRealm = useCallback(
+  const _bridgeWithdrawFromRealm = useCallback(
     async (resources: { tokenAddress: string; amount: bigint }[], fromStructureId: bigint, toRecipientAddress: bigint, clientFeeRecipient: bigint) => {
       if (account) {
         return await bridge_withdraw_from_realm({
@@ -57,6 +57,6 @@ export const useBridgeAsset = () => {
 
   return {
     bridgeDepositIntoRealm: _bridgeIntoRealm,
-    bridgeWithdrawFromRealm: _bridgeStartWithdrawFromRealm,
+    bridgeWithdrawFromRealm: _bridgeWithdrawFromRealm,
   };
 };
