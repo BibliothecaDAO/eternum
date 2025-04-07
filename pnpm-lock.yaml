@@ -426,7 +426,7 @@ importers:
         version: 7.18.0(@typescript-eslint/parser@8.26.0(eslint@9.22.0(jiti@2.4.2))(typescript@5.8.2))(eslint@9.22.0(jiti@2.4.2))(typescript@5.8.2)
       '@vitest/coverage-v8':
         specifier: ^2.0.5
-        version: 2.1.9(vitest@2.1.9)
+        version: 2.1.9(vitest@2.1.9(@types/node@20.17.24)(@vitest/ui@2.1.9)(lightningcss@1.29.2)(terser@5.39.0))
       '@vitest/ui':
         specifier: ^2.0.1
         version: 2.1.9(vitest@2.1.9)
@@ -602,13 +602,19 @@ importers:
       starknet:
         specifier: 6.23.1
         version: 6.23.1(encoding@0.1.13)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.8.2
     devDependencies:
       '@types/bun':
         specifier: latest
         version: 1.2.8
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.17.24
+      tsup:
+        specifier: ^8.0.2
+        version: 8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.6.3)(yaml@2.7.0)
+      typescript:
+        specifier: ^5.4.4
+        version: 5.6.3
 
   packages/core:
     dependencies:
@@ -14257,7 +14263,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9)':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@20.17.24)(@vitest/ui@2.1.9)(lightningcss@1.29.2)(terser@5.39.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -19239,6 +19245,34 @@ snapshots:
   tslib@2.6.3: {}
 
   tslib@2.8.1: {}
+
+  tsup@8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.6.3)(yaml@2.7.0):
+    dependencies:
+      bundle-require: 5.1.0(esbuild@0.25.1)
+      cac: 6.7.14
+      chokidar: 4.0.3
+      consola: 3.4.0
+      debug: 4.4.0
+      esbuild: 0.25.1
+      joycon: 3.1.1
+      picocolors: 1.1.1
+      postcss-load-config: 6.0.1(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(yaml@2.7.0)
+      resolve-from: 5.0.0
+      rollup: 4.35.0
+      source-map: 0.8.0-beta.0
+      sucrase: 3.35.0
+      tinyexec: 0.3.2
+      tinyglobby: 0.2.12
+      tree-kill: 1.2.2
+    optionalDependencies:
+      '@swc/core': 1.11.8(@swc/helpers@0.5.15)
+      postcss: 8.5.3
+      typescript: 5.6.3
+    transitivePeerDependencies:
+      - jiti
+      - supports-color
+      - tsx
+      - yaml
 
   tsup@8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.0):
     dependencies:

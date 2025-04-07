@@ -254,7 +254,7 @@ pub impl StructureImpl of StructureTrait {
         structure.metadata = metadata;
         match category {
             StructureCategory::Realm => {
-                structure.base.troop_max_explorer_count = 1;
+                structure.base.troop_max_explorer_count = 6;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
             StructureCategory::Hyperstructure => {
@@ -270,7 +270,7 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
             StructureCategory::Village => { // todo: check if this is correct
-                structure.base.troop_max_explorer_count = 1;
+                structure.base.troop_max_explorer_count = 6;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
             _ => { panic!("invalid structure category"); },

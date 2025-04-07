@@ -12,6 +12,21 @@ export interface CreateVillageProps extends SystemSigner {
   direction: num.BigNumberish;
 }
 
+export interface MintAndSettleTestRealmsProps extends SystemSigner {
+  calls: MintTestRealm[];
+}
+export interface MintTestRealm {
+  token_id: num.BigNumberish;
+  realms_address: string;
+  season_pass_address: string;
+  realm_settlement: {
+    side: num.BigNumberish;
+    layer: num.BigNumberish;
+    point: num.BigNumberish;
+  };
+  realm_entity_id: num.BigNumberish
+}
+
 export interface MintAndSettleTestRealmProps extends SystemSigner {
   token_id: num.BigNumberish;
   realms_address: string;

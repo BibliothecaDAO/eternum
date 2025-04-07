@@ -31,6 +31,7 @@ pub mod trade_systems {
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
     use s1_eternum::models::owner::{OwnerAddressTrait};
+    use s1_eternum::models::position::{ Direction, CoordImpl};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
@@ -41,6 +42,7 @@ pub mod trade_systems {
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
+    use s1_eternum::models::map::{Tile};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::village::{iVillageImpl};
@@ -99,87 +101,97 @@ pub mod trade_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // ensure maker structure is owned by caller
-            let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
-            maker_structure_owner.assert_caller_owner();
+            // // ensure maker structure is owned by caller
+            let first_maker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, maker_id);
+            // let maker_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, maker_id);
+            // maker_structure_owner.assert_caller_owner();
 
-            // ensure taker structure exists
-            if taker_id.is_non_zero() {
-                let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
-                taker_structure.assert_exists();
-            }
+            let mut all_structure_ids: Array<ID> = array![maker_id];
+            for direction in array![Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest, Direction::SouthEast] {
+                let village_coord = first_maker_structure.coord().neighbor_after_distance(direction, 2);
+                let mut tile : Tile = world.read_model((village_coord.x, village_coord.y));
+                all_structure_ids.append(tile.occupier_id);
+            };
 
-            // ensure trade count does not exceed max
-            let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
-            let mut trade_count: TradeCount = world.read_model(maker_id);
-            assert!(trade_count.count < trade_config.max_count, "trade count exceeds max");
+            for structure_id in all_structure_ids {
+                let maker_id = structure_id;
+                // ensure taker structure exists
+                if taker_id.is_non_zero() {
+                    let taker_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, taker_id);
+                    taker_structure.assert_exists();
+                }
 
-            // ensure expires at is in the future
-            let now = starknet::get_block_timestamp().try_into().unwrap();
-            assert!(expires_at > now, "expires at is in the past");
+                // ensure trade count does not exceed max
+                let trade_config: TradeConfig = WorldConfigUtilImpl::get_member(world, selector!("trade_config"));
+                let mut trade_count: TradeCount = world.read_model(maker_id);
+                assert!(trade_count.count < trade_config.max_count, "trade count exceeds max");
 
-            // ensure maker resource is not taker resource
-            assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
+                // ensure expires at is in the future
+                let now = starknet::get_block_timestamp().try_into().unwrap();
+                assert!(expires_at > now, "expires at is in the past");
 
-            // ensure amounts are valid
-            assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");
-            assert!(taker_pays_min_resource_amount.is_non_zero(), "taker pays min resource amount is 0");
-            assert!(maker_gives_max_count.is_non_zero(), "maker gives max count is 0");
+                // ensure maker resource is not taker resource
+                assert!(maker_gives_resource_type != taker_pays_resource_type, "maker resource is taker resource");
 
-            // ensure resouce amount being given is greater than 0
-            let maker_gives_max_resource_amount: u128 = maker_gives_max_count.into()
-                * maker_gives_min_resource_amount.into();
-            let taker_gives_max_resource_amount: u128 = maker_gives_max_count.into()
-                * taker_pays_min_resource_amount.into();
+                // ensure amounts are valid
+                assert!(maker_gives_resource_type.is_non_zero(), "maker gives resource type is 0");
+                assert!(taker_pays_min_resource_amount.is_non_zero(), "taker pays min resource amount is 0");
+                assert!(maker_gives_max_count.is_non_zero(), "maker gives max count is 0");
 
-            // burn offered resource from maker balance
-            let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, maker_id);
-            let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, maker_gives_resource_type);
-            let mut maker_resource = SingleResourceStoreImpl::retrieve(
-                ref world,
-                maker_id,
-                maker_gives_resource_type,
-                ref maker_structure_weight,
-                maker_resource_weight_grams,
-                true,
-            );
-            maker_resource
-                .spend(maker_gives_max_resource_amount.into(), ref maker_structure_weight, maker_resource_weight_grams);
-            maker_resource.store(ref world);
+                // ensure resouce amount being given is greater than 0
+                let maker_gives_max_resource_amount: u128 = maker_gives_max_count.into()
+                    * maker_gives_min_resource_amount.into();
+                let taker_gives_max_resource_amount: u128 = maker_gives_max_count.into()
+                    * taker_pays_min_resource_amount.into();
 
-            // burn enough maker donkeys to carry resources given by taker
-            let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, taker_pays_resource_type);
-            let taker_resource_weight: u128 = taker_gives_max_resource_amount * taker_resource_weight_grams;
-            let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_resource_weight);
-            iDonkeyImpl::burn(ref world, maker_id, ref maker_structure_weight, maker_donkey_amount);
-
-            // update structure weight
-            maker_structure_weight.store(ref world, maker_id);
-
-            // create trade entity
-            let trade_id = world.dispatcher.uuid();
-            world
-                .write_model(
-                    @Trade {
-                        trade_id,
-                        maker_id,
-                        maker_gives_resource_type,
-                        maker_gives_min_resource_amount,
-                        maker_gives_max_count,
-                        taker_id,
-                        taker_pays_resource_type,
-                        taker_pays_min_resource_amount,
-                        expires_at,
-                    },
+                // burn offered resource from maker balance
+                let mut maker_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, maker_id);
+                let maker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, maker_gives_resource_type);
+                let mut maker_resource = SingleResourceStoreImpl::retrieve(
+                    ref world,
+                    maker_id,
+                    maker_gives_resource_type,
+                    ref maker_structure_weight,
+                    maker_resource_weight_grams,
+                    true,
                 );
+                maker_resource
+                    .spend(maker_gives_max_resource_amount.into(), ref maker_structure_weight, maker_resource_weight_grams);
+                maker_resource.store(ref world);
 
-            // increment trade count
-            trade_count.count += 1;
-            world.write_model(@trade_count);
+                // burn enough maker donkeys to carry resources given by taker
+                let taker_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, taker_pays_resource_type);
+                let taker_resource_weight: u128 = taker_gives_max_resource_amount * taker_resource_weight_grams;
+                let maker_donkey_amount = iDonkeyImpl::needed_amount(ref world, taker_resource_weight);
+                iDonkeyImpl::burn(ref world, maker_id, ref maker_structure_weight, maker_donkey_amount);
 
-            world.emit_event(@CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() });
+                // update structure weight
+                maker_structure_weight.store(ref world, maker_id);
 
-            trade_id
+                // create trade entity
+                let trade_id = world.dispatcher.uuid();
+                world
+                    .write_model(
+                        @Trade {
+                            trade_id,
+                            maker_id,
+                            maker_gives_resource_type,
+                            maker_gives_min_resource_amount,
+                            maker_gives_max_count,
+                            taker_id,
+                            taker_pays_resource_type,
+                            taker_pays_min_resource_amount,
+                            expires_at,
+                        },
+                    );
+
+                // increment trade count
+                trade_count.count += 1;
+                world.write_model(@trade_count);
+
+                world.emit_event(@CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() });
+            };
+            0
         }
 
 

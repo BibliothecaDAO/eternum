@@ -2,7 +2,6 @@
   "name": "eternum-config",
   "module": "index.ts",
   "scripts": {
-    "build": "tsup deployer/index.ts",
     "local": "bun --env-file=../client/apps/game/.env.local run ./deployer/index.ts",
     "slot": "bun --env-file=../client/apps/game/.env.slot run ./deployer/index.ts",
     "sepolia": "bun --env-file=../client/apps/game/.env.sepolia run ./deployer/index.ts",
@@ -14,10 +13,7 @@
     "chalk": "^5.4.1"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/node": "^20.11.10",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.4"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "starknet": "6.23.1",

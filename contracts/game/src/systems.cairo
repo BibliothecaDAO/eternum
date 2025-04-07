@@ -1,3 +1,7 @@
+pub mod cheat {
+    pub mod contracts;
+}
+
 pub mod config {
     pub mod contracts;
     #[cfg(test)]

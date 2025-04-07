@@ -714,6 +714,173 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+
+  public async cheat_test_realms(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    const realmCalls = [];
+    for (const call of calls) {
+      const { token_id, realms_address, season_pass_address, realm_settlement } = call;
+      const mintRealmCall = {
+        contractAddress: realms_address.toString(),
+        entrypoint: "mint",
+        calldata: [uint256.bnToUint256(token_id)],
+      };
+      const mintSeasonPassCall = {
+        contractAddress: season_pass_address.toString(),
+        entrypoint: "mint",
+        calldata: [signer.address, uint256.bnToUint256(token_id)],
+      };
+      const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
+      const approvalForAllCall = {
+        contractAddress: season_pass_address,
+        entrypoint: "set_approval_for_all",
+        calldata: [realmSystemsContractAddress, true],
+      };
+
+      const createRealmCall = {
+        contractAddress: realmSystemsContractAddress,
+        entrypoint: "create",
+        calldata: [signer.address, token_id, signer.address, realm_settlement],
+      };
+      realmCalls.push(mintRealmCall, mintSeasonPassCall, approvalForAllCall, createRealmCall);
+      console.log(realmCalls);
+      const tx1 = await this.executeAndCheckTransaction(signer, realmCalls);
+      console.log(`Create Test Realms Transaction for Realm Ids Up to ${token_id}`, tx1.statusReceipt)
+    }
+  }
+
+  public async cheat_create_villages(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      for (let i= 0; i < 6; i++) {
+        const createVillageCall: Call = {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
+          entrypoint: "create",
+          calldata: [realm_entity_id, i],
+        };
+        const tx = await this.executeAndCheckTransaction(signer, [createVillageCall]);
+        console.log(`Create Village Transaction for Realm Entity Id ${realm_entity_id} and Direction ${i}`, tx.statusReceipt)
+      }
+    }
+  }
+
+  public async cheat_create_tiles_and_mines(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      for (let i= 0; i < 6; i++) {
+        const exploreLineCall: Call = {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+          entrypoint: "explore_line",
+          calldata: [realm_entity_id, i, 3, 51],
+        };
+        console.log(exploreLineCall);
+        const tx = await this.executeAndCheckTransaction(signer, [exploreLineCall]);
+        console.log(`Explore Line Transaction for Realm Entity Id ${realm_entity_id} and Direction ${i}`, tx.statusReceipt)
+      }
+
+      const exploreCircleCall: Call = {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+        entrypoint: "explore_circles",
+        calldata: [realm_entity_id, 5],
+      };
+      console.log(exploreCircleCall);
+      const tx = await this.executeAndCheckTransaction(signer, [exploreCircleCall]);
+      console.log(`Explore Circle Transaction for Realm Entity Id ${realm_entity_id}`, tx.statusReceipt)
+    }
+  }
+
+      
+  public async cheat_create_troops(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      
+      const exploreTroopsCall: Call = {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+        entrypoint: "explore_troops",
+        calldata: [realm_entity_id],
+      };
+      console.log(exploreTroopsCall);
+      const tx = await this.executeAndCheckTransaction(signer, [exploreTroopsCall]);
+      console.log(`Explore Troops Transaction for Realm Entity Id ${realm_entity_id}`, tx.statusReceipt)
+    }
+  }
+
+  public async cheat_create_realm_buildings(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;      
+      const exploreRealmBuildingsCall: Call = {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+        entrypoint: "explore_buildings",
+        calldata: [realm_entity_id, false, 0],
+      };
+      console.log(exploreRealmBuildingsCall);
+      const tx2 = await this.executeAndCheckTransaction(signer, [exploreRealmBuildingsCall]);
+      console.log(`Explore Realm Buildings Transaction for Realm Entity Id ${realm_entity_id}`, tx2.statusReceipt)
+    }
+  }
+
+
+  public async cheat_create_village_buildings(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      for(let i = 0; i < 6; i++) {
+        const exploreVillageBuildingsCall: Call = {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+          entrypoint: "explore_buildings",
+          calldata: [realm_entity_id, true, i],
+        };
+        console.log(exploreVillageBuildingsCall);
+        const txz = await this.executeAndCheckTransaction(signer, [exploreVillageBuildingsCall]);
+        console.log(`Explore Village ${i + 1} Buildings Transaction for Realm Entity Id ${realm_entity_id}`, txz.statusReceipt)
+      }
+    }
+  }
+
+  public async cheat_create_village_resource_arrivals(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      let exploreVillageResourceArrivalsCalls: Call[] = [];
+      for (let i = 0; i < 6; i++) {
+        const exploreVillageResourceArrivalsCall: Call = {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-cheat_map_systems`),
+          entrypoint: "explore_village_resource_arrivals",
+          calldata: [realm_entity_id, i],
+        };
+        exploreVillageResourceArrivalsCalls.push(exploreVillageResourceArrivalsCall);
+      }
+      console.log(exploreVillageResourceArrivalsCalls);
+      const tx3 = await this.executeAndCheckTransaction(signer, exploreVillageResourceArrivalsCalls);
+      console.log(`Explore Village Resource Arrivals Transaction for Realm Entity Id ${realm_entity_id}`, tx3.statusReceipt)
+    }
+  }
+
+
+
+  public async cheat_create_5_trades_per_realm_and_village(props: SystemProps.MintAndSettleTestRealmsProps) {
+    const { calls, signer } = props;
+    for (const call of calls) {
+      const { realm_entity_id } = call;
+      const createOrderCalls: Call[] = [];
+      for(let i = 0; i < 5; i++) {
+        const createOrderCall: Call = {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
+          entrypoint: "create_order",
+          calldata: [realm_entity_id, 0, i + 1, 37, 2, 30* 1_000_000_000, 1, 1794021617],
+        };  
+        console.log(createOrderCall);
+        createOrderCalls.push(createOrderCall);
+      }
+      const tx3 = await this.executeAndCheckTransaction(signer, createOrderCalls);
+      console.log(`Create Order Transaction for Realm Entity Id ${realm_entity_id}`, tx3.statusReceipt)
+    }
+  }
+
   /**
    * Send resources from one entity to another
    *

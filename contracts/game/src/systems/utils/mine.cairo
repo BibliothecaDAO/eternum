@@ -17,7 +17,7 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
-
+use s1_eternum::alias::ID;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
@@ -42,7 +42,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         vrf_seed: u256,
-    ) -> bool {
+    ) -> ID {
         // make fragment mine structure
         let structure_id = world.dispatcher.uuid();
         iStructureImpl::create(
@@ -108,7 +108,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             BuildingImpl::center(),
         );
 
-        return true;
+        return structure_id;
     }
 
     fn _reward_amount(ref world: WorldStorage, randomness: u256) -> u128 {
