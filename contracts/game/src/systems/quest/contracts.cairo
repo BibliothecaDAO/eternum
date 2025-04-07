@@ -20,6 +20,7 @@ pub trait IQuestSystems<T> {
     fn claim_reward(ref self: T, quest_id: u32);
     fn get_quest_details(ref self: T, details_id: u32) -> QuestDetails;
     fn get_quest(ref self: T, quest_id: u32) -> Quest;
+    // TODO: add a get_quest_id_for_game(game_id: u32) -> u32
 }
 
 
@@ -73,7 +74,7 @@ pub mod quest_systems {
             assert(quest_details.participant_count < quest_details.capacity, 'Quest is at capacity');
 
             let explorer: ExplorerTroops = world.read_model(explorer_id);
-            assert(explorer.coord == quest_details.coord, 'Explorer is not on quest tile');
+            assert!(explorer.coord.is_adjacent(quest_details.coord), "Explorer is not adjacent to quest tile");
 
             // verify caller is owner of explorer
             StructureOwnerStoreImpl::retrieve(ref world, explorer.owner).assert_caller_owner();
@@ -131,6 +132,12 @@ pub mod quest_systems {
             let mut world = self.world(DEFAULT_NS());
             let mut quest: Quest = world.read_model(quest_id);
             let quest_details: QuestDetails = world.read_model(quest.details_id);
+
+            // Explorer must be adjacent to quest tile to claim reward
+            let explorer: ExplorerTroops = world.read_model(quest.explorer_id);
+            assert!(explorer.coord.is_adjacent(quest_details.coord), "Explorer is not adjacent to quest tile");
+
+            // TODO: Capacity Check (if we're using a resource that has a weight)
 
             // get score for the token id
             let game_registry: QuestGameRegistry = world.read_model(VERSION);
@@ -306,7 +313,7 @@ mod tests {
         MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
         MOCK_TROOP_STAMINA_CONFIG, MOCK_WEIGHT_CONFIG, tgrant_resources, tspawn_simple_realm, tspawn_world,
         tstore_capacity_config, tstore_map_config, tstore_tick_config, tstore_troop_damage_config,
-        tstore_troop_limit_config, tstore_troop_stamina_config, tstore_weight_config,
+        tstore_troop_limit_config, tstore_troop_stamina_config, tstore_weight_config, tstore_production_config
     };
     use tournaments::components::models::game::{
         m_GameCounter, m_GameMetadata, m_Score, m_Settings, m_SettingsCounter, m_SettingsDetails, m_TokenMetadata,
@@ -417,6 +424,9 @@ mod tests {
                 .span(),
         );
         tstore_map_config(ref world, MOCK_MAP_CONFIG());
+        // todo: move this to tspawn_realm
+        // tstore_production_config(ref world, ResourceTypes::WHEAT);
+        // tstore_production_config(ref world, ResourceTypes::FISH);
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
