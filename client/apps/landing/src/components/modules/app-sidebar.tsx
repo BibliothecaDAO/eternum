@@ -54,7 +54,7 @@ const items = [
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="bg-dark-wood">
         <a href="/">
           <div className="flex flex-col items-center">
             {/* <EternumLogo className="w-24 h-24 fill-gold mx-auto pt-8" /> */}

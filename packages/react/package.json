@@ -18,7 +18,7 @@
     "@dojoengine/react": "*",
     "@starknet-react/core": "*",
     "react": "^18",
-    "starknet": "^6.23.1",
+    "starknet": "6.23.1",
     "wouter": "^2.12.1"
   },
   "devDependencies": {

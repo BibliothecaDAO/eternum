@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Sedan:ital@0;1&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Bokor&display=swap&family=Anonymous+Pro:wght@400;700");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Goudy+Bookletter+1911&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -81,14 +81,30 @@
   body {
     @apply bg-background;
   }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-heading;
-  }
+
+}
+
+html,
+body {
+  overflow: hidden;
+  font-family: "Goudy Bookletter 1911", serif;
+  touch-action: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Cinzel", serif;
+}
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+  font-family: "Cinzel", serif;
 }
 
 *::-webkit-scrollbar-track {

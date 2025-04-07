@@ -1,4 +1,5 @@
 export * from "./constants";
+export * from "./data";
 export * from "./dojo";
 export * from "./managers";
 export * from "./provider";

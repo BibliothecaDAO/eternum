@@ -184,61 +184,56 @@ export const SeasonPassRealm = ({
   return (
     <div
       key={seasonPassRealm.realmId}
-      className={`flex flex-col gap-3 p-3 h-[180px] rounded-md bg-black/70 transition-colors duration-200 border border-2 ${
-        selected ? "border-gold bg-black/80" : "border-transparent"
-      } ${className} hover:border-gold`}
+      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md bg-dark-wood transition-colors duration-200 ${
+        selected ? "border-gold/40 bg-black/80" : "border-transparent"
+      } ${className} border hover:border-gold cursor-pointer`}
       onClick={() => setSelected(!selected)}
     >
-      <div className="flex flex-row items-center gap-3">
-        <div className="flex items-center">
+      <div className="flex flex-row items-center gap-2 justify-between">
+        <h5 className="font-semibold text-gold">{seasonPassRealm.name}</h5>
+        <div className="flex items-center self-start pt-1">
           {selected ? (
             <CheckboxChecked className="w-6 h-6 fill-current text-gold" />
           ) : (
             <CheckboxUnchecked className="w-6 h-6 fill-current text-gold" />
           )}
         </div>
-        <div className="align-bottom text-base">{seasonPassRealm.name}</div>
       </div>
-      <div className="grid grid-cols-7 gap-1 z-10 align-bottom items-end">
+      <div className="flex gap-2 z-10 items-end">
         {resourcesProduced.map((resourceId) => (
-          <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" key={resourceId} withTooltip={false} />
+          <ResourceIcon
+            className=""
+            resource={ResourcesIds[resourceId]}
+            size="lg"
+            key={resourceId}
+            withTooltip={false}
+          />
         ))}
       </div>
 
-      <div className="mt-auto">
+      <div className="mt-auto border-t border-gold/20 pt-2">
         {normalizedSelectedLocation ? (
           <div className="flex flex-col gap-1">
-            <div className="text-sm text-gold/80">Selected Location:</div>
+            <h6 className="text-xs text-gold/70">Selected Location</h6>
             <div className="flex justify-between items-center">
-              <div className="text-base">
-                {normalizedSelectedLocation.x}, {normalizedSelectedLocation.y}
-              </div>
+              <h5 className="">
+                ({normalizedSelectedLocation.x}, {normalizedSelectedLocation.y})
+              </h5>
               <div className="flex gap-2">
-                <Button
-                  onClick={handleCancelLocation}
-                  className="!h-8 !w-8 !min-w-0 !p-0 !bg-red-500/30 !text-red-400 rounded-md hover:!bg-red-500/40"
-                >
-                  <span className="text-sm">✕</span>
+                <Button onClick={handleCancelLocation} variant="danger" className="!p-1">
+                  <span className="text-lg leading-none">✕</span>
                 </Button>
-                <Button
-                  onClick={handleSelectLocationClick}
-                  isLoading={isLoading}
-                  className="!h-8 !w-8 !min-w-0 !p-0 !bg-gold/30 !text-gold rounded-md hover:!bg-gold/40"
-                >
-                  <MapIcon className="w-5 h-5 fill-current" />
+                <Button onClick={handleSelectLocationClick} isLoading={isLoading} variant="primary" className="!p-1">
+                  <MapIcon className="w-4 h-4 fill-current" />
                 </Button>
               </div>
             </div>
           </div>
         ) : (
-          <Button
-            isPulsing={true}
-            onClick={handleSelectLocationClick}
-            className="w-full !h-[40px] !bg-gold/30 !text-gold !normal-case rounded-md hover:!bg-gold/40 text-sm"
-          >
-            <div className="flex items-center justify-center">
-              <MapIcon className="w-5 h-5 mr-2 fill-current" />
-              <div className="!font-normal">Select Location</div>
+          <Button isPulsing={true} onClick={handleSelectLocationClick} variant="primary" size="md" className="w-full">
+            <div className="flex items-center justify-center gap-2">
+              <MapIcon className="w-4 h-4 fill-current" />
+              <div>Select Location</div>
             </div>
           </Button>
         )}

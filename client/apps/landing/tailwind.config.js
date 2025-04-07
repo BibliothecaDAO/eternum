@@ -63,9 +63,12 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        "dark-wood": "url(/images/textures/dark-wood.png)",
+      },
       fontFamily: {
-        sans: ["Space Grotesk", ...defaultTheme.fontFamily.sans],
-        heading: ["Bokor", ...defaultTheme.fontFamily.sans],
+        sans: ["Goudy Bookletter 1911", ...defaultTheme.fontFamily.sans],
+        heading: ["Cinzel", ...defaultTheme.fontFamily.sans],
         number: ["Anonymous Pro", ...defaultTheme.fontFamily.mono],
       },
       fontSize: {

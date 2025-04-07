@@ -301,7 +301,7 @@ export const SettlementCanvas = ({
     ctx.fill();
 
     // Draw legend items
-    ctx.font = "12px Arial";
+    // ctx.font = "12px Arial";
     LEGEND_ITEMS.forEach((item, index) => {
       const itemY = legendY + legendPadding + index * legendItemHeight;
 
@@ -368,11 +368,11 @@ export const SettlementCanvas = ({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        className="border border-gold/50 mb-4 cursor-grab rounded-md shadow-lg hover:border-gold transition-all duration-300"
+        className=" panel-wood mb-4 cursor-grab hover:border-gold transition-all duration-300"
         aria-label="Settlement map"
       />
 
-      <div className="absolute bottom-2 right-2 text-xs text-gold bg-black/70 p-2 rounded-md opacity-70 group-hover:opacity-100 transition-opacity duration-300 flex items-center">
+      <div className="absolute bottom-2 right-2 text-xs text-gold p-2 bg-brown opacity-70 group-hover:opacity-100 transition-opacity duration-300 flex items-center">
         <svg
           className="w-4 h-4 mr-1"
           fill="none"

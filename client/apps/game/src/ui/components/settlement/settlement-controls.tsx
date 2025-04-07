@@ -107,14 +107,14 @@ export const SettlementInfoPanel = ({ selectedLocation, selectedCoords }: Settle
       {selectedLocation ? (
         <div className="text-center w-full">
           <div className="text-xl font-semibold text-gold mb-2 border-b border-gold/20 pb-2">Selected Location</div>
-          <div className="grid grid-cols-2 gap-6 text-gold">
+          <div className="flex justify-center items-center gap-4 text-gold">
             <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
-              <div className="text-sm text-gold/70">X Coordinate</div>
-              <div className="text-2xl font-bold">{selectedCoords?.x}</div>
+              <div className="text-xs text-gold/70 uppercase tracking-wider">X</div>
+              <div className="text-xl font-bold">{selectedCoords?.x}</div>
             </div>
             <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
-              <div className="text-sm text-gold/70">Y Coordinate</div>
-              <div className="text-2xl font-bold">{selectedCoords?.y}</div>
+              <div className="text-xs text-gold/70 uppercase tracking-wider">Y</div>
+              <div className="text-xl font-bold">{selectedCoords?.y}</div>
             </div>
           </div>
         </div>
