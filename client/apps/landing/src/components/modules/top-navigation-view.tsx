@@ -59,6 +59,17 @@ export const TopNavigationView = ({
           <PlayIcon className="!w-4 h-2" />
           Play Eternum
         </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => {
+            window.open("https://discord.gg/realmsworld", "_blank");
+          }}
+          className="gap-2 hidden sm:flex"
+        >
+          <img src="/images/buildings/thumb/discord.png" alt="Discord" className="w-4 h-4" />
+          Discord
+        </Button>
       </div>
       <SeasonStartTimer />
       {/* <SeasonRegistrationTimer /> */}

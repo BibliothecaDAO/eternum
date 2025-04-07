@@ -5,7 +5,13 @@ use s1_eternum::models::troop::GuardSlot;
 
 #[starknet::interface]
 pub trait ITroopBattleSystems<T> {
-    fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, defender_direction: Direction);
+    fn attack_explorer_vs_explorer(
+        ref self: T,
+        aggressor_id: ID,
+        defender_id: ID,
+        defender_direction: Direction,
+        steal_resources: Span<(u8, u128)>,
+    );
     fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
     fn attack_guard_vs_explorer(
         ref self: T, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID, explorer_direction: Direction,
@@ -32,6 +38,7 @@ pub mod troop_battle_systems {
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl, TroopsTrait};
+    use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::utils::{
         resource::{iResourceTransferImpl}, structure::iStructureImpl, troop::{iExplorerImpl, iGuardImpl, iTroopImpl},
     };
@@ -43,7 +50,11 @@ pub mod troop_battle_systems {
     #[abi(embed_v0)]
     pub impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
-            ref self: ContractState, aggressor_id: ID, defender_id: ID, defender_direction: Direction,
+            ref self: ContractState,
+            aggressor_id: ID,
+            defender_id: ID,
+            defender_direction: Direction,
+            steal_resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
 
@@ -78,6 +89,8 @@ pub mod troop_battle_systems {
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
+            let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             explorer_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
@@ -90,6 +103,22 @@ pub mod troop_battle_systems {
             // update both explorers
             explorer_aggressor.troops = explorer_aggressor_troops;
             explorer_defender.troops = explorer_defender_troops;
+
+            // update aggressor troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                aggressor_id,
+                explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
+                false,
+            );
+
+            // update defender troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                defender_id,
+                explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
+                false,
+            );
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
@@ -117,6 +146,21 @@ pub mod troop_battle_systems {
             }
 
             if explorer_defender_troops.count.is_zero() {
+                // steal resources from defender if dead
+                let mut explorer_aggressor_weight: Weight = WeightStoreImpl::retrieve(ref world, aggressor_id);
+                let mut explorer_defender_weight: Weight = WeightStoreImpl::retrieve(ref world, defender_id);
+                iResourceTransferImpl::troop_to_troop_instant(
+                    ref world,
+                    explorer_defender,
+                    ref explorer_defender_weight,
+                    explorer_aggressor,
+                    ref explorer_aggressor_weight,
+                    steal_resources,
+                );
+                explorer_aggressor_weight.store(ref world, aggressor_id);
+                explorer_defender_weight.store(ref world, defender_id);
+
+                // delete defender
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
                 } else {
@@ -202,11 +246,21 @@ pub mod troop_battle_systems {
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_config(ref world);
+            let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             explorer_aggressor_troops
                 .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
 
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
+
+            // update explorer troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                explorer_id,
+                explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
+                false,
+            );
+
             if explorer_aggressor_troops.count.is_zero() {
                 if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
@@ -322,6 +376,7 @@ pub mod troop_battle_systems {
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
+            let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             structure_guard_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
@@ -333,6 +388,15 @@ pub mod troop_battle_systems {
 
             // update explorer
             explorer_defender.troops = explorer_defender_troops;
+
+            // update explorer troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                explorer_id,
+                explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
+                false,
+            );
+
             if explorer_defender.troops.count.is_zero() {
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);

@@ -126,7 +126,7 @@ export const Social = () => {
           ))}
         </Tabs.List>
 
-        <div className="flex justify-center gap-8">
+        <div className="flex justify-center gap-8 mt-8">
           {gameEnded.length === 0 && <EndSeasonButton />}
           <Button isLoading={isLoading} variant="secondary" onClick={handleUpdatePoints}>
             Update Points

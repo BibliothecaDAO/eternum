@@ -11,11 +11,11 @@ import type { ReactNode } from "react";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: "px-3 py-1 !outline-none rounded transition-colors duration-200 hover:bg-gold space-x-1 hover:text-brown font-bold",
-      active: "bg-gold text-brown",
+      base: "px-3 py-1 !outline-none transition-colors duration-200 space-x-1 hover:bg-gold/20 border-3 border-transparent",
+      active: "panel-gold text-gold",
       inactive: "text-gold",
     },
-    tabList: "flex w-full justify-center p-2 panel-wood border-2 border-yellow-700 rounded-lg",
+    tabList: "flex w-full justify-center",
   },
   primary: {
     tab: {

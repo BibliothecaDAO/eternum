@@ -7,6 +7,7 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { useMusicPlayer } from "@/hooks/helpers/use-music";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { ToriiSetting } from "@/types";
 import { settings } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
@@ -16,16 +17,55 @@ import { Checkbox } from "@/ui/elements/checkbox";
 import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
+import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { ContractAddress, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
+import * as platform from "platform";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+// Helper function to extract architecture from filename
+const extractArchitecture = (filename: string): string | null => {
+  // Common architecture patterns
+  const patterns = [
+    /arm64/i,
+    /aarch64/i, // Often used for ARM64, especially on macOS
+    /x86_64/i,
+    /amd64/i, // Often used interchangeably with x86_64
+    /x64/i, // Common abbreviation for x86_64/amd64
+  ];
+
+  for (const pattern of patterns) {
+    const match = filename.match(pattern);
+    if (match) {
+      let arch = match[0].toLowerCase();
+      // Normalize common variations
+      if (arch === "aarch64") arch = "arm64";
+      if (arch === "x64") arch = "amd64"; // Or 'x86_64', 'amd64' is common
+      return arch;
+    }
+  }
+
+  // Handle specific file types if no pattern matches
+  if (filename.endsWith(".exe")) {
+    // Assume amd64 for .exe if not specified, as it's most common
+    return "amd64";
+  }
+  // Add assumption for .dmg if no explicit arch (often aarch64/arm64 on modern macOS)
+  if (filename.endsWith(".dmg")) {
+    return "arm64/amd64"; // Could be either, maybe default to arm64 or leave ambiguous
+  }
+
+  return null; // Return null if no architecture found
+};
 
 export const SettingsWindow = () => {
   const {
     account: { account },
     setup: { components },
   } = useDojo();
+
+  const [download, setDownload] = useState<boolean>(false);
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
@@ -41,6 +81,14 @@ export const SettingsWindow = () => {
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
+
+  const initialToriiSetting = (localStorage.getItem("TORII_SETTING") as ToriiSetting) || DEFAULT_TORII_SETTING;
+  const [toriiSetting, setToriiSetting] = useState<ToriiSetting>(initialToriiSetting);
+
+  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
+
+  // State to hold download links with names and URLs
+  const [eternumLoaderDownloadLinks, setEternumLoaderDownloadLinks] = useState<string[]>([]);
 
   const clickFullScreen = () => {
     setFullScreen(!fullScreen);
@@ -81,8 +129,6 @@ export const SettingsWindow = () => {
     toast("Guild whitelist cleared!");
   };
 
-  const [isFlatMode, setIsFlatMode] = useState<boolean>(() => IS_FLAT_MODE);
-
   const toggleFlatMode = () => {
     setIsFlatMode((prev) => {
       const newFlatMode = !prev;
@@ -91,6 +137,35 @@ export const SettingsWindow = () => {
       return newFlatMode;
     });
   };
+
+  useEffect(() => {
+    (async () => {
+      const latestRelease = await fetch("https://api.github.com/repos/edisontim/eternum-loader/releases/latest");
+      const data = await latestRelease.json();
+      const assets = data.assets;
+
+      if (platform.os?.family === "Windows") {
+        setEternumLoaderDownloadLinks(
+          assets.filter((asset: any) => asset.name.endsWith(".exe")).map((asset: any) => asset.browser_download_url),
+        );
+      }
+      if (platform.os?.family === "OS X") {
+        setEternumLoaderDownloadLinks(
+          assets.filter((asset: any) => asset.name.endsWith(".dmg")).map((asset: any) => asset.browser_download_url),
+        );
+      }
+      if (platform.os?.family === "Linux") {
+        setEternumLoaderDownloadLinks([
+          ...assets
+            .filter((asset: any) => asset.name.endsWith(".deb"))
+            ?.map((asset: any) => asset.browser_download_url),
+          ...assets
+            .filter((asset: any) => asset.name.endsWith(".rpm"))
+            ?.map((asset: any) => asset.browser_download_url),
+        ]);
+      }
+    })();
+  }, [platform.os]);
 
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
@@ -119,6 +194,69 @@ export const SettingsWindow = () => {
 
         {/* Settings Sections */}
         <div className="flex flex-col space-y-6">
+          {/* Torii Section */}
+          <section className="space-y-3">
+            <Headline>Torii Data source</Headline>
+            {download && eternumLoaderDownloadLinks.length > 0 ? (
+              <div className="flex flex-col space-y-2">
+                {eternumLoaderDownloadLinks.map((linkInfo) => {
+                  const arch = extractArchitecture(linkInfo);
+                  return (
+                    <a key={linkInfo} href={linkInfo} className="text-xs text-gray-gold mx-auto">
+                      {platform.os?.family} {arch ? `(${arch})` : ""}
+                    </a>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-gray-gold mx-auto">
+                <span className="cursor-pointer underline" onClick={() => setDownload(true)}>
+                  Download
+                </span>{" "}
+                Eternum Loader for optimal loading times.
+              </div>
+            )}
+            <div className="flex justify-between items-center space-x-2 text-xs cursor-pointer text-gray-gold">
+              <div className="flex flex-row space-x-4 items-center">
+                <div
+                  onClick={() => {
+                    const newToriiSetting =
+                      toriiSetting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+                    setToriiSetting(newToriiSetting);
+                  }}
+                  className="flex items-center space-x-2"
+                >
+                  <Checkbox enabled={toriiSetting === ToriiSetting.Local} />
+                  <div>Eternum Loader</div>
+                </div>
+                <div
+                  onClick={() => {
+                    const newToriiSetting =
+                      toriiSetting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+                    setToriiSetting(newToriiSetting);
+                  }}
+                  className="flex items-center space-x-2"
+                >
+                  <Checkbox enabled={toriiSetting === ToriiSetting.Remote} />
+                  <div>Provided</div>
+                </div>
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={initialToriiSetting === toriiSetting}
+                  onClick={() => {
+                    localStorage.setItem("TORII_SETTING", toriiSetting);
+                    window.location.reload();
+                  }}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </div>
+            <div className="w-fit text-xs text-gray-gold mx-auto">Changing this setting will reload the page</div>
+          </section>
           {/* Video Section */}
           <section className="space-y-3">
             <Headline>Video</Headline>

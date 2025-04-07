@@ -33,9 +33,9 @@ export const GuildInviteList = ({
   });
 
   return (
-    <div className="flex flex-col p-2 border rounded-xl h-full">
+    <div className="flex flex-col p-4 border border-gold/30 rounded-xl h-full bg-brown-900/50 backdrop-blur-sm">
       <GuildInviteListHeader activeSort={activeSort} setActiveSort={setActiveSort} />
-      <div className="space-y-2 overflow-y-auto">
+      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
         {sortItems(invitedPlayers, activeSort, { sortKey: "rank", sort: "asc" }).map((player) => (
           <InviteRow
             key={player.address}
@@ -45,7 +45,7 @@ export const GuildInviteList = ({
             removePlayerFromWhitelist={removePlayerFromWhitelist}
           />
         ))}
-        {!invitedPlayers.length && <p className="text-center italic">No Tribe Invites Sent</p>}
+        {!invitedPlayers.length && <p className="text-center italic text-gold/70 py-4">No Tribe Invites Sent</p>}
       </div>
     </div>
   );
@@ -65,10 +65,10 @@ const GuildInviteListHeader = ({ activeSort, setActiveSort }: ListHeaderProps) =
     ];
   }, []);
 
-  const textStyle = "text-gray-gold font-bold";
+  const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase";
 
   return (
-    <SortPanel className="grid grid-cols-5 mb-1 font-bold">
+    <SortPanel className="grid grid-cols-5 p-2 border-b border-gold/20">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
           className={className + " " + textStyle}
@@ -93,14 +93,14 @@ const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelis
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return (
-    <div className="flex grid grid-cols-5">
+    <div className="grid grid-cols-5 w-full py-2 px-2 hover:bg-gold/10 rounded-lg transition-colors duration-200 mb-1">
       <div
-        className="col-span-4 grid grid-cols-1 text-md hover:opacity-70 hover:border p-1 rounded-xl"
+        className="col-span-4 grid grid-cols-1 cursor-pointer"
         onClick={() => {
           viewPlayerInfo(ContractAddress(player.address!));
         }}
       >
-        <p className="truncate font-bold h6">{player.name}</p>
+        <p className="truncate font-semibold text-gold/90">{player.name}</p>
       </div>
 
       <Trash
@@ -108,9 +108,12 @@ const InviteRow = ({ player, isLoading, viewPlayerInfo, removePlayerFromWhitelis
           removePlayerFromWhitelist(player.address!);
           setTooltip(null);
         }}
-        className={clsx("m-auto self-center w-4 fill-red/70 hover:fill-red/40 duration-100 transition-all", {
-          "animate-pulse ": isLoading,
-        })}
+        className={clsx(
+          "m-auto self-center w-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all",
+          {
+            "pointer-events-none": isLoading,
+          },
+        )}
         onMouseEnter={() =>
           setTooltip({
             content: <div>Revoke tribe invitation</div>,

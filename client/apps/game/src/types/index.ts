@@ -22,3 +22,8 @@ export type BattleViewInfo = {
   ownArmyEntityId: ID | undefined;
   targetArmy: ID | undefined;
 };
+
+export enum ToriiSetting {
+  Local = "local",
+  Remote = "remote",
+}

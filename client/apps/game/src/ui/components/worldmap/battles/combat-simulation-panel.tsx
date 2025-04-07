@@ -2,6 +2,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { SelectBiome } from "@/ui/elements/select-biome";
 import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
+import { formatTypeAndBonuses, getStaminaDisplay } from "@/ui/modules/military/combat-utils";
 import {
   BiomeType,
   CombatParameters,
@@ -206,6 +207,8 @@ export const CombatSimulationPanel = () => {
                 damage: simulationResult.attackerDamage,
                 newStamina: newAttackerStamina,
                 isWinner: defenderTroopsLeft <= 0 && attackerTroopsLeft > 0,
+                staminaModifier: combatSimulator.calculateStaminaModifier(attacker.stamina, true),
+                biomeBonus: combatSimulator.getBiomeBonus(attacker.troopType, biome),
               },
             },
             {
@@ -216,6 +219,8 @@ export const CombatSimulationPanel = () => {
                 damage: simulationResult.defenderDamage,
                 newStamina: newDefenderStamina,
                 isWinner: attackerTroopsLeft <= 0 && defenderTroopsLeft > 0,
+                staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
+                biomeBonus: combatSimulator.getBiomeBonus(defender.troopType, biome),
               },
             },
           ].map(({ label, data }) => (
@@ -238,6 +243,14 @@ export const CombatSimulationPanel = () => {
                   )}
                 </div>
 
+                {formatTypeAndBonuses(
+                  data.army.troopType,
+                  data.army.tier,
+                  data.biomeBonus,
+                  data.staminaModifier,
+                  label === "Attacker",
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="text-gold/80">
@@ -254,28 +267,7 @@ export const CombatSimulationPanel = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="text-gold/80">
-                      <div className="text-sm font-medium mb-1">Stamina</div>
-                      <div className="text-xl font-bold flex items-baseline">
-                        {Math.max(0, data.newStamina)}
-                        <span className="text-xs ml-2 text-gold/50">/ {data.army.stamina}</span>
-                        {data.isWinner && <span className="text-xs ml-2 text-green-400">(+30)</span>}
-                      </div>
-                    </div>
-                    <div className="text-gold/80">
-                      <div className="text-sm font-medium mb-1">Biome Bonus</div>
-                      <div
-                        className={`text-xl font-bold ${
-                          combatSimulator.getBiomeBonus(data.army.troopType, biome) > 1
-                            ? "text-green-400"
-                            : combatSimulator.getBiomeBonus(data.army.troopType, biome) < 1
-                              ? "text-red-400"
-                              : "text-gold/50"
-                        }`}
-                      >
-                        {((combatSimulator.getBiomeBonus(data.army.troopType, biome) - 1) * 100).toFixed(0)}%
-                      </div>
-                    </div>
+                    {getStaminaDisplay(data.army.stamina, data.newStamina, data.isWinner, 30)}
                   </div>
                 </div>
               </div>

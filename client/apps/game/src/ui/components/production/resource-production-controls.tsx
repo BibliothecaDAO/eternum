@@ -1,33 +1,22 @@
 import Button from "@/ui/elements/button";
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
+  formatTime,
   getBuildingFromResource,
   getBuildingQuantity,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
-
-const formatProductionTime = (ticks: number) => {
-  const days = Math.floor(ticks / (24 * 60 * 60));
-  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-  const seconds = ticks % 60;
-
-  return [
-    days > 0 ? `${days}d ` : "",
-    hours > 0 ? `${hours}h ` : "",
-    minutes > 0 ? `${minutes}m ` : "",
-    `${seconds}s`,
-  ].join("");
-};
 
 export const ResourceProductionControls = ({
   selectedResource,
@@ -178,7 +167,7 @@ export const ResourceProductionControls = ({
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
-    <div className="bg-brown/20 p-4 rounded-lg">
+    <div className=" p-4 rounded-lg">
       <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
 
       <div className={`grid ${laborCurrentInputs.length > 0 ? "grid-cols-2" : "grid-cols-1"} gap-4 mb-4`}>
@@ -205,36 +194,53 @@ export const ResourceProductionControls = ({
       </div>
 
       {/* Output */}
-      <div className="mb-4 p-4 rounded-lg border-2 border-gold/30">
-        <h4 className="text-xl mb-4 text-gold">Output</h4>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" />
-            <span className="text-gold/80">Amount:</span>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="mb-4 p-4 rounded-lg border-2 border-gold/30 panel-gold">
+          <h4 className=" mb-2">Production Output</h4>
+          <p className="text-xl text-gold/80 mb-4">
+            You can input the output here and it will be automatically calculated.
+          </p>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <ResourceIcon resource={ResourcesIds[selectedResource]} size="xl" />
+              <span className="text-gold/80">Amount</span>
+            </div>
+            <NumberInput
+              value={Math.round(productionAmount)}
+              onChange={(value) => setProductionAmount(value)}
+              min={1}
+              className="rounded-md border-gold/30 hover:border-gold/50"
+            />
           </div>
-          <NumberInput
-            value={Math.round(productionAmount)}
-            onChange={(value) => setProductionAmount(value)}
-            min={1}
-            className="rounded-md border-gold/30 hover:border-gold/50"
-          />
         </div>
-        <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
-          <span className="text-gold/80">Production Time:</span>
-          <span className="font-medium">{ticks ? formatProductionTime(Math.floor(ticks / buildingCount)) : "0s"}</span>
+        <div className="flex flex-col gap-2">
+          <div className=" text-xl my-4">
+            You will be charged for the production of {formatNumber(productionAmount, 0)}{" "}
+            <span className="flex items-center gap-2">
+              {" "}
+              {ResourcesIds[selectedResource]}
+              <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" />
+            </span>
+          </div>
+          <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md  text-2xl">
+            <span className="text-gold/80">Production Time:</span>
+            <span>
+              {ticks
+                ? formatTime(Math.floor((ticks / buildingCount) * (realm.category === StructureType.Village ? 2 : 1)))
+                : "0s"}
+            </span>
+          </div>
+          <Button
+            onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
+            disabled={isDisabled}
+            isLoading={isLoading}
+            variant={isDisabled ? "default" : "gold"}
+            className="px-8 py-2"
+            size="lg"
+          >
+            {isDisabled ? "Not enough resources" : "Start Production"}
+          </Button>
         </div>
-      </div>
-
-      <div className="flex justify-center">
-        <Button
-          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-          disabled={isDisabled}
-          isLoading={isLoading}
-          variant="primary"
-          className="px-8 py-2"
-        >
-          Start Production
-        </Button>
       </div>
     </div>
   );

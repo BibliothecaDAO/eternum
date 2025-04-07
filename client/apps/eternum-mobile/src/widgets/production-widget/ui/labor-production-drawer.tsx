@@ -1,4 +1,3 @@
-import { getLaborConfig } from "@/features/resources-production/lib/labor";
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
@@ -7,12 +6,14 @@ import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
 import {
+  configManager,
   divideByPrecision,
   findResourceById,
   formatTime,
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
@@ -56,7 +57,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
   };
 
   const laborConfig = useMemo(() => {
-    return selectedResources.map((r) => getLaborConfig(r.id));
+    return selectedResources.map((r) => configManager.getLaborConfig(r.id));
   }, [selectedResources]);
 
   const { laborAmount, ticks } = useMemo(() => {
@@ -141,7 +142,9 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
 
   const renderResourceRow = (resource: { id: number; amount: number }, index: number) => {
     const resourceInfo = findResourceById(resource.id);
-    const balance = divideByPrecision(Number(availableResources[index]?.amount || 0));
+    const balance = divideByPrecision(
+      Number(availableResources.find((r) => r.resourceId === resource.id)?.amount || 0),
+    );
 
     if (!resourceInfo) return null;
 
@@ -205,7 +208,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
                   <ResourceIcon resourceId={ResourcesIds.Labor} size={16} />
                   <span>Total Labor Generated: {laborAmount}</span>
                 </div>
-                <div>Time Required: {formatTime(ticks)}</div>
+                <div>Time Required: {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}</div>
               </div>
             </CardContent>
           </Card>

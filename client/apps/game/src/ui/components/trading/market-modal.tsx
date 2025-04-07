@@ -151,8 +151,8 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="market-modal-selector container border mx-auto grid grid-cols-12 bg-dark border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
-        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
+      <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
+        <div className="col-span-3 row-span-10 overflow-y-auto ">
           <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center   rounded-xl w-full ">
             <div className="">
               <Select
@@ -192,7 +192,7 @@ export const MarketModal = () => {
         <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
           <MarketHeader />
           <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
-            <Tabs.List className=" flex w-full">
+            <Tabs.List className=" flex w-full mt-4">
               {tabs.map((tab, index) => (
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}

@@ -40,15 +40,15 @@ export const GuildListHeader = ({
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-12 pb-3 border-b border-gold/20">
+    <SortPanel className="grid grid-cols-12 w-full p-2 border-b border-gold/20">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
+          className={className + " " + textStyle}
+          classNameCaret="w-2"
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
-          className={`${className} ${textStyle}`}
-          classNameCaret="w-2.5 h-2.5 ml-1"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -77,7 +77,7 @@ export const GuildRow = ({
   return (
     <div
       className={clsx(
-        "grid grid-cols-12 w-full py-1 cursor-pointer items-center hover:bg-gold/5 rounded-lg transition-colors duration-200 mb-1",
+        "grid grid-cols-12 w-full py-2 px-2 cursor-pointer items-center hover:bg-gold/10 rounded-lg transition-colors duration-200 mb-1",
         {
           "bg-blueish/20 hover:bg-blueish/30": guild.isMember,
         },

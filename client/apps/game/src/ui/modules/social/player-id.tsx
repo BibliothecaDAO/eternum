@@ -131,20 +131,19 @@ export const PlayerId = ({
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 bg-brown/20 p-3 rounded-lg shadow-md">
             <span className="text-2xl font-bold text-gold">{playerName || "No player selected"}</span>
-
             {playerName && <MessageIcon playerName={playerName} selectedPlayer={selectedPlayer} />}
           </div>
 
-          <div className="text-xs italic">
-            {hasBeenPlayingFor ? `Joined ${hasBeenPlayingFor} ago` : "Has not settled a realm yet"}
-          </div>
+          {hasBeenPlayingFor && <div className="text-xs italic">Joined {hasBeenPlayingFor} ago</div>}
 
-          <div className="text-xs">{playerEntityId ? `Player ID: ${playerEntityId}` : ""}</div>
+          {!hasBeenPlayingFor && <div className="text-xs italic">Has not settled a realm yet</div>}
+
+          {playerEntityId && <div className="text-xs">Player ID: {playerEntityId}</div>}
         </div>
       </div>
 
       <div className="flex flex-col gap-4 w-full p-1 max-h-[500px] overflow-y-auto">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-2 gap-1">
           {playerStructures?.map((structure) => {
             if (!structure) return null;
 
@@ -164,9 +163,9 @@ export const PlayerId = ({
             }
 
             return (
-              <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-2 rounded-md">
+              <div key={structure.entity_id} className="flex flex-col gap-2 border-2 border-gold/10 p-3 rounded-md">
                 <div className="flex flex-col justify-between text-xs font-bold break-words">
-                  {structure.structureName}
+                  <h6 className="mb-4">{structure.structureName}</h6>
                   <div className="flex flex-row items-center">
                     <NavigateToPositionIcon className="!w-5 !h-5" position={structure.position} />
                     <ViewOnMapIcon className="!w-4 !h-4" position={structure.position} />

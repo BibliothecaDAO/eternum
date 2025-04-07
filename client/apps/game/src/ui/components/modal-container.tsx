@@ -60,12 +60,12 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   return (
     <div
       ref={modalRef}
-      className={`z-50 bg-brown/90 text-gold ${containerClasses} fixed overflow-hidden focus:outline-none focus:ring-2 focus:ring-gold/50`}
+      className={`z-50  bg-dark-wood panel-wood text-gold ${containerClasses} fixed overflow-hidden focus:outline-none focus:ring-2 focus:ring-gold/50`}
       tabIndex={0}
     >
       <div className={`flex flex-col ${size === "auto" ? "h-auto" : "h-full"}`}>
         <div className="flex justify-between items-center p-2">
-          <div className="text-lg font-semibold text-gold px-4">{title}</div>
+          <h5>{title}</h5>
           <div className="flex justify-end p-1">
             <Button className="!p-4" size="xs" variant="danger" onClick={() => toggleModal(null)}>
               <X className="w-4 h-4" />

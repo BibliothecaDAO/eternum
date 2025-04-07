@@ -392,11 +392,13 @@ export class ArmyManager {
       "hover:bg-brown/90",
       "pointer-events-auto",
       army.isMine ? "text-order-brilliance" : "text-gold",
-      "p-1",
+      "p-0.5",
       "-translate-x-1/2",
-      "text-xs",
+      "text-xxs",
+      "h-10",
       "flex",
       "items-center",
+      "group",
     );
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
@@ -408,21 +410,28 @@ export class ArmyManager {
     const img = document.createElement("img");
     img.src = isDaydreamsAgent
       ? "/images/logos/daydreams.png"
-      : `/textures/${army.isMine ? "my_army_label" : "army_label"}.png`;
-    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
+      : `/images/labels/${army.isMine ? "army" : "enemy_army"}.png`;
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
     // Create text container with transition
     const textContainer = document.createElement("div");
+
+    const spacerDiv = document.createElement("div");
+    spacerDiv.classList.add("w-2");
+    textContainer.appendChild(spacerDiv);
+
     textContainer.classList.add(
       "flex",
       "flex-col",
-      "transition-all",
+      "transition-width",
       "duration-700",
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      "group-hover:max-w-[250px]",
+      "group-hover:ml-2",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
 
@@ -438,7 +447,7 @@ export class ArmyManager {
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
-    label.position.y += 1.5;
+    label.position.y += 2.1;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;

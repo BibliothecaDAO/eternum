@@ -1,10 +1,10 @@
+import { TORII_SETTING } from "@/utils/config";
 import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
 import { env } from "./env";
 
 const {
   VITE_PUBLIC_NODE_URL,
-  VITE_PUBLIC_TORII,
   VITE_PUBLIC_TORII_RELAY,
   VITE_PUBLIC_MASTER_ADDRESS,
   VITE_PUBLIC_MASTER_PRIVATE_KEY,
@@ -17,7 +17,7 @@ const manifest = getGameManifest(VITE_PUBLIC_CHAIN! as Chain);
 
 export const dojoConfig = createDojoConfig({
   rpcUrl: VITE_PUBLIC_NODE_URL,
-  toriiUrl: VITE_PUBLIC_TORII,
+  toriiUrl: await TORII_SETTING(),
   relayUrl: VITE_PUBLIC_TORII_RELAY,
   masterAddress: VITE_PUBLIC_MASTER_ADDRESS,
   masterPrivateKey: VITE_PUBLIC_MASTER_PRIVATE_KEY,

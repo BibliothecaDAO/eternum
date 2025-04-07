@@ -49,7 +49,7 @@ export const LaborResourcesPanel = ({
   return (
     <div
       className={`p-4 rounded-lg border-2 cursor-pointer ${
-        isSelected ? "border-gold" : "border-transparent opacity-50"
+        isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-50"
       }`}
       onClick={onSelect}
     >

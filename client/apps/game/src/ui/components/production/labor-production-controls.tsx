@@ -8,9 +8,11 @@ import {
   configManager,
   divideByPrecision,
   findResourceById,
+  formatTime,
   multiplyByPrecision,
   RealmInfo,
   ResourcesIds,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
@@ -194,19 +196,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
             <div className="flex items-center gap-2 justify-center p-2 bg-white/5 rounded-md">
               <span>Time Required:</span>
               <span className="font-medium">
-                {(() => {
-                  const days = Math.floor(ticks / (24 * 60 * 60));
-                  const hours = Math.floor((ticks % (24 * 60 * 60)) / (60 * 60));
-                  const minutes = Math.floor((ticks % (60 * 60)) / 60);
-                  const seconds = ticks % 60;
-
-                  return [
-                    days > 0 ? `${days}d ` : "",
-                    hours > 0 ? `${hours}h ` : "",
-                    minutes > 0 ? `${minutes}m ` : "",
-                    `${seconds}s`,
-                  ].join("");
-                })()}
+                {formatTime(ticks * (realm.category === StructureType.Village ? 2 : 1))}
               </span>
             </div>
           </div>

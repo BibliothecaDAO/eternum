@@ -1,7 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { BuildingThumbs } from "@/ui/config";
-import CircleButton from "@/ui/elements/circle-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -20,7 +18,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
-import { HintModal } from "../hints/hint-modal";
 import { NavigateToPositionIcon } from "../military/army-chip";
 import { CooldownTimer, DefenseTroop } from "../military/structure-defence";
 import { TroopChip } from "../military/troop-chip";
@@ -49,8 +46,8 @@ export const MarketHeader = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
-    <div className="grid grid-cols-4 p-3 flex-wrap justify-between items-start gap-6 rounded-xl shadow-lg panel-wood-bottom relative">
-      <div className="absolute top-4 right-4">
+    <div className="grid grid-cols-4 flex-wrap justify-between items-start gap-6 rounded-xl shadow-lg panel-wood-bottom relative">
+      {/* <div className="absolute top-4 right-4">
         <CircleButton
           onClick={() => {
             toggleModal(null);
@@ -60,32 +57,33 @@ export const MarketHeader = () => {
           image={BuildingThumbs.question}
           className="hover:bg-gold/20 transition-colors duration-200"
         />
-      </div>
-      <div className="col-span-3  p-3 rounded-xl text-sm shadow-lg h-full flex flex-col">
+      </div> */}
+      {/* <div className="col-span-12 h-full flex flex-col rounded-lg overflow-hidden">
         <BankInformationHeader />
-        {BANKS.map((bank) => (
-          <BankInformation key={bank.id} bank={bank} />
-        ))}
-      </div>
+        <div className="flex flex-col divide-y divide-gold/20">
+          {BANKS.map((bank) => (
+            <BankInformation key={bank.id} bank={bank} />
+          ))}
+        </div>
+      </div> */}
     </div>
   );
 };
 
 const BankInformationHeader = () => {
   return (
-    <div className="grid grid-cols-8 gap-2 text-gold/80 text-xs font-medium border-b border-gold/20 mb-1">
-      <span>Owner</span>
-
-      <span>Treasury</span>
+    <div className="grid grid-cols-8 gap-2 py-3 px-4 bg-brown-900/80 text-gold font-medium border-b border-gold/30">
+      <span className="text-sm uppercase tracking-wider">Owner</span>
+      <span className="text-sm uppercase tracking-wider">Treasury</span>
       <div className="col-span-5 grid grid-cols-4 gap-2">
         {Object.values(DEFENSE_NAMES).map((name, index) => (
-          <div key={index} className="flex flex-row items-center justify-center gap-1">
-            <div className="w-1 h-1 rounded-full bg-gold/40" />
+          <div key={index} className="flex flex-row items-center justify-center gap-1 text-sm uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-gold/60" />
             {name}
           </div>
         ))}
       </div>
-      <div></div>
+      <div className="text-sm uppercase tracking-wider text-right pr-2">Actions</div>
     </div>
   );
 };
@@ -103,11 +101,11 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
   const guards = getGuardsByStructure(bankInfo?.structure);
 
   return (
-    <div className="grid grid-cols-8 gap-2 items-center mb-1">
-      <span>{bankInfo?.owner}</span>
+    <div className="grid grid-cols-8 items-center py-3 px-4 hover:bg-brown-900/20 transition-colors duration-200">
+      <h6 className="font-medium text-gold/90">{bankInfo?.owner || "—"}</h6>
 
-      <div className="flex flex-row items-center">
-        <span>{currencyFormat(Number(bankLordsBalance), 0)}</span>
+      <div className="flex flex-row items-center gap-2">
+        <span className="font-medium">{currencyFormat(Number(bankLordsBalance), 0)}</span>
         <ResourceIcon className={"mt-0.5"} resource={ResourcesIds[ResourcesIds.Lords]} size="sm" />
       </div>
       <div className="col-span-5">
@@ -119,9 +117,9 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
           }))}
         />
       </div>
-      <div className="flex flex-row justify-end gap-2">
+      <div className="flex flex-row justify-end gap-3">
         <ViewOnMapIcon
-          className="w-5 h-5 hover:scale-110 transition-all duration-300"
+          className="w-5 h-5 hover:scale-110 transition-all duration-300 text-gold/80 hover:text-gold"
           position={
             new Position({
               x: Number(bankInfo?.position.x),
@@ -129,7 +127,11 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
             })
           }
         />
-        <NavigateToPositionIcon tooltipContent="Navigate to Bank" position={new Position(bankInfo?.position)} />
+        <NavigateToPositionIcon
+          tooltipContent="Navigate to Bank"
+          position={new Position(bankInfo?.position)}
+          className="text-gold/80 hover:text-gold"
+        />
       </div>
     </div>
   );
@@ -149,7 +151,7 @@ const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefensePro
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-3">
         {Array.from({ length: maxDefenses }).map((_, index) => {
           const defense = defenseTroops[index];
           const slot = defense?.slot;
@@ -159,12 +161,12 @@ const BankDefense = ({ maxDefenses, troops, cooldownSlots = [] }: BankDefensePro
               {cooldownSlots.includes(index) ? (
                 <CooldownTimer slot={index} time={24 * 60 * 60} />
               ) : defense ? (
-                <div className="relative">
-                  <TroopChip troops={defense.troops} iconSize="sm" className="hover:border-gold/40 transition-colors" />
+                <div className="relative w-full flex items-center justify-center border border-gold/40 rounded-md bg-brown-900/40 p-1 shadow-sm">
+                  <TroopChip troops={defense.troops} iconSize="lg" />
                 </div>
               ) : (
                 <div
-                  className="px-3 py-2 bg-brown-900/50 border border-gold/20 rounded-md text-gold/40 text-xs hover:border-gold/40 transition-colors flex justify-between items-center cursor-pointer w-full"
+                  className="px-3 py-2 bg-brown-900/40 border border-gold/20 rounded-md text-gold/40 text-xs hover:border-gold/60 hover:bg-brown-900/60 transition-all flex justify-between items-center cursor-pointer w-full shadow-sm"
                   onClick={() => toggleDefenseExpansion(index)}
                 >
                   <span>Empty</span>

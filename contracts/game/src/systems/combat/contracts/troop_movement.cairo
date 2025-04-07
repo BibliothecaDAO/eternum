@@ -9,6 +9,7 @@ pub trait ITroopMovementSystems<TContractState> {
 #[dojo::contract]
 pub mod troop_movement_systems {
     use core::num::traits::zero::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{WorldStorageTrait};
     use s1_eternum::alias::ID;
@@ -36,14 +37,26 @@ pub mod troop_movement_systems {
     use super::ITroopMovementSystems;
     use super::{ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
-    #[derive(Copy, Drop, Serde)]
-    pub enum ExploreTreasure {
+    #[derive(Copy, Drop, Serde, Introspect)]
+    pub enum ExploreFind {
         None,
         Hyperstructure,
         Mine,
         Agent,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerMoveEvent {
+        #[key]
+        pub explorer_id: ID,
+        pub explorer_structure_id: ID,
+        pub explorer_owner_address: starknet::ContractAddress,
+        pub explore_find: ExploreFind,
+        pub reward_resource_type: u8,
+        pub reward_resource_amount: u128,
+        pub timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
@@ -64,6 +77,10 @@ pub mod troop_movement_systems {
             // remove explorer from current occupier
             let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
             IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
+
+            let mut explore_find = ExploreFind::None;
+            let mut explore_reward_type = 0;
+            let mut explore_reward_amount = 0;
 
             let caller = starknet::get_caller_address();
             let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
@@ -104,7 +121,7 @@ pub mod troop_movement_systems {
                         contract_address: troop_movement_util_systems_address,
                     };
 
-                    let found_treasure: bool = troop_movement_util_systems
+                    let (found_treasure, _explore_find) = troop_movement_util_systems
                         .find_treasure(
                             vrf_seed,
                             tile,
@@ -114,6 +131,7 @@ pub mod troop_movement_systems {
                             troop_stamina_config,
                             current_tick,
                         );
+                    explore_find = _explore_find;
                     if found_treasure {
                         // ensure explorer does not occupy destination tile
                         occupy_destination = false;
@@ -123,13 +141,15 @@ pub mod troop_movement_systems {
                     }
 
                     // grant resource reward for exploration
-                    let (explore_reward_id, explore_reward_amount) = iExplorerImpl::exploration_reward(
+                    let (_explore_reward_type, _explore_reward_amount) = iExplorerImpl::exploration_reward(
                         ref world, map_config, vrf_seed,
                     );
+                    explore_reward_type = _explore_reward_type;
+                    explore_reward_amount = _explore_reward_amount;
                     let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_id);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, explore_reward_type);
                     let mut resource = SingleResourceStoreImpl::retrieve(
-                        ref world, explorer_id, explore_reward_id, ref explorer_weight, resource_weight_grams, false,
+                        ref world, explorer_id, explore_reward_type, ref explorer_weight, resource_weight_grams, false,
                     );
                     resource.add(explore_reward_amount, ref explorer_weight, resource_weight_grams);
                     resource.store(ref world);
@@ -169,6 +189,20 @@ pub mod troop_movement_systems {
             // burn food cost
             iExplorerImpl::burn_food_cost(ref world, ref explorer, troop_stamina_config, explore);
 
+            // emit event
+            world
+                .emit_event(
+                    @ExplorerMoveEvent {
+                        explorer_id,
+                        explorer_structure_id: explorer.owner,
+                        explorer_owner_address: starknet::get_caller_address(),
+                        explore_find: explore_find,
+                        reward_resource_type: explore_reward_type,
+                        reward_resource_amount: explore_reward_amount,
+                        timestamp: starknet::get_block_timestamp(),
+                    },
+                );
+
             // update explorer
             world.write_model(@explorer);
         }
@@ -176,9 +210,8 @@ pub mod troop_movement_systems {
 }
 use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
 use s1_eternum::models::map::Tile;
-
-
 use s1_eternum::models::{config::{MapConfig}};
+use troop_movement_systems::ExploreFind;
 
 #[starknet::interface]
 pub trait ITroopMovementUtilSystems<T> {
@@ -191,7 +224,7 @@ pub trait ITroopMovementUtilSystems<T> {
         troop_limit_config: TroopLimitConfig,
         troop_stamina_config: TroopStaminaConfig,
         current_tick: u64,
-    ) -> bool;
+    ) -> (bool, ExploreFind);
 }
 
 #[dojo::contract]
@@ -205,7 +238,7 @@ pub mod troop_movement_util_systems {
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
     };
-    use super::{ITroopMovementUtilSystems};
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
 
     #[abi(embed_v0)]
     impl TroopMovementUtilImpl of ITroopMovementUtilSystems<ContractState> {
@@ -218,7 +251,7 @@ pub mod troop_movement_util_systems {
             troop_limit_config: TroopLimitConfig,
             troop_stamina_config: TroopStaminaConfig,
             current_tick: u64,
-        ) -> bool {
+        ) -> (bool, ExploreFind) {
             // ensure caller is the troop movement systems because this changes state
             let mut world = self.world(DEFAULT_NS());
 
@@ -236,7 +269,7 @@ pub mod troop_movement_util_systems {
                 iHyperstructureDiscoveryImpl::create(
                     ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                 );
-                return true;
+                return (true, ExploreFind::Hyperstructure);
             } else {
                 // perform lottery to discover mine
                 let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
@@ -244,16 +277,16 @@ pub mod troop_movement_util_systems {
                     iMineDiscoveryImpl::create(
                         ref world, tile.into(), map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                     );
-                    return true;
+                    return (true, ExploreFind::Mine);
                 } else {
                     let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
                     if agent_lottery_won {
                         iAgentDiscoveryImpl::create(
                             ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
                         );
-                        return true;
+                        return (true, ExploreFind::Agent);
                     } else {
-                        return false;
+                        return (false, ExploreFind::None);
                     }
                 }
             }

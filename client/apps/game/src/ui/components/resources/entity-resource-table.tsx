@@ -37,6 +37,7 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     const resources = resourceIds.map((resourceId: any) => (
       <ResourceChip
         key={resourceId}
+        size="large"
         resourceId={resourceId}
         resourceManager={resourceManager}
         maxCapacityKg={maxStorehouseCapacityKg}

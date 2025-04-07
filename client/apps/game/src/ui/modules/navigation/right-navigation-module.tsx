@@ -57,7 +57,7 @@ export const RightNavigationModule = () => {
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-36 ${
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${
         isOffscreen ? "translate-x-[83%]" : ""
       }`}
     >
@@ -68,9 +68,9 @@ export const RightNavigationModule = () => {
         }}
         initial="hidden"
         animate="visible"
-        className="gap-2 flex flex-col justify-start pointer-events-auto h-[60vh]"
+        className="flex flex-col justify-start pointer-events-auto h-[60vh]"
       >
-        <div className="flex flex-col gap-2 mb-auto">
+        <div className="flex flex-col mb-auto">
           {navigation.map((item, index) => (
             <div key={index}>{item.button}</div>
           ))}
@@ -78,7 +78,7 @@ export const RightNavigationModule = () => {
       </motion.div>
 
       <BaseContainer
-        className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 border-gold/20`}
+        className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
       >
         <Suspense fallback={<div className="p-8">Loading...</div>}>
           {view === RightView.ResourceTable && !!structureEntityId && (

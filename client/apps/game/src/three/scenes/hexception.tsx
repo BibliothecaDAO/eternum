@@ -34,6 +34,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
+import gsap from "gsap";
 import * as THREE from "three";
 import { CSS2DObject } from "three-stdlib";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -423,7 +424,7 @@ export default class HexceptionScene extends HexagonScene {
             </div>
           </div>
         ),
-        position: "top",
+        position: "bottom",
       });
     }
   }
@@ -449,7 +450,7 @@ export default class HexceptionScene extends HexagonScene {
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
     this.updateCastleLevel();
-    const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
+    const biomeHexes: Record<BiomeType | "Empty", THREE.Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -467,6 +468,7 @@ export default class HexceptionScene extends HexagonScene {
       SubtropicalDesert: [],
       TropicalSeasonalForest: [],
       TropicalRainForest: [],
+      Empty: [],
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
@@ -531,6 +533,10 @@ export default class HexceptionScene extends HexagonScene {
             const instance = buildingData.model.clone();
 
             instance.applyMatrix4(building.matrix);
+
+            // Set initial scale for animation
+            instance.scale.set(0.01, 0.01, 0.01);
+
             if (buildingType === ResourceMiningTypes.Forge) {
               instance.traverse((child) => {
                 if (child.name === "Grassland003_1" && child instanceof THREE.Mesh) {
@@ -542,20 +548,41 @@ export default class HexceptionScene extends HexagonScene {
                 }
               });
             }
-            // if (buildingType === ResourceMiningTypes.Mine) {
-            //   const crystalMesh1 = instance.children[1] as THREE.Mesh;
-            //   const crystalMesh2 = instance.children[2] as THREE.Mesh;
-            //   if (!this.minesMaterials.has(building.resource)) {
-            //     const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-            //     this.minesMaterials.set(building.resource, material);
-            //   }
-            //   // @ts-ignoreq
-            //   crystalMesh1.material = this.minesMaterials.get(building.resource);
-            //   // @ts-ignore
-            //   crystalMesh2.material = this.minesMaterials.get(building.resource);
-            // }
+            if (buildingType === ResourceMiningTypes.Mine) {
+              instance.traverse((child) => {
+                // @ts-ignore
+                if (child?.material?.name === "crystal" && child instanceof THREE.Mesh) {
+                  if (!this.minesMaterials.has(building.resource)) {
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.EtherealSilica]);
+                    this.minesMaterials.set(building.resource, material);
+                  }
+                  child.material = this.minesMaterials.get(building.resource);
+                }
+              });
+              // const crystalMesh1 = instance.children[1] as THREE.Mesh;
+              // const crystalMesh2 = instance.children[2] as THREE.Mesh;
+              // if (!this.minesMaterials.has(building.resource)) {
+              //   const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
+              //   this.minesMaterials.set(building.resource, material);
+              // }
+              // // @ts-ignoreq
+              // crystalMesh1.material = this.minesMaterials.get(building.resource);
+              // // @ts-ignore
+              // crystalMesh2.material = this.minesMaterials.get(building.resource);
+            }
+
+            // Add instance to scene BEFORE starting animation
             this.scene.add(instance);
             this.buildingInstances.set(key, instance);
+
+            // Animate scale using gsap
+            gsap.to(instance.scale, {
+              duration: 0.5,
+              x: 1,
+              y: 1,
+              z: 1,
+              ease: "power2.out",
+            });
 
             // Check if the model has animations and start them
             const animations = buildingData.animations;
@@ -636,7 +663,7 @@ export default class HexceptionScene extends HexagonScene {
     biomeHexes: Record<BiomeType, THREE.Matrix4[]>,
   ) => {
     const biome = Biome.getBiome(targetHex.col, targetHex.row);
-    const buildableAreaBiome = "Grassland";
+    const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
     // reset buildings
@@ -677,26 +704,13 @@ export default class HexceptionScene extends HexagonScene {
         if (building) {
           withBuilding = true;
           const buildingObj = dummy.clone();
-          const rotation = Math.PI / 3;
-          buildingObj.rotation.y = rotation * 3;
-          if (building.category === BuildingType.ResourceLabor) {
-            buildingObj.rotation.y = rotation * 3;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.LumberMill) {
-            buildingObj.rotation.y = rotation * 2;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Dragonhide) {
-            buildingObj.rotation.y = rotation * 2;
-          }
-          if (ResourceIdToMiningType[building.resource as ResourcesIds] === ResourceMiningTypes.Forge) {
-            buildingObj.rotation.y = rotation * 6;
-          }
-          if (building.resource && building.resource === ResourcesIds.Crossbowman) {
-            buildingObj.rotation.y = rotation;
-          }
-          if (building.resource && building.resource === ResourcesIds.Paladin) {
-            buildingObj.rotation.y = rotation * 3;
-          }
+          // --- Deterministic Rotation ---
+          const rotationSeed = this.hashCoordinates(position.col, position.row);
+          const rotationIndex = Math.floor(rotationSeed * 6); // Map 0-1 to 0-5
+          const deterministicRotation = (rotationIndex * Math.PI) / 3; // Convert index to radians (0, pi/3, 2pi/3, ...)
+          buildingObj.rotation.y = deterministicRotation;
+          // --- End Deterministic Rotation ---
+
           buildingObj.updateMatrix();
           this.buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
         } else if (isMainHex) {
@@ -704,7 +718,7 @@ export default class HexceptionScene extends HexagonScene {
         }
 
         if (!withBuilding) {
-          biomeHexes[buildableAreaBiome].push(dummy.matrix.clone());
+          biomeHexes[buildableAreaBiome as BiomeType].push(dummy.matrix.clone());
         }
       });
     }

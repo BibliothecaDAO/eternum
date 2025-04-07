@@ -1,4 +1,3 @@
-import { ReactComponent as WorldIcon } from "@/assets/icons/common/world.svg";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
@@ -17,7 +16,8 @@ export const ViewOnMapIcon = ({
   const navigateToMapView = useNavigateToMapView();
 
   return (
-    <WorldIcon
+    <img
+      src="/image-icons/world.png"
       className={clsx(
         "h-5 w-5 fill-gold hover:fill-gold/50 hover:animate-pulse duration-300 transition-all",
         className,
@@ -30,7 +30,7 @@ export const ViewOnMapIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: "View on Map",
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {

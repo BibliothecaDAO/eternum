@@ -15,7 +15,7 @@ pub trait ITroopRaidSystems<T> {
 #[dojo::contract]
 pub mod troop_raid_systems {
     use core::num::traits::zero::Zero;
-
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION};
@@ -25,7 +25,9 @@ pub mod troop_raid_systems {
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::position::{CoordTrait, Direction};
-    use s1_eternum::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
+    use s1_eternum::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
+    };
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
@@ -43,6 +45,17 @@ pub mod troop_raid_systems {
 
     use super::super::super::super::super::models::troop::GuardTrait;
 
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    pub struct ExplorerRaidEvent {
+        #[key]
+        pub explorer_id: ID,
+        #[key]
+        pub structure_id: ID,
+        pub success: bool,
+        pub timestamp: u64,
+    }
 
     #[abi(embed_v0)]
     pub impl TroopRaidSystemsImpl of super::ITroopRaidSystems<ContractState> {
@@ -194,8 +207,10 @@ pub mod troop_raid_systems {
                     / PercentageValueImpl::_100().into();
                 // add one and make sure it is precise
                 explorer_damage_applied += RESOURCE_PRECISION - (explorer_damage_applied % RESOURCE_PRECISION);
-                explorer_aggressor_troops
-                    .count -= core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
+                let explorer_troops_lost = core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
+                explorer_aggressor_troops.count -= explorer_troops_lost;
+                // update explorer capacity
+                iExplorerImpl::update_capacity(ref world, explorer_id, explorer_troops_lost, false);
 
                 // deduct stamina spent by explorer
                 explorer_aggressor_troops
@@ -255,12 +270,19 @@ pub mod troop_raid_systems {
             if raid_success {
                 let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
                 let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
-                iResourceTransferImpl::structure_to_troop_instant(
+                iResourceTransferImpl::structure_to_troop_raid_instant(
                     ref world, structure_id, ref structure_weight, explorer_id, ref explorer_weight, steal_resources,
                 );
                 structure_weight.store(ref world, structure_id);
                 explorer_weight.store(ref world, explorer_id);
             };
+
+            world
+                .emit_event(
+                    @ExplorerRaidEvent {
+                        explorer_id, structure_id, success: raid_success, timestamp: starknet::get_block_timestamp(),
+                    },
+                )
         }
     }
 }

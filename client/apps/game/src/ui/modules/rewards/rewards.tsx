@@ -110,7 +110,7 @@ export const Rewards = () => {
           setRegistrationTimeRemaining("Registration Closed");
         } else {
           const registrationDifference = registrationEndTime - currentTime;
-          setRegistrationTimeRemaining(formatTime(registrationDifference, undefined));
+          setRegistrationTimeRemaining(formatTime(registrationDifference));
         }
 
         // Calculate bridge out time
@@ -118,7 +118,7 @@ export const Rewards = () => {
           setBridgeOutTimeRemaining("Bridge Out Closed");
         } else {
           const bridgeOutDifference = bridgeOutEndTime - currentTime;
-          setBridgeOutTimeRemaining(formatTime(bridgeOutDifference, undefined));
+          setBridgeOutTimeRemaining(formatTime(bridgeOutDifference));
         }
       };
 

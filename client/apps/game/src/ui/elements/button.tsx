@@ -25,7 +25,7 @@ type ButtonProps = {
 
 const STYLES = {
   baseStyle:
-    "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold uppercase button-wood",
+    "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold uppercase button-wood ",
   primary:
     "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
   primarySelected:
@@ -80,7 +80,7 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <div className={`w-full inset-0 flex flex-col items-center justify-center h-full`}>
+        <div className={`w-full inset-0 flex flex-col items-center justify-center h-full `}>
           <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>{" "}
         </div>
       ) : (

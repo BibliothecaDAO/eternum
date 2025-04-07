@@ -94,7 +94,7 @@ export const SecondaryPopup = ({ children, className, name, width = "400px" }: F
             onClick={handleClick}
             ref={nodeRef}
             className={clsx(
-              "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood",
+              "fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] panel-wood bg-dark-wood",
               className,
             )}
             style={{ width: `${width}px` }}
@@ -120,7 +120,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2  bg-brown/90  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
+      " items-center relative cursor-move z-30 p-2  bg-dark-wood  w-full whitespace-nowrap handle flex justify-between  border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
@@ -130,7 +130,7 @@ SecondaryPopup.Head = ({
     }}
     tabIndex={0}
   >
-    <div>{children}</div>
+    <h4>{children}</h4>
     <div className="flex flex-row">
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
 
@@ -185,7 +185,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 flex flex-col bg-brown border-gradient border overflow-auto bg-hex-bg bg-repeat`,
+        `relative z-10 flex flex-col bg-dark-wood border-gradient border overflow-auto bg-hex-bg bg-repeat`,
       )}
       style={{
         width: width ? width : "",

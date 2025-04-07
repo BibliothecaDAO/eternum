@@ -97,9 +97,7 @@ const SelectEntitiesStep = memo(
     return (
       <>
         <div className="w-full flex flex-col justify-center items-center">
-          {formattedArrivalTime && (
-            <div className="text-gold font-semibold">Estimated Arrival: {formattedArrivalTime}</div>
-          )}
+          {formattedArrivalTime && <div className="">Estimated Arrival: {formattedArrivalTime}</div>}
         </div>
         <div className="grid grid-cols-2 gap-6 mt-3">
           {/* From column */}

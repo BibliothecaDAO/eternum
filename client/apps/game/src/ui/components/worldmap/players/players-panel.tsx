@@ -121,12 +121,12 @@ export const PlayersPanel = ({
 
   return (
     <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
-      <div className="flex gap-2 mb-4">
+      <div className="flex mb-4">
         <TextInput
           placeholder="Search players/realms/structures..."
           onChange={(value) => setInputValue(value)}
           onKeyDown={handleKeyDown}
-          className="flex-1"
+          className="flex-1 button-wood"
         />
         <Button onClick={handleSearch} variant="primary">
           Search

@@ -5,7 +5,6 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
   Building,
-  BuildingType,
   getEntityIdFromKeys,
   getRealmInfo,
   isFoodBuilding,
@@ -164,7 +163,7 @@ const BuildingRow = ({ building, isOwner, isLoading, handlePauseResumeProduction
         <div className="flex items-center space-x-3">
           <img
             className="w-24 bg-brown/40 rounded-xl p-1"
-            src={BUILDING_IMAGES_PATH[BuildingType[building.category as any] as keyof typeof BUILDING_IMAGES_PATH]}
+            src={BUILDING_IMAGES_PATH[building.category as keyof typeof BUILDING_IMAGES_PATH]}
           />
           <h4 className="text-lg font-medium">{building.name}</h4>
         </div>
