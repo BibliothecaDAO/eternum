@@ -2168,16 +2168,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
     const { initialize_shards_amount, construction_resources, points_per_second, points_for_win, signer } = props;
 
+    const calldata = [
+      initialize_shards_amount,
+      construction_resources.length,
+      ...construction_resources,
+      points_per_second,
+      points_for_win,
+    ];
+
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
-      calldata: [
-        initialize_shards_amount,
-        construction_resources.length,
-        ...construction_resources,
-        points_per_second,
-        points_for_win,
-      ],
+      calldata,
     });
   }
 

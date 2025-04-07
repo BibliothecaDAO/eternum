@@ -1,4 +1,5 @@
 import {
+  configManager,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   getAddressNameFromEntity,
@@ -90,4 +91,20 @@ export const useHyperstructureUpdates = (hyperstructureEntityId: ID) => {
   ]);
 
   return updates.map((updateEntityId) => getComponentValue(Hyperstructure, updateEntityId));
+};
+
+export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
+  const {
+    setup: {
+      components: { HyperstructureRequirements },
+    },
+  } = useDojo();
+
+  const currentAmounts = useEntityQuery([
+    HasValue(HyperstructureRequirements, { hyperstructure_id: hyperstructureEntityId }),
+  ]);
+
+  return useMemo(() => {
+    return configManager.getHyperstructureCurrentAmounts(hyperstructureEntityId);
+  }, [currentAmounts, hyperstructureEntityId]);
 };

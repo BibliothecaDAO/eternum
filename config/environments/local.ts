@@ -52,12 +52,15 @@ export const LocalEternumGlobalConfig: Config = {
     hyperstructureInitializationShardsCost: {
       resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
       amount: 500,
-     },
-      hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map((cost) => ({
-      ...cost,
-      min_amount: 120_000,
-      max_amount: 120_000,
-    })),
+    },
+    hyperstructurePointsForWin: 100n,
+    hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
+      (cost) => ({
+        ...cost,
+        min_amount: 120_000,
+        max_amount: 120_000,
+      }),
+    ),
   },
   // no grace period
   battle: {

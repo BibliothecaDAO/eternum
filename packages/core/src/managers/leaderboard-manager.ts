@@ -88,6 +88,8 @@ export class LeaderboardManager {
     );
     if (!hyperstructureShareholders) return 0;
 
+    console.log({ hyperstructureShareholders });
+
     const shareholders = hyperstructureShareholders.shareholders as any;
 
     const playerShare = shareholders.find((share: any) => share[0] === playerAddress);

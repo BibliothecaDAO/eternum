@@ -19,7 +19,7 @@ import {
   ResourceManager,
   ResourcesIds,
 } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
+import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -65,6 +65,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const progresses = useHyperstructureProgress(entity.entity_id);
+  const currentAmounts = useCurrentAmounts(entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
 
@@ -129,6 +130,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
 
+    console.log({ formattedContributions });
+
     try {
       await contribute_to_construction({
         signer: account,
@@ -147,7 +150,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     if (progresses.percentage === 100) return;
 
     const requiredAmounts = configManager.getHyperstructureTotalContributableAmounts(entity.entity_id);
-    const currentAmounts = configManager.getHyperstructureCurrentAmounts(entity.entity_id);
 
     return Object.values(requiredAmounts)
       .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
@@ -174,7 +176,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
           />
         );
       });
-  }, [progresses]);
+  }, [progresses, currentAmounts, newContributions]);
 
   const canContribute = useMemo(() => {
     const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
