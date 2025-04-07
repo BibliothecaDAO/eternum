@@ -41,7 +41,7 @@ export const Rewards = () => {
   useEffect(() => {
     const init = async () => {
       const address = getLordsAddress();
-      setLordsAddress(address);
+      setLordsAddress(address as string);
     };
     init();
   }, []);
