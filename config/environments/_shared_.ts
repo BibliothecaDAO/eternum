@@ -17,9 +17,10 @@ import {
   SIMPLE_BUILDING_COSTS,
 } from "./utils/building";
 import {
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TOTAL_COSTS,
+  HYPERSTRUCTURE_COSTS,
+  HYPERSTRUCTURE_POINTS_FOR_WIN,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_SHARDS_COST
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
@@ -70,11 +71,6 @@ const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
 
-// ----- Hyperstructures ----- //
-export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 7;
-export const HYPERSTRUCTURE_POINTS_ON_COMPLETION = 500_000;
-export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
-export const HYPERSTRUCTURE_POINTS_FOR_WIN = 9_620_000;
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
@@ -309,12 +305,9 @@ export const EternumGlobalConfig: Config = {
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
-    hyperstructureCreationCosts: HYPERSTRUCTURE_CREATION_COSTS,
-    hyperstructureConstructionCosts: HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-    hyperstructureTotalCosts: HYPERSTRUCTURE_TOTAL_COSTS,
+    hyperstructureInitializationShardsCost: HYPERSTRUCTURE_SHARDS_COST,
+    hyperstructureConstructionCost: HYPERSTRUCTURE_COSTS,
     hyperstructurePointsPerCycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
-    hyperstructurePointsOnCompletion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-    hyperstructureTimeBetweenSharesChangeSeconds: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
   },
   season: {

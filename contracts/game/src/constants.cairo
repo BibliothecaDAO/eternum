@@ -213,56 +213,6 @@ pub mod ResourceTiers {
     pub const MYTHIC: u8 = 9;
 }
 
-pub fn get_resource_tier(resource_type: u8) -> u8 {
-    if resource_type == ResourceTypes::LORDS || resource_type == ResourceTypes::EARTHEN_SHARD {
-        ResourceTiers::LORDS
-    } else if resource_type == ResourceTypes::KNIGHT_T1
-        || resource_type == ResourceTypes::KNIGHT_T2
-        || resource_type == ResourceTypes::KNIGHT_T3
-        || resource_type == ResourceTypes::CROSSBOWMAN_T1
-        || resource_type == ResourceTypes::CROSSBOWMAN_T2
-        || resource_type == ResourceTypes::CROSSBOWMAN_T3
-        || resource_type == ResourceTypes::PALADIN_T1
-        || resource_type == ResourceTypes::PALADIN_T2
-        || resource_type == ResourceTypes::PALADIN_T3 {
-        ResourceTiers::MILITARY
-    } else if resource_type == ResourceTypes::DONKEY {
-        ResourceTiers::TRANSPORT
-    } else if resource_type == ResourceTypes::WHEAT || resource_type == ResourceTypes::FISH {
-        ResourceTiers::FOOD
-    } else if resource_type == ResourceTypes::WOOD
-        || resource_type == ResourceTypes::STONE
-        || resource_type == ResourceTypes::COAL
-        || resource_type == ResourceTypes::COPPER
-        || resource_type == ResourceTypes::OBSIDIAN {
-        ResourceTiers::COMMON
-    } else if resource_type == ResourceTypes::SILVER
-        || resource_type == ResourceTypes::IRONWOOD
-        || resource_type == ResourceTypes::COLD_IRON
-        || resource_type == ResourceTypes::GOLD {
-        ResourceTiers::UNCOMMON
-    } else if resource_type == ResourceTypes::HARTWOOD
-        || resource_type == ResourceTypes::DIAMONDS
-        || resource_type == ResourceTypes::SAPPHIRE
-        || resource_type == ResourceTypes::RUBY {
-        ResourceTiers::RARE
-    } else if resource_type == ResourceTypes::DEEP_CRYSTAL
-        || resource_type == ResourceTypes::IGNIUM
-        || resource_type == ResourceTypes::ETHEREAL_SILICA
-        || resource_type == ResourceTypes::TRUE_ICE
-        || resource_type == ResourceTypes::TWILIGHT_QUARTZ
-        || resource_type == ResourceTypes::ALCHEMICAL_SILVER {
-        ResourceTiers::UNIQUE
-    } else if resource_type == ResourceTypes::ADAMANTINE
-        || resource_type == ResourceTypes::MITHRAL
-        || resource_type == ResourceTypes::DRAGONHIDE {
-        ResourceTiers::MYTHIC
-    } else {
-        panic!("Unknown resource tier for resource id {}", resource_type);
-        0
-    }
-}
-
 
 pub fn get_resources_without_earthenshards() -> Span<u8> {
     return array![
@@ -330,35 +280,6 @@ pub fn get_hyperstructure_construction_resources() -> Span<u8> {
         ResourceTypes::ADAMANTINE,
         ResourceTypes::MITHRAL,
         ResourceTypes::DRAGONHIDE,
-    ]
-        .span();
-}
-
-pub fn get_contributable_resources_with_rarity() -> Span<(u8, u128)> {
-    return array![
-        (ResourceTypes::WOOD, 100),
-        (ResourceTypes::STONE, 127),
-        (ResourceTypes::COAL, 131),
-        (ResourceTypes::COPPER, 190),
-        (ResourceTypes::OBSIDIAN, 226),
-        (ResourceTypes::SILVER, 288),
-        (ResourceTypes::IRONWOOD, 425),
-        (ResourceTypes::COLD_IRON, 524),
-        (ResourceTypes::GOLD, 549),
-        (ResourceTypes::HARTWOOD, 844),
-        (ResourceTypes::DIAMONDS, 1672),
-        (ResourceTypes::SAPPHIRE, 2030),
-        (ResourceTypes::RUBY, 2098),
-        (ResourceTypes::DEEP_CRYSTAL, 2098),
-        (ResourceTypes::IGNIUM, 2915),
-        (ResourceTypes::ETHEREAL_SILICA, 3095),
-        (ResourceTypes::TRUE_ICE, 3606),
-        (ResourceTypes::TWILIGHT_QUARTZ, 4518),
-        (ResourceTypes::ALCHEMICAL_SILVER, 5392),
-        (ResourceTypes::ADAMANTINE, 9120),
-        (ResourceTypes::MITHRAL, 13553),
-        (ResourceTypes::DRAGONHIDE, 21792),
-        (ResourceTypes::EARTHEN_SHARD, 2098),
     ]
         .span();
 }
