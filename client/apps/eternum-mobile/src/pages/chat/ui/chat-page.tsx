@@ -1,4 +1,5 @@
-import { filterMessages } from "@/features/ws-chat/lib/filterUtils";
+import { filterMessages, sortMessagesByTime } from "@/features/ws-chat/lib/filterUtils";
+import { groupMessagesBySender } from "@/features/ws-chat/lib/messageUtils";
 import { generateUserCredentials } from "@/features/ws-chat/lib/userCredentials";
 import ChatClient from "@/features/ws-chat/model/client";
 import { Message, Room, User } from "@/features/ws-chat/model/types";
@@ -122,6 +123,16 @@ export function ChatPage() {
   const filteredMessages = useMemo(() => {
     return filterMessages(messages, userId, directMessageRecipient, activeRoom);
   }, [messages, userId, directMessageRecipient, activeRoom]);
+
+  // Sort messages based on active tab
+  const sortedMessages = useMemo(() => {
+    return sortMessagesByTime(filteredMessages);
+  }, [filteredMessages]);
+
+  // Group messages by sender
+  const messageGroups = useMemo(() => {
+    return groupMessagesBySender(sortedMessages);
+  }, [sortedMessages]);
 
   // Set direct message recipient
   const selectRecipient = useCallback(
@@ -386,9 +397,11 @@ export function ChatPage() {
             <GlobalChatTab
               onMentionClick={() => setIsDMDrawerOpen(true)}
               messages={filteredMessages}
+              messageGroups={messageGroups}
               onSendMessage={handleSendMessage}
               isLoadingMessages={isLoadingMessages}
               userId={userId}
+              selectRecipient={selectRecipient}
             />
           </TabsContent>
 
@@ -399,9 +412,11 @@ export function ChatPage() {
               activeRoom={activeRoom}
               onRoomSelect={joinRoom}
               messages={filteredMessages}
+              messageGroups={messageGroups}
               onSendMessage={handleSendMessage}
               isLoadingMessages={isLoadingMessages}
               userId={userId}
+              selectRecipient={selectRecipient}
             />
           </TabsContent>
 
@@ -414,6 +429,7 @@ export function ChatPage() {
               directMessageRecipient={directMessageRecipient}
               onSelectRecipient={selectRecipient}
               messages={filteredMessages}
+              messageGroups={messageGroups}
               onSendMessage={handleSendMessage}
               isLoadingMessages={isLoadingMessages}
               userId={userId}

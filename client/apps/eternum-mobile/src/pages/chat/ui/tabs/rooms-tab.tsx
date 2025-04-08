@@ -3,6 +3,7 @@ import { Input } from "@/shared/ui/input";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { useEffect, useRef, useState } from "react";
 import { ChatInput } from "../chat-input";
+import MessageGroupComponent, { MessageGroup } from "../message-group";
 
 interface Room {
   id: string;
@@ -27,9 +28,11 @@ interface RoomsTabProps {
   activeRoom: string;
   onRoomSelect: (roomId: string) => void;
   messages: Message[];
+  messageGroups: MessageGroup[];
   onSendMessage: (message: string) => void;
   isLoadingMessages: boolean;
   userId: string;
+  selectRecipient: (userId: string) => void;
 }
 
 export function RoomsTab({
@@ -38,9 +41,11 @@ export function RoomsTab({
   activeRoom,
   onRoomSelect,
   messages,
+  messageGroups,
   onSendMessage,
   isLoadingMessages,
-  userId
+  userId,
+  selectRecipient
 }: RoomsTabProps) {
   const [inputValue, setInputValue] = useState("");
   const [newRoomId, setNewRoomId] = useState("");
@@ -146,23 +151,19 @@ export function RoomsTab({
             <p className="text-sm">Be the first to send a message!</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id} className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">
-                    {message.senderId === userId ? "You" : message.senderUsername || message.senderId}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-                <p className="text-sm">{message.message}</p>
-              </div>
-            ))}
+          <div className="space-y-1">
+            {messageGroups.map((group, groupIndex) => {
+              // Create a unique key based on the group's first message id and index
+              const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
+              return (
+                <MessageGroupComponent
+                  key={groupKey}
+                  group={group}
+                  userId={userId}
+                  selectRecipient={selectRecipient}
+                />
+              );
+            })}
             <div ref={scrollRef} />
           </div>
         )}
