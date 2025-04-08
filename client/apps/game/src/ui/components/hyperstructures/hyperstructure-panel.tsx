@@ -402,6 +402,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
                       content: <>Not the correct access</>,
                       position: "right",
                     });
+                  } else if (!progresses.initialized) {
+                    setTooltip({
+                      content: <>Hyperstructure must be initialized first</>,
+                      position: "right",
+                    });
                   }
                 }}
                 onMouseLeave={() => {
@@ -411,7 +416,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
                 <Button
                   isLoading={isLoading === Loading.Contribute}
                   variant="primary"
-                  disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
+                  disabled={
+                    Object.keys(newContributions).length === 0 ||
+                    isLoading !== Loading.None ||
+                    !canContribute ||
+                    !progresses.initialized
+                  }
                   onClick={contributeToConstruction}
                 >
                   Contribute To Construction

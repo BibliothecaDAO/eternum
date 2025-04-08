@@ -9,11 +9,12 @@ import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   ContractAddress,
   getGuildFromPlayerAddress,
+  getHyperstructureProgress,
   HyperstructureInfo,
   LeaderboardManager,
   MERCENARIES,
 } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureProgress, useHyperstructures } from "@bibliothecadao/react";
+import { useDojo, useHyperstructures } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Filter, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -116,13 +117,13 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
           {/* Search and filter bar */}
           <div className="mb-4 space-y-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4" />
               <input
                 type="text"
                 placeholder="Search hyperstructures..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gold"
+                className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold"
               />
             </div>
 
@@ -141,7 +142,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
               <ul className="space-y-3">
                 {filteredHyperstructures.map((hyperstructure) => {
                   // Get progress for display and filtering
-                  const progress = useHyperstructureProgress(hyperstructure.entity_id);
+                  const progress = getHyperstructureProgress(hyperstructure.entity_id, components);
 
                   // Filter out based on progress if needed
                   if (
