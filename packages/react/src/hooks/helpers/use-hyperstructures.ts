@@ -1,8 +1,8 @@
 import {
-  configManager,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   getAddressNameFromEntity,
+  getHyperstructureCurrentAmounts,
   getHyperstructureProgress,
   ID,
   ResourcesIds,
@@ -97,6 +97,7 @@ export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
   const {
     setup: {
       components: { HyperstructureRequirements },
+      components,
     },
   } = useDojo();
 
@@ -105,6 +106,6 @@ export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
   ]);
 
   return useMemo(() => {
-    return configManager.getHyperstructureCurrentAmounts(hyperstructureEntityId);
+    return getHyperstructureCurrentAmounts(hyperstructureEntityId, components);
   }, [currentAmounts, hyperstructureEntityId]);
 };
