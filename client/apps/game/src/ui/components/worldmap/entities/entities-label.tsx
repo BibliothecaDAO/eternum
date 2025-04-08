@@ -87,7 +87,7 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
   if (isTileOccupierStructure(tile.occupier_type)) {
     const structure = entityInfo as Structure;
     return (
-      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-[350px]`}>
+      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min`}>
         <div className="flex flex-col gap-1">
           <Headline className="text-center text-lg">
             <div>{structure.ownerName}</div>
@@ -114,11 +114,11 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
     return (
       <BaseThreeTooltip
         position={Position.CLEAN}
-        className={`pointer-events-none w-[320px] panel-wood ${army.isMine ? "bg-ally" : "bg-enemy"}`}
+        className={`pointer-events-none w-min p-2 panel-wood ${army.isMine ? "bg-ally" : ""}`}
       >
         <div className="flex flex-col gap-2">
           {/* Header with owner and warnings */}
-          <div className="flex items-center justify-between border-b border-gold/30 pb-2">
+          <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
             <div className="flex flex-col">
               <h4 className="text-lg font-bold">{army.ownerName || army.name}</h4>
               {playerGuild && (
@@ -160,12 +160,12 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
 
           {/* Stamina and capacity - more prominent */}
           <div className="flex flex-col gap-2 bg-gray-900/40 rounded p-2 border border-gold/20">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-bold text-gold/90">STAMINA</div>
               <StaminaResource entityId={army.entityId} />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="text-xs font-bold text-gold/90">CAPACITY</div>
               <ArmyCapacity army={army} />
             </div>

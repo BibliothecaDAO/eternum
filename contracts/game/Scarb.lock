@@ -4,7 +4,7 @@ version = 1
 [[package]]
 name = "achievement"
 version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/arcade?tag=v1.2.1#8b8ccea5ec85ae7f903903ced9cd16e16b8e47cb"
+source = "git+https://github.com/edisontim/arcade?branch=feat%2Fbump-dojo-version#9e9349c5316b2c51377de817c65403c17a0f0c98"
 dependencies = [
  "dojo",
 ]
@@ -66,8 +66,8 @@ source = "git+https://github.com/edisontim/cubit.git?branch=feat%2Fcairo-2.9.2#3
 
 [[package]]
 name = "dojo"
-version = "1.2.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.2.1#3d4b1a3e662f70679813f9fb65c0b5c7fa5d6f0a"
+version = "1.3.0"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.0#e4702479ec9cf0f01d6927d36f0a3910cf6cb3e3"
 dependencies = [
  "dojo_plugin",
 ]
@@ -75,7 +75,7 @@ dependencies = [
 [[package]]
 name = "dojo_cairo_test"
 version = "1.0.12"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.2.1#3d4b1a3e662f70679813f9fb65c0b5c7fa5d6f0a"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.0#e4702479ec9cf0f01d6927d36f0a3910cf6cb3e3"
 dependencies = [
  "dojo",
 ]
@@ -83,7 +83,7 @@ dependencies = [
 [[package]]
 name = "dojo_plugin"
 version = "2.9.2"
-source = "git+https://github.com/dojoengine/dojo?tag=v1.2.1#3d4b1a3e662f70679813f9fb65c0b5c7fa5d6f0a"
+source = "git+https://github.com/dojoengine/dojo?tag=v1.3.0#e4702479ec9cf0f01d6927d36f0a3910cf6cb3e3"
 
 [[package]]
 name = "s1_eternum"

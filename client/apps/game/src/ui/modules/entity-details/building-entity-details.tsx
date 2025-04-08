@@ -187,7 +187,7 @@ export const BuildingEntityDetails = () => {
                   toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
                 }}
                 isLoading={isLoading}
-                variant="primary"
+                variant="gold"
                 withoutSound
               >
                 <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export const BuildingEntityDetails = () => {
                   Produce
                 </div>
               </Button>
-              <Button
+              {/* <Button
                 className="mb-4"
                 onClick={handlePauseResumeProduction}
                 isLoading={isLoading}
@@ -203,12 +203,12 @@ export const BuildingEntityDetails = () => {
                 withoutSound
               >
                 {isPaused ? "Resume" : "Pause"}
-              </Button>
+              </Button> */}
               <Button
                 disabled={!canDestroyBuilding}
                 className="mb-4"
                 onClick={handleDestroyBuilding}
-                variant="secondary"
+                variant="danger"
                 withoutSound
               >
                 {showDestroyConfirm ? "Confirm Destroy" : "Destroy"}

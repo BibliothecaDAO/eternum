@@ -179,7 +179,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <div className="vignette" />
 
         <Suspense fallback={<LoadingScreen backgroundImage={backgroundImage} />}>
-          <LoadingOroborus loading={isLoadingScreenEnabled} />
           <RealmTransferManager zIndex={100} />
 
           {/* Extracted modal components */}
@@ -206,14 +205,17 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             <BottomRightContainer>
               <MiniMapNavigation />
             </BottomRightContainer>
+
             <RightMiddleContainer>
-              <RightNavigationModule />
+              <RightNavigationModule structures={playerStructures} />
             </RightMiddleContainer>
 
             <TopLeftContainer>
               <TopLeftNavigation structures={playerStructures} />
             </TopLeftContainer>
           </div>
+
+          <LoadingOroborus loading={isLoadingScreenEnabled} />
 
           {/* todo: put this somewhere else maybe ? */}
           {/* <Redirect to="/" /> */}

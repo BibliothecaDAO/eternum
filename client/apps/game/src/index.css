@@ -319,6 +319,119 @@ canvas {
   cursor: pointer;
 }
 
+/* Wood ornate corner classes */
+.panel-wood-corner-tl {
+  position: relative;
+}
+.panel-wood-corner-tl::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 48px;
+  height: 48px;
+  background-image: url("/borders/wood-ornate-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top left;
+  pointer-events: none;
+}
+
+.panel-wood-corner-tr {
+  position: relative;
+}
+.panel-wood-corner-tr::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 48px;
+  height: 48px;
+  background-image: url("/borders/wood-ornate-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top right;
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.panel-wood-corner-bl {
+  position: relative;
+}
+.panel-wood-corner-bl::before {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  left: -14px;
+  width: 48px;
+  height: 48px;
+  background-image: url("/borders/wood-ornate-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom left;
+  transform: rotate(270deg);
+  pointer-events: none;
+}
+
+.panel-wood-corner-br {
+  position: relative;
+}
+.panel-wood-corner-br::before {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  right: -14px;
+  width: 48px;
+  height: 48px;
+  background-image: url("/borders/wood-ornate-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: bottom right;
+  transform: rotate(180deg);
+  pointer-events: none;
+}
+
+/* All corners at once */
+.panel-wood-corners {
+  position: relative;
+}
+.panel-wood-corners::before,
+.panel-wood-corners::after,
+.panel-wood-corners .corner-bl,
+.panel-wood-corners .corner-br {
+  content: "";
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  background-image: url("/borders/wood-ornate-corner.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+.panel-wood-corners::before {
+  top: -14px;
+  left: -14px;
+  background-position: top left;
+}
+.panel-wood-corners::after {
+  top: -14px;
+  right: -14px;
+  background-position: top right;
+  transform: rotate(90deg);
+}
+.panel-wood-corners .corner-bl {
+  bottom: -14px;
+  left: -14px;
+  background-position: bottom left;
+  transform: rotate(270deg);
+}
+.panel-wood-corners .corner-br {
+  bottom: -14px;
+  right: -14px;
+  background-position: bottom right;
+  transform: rotate(180deg);
+}
+
 button {
   font-family: "Cinzel", serif;
 }
@@ -339,7 +452,6 @@ button {
   box-shadow: 0 0 6px #d4aa7044;
   cursor: pointer;
 }
-
 
 .panel-gold {
   border: 3px solid transparent;

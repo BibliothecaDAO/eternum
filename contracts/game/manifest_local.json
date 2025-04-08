@@ -8419,7 +8419,7 @@
     },
     {
       "address": "0x791ac6ed1f83b33cb809fd5603d0ed98e9f4534f552f57f5de5ae73a4323c38",
-      "class_hash": "0xf3c45759eee07cddd9fed7d2dee7968b65825edb7eff4c97b3a503e5cc059a",
+      "class_hash": "0x48fc0885ee606d26cb39a6e225bcd399e0e1f675752153f3f239da20934fa0",
       "abi": [
         {
           "type": "impl",

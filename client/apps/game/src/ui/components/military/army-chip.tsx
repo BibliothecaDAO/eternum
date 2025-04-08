@@ -1,7 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { ReactComponent as Plus } from "@/assets/icons/common/plus-sign.svg";
 import { ReactComponent as Swap } from "@/assets/icons/common/swap.svg";
-import { ReactComponent as Compass } from "@/assets/icons/compass.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
 import { ArmyManagementCard } from "@/ui/components/military/army-management-card";
@@ -20,7 +19,7 @@ export const NavigateToPositionIcon = ({
   position,
   hideTooltip = false,
   className = "",
-  tooltipContent = "Navigate to Army",
+  tooltipContent = "Navigate to Position",
 }: {
   position: Position;
   hideTooltip?: boolean;
@@ -31,7 +30,8 @@ export const NavigateToPositionIcon = ({
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
-    <Compass
+    <img
+      src="/image-icons/compass.png"
       className={`w-5 h-5 fill-gold hover:fill-gold/50 transition-all duration-300 ${className}`}
       onClick={() => {
         const { x, y } = position.getNormalized();
@@ -44,7 +44,7 @@ export const NavigateToPositionIcon = ({
         if (hideTooltip) return;
         setTooltip({
           content: tooltipContent,
-          position: "top",
+          position: "bottom",
         });
       }}
       onMouseLeave={() => {
@@ -77,7 +77,7 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs px-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/20" : "bg-red/20"} ${
+      className={`items-center text-xs p-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/5" : "bg-red/5"} ${
         army ? "defensive-army-selector" : "attacking-army-selector"
       } rounded-md border-gold/20 ${className}`}
     >
@@ -95,110 +95,81 @@ export const ArmyChip = ({
         <ArmyMergeTroopsPanel giverArmy={army} setShowMergeTroopsPopup={setShowTroopSwap} />
       ) : (
         <>
-          <div className="flex w-full h-full justify-between">
-            <div className="flex w-full justify-between py-2">
-              <div className="flex flex-col w-[45%]">
-                <div className="h4 items-center justify-between text-xl mb-2 flex flex-row">
-                  <div className="mr-2 text-base">{army.name}</div>
-                  {showButtons !== undefined && showButtons === true && (
-                    <div className="flex flex-row mt-1 h-6 gap-1 mr-2">
-                      {army.isMine && (
-                        <React.Fragment>
-                          <Plus
-                            className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
-                              army.troops.count === 0n ? "animate-pulse" : ""
-                            } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
-                            onClick={() => {
-                              setTooltip(null);
-                              setEditMode(!editMode);
-                            }}
-                            onMouseEnter={() => {
-                              setTooltip({
-                                content: "Edit",
-                                position: "top",
-                              });
-                            }}
-                            onMouseLeave={() => {
-                              setTooltip(null);
-                            }}
-                          />
-                          {army.troops.count > 0n && (
-                            <>
-                              <ViewOnMapIcon
-                                className="w-5 h-5 hover:scale-110 transition-all duration-300"
-                                position={
-                                  new Position({
-                                    x: Number(army.position.x),
-                                    y: Number(army.position.y),
-                                  })
-                                }
-                              />
-                              {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
-                              <Swap
-                                className={`w-5 h-5 fill-gold mt-0.5 hover:fill-gold/50 hover:scale-110 transition-all duration-300 ${
-                                  army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
-                                }`}
-                                onClick={() => {
-                                  setTooltip(null);
-                                  setShowTroopSwap(!showTroopSwap);
-                                }}
-                                onMouseEnter={() => {
-                                  setTooltip({
-                                    content: "Swap troops or resources (only possible on same hex)",
-                                    position: "top",
-                                  });
-                                }}
-                                onMouseLeave={() => {
-                                  setTooltip(null);
-                                }}
-                              />
-                            </>
-                          )}
-                        </React.Fragment>
-                      )}
-                      {army.troops.count > 0n && (
-                        <Inventory
-                          className="w-4 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300"
+          <div className="flex w-full h-full justify-between p-2 gap-4">
+            <div className="flex flex-col justify-between w-[45%]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-base mr-2 truncate">{army.name}</div>
+                {showButtons && army.isMine && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Plus
+                      className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                        army.troops.count === 0n ? "animate-pulse" : ""
+                      } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
+                      onClick={() => {
+                        setTooltip(null);
+                        setEditMode(!editMode);
+                      }}
+                      onMouseEnter={() => setTooltip({ content: "Edit", position: "top" })}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
+                    {army.troops.count > 0n && (
+                      <React.Fragment>
+                        <ViewOnMapIcon
+                          className="w-5 h-5 hover:scale-110 transition-all duration-300 cursor-pointer"
+                          position={new Position({ x: Number(army.position.x), y: Number(army.position.y) })}
+                        />
+                        {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
+                        <Swap
+                          className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
+                            army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                          }`}
                           onClick={() => {
                             setTooltip(null);
-                            setShowInventory(!showInventory);
+                            setShowTroopSwap(!showTroopSwap);
                           }}
-                          onMouseEnter={() => {
+                          onMouseEnter={() =>
                             setTooltip({
-                              content: "Inventory",
+                              content: "Swap troops or resources (only possible on same hex)",
                               position: "top",
-                            });
-                          }}
-                          onMouseLeave={() => {
-                            setTooltip(null);
-                          }}
+                            })
+                          }
+                          onMouseLeave={() => setTooltip(null)}
                         />
-                      )}
-                    </div>
-                  )}
-                </div>
-                {armyHasTroops([army]) && (
-                  <div className="flex flex-row justify-between font-bold text-xs mr-2">
-                    <div className="h-full flex items-end">
-                      {isHome && <div className="text-xs px-2 text-green">At Base</div>}
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <StaminaResource entityId={army.entityId} />
-                      <ArmyCapacity army={army} />
-                    </div>
+                      </React.Fragment>
+                    )}
+                    {army.troops.count > 0n && (
+                      <Inventory
+                        className="w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer"
+                        onClick={() => {
+                          setTooltip(null);
+                          setShowInventory(!showInventory);
+                        }}
+                        onMouseEnter={() => setTooltip({ content: "Inventory", position: "top" })}
+                        onMouseLeave={() => setTooltip(null)}
+                      />
+                    )}
                   </div>
                 )}
               </div>
-              <div className="flex flex-col content-center w-[55%]">
-                <TroopChip troops={army.troops} className="h-full" iconSize="lg" />
-                {showInventory && (
-                  <InventoryResources
-                    entityId={army.entityId}
-                    className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
-                    resourcesIconSize="xs"
-                  />
-                )}
-              </div>
+              {armyHasTroops([army]) && (
+                <div className="flex justify-between items-end mt-auto">
+                  <div className="flex items-center">{isHome && <div className="text-green text-xs">At Base</div>}</div>
+                  <div className="flex flex-col items-end gap-1">
+                    <StaminaResource entityId={army.entityId} />
+                    <ArmyCapacity army={army} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col w-[55%] gap-2">
+              <TroopChip troops={army.troops} className="h-auto" iconSize="lg" />
+              {showInventory && (
+                <InventoryResources
+                  entityId={army.entityId}
+                  className="flex gap-1 h-14 overflow-x-auto no-scrollbar"
+                  resourcesIconSize="xs"
+                />
+              )}
             </div>
           </div>
         </>

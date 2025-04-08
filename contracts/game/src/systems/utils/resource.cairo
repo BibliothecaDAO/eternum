@@ -3,6 +3,7 @@ use core::num::traits::zero::Zero;
 use dojo::world::WorldStorage;
 
 use s1_eternum::alias::ID;
+use s1_eternum::constants::ResourceTypes;
 use s1_eternum::models::config::{SpeedImpl};
 use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
 use s1_eternum::models::resource::resource::{
@@ -13,7 +14,7 @@ use s1_eternum::models::structure::{
     StructureMetadataStoreImpl,
 };
 use s1_eternum::models::troop::{ExplorerTroops};
-use s1_eternum::models::weight::{Weight};
+use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
 use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
 use s1_eternum::systems::utils::village::{iVillageImpl};
@@ -108,10 +109,26 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
+        Self::ensure_no_troop_resource(resources);
         Self::_instant_transfer(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources, false,
         );
     }
+
+    fn structure_to_troop_raid_instant(
+        ref world: WorldStorage,
+        from_structure_id: ID,
+        ref from_structure_weight: Weight,
+        to_troop_id: ID,
+        ref to_troop_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        Self::ensure_no_troop_or_lords_resource(resources);
+        Self::_instant_transfer_storable(
+            ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
+        );
+    }
+
 
     #[inline(always)]
     fn portal_to_structure_arrivals_instant(
@@ -164,6 +181,55 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             // update from_resource weight
             from_weight.store(ref world, from_id);
         }
+
+        // update to_resource weight
+        to_weight.store(ref world, to_id);
+    }
+
+
+    fn _instant_transfer_storable(
+        ref world: WorldStorage,
+        from_id: ID,
+        ref from_weight: Weight,
+        to_id: ID,
+        ref to_weight: Weight,
+        mut resources: Span<(u8, u128)>,
+    ) {
+        let mut resources_clone = resources.clone();
+        loop {
+            match resources_clone.pop_front() {
+                Option::Some((
+                    resource_type, resource_amount,
+                )) => {
+                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                    let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+
+                    // update the resource amount to be the maximum storable amount
+                    let (resource_amount, _) = SingleResourceImpl::storable_amount(
+                        resource_amount, to_weight.unused(), resource_weight_grams,
+                    );
+                    if resource_amount.is_non_zero() {
+                        // add resource to to_resource balance
+                        let mut to_resource = SingleResourceStoreImpl::retrieve(
+                            ref world, to_id, resource_type, ref to_weight, resource_weight_grams, true,
+                        );
+                        to_resource.add(resource_amount, ref to_weight, resource_weight_grams);
+                        to_resource.store(ref world);
+
+                        // spend from from_resource balance
+                        let mut from_resource = SingleResourceStoreImpl::retrieve(
+                            ref world, from_id, resource_type, ref from_weight, resource_weight_grams, true,
+                        );
+                        from_resource.spend(resource_amount, ref from_weight, resource_weight_grams);
+                        from_resource.store(ref world);
+                    }
+                },
+                Option::None => { break; },
+            }
+        };
+
+        // update from_resource weight
+        from_weight.store(ref world, from_id);
 
         // update to_resource weight
         to_weight.store(ref world, to_id);
@@ -405,6 +471,27 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             ResourceArrivalImpl::write_day_total(
                 ref world, to_structure_id, day, to_structure_resource_arrival_day_total,
             );
+        }
+    }
+
+    fn ensure_no_troop_resource(mut resources: Span<(u8, u128)>) {
+        for i in 0..resources.len() {
+            let (resource_type, _) = resources.at(i);
+            if TroopResourceImpl::is_troop(*resource_type) {
+                panic!("troop resource can't be transferred");
+            }
+        }
+    }
+
+    fn ensure_no_troop_or_lords_resource(mut resources: Span<(u8, u128)>) {
+        for i in 0..resources.len() {
+            let (resource_type, _) = resources.at(i);
+            if TroopResourceImpl::is_troop(*resource_type) {
+                panic!("troop resource can't be received");
+            }
+            if *resource_type == ResourceTypes::LORDS {
+                panic!("lords resource can't be received");
+            }
         }
     }
 

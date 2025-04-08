@@ -129,7 +129,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseLeave={() => {
             setTooltip(null);
           }}
-          className="storehouse-selector px-3 py-1 flex gap-2 justify-start items-center   hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help"
+          className="storehouse-selector text-lg px-3 py-1 flex gap-2 justify-start items-center   transition-colors duration-200 cursor-help"
         >
           <ResourceIcon withTooltip={false} resource="Silo" size="sm" />
           <div className="self-center font-medium">{realmInfo.storehouses.capacityKg.toLocaleString()} kg</div>
@@ -147,8 +147,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           setTooltip(null);
         }}
         className={clsx(
-          "population-selector px-3 py-1 flex gap-2 justify-start items-center  hover:bg-black/60 rounded-md transition-colors duration-200 cursor-help",
-          isPopulationNearCapacity && "ring-1 ring-red-500",
+          "population-selector px-3 py-1  flex gap-2 justify-start items-center rounded-md transition-colors duration-200 cursor-help text-lg  ",
         )}
       >
         <ResourceIcon withTooltip={false} resource="House" size="sm" />
@@ -156,7 +155,7 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           <div className={clsx("self-center", isPopulationNearCapacity && "text-red-400")}>
             {realmInfo?.population || 0} / {(realmInfo?.capacity || 0) + configManager.getBasePopulationCapacity()}
           </div>
-          <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
+          <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden text-lg ">
             <div
               className={clsx(
                 "h-full rounded-full",

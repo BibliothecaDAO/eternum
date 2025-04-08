@@ -1,13 +1,11 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
-import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
 import Button from "@/ui/elements/button";
 import { TermsOfService } from "@/ui/layouts/terms-of-service";
-import { Controller } from "@/ui/modules/controller/controller";
 import { LocalStepOne, SettleRealm, StepOne } from "@/ui/modules/onboarding/steps";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -26,6 +24,7 @@ interface StepContainerProps {
   tos?: boolean;
   transition?: boolean;
   loading?: boolean;
+  isSettleRealm?: boolean;
 }
 
 interface OnboardingContainerProps {
@@ -49,26 +48,13 @@ export const mintUrl =
     ? "https://empire.realms.world/season-passes"
     : "https://next-empire.realms.world/season-passes";
 
-const OnboardingOverlay = ({ controller }: OnboardingOverlayProps) => {
-  return (
-    <div className="fixed top-6 right-6 flex justify-center gap-2 items-center z-50">
-      <a className="cursor-pointer" href={mintUrl} target="_blank" rel="noopener noreferrer">
-        <Button variant="default">
-          <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-gold text-gold self-center" />
-          Mint Season Pass
-        </Button>
-      </a>
-      {controller && <Controller className="!h-10 w-24 normal-case font-normal" />}
-    </div>
-  );
-};
-
 export const StepContainer = ({
   children,
   bottomChildren,
   tos = true,
   transition = true,
   loading = false,
+  isSettleRealm = false,
 }: StepContainerProps) => {
   const width = "w-[456px]";
   const height = "h-screen";
@@ -76,6 +62,8 @@ export const StepContainer = ({
 
   const showToS = useUIStore((state) => state.showToS);
   const setShowToS = useUIStore((state) => state.setShowToS);
+
+  const expandedWidth = showToS || isSettleRealm ? "w-[800px]" : width;
 
   const motionProps = transition
     ? {
@@ -89,8 +77,8 @@ export const StepContainer = ({
   return (
     <motion.div className="flex h-screen z-50" {...motionProps}>
       <div
-        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] panel-wood-right ${
-          showToS ? "w-[800px]" : width
+        className={`bg-black/20 border-r border-[0.5px] border-gradient p-6 lg:p-10 text-gold overflow-hidden relative z-50 backdrop-filter backdrop-blur-[32px] my-16 ml-16 panel-wood panel-wood-corners ${
+          expandedWidth
         } shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]`}
       >
         {showToS ? (
@@ -117,21 +105,21 @@ export const StepContainer = ({
                     className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8"
                   />
                 ) : (
-                  <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-48 stroke-current mx-auto" />
+                  <EternumWordsLogo className="fill-brown w-32 sm:w-40 lg:w-72 mx-auto" />
                 )}
               </div>
             </div>
             <div className="flex-grow overflow-auto">{children}</div>
             {tos && (
               <div className="mt-auto pt-4 flex-shrink-0">
+                <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg p-2">
-                  <Lock className="w-4 h-4 fill-current relative bottom-0.45 mr-3" />
+                  <Lock className="w-6 h-6 fill-current relative bottom-0.45 mr-3" />
                   <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing to Eternum's{" "}
+                    By continuing you are agreeing to Eternum's <br />{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
-                <div className="relative w-full">{bottomChildren}</div>
               </div>
             )}
           </div>
@@ -168,7 +156,9 @@ export const Onboarding = ({ backgroundImage }: OnboardingProps) => {
     <>
       {settleRealm ? (
         <OnboardingContainer backgroundImage={backgroundImage}>
-          <SettleRealm onPrevious={() => setSettleRealm(false)} />
+          <StepContainer bottomChildren={bottomChildren} isSettleRealm={true}>
+            <SettleRealm onPrevious={() => setSettleRealm(false)} />
+          </StepContainer>
         </OnboardingContainer>
       ) : (
         <OnboardingContainer backgroundImage={backgroundImage}>
@@ -221,8 +211,9 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
         {seasonPassRealms.length > 0 && (
           <Button
             isPulsing={true}
+            size="lg"
             onClick={handleClick}
-            className={`w-full h-10 md:h-12 lg:h-12 2xl:h-14 !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+            className={`w-full !text-black !bg-gold !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
               !hasRealmsOrVillages ? "animate-pulse" : ""
             }`}
           >
@@ -264,12 +255,12 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               >
                 <div className="flex items-center justify-center gap-2">
                   <TreasureChest className="!w-5 !h-5 fill-gold" />
-                  <span className="font-medium">Mint Village Pass</span>
+                  <span className="font-medium">Buy Village</span>
                 </div>
               </Button>
             </a>
           </div>
-          <a
+          {/* <a
             className="cursor-pointer text-lg w-full"
             href={`https://empire.realms.world/trade`}
             target="_blank"
@@ -286,7 +277,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
                 <span className="font-medium">Bridge in Lords</span>
               </div>
             </Button>
-          </a>
+          </a> */}
         </div>
       </div>
     )

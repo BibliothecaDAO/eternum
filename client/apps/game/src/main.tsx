@@ -81,16 +81,19 @@ async function init() {
 
   if (env.VITE_PUBLIC_CONSTRUCTION_FLAG == true) {
     root.render(
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold relative">
-        <img
+      <div className="flex h-screen w-screen flex-col items-center justify-center p-4 text-center text-gold relative">
+        <video
           className="absolute h-screen w-screen object-cover"
-          src={`/images/covers/${backgroundImage}.png`}
-          alt="Cover"
+          src="/videos/01.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
         />
-        <div className="relative z-10 flex flex-col items-center justify-center bg-brown/90 bg-hex-bg rounded-xl border border-gold/40 p-10">
+        <div className="relative z-10 flex flex-col items-center justify-center bg-dark-wood bg-brown/90 bg-hex-bg rounded-xl border panel-wood  p-10">
           <EternumWordsLogo className="fill-current w-32 sm:w-40 lg:w-48 stroke-current mx-auto" />
 
-          <p className="my-6">Eternum is being crafted, and will be available soon...</p>
+          <p className="my-6 text-2xl">Eternum is being crafted, and will be available soon...</p>
           <div className="flex gap-4 mt-4">
             <a
               href="https://discord.gg/uQnjZhZPfu"

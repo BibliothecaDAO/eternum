@@ -4,6 +4,7 @@ export enum RightView {
   None,
   ResourceTable,
   Production,
+  Bridge,
 }
 
 export enum LeftView {
@@ -22,3 +23,8 @@ export type BattleViewInfo = {
   ownArmyEntityId: ID | undefined;
   targetArmy: ID | undefined;
 };
+
+export enum ToriiSetting {
+  Local = "local",
+  Remote = "remote",
+}

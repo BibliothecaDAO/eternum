@@ -1,7 +1,7 @@
 import { BiomeType } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 
-export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
+export const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {
   None: new THREE.Color("#000000"),
   DeepOcean: new THREE.Color("#4a6b63"),
   Ocean: new THREE.Color("#657d71"),
@@ -19,4 +19,5 @@ export const BIOME_COLORS: Record<BiomeType, THREE.Color> = {
   SubtropicalDesert: new THREE.Color("#926338"),
   TropicalSeasonalForest: new THREE.Color("#897049"),
   TropicalRainForest: new THREE.Color("#8a714a"),
+  Empty: new THREE.Color("#000000"),
 };

@@ -9,7 +9,7 @@ import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import { useAccount } from "@starknet-react/core";
+
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
 
@@ -26,7 +26,6 @@ export const SecondaryMenuItems = () => {
   const { connector } = useAccountStore();
 
   const gameEnded = useEntityQuery([Has(GameEnded)]);
-  const { isConnected } = useAccount();
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -75,8 +74,9 @@ export const SecondaryMenuItems = () => {
   }, [structureEntityId, gameEnded]);
 
   return (
-    <div className="flex ">
+    <div className="flex panel-wood ">
       <div className="top-right-navigation-selector self-center flex ">
+        <HomeButton />
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
@@ -107,12 +107,11 @@ export const SecondaryMenuItems = () => {
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
-          label={"Support"}
+          label={"Settings"}
           size="md"
           onClick={() => togglePopup(settings)}
         />
-        <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
-        <HomeButton />
+        <Controller />
       </div>
       {/* {isConnected && (
         <div className="absolute top-16 right-0 bg-brown/90 mx-2">

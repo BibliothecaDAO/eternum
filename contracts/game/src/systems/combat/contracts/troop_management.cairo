@@ -265,7 +265,7 @@ pub mod troop_management_systems {
             world.write_model(@explorer);
 
             // update troop capacity
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, explorer, amount, true);
+            iExplorerImpl::update_capacity(ref world, to_explorer_id, amount, true);
 
             // ensure explorer count does not exceed max count
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -358,8 +358,8 @@ pub mod troop_management_systems {
             to_explorer.troops.count += count;
 
             // update troop capacity
-            iExplorerImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
+            iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
+            iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
 
             // ensure to_explorer count does not exceed max count
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
@@ -471,7 +471,7 @@ pub mod troop_management_systems {
             from_explorer.troops.count -= count;
 
             // update explorer troop capacity
-            iExplorerImpl::update_capacity(ref world, from_explorer_id, from_explorer, count, false);
+            iExplorerImpl::update_capacity(ref world, from_explorer_id, count, false);
 
             // update explorer stamina
             let tick = TickImpl::get_tick_config(ref world);
@@ -590,7 +590,7 @@ pub mod troop_management_systems {
             from_structure_troops.count -= count;
 
             // update explorer troop capacity
-            iExplorerImpl::update_capacity(ref world, to_explorer_id, to_explorer, count, true);
+            iExplorerImpl::update_capacity(ref world, to_explorer_id, count, true);
 
             // ensure to_explorer count does not exceed max count
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
