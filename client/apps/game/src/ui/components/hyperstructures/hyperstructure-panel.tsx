@@ -13,6 +13,7 @@ import {
   divideByPrecision,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
+  getHyperstructureTotalContributableAmounts,
   LeaderboardManager,
   MAX_NAME_LENGTH,
   multiplyByPrecision,
@@ -149,7 +150,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
 
-    const requiredAmounts = configManager.getHyperstructureTotalContributableAmounts(entity.entity_id);
+    const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
 
     return Object.values(requiredAmounts)
       .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
