@@ -823,6 +823,14 @@ export interface ExplorerAddProps extends SystemSigner {
 }
 
 /**
+ * Properties for deleting an explorer
+ */
+export interface ExplorerDeleteProps extends SystemSigner {
+  /** ID of the explorer to delete */
+  explorer_id: number;
+}
+
+/**
  * Properties for transferring resources from a troop to an adjacent structure
  */
 export interface TroopStructureAdjacentTransferProps extends SystemSigner {
