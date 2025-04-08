@@ -152,31 +152,29 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
 
-    return Object.values(requiredAmounts)
-      .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
-      .map(({ resource }) => {
-        const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-        const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-        const progress = {
-          percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
-          costNeeded: requiredAmount,
-          hyperstructure_entity_id: entity.entity_id,
-          resource_type: resource,
-          amount: currentAmount,
-        };
+    return Object.values(requiredAmounts).map(({ resource }) => {
+      const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const progress = {
+        percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
+        costNeeded: requiredAmount,
+        hyperstructure_entity_id: entity.entity_id,
+        resource_type: resource,
+        amount: currentAmount,
+      };
 
-        return (
-          <HyperstructureResourceChip
-            structureEntityId={structureEntityId}
-            setContributions={setNewContributions}
-            contributions={newContributions}
-            progress={progress}
-            key={resource}
-            resourceId={resource}
-            resetContributions={resetContributions}
-          />
-        );
-      });
+      return (
+        <HyperstructureResourceChip
+          structureEntityId={structureEntityId}
+          setContributions={setNewContributions}
+          contributions={newContributions}
+          progress={progress}
+          key={resource}
+          resourceId={resource}
+          resetContributions={resetContributions}
+        />
+      );
+    });
   }, [progresses, currentAmounts, newContributions]);
 
   const canContribute = useMemo(() => {
