@@ -37,31 +37,31 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    // await this.setupBank(account, provider);
+    await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    // await setWorldConfig(config);
-    // await setAgentControllerConfig(config);
-    // await SetResourceFactoryConfig(config);
-    // await setResourceBridgeWhitelistConfig(config);
-    // await setTradeConfig(config);
-    // await setStartingResourcesConfig(config);
-    // await setSeasonConfig(config);
-    // await setVRFConfig(config);
-    // await setResourceBridgeFeesConfig(config);
-    // await setBuildingConfig(config);
-    // await setWeightConfig(config);
-    // await setBattleConfig(config);
-    // await setTroopConfig(config);
-    // await setRealmUpgradeConfig(config);
-    // await setStructureMaxLevelConfig(config);
-    // await setupGlobals(config);
-    // await setCapacityConfig(config);
-    // await setSpeedConfig(config);
+    await setWorldConfig(config);
+    await setAgentControllerConfig(config);
+    await SetResourceFactoryConfig(config);
+    await setResourceBridgeWhitelistConfig(config);
+    await setTradeConfig(config);
+    await setStartingResourcesConfig(config);
+    await setSeasonConfig(config);
+    await setVRFConfig(config);
+    await setResourceBridgeFeesConfig(config);
+    await setBuildingConfig(config);
+    await setWeightConfig(config);
+    await setBattleConfig(config);
+    await setTroopConfig(config);
+    await setRealmUpgradeConfig(config);
+    await setStructureMaxLevelConfig(config);
+    await setupGlobals(config);
+    await setCapacityConfig(config);
+    await setSpeedConfig(config);
     await setHyperstructureConfig(config);
-    // await setSettlementConfig(config);
+    await setSettlementConfig(config);
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
