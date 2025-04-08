@@ -1,6 +1,7 @@
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ContractAddress,
   ID,
@@ -9,6 +10,7 @@ import {
   configManager,
   divideByPrecision,
   getArmy,
+  resources,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
@@ -51,9 +53,15 @@ export const TransferResourcesContainer = ({
 
   // Get available resources for the selected entity
   const availableResources = (() => {
+    const { currentDefaultTick } = getBlockTimestamp();
     if (!selectedEntityId) return [];
     const resourceManager = new ResourceManager(components, selectedEntityId);
-    return resourceManager.getResourceBalances();
+    return resources
+      .map(({ id }) => ({
+        resourceId: id,
+        amount: resourceManager.balanceWithProduction(currentDefaultTick, id),
+      }))
+      .filter(({ amount }) => amount > 0);
   })();
 
   // Explorer capacity information

@@ -9,7 +9,6 @@ import {
   calculateGuildLordsPrize,
   ContractAddress,
   getGuildFromPlayerAddress,
-  ID,
   PlayerInfo,
 } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
@@ -20,7 +19,7 @@ export const Guilds = ({
   viewGuildMembers,
   players,
 }: {
-  viewGuildMembers: (guildEntityId: ID) => void;
+  viewGuildMembers: (guildEntityId: ContractAddress) => void;
   players: PlayerInfo[];
 }) => {
   const {

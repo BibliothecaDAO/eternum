@@ -158,6 +158,10 @@ export function createSystemCalls({
     await provider.initialize(props);
   };
 
+  const allocate_shares = async (props: SystemProps.SetCoOwnersProps) => {
+    await provider.allocate_shares(props);
+  };
+
   const contribute_to_construction = async (props: SystemProps.ContributeToConstructionProps) => {
     await provider.contribute_to_construction(props);
   };
@@ -170,22 +174,6 @@ export function createSystemCalls({
     await provider.end_game(props);
   };
 
-  const register_to_leaderboard = async (props: SystemProps.RegisterToLeaderboardProps) => {
-    await provider.register_to_leaderboard(props);
-  };
-
-  const claim_leaderboard_rewards = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
-    await provider.claim_leaderboard_rewards(props);
-  };
-
-  const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
-    await provider.set_co_owners(props);
-  };
-
-  const get_points = async (props: SystemProps.GetPointsProps) => {
-    return await provider.get_points(props);
-  };
-
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
     await provider.create_guild(props);
   };
@@ -194,12 +182,20 @@ export function createSystemCalls({
     await provider.join_guild(props);
   };
 
-  const whitelist_player = async (props: SystemProps.WhitelistPlayerProps) => {
-    await provider.whitelist_player(props);
+  const update_whitelist = async (props: SystemProps.UpdateWhitelist) => {
+    await provider.update_whitelist(props);
   };
 
-  const transfer_guild_ownership = async (props: SystemProps.TransferGuildOwnership) => {
-    await provider.transfer_guild_ownership(props);
+  const claim_construction_points = async (props: SystemProps.ClaimConstructionPointsProps) => {
+    await provider.claim_construction_points(props);
+  };
+
+  const claim_share_points = async (props: SystemProps.ClaimSharePointsProps) => {
+    await provider.claim_share_points(props);
+  };
+
+  const season_prize_claim = async (props: SystemProps.ClaimLeaderboardRewardsProps) => {
+    await provider.season_prize_claim(props);
   };
 
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember) => {
@@ -208,10 +204,6 @@ export function createSystemCalls({
 
   const disband_guild = async (props: SystemProps.DisbandGuild) => {
     await provider.disband_guild(props);
-  };
-
-  const remove_player_from_whitelist = async (props: SystemProps.RemovePlayerFromWhitelist) => {
-    await provider.remove_player_from_whitelist(props);
   };
 
   const isLive = async () => {
@@ -331,23 +323,21 @@ export function createSystemCalls({
     uuid: uuid,
 
     initialize_hyperstructure: withAuth(initialize_hyperstructure),
+    allocate_shares: withAuth(allocate_shares),
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
-    set_co_owners: withAuth(set_co_owners),
-    get_points: withAuth(get_points),
     end_game: withAuth(end_game),
-    register_to_leaderboard: withAuth(register_to_leaderboard),
-    claim_leaderboard_rewards: withAuth(claim_leaderboard_rewards),
+    claim_construction_points: withAuth(claim_construction_points),
+    claim_share_points: withAuth(claim_share_points),
+    season_prize_claim: withAuth(season_prize_claim),
 
     mint_resources: withAuth(mint_resources),
 
     create_guild: withAuth(create_guild),
     join_guild: withAuth(join_guild),
-    whitelist_player: withAuth(whitelist_player),
-    transfer_guild_ownership: withAuth(transfer_guild_ownership),
+    update_whitelist: withAuth(update_whitelist),
     remove_guild_member: withAuth(remove_guild_member),
     disband_guild: withAuth(disband_guild),
-    remove_player_from_whitelist: withAuth(remove_player_from_whitelist),
 
     mint_test_realm: withAuth(mint_test_realm),
     mint_season_passes: withAuth(mint_season_passes),

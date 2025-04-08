@@ -5,7 +5,7 @@ use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{WORLD_CONFIG_ID};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
-use s1_eternum::models::hyperstructure::{Access, Hyperstructure, HyperstructureGlobals};
+use s1_eternum::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
 use s1_eternum::models::map::{TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, TravelImpl};
 
@@ -96,13 +96,10 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         world
             .write_model(
                 @Hyperstructure {
-                    entity_id: structure_id,
-                    current_epoch: 0,
+                    hyperstructure_id: structure_id,
                     initialized: false,
                     completed: false,
-                    last_updated_by: Zero::zero(),
-                    last_updated_timestamp: now,
-                    access: Access::Private,
+                    access: ConstructionAccess::Private,
                     randomness: vrf_seed.try_into().unwrap(),
                 },
             );

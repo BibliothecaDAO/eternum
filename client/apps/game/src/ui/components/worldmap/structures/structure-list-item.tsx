@@ -1,7 +1,7 @@
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { getStructureTypeName, Structure, StructureType } from "@bibliothecadao/eternum";
-import { useGetHyperstructureProgress, useGuardsByStructure } from "@bibliothecadao/react";
+import { getHyperstructureProgress, getStructureTypeName, Structure, StructureType } from "@bibliothecadao/eternum";
+import { useDojo, useGuardsByStructure } from "@bibliothecadao/react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 
 type StructureListItemProps = {
@@ -15,7 +15,9 @@ export const StructureListItem = ({
   maxInventory = Infinity,
   showButtons = false,
 }: StructureListItemProps) => {
-  const getHyperstructureProgress = useGetHyperstructureProgress();
+  const {
+    setup: { components },
+  } = useDojo();
 
   const guards = useGuardsByStructure({ structureEntityId: structure.entityId }).filter(
     (guard) => guard.troops.count > 0n,
@@ -27,7 +29,7 @@ export const StructureListItem = ({
 
   const progress =
     structure.structure.base.category === StructureType.Hyperstructure
-      ? getHyperstructureProgress(structure.entityId)
+      ? getHyperstructureProgress(structure.entityId, components)
       : undefined;
 
   return (

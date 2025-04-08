@@ -17,7 +17,7 @@ export const SecondaryMenuItems = () => {
   const {
     setup: {
       components: {
-        events: { GameEnded },
+        events: { SeasonEnded },
       },
     },
   } = useDojo();
@@ -25,7 +25,7 @@ export const SecondaryMenuItems = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { connector } = useAccountStore();
 
-  const gameEnded = useEntityQuery([Has(GameEnded)]);
+  const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -55,7 +55,7 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-    if (gameEnded.length !== 0) {
+    if (hasSeasonEnded) {
       buttons.push({
         button: (
           <CircleButton
@@ -71,7 +71,7 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [structureEntityId, gameEnded]);
+  }, [structureEntityId, hasSeasonEnded]);
 
   return (
     <div className="flex panel-wood ">
@@ -113,20 +113,6 @@ export const SecondaryMenuItems = () => {
         />
         <Controller />
       </div>
-      {/* {isConnected && (
-        <div className="absolute top-16 right-0 bg-brown/90 mx-2">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer")}
-          >
-            <div className="flex items-center gap-2">
-              <ResourceIcon resource="Lords" size="xs" />
-              Bridge Lords & Resources
-            </div>
-          </Button>
-        </div>
-      )} */}
     </div>
   );
 };

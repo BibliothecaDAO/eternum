@@ -273,6 +273,12 @@ export interface ResourceCostMinMax {
   min_amount: number;
   max_amount: number;
 }
+export interface HyperstructureResourceCostMinMax {
+  resource_type: ResourcesIds;
+  resource_completion_points: number;
+  min_amount: number;
+  max_amount: number;
+}
 
 export interface ResourceInputs {
   [key: number]: ResourceCost[];
@@ -416,13 +422,10 @@ export interface Config {
   };
 
   hyperstructures: {
-    hyperstructureCreationCosts: ResourceCostMinMax[];
-    hyperstructureConstructionCosts: ResourceCostMinMax[];
-    hyperstructureTotalCosts: ResourceCostMinMax[];
+    hyperstructureInitializationShardsCost: ResourceCost;
+    hyperstructureConstructionCost: HyperstructureResourceCostMinMax[];
     hyperstructurePointsPerCycle: number;
-    hyperstructurePointsOnCompletion: number;
-    hyperstructureTimeBetweenSharesChangeSeconds: number;
-    hyperstructurePointsForWin: number;
+    hyperstructurePointsForWin: bigint;
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
@@ -481,7 +484,7 @@ export interface Player {
 }
 
 export type GuildInfo = {
-  entityId: ID;
+  entityId: ContractAddress;
   name: string;
   isOwner: boolean;
   memberCount: number;

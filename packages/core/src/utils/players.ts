@@ -2,7 +2,7 @@ import { getComponentValue, Has, HasValue, runQuery } from "@dojoengine/recs";
 import { StructureType } from "../constants";
 import { ClientComponents } from "../dojo";
 import { ContractAddress, Player, PlayerInfo } from "../types";
-import { getEntityName } from "./entities";
+import { getGuild } from "./guild";
 import { calculatePlayerSharePercentage } from "./leaderboard";
 
 export const getPlayerInfo = (
@@ -21,14 +21,14 @@ export const getPlayerInfo = (
       const isAlive = runQuery([HasValue(Structure, { owner: player.address })]).size > 0;
 
       const guildMember = getComponentValue(GuildMember, player.entity);
-      const guildName = guildMember ? getEntityName(guildMember.guild_entity_id, components) : "";
+      const guild = getGuild(guildMember?.guild_id ?? 0n, player.address, components);
 
       return {
         entity: player.entity,
         address: player.address,
         name: player.name,
         isAlive,
-        guildName,
+        guildName: guild?.name,
       };
     })
     .filter((player) => player !== undefined);

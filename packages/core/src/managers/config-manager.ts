@@ -4,12 +4,10 @@ import {
   BiomeType,
   BuildingType,
   CapacityConfig,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
   getProducedResource,
   HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
-  ResourceTier,
   StructureType,
   WORLD_CONFIG_ID,
 } from "../constants";
@@ -41,7 +39,7 @@ export class ClientConfigManager {
   simpleSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   laborOutputPerResource: Record<number, { resource: ResourcesIds; amount: number }> = {};
 
-  hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
+  hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -149,19 +147,20 @@ export class ClientConfigManager {
   }
 
   private initializeHyperstructureTotalCosts() {
-    const hyperstructureTotalCosts: { resource: ResourceTier; min_amount: number; max_amount: number }[] = [];
+    const hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
 
-    for (const resourceTier of Object.values(ResourceTier).filter(Number.isInteger)) {
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureResourceConfig,
-        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
+        this.components.HyperstructureConstructConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
       );
+      if (!hyperstructureResourceConfig) continue;
 
-      const min_amount = Number(hyperstructureResourceConfig?.min_amount ?? 0) / RESOURCE_PRECISION;
-
-      const max_amount = Number(hyperstructureResourceConfig?.max_amount ?? 0) / RESOURCE_PRECISION;
-
-      hyperstructureTotalCosts.push({ resource: resourceTier as ResourceTier, min_amount, max_amount });
+      hyperstructureTotalCosts.push({
+        resource: resourceType as ResourcesIds,
+        min_amount: hyperstructureResourceConfig.min_amount,
+        max_amount: hyperstructureResourceConfig.max_amount,
+      });
     }
 
     this.hyperstructureTotalCosts = hyperstructureTotalCosts;
@@ -264,14 +263,11 @@ export class ClientConfigManager {
     return 0;
   }
 
-  private getHyperstructureConstructionCosts() {
-    const hyperstructureResourceConfig = getComponentValue(
-      this.components.HyperstructureResourceConfig,
-      getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(ResourceTier.Lords)]),
-    );
+  public getHyperstructureConstructionCosts() {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
     return {
-      amount: this.divideByPrecision(Number(hyperstructureResourceConfig?.min_amount) ?? 0),
+      amount: this.divideByPrecision(Number(worldConfig?.hyperstructure_config?.initialize_shards_amount) ?? 0),
       resource: ResourcesIds.AncientFragment,
     };
   }
@@ -630,86 +626,210 @@ export class ClientConfigManager {
     );
   }
 
+  getHyperstructureTotalConstructionPoints() {
+    let totalPoints = 0;
+    for (const resource of Object.values(ResourcesIds)) {
+      const HyperstructureConstructConfig = getComponentValue(
+        this.components.HyperstructureConstructConfig,
+        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resource)]),
+      );
+
+      if (!HyperstructureConstructConfig) continue;
+
+      const pointsForConstruction = Number(HyperstructureConstructConfig.resource_contribution_points);
+      totalPoints += pointsForConstruction;
+    }
+
+    return totalPoints;
+  }
+
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
         const hyperstructureConfig = getComponentValue(
           this.components.WorldConfig,
-          getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]),
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
         )?.hyperstructure_config;
 
         return {
-          timeBetweenSharesChange: hyperstructureConfig?.time_between_shares_change ?? 0,
-          pointsPerCycle: Number(hyperstructureConfig?.points_per_cycle) ?? 0,
+          // todo: need to fix this
+          timeBetweenSharesChange: 0,
+          pointsPerCycle: Number(hyperstructureConfig?.points_per_second) ?? 0,
           pointsForWin: Number(hyperstructureConfig?.points_for_win) ?? 0,
-          pointsOnCompletion: Number(hyperstructureConfig?.points_on_completion) ?? 0,
         };
       },
       {
         timeBetweenSharesChange: 0,
         pointsPerCycle: 0,
         pointsForWin: 0,
-        pointsOnCompletion: 0,
       },
     );
   }
 
-  getHyperstructureTotalContributableAmount(hyperstructureId: number) {
-    const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
-    return requiredAmounts.reduce(
-      (total, { amount, resource }) => total + amount * this.getResourceRarity(resource),
-      0,
-    );
-  }
-
-  getHyperstructureRequiredAmounts(hyperstructureId: number) {
+  getHyperstructureTotalContributableAmounts(hyperstructureId: number): { resource: ResourcesIds; amount: number }[] {
     const hyperstructure = getComponentValue(
       this.components.Hyperstructure,
       getEntityIdFromKeys([BigInt(hyperstructureId)]),
     );
 
-    const randomness = BigInt(hyperstructure?.randomness ?? 0);
-    const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
+    if (!hyperstructure?.randomness) {
+      return [];
+    }
 
-    // Get amounts for each tier
-    for (const tier in ResourceTier) {
-      if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
+    const result: { resource: ResourcesIds; amount: number }[] = [];
+    const randomness = BigInt(hyperstructure.randomness);
 
-      const resourceTierNumber = Number(tier) as ResourceTier;
-      const resourcesInTier = GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resourceTierNumber, true);
-      const amountForTier = this.getHyperstructureRequiredAmountPerTier(resourceTierNumber, randomness);
+    for (const resourceConfig of this.hyperstructureTotalCosts) {
+      const { resource, min_amount, max_amount } = resourceConfig;
 
-      // Add entry for each resource in this tier
-      resourcesInTier.forEach((resourceId) => {
-        requiredAmounts.push({
-          resource: resourceId,
-          amount: amountForTier,
-        });
+      let neededAmount;
+      if (min_amount === max_amount) {
+        neededAmount = max_amount;
+      } else {
+        const uniqueResourceRandomness = randomness / BigInt(resource);
+        const additional = Number(uniqueResourceRandomness % BigInt(max_amount - min_amount));
+        neededAmount = min_amount + additional;
+      }
+
+      result.push({
+        resource,
+        amount: neededAmount,
       });
     }
 
-    return requiredAmounts;
+    return result;
   }
 
-  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: bigint): number {
-    const hyperstructureResourceConfig = getComponentValue(
-      this.components.HyperstructureResourceConfig,
-      getEntityIdFromKeys([BigInt(resourceTier)]),
+  getHyperstructureCurrentAmounts(hyperstructureId: number) {
+    const hyperstructureRequirements = getComponentValue(
+      this.components.HyperstructureRequirements,
+      getEntityIdFromKeys([BigInt(hyperstructureId)]),
     );
 
-    if (!hyperstructureResourceConfig) {
-      return 0;
+    if (!hyperstructureRequirements) {
+      return [];
     }
 
-    const minAmount = Number(hyperstructureResourceConfig.min_amount);
-    const maxAmount = Number(hyperstructureResourceConfig.max_amount);
+    const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
 
-    if (minAmount === maxAmount) {
-      return this.divideByPrecision(minAmount);
-    }
+    // Map all resources from the HyperstructureRequirements component
+    if (hyperstructureRequirements.stone_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Stone,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.stone_amount_current)),
+      });
+    if (hyperstructureRequirements.coal_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Coal,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.coal_amount_current)),
+      });
+    if (hyperstructureRequirements.wood_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Wood,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.wood_amount_current)),
+      });
+    if (hyperstructureRequirements.copper_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Copper,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.copper_amount_current)),
+      });
+    if (hyperstructureRequirements.ironwood_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Ironwood,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.ironwood_amount_current)),
+      });
+    if (hyperstructureRequirements.obsidian_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Obsidian,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.obsidian_amount_current)),
+      });
+    if (hyperstructureRequirements.gold_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Gold,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.gold_amount_current)),
+      });
+    if (hyperstructureRequirements.silver_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Silver,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.silver_amount_current)),
+      });
+    if (hyperstructureRequirements.mithral_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Mithral,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.mithral_amount_current)),
+      });
+    if (hyperstructureRequirements.alchemicsilver_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.AlchemicalSilver,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.alchemicsilver_amount_current)),
+      });
+    if (hyperstructureRequirements.coldiron_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.ColdIron,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.coldiron_amount_current)),
+      });
+    if (hyperstructureRequirements.deepcrystal_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.DeepCrystal,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.deepcrystal_amount_current)),
+      });
+    if (hyperstructureRequirements.ruby_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Ruby,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.ruby_amount_current)),
+      });
+    if (hyperstructureRequirements.diamonds_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Diamonds,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.diamonds_amount_current)),
+      });
+    if (hyperstructureRequirements.hartwood_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Hartwood,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.hartwood_amount_current)),
+      });
+    if (hyperstructureRequirements.ignium_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Ignium,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.ignium_amount_current)),
+      });
+    if (hyperstructureRequirements.twilightquartz_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.TwilightQuartz,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.twilightquartz_amount_current)),
+      });
+    if (hyperstructureRequirements.trueice_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.TrueIce,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.trueice_amount_current)),
+      });
+    if (hyperstructureRequirements.adamantine_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Adamantine,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.adamantine_amount_current)),
+      });
+    if (hyperstructureRequirements.sapphire_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Sapphire,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.sapphire_amount_current)),
+      });
+    if (hyperstructureRequirements.etherealsilica_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.EtherealSilica,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.etherealsilica_amount_current)),
+      });
+    if (hyperstructureRequirements.dragonhide_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Dragonhide,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.dragonhide_amount_current)),
+      });
+    if (hyperstructureRequirements.labor_amount_current)
+      requiredAmounts.push({
+        resource: ResourcesIds.Labor,
+        amount: this.divideByPrecision(Number(hyperstructureRequirements.labor_amount_current)),
+      });
 
-    const additionalAmount = Number(randomness % BigInt(maxAmount - minAmount));
-    return this.divideByPrecision(minAmount + Number(additionalAmount));
+    return requiredAmounts;
   }
 
   getBasePopulationCapacity(): number {
@@ -903,9 +1023,9 @@ export class ClientConfigManager {
     ] || { resource: resourceId, amount: 0 };
 
     return {
-      laborProductionPerResource: laborProducedPerResource.amount / RESOURCE_PRECISION,
+      laborProductionPerResource: this.divideByPrecision(laborProducedPerResource.amount),
       laborBurnPerResourceOutput: laborBurnPerResourceOutput.amount,
-      laborRatePerTick: laborResourceOutput.realm_output_per_second / RESOURCE_PRECISION,
+      laborRatePerTick: this.divideByPrecision(laborResourceOutput.realm_output_per_second),
       inputResources: simpleSystemResourceInputs,
       resourceOutputPerInputResources: simpleSystemResourceOutput.amount,
     };

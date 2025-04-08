@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { lordsAddress } from "@/config";
 import { useDojo } from "@/hooks/context/dojo-context";
 import {
   useGameWinner,
@@ -59,7 +58,7 @@ export const Route = createLazyFileRoute("/claim")({
 function Claim() {
   const {
     setup: {
-      systemCalls: { claim_leaderboard_rewards, register_to_leaderboard },
+      // systemCalls: { claim_leaderboard_rewards, register_to_leaderboard },
     },
   } = useDojo();
 
@@ -91,17 +90,19 @@ function Claim() {
   const onRegister = async () => {
     if (!account || noPoints) return;
     setRegisterLoading(true);
-    await register_to_leaderboard({
-      signer: account,
-      hyperstructure_contributed_to: hyperstructures,
-      hyperstructure_shareholder_epochs: epochs,
-    }).finally(() => setRegisterLoading(false));
+    // todo: fix this
+    // await register_to_leaderboard({
+    //   signer: account,
+    //   hyperstructure_contributed_to: hyperstructures,
+    //   hyperstructure_shareholder_epochs: epochs,
+    // }).finally(() => setRegisterLoading(false));
   };
 
   const onClaim = async () => {
     if (!account) return;
     setClaimLoading(true);
-    await claim_leaderboard_rewards({ signer: account, token: lordsAddress }).finally(() => setClaimLoading(false));
+    // todo: fix this
+    // await claim_leaderboard_rewards({ signer: account, token: lordsAddress }).finally(() => setClaimLoading(false));
   };
 
   return (

@@ -180,12 +180,20 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   setLoading(LoadingStateKey.Hyperstructure, true);
   let start = performance.now();
   try {
+    // todo: only 1 undefined clause variable len
     await getEntities(
       setup.network.toriiClient,
       {
         Composite: {
           operator: "Or",
           clauses: [
+            {
+              Keys: {
+                keys: [undefined],
+                pattern_matching: "FixedLen",
+                models: [],
+              },
+            },
             {
               Keys: {
                 keys: [undefined, undefined],
@@ -296,6 +304,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   console.log("[sync] tile query", end - start);
 };
 
+// todo: only 1 undefined clause variable len
 const configClauses: Clause[] = [
   {
     Keys: {
@@ -336,44 +345,41 @@ const configClauses: Clause[] = [
 
 const configModels = [
   "s1_eternum-WorldConfig",
-  "s1_eternum-HyperstructureResourceConfig",
+  "s1_eternum-HyperstructureConstructConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ResourceFactoryConfig",
   "s1_eternum-BuildingCategoryConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
   "s1_eternum-ResourceList",
-  "s1_eternum-LeaderboardRegisterContribution",
-  "s1_eternum-LeaderboardRegisterShare",
+  "s1_eternum-SeasonPrize",
+  "s1_eternum-GuildWhitelist",
+  "s1_eternum-HyperstructureRequirements",
 ];
 
 const singleKeyModels = [
   "s1_eternum-AddressName",
-  "s1_eternum-Trade",
   "s1_eternum-Structure",
-  "s1_eternum-Hyperstructure",
+  // Guild
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
-  "s1_eternum-Leaderboard",
-  "s1_eternum-LeaderboardRegistered",
-  "s1_eternum-LeaderboardRewardClaimed",
-  "s1_eternum-LeaderboardEntry",
-  "s1_eternum-BuildingCategoryConfig",
 ];
 
 const eventModels = [
-  "s1_eternum-GameEnded",
-  "s1_eternum-HyperstructureFinished",
+  "s1_eternum-SeasonEnded",
   "s1_eternum-AcceptOrder",
   "s1_eternum-SwapEvent",
   "s1_eternum-LiquidityEvent",
-  "s1_eternum-HyperstructureContribution",
 ];
 
 const hyperstructureModels = [
-  "s1_eternum-HyperstructureResourceConfig",
-  "s1_eternum-WeightConfig",
-  "s1_eternum-ResourceFactoryConfig",
+  // Hyperstructure
+  "s1_eternum-HyperstructureGlobals",
+  "s1_eternum-Hyperstructure",
+  "s1_eternum-HyperstructureShareholders",
+  // Leaderboard
+  "s1_eternum-PlayerRegisteredPoints",
+  "s1_eternum-PlayerConstructionPoints",
 ];
 
 export const syncStructureData = async (

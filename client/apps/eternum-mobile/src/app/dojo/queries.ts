@@ -83,7 +83,7 @@ export const getMarketFromTorii = async <S extends Schema>(
     },
     components,
     [],
-    ["s1_eternum-Market", "s1_eternum-Liquidity"],
+    ["s1_eternum-Market", "s1_eternum-Liquidity", "s1_eternum-Trade"],
     30_000,
     false,
   );

@@ -6,7 +6,7 @@ import {
   configManager,
   findResourceById,
   formatTime,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  resources,
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
@@ -98,12 +98,7 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureCompletionTable = () => {
-  const completionCosts = Object.keys(configManager.hyperstructureTotalCosts)
-    .map(
-      (key) =>
-        configManager.hyperstructureTotalCosts[Number(key) as keyof typeof configManager.hyperstructureTotalCosts],
-    )
-    .filter((tier) => tier.max_amount !== 0);
+  const completionCosts = configManager.hyperstructureTotalCosts;
 
   return (
     <div className="rounded-lg border border-gold/20 overflow-hidden mt-4">
@@ -122,11 +117,9 @@ const HyperstructureCompletionTable = () => {
               <td className="p-4" colSpan={8}>
                 <div className="flex items-center">
                   <div className="flex">
-                    {GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resource, true).map((resourceId) => (
-                      <div key={resourceId} className="mr-3">
-                        <ResourceIcon size="md" resource={ResourcesIds[resourceId]} />
-                      </div>
-                    ))}
+                    <div className="mr-3">
+                      <ResourceIcon size="md" resource={resources.find((r) => r.id === resource)?.trait || ""} />
+                    </div>
                   </div>
                   <div className="ml-auto">
                     {min_amount} - {max_amount}

@@ -1,9 +1,8 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useDonkeyArrivals } from "@/hooks/helpers/use-donkey-arrivals";
 import { useEntities } from "@/hooks/helpers/use-entities";
-import { useBridgeAsset } from "@/hooks/use-bridge";
 import { displayAddress } from "@/lib/utils";
-import { ADMIN_BANK_ENTITY_ID, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -12,7 +11,6 @@ import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Input } from "../ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { getResourceAddresses } from "../ui/utils/addresses";
 import { BridgeFees } from "./bridge-fees";
 export const BridgeOutStep2 = () => {
   const { address } = useAccount();
@@ -40,30 +38,8 @@ export const BridgeOutStep2 = () => {
 
   const [_, setRefreshTrigger] = useState(0);
 
-  const { bridgeFinishWithdrawFromRealm } = useBridgeAsset();
-
   const onFinishWithdrawFromBank = async () => {
-    if (selectedResourceIds.length) {
-      const resourceAddresses = getResourceAddresses();
-      const donkeyResources = selectedResourceIds.map((id, index) => ({
-        tokenAddress: resourceAddresses[ResourcesIds[id].toUpperCase() as keyof typeof resourceAddresses][1],
-        from_entity_id: Array.from(selectedDonkeys)[index],
-      }));
-
-      try {
-        setIsLoading(true);
-        const tx = await bridgeFinishWithdrawFromRealm(donkeyResources, ADMIN_BANK_ENTITY_ID);
-        if (tx) {
-          setSelectedDonkeys(new Set());
-          setSelectedResourceIds([]);
-          setSelectedResourceAmounts({});
-        }
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+    console.log("implement bridge inside game client");
   };
   const [isFeesOpen, setIsFeesOpen] = useState(false);
 
