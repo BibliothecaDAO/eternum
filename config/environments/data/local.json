@@ -1865,28 +1865,28 @@
     "buildingFixedCostScalePercent": 5000
   },
   "hyperstructures": {
-    "hyperstructureCreationCosts": [
+    "hyperstructureInitializationShardsCost": {
+      "resource": 24,
+      "amount": 500
+    },
+    "hyperstructureConstructionCost": [
       {
-        "resource_tier": 1,
-        "min_amount": 3000000,
-        "max_amount": 3000000
-      }
-    ],
-    "hyperstructureConstructionCosts": [
-      {
-        "resource_tier": 2,
-        "min_amount": 0,
-        "max_amount": 0
+        "resource_type": 3,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
-        "resource_tier": 3,
-        "min_amount": 0,
-        "max_amount": 0
+        "resource_type": 1,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
-        "resource_tier": 4,
-        "min_amount": 0,
-        "max_amount": 0
+        "resource_type": 2,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
       },
       {
         "resource_tier": 5,
@@ -1921,15 +1921,98 @@
         "max_amount": 500
       },
       {
-        "resource_tier": 5,
+        "resource_type": 7,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 15,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 14,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 20,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 13,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 12,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 16,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 21,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 18,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 17,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 10,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 19,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 9,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 22,
+        "resource_completion_points": 21732000000,
+        "min_amount": 120000,
+        "max_amount": 120000
+      },
+      {
+        "resource_type": 23,
+        "resource_completion_points": 21732000000,
         "min_amount": 120000,
         "max_amount": 120000
       }
     ],
-    "hyperstructurePointsPerCycle": 7,
-    "hyperstructurePointsOnCompletion": 500000,
-    "hyperstructureTimeBetweenSharesChangeSeconds": 17280,
-    "hyperstructurePointsForWin": 9620000
+    "hyperstructurePointsPerCycle": 7000000,
+    "hyperstructurePointsForWin": "100"
   },
   "season": {
     "startSettlingAfterSeconds": 59,
@@ -1944,7 +2027,7 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
+    "season_pool_fee_recipient": "0x74c9a743983d34edbde1a88fe85094d6c2c89038634c05366ac1fa1c0a0cd30",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
@@ -4079,8 +4162,8 @@
           ]
         },
         {
-          "address": "0x23231d63352e9fc2336d4b168d199325a7afed5337cba3bea52f315d693782c",
-          "class_hash": "0x1106605ab129f7277e8dfa4ca8b3615646787e04a810931eaf79083af40d9e2",
+          "address": "0x39d86bf5660e0709ad9f4197ca58f0bccbe656556173a67821478805b007ed2",
+          "class_hash": "0x2ac87f1508b3b2f9e156027d656a66724c39e437db42beb628fdbd5a115ea6e",
           "abi": [
             {
               "type": "impl",
@@ -4597,11 +4680,33 @@
             },
             {
               "type": "struct",
-              "name": "core::array::Span::<(core::integer::u8, core::integer::u128, core::integer::u128)>",
+              "name": "s1_eternum::models::config::HyperstructureConstructConfig",
+              "members": [
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "resource_contribution_points",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "min_amount",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "max_amount",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<s1_eternum::models::config::HyperstructureConstructConfig>",
               "members": [
                 {
                   "name": "snapshot",
-                  "type": "@core::array::Array::<(core::integer::u8, core::integer::u128, core::integer::u128)>"
+                  "type": "@core::array::Array::<s1_eternum::models::config::HyperstructureConstructConfig>"
                 }
               ]
             },
@@ -4614,23 +4719,19 @@
                   "name": "set_hyperstructure_config",
                   "inputs": [
                     {
-                      "name": "resources_for_completion",
-                      "type": "core::array::Span::<(core::integer::u8, core::integer::u128, core::integer::u128)>"
+                      "name": "initialize_shards_amount",
+                      "type": "core::integer::u128"
                     },
                     {
-                      "name": "time_between_shares_change",
-                      "type": "core::integer::u64"
+                      "name": "construction_resources",
+                      "type": "core::array::Span::<s1_eternum::models::config::HyperstructureConstructConfig>"
                     },
                     {
-                      "name": "points_per_cycle",
+                      "name": "points_per_second",
                       "type": "core::integer::u128"
                     },
                     {
                       "name": "points_for_win",
-                      "type": "core::integer::u128"
-                    },
-                    {
-                      "name": "points_on_completion",
                       "type": "core::integer::u128"
                     }
                   ],
@@ -5458,8 +5559,8 @@
           ]
         },
         {
-          "address": "0x599541cbcfb037659be5445d32c3c094c71acb4d0555cf5dcabd079a924a8e1",
-          "class_hash": "0x49b8c821dbe2eaa735eef86e52180981048815126efc1270191e1c9be485acd",
+          "address": "0x6e0877d82474f1c1928bc4b82e5944cce136d1777721f08639cd66a69ceebcf",
+          "class_hash": "0xcb80f9ef9892d5336567b763eff6b7599c9328c98fc636252ef75461cdcbaa",
           "abi": [
             {
               "type": "impl",
@@ -5672,8 +5773,8 @@
           ]
         },
         {
-          "address": "0x22c37ace384c10e8c1a44f4efaa4a604c303c226b055fdb781753575381ccb6",
-          "class_hash": "0x475541ea665d855869963217202ccb74e0f3bca0cc98a7fdd8919d922f73217",
+          "address": "0x4d213c0e46c7b1b34d1d9866c907b6207ce6537452df4934f8b22ea09116fe8",
+          "class_hash": "0xdb28ed385760a6ca5004d10253e8d4b1c77ff667149c70e9dba79777abfd9b",
           "abi": [
             {
               "type": "impl",
@@ -5753,19 +5854,15 @@
                   "name": "create_guild",
                   "inputs": [
                     {
-                      "name": "is_public",
+                      "name": "public",
                       "type": "core::bool"
                     },
                     {
-                      "name": "guild_name",
+                      "name": "name",
                       "type": "core::felt252"
                     }
                   ],
-                  "outputs": [
-                    {
-                      "type": "core::integer::u32"
-                    }
-                  ],
+                  "outputs": [],
                   "state_mutability": "external"
                 },
                 {
@@ -5773,8 +5870,8 @@
                   "name": "join_guild",
                   "inputs": [
                     {
-                      "name": "guild_entity_id",
-                      "type": "core::integer::u32"
+                      "name": "guild_id",
+                      "type": "core::starknet::contract_address::ContractAddress"
                     }
                   ],
                   "outputs": [],
@@ -5782,15 +5879,22 @@
                 },
                 {
                   "type": "function",
-                  "name": "whitelist_player",
+                  "name": "leave_guild",
+                  "inputs": [],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "update_whitelist",
                   "inputs": [
                     {
-                      "name": "player_address_to_whitelist",
+                      "name": "address",
                       "type": "core::starknet::contract_address::ContractAddress"
                     },
                     {
-                      "name": "guild_entity_id",
-                      "type": "core::integer::u32"
+                      "name": "whitelist",
+                      "type": "core::bool"
                     }
                   ],
                   "outputs": [],
@@ -5798,43 +5902,11 @@
                 },
                 {
                   "type": "function",
-                  "name": "transfer_guild_ownership",
+                  "name": "remove_member",
                   "inputs": [
                     {
-                      "name": "guild_entity_id",
-                      "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "to_player_address",
+                      "name": "address",
                       "type": "core::starknet::contract_address::ContractAddress"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "remove_guild_member",
-                  "inputs": [
-                    {
-                      "name": "player_address_to_remove",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "remove_player_from_whitelist",
-                  "inputs": [
-                    {
-                      "name": "player_address_to_remove",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    },
-                    {
-                      "name": "guild_entity_id",
-                      "type": "core::integer::u32"
                     }
                   ],
                   "outputs": [],
@@ -5963,16 +6035,15 @@
           "systems": [
             "create_guild",
             "join_guild",
-            "whitelist_player",
-            "transfer_guild_ownership",
-            "remove_guild_member",
-            "remove_player_from_whitelist",
+            "leave_guild",
+            "update_whitelist",
+            "remove_member",
             "upgrade"
           ]
         },
         {
-          "address": "0xe5f18340404983e990dda7e18fbba418faa984ecf4ca1ccb2fefd0760fb6e3",
-          "class_hash": "0x3fbea94ad69a12990f173ec7e52935325049087d0555cf2f21609800b9c135c",
+          "address": "0x15f87972cf98b45e430afe155de564f3b7fe65ccd1e76fb53527775dc2069de",
+          "class_hash": "0x5889095f77982fb17b41577e3948589608440c07876d88c6a4794e46ec3f9d1",
           "abi": [
             {
               "type": "impl",
@@ -6050,28 +6121,8 @@
               ]
             },
             {
-              "type": "struct",
-              "name": "core::array::Span::<core::integer::u32>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<core::integer::u32>"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "core::array::Span::<(core::integer::u32, core::integer::u16)>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<(core::integer::u32, core::integer::u16)>"
-                }
-              ]
-            },
-            {
               "type": "enum",
-              "name": "s1_eternum::models::hyperstructure::Access",
+              "name": "s1_eternum::models::hyperstructure::ConstructionAccess",
               "variants": [
                 {
                   "name": "Public",
@@ -6084,6 +6135,16 @@
                 {
                   "name": "GuildOnly",
                   "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<core::integer::u32>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<core::integer::u32>"
                 }
               ]
             },
@@ -6105,18 +6166,18 @@
                 },
                 {
                   "type": "function",
-                  "name": "contribute_to_construction",
+                  "name": "contribute",
                   "inputs": [
                     {
-                      "name": "hyperstructure_entity_id",
+                      "name": "hyperstructure_id",
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "contributor_entity_id",
+                      "name": "from_structure_id",
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "contributions",
+                      "name": "contribution",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
                   ],
@@ -6125,14 +6186,14 @@
                 },
                 {
                   "type": "function",
-                  "name": "set_co_owners",
+                  "name": "allocate_shares",
                   "inputs": [
                     {
-                      "name": "hyperstructure_entity_id",
+                      "name": "hyperstructure_id",
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "co_owners",
+                      "name": "shareholders",
                       "type": "core::array::Span::<(core::starknet::contract_address::ContractAddress, core::integer::u16)>"
                     }
                   ],
@@ -6141,31 +6202,15 @@
                 },
                 {
                   "type": "function",
-                  "name": "end_game",
+                  "name": "update_construction_access",
                   "inputs": [
                     {
-                      "name": "hyperstructures_contributed_to",
-                      "type": "core::array::Span::<core::integer::u32>"
-                    },
-                    {
-                      "name": "hyperstructure_shareholder_epochs",
-                      "type": "core::array::Span::<(core::integer::u32, core::integer::u16)>"
-                    }
-                  ],
-                  "outputs": [],
-                  "state_mutability": "external"
-                },
-                {
-                  "type": "function",
-                  "name": "set_access",
-                  "inputs": [
-                    {
-                      "name": "hyperstructure_entity_id",
+                      "name": "hyperstructure_id",
                       "type": "core::integer::u32"
                     },
                     {
                       "name": "access",
-                      "type": "s1_eternum::models::hyperstructure::Access"
+                      "type": "s1_eternum::models::hyperstructure::ConstructionAccess"
                     }
                   ],
                   "outputs": [],
@@ -6173,27 +6218,31 @@
                 },
                 {
                   "type": "function",
-                  "name": "get_points",
+                  "name": "claim_construction_points",
                   "inputs": [
                     {
-                      "name": "player_address",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    },
-                    {
-                      "name": "hyperstructures_contributed_to",
+                      "name": "hyperstructure_ids",
                       "type": "core::array::Span::<core::integer::u32>"
                     },
                     {
-                      "name": "hyperstructure_shareholder_epochs",
-                      "type": "core::array::Span::<(core::integer::u32, core::integer::u16)>"
+                      "name": "player",
+                      "type": "core::starknet::contract_address::ContractAddress"
                     }
                   ],
-                  "outputs": [
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "claim_share_points",
+                  "inputs": [
                     {
-                      "type": "(core::integer::u128, core::integer::u128, core::integer::u128, core::integer::u128)"
+                      "name": "hyperstructure_ids",
+                      "type": "core::array::Span::<core::integer::u32>"
                     }
                   ],
-                  "state_mutability": "view"
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -6317,16 +6366,17 @@
           "selector": "0x4bdd8bcbb935577aba3b974bd7e906698504fcb75e0c3aa34913c21342b4498",
           "systems": [
             "initialize",
-            "contribute_to_construction",
-            "set_co_owners",
-            "end_game",
-            "set_access",
+            "contribute",
+            "allocate_shares",
+            "update_construction_access",
+            "claim_construction_points",
+            "claim_share_points",
             "upgrade"
           ]
         },
         {
-          "address": "0x31b5fdd3dafbdea53d6548a175616ed56e392b6a54cc7848a23d123fb11b7f2",
-          "class_hash": "0x6fea985f1bf091020996f7c3bdf03311fc9e7384561dfdefe26fccd4be20b77",
+          "address": "0x42a3457c63d431121e8ab3239403a5d0ae784577f283c487e1406751cbaea69",
+          "class_hash": "0x46440a163788a97ac90626aee308b384467636ca9c4bb7a6449e3fb19b3952f",
           "abi": [
             {
               "type": "impl",
@@ -6566,8 +6616,8 @@
           ]
         },
         {
-          "address": "0xea0affaf8b107d9493cb7eea6bf049f37cd7b28d5ca454f36a0e43028d93bb",
-          "class_hash": "0x398d0511919674d0a834c3d055dc4abf96c1425d205b801c36a71f95f372f57",
+          "address": "0x2b4ba6b8b3afd231d161b2a2c9301a9ef0e704ab08ac13e7888702c8735b236",
+          "class_hash": "0x78dc52c0b398178c7306226f294e9db435a941c380d26aa943787dcbece5477",
           "abi": [
             {
               "type": "impl",
@@ -6766,8 +6816,8 @@
           ]
         },
         {
-          "address": "0x5773ce41b4b5c4812c374eb6d7d4d7900c67eca12736b867e3018d6d75a9b34",
-          "class_hash": "0x765552772870cc5165d9d20f9e6714f7cbcba638300aa86b38436e2a5a988f3",
+          "address": "0x17768ea9f48142b6e692ee726355944fa33f1156d451e20936bc3190207b08e",
+          "class_hash": "0x2ec1ad43bb4ba1755c6c672633940b7af8a54344f5e46dafb6890e091559cb9",
           "abi": [
             {
               "type": "impl",
@@ -6987,8 +7037,8 @@
           ]
         },
         {
-          "address": "0x2c958151c74275448cf99f3a1116b9c4857ad9b14a2df3ae6f6501933c074ed",
-          "class_hash": "0x52fc96e1120c8ab1e2467f7173467ab5e021e5b96bb603ba05fc3e8130d7d55",
+          "address": "0x11bc5d38f17a14025ac8eed1dbbfff611bba2df689e389a82c2649a222fd0df",
+          "class_hash": "0x27e6f7034394ce85098eff71519b001f342d4c7300d671d64a1bc384b7faada",
           "abi": [
             {
               "type": "impl",
@@ -7797,8 +7847,8 @@
           ]
         },
         {
-          "address": "0x2c86de5f1c7f2536d2ce1906ef0a07983406b027a7d7b891e09aed0355c7a90",
-          "class_hash": "0x76dd68e4060372047c60d6c64a48eba56ae5eaac41b6992f1edebb7bb6e928e",
+          "address": "0x46e19729a9f07c78ae94c29d0fed62219e9c87578cf3141016536f56ebc7cec",
+          "class_hash": "0x6c5c202f0d69bca5dfa6e7214d7c90c965866710f98c9d2647064f3ef7d8663",
           "abi": [
             {
               "type": "impl",
@@ -8417,8 +8467,8 @@
           ]
         },
         {
-          "address": "0x184cd1cc2c46367580d5f609d465bde1ec3090cedad5686bfdcce7edd7fb4f3",
-          "class_hash": "0x3e372338ca4ad7a94e0753e2ed4c1cfed2625915374ffa12274c7dc16c82ab",
+          "address": "0x74c9a743983d34edbde1a88fe85094d6c2c89038634c05366ac1fa1c0a0cd30",
+          "class_hash": "0x6f5b980b05a072100b830076082e734eaca5ef4f126a5817acae23748ec8b0a",
           "abi": [
             {
               "type": "impl",
@@ -8476,54 +8526,20 @@
               "interface_name": "s1_eternum::systems::season::contracts::ISeasonSystems"
             },
             {
-              "type": "struct",
-              "name": "core::array::Span::<core::integer::u32>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<core::integer::u32>"
-                }
-              ]
-            },
-            {
-              "type": "struct",
-              "name": "core::array::Span::<(core::integer::u32, core::integer::u16)>",
-              "members": [
-                {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<(core::integer::u32, core::integer::u16)>"
-                }
-              ]
-            },
-            {
               "type": "interface",
               "name": "s1_eternum::systems::season::contracts::ISeasonSystems",
               "items": [
                 {
                   "type": "function",
-                  "name": "register_to_leaderboard",
-                  "inputs": [
-                    {
-                      "name": "hyperstructures_contributed_to",
-                      "type": "core::array::Span::<core::integer::u32>"
-                    },
-                    {
-                      "name": "hyperstructure_shareholder_epochs",
-                      "type": "core::array::Span::<(core::integer::u32, core::integer::u16)>"
-                    }
-                  ],
+                  "name": "season_close",
+                  "inputs": [],
                   "outputs": [],
                   "state_mutability": "external"
                 },
                 {
                   "type": "function",
-                  "name": "claim_leaderboard_rewards",
-                  "inputs": [
-                    {
-                      "name": "token",
-                      "type": "core::starknet::contract_address::ContractAddress"
-                    }
-                  ],
+                  "name": "season_prize_claim",
+                  "inputs": [],
                   "outputs": [],
                   "state_mutability": "external"
                 }
@@ -8648,14 +8664,14 @@
           "tag": "s1_eternum-season_systems",
           "selector": "0x44e1edf9ca51b11a8c1d6ffc341d3248fdbeebc7e7d3ee6314fee33174860c4",
           "systems": [
-            "register_to_leaderboard",
-            "claim_leaderboard_rewards",
+            "season_close",
+            "season_prize_claim",
             "upgrade"
           ]
         },
         {
-          "address": "0x2762db2bd8a71a67910142cf7bc5fc1fe3126299ca9f2ee340a64b15e6de49e",
-          "class_hash": "0x7bf254700d0654b563783dd2b69c7772afbad7640bfea5be42ba2b0556e24d3",
+          "address": "0xd5629ba28cdf522a3738cc869a8c80a646e9ed0e343a3f5f7b41af25cda0c2",
+          "class_hash": "0x64d33eb9c3abc0e24a11e667ab6db8dab154c4b2f3ab5292f7c0f065932d809",
           "abi": [
             {
               "type": "impl",
@@ -8854,8 +8870,8 @@
           ]
         },
         {
-          "address": "0xdf177fc98b6170116377b28e22aa9ead622397bc9f6e13804b17878f74fddf",
-          "class_hash": "0x67087bf51e717af506ae5a8bcd8e9e3a701635433edcdb5fac892f0d48b8030",
+          "address": "0x69fcd9fa57561cc9df94910a6a22bc446bb919ec62e7165af8133b9dc80a623",
+          "class_hash": "0x63b4318e267bb36fad7329b3be1840d140cdfbd17f81fb2cea8db1b11bdc3a3",
           "abi": [
             {
               "type": "impl",
@@ -9091,8 +9107,8 @@
           ]
         },
         {
-          "address": "0x6e068fca029199887c748e0c268e81d56be44d7f26d2dbbde38939172732a7c",
-          "class_hash": "0x21688e9838f4b27ec34ee3de294694dccaadf5e72cc4fde296e1fa3897d09ef",
+          "address": "0x4062959683fda53e51f4109ec8c6f11f39da7100b53bd62cc21cf81d958c8fe",
+          "class_hash": "0xb2bcd778e8f2886b3d147b69b8f89f43de6e137f1beca2b624dc1ea013d8f5",
           "abi": [
             {
               "type": "impl",
@@ -9677,8 +9693,8 @@
           ]
         },
         {
-          "address": "0x443bd71b617d42a07f66d4da33060e56904e1baafb562593853247aabf255af",
-          "class_hash": "0x71e6d5d18472afd2fd7ece930b02817fc6c3b51950bf2335a5a02fb5ac41601",
+          "address": "0x1f69f2784fff4c4e45579a0f688f9a92ef2b40242cdf0a584ddf00bbc90afeb",
+          "class_hash": "0x75b7c3dcca6eb0f3dcc59e4b6411b7ac080dd313a270663cca9f000533ee0d6",
           "abi": [
             {
               "type": "impl",
@@ -11387,45 +11403,39 @@
         },
         {
           "members": [],
-          "class_hash": "0x2238b178e87807c6d6a6d642d0558eacff4e5ae9d30c72d5e9c97393c13f9f3",
-          "tag": "s1_eternum-Contribution",
-          "selector": "0x5610d7fde56cbda8d6714af14cb51989d77e24ffd867561e6f6ce36a5c8cda0"
-        },
-        {
-          "members": [],
-          "class_hash": "0x4930d4164035886b82ffe1dc0ea0d6c4d7f688772078912e4c49b1837bdf58d",
-          "tag": "s1_eternum-Epoch",
-          "selector": "0x7538402a46c4b333f00ed41744e67a26bb14f26753fdbe032f0ff218f83ff6a"
-        },
-        {
-          "members": [],
           "class_hash": "0x7d24a9a640720b5bd0139e0ff27d13396046d918d3efc7ad496be66b866681a",
           "tag": "s1_eternum-ExplorerTroops",
           "selector": "0x15b04275000fff7a4726d78e8083bfc8818a1b44138f368441ca8dd6fb0465f"
         },
         {
           "members": [],
-          "class_hash": "0x8db01c6a21e785cbd4f31beee27162f4d9b74d0d0214565b53676dae536049",
+          "class_hash": "0x4629488eedd05c8bc1f6d2e608598d22afca9dac82ee8a59408875cdb31f676",
           "tag": "s1_eternum-Guild",
           "selector": "0x1005f12b60fb0b9955acaa3d2ef4e839a9d9ca0de11ba53c74c3a4b5d324142"
         },
         {
           "members": [],
-          "class_hash": "0x3efc612d485ee6bcb483055c093630c91a8b6a70b0bf892950bb07053c633b",
+          "class_hash": "0x29604e1cb69df4551e994806ccedfc7c6c2746562d73574ec44cc3ed557056e",
           "tag": "s1_eternum-GuildMember",
           "selector": "0x4e1c4b07b2c1113f22a01d146dbe1224007cd027c7681007de3828761f92c1"
         },
         {
           "members": [],
-          "class_hash": "0x2963826b3ab460f9052766bcf2c5c7aed5907855d42a39253c02a3164ad93e9",
+          "class_hash": "0x307c3d25a6b65cbf79f5e7b0d7b2ee0b753b10e25a9d862959d97c530b5142d",
           "tag": "s1_eternum-GuildWhitelist",
           "selector": "0x58ba641332348c46d0aad19ab754598e63a4d8736db7ef9654918c79d6ad071"
         },
         {
           "members": [],
-          "class_hash": "0x33d5e7729556b288e3edc15b63e755e40c30342b525eaf3a4a6043cbcb4bf9b",
+          "class_hash": "0x2b9396f6e764f40d5dc81fbf65af13f61897109794ec77c21a3256549cd983a",
           "tag": "s1_eternum-Hyperstructure",
           "selector": "0x5894102a0f9c53bf2298d3bdaf4b0f8a0f92777d57ff0d585ca3b5c5b25b7bc"
+        },
+        {
+          "members": [],
+          "class_hash": "0x5839f6345d0a9c56079b038942db4d04320d3b94849730c544d2afe0590394e",
+          "tag": "s1_eternum-HyperstructureConstructConfig",
+          "selector": "0x3016655f18fad274b859a45978be7374913b61faf570281a454c8a6afe82338"
         },
         {
           "members": [],
@@ -11435,45 +11445,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x302f8573f851269b8376dac58238af5f8b6ecd1e976026e4e1419847bb2d85e",
-          "tag": "s1_eternum-HyperstructureResourceConfig",
-          "selector": "0x344c119cf22cf69ac0954dadeb846930657d9d80e550aec607fe0d285e2d1b6"
+          "class_hash": "0x53492db4375ebc7f13b4849d209537a548ea4d818f525301a2351e7a2aae566",
+          "tag": "s1_eternum-HyperstructureRequirements",
+          "selector": "0x1e1278c034743f9c0ab03f3d5efa81a2854fbebbca4c21704aad54cf792e589"
         },
         {
           "members": [],
-          "class_hash": "0x19f28303c42bc4c86b80560a4755e7ec7c46225f76d3ca59a03a46852db49af",
-          "tag": "s1_eternum-Leaderboard",
-          "selector": "0x2731a4b2cc1d25c3605cbd9f58fb010860aa57f2fd978b012309815622bad38"
-        },
-        {
-          "members": [],
-          "class_hash": "0xf7577c89f1d5bed258a8b129c013118b59d11d4da3db3c8e47760603fc3620",
-          "tag": "s1_eternum-LeaderboardEntry",
-          "selector": "0x64d192ab245076ad4a8fc1065a8ed826370b3b9ac74e19e5ba62c4778afbd0e"
-        },
-        {
-          "members": [],
-          "class_hash": "0x24d4e809a12da5f55779f8be985a841e8e1ef54810f1116e930f0e5e606d78c",
-          "tag": "s1_eternum-LeaderboardRegisterContribution",
-          "selector": "0x19570cd480372cee10d9c139bc552086c7b8222c1bc012113bbfd39b56a7e8"
-        },
-        {
-          "members": [],
-          "class_hash": "0x8e69ab9853bcdc868103690d6cacacc494217358180feb345eea2e981982f1",
-          "tag": "s1_eternum-LeaderboardRegisterShare",
-          "selector": "0x75ac5be2d09aae03d624ea55302b474702a77e282b53b6ae223e7e2f2fcf331"
-        },
-        {
-          "members": [],
-          "class_hash": "0x29dbad5791c92e98ea07a92bce67b40fd6cbf1f388835607b942f8a3c3adff",
-          "tag": "s1_eternum-LeaderboardRegistered",
-          "selector": "0x23cb90d19983cc3481c16b0daca97a2e9d61ccca2887ec43a37e8d0c8bc8a82"
-        },
-        {
-          "members": [],
-          "class_hash": "0x1dc7c5ee5408c8a8e5d57ab23acf392ec6ff646bb93dde92de9a2c0954e5f33",
-          "tag": "s1_eternum-LeaderboardRewardClaimed",
-          "selector": "0x4a2604638f545e33a48aaa88165cdf7c14d2e3e90dc0ffef45efaafce0a7acb"
+          "class_hash": "0x1d639b2ef826eb0a74eaadaa10e5a79e868ffd24e181819327afbcb635343fd",
+          "tag": "s1_eternum-HyperstructureShareholders",
+          "selector": "0x6463c2186d9cf77e07bb449b7b8466d987b7602325261ce48f4dc35a5049695"
         },
         {
           "members": [],
@@ -11495,9 +11475,15 @@
         },
         {
           "members": [],
-          "class_hash": "0x7702a9475dce2ccca23022565d543a88e3ec30c1a7be38f2eef4cadf479bd27",
-          "tag": "s1_eternum-Progress",
-          "selector": "0x510024ae0ff452228a083d9fb3aba5e3521c107ab7a84246efcac7bcdfddcb5"
+          "class_hash": "0x6558506c23582b4fa6b0aaea272ecf5051418831d158b17cd390cd704313fdc",
+          "tag": "s1_eternum-PlayerConstructionPoints",
+          "selector": "0x49b727c54c7780c4f0e3f45284c2d13d4e192d53a70233720cb8145e552ca0c"
+        },
+        {
+          "members": [],
+          "class_hash": "0x239635aa89063f9eaa6411212d73e6cf024328d3e8cc040bab7c7cdd2cbaddc",
+          "tag": "s1_eternum-PlayerRegisteredPoints",
+          "selector": "0xdde28691470092c95b58aada5c45433f59662861cce59f49d07f6085d357ae"
         },
         {
           "members": [],
@@ -11549,6 +11535,12 @@
         },
         {
           "members": [],
+          "class_hash": "0x25e9f8699613b7557509c6b71c9bd574f07f1d5c9d1bd903823549fe3b26278",
+          "tag": "s1_eternum-SeasonPrize",
+          "selector": "0x52494c495c466f56b0712ded319bb8d6d782e702493101057a8e093f024a368"
+        },
+        {
+          "members": [],
           "class_hash": "0x225c82c9d68eda6ad28b4bd6140c38d510f6f21d18b7f62f008a78840303375",
           "tag": "s1_eternum-Structure",
           "selector": "0x3b407b0e3490f7044ce3870614a93f2a0fcbec02710f0975bfdb6c28fdfbecc"
@@ -11591,7 +11583,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x3e74a07618c145066993d51a48df0bc067370560b5aa5b07f233dad50b5892f",
+          "class_hash": "0x23ef414977ec9d28aa690acd30994c5240a39ef7644c0e1cc35d7f9d87ad0fd",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }
@@ -11686,6 +11678,12 @@
           "class_hash": "0x107d9679ef0d3c009e2c043464f02d92571288aba9144e099f472158330f3b4",
           "tag": "s1_eternum-LiquidityEvent",
           "selector": "0x4e19f323259ff883daf1f685cfb94306159cde4c8cb46155a290a9b9c91df8c"
+        },
+        {
+          "members": [],
+          "class_hash": "0x598cd8e9d1310a01ae0e4ca30906fdc61bcfe352ec6c8d8d6c877e9e79342a2",
+          "tag": "s1_eternum-SeasonEnded",
+          "selector": "0x664d87c93359af52b6c622949d8b545e42ba56803dbb6a91718aba120904d3c"
         },
         {
           "members": [],

@@ -184,10 +184,8 @@ const HyperStructureExtraContent = ({
   const latestChangeEvent = LeaderboardManager.instance(components).getCurrentCoOwners(hyperstructureEntityId);
   const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
   const shares =
-    LeaderboardManager.instance(components).getAddressShares(
-      ContractAddress(account.address),
-      hyperstructureEntityId,
-    ) || 0;
+    LeaderboardManager.instance(components).getPlayerShares(ContractAddress(account.address), hyperstructureEntityId) ||
+    0;
 
   return (
     <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>

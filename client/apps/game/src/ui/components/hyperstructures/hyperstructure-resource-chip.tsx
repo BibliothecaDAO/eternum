@@ -38,12 +38,16 @@ export const HyperstructureResourceChip = ({
   maxContributableAmount = Math.ceil(maxContributableAmount);
 
   useEffect(() => {
+    console.log({ contributions });
     let contributionsCopy = Object.assign({}, contributions);
     if (inputValue === 0 || isNaN(inputValue)) {
+      console.log("deleting");
       delete contributionsCopy[resourceId];
     } else {
+      console.log("adding");
       contributionsCopy[resourceId] = inputValue;
     }
+    console.log({ contributionsCopy });
     setContributions(contributionsCopy);
   }, [inputValue]);
 

@@ -4,8 +4,6 @@ export enum EventType {
   BurnDonkey = "BurnDonkey",
   SettleRealm = "SettleRealmData",
   Swap = "SwapEvent",
-  HyperstructureFinished = "HyperstructureFinished",
-  HyperstructureContribution = "HyperstructureContribution",
   AcceptOrder = "AcceptOrder",
 }
 

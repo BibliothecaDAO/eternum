@@ -1,10 +1,11 @@
-import { ContractAddress, GuildMemberInfo, ID } from "../types";
+import { ContractAddress, GuildMemberInfo } from "../types";
 
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
 import { ClientComponents } from "../dojo";
 import { GuildInfo } from "../types";
-import { getAddressName, getEntityName } from "./entities";
+import { getAddressName } from "./entities";
 
 export const formatGuilds = (
   guilds: Entity[],
@@ -18,23 +19,21 @@ export const formatGuilds = (
       const guild = getComponentValue(components.Guild, guild_entity_id);
       if (!guild) return;
 
-      const name = getEntityName(guild.entity_id, components);
-
       return {
-        entityId: guild.entity_id,
-        name,
-        // todo: fix
-        isOwner: false,
+        // guild id is address of the owner
+        entityId: guild.guild_id,
+        name: shortString.decodeShortString(guild.name.toString()),
+        isOwner: guild.guild_id === playerAddress,
         memberCount: guild.member_count,
-        isPublic: guild.is_public,
-        isMember: guild.entity_id === guildMember?.guild_entity_id,
+        isPublic: guild.public,
+        isMember: guild.guild_id === guildMember?.guild_id,
       };
     })
     .filter((guild): guild is NonNullable<typeof guild> => guild !== undefined);
 };
 
 export const getGuild = (
-  guildEntityId: ID,
+  guildEntityId: ContractAddress,
   playerAddress: ContractAddress,
   components: ClientComponents,
 ): GuildInfo | undefined => {
@@ -51,13 +50,13 @@ export const formatGuildMembers = (
       const guildMember = getComponentValue(components.GuildMember, entity);
       if (!guildMember) return;
 
-      const addressName = getAddressName(guildMember.address, components);
+      const addressName = getAddressName(guildMember.member, components);
 
       return {
-        address: guildMember.address,
-        guildEntityId: guildMember.guild_entity_id,
+        address: guildMember.member,
+        guildEntityId: Number(guildMember.guild_id),
         name: addressName ? addressName : "Unknown",
-        isUser: guildMember.address === playerAddress,
+        isUser: guildMember.member === playerAddress,
         isGuildMaster: false, // todo: fix
       };
     })
@@ -78,12 +77,12 @@ export const getGuildFromPlayerAddress = (
   const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
   if (!guildMember) return;
 
-  return getGuild(guildMember.guild_entity_id, playerAddress, components);
+  return getGuild(guildMember.guild_id, playerAddress, components);
 };
 
 export const getGuildMembersFromPlayerAddress = (playerAddress: ContractAddress, components: ClientComponents) => {
   const guildMember = getComponentValue(components.GuildMember, getEntityIdFromKeys([playerAddress]));
   if (!guildMember) return;
 
-  return formatGuildMembers([getEntityIdFromKeys([BigInt(guildMember.guild_entity_id)])], playerAddress, components);
+  return formatGuildMembers([getEntityIdFromKeys([BigInt(guildMember.guild_id)])], playerAddress, components);
 };

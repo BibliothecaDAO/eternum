@@ -6,8 +6,6 @@ import {
   EternumProvider,
   HexGrid,
   ResourcesIds,
-  ResourceTier,
-  scaleResourceCostMinMax,
   scaleResourceInputs,
   scaleResourceOutputs,
   scaleResources,
@@ -39,31 +37,31 @@ export class GameConfigDeployer {
 
   async setupAll(account: Account, provider: EternumProvider) {
     await this.setupNonBank(account, provider);
-    await this.setupBank(account, provider);
+    // await this.setupBank(account, provider);
   }
 
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
-    await setWorldConfig(config);
-    await setAgentControllerConfig(config);
-    await SetResourceFactoryConfig(config);
-    await setResourceBridgeWhitelistConfig(config);
-    await setTradeConfig(config);
-    await setStartingResourcesConfig(config);
-    await setSeasonConfig(config);
-    await setVRFConfig(config);
-    await setResourceBridgeFeesConfig(config);
-    await setBuildingConfig(config);
-    await setWeightConfig(config);
-    await setBattleConfig(config);
-    await setTroopConfig(config);
-    await setRealmUpgradeConfig(config);
-    await setStructureMaxLevelConfig(config);
-    await setupGlobals(config);
-    await setCapacityConfig(config);
-    await setSpeedConfig(config);
+    // await setWorldConfig(config);
+    // await setAgentControllerConfig(config);
+    // await SetResourceFactoryConfig(config);
+    // await setResourceBridgeWhitelistConfig(config);
+    // await setTradeConfig(config);
+    // await setStartingResourcesConfig(config);
+    // await setSeasonConfig(config);
+    // await setVRFConfig(config);
+    // await setResourceBridgeFeesConfig(config);
+    // await setBuildingConfig(config);
+    // await setWeightConfig(config);
+    // await setBattleConfig(config);
+    // await setTroopConfig(config);
+    // await setRealmUpgradeConfig(config);
+    // await setStructureMaxLevelConfig(config);
+    // await setupGlobals(config);
+    // await setCapacityConfig(config);
+    // await setSpeedConfig(config);
     await setHyperstructureConfig(config);
-    await setSettlementConfig(config);
+    // await setSettlementConfig(config);
   }
 
   async setupBank(account: Account, provider: EternumProvider) {
@@ -96,23 +94,14 @@ export class GameConfigDeployer {
 
   getHyperstructureConstructionCostsScaled(): { resource: number; amount: number }[] {
     return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureConstructionCosts,
-      this.globalConfig.resources.resourcePrecision,
-    );
-  }
-
-  getHyperstructureCreationCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureCreationCosts,
+      this.globalConfig.hyperstructures.hyperstructureConstructionCost,
       this.globalConfig.resources.resourcePrecision,
     );
   }
 
   getHyperstructureTotalCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureTotalCosts,
-      this.globalConfig.resources.resourcePrecision,
-    );
+    // Create a utility function if needed or return empty array
+    return [];
   }
 }
 
@@ -1091,37 +1080,32 @@ export const setHyperstructureConfig = async (config: Config) => {
 
   const {
     hyperstructurePointsPerCycle,
-    hyperstructurePointsOnCompletion,
-    hyperstructureTimeBetweenSharesChangeSeconds,
+    hyperstructureConstructionCost,
     hyperstructurePointsForWin,
-    hyperstructureTotalCosts,
+    hyperstructureInitializationShardsCost,
   } = config.config.hyperstructures;
 
-  const costs = scaleResourceCostMinMax(hyperstructureTotalCosts, config.config.resources.resourcePrecision);
-
+  const initializationShardsAmount = hyperstructureInitializationShardsCost.amount;
   const hyperstructureCalldata = {
     signer: config.account,
-    resources_for_completion: costs,
-    time_between_shares_change: hyperstructureTimeBetweenSharesChangeSeconds,
-    points_per_cycle: hyperstructurePointsPerCycle,
+    initialize_shards_amount: initializationShardsAmount * config.config.resources.resourcePrecision,
+    construction_resources: hyperstructureConstructionCost,
+    points_per_second: hyperstructurePointsPerCycle,
     points_for_win: hyperstructurePointsForWin,
-    points_on_completion: hyperstructurePointsOnCompletion,
   };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Points System")}
-    │  ${chalk.gray("Per Cycle:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_cycle))}
-    │  ${chalk.gray("On Completion:")}    ${chalk.white(addCommas(hyperstructureCalldata.points_on_completion))}
+    ┌─ ${chalk.yellow("Hyperstructure Points System")}
+    │  ${chalk.gray("Per Second:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_second))}
     │  ${chalk.gray("For Win:")}          ${chalk.white(addCommas(hyperstructureCalldata.points_for_win))}
     │
-    │  ${chalk.yellow("Timing")}
-    │  ${chalk.gray("Minimum Time Between Share Changes:")}     ${chalk.white(hourMinutesSeconds(hyperstructureCalldata.time_between_shares_change))}
+    │  ${chalk.gray("Initialization Shards:")}     ${chalk.white(inGameAmount(hyperstructureCalldata.initialize_shards_amount, config.config))}
     │
-    │  ${chalk.yellow("Resource Tier")}${hyperstructureCalldata.resources_for_completion
+    │  ${chalk.gray("Construction Cost")}${hyperstructureCalldata.construction_resources
       .map(
         (c) => `
-    │  ${chalk.gray(ResourceTier[c.resource_tier].padEnd(12))} ${chalk.white(inGameAmount(c.min_amount, config.config))} ${chalk.gray("to")} ${chalk.white(inGameAmount(c.max_amount, config.config))}`,
+    │  ${chalk.yellow(ResourcesIds[c.resource_type].padEnd(12))} ${chalk.white(c.min_amount)} ${chalk.gray("to")} ${chalk.white(c.max_amount)}`,
       )
       .join("")}
     └────────────────────────────────`),
