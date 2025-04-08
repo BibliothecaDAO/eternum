@@ -35,9 +35,15 @@ export function GlobalChatTab({
 }: GlobalChatTabProps) {
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isInitialScrollRef = useRef(true);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ 
+        behavior: isInitialScrollRef.current ? "auto" : "smooth" 
+      });
+      isInitialScrollRef.current = false;
+    }
   }, [messages]);
 
   const handleSend = () => {
