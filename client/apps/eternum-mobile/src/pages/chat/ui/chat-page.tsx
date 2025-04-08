@@ -1,24 +1,24 @@
-import { Badge } from "@/shared/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DMDrawer } from "./dm-drawer";
-import { DMTab } from "./tabs/dm-tab";
-import { RoomsTab } from "./tabs/rooms-tab";
-import { GlobalChatTab } from "./tabs/global-chat-tab";
-import useStore from "@/shared/store";
+import { filterMessages } from "@/features/ws-chat/lib/filterUtils";
+import { generateUserCredentials } from "@/features/ws-chat/lib/userCredentials";
 import ChatClient from "@/features/ws-chat/model/client";
 import { Message, Room, User } from "@/features/ws-chat/model/types";
-import { generateUserCredentials } from "@/features/ws-chat/lib/userCredentials";
-import { filterMessages } from "@/features/ws-chat/lib/filterUtils";
-import { 
+import {
   useConnectionEvents,
   useDirectMessageEvents,
   useGlobalMessageEvents,
   useInitialDataEvents,
   useRoomEvents,
   useRoomMessageEvents,
-  useUserEvents
+  useUserEvents,
 } from "@/features/ws-chat/model/useSocketEvents";
+import useStore from "@/shared/store";
+import { Badge } from "@/shared/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DMDrawer } from "./dm-drawer";
+import { DMTab } from "./tabs/dm-tab";
+import { GlobalChatTab } from "./tabs/global-chat-tab";
+import { RoomsTab } from "./tabs/rooms-tab";
 
 type TabType = "global" | "rooms" | "dm";
 
@@ -28,34 +28,34 @@ export function ChatPage() {
   const [userToken, setUserToken] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [isUsernameSet, setIsUsernameSet] = useState<boolean>(false);
-  
+
   // Chat client
   const chatClientRef = useRef<ChatClient | null>(null);
-  
+
   // UI state
   const [activeTab, setActiveTab] = useState<TabType>("global");
   const [isDMDrawerOpen, setIsDMDrawerOpen] = useState(false);
-  
+
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
   const [directMessageRecipient, setDirectMessageRecipient] = useState("");
   const [activeRoom, setActiveRoom] = useState("");
-  
+
   // Users and rooms state
   const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
   const [offlineUsers, setOfflineUsers] = useState<User[]>([]);
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
-  
+
   // Loading states
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  
+
   // Unread messages state
   const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
-  
+
   const { connector } = useStore();
-  
+
   // Initialize chat client
   const chatClient = useMemo(() => {
     if (!isUsernameSet) return null;
@@ -85,45 +85,44 @@ export function ChatPage() {
     chatClientRef.current = newClient;
     return newClient;
   }, [userToken, username, isUsernameSet]);
-  
+
   // Add a message to the state
-  const addMessage = useCallback(
-    (message: Message) => {
-      console.log("Adding message:", message);
-      // Force a new array reference to ensure React detects the change
-      setMessages((prevMessages) => {
-        console.log("Previous message count:", prevMessages.length);
+  const addMessage = useCallback((message: Message) => {
+    console.log("Adding message:", message);
+    // Force a new array reference to ensure React detects the change
+    setMessages((prevMessages) => {
+      console.log("Previous message count:", prevMessages.length);
 
-        // Check for duplicates based on content, sender, type and timestamp proximity
-        const isDuplicate = prevMessages.some(
-          (existing) =>
-            existing.message === message.message &&
-            existing.senderId === message.senderId &&
-            existing.type === message.type &&
-            (message.type === "direct" ? existing.recipientId === message.recipientId : true) &&
-            (message.type === "room" ? existing.roomId === message.roomId : true) &&
-            // Check if timestamps are within 2 seconds of each other
-            Math.abs(new Date(existing.timestamp).getTime() - new Date(message.timestamp).getTime()) < 2000,
-        );
+      // Check for duplicates based on content, sender, type and timestamp proximity
+      const prev5Messages = prevMessages.slice(-5);
+      const isDuplicate = prev5Messages.some((existing) => {
+        const sameMessage = existing.message === message.message;
+        const sameSender = existing.senderId === message.senderId;
+        const sameType = existing.type === message.type;
+        const sameRecipient = message.type === "direct" ? existing.recipientId === message.recipientId : true;
+        const sameRoom = message.type === "room" ? existing.roomId === message.roomId : true;
+        const timeClose =
+          Math.abs(new Date(existing.timestamp).getTime() - new Date(message.timestamp).getTime()) < 3000;
 
-        if (isDuplicate) {
-          console.log("Duplicate message detected, not adding:", message);
-          return prevMessages; // Return unchanged array
-        }
-
-        const newMessages = [...prevMessages, message];
-        console.log("New message count:", newMessages.length);
-        return newMessages;
+        return sameMessage && sameSender && sameType && sameRecipient && sameRoom && timeClose;
       });
-    },
-    [],
-  );
-  
+
+      if (isDuplicate) {
+        console.log("Duplicate message detected, not adding:", message);
+        return prevMessages; // Return unchanged array
+      }
+
+      const newMessages = [...prevMessages, message];
+      console.log("New message count:", newMessages.length);
+      return newMessages;
+    });
+  }, []);
+
   // Filter messages based on active tab
   const filteredMessages = useMemo(() => {
     return filterMessages(messages, userId, directMessageRecipient, activeRoom);
   }, [messages, userId, directMessageRecipient, activeRoom]);
-  
+
   // Set direct message recipient
   const selectRecipient = useCallback(
     (recipientId: string) => {
@@ -134,7 +133,7 @@ export function ChatPage() {
 
       // Set recipient immediately
       setDirectMessageRecipient(recipientId);
-      
+
       // Switch to DM tab
       if (recipientId) {
         setActiveTab("dm");
@@ -164,7 +163,7 @@ export function ChatPage() {
     },
     [chatClient, setActiveTab],
   );
-  
+
   // Join a room
   const joinRoom = useCallback(
     (roomId: string) => {
@@ -180,7 +179,7 @@ export function ChatPage() {
 
       // First set active room to update UI
       setActiveRoom(roomId);
-      
+
       // Switch to rooms tab
       if (roomId) {
         setActiveTab("rooms");
@@ -201,7 +200,7 @@ export function ChatPage() {
     },
     [chatClient, setActiveTab],
   );
-  
+
   // Send a message based on active tab
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -246,7 +245,7 @@ export function ChatPage() {
     },
     [chatClient, directMessageRecipient, activeRoom, userId, username, addMessage],
   );
-  
+
   // Initialize username from connector
   useEffect(() => {
     if (!connector || !connector!.controller) return;
@@ -268,7 +267,7 @@ export function ChatPage() {
       console.error("Error getting username:", error);
     }
   }, [connector]);
-  
+
   // Setup chat event handlers
   useInitialDataEvents(
     chatClient,
@@ -300,7 +299,7 @@ export function ChatPage() {
   useRoomEvents(chatClient, setAvailableRooms, setIsLoadingRooms);
 
   useConnectionEvents(chatClient);
-  
+
   // Request initial data once
   useEffect(() => {
     const initTimer = setTimeout(() => {
@@ -331,12 +330,12 @@ export function ChatPage() {
       }
     };
   }, [chatClient]);
-  
+
   // Calculate unread counts for badges
   const dmUnreadCount = useMemo(() => {
     return Object.values(unreadMessages).reduce((sum, count) => sum + count, 0);
   }, [unreadMessages]);
-  
+
   // Switch to global chat
   const switchToGlobalChat = useCallback(() => {
     setDirectMessageRecipient("");
@@ -351,7 +350,7 @@ export function ChatPage() {
         value={activeTab}
         onValueChange={(value) => {
           setActiveTab(value as TabType);
-          
+
           // Clear selections when switching tabs
           if (value === "global") {
             setDirectMessageRecipient("");
@@ -384,8 +383,8 @@ export function ChatPage() {
 
         <div className="flex-1">
           <TabsContent value="global" className="h-full m-0">
-            <GlobalChatTab 
-              onMentionClick={() => setIsDMDrawerOpen(true)} 
+            <GlobalChatTab
+              onMentionClick={() => setIsDMDrawerOpen(true)}
               messages={filteredMessages}
               onSendMessage={handleSendMessage}
               isLoadingMessages={isLoadingMessages}
@@ -394,7 +393,7 @@ export function ChatPage() {
           </TabsContent>
 
           <TabsContent value="rooms" className="h-full m-0">
-            <RoomsTab 
+            <RoomsTab
               onMentionClick={() => setIsDMDrawerOpen(true)}
               rooms={availableRooms}
               activeRoom={activeRoom}
@@ -423,9 +422,9 @@ export function ChatPage() {
         </div>
       </Tabs>
 
-      <DMDrawer 
-        isOpen={isDMDrawerOpen} 
-        onClose={() => setIsDMDrawerOpen(false)} 
+      <DMDrawer
+        isOpen={isDMDrawerOpen}
+        onClose={() => setIsDMDrawerOpen(false)}
         onSelectUser={selectRecipient}
         onlineUsers={onlineUsers}
         offlineUsers={offlineUsers}
