@@ -74,16 +74,12 @@ export function createSystemCalls({
     await provider.mint_test_lords(props);
   };
 
-  const bridge_resources_into_realm = async (props: SystemProps.BridgeResourcesIntoRealmProps) => {
-    return await provider.bridge_resources_into_realm(props);
+  const bridge_deposit_into_realm = async (props: SystemProps.BridgeDepositIntoRealmProps) => {
+    return await provider.bridge_deposit_into_realm(props);
   };
 
-  const bridge_start_withdraw_from_realm = async (props: SystemProps.BridgeStartWithdrawFromRealmProps) => {
-    return await provider.bridge_start_withdraw_from_realm(props);
-  };
-
-  const bridge_finish_withdraw_from_realm = async (props: SystemProps.BridgeFinishWithdrawFromRealmProps) => {
-    return await provider.bridge_finish_withdraw_from_realm(props);
+  const bridge_withdraw_from_realm = async (props: SystemProps.BridgeWithdrawFromRealmProps) => {
+    return await provider.bridge_withdraw_from_realm(props);
   };
 
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps) => {
@@ -345,9 +341,8 @@ export function createSystemCalls({
     detach_lords: withAuth(detach_lords),
     mint_test_lords: withAuth(mint_test_lords),
     mint_and_settle_test_realm: withAuth(mint_and_settle_test_realm),
-    bridge_resources_into_realm: withAuth(bridge_resources_into_realm),
-    bridge_start_withdraw_from_realm: withAuth(bridge_start_withdraw_from_realm),
-    bridge_finish_withdraw_from_realm: withAuth(bridge_finish_withdraw_from_realm),
+    bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),
+    bridge_withdraw_from_realm: withAuth(bridge_withdraw_from_realm),
 
     burn_resource_for_labor_production: withAuth(burn_resource_for_labor_production),
     burn_labor_for_resource_production: withAuth(burn_labor_for_resource_production),

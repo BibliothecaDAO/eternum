@@ -171,22 +171,22 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
   });
 
   return (
-    <div className="rounded-lg p-4">
+    <div className=" py-4">
       {isExplorer && !army && freeDirections.length === 0 && (
-        <div className="text-xs text-red-500 mb-4 p-2 bg-red-500/10 border border-red-500/30 rounded-md flex items-center">
+        <div className="text-xs text-red-500 mb-4 p-2 bg-red-500/10 border border-red-500/30  flex items-center">
           <span className="mr-1">⚠️</span> No space available to create an army. Clear adjacent tiles to create an army.
         </div>
       )}
 
       {isExplorer && army && !army.isHome && (
-        <div className="text-xs text-amber-500 mb-4 p-2 bg-amber-500/10 border border-amber-500/30 rounded-md flex items-center">
+        <div className="text-xs p-2 bg-amber-500/10 flex items-center">
           <span className="mr-1">⚠️</span> Army must be at Base to add reinforcements.
         </div>
       )}
 
       {(!army || army.troops.count === 0n) && (
-        <div className="mb-6">
-          <h6 className="text-center mb-2">SELECT TIER</h6>
+        <div className="my-4">
+          <h4 className="text-center mb-4">SELECT TIER</h4>
           <div className="flex justify-center gap-2 mb-2">
             {[TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => (
               <Button
@@ -206,7 +206,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
       )}
 
       <div className="mb-4">
-        <h6 className="text-center mb-2">SELECT TROOP TYPE</h6>
+        <h5 className="text-center my-4">SELECT TROOP TYPE</h5>
 
         <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
           {troops.map((troop) => {
@@ -224,8 +224,8 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
             return (
               <div
                 className={clsx(
-                  "p-3 bg-gold/10 flex flex-col cursor-pointer rounded-md transition-all duration-200",
-                  isCurrentTroopType ? "ring-2 ring-gold" : "opacity-50 hover:opacity-70",
+                  "p-3 bg-gold/5 flex flex-col cursor-pointer transition-all duration-200",
+                  isCurrentTroopType ? "panel-gold" : "opacity-50 hover:opacity-70",
                 )}
                 key={troop.troopType}
                 onClick={() => {
@@ -236,10 +236,10 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
               >
                 <div className="font-bold mb-4">
                   <div className="flex justify-between">
-                    <div className="text-sm font-semibold">{getTroopName(troop.troopType, selectedTier)}</div>
+                    <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
                   </div>
-                  <div className="text-xs font-normal mt-1 mb-2">
-                    Avail. <span className="text-gold">[{currencyFormat(balance ? Number(balance) : 0, 0)}]</span>
+                  <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
+                    Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
                   </div>
                   <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
                     <ResourceIcon
@@ -296,7 +296,7 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
         <Button
           className={clsx(onCancel ? "w-1/2" : "w-full", !canCreate && "opacity-50 cursor-not-allowed")}
           disabled={!canCreate}
-          variant="primary"
+          variant="gold"
           isLoading={isLoading}
           onClick={() =>
             handleBuyArmy(isExplorer, selectedTroopType, selectedTier, troopCount).finally(() => {
@@ -358,27 +358,24 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
 
   return (
     army && (
-      <div className="bg-brown-800/80 border border-gold/30 rounded-lg overflow-hidden">
-        <div className="flex justify-between p-2 text-xs bg-brown-900/80 border-b border-gold/20">
-          <div className="self-center flex flex-row mr-auto px-3 font-bold items-center gap-x-1">
+      <div className=" overflow-hidden">
+        <div className="flex justify-between">
+          <div className="self-center flex flex-row gap-3 mt-4 items-center">
             {army.isHome ? (
               <span className="text-green flex items-center">
                 <span className="w-2 h-2 bg-green rounded-full mr-1"></span>
                 At Base
               </span>
             ) : army.position ? (
-              <span className="text-amber-400 flex items-center">
-                <span className="w-2 h-2 bg-amber-400 rounded-full mr-1"></span>
-                On Map
-              </span>
+              <h6 className=" flex items-center">Army On Map</h6>
             ) : (
               "Unknown"
             )}
             <ViewOnMapIcon position={new PositionInterface(army.position)} />
           </div>
         </div>
-        <div className="flex flex-col relative p-4">
-          <div className="flex justify-between items-center p-2 mb-4 bg-brown-900/50 rounded-md border border-gold/10">
+        <div className="flex flex-col relative my-4">
+          <div className="flex justify-between items-center">
             {editName ? (
               <div className="flex space-x-2 w-full items-center">
                 <TextInput placeholder="Type Name" className="h-full flex-1" onChange={(name) => setNaming(name)} />
@@ -414,7 +411,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               </div>
             ) : (
               <div className="flex flex-row items-center w-full">
-                <h3 className="mr-auto text-lg font-bold">{army.name || "Unnamed Army"}</h3>
+                <h3>{army.name || "Unnamed Army"}</h3>
                 <button
                   className="ml-2 p-1.5 rounded-full hover:bg-gold/20 transition-colors"
                   onClick={() => {

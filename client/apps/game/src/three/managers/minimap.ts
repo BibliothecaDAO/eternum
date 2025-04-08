@@ -9,16 +9,21 @@ import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {
-  ARMY: "/textures/army_label.png",
-  MY_ARMY: "/textures/my_army_label.png",
-  MY_REALM: "/textures/my_realm_label.png",
-  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
-  REALM_WONDER: "/textures/realm_wonder_label.png",
+  ARMY: "/images/labels/enemy_army.png",
+  MY_ARMY: "/images/labels/army.png",
+  MY_REALM: "/images/labels/realm.png",
+  MY_REALM_WONDER: "/images/labels/realm.png",
+  REALM_WONDER: "/images/labels/realm.png",
   STRUCTURES: {
-    [StructureType.Realm]: "/textures/realm_label.png",
-    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+  },
+  MY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
   },
 };
 
@@ -40,8 +45,8 @@ const MINIMAP_CONFIG = {
     },
   },
   SIZES: {
-    STRUCTURE: 10,
-    ARMY: 10,
+    STRUCTURE: 14,
+    ARMY: 14,
     CAMERA: {
       TOP_SIDE_WIDTH_FACTOR: 105,
       BOTTOM_SIDE_WIDTH_FACTOR: 170,
@@ -82,6 +87,13 @@ class Minimap {
   private lastMousePosition: { x: number; y: number } | null = null;
   private mouseStartPosition: { x: number; y: number } | null = null;
 
+  // Entity visibility toggles
+  private showRealms: boolean = true;
+  private showArmies: boolean = true;
+  private showHyperstructures: boolean = true;
+  private showBanks: boolean = true;
+  private showFragmentMines: boolean = true;
+
   constructor(
     worldmapScene: WorldmapScene,
     exploredTiles: Map<number, Map<number, BiomeType>>,
@@ -90,6 +102,10 @@ class Minimap {
     armyManager: ArmyManager,
   ) {
     this.worldmapScene = worldmapScene;
+
+    // Expose the minimap instance globally for UI access
+    (window as any).minimapInstance = this;
+
     this.waitForMinimapElement().then((canvas) => {
       this.canvas = canvas;
       this.loadLabelImages();
@@ -163,14 +179,32 @@ class Minimap {
     if (this.canvas.width > 300) {
       modifier = MINIMAP_CONFIG.EXPANDED_MODIFIER;
     }
-    // Precompute sizes
+
+    // Add zoom-based scaling for icons
+    // As we get closer to MIN_ZOOM_RANGE, we want icons to get smaller
+    const zoomRatio = Math.min(
+      1,
+      (this.mapSize.width - MINIMAP_CONFIG.MIN_ZOOM_RANGE) /
+        (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
+    );
+
+    // Scale from 0.5 (at max zoom) to 2.0 (at min zoom)
+    // This will make icons twice as large when zoomed out while keeping them at current size when zoomed in
+    let zoomScaleFactor = 1;
+    if (this.canvas.width > 400) {
+      zoomScaleFactor = 0.25 + zoomRatio * 0.5;
+    } else {
+      zoomScaleFactor = 0.5 + zoomRatio * 1.5;
+    }
+
+    // Precompute sizes with zoom scaling
     this.structureSize = {
-      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier,
+      width: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.STRUCTURE * this.scaleX * modifier * zoomScaleFactor,
     };
     this.armySize = {
-      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,
@@ -189,6 +223,8 @@ class Minimap {
   }
 
   draw() {
+    if (!this.context) return;
+
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawExploredTiles();
     this.drawStructures();
@@ -197,6 +233,8 @@ class Minimap {
   }
 
   private drawExploredTiles() {
+    if (!this.context) return;
+
     this.exploredTiles.forEach((rows, col) => {
       rows.forEach((biome, row) => {
         const cacheKey = `${col},${row}`;
@@ -223,13 +261,18 @@ class Minimap {
   }
 
   private drawStructures() {
+    if (!this.context) return;
+
     const allStructures = this.structureManager.structures.getStructures();
     for (const [structureType, structures] of allStructures) {
+      // Skip rendering based on toggle settings
+      if (!this.shouldShowStructureType(structureType)) continue;
+
       let labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
       if (!labelImg) continue;
 
       structures.forEach((structure) => {
-        if (structureType === StructureType.Realm) {
+        if (structureType === StructureType.Realm || structureType === StructureType.Village) {
           if (structure.isMine) {
             labelImg = structure.hasWonder ? this.labelImages.get("MY_REALM_WONDER") : this.labelImages.get("MY_REALM");
           } else {
@@ -256,6 +299,8 @@ class Minimap {
   }
 
   private drawArmies() {
+    if (!this.context || !this.showArmies) return;
+
     const allArmies = this.armyManager.getArmies();
     allArmies.forEach((army) => {
       const { x: col, y: row } = army.hexCoords.getNormalized();
@@ -277,6 +322,8 @@ class Minimap {
   }
 
   drawCamera() {
+    if (!this.context) return;
+
     const cameraPosition = this.camera.position;
     const { col, row } = getHexForWorldPosition(cameraPosition);
     const cacheKey = `${col},${row}`;
@@ -315,8 +362,29 @@ class Minimap {
     this.recomputeScales();
   }
 
-  update() {
+  // Set the map to maximum distance for screenshots
+  setMaxDistance() {
+    // Set to maximum distance
+    this.mapSize = {
+      width: MINIMAP_CONFIG.MAX_ZOOM_RANGE,
+      height: MINIMAP_CONFIG.MAP_ROWS_HEIGHT * 3,
+    };
+    this.recomputeScales();
     this.draw();
+  }
+
+  // Center the map at the origin (0,0) for screenshots
+  centerAtOrigin() {
+    this.mapCenter = { col: 0, row: 0 };
+    this.recomputeScales();
+    this.draw();
+  }
+
+  update() {
+    // Only call draw if we have completed initialization
+    if (this.context) {
+      this.draw();
+    }
   }
 
   private handleMouseDown = (event: MouseEvent) => {
@@ -410,7 +478,7 @@ class Minimap {
 
   private handleResize = () => {
     this.recomputeScales();
-    this.draw();
+    if (this.context) this.draw();
   };
 
   private loadLabelImages() {
@@ -431,6 +499,75 @@ class Minimap {
     const img = new Image();
     img.src = path;
     this.labelImages.set(key, img);
+  }
+
+  private shouldShowStructureType(structureType: StructureType): boolean {
+    switch (structureType) {
+      case StructureType.Realm:
+      case StructureType.Village:
+        return this.showRealms;
+      case StructureType.Hyperstructure:
+        return this.showHyperstructures;
+      case StructureType.Bank:
+        return this.showBanks;
+      case StructureType.FragmentMine:
+        return this.showFragmentMines;
+      default:
+        return true;
+    }
+  }
+
+  // Toggle visibility methods
+  toggleRealms(visible: boolean) {
+    this.showRealms = visible;
+    if (this.context) this.draw();
+  }
+
+  toggleArmies(visible: boolean) {
+    this.showArmies = visible;
+    if (this.context) this.draw();
+  }
+
+  toggleHyperstructures(visible: boolean) {
+    this.showHyperstructures = visible;
+    if (this.context) this.draw();
+  }
+
+  toggleBanks(visible: boolean) {
+    this.showBanks = visible;
+    if (this.context) this.draw();
+  }
+
+  toggleFragmentMines(visible: boolean) {
+    this.showFragmentMines = visible;
+    if (this.context) this.draw();
+  }
+
+  // Method to get current visibility states for UI
+  getVisibilityStates() {
+    return {
+      realms: this.showRealms,
+      armies: this.showArmies,
+      hyperstructures: this.showHyperstructures,
+      banks: this.showBanks,
+      fragmentMines: this.showFragmentMines,
+    };
+  }
+
+  // Initialize visibility states based on UI state if available
+  syncVisibilityStates(states: {
+    realms?: boolean;
+    armies?: boolean;
+    hyperstructures?: boolean;
+    banks?: boolean;
+    fragmentMines?: boolean;
+  }) {
+    if (states.realms !== undefined) this.showRealms = states.realms;
+    if (states.armies !== undefined) this.showArmies = states.armies;
+    if (states.hyperstructures !== undefined) this.showHyperstructures = states.hyperstructures;
+    if (states.banks !== undefined) this.showBanks = states.banks;
+    if (states.fragmentMines !== undefined) this.showFragmentMines = states.fragmentMines;
+    if (this.context) this.draw();
   }
 }
 

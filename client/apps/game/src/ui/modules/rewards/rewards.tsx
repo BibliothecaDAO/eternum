@@ -3,6 +3,7 @@ import { HintSection } from "@/ui/components/hints/hint-modal";
 import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getLordsAddress } from "@/utils/addresses";
 import { ContractAddress, formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo, usePrizePool } from "@bibliothecadao/react";
@@ -49,7 +50,7 @@ export const Rewards = () => {
   useEffect(() => {
     const init = async () => {
       const address = getLordsAddress();
-      setLordsAddress(address);
+      setLordsAddress(address as string);
     };
     init();
   }, []);
@@ -112,19 +113,6 @@ export const Rewards = () => {
       setIsLoading(false);
     }
   }, [account, hyperstructure_ids]);
-
-  const registerToLeaderboard = useCallback(async () => {
-    // This function needs to be implemented based on your requirements
-    setIsLoading(true);
-    try {
-      // Implement registration logic here
-      console.log("Registering to leaderboard");
-    } catch (error) {
-      console.error("Error registering to leaderboard", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [account]);
 
   useEffect(() => {
     if (gameEnded) {
@@ -201,7 +189,9 @@ export const Rewards = () => {
               <div className="text-center text-lg font-semibold self-center w-full">
                 <div className="text-sm font-bold uppercase">Your registered points</div>
 
-                <div className="text-lg">{Number(playerRegistredPoints?.registered_points ?? 0)}</div>
+                <div className="text-lg">
+                  {currencyIntlFormat(Number(playerRegistredPoints?.registered_points ?? 0))}
+                </div>
               </div>
             </Compartment>
           </div>
@@ -246,15 +236,6 @@ export const Rewards = () => {
           <div className="flex flex-wrap gap-4">
             <Button variant="primary" isLoading={isLoading} disabled={!registrationClosed} onClick={claimRewards}>
               {registrationClosed ? "Claim Rewards" : "Waiting for registration period to end"}
-            </Button>
-
-            <Button
-              disabled={registrationClosed}
-              variant="primary"
-              isLoading={isLoading}
-              onClick={registerToLeaderboard}
-            >
-              Register to Leaderboard
             </Button>
 
             <Button variant="primary" isLoading={isLoading} onClick={claimConstructionPoints}>

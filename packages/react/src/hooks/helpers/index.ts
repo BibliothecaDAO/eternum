@@ -1,5 +1,6 @@
 export * from "./use-armies";
 export * from "./use-bank";
+export * from "./use-bridge";
 export * from "./use-buildings";
 export * from "./use-fragment-mines";
 export * from "./use-guilds";
@@ -15,3 +16,4 @@ export * from "./use-season-start";
 export * from "./use-stamina";
 export * from "./use-structures";
 export * from "./use-trade";
+

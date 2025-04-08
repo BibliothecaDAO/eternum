@@ -18,17 +18,21 @@ const MAX_INSTANCES = 1000;
 const WONDER_MODEL_INDEX = 4;
 
 const ICONS = {
-  ARMY: "/textures/army_label.png",
-  MY_ARMY: "/textures/my_army_label.png",
-  MY_REALM: "/textures/my_realm_label.png",
-  MY_REALM_WONDER: "/textures/my_realm_wonder_label.png",
-  REALM_WONDER: "/textures/realm_wonder_label.png",
+  ARMY: "/images/labels/enemy_army.png",
+  MY_ARMY: "/images/labels/army.png",
+  MY_REALM: "/images/labels/realm.png",
+  MY_REALM_WONDER: "/images/labels/realm.png",
+  REALM_WONDER: "/images/labels/realm.png",
   STRUCTURES: {
-    [StructureType.Village]: "/images/buildings/construction/castleZero.png",
-    [StructureType.Realm]: "/textures/realm_label.png",
-    [StructureType.Hyperstructure]: "/textures/hyper_label.png",
+    [StructureType.Village]: "/images/labels/enemy_village.png",
+    [StructureType.Realm]: "/images/labels/enemy_realm.png",
+    [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
-    [StructureType.FragmentMine]: "/textures/fragment_mine_label.png",
+    [StructureType.FragmentMine]: "/images/labels/fragment_mine.png",
+  } as Record<StructureType, string>,
+  MY_STRUCTURES: {
+    [StructureType.Village]: "/images/labels/village.png",
+    [StructureType.Realm]: "/images/labels/realm.png",
   } as Record<StructureType, string>,
 };
 
@@ -83,10 +87,10 @@ export class StructureManager {
         if (contentContainer) {
           if (view === CameraView.Far) {
             contentContainer.classList.add("max-w-0", "ml-0");
-            contentContainer.classList.remove("max-w-[200px]", "ml-2");
+            contentContainer.classList.remove("max-w-[250px]", "ml-2");
           } else {
             contentContainer.classList.remove("max-w-0", "ml-0");
-            contentContainer.classList.add("max-w-[200px]", "ml-2");
+            contentContainer.classList.add("max-w-[250px]", "ml-2");
           }
         }
       }
@@ -315,17 +319,19 @@ export class StructureManager {
       "bg-brown/50",
       "hover:bg-brown/90",
       "pointer-events-auto",
+      "h-10",
       structure.isMine ? "text-order-brilliance" : "text-gold",
-      "p-1",
+      "p-0.5",
       "-translate-x-1/2",
-      "text-xs",
+      "text-xxs",
       "flex",
       "items-center",
+      "group",
     );
 
     // Create icon container
     const iconContainer = document.createElement("div");
-    iconContainer.classList.add("w-8", "h-8", "flex-shrink-0");
+    iconContainer.classList.add("w-auto", "h-full", "flex-shrink-0");
 
     // Select appropriate icon
     let iconPath = ICONS.STRUCTURES[structure.structureType];
@@ -333,7 +339,9 @@ export class StructureManager {
       if (structure.hasWonder) {
         iconPath = structure.isMine ? ICONS.MY_REALM_WONDER : ICONS.REALM_WONDER;
       } else {
-        iconPath = structure.isMine ? ICONS.MY_REALM : ICONS.STRUCTURES[StructureType.Realm];
+        iconPath = structure.isMine
+          ? ICONS.MY_STRUCTURES[structure.structureType]
+          : ICONS.STRUCTURES[structure.structureType];
       }
     }
 
@@ -346,31 +354,30 @@ export class StructureManager {
 
     // Create content container with transition
     const contentContainer = document.createElement("div");
+
+    // Add empty div with w-2 for spacing
+    const spacerDiv = document.createElement("div");
+    spacerDiv.classList.add("w-2");
+    contentContainer.appendChild(spacerDiv);
+
     contentContainer.classList.add(
       "flex",
       "flex-col",
-      "transition-all",
+      "transition-width",
       "duration-700",
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      "group-hover:max-w-[250px]",
+      "group-hover:ml-2",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
 
-    // Add owner name and address
     const ownerText = document.createElement("span");
     const displayName = structure.owner.ownerName || `0x${structure.owner.address.toString(16).slice(0, 6)}...`;
-    ownerText.textContent = displayName;
-    ownerText.classList.add("text-xs", "opacity-80");
-
-    // Add guild name if available
-    if (structure.owner.guildName) {
-      const guildText = document.createElement("span");
-      guildText.textContent = structure.owner.guildName;
-      guildText.classList.add("text-xs", "text-gold/70", "italic");
-      contentContainer.appendChild(guildText);
-    }
+    ownerText.textContent = structure.owner.guildName ? `${displayName} [${structure.owner.guildName}]` : displayName;
+    ownerText.classList.add("opacity-80");
 
     // Add structure type and level
     const typeText = document.createElement("strong");
@@ -381,7 +388,6 @@ export class StructureManager {
           : "Foundation"
         : ""
     }`;
-    typeText.classList.add("text-xs");
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);
@@ -389,7 +395,7 @@ export class StructureManager {
 
     const label = new CSS2DObject(labelDiv);
     label.position.copy(position);
-    label.position.y += 1.5;
+    label.position.y += 2;
 
     // Store original renderOrder
     const originalRenderOrder = label.renderOrder;

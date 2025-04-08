@@ -38,7 +38,7 @@ const sideLayerOneFirstCoord = (side: number): Coord => {
     side_first_coord_layer_0 = side_first_coord_layer_0.neighbor(start_direction);
   }
 
-  for (let i = 0; i < SETTLEMENT_BASE_DISTANCE / 2 + SETTLEMENT_SUBSEQUENT_DISTANCE / 2; i++) {
+  for (let i = 0; i < SETTLEMENT_BASE_DISTANCE / 2; i++) {
     side_first_coord_layer_0 = side_first_coord_layer_0.neighbor(triangle_direction);
   }
   return side_first_coord_layer_0;
@@ -50,7 +50,7 @@ const sideDirections = (side: number): Direction[] => {
     [Direction.EAST, Direction.SOUTH_WEST],
     [Direction.WEST, Direction.NORTH_EAST],
     [Direction.WEST, Direction.SOUTH_EAST],
-    [Direction.SOUTH_WEST, Direction.EAST],
+    [Direction.SOUTH_EAST, Direction.WEST],
     [Direction.NORTH_EAST, Direction.WEST],
   ];
   return start_directions[side];

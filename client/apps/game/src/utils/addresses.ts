@@ -15,5 +15,12 @@ export const getRealmsAddress = () => {
 };
 
 export const getLordsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
+  if ((env.VITE_PUBLIC_CHAIN as Chain) == "mainnet") {
+    return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
+  }
+  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources.LORDS[1];
+};
+
+export const getClientFeeRecipient = () => {
+  return env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
 };

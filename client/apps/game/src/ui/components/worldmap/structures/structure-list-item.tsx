@@ -35,12 +35,12 @@ export const StructureListItem = ({
   return (
     <div className="flex justify-between flex-row mt-2 ">
       <div
-        className={`flex w-[27rem] h-full justify-between  ${
+        className={`flex h-full justify-between  ${
           structure.isMine ? "bg-blueish/20" : "bg-red/20"
         } rounded-md border-gold/20 p-2`}
       >
-        <div className="flex w-full justify-between">
-          <div className="flex flex-col w-[45%] justify-between">
+        <div className="grid grid-cols-[2fr_3fr] gap-4">
+          <div className="flex flex-col justify-between">
             <div className="h4 text-xl flex flex-col">
               <div className="text-base font-semibold text-gold">{structureTypeName}</div>
               {!isRealm && <div className="text-sm text-gold/80">{structure.name}</div>}
@@ -51,7 +51,7 @@ export const StructureListItem = ({
 
             {isRealm && <RealmResourcesIO realmEntityId={structure.entityId} />}
           </div>
-          <div className="flex flex-col content-center w-[55%]">
+          <div className="flex flex-col content-center">
             <CompactDefenseDisplay
               troops={guards.map((army) => ({
                 slot: army.slot,
@@ -61,8 +61,9 @@ export const StructureListItem = ({
             <InventoryResources
               max={maxInventory}
               entityId={structure.entityId}
-              className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+              className="flex gap-1 mt-2 no-scrollbar"
               resourcesIconSize="xs"
+              textSize="xxs"
             />
           </div>
         </div>

@@ -9,15 +9,15 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.9.2"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.2.1" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.3.0" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
-achievement = { git = "https://github.com/cartridge-gg/arcade", tag = "v1.2.1" }
+achievement = { git = "https://github.com/edisontim/arcade", branch = "feat/bump-dojo-version" }
 cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
 
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.2.1" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.3.0" }
 
 [[target.starknet-contract]]
 casm = true

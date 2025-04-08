@@ -299,18 +299,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
-  public async bridge_start_withdraw_from_realm(props: SystemProps.BridgeStartWithdrawFromRealmProps) {
-    const { resources, through_bank_id, from_realm_entity_id, signer } = props;
+  public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
+    const { resources, from_structure_id, recipient_address, client_fee_recipient, signer } = props;
 
     const calls = resources.map((resource) => ({
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_bridge_systems`),
-      entrypoint: "start_withdraw",
-      calldata: [through_bank_id, from_realm_entity_id, resource.tokenAddress, resource.amount],
+      entrypoint: "withdraw",
+      calldata: [from_structure_id, recipient_address, resource.tokenAddress, resource.amount, client_fee_recipient],
     }));
     return await this.executeAndCheckTransaction(signer, calls);
   }
 
-  public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
+  /*public async bridge_finish_withdraw_from_realm(props: SystemProps.BridgeFinishWithdrawFromRealmProps) {
     const { donkey_resources, through_bank_id, recipient_address, client_fee_recipient, signer } = props;
 
     const calls = donkey_resources.map((donkey_resource) => ({
@@ -326,10 +326,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     }));
 
     return await this.executeAndCheckTransaction(signer, calls);
-  }
+  }*/
 
-  public async bridge_resources_into_realm(props: SystemProps.BridgeResourcesIntoRealmProps) {
-    const { resources, through_bank_id, recipient_realm_entity_id, client_fee_recipient, signer } = props;
+  public async bridge_deposit_into_realm(props: SystemProps.BridgeDepositIntoRealmProps) {
+    const { resources, recipient_structure_id, client_fee_recipient, signer } = props;
     const approvalCalls = resources.map((resource) => ({
       contractAddress: resource.tokenAddress as string,
       entrypoint: "approve",
@@ -345,8 +345,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "deposit",
       calldata: [
         resource.tokenAddress,
-        through_bank_id,
-        recipient_realm_entity_id,
+        recipient_structure_id,
         resource.amount,
         0, // u128, u128
         client_fee_recipient,

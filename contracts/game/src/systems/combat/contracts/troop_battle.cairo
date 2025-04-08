@@ -89,6 +89,8 @@ pub mod troop_battle_systems {
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
+            let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
+            let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             explorer_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
@@ -101,6 +103,22 @@ pub mod troop_battle_systems {
             // update both explorers
             explorer_aggressor.troops = explorer_aggressor_troops;
             explorer_defender.troops = explorer_defender_troops;
+
+            // update aggressor troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                aggressor_id,
+                explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
+                false,
+            );
+
+            // update defender troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                defender_id,
+                explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
+                false,
+            );
 
             // save or delete explorer
             if explorer_aggressor_troops.count.is_zero() {
@@ -228,11 +246,21 @@ pub mod troop_battle_systems {
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let tick = TickImpl::get_tick_config(ref world);
+            let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             explorer_aggressor_troops
                 .attack(ref guard_troops, defender_biome, troop_stamina_config, troop_damage_config, tick.current());
 
             // update explorer
             explorer_aggressor.troops = explorer_aggressor_troops;
+
+            // update explorer troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                explorer_id,
+                explorer_aggressor_troop_count_before_attack - explorer_aggressor.troops.count,
+                false,
+            );
+
             if explorer_aggressor_troops.count.is_zero() {
                 if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
@@ -348,6 +376,7 @@ pub mod troop_battle_systems {
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
+            let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
             structure_guard_aggressor_troops
                 .attack(
                     ref explorer_defender_troops,
@@ -359,6 +388,15 @@ pub mod troop_battle_systems {
 
             // update explorer
             explorer_defender.troops = explorer_defender_troops;
+
+            // update explorer troop capacity
+            iExplorerImpl::update_capacity(
+                ref world,
+                explorer_id,
+                explorer_defender_troop_count_before_attack - explorer_defender.troops.count,
+                false,
+            );
+
             if explorer_defender.troops.count.is_zero() {
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);

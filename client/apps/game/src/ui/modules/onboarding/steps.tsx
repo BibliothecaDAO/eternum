@@ -155,7 +155,7 @@ export const LocalStepOne = () => {
               >
                 <div className="flex items-center justify-center">
                   {loading ? (
-                    <img src="/images/logos/eternum-animated.png" className="w-5 h-5 mr-1 md:mr-2" />
+                    <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-1 md:mr-2" />
                   ) : (
                     <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
                   )}
@@ -173,7 +173,7 @@ export const LocalStepOne = () => {
         >
           <div className="flex items-center">
             {loading ? (
-              <img src="/images/logos/eternum-animated.png" className="w-5 h-5 mr-1 md:mr-2" />
+              <img src="/images/logos/eternum-loader.png" className="w-5 h-5 mr-1 md:mr-2" />
             ) : (
               <TreasureChest className="!w-5 !h-5 mr-1 md:mr-2 fill-brown text-brown" />
             )}
@@ -187,7 +187,7 @@ export const LocalStepOne = () => {
       >
         <div className="flex items-center gap-2">
           <TreasureChest className="!w-4 !h-4 fill-brown text-brown" />
-          Mint Village Pass
+          Get Village
         </div>
       </Button>
     </>
@@ -391,21 +391,17 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     return elements;
   }, [seasonPassRealms, selectedRealms]);
 
-  const width = "max-w-[600px] w-[40vw]";
-  const height = "max-h-[500px] h-[46vh] xl:h-[52vh] 2xl:h-[46vh]";
-  const size = `${width} ${height}`;
-
   return (
     <motion.div
-      className="flex justify-center z-50 px-4 md:px-0 flex-col"
+      className="flex justify-center z-50 px-4 md:px-0 flex-col "
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 20 }}
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
       <div
-        className={`backdrop-blur-lg bg-black/20 self-center border-[0.5px] border-gradient rounded-lg text-gold w-full overflow-hidden relative z-50 backdrop-filter backdrop-blur-[24px] ${size} 
-		shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] p-8`}
+        className={`self-center border-[0.5px] border-gradient rounded-lg text-gold w-full relative z-50 backdrop-filter
+		 p-8`}
       >
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
@@ -433,7 +429,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 lg:h-[22vh] lg:max-h-[22vh] lg:min-h-[22vh] min-h-[20vh] h-[20vh] max-h-[20vh] xl:h-[20vh] xl:max-h-[20vh] xl:min-h-[20vh] 2xl:h-[22vh] 2xl:max-h-[22vh] 2xl:min-h-[22vh] overflow-hidden overflow-y-auto no-scrollbar">
+          <div className="flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
             {seasonPassElements}
           </div>
 
@@ -448,7 +444,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
               }`}
             >
               {loading ? (
-                <img src="/images/logos/eternum-animated.png" className="w-7" />
+                <img src="/images/logos/eternum-loader.png" className="w-7" />
               ) : (
                 <div className="text-lg !font-normal">
                   {settleableRealms.length === 0 ? "Select Realms & Locations" : `Settle (${settleableRealms.length})`}

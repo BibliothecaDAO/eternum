@@ -252,14 +252,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               return (
                 <div key={armyType} className="border border-gold/20 rounded-md">
                   <button
-                    className="flex w-full justify-between items-center p-2 bg-gold/10 cursor-pointer hover:bg-gold/20 transition-colors"
+                    className="flex w-full justify-between items-center p-2 bg-gold/5 cursor-pointer hover:bg-gold/20 transition-colors"
                     onClick={() => toggleArmyType(armyType)}
                   >
                     <div className="flex items-center">
-                      <h4 className="text-gold font-medium">{armyType}</h4>
+                      <h4 className="font-medium">{armyType}</h4>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center text-xs text-gold/70 bg-gold/10 rounded-md px-2 py-0.5">
+                      <div className="flex items-center text-xs text-gold/70 bg-gold/5 rounded-md px-2 py-0.5">
                         {militaryBuildings.map((buildingType, idx) => {
                           const building = BuildingType[buildingType as keyof typeof BuildingType];
                           const info = getMilitaryBuildingInfo(building);
@@ -277,7 +277,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         })}
                         {militaryBuildings.length} buildings
                       </div>
-                      <div className="text-gold ml-2">
+                      <div className="ml-2">
                         {expandedTypes[armyType] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       </div>
                     </div>
@@ -312,8 +312,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           return (
                             <BuildingCard
                               className={clsx("border border-gold/10", {
-                                "bg-emerald-900/20": canBuild,
-                                "border-emerald-700/50": canBuild,
+                                "bg-emerald-900/5": canBuild,
+                                "border-emerald-700/5": canBuild,
                               })}
                               key={index}
                               buildingId={building}
@@ -354,11 +354,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   return (
     <div className={`${className}`}>
-      <div className="flex justify-between items-center px-3 py-2 bg-brown/30 border-b border-gold/20">
-        <div className="text-gold text-sm font-medium">Building Costs</div>
+      <div className="flex justify-between items-center px-3 py-2  border-b border-gold/20">
+        <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
           <label className="inline-flex items-center cursor-pointer">
-            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : "text-gold"}`}>Standard</span>
+            <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Standard</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -368,7 +368,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
               />
               <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
             </div>
-            <span className={`ml-2 text-xs ${useSimpleCost ? "text-gold" : "text-gold/50"}`}>Simple</span>
+            <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Simple</span>
           </label>
           <HintModalButton className="" section={HintSection.Buildings} />
         </div>
@@ -379,7 +379,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         onChange={(index: any) => {
           setSelectedTab(index);
         }}
-        className="construction-panel-selector h-full"
+        className="construction-panel-selector h-full mt-2"
       >
         <Tabs.List className="construction-tabs-selector">
           {tabs.map((tab, index) => (
@@ -425,7 +425,7 @@ const BuildingCard = ({
     <div
       onClick={onClick}
       className={clsx(
-        "text-gold bg-brown/30 overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded-xl",
+        " overflow-hidden  text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded",
         {
           "!border-lightest": active,
         },
@@ -442,7 +442,7 @@ const BuildingCard = ({
         className="absolute inset-0 w-full h-full object-contain"
       />
       {(!hasFunds || !hasPopulation) && (
-        <div className="absolute w-full h-full bg-brown/70 p-4 text-xs flex justify-center">
+        <div className="absolute w-full h-full bg-brown/50 p-4 text-xs flex justify-center">
           <div className="self-center flex items-center space-x-2">
             {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
             {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
@@ -450,7 +450,7 @@ const BuildingCard = ({
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 p-2">
-        <div className="truncate">{buildingName}</div>
+        <h6 className="truncate">{buildingName}</h6>
         <InfoIcon
           onMouseEnter={() => {
             setTooltip({
@@ -523,93 +523,114 @@ export const ResourceInfo = ({
   }, [resourceId]);
 
   return (
-    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
-      <Headline className="pb-3">
-        <div className=" flex gap-4">
-          <ResourceIcon className="self-center" resource={resourceById || ""} size="md" /> <div>Building </div>
+    <div className="flex flex-col p-3 space-y-3 text-sm  ">
+      <Headline className="pb-2 border-b border-gold/20 mb-2 ">
+        <div className="flex justify-between items-center w-full gap-3">
+          <div className="flex items-center gap-2">
+            <ResourceIcon className="self-center" resource={resourceById || ""} size="md" />
+            <h6 className="">{resourceById} Production</h6>
+          </div>
           {hintModal && <HintModalButton section={HintSection.Buildings} />}
-        </div>{" "}
+        </div>
       </Headline>
 
-      {isPaused && <div className="py-3 font-bold"> ⚠️ Building Production Paused </div>}
+      {isPaused && (
+        <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
+        {resourceById && (
+          <div>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
+            <div className="flex items-center gap-2 mt-1">
+              <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
+              <ResourceIcon className="self-center" resource={resourceById || ""} size="xl" />
+              <h6 className="text-gold/80">{resourceById || ""}</h6>
+            </div>
+          </div>
+        )}
         <div>
           {population !== 0 && (
-            <div className="font-bold uppercase">
-              <span className="font-bold">Population </span> <br />+{population}{" "}
+            <div className="mb-2">
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
+              <h6 className="text-gold text-lg font-semibold">+{population}</h6>
             </div>
           )}
 
           {capacity !== 0 && (
-            <div className="pt-3 uppercase">
-              <span className="font-bold">Max population capacity </span>
-              <br /> +{capacity}
+            <div>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Pop. Capacity Grant</h6>
+              <h6 className="text-gold text-lg font-semibold">+{capacity}</h6>
             </div>
           )}
         </div>
+      </div>
 
-        {resourceById && (
-          <div className="uppercase">
-            <div className="w-full font-bold">Produces</div>
-
-            <div className="flex gap-2">
-              + {amountProducedPerTick}
-              <ResourceIcon className="self-center" resource={resourceById || ""} size="md" />
-              {resourceById || ""} per/s
-            </div>
+      {Object.keys(cost).length > 0 && (
+        <>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Consumed per Second
+          </h6>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.keys(cost).map((resourceId) => {
+              const balance = getBalance(
+                entityId || 0,
+                cost[Number(resourceId)].resource,
+                currentDefaultTick,
+                dojo.setup.components,
+              );
+              return (
+                <ResourceCost
+                  key={resourceId}
+                  type="horizontal"
+                  resourceId={cost[Number(resourceId)].resource}
+                  amount={cost[Number(resourceId)].amount}
+                  balance={balance.balance}
+                  size="lg"
+                />
+              );
+            })}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
-      <div className="font-bold uppercase">consumed per/s</div>
-      <div className="grid grid-cols-2 gap-2">
-        {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(
-            entityId || 0,
-            cost[Number(resourceId)].resource,
-            currentDefaultTick,
-            dojo.setup.components,
-          );
+      {Object.keys(buildingCost).length > 0 && (
+        <>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.keys(buildingCost).map((resourceId, index) => {
+              const balance = getBalance(
+                entityId || 0,
+                buildingCost[Number(resourceId)].resource,
+                currentDefaultTick,
+                dojo.setup.components,
+              );
+              return (
+                <ResourceCost
+                  key={index}
+                  type="horizontal"
+                  resourceId={buildingCost[Number(resourceId)].resource}
+                  amount={buildingCost[Number(resourceId)].amount}
+                  balance={balance.balance}
+                  size="lg"
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
 
-          return (
-            <ResourceCost
-              key={resourceId}
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
-
-      <div className="pt-2 font-bold uppercase">Building Creation Cost</div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(
-            entityId || 0,
-            buildingCost[Number(resourceId)].resource,
-            currentDefaultTick,
-            dojo.setup.components,
-          );
-          return (
-            <ResourceCost
-              key={index}
-              resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
       {consumedBy.length > 0 && (
         <>
-          <div className="pt-1 font-bold uppercase ">Consumed by</div>
-          <div className="flex flex-row">
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10 flex items-center gap-2">
+            <ResourceIcon className="self-center" resource={resourceById || ""} size="lg" /> Consumed By
+          </h6>
+          <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
               consumedBy.map((resourceId) => (
-                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="sm" />
               )),
             )}
           </div>
@@ -638,6 +659,7 @@ export const BuildingInfo = ({
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
+  const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;
 
   const buildingCost = getBuildingCosts(entityId ?? 0, dojo.setup.components, buildingId, useSimpleCost) || [];
 
@@ -648,16 +670,25 @@ export const BuildingInfo = ({
   const extraStorehouseCapacityKg =
     buildingId === BuildingType.Storehouse ? configManager.getCapacityConfigKg(CapacityConfig.Storehouse) : 0;
 
-  let ongoingCost =
-    resourceProduced !== undefined
-      ? (useSimpleCost
-          ? configManager.simpleSystemResourceInputs[resourceProduced]
-          : configManager.complexSystemResourceInputs[resourceProduced]) || []
-      : [];
+  let ongoingCost: any[] = [];
+  if (resourceProduced !== undefined) {
+    const costs = useSimpleCost
+      ? configManager.simpleSystemResourceInputs[resourceProduced]
+      : configManager.complexSystemResourceInputs[resourceProduced];
+    if (costs) {
+      ongoingCost = Object.values(costs); // Convert object to array
+    }
+  }
 
   const structure = getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId || 0)]));
 
-  if (buildingId == BuildingType.ResourceDonkey && structure?.metadata.has_wonder && ongoingCost.length > 0) {
+  // Ensure ongoingCost is an array before attempting to use adjustWonderLordsCost
+  if (
+    buildingId == BuildingType.ResourceDonkey &&
+    structure?.metadata.has_wonder &&
+    Array.isArray(ongoingCost) &&
+    ongoingCost.length > 0
+  ) {
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
@@ -669,85 +700,89 @@ export const BuildingInfo = ({
   }, [resourceProduced]);
 
   return (
-    <div className="flex flex-col text-gold text-sm p-2 space-y-1">
-      <Headline className="pb-3">
-        <div className="flex gap-2">
-          <div className="self-center">{name}</div>
+    <div className="flex flex-col p-3 space-y-3 text-sm">
+      <Headline className="pb-2 border-b border-gold/20 mb-2">
+        <div className="flex justify-between items-center w-full gap-3">
+          <div className="flex items-center gap-2">
+            <h6>{name}</h6>
+          </div>
           {hintModal && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
 
-      {isPaused && <div className="py-3 font-bold">⚠️ Building Production Paused</div>}
+      {isPaused && (
+        <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           {population !== 0 && (
-            <div className="font-bold uppercase">
-              <span className="font-bold">Population</span>
-              <br />+{population}
+            <div className="mb-2">
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
+              <span className="text-gold text-lg font-semibold">+{population}</span>
             </div>
           )}
           {capacity !== 0 && (
-            <div className="pt-3 uppercase">
-              <span className="font-bold">Max population capacity</span>
-              <br />+{capacity}
+            <div>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Population Grant</h6>
+              <span className="text-gold text-lg font-semibold">+{capacity}</span>
             </div>
           )}
         </div>
-        {extraStorehouseCapacityKg !== 0 && (
-          <div>
-            <span className="w-full font-bold uppercase">Max resource capacity</span>
-            <br />+{extraStorehouseCapacityKg.toLocaleString()} kg
-          </div>
-        )}
-        {resourceProduced !== 0 && (
-          <div className="uppercase">
-            <div className="w-full font-bold">Produces</div>
-            <div className="flex gap-2">
-              +{perTick}
-              <ResourceIcon
-                className="self-center"
-                resource={findResourceById(resourceProduced)?.trait || ""}
-                size="md"
-              />
-              {findResourceById(resourceProduced)?.trait || ""}
+        <div>
+          {extraStorehouseCapacityKg !== 0 && (
+            <div className="mb-2">
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Resource Capacity</h6>
+              <span className="text-gold text-lg font-semibold">+{extraStorehouseCapacityKg.toLocaleString()} kg</span>
             </div>
-          </div>
-        )}
+          )}
+          {resourceProducedName && perTick !== 0 && (
+            <div>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-lg font-semibold text-green-400">+{perTick}</span>
+                <ResourceIcon className="self-center" resource={resourceProducedName} size="sm" />
+                <span className="text-gold/80">{resourceProducedName}</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {ongoingCost.length > 0 ? (
+      {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
         <>
-          <div className="font-bold uppercase">consumed per/s</div>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Consumed per Second
+          </h6>
           <div className="grid grid-cols-2 gap-2">
-            {resourceProduced !== 0 &&
-              Object.keys(ongoingCost).map((resourceId, index) => {
-                const balance = getBalance(
-                  entityId || 0,
-                  ongoingCost[Number(resourceId)].resource,
-                  currentDefaultTick,
-                  dojo.setup.components,
-                );
-                return (
-                  <ResourceCost
-                    key={`ongoing-cost-${index}`}
-                    type="horizontal"
-                    resourceId={ongoingCost[Number(resourceId)].resource}
-                    amount={ongoingCost[Number(resourceId)].amount}
-                    balance={balance.balance}
-                  />
-                );
-              })}
+            {ongoingCost.map((costItem, index) => {
+              if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
+              const balance = getBalance(entityId || 0, costItem.resource, currentDefaultTick, dojo.setup.components);
+              return (
+                <ResourceCost
+                  key={`ongoing-cost-${index}`}
+                  type="horizontal"
+                  className="!text-xs"
+                  resourceId={costItem.resource}
+                  amount={costItem.amount}
+                  balance={balance.balance}
+                />
+              );
+            })}
           </div>
         </>
-      ) : (
-        <div className="text-gold/70 italic text-sm">No production costs in this mode</div>
-      )}
+      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not simple mode
+        <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
+          No ongoing resource costs in this mode.
+        </div>
+      ) : null}
 
-      {buildingCost.length !== 0 && (
+      {Object.keys(buildingCost).length !== 0 && (
         <>
-          <div className="pt-2 font-bold uppercase">Building Creation Cost</div>
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
+          <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
                 entityId || 0,
@@ -759,6 +794,7 @@ export const BuildingInfo = ({
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
+                  className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
@@ -771,11 +807,11 @@ export const BuildingInfo = ({
 
       {usedIn.length > 0 && (
         <>
-          <div className="pt-3 pb-1 font-bold uppercase">Consumed by</div>
-          <div className="flex flex-row">
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Consumed By</h6>
+          <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
               usedIn.map((resourceId) => (
-                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="md" />
+                <ResourceIcon key={resourceId} resource={findResourceById(resourceId || 0)?.trait || ""} size="sm" />
               )),
             )}
           </div>

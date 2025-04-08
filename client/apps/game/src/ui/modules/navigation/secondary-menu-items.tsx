@@ -7,21 +7,25 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
 import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has } from "@dojoengine/recs";
+
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
 
 export const SecondaryMenuItems = () => {
   const {
     setup: {
-      components: {},
+      components: {
+        events: { SeasonEnded },
+      },
     },
   } = useDojo();
 
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { connector } = useAccountStore();
 
-  // todo: fix this
-  const gameEnded = false;
+  const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -51,7 +55,7 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-    if (gameEnded) {
+    if (hasSeasonEnded) {
       buttons.push({
         button: (
           <CircleButton
@@ -67,11 +71,12 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [structureEntityId, gameEnded]);
+  }, [structureEntityId, hasSeasonEnded]);
 
   return (
-    <div className="flex ">
+    <div className="flex panel-wood ">
       <div className="top-right-navigation-selector self-center flex ">
+        <HomeButton />
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
@@ -102,12 +107,11 @@ export const SecondaryMenuItems = () => {
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
           image={BuildingThumbs.settings}
-          label={"Support"}
+          label={"Settings"}
           size="md"
           onClick={() => togglePopup(settings)}
         />
-        <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
-        <HomeButton />
+        <Controller />
       </div>
     </div>
   );
