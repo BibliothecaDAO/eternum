@@ -60,7 +60,7 @@ enum BuildingFilenames {
   Mine = "mine.glb",
   LumberMill = "lumber_mill.glb",
   Dragonhide = "dragonhide.glb",
-  Wonder = "wonder.glb",
+  Wonder = "wonder2.glb",
   HyperstructureInit = "hyperstructure_init.glb",
   HyperstructureHalf = "hyperstructure_half.glb",
   Hyperstructure = "hyperstructure.glb",
