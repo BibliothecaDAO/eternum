@@ -38,10 +38,11 @@ export default class InstancedModel {
           return;
         }
         let material = child.material;
-        if (name === StructureType[StructureType.FragmentMine] && child.name.includes("crystal")) {
+        if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
         const tmp = new THREE.InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
+        tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
