@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-// import "./App.css";
 import LoginForm from "./ui/LoginForm";
-import MessageInput from "./MessageInput";
-import ChatClient from "././ui/MessageInput
 import MessageGroupComponent from "./ui/MessageGroup";
+import MessageInput from "./ui/MessageInput";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import Button from "@/ui/elements/button";
-import CircleButton from "@/ui/elements/circle-button";
+import useStore from "@/shared/store";
+import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./lib/filterUtils";
+import { groupMessagesBySender } from "./lib/messageUtils";
+import { generateUserCredentials, initialToken, initialUserId } from "./lib/userCredentials";
+import ChatClient from "./model/client";
+import { Message, Room, User } from "./model/types";
 import {
   useConnectionEvents,
   useDirectMessageEvents,
@@ -16,11 +17,7 @@ import {
   useRoomEvents,
   useRoomMessageEvents,
   useUserEvents,
-} from "./hooks/useSocketEvents";
-import { filterMessages, filterRoomsBySearch, filterUsersBySearch, sortMessagesByTime } from "./lib/filterUtils";
-import { groupMessagesBySender } from "./lib/messageUtils";
-import { generateUserCredentials, initialToken, initialUserId } from "./lib/userCredentials";
-import { Message, Room, User } from "./model/types";
+} from "./model/useSocketEvents";
 
 function ChatModule() {
   // User state
@@ -35,7 +32,7 @@ function ChatModule() {
   // Use a ref to hold the chat client instance to ensure stability across renders
   const chatClientRef = useRef<ChatClient | null>(null);
 
-  const { connector } = useAccountStore();
+  const { connector } = useStore();
 
   // Initialize chat client after username is set
   const chatClient = useMemo(() => {
