@@ -37,8 +37,8 @@ interface DMTabProps {
   userId: string;
 }
 
-export function DMTab({ 
-  onNewDMClick, 
+export function DMTab({
+  onNewDMClick,
   onlineUsers,
   offlineUsers,
   unreadMessages,
@@ -48,7 +48,7 @@ export function DMTab({
   messageGroups,
   onSendMessage,
   isLoadingMessages,
-  userId
+  userId,
 }: DMTabProps) {
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,8 +56,8 @@ export function DMTab({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ 
-        behavior: isInitialScrollRef.current ? "auto" : "smooth" 
+      scrollRef.current.scrollIntoView({
+        behavior: isInitialScrollRef.current ? "auto" : "smooth",
       });
       isInitialScrollRef.current = false;
     }
@@ -69,6 +69,7 @@ export function DMTab({
     setInputValue("");
   };
 
+  // @ts-ignore
   const handleCloseDM = (e: React.MouseEvent, userId: string) => {
     e.stopPropagation();
     if (directMessageRecipient === userId) {
@@ -78,8 +79,8 @@ export function DMTab({
 
   // If a direct message recipient is selected, show the chat
   if (directMessageRecipient) {
-    const activeUser = [...onlineUsers, ...offlineUsers].find(u => u.id === directMessageRecipient);
-    
+    const activeUser = [...onlineUsers, ...offlineUsers].find((u) => u.id === directMessageRecipient);
+
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 p-2 pt-0 border-b bg-background sticky top-14 z-10">
@@ -209,9 +210,7 @@ export function DMTab({
           )}
 
           {onlineUsers.length === 0 && offlineUsers.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No users available
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No users available</div>
           )}
         </div>
       </ScrollArea>

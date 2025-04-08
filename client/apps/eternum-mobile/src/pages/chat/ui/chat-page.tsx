@@ -48,7 +48,9 @@ export function ChatPage() {
   const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
   // Loading states
+  // @ts-ignore
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  // @ts-ignore
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
@@ -348,6 +350,7 @@ export function ChatPage() {
   }, [unreadMessages]);
 
   // Switch to global chat
+  // @ts-ignore
   const switchToGlobalChat = useCallback(() => {
     setDirectMessageRecipient("");
     setActiveRoom("");
