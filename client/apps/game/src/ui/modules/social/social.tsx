@@ -10,6 +10,7 @@ import { Tabs } from "@/ui/elements/tab";
 import { ContractAddress, getPlayerInfo, LeaderboardManager, PlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { RefreshCw, Shapes, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./end-season-button";
 import { PlayerId } from "./player-id";
@@ -25,8 +26,6 @@ export const Social = () => {
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUpdateLoading, setIsUpdateLoading] = useState(false);
   const [isRegisterLoading, setIsRegisterLoading] = useState(false);
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
   const [isUpdatePointsLoading, setIsUpdatePointsLoading] = useState(false);
@@ -94,7 +93,6 @@ export const Social = () => {
 
   useEffect(() => {
     setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
-    setIsLoading(false);
   }, [playersByRank]);
 
   const viewGuildMembers = (guildEntityId: ContractAddress) => {
@@ -120,13 +118,23 @@ export const Social = () => {
     () => [
       {
         key: "Players",
-        label: <div>Players</div>,
+        label: (
+          <div className="flex items-center gap-2">
+            <Users size={16} />
+            <span>Players</span>
+          </div>
+        ),
         component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
       {
         key: "Tribes",
-        label: <div>Tribes</div>,
+        label: (
+          <div className="flex items-center gap-2">
+            <Shapes size={16} />
+            <span>Tribes</span>
+          </div>
+        ),
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
@@ -145,7 +153,7 @@ export const Social = () => {
 
   return (
     <ExpandableOSWindow
-      width="800px"
+      width="900px"
       widthExpanded="400px"
       onClick={() => togglePopup(social)}
       show={isOpen}
@@ -164,34 +172,49 @@ export const Social = () => {
         }}
         className="h-full"
       >
-        <Tabs.List>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab.key}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
+        <div className="flex flex-col h-full">
+          <Tabs.List className="mb-2 px-1">
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                {tab.label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
 
-        <div className="flex justify-center gap-8 mt-8">
-          <EndSeasonButton />
-          <Button
-            isLoading={isRegisterLoading || isSharePointsLoading}
-            variant="secondary"
-            onClick={() => {
-              claimConstructionPoints();
-              claimSharePoints();
-            }}
-          >
-            Claim All Points
-          </Button>
-          <Button isLoading={isUpdatePointsLoading} variant="secondary" onClick={handleUpdatePoints}>
-            Update Points
-          </Button>
+          <div className="flex justify-center gap-4 mt-1 mb-3 px-4">
+            <Button
+              isLoading={isRegisterLoading || isSharePointsLoading}
+              variant="gold"
+              onClick={() => {
+                claimConstructionPoints();
+                claimSharePoints();
+              }}
+              className="flex-1 flex justify-center items-center py-2"
+            >
+              Claim All Points
+            </Button>
+
+            <Button
+              isLoading={isUpdatePointsLoading}
+              variant="secondary"
+              onClick={handleUpdatePoints}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={14} />
+              Update
+            </Button>
+
+            <EndSeasonButton className="flex items-center" />
+          </div>
+
+          <Tabs.Panels className="overflow-hidden flex-1">
+            {tabs.map((tab) => (
+              <Tabs.Panel key={tab.key} className="h-full">
+                {tab.component}
+              </Tabs.Panel>
+            ))}
+          </Tabs.Panels>
         </div>
-
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab) => (
-            <Tabs.Panel key={tab.key}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
       </Tabs>
     </ExpandableOSWindow>
   );

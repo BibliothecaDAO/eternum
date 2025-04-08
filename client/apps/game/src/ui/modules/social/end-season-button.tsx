@@ -5,7 +5,11 @@ import { configManager, ContractAddress, LeaderboardManager } from "@bibliotheca
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useMemo, useState } from "react";
 
-export const EndSeasonButton = () => {
+interface EndSeasonButtonProps {
+  className?: string;
+}
+
+export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
   const dojo = useDojo();
   const {
     setup,
@@ -35,14 +39,6 @@ export const EndSeasonButton = () => {
     return percentageOfPoints >= 100;
   }, [percentageOfPoints]);
 
-  const gradient = useMemo(() => {
-    const filledPercentage = percentageOfPoints;
-    const emptyPercentage = 1 - percentageOfPoints;
-    return `linear-gradient(to right, #f3c99f80 ${filledPercentage}%, #f3c99f80 ${filledPercentage}%, #0000000d ${filledPercentage}%, #0000000d ${
-      filledPercentage + emptyPercentage
-    }%)`;
-  }, [percentageOfPoints]);
-
   const endGame = useCallback(async () => {
     if (!hasReachedFinalPoints || isSeasonOver) {
       return;
@@ -62,6 +58,7 @@ export const EndSeasonButton = () => {
       variant="primary"
       isLoading={isLoading}
       disabled={!hasReachedFinalPoints || isSeasonOver}
+      className={className}
       onMouseOver={() => {
         setTooltip({
           position: "bottom",
