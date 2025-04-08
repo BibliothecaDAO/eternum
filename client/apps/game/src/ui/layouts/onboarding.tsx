@@ -1,7 +1,6 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
 import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
-import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
@@ -261,7 +260,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               </Button>
             </a>
           </div>
-          <a
+          {/* <a
             className="cursor-pointer text-lg w-full"
             href={`https://empire.realms.world/trade`}
             target="_blank"
@@ -278,7 +277,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
                 <span className="font-medium">Bridge in Lords</span>
               </div>
             </Button>
-          </a>
+          </a> */}
         </div>
       </div>
     )

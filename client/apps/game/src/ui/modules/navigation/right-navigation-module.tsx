@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
 import { Bridge } from "@/ui/components/bridge/bridge";
@@ -19,7 +20,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  console.log("structures", structures);
+  const { account: ConnectedAccount } = useAccountStore();
 
   const navigation = useMemo(
     () => [
@@ -79,38 +80,42 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
         isOffscreen ? "translate-x-[83%]" : ""
       }`}
     >
-      <motion.div
-        variants={{
-          hidden: { x: "100%" },
-          visible: { x: "0%", transition: { duration: 0.5 } },
-        }}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col justify-start pointer-events-auto h-[60vh]"
-      >
-        <div className="flex flex-col mb-auto">
-          {navigation.map((item, index) => (
-            <div key={index}>{item.button}</div>
-          ))}
-        </div>
-      </motion.div>
+      {ConnectedAccount && (
+        <>
+          <motion.div
+            variants={{
+              hidden: { x: "100%" },
+              visible: { x: "0%", transition: { duration: 0.5 } },
+            }}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col justify-start pointer-events-auto h-[60vh]"
+          >
+            <div className="flex flex-col mb-auto">
+              {navigation.map((item, index) => (
+                <div key={index}>{item.button}</div>
+              ))}
+            </div>
+          </motion.div>
 
-      <BaseContainer
-        className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
-      >
-        <Suspense fallback={<div className="p-8">Loading...</div>}>
-          {view === RightView.ResourceTable && !!structureEntityId && (
-            <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-              <EntityResourceTable entityId={structureEntityId} />
-            </div>
-          )}
-          {view === RightView.Bridge && (
-            <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-              <Bridge structures={structures} />
-            </div>
-          )}
-        </Suspense>
-      </BaseContainer>
+          <BaseContainer
+            className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
+          >
+            <Suspense fallback={<div className="p-8">Loading...</div>}>
+              {view === RightView.ResourceTable && !!structureEntityId && (
+                <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <EntityResourceTable entityId={structureEntityId} />
+                </div>
+              )}
+              {view === RightView.Bridge && (
+                <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <Bridge structures={structures} />
+                </div>
+              )}
+            </Suspense>
+          </BaseContainer>
+        </>
+      )}
     </div>
   );
 };
