@@ -52,6 +52,7 @@ pub mod quest_systems {
     };
     use s1_eternum::models::structure::{StructureMetadataStoreImpl, StructureOwnerStoreImpl};
     use s1_eternum::models::troop::ExplorerTroops;
+    use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::quest::constants::{VERSION};
     use s1_eternum::models::map::Tile;
