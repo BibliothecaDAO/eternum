@@ -48,6 +48,20 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     [hyperstructures],
   );
 
+  // Calculate counts for each filter category
+  const filterCounts = useMemo(() => {
+    const completedStructures = hyperstructuresList.filter(
+      (entity) => getHyperstructureProgress(entity.entity_id, components).percentage === 100,
+    );
+
+    return {
+      all: hyperstructuresList.length,
+      mine: myHyperstructureIds.length,
+      completed: completedStructures.length,
+      "in-progress": hyperstructuresList.length - completedStructures.length,
+    };
+  }, [hyperstructuresList, myHyperstructureIds, components]);
+
   // Filter and search the hyperstructures list
   const filteredHyperstructures = useMemo(() => {
     let filtered = hyperstructuresList;
@@ -64,11 +78,15 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
         break;
       case "completed":
         // We'll check progress in the component so we don't need hook in filter
-        filtered = filtered.filter(() => true);
+        filtered = filtered.filter(
+          (entity) => getHyperstructureProgress(entity.entity_id, components).percentage === 100,
+        );
         break;
       case "in-progress":
         // We'll check progress in the component so we don't need hook in filter
-        filtered = filtered.filter(() => true);
+        filtered = filtered.filter(
+          (entity) => getHyperstructureProgress(entity.entity_id, components).percentage !== 100,
+        );
         break;
       default:
         // "all" - no additional filtering
@@ -81,13 +99,16 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   // Filter button component
   const FilterButton = ({ label, value }: { label: string; value: FilterOption }) => (
     <button
-      className={clsx("px-3 py-1 text-xs rounded-md transition-colors", {
+      className={clsx("px-3 py-1 text-xxs rounded-md transition-colors flex items-center gap-1.5", {
         "bg-gold/20 text-gold": activeFilter === value,
         "hover:bg-gray-700/30": activeFilter !== value,
       })}
       onClick={() => setActiveFilter(value)}
     >
-      {label}
+      <span>{label}</span>
+      <span className={clsx("rounded-full px-1 py-0.5 text-[10px] font-medium bg-gold/30 text-gold", {})}>
+        {filterCounts[value]}
+      </span>
     </button>
   );
 
@@ -123,7 +144,7 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
                 placeholder="Search hyperstructures..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold"
+                className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold text-gold"
               />
             </div>
 
