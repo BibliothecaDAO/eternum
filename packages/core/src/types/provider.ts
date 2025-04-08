@@ -597,8 +597,6 @@ export interface SetStaminaRefillConfigProps extends SystemSigner {
   start_boost_tick_count: num.BigNumberish;
 }
 
-export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
-
 export interface SetSettlementConfigProps extends SystemSigner {
   center: num.BigNumberish;
   base_distance: num.BigNumberish;
@@ -822,14 +820,6 @@ export interface ExplorerAddProps extends SystemSigner {
   amount: number;
   /** Direction to the explorer's home */
   home_direction: number;
-}
-
-/**
- * Properties for deleting an explorer
- */
-export interface ExplorerDeleteProps extends SystemSigner {
-  /** ID of the explorer to delete */
-  explorer_id: number;
 }
 
 /**
