@@ -6,11 +6,33 @@ import {
   getRealmInfo,
   ID,
   RESOURCE_TIERS,
+  ResourcesIds,
   StructureType,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
+
+const TIER_DISPLAY_NAMES: Record<string, string> = {
+  lords: "Lords & Fragments",
+  labor: "Labor",
+  military: "Military",
+  transport: "Transport",
+  food: "Food",
+  common: "Common",
+  uncommon: "Uncommon",
+  rare: "Rare",
+  unique: "Unique",
+  mythic: "Mythic",
+};
+
+const alwaysShowResources = [
+  ResourcesIds.Lords,
+  ResourcesIds.Labor,
+  ResourcesIds.Donkey,
+  ResourcesIds.Fish,
+  ResourcesIds.Wheat,
+];
 
 export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | undefined }) => {
   const dojo = useDojo();
@@ -52,24 +74,29 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
         </label>
       </div>
 
-      {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-        const resources = resourceIds.map((resourceId: any) => (
-          <ResourceChip
-            key={resourceId}
-            size="large"
-            resourceId={resourceId}
-            resourceManager={resourceManager}
-            maxCapacityKg={maxStorehouseCapacityKg}
-            hideZeroBalance={!showAllResources}
-          />
-        ));
-
-        return (
-          <div key={tier}>
-            <div className="grid grid-cols-1 flex-wrap">{resources}</div>
-          </div>
-        );
-      })}
+      <div className="space-y-4">
+        {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
+          return (
+            <div key={tier} className="pb-3">
+              <h4 className="text-sm text-gold/80 font-medium mb-2 border-b border-gold/10 pb-1">
+                {TIER_DISPLAY_NAMES[tier]}
+              </h4>
+              <div className="grid grid-cols-1 flex-wrap">
+                {resourceIds.map((resourceId: any) => (
+                  <ResourceChip
+                    key={resourceId}
+                    size="large"
+                    resourceId={resourceId}
+                    resourceManager={resourceManager}
+                    maxCapacityKg={maxStorehouseCapacityKg}
+                    hideZeroBalance={!showAllResources && !alwaysShowResources.includes(resourceId)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 });
