@@ -266,6 +266,9 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      socket.io-client:
+        specifier: ^4.8.1
+        version: 4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       starknet:
         specifier: 6.23.1
         version: 6.23.1(encoding@0.1.13)
