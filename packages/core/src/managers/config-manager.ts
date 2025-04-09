@@ -315,11 +315,11 @@ export class ClientConfigManager {
         case BiomeType.Taiga:
           return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Snow:
-          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+          return baseStaminaCost + (troopType !== TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Bare:
           return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
         case BiomeType.Scorched:
-          return baseStaminaCost + biomeBonus;
+          return baseStaminaCost + biomeBonus; // +10 for all troops
         default:
           return baseStaminaCost;
       }
