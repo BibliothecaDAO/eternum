@@ -1,9 +1,10 @@
 import { DojoConfig } from "@dojoengine/core";
-import { world } from "./world";
+import { world } from "@bibliothecadao/types";
 
 import * as torii from "@dojoengine/torii-client";
-import { defineContractComponents } from "..";
-import { EternumProvider } from "../provider";
+
+import { defineContractComponents } from "@bibliothecadao/types";
+import { EternumProvider } from "@bibliothecadao/provider";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 

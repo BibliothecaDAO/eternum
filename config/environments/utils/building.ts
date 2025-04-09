@@ -1,4 +1,4 @@
-import { BuildingType, getProducedResource, ResourcesIds, type ResourceInputs } from "@bibliothecadao/eternum";
+import { BuildingType, getProducedResource, ResourcesIds, type ResourceInputs } from "@bibliothecadao/types";
 
 export const BUILDING_CAPACITY: { [key in BuildingType]: number } = {
   [BuildingType.None]: 0,

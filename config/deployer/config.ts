@@ -1,19 +1,21 @@
 import {
+	HexGrid,
+	scaleResourceInputs,
+	scaleResourceOutputs,
+	scaleResources,
+} from "@bibliothecadao/eternum";
+import type { EternumProvider } from "@bibliothecadao/provider";
+import {
 	ADMIN_BANK_ENTITY_ID,
 	BRIDGE_FEE_DENOMINATOR,
 	BuildingType,
 	CapacityConfig,
 	type Config as EternumConfig,
-	type EternumProvider,
-	HexGrid,
 	type ResourceInputs,
 	type ResourceOutputs,
 	type ResourceWhitelistConfig,
 	ResourcesIds,
-	scaleResourceInputs,
-	scaleResourceOutputs,
-	scaleResources,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 
 import chalk from "chalk";
 

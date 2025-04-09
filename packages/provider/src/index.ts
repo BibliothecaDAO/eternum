@@ -7,7 +7,7 @@
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
-import * as SystemProps from "../types/provider";
+import * as SystemProps from "@bibliothecadao/types";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };

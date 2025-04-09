@@ -146,7 +146,7 @@ importers:
         version: 5.4.16(@types/node@20.17.30)(lightningcss@1.29.3)(terser@5.39.0)
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@20.17.30)(lightningcss@1.29.3)(terser@5.39.0)
+        version: 2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
 
   client:
     dependencies:
@@ -704,6 +704,15 @@ importers:
 
   config:
     dependencies:
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../packages/provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../packages/types
+      '@dojoengine/core':
+        specifier: 'catalog:'
+        version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
@@ -720,6 +729,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@bibliothecadao/dojo':
+        specifier: workspace:*
+        version: link:../dojo
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../types
       '@dojoengine/core':
         specifier: 'catalog:'
         version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
@@ -758,11 +776,103 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@20.17.24)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
 
+  packages/dojo:
+    dependencies:
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../types
+      '@dojoengine/core':
+        specifier: 'catalog:'
+        version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@dojoengine/recs':
+        specifier: 'catalog:'
+        version: 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+      '@scure/starknet':
+        specifier: ^1.1.0
+        version: 1.1.0
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
+      starknet:
+        specifier: 'catalog:'
+        version: 6.23.1(encoding@0.1.13)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.17.30
+      tsup:
+        specifier: ^8.0.2
+        version: 8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.1)
+      typedoc:
+        specifier: ^0.26.11
+        version: 0.26.11(typescript@5.8.2)
+      typedoc-plugin-markdown:
+        specifier: ^4.2.10
+        version: 4.4.2(typedoc@0.26.11(typescript@5.8.2))
+      typescript:
+        specifier: ^5.4.4
+        version: 5.8.2
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
+
+  packages/provider:
+    dependencies:
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../types
+      '@dojoengine/core':
+        specifier: 'catalog:'
+        version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@scure/starknet':
+        specifier: ^1.1.0
+        version: 1.1.0
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
+      starknet:
+        specifier: 'catalog:'
+        version: 6.23.1(encoding@0.1.13)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.17.30
+      tsup:
+        specifier: ^8.0.2
+        version: 8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.1)
+      typedoc:
+        specifier: ^0.26.11
+        version: 0.26.11(typescript@5.8.2)
+      typedoc-plugin-markdown:
+        specifier: ^4.2.10
+        version: 4.4.2(typedoc@0.26.11(typescript@5.8.2))
+      typescript:
+        specifier: ^5.4.4
+        version: 5.8.2
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
+
   packages/react:
     dependencies:
+      '@bibliothecadao/dojo':
+        specifier: workspace:*
+        version: link:../dojo
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../core
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../types
       '@dojoengine/react':
         specifier: 'catalog:'
         version: 1.4.2(@types/node@22.13.17)(@types/react@18.3.18)(bufferutil@4.0.9)(immer@10.1.1)(lightningcss@1.29.3)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
@@ -794,6 +904,46 @@ importers:
       vite-plugin-wasm:
         specifier: ^3.3.0
         version: 3.4.1(vite@6.2.4(@types/node@22.13.17)(jiti@2.4.2)(lightningcss@1.29.3)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1))
+
+  packages/types:
+    dependencies:
+      '@dojoengine/core':
+        specifier: 'catalog:'
+        version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@dojoengine/recs':
+        specifier: 'catalog:'
+        version: 2.0.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2)
+      '@scure/starknet':
+        specifier: ^1.1.0
+        version: 1.1.0
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
+      starknet:
+        specifier: 'catalog:'
+        version: 6.23.1(encoding@0.1.13)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.17.30
+      tsup:
+        specifier: ^8.0.2
+        version: 8.4.0(@swc/core@1.11.8(@swc/helpers@0.5.15))(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.2)(yaml@2.7.1)
+      typedoc:
+        specifier: ^0.26.11
+        version: 0.26.11(typescript@5.8.2)
+      typedoc-plugin-markdown:
+        specifier: ^4.2.10
+        version: 4.4.2(typedoc@0.26.11(typescript@5.8.2))
+      typescript:
+        specifier: ^5.4.4
+        version: 5.8.2
+      vitest:
+        specifier: ^2.0.5
+        version: 2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
 
 packages:
 
@@ -23903,7 +24053,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.9(@types/node@20.17.30)(lightningcss@1.29.3)(terser@5.39.0):
+  vitest@2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0):
     dependencies:
       '@vitest/expect': 2.1.9
       '@vitest/mocker': 2.1.9(vite@5.4.16(@types/node@20.17.30)(lightningcss@1.29.3)(terser@5.39.0))
@@ -23927,6 +24077,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.17.30
+      '@vitest/ui': 2.1.9(vitest@2.1.9)
     transitivePeerDependencies:
       - less
       - lightningcss

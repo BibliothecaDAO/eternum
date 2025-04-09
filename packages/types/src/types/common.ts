@@ -10,7 +10,7 @@ import {
   ResourceTier,
   StructureType,
 } from "../constants";
-import { ClientComponents } from "../dojo";
+import { ClientComponents } from "../dojo/create-client-components";
 
 export enum TileOccupier {
   None,

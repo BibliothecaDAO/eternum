@@ -1,7 +1,5 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { getNeighborHexes, Steps } from "../constants";
-import { ClientComponents } from "../dojo";
-import { ID } from "../types";
+import { getNeighborHexes, Steps, ClientComponents, ID } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "./utils";
 
 export const getFreeVillagePositions = (realmEntityId: ID, components: ClientComponents) => {
