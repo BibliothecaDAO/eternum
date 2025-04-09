@@ -38,7 +38,7 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-  // Redirect mobile users to the mobile version
+  // Redirect mobile users to the mobile version of the game
   if (IS_MOBILE) {
     root.render(
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
