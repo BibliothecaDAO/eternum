@@ -1554,6 +1554,25 @@ const eventsComponents = (world: World) => {
           },
         );
       })(),
+      ExplorerRaidEvent: (() => {
+        return defineComponent(
+          world,
+          {
+            explorer_id: RecsType.Number,
+            structure_id: RecsType.Number,
+            success: RecsType.Boolean,
+            timestamp: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace: "s1_eternum",
+              name: "ExplorerRaidEvent",
+              types: ["u32", "u32", "bool", "u64"],
+              customTypes: [],
+            },
+          },
+        );
+      })(),
     },
   };
 };

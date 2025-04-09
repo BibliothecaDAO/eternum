@@ -2,7 +2,7 @@ import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { Biome, BiomeType, divideByPrecision, DojoAccount, kgToNanogram, nanogramToKg, world } from "..";
+import { Biome, BiomeType, divideByPrecision, DojoAccount, getRemainingCapacityInKg, kgToNanogram, world } from "..";
 import {
   BiomeTypeToId,
   FELT_CENTER,
@@ -17,7 +17,7 @@ import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
-import { computeExploreFoodCosts, computeTravelFoodCosts, getRemainingCapacityInKg } from "./utils";
+import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 
 export class ArmyActionManager {
   private readonly entity: Entity;
@@ -526,16 +526,6 @@ export class ArmyActionManager {
   };
 
   private readonly _getArmyRemainingCapacity = () => {
-    // this weight is in nanograms
-    const armyWeight = getComponentValue(this.components.Resource, this.entity)?.weight.weight || 0;
-
-    const armyWeightKg = nanogramToKg(Number(armyWeight));
-
-    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
-    if (!explorerTroops) return 0;
-
-    const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
-
-    return getRemainingCapacityInKg(actualExplorerTroopsCount, armyWeightKg);
+    return getRemainingCapacityInKg(this.entityId, this.components);
   };
 }

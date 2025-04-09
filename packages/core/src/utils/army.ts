@@ -7,9 +7,9 @@ import {
   Direction,
   divideByPrecision,
   getAddressNameFromEntity,
-  getArmyTotalCapacityInKg,
   getNeighborHexes,
   gramToKg,
+  nanogramToKg,
   ResourcesIds,
 } from "..";
 import { ClientComponents } from "../dojo";
@@ -27,8 +27,7 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const actualExplorerTroopsCount = divideByPrecision(Number(explorerTroops.troops.count));
-      const totalCapacityKg = Number(getArmyTotalCapacityInKg(actualExplorerTroopsCount));
+      const totalCapacityKg = getArmyTotalCapacityInKg(explorerTroops.explorer_id, components);
 
       const resource = getComponentValue(components.Resource, armyEntity);
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
@@ -213,4 +212,21 @@ export const getFreeDirectionsAroundStructure = (structureEntityId: ID, componen
   });
 
   return freeDirections;
+};
+
+// troop count without precision
+export const getRemainingCapacityInKg = (entityId: ID, components: ClientComponents) => {
+  const weight = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId)]))?.weight;
+
+  if (!weight) return 0;
+
+  return nanogramToKg(Number(weight.capacity - weight.weight)) || 0;
+};
+
+// number of troops needs to be divided by precision
+export const getArmyTotalCapacityInKg = (entityId: ID, components: ClientComponents) => {
+  const totalCapacity = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId)]))?.weight
+    .capacity;
+
+  return nanogramToKg(Number(totalCapacity)) || 0;
 };

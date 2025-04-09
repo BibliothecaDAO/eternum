@@ -1697,6 +1697,38 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  /**
+   * Raid a structure with an explorer
+   *
+   * @param props - Properties for explorer raid
+   * @param props.explorer_id - ID of the raiding explorer
+   * @param props.structure_id - ID of the structure being raided
+   * @param props.structure_direction - Direction to the structure
+   * @param props.steal_resources - Resources to steal during the raid
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async raid_explorer_vs_guard(props: SystemProps.RaidExplorerVsGuardProps) {
+    const { explorer_id, structure_id, structure_direction, steal_resources, signer } = props;
+
+    // Prepare calldata for steal_resources which is a Span<(u8, u128)>
+    const resourcesCalldata = steal_resources.flatMap((resource) => [resource.resourceId, resource.amount]);
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_raid_systems`),
+      entrypoint: "raid_explorer_vs_guard",
+      calldata: [
+        explorer_id,
+        structure_id,
+        structure_direction,
+        steal_resources.length, // Size of the span
+        ...resourcesCalldata, // Flattened resource tuples
+      ],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   public async mint_starting_resources(props: SystemProps.MintStartingResources) {
     const { realm_entity_id, config_ids, signer } = props;
 
