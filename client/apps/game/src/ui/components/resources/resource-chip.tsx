@@ -19,11 +19,13 @@ export const ResourceChip = ({
   resourceManager,
   maxCapacityKg,
   size = "default",
+  hideZeroBalance = false,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   maxCapacityKg: number;
   size?: "default" | "large";
+  hideZeroBalance?: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -107,6 +109,11 @@ export const ResourceChip = ({
   }, [setTooltip]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
+
+  // Check if we should hide this resource based on the balance and hideZeroBalance prop
+  if (hideZeroBalance && balance <= 0) {
+    return null;
+  }
 
   return (
     <div

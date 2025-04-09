@@ -1,9 +1,9 @@
 import {
-  configManager,
   ContractAddress,
-  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   getAddressNameFromEntity,
+  getHyperstructureCurrentAmounts,
   getHyperstructureProgress,
+  HyperstructureInfo,
   ID,
   ResourcesIds,
   toInteger,
@@ -22,7 +22,7 @@ export type ProgressWithPercentage = {
   amount: number;
 };
 
-export const useHyperstructures = () => {
+export const useHyperstructures = (): HyperstructureInfo[] => {
   const {
     account: { account },
     setup: { components },
@@ -38,27 +38,24 @@ export const useHyperstructures = () => {
     const entityName = getComponentValue(AddressName, hyperstructureEntityId);
     const ownerName = hyperstructure ? getAddressNameFromEntity(hyperstructure.hyperstructure_id, components) : "";
 
-    if (!structure) return;
+    if (!structure || !hyperstructure) return;
 
     return {
-      ...hyperstructure,
-      ...structure,
+      entity_id: hyperstructure.hyperstructure_id,
+      hyperstructure,
+      structure,
       position: { x: structure.base.coord_x, y: structure.base.coord_y },
       owner,
       isOwner,
       ownerName,
-      entityIdPoseidon: hyperstructureEntityId,
       name: entityName
         ? shortString.decodeShortString(entityName.name.toString())
-        : `Hyperstructure ${
-            hyperstructure?.hyperstructure_id === Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID)
-              ? ""
-              : hyperstructure?.hyperstructure_id
-          }`,
+        : `Hyperstructure ${hyperstructure.hyperstructure_id}`,
+      access: hyperstructure.access,
     };
   });
 
-  return hyperstructures;
+  return hyperstructures.filter((h): h is HyperstructureInfo => h !== undefined);
 };
 
 export const useHyperstructureProgress = (hyperstructureEntityId: ID) => {
@@ -97,6 +94,7 @@ export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
   const {
     setup: {
       components: { HyperstructureRequirements },
+      components,
     },
   } = useDojo();
 
@@ -105,6 +103,6 @@ export const useCurrentAmounts = (hyperstructureEntityId: ID) => {
   ]);
 
   return useMemo(() => {
-    return configManager.getHyperstructureCurrentAmounts(hyperstructureEntityId);
+    return getHyperstructureCurrentAmounts(hyperstructureEntityId, components);
   }, [currentAmounts, hyperstructureEntityId]);
 };

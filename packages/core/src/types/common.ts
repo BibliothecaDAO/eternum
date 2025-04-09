@@ -48,6 +48,18 @@ export type ResourceArrivalInfo = {
   slot: bigint;
 };
 
+export type HyperstructureInfo = {
+  entity_id: ID;
+  hyperstructure: ComponentValue<ClientComponents["Hyperstructure"]["schema"]>;
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  name: string;
+  position: { x: number; y: number };
+  owner: bigint;
+  ownerName: string;
+  isOwner: boolean;
+  access: string;
+};
+
 export type DojoAccount = Account | AccountInterface;
 
 export type ArmyInfo = {
