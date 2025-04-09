@@ -79,6 +79,9 @@ export class ArmyModel {
       gltfLoader.load(
         `models/units/${fileName}.glb`,
         (gltf) => {
+          // if (modelType === ModelType.Paladin2) {
+          //   console.log("Paladin", gltf.scene);
+          // }
           const modelData = this.createModelData(gltf);
           this.models.set(modelType, modelData);
           resolve();
@@ -137,13 +140,19 @@ export class ArmyModel {
   private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry.clone();
     const material = mesh.material;
+    // @ts-ignore
+    if (mesh.material.name.includes("stand")) {
+      // @ts-ignore
+      material.opacity = 0.9;
+    }
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
     instancedMesh.instanceMatrix.needsUpdate = true;
-
-    if (meshIndex > 0) {
+    instancedMesh.renderOrder = 10 + meshIndex;
+    // @ts-ignore
+    if (mesh.material.name.includes("stand")) {
       instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
     }
 
