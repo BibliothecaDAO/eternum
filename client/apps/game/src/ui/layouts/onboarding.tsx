@@ -229,7 +229,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           <div className="flex gap-3 w-full flex-wrap">
             <a
               className="text-brown cursor-pointer w-full"
-              href={`https://empire.realms.world`}
+              href={`https://empire.realms.world/mint`}
               target="_blank"
               rel="noopener noreferrer"
             >
