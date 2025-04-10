@@ -1,8 +1,10 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
+import { ROUTES } from "@/shared/consts/routes";
 import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
+import { useSearch } from "@tanstack/react-router";
 import {
   configManager,
   ContractAddress,
@@ -20,12 +22,30 @@ import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
+  const search = useSearch({ from: ROUTES.TRADE });
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
   const [sellResourceId, setSellResourceId] = useState(1); // Default to first non-Lords resource
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { structureEntityId } = useStore();
+
+  useEffect(() => {
+    if (search.resourceId) {
+      const resourceId = parseInt(search.resourceId);
+      if (!isNaN(resourceId)) {
+        // If the resource is Lords, set it as sell resource and another resource as buy
+        if (resourceId === ResourcesIds.Lords) {
+          setSellResourceId(resourceId);
+          setBuyResourceId(sellResourceId === ResourcesIds.Lords ? 1 : sellResourceId);
+        } else {
+          // If it's not Lords, set Lords as sell and the selected resource as buy
+          setSellResourceId(ResourcesIds.Lords);
+          setBuyResourceId(resourceId);
+        }
+      }
+    }
+  }, [search.resourceId]);
 
   const {
     account: { account },

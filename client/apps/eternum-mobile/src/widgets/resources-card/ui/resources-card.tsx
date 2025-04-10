@@ -1,4 +1,5 @@
 import { useResourceBalances } from "@/features/resource-balances";
+import { ROUTES } from "@/shared/consts/routes";
 import { cn, currencyFormat, currencyIntlFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -6,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { divideByPrecision, ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -34,6 +36,14 @@ const HIDDEN_TIERS_IN_COLLAPSED: ResourceTier[] = ["lords", "labor", "military",
 export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { resourceAmounts } = useResourceBalances(entityId);
+  const navigate = useNavigate();
+
+  const handleTradeClick = (resourceId: number) => {
+    navigate({
+      to: ROUTES.TRADE,
+      search: { resourceId: resourceId.toString() }
+    });
+  };
 
   const renderResourceItem = useCallback(
     (resourceId: number) => {
@@ -51,7 +61,11 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
                 <span className="text-sm text-muted-foreground">{currencyFormat(amount)}</span>
               </div>
             </div>
-            <Button variant="secondary" size="sm">
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => handleTradeClick(resource.id)}
+            >
               Trade
             </Button>
           </div>
