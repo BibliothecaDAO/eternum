@@ -76,15 +76,17 @@ export function HexagonLocationSelector({
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Select Hexagon Location</DrawerTitle>
-          <DrawerDescription>
-            Click on an available (grey) hexagon to select it. Occupied locations are shown in red.
+          <DrawerDescription className="flex flex-col gap-1">
+            <p>Click on an available (grey) hexagon to select it. Occupied locations are shown in red.</p>
+            <p className="text-xs text-muted-foreground italic">Drag the canvas to explore more locations if needed.</p>
           </DrawerDescription>
         </DrawerHeader>
 
-        <div className="flex flex-col items-center justify-center flex-1">
+        <div className="flex flex-col items-center justify-center flex-1 p-4">
           <HexInfo selectedLocation={selectedLocation} />
 
-          <div className="w-full overflow-auto flex-1 flex items-center justify-center p-2">
+          <div className="w-full overflow-hidden flex-1 flex items-center justify-center p-2 relative">
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background via-transparent to-background opacity-25 z-10" />
             <HexagonCanvas
               width={canvasSize.width}
               height={canvasSize.height}
