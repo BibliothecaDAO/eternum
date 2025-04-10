@@ -56,7 +56,8 @@ const tradeRoute = createRoute({
   path: ROUTES.TRADE,
   component: TradePage,
   validateSearch: (search: Record<string, unknown>) => ({
-    resourceId: search.resourceId as string | undefined,
+    buyResourceId: search.buyResourceId as string | undefined,
+    sellResourceId: search.sellResourceId as string | undefined,
   }),
 });
 

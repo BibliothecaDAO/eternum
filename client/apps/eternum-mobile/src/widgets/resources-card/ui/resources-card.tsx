@@ -39,10 +39,19 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const navigate = useNavigate();
 
   const handleTradeClick = (resourceId: number) => {
-    navigate({
-      to: ROUTES.TRADE,
-      search: { resourceId: resourceId.toString() }
-    });
+    // If the resource is Lords, set it as sell resource
+    if (resourceId === ResourcesIds.Lords) {
+      navigate({
+        to: ROUTES.TRADE,
+        search: { sellResourceId: resourceId.toString(), buyResourceId: "1" }
+      });
+    } else {
+      // If it's not Lords, set Lords as sell and the selected resource as buy
+      navigate({
+        to: ROUTES.TRADE,
+        search: { sellResourceId: ResourcesIds.Lords.toString(), buyResourceId: resourceId.toString() }
+      });
+    }
   };
 
   const renderResourceItem = useCallback(
