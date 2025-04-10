@@ -201,7 +201,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 }
               }}
             >
-              {isMapView ? "Realm" : "World"}
+              {isMapView ? "Local" : "World"}
             </Button>
           </div>
           <div className="flex flex-row">
