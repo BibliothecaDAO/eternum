@@ -70,7 +70,7 @@ export function HexagonLocationSelector({
   };
 
   return (
-    <Drawer>
+    <Drawer dismissible={false}>
       {children && <DrawerTrigger asChild>{children}</DrawerTrigger>}
 
       <DrawerContent>

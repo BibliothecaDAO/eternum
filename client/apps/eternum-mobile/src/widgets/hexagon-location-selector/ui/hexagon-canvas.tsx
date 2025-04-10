@@ -12,6 +12,88 @@ interface HexagonCanvasProps {
   onHexClick: (col: number, row: number) => void;
 }
 
+// Helper functions for rounded corners
+function getLength(dx: number, dy: number): number {
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getProportionPoint(
+  x: number,
+  y: number,
+  segment: number,
+  length: number,
+  dx: number,
+  dy: number,
+): { x: number; y: number } {
+  const factor = segment / length;
+  return { x: x - dx * factor, y: y - dy * factor };
+}
+
+function getOneRoundedCorner(
+  ctx: CanvasRenderingContext2D,
+  angularPoint: { x: number; y: number },
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  radius: number,
+  pointsCount: number,
+) {
+  // Vector 1
+  const dx1 = angularPoint.x - p1.x;
+  const dy1 = angularPoint.y - p1.y;
+
+  // Vector 2
+  const dx2 = angularPoint.x - p2.x;
+  const dy2 = angularPoint.y - p2.y;
+
+  // Angle between vector 1 and vector 2 divided by 2
+  const angle = (Math.atan2(dy1, dx1) - Math.atan2(dy2, dx2)) / 2;
+
+  // The length of segment between angular point and the points of intersection
+  // with the circle of a given radius
+  const tan = Math.abs(Math.tan(angle));
+  let segment = radius / tan;
+
+  // Check the segment
+  const length1 = getLength(dx1, dy1);
+  const length2 = getLength(dx2, dy2);
+
+  const length = Math.min(length1, length2);
+
+  if (segment > length) {
+    segment = length;
+    radius = length * tan;
+  }
+
+  // Points of intersection are calculated by the proportion between
+  // the coordinates of the vector, length of vector and the length of the segment
+  const p1Cross = getProportionPoint(angularPoint.x, angularPoint.y, segment, length1, dx1, dy1);
+  const p2Cross = getProportionPoint(angularPoint.x, angularPoint.y, segment, length2, dx2, dy2);
+
+  // Calculation of the coordinates of the circle center by the addition of angular vectors
+  const dx = angularPoint.x * 2 - p1Cross.x - p2Cross.x;
+  const dy = angularPoint.y * 2 - p1Cross.y - p2Cross.y;
+
+  const L = getLength(dx, dy);
+  const d = getLength(segment, radius);
+
+  const circlePoint = getProportionPoint(angularPoint.x, angularPoint.y, d, L, dx, dy);
+
+  // StartAngle and EndAngle of arc
+  let startAngle = Math.atan2(p1Cross.y - circlePoint.y, p1Cross.x - circlePoint.x);
+  const endAngle = Math.atan2(p2Cross.y - circlePoint.y, p2Cross.x - circlePoint.x);
+
+  // Sweep angle
+  let sweepAngle = endAngle - startAngle;
+
+  // Some additional checks
+  if (sweepAngle < 0) {
+    sweepAngle = 2 * Math.PI + sweepAngle;
+  }
+
+  // Draw the arc
+  ctx.arc(circlePoint.x, circlePoint.y, radius, startAngle, startAngle + sweepAngle);
+}
+
 export function HexagonCanvas({
   width,
   height,
@@ -195,7 +277,7 @@ export function HexagonCanvas({
 
       const isOccupied = occupiedLocations.some((loc) => loc.col === hex.col && loc.row === hex.row);
 
-      drawHexagon(ctx, hex, hexSize, isSelected, isOccupied);
+      drawRoundedHexagon(ctx, hex, hexSize, isSelected, isOccupied);
     });
 
     // Reset transformation
@@ -211,8 +293,8 @@ export function HexagonCanvas({
     }
   };
 
-  // Draw a single hexagon
-  const drawHexagon = (
+  // Draw a single rounded hexagon
+  const drawRoundedHexagon = (
     ctx: CanvasRenderingContext2D,
     hex: HexLocation,
     size: number,
@@ -220,21 +302,30 @@ export function HexagonCanvas({
     isOccupied: boolean,
   ) => {
     const { x, y } = hexToPixel(hex, size);
+    const cornerRadius = size * 0.25; // Same ratio as in hexagon-geometry.ts
+
+    // Apply a scale factor to create gaps between hexagons
+    const gapScale = 0.975; // Reduce hexagon to 85% of its size to create gaps
+    const effectiveSize = size * gapScale;
+
+    // Generate hexagon corner points with the reduced size
+    const points = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = ((2 * Math.PI) / 6) * i;
+      const hx = x + effectiveSize * Math.cos(angle);
+      const hy = y + effectiveSize * Math.sin(angle);
+      points.push({ x: hx, y: hy });
+    }
 
     // Start a new path
     ctx.beginPath();
 
-    // Draw hexagon
-    for (let i = 0; i < 6; i++) {
-      const angle = ((2 * Math.PI) / 6) * i;
-      const hx = x + size * Math.cos(angle);
-      const hy = y + size * Math.sin(angle);
+    // Draw rounded hexagon
+    for (let i = 0; i < points.length; i++) {
+      const p1Index = i === 0 ? points.length - 1 : i - 1;
+      const p2Index = (i + 1) % points.length;
 
-      if (i === 0) {
-        ctx.moveTo(hx, hy);
-      } else {
-        ctx.lineTo(hx, hy);
-      }
+      getOneRoundedCorner(ctx, points[i], points[p1Index], points[p2Index], cornerRadius, 5);
     }
 
     ctx.closePath();
@@ -243,15 +334,27 @@ export function HexagonCanvas({
     if (isSelected) {
       // Pulse animation for selected hexagon
       const pulseValue = getPulseAnimation();
-      const green = Math.floor(100 + pulseValue * 155); // Pulsing from darker to lighter green
-      ctx.fillStyle = `rgb(0, ${green}, 0)`;
+      // Fantasy-themed emerald/jade green with slight glow effect
+      const green = Math.floor(120 + pulseValue * 100); // Vibrant green base
+      const red = Math.floor(20 + pulseValue * 30); // Minimal red for richness
+      const blue = Math.floor(80 + pulseValue * 60); // Blue component for magical feel
+      ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+
+      // Add a subtle glow effect for selected hexagons
+      ctx.shadowColor = `rgba(0, 255, 180, 0.6)`;
+      ctx.shadowBlur = 10;
     } else if (isOccupied) {
       ctx.fillStyle = "#ff5555"; // Red for occupied
+      ctx.shadowBlur = 0; // Reset shadow
     } else {
       ctx.fillStyle = "#aaaaaa"; // Grey for available
+      ctx.shadowBlur = 0; // Reset shadow
     }
 
     ctx.fill();
+
+    // Reset shadow for border drawing
+    ctx.shadowBlur = 0;
 
     // Draw border
     ctx.strokeStyle = "#333333";
