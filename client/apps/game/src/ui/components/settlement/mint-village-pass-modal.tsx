@@ -1,5 +1,6 @@
 import Button from "@/ui/elements/button";
-import { Direction, getFreeVillagePositions, getRealmNameById, HexPosition, ID } from "@bibliothecadao/eternum";
+import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+import { getFreeVillagePositions, getRealmNameById } from "@bibliothecadao/eternum"
 import { useAllRealms, useDojo } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { ModalContainer } from "../modal-container";

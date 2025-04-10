@@ -1,5 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BiomeType, configManager, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import { BiomeType, ResourcesIds, TroopType } from "@bibliothecadao/types";
 
 export const ExplorationTable = () => {
   // All biome types

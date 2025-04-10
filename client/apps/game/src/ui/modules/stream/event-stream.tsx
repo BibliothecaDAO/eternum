@@ -1,7 +1,8 @@
 import { Position } from "@/types/position";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { ContractAddress, getAddressFromStructureEntity, ID, world } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, world } from "@bibliothecadao/types";
+import { getAddressFromStructureEntity } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { Component, defineComponentSystem, Entity, getComponentValue, World } from "@dojoengine/recs";
 import { useCallback, useEffect, useState } from "react";
@@ -102,9 +103,8 @@ export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
             All
           </div>
           <div
-            className={`px-3 py-1 cursor-pointer relative ${
-              activeTab === "personal" ? "bg-brown/40 text-gold" : "bg-brown/20"
-            }`}
+            className={`px-3 py-1 cursor-pointer relative ${activeTab === "personal" ? "bg-brown/40 text-gold" : "bg-brown/20"
+              }`}
             onClick={() => setActiveTab("personal")}
           >
             Personal

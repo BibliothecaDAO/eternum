@@ -7,13 +7,15 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
   divideByPrecision,
-  findResourceById,
   formatTime,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  findResourceById,
   RealmInfo,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types"
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
@@ -63,7 +65,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
       ...laborConfig.map((config, index) => {
         return Math.ceil(
           (selectedResources[index].amount * (config?.laborProductionPerResource || 0)) /
-            (config?.laborRatePerTick || 0),
+          (config?.laborRatePerTick || 0),
         );
       }),
     );

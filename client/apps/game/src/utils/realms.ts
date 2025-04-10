@@ -1,4 +1,4 @@
-import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Has, HasValue, runQuery } from "@dojoengine/recs";
 
 export const getRandomRealmEntity = (components: ClientComponents) => {

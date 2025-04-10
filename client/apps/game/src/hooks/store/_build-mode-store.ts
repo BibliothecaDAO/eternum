@@ -1,4 +1,4 @@
-import { BUILDINGS_CENTER, BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { BUILDINGS_CENTER, BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { Entity } from "@dojoengine/recs";
 
 export interface BuildModeStore {

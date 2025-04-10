@@ -1,4 +1,5 @@
-import { configManager, TickIds } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/types";
+import { configManager, } from "@bibliothecadao/eternum";
 
 export const getBlockTimestamp = () => {
   const timestamp = Math.floor(Date.now() / 1000);

@@ -1,15 +1,16 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import {} from "@/ui/utils/utils";
 import {
   configManager,
-  findResourceById,
   formatTime,
+} from "@bibliothecadao/eternum";
+import {
+  findResourceById,
   resources,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types"
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 const STRUCTURE_IMAGE_PATHS = {

@@ -9,9 +9,12 @@ import {
   divideByPrecision,
   getBalance,
   getTotalResourceWeightKg,
+} from "@bibliothecadao/eternum";
+
+import {
   Resources,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Check, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";

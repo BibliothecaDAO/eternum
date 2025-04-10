@@ -4,14 +4,16 @@ import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
 import { formatTypeAndBonuses, getStaminaDisplay } from "@/ui/modules/military/combat-utils";
 import {
-  BiomeType,
   CombatParameters,
   CombatSimulator,
   getTroopResourceId,
-  TroopTier,
-  TroopType,
   type Army,
 } from "@bibliothecadao/eternum";
+import {
+  BiomeType,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 interface ArmyInputProps {

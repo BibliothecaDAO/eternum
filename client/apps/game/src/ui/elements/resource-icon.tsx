@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 

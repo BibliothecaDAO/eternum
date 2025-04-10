@@ -5,7 +5,7 @@ import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
-import { PlayerStructure } from "@bibliothecadao/eternum";
+import { PlayerStructure } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -76,9 +76,8 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${
-        isOffscreen ? "translate-x-[83%]" : ""
-      }`}
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${isOffscreen ? "translate-x-[83%]" : ""
+        }`}
     >
       {ConnectedAccount && (
         <>

@@ -1,5 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager, getEntityIdFromKeys, getRealmInfo, ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 
 export const RealmResourcesIO = ({

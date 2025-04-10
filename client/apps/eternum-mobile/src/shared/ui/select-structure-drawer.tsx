@@ -1,6 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/shared/ui/drawer";
-import { RealmInfo } from "@bibliothecadao/eternum";
+import { RealmInfo } from "@bibliothecadao/types";
 import { ReactNode, useState } from "react";
 
 interface SelectStructureDrawerProps {

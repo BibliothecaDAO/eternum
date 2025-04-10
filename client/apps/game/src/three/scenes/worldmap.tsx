@@ -23,6 +23,10 @@ import {
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  StructureActionManager,
+} from "@bibliothecadao/eternum";
+import {
+
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -30,9 +34,8 @@ import {
   HexEntityInfo,
   HexPosition,
   ID,
-  SetupResult,
-  StructureActionManager,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
+import { SetupResult } from "@bibliothecadao/dojo";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { Account, AccountInterface } from "starknet";
@@ -250,7 +253,7 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
-  protected onHexagonDoubleClick(hexCoords: HexPosition) {}
+  protected onHexagonDoubleClick(hexCoords: HexPosition) { }
 
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");

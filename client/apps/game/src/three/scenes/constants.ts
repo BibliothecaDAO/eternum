@@ -7,7 +7,7 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import * as THREE from "three";
 import { HyperstructureTypesNames, StructureProgress } from "../types";
 

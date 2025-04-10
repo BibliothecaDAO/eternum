@@ -8,7 +8,8 @@ import { ChatMetadata, Tab } from "@/ui/modules/chat/types";
 import { useChatStore } from "@/ui/modules/chat/use-chat-store";
 import { getMessageKey } from "@/ui/modules/chat/utils";
 import { EventStream } from "@/ui/modules/stream/event-stream";
-import { ContractAddress, getGuildFromPlayerAddress, Player, toHexString } from "@bibliothecadao/eternum";
+import { ContractAddress, Player } from "@bibliothecadao/types";
+import { getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
@@ -87,8 +88,8 @@ export const Chat = () => {
       addTab({
         name: fromSelector
           ? shortString.decodeShortString(
-              getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
-            )
+            getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]))?.name.toString() || "",
+          )
           : tab!,
         address,
         displayed: true,
@@ -127,9 +128,8 @@ export const Chat = () => {
         </div>
       </div>
       <div
-        className={`flex flex-col w-[28vw] max-w-[28vw] bg-brown/90  bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${
-          hideChat ? "p-0" : "p-1"
-        }`}
+        className={`flex flex-col w-[28vw] max-w-[28vw] bg-brown/90  bg-hex-bg bottom-0 rounded-xl pointer-events-auto flex-grow ${hideChat ? "p-0" : "p-1"
+          }`}
       >
         {displayMessages ? (
           <Messages
@@ -306,9 +306,8 @@ const Messages = ({
 
   return (
     <div
-      className={`text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${
-        hideChat ? "h-0 hidden" : "block h-[20vh]"
-      }`}
+      className={`text-xs overflow-y-auto transition-all duration-300 rounded-xl flex-grow ${hideChat ? "h-0 hidden" : "block h-[20vh]"
+        }`}
     >
       {messagesToDisplay?.messages.map((message, index) => (
         <div

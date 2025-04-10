@@ -7,18 +7,20 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import {
-  ArmyInfo,
-  ClientComponents,
-  ContractAddress,
   getArmy,
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   getRealmNameById,
   getStructure,
   isTileOccupierStructure,
+} from "@bibliothecadao/eternum";
+import {
+  ArmyInfo,
+  ClientComponents,
+  ContractAddress,
   Structure,
   TileOccupier,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { memo, useMemo } from "react";

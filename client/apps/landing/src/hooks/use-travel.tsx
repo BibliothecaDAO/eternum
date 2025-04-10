@@ -1,4 +1,4 @@
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { calculateDistance } from "../components/ui/utils/utils";
 import { execute } from "./gql/execute";

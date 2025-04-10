@@ -1,15 +1,13 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { WORLD_CONFIG_ID } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import { ID, Troops, TroopType } from "../types";
+import { WORLD_CONFIG_ID, ClientComponents, ID, Troops, TroopType } from "@bibliothecadao/types";
 import { configManager } from "./config-manager";
 
 export class StaminaManager {
   constructor(
     private components: ClientComponents,
     private armyEntityId: ID,
-  ) {}
+  ) { }
 
   public static getStaminaConfig(troopType: TroopType) {
     return configManager.getTroopStaminaConfig(troopType);

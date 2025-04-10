@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { ID, resources } from "@bibliothecadao/eternum";
+import { ID, resources } from "@bibliothecadao/types";
 import { useResourceManager } from "@bibliothecadao/react";
 import { useCallback, useEffect, useState } from "react";
 

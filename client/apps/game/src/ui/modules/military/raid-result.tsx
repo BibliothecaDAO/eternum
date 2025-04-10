@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ClientComponents, getEntityIdFromKeys, ID, resources } from "@bibliothecadao/eternum";
+import { ClientComponents, ID, resources } from "@bibliothecadao/types";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
@@ -133,8 +134,6 @@ export const RaidResult = ({
           },
         ],
         // logging
-        false,
-        // historical
         false,
       );
     };

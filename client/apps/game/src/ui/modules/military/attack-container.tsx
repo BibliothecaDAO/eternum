@@ -1,4 +1,4 @@
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { useState } from "react";
 import { CombatContainer } from "./combat-container";
 import { RaidContainer } from "./raid-container";
@@ -23,11 +23,10 @@ export const AttackContainer = ({
       <div className="flex justify-center mb-6 mx-auto mt-4">
         <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
           <button
-            className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-              attackType === AttackType.Combat
+            className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${attackType === AttackType.Combat
                 ? "bg-gold/20 text-gold border-b-2 border-gold"
                 : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-            }`}
+              }`}
             onClick={() => setAttackType(AttackType.Combat)}
           >
             <div className="flex items-center">
@@ -36,11 +35,10 @@ export const AttackContainer = ({
             </div>
           </button>
           <button
-            className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
-              attackType === AttackType.Raid
+            className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${attackType === AttackType.Raid
                 ? "bg-gold/20 text-gold border-b-2 border-gold"
                 : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-            }`}
+              }`}
             onClick={() => setAttackType(AttackType.Raid)}
           >
             <div className="flex items-center">

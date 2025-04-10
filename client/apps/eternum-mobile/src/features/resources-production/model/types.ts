@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 export interface ProductionBuilding {
   category: string;

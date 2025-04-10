@@ -11,11 +11,13 @@ import { calculateArrivalTime, formatArrivalTime, normalizeDiacriticalMarks } fr
 import {
   computeTravelTime,
   configManager,
-  EntityType,
   getAddressNameFromEntity,
-  ID,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
+import {
+  EntityType,
+  ID,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/eternum";
+import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/types";
 
 export { FELT_CENTER };
 

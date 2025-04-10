@@ -1,5 +1,5 @@
 [package]
-cairo-version = "=2.9.2"
+cairo-version = "=2.9.4"
 name = "s1_eternum"
 version = "1.0.0"
 edition = "2024_07"
@@ -8,23 +8,23 @@ edition = "2024_07"
 sierra-replace-ids = true
 
 [dependencies]
-starknet = "2.9.2"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.3.0" }
+starknet = "2.9.4"
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.4.0" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
-achievement = { git = "https://github.com/edisontim/arcade", branch = "feat/bump-dojo-version" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", branch = "main" }
 cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
 
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.3.0" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.4.0" }
 
 [[target.starknet-contract]]
 casm = true
 build-external-contracts = [
-	"dojo::world::world_contract::world",
-	"achievement::events::index::e_TrophyCreation",
-	"achievement::events::index::e_TrophyProgression",
+  "dojo::world::world_contract::world",
+  "achievement::events::index::e_TrophyCreation",
+  "achievement::events::index::e_TrophyProgression",
 ]
 
 [tool.fmt]

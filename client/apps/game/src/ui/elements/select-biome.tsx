@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { CombatSimulator } from "@bibliothecadao/eternum";
+import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {

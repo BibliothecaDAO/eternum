@@ -7,15 +7,17 @@ import { Buildings } from "@/ui/modules/entity-details/realm/buildings";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
 import { copyPlayerAddressToClipboard, displayAddress } from "@/ui/utils/utils";
 import {
-  ContractAddress,
-  Structure,
-  StructureType,
   formatTime,
   getStructure,
   getStructureImmunityTimer,
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  Structure,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

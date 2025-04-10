@@ -1,7 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { configManager, ContractAddress, LeaderboardManager } from "@bibliothecadao/eternum";
+import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useMemo, useState } from "react";
 

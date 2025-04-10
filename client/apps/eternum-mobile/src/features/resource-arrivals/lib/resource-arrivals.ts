@@ -1,5 +1,6 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { ResourceArrivalInfo, ResourceArrivalManager } from "@bibliothecadao/eternum";
+import { ResourceArrivalManager } from "@bibliothecadao/eternum";
+import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";
 import { ResourceArrivalSummary } from "../model/types";
 

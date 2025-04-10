@@ -6,14 +6,16 @@ import TextInput from "@/ui/elements/text-input";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
+  divideByPrecision,
+  getBalance,
+} from "@bibliothecadao/eternum";
+import {
   ID,
   Resources,
   ResourcesIds,
-  divideByPrecision,
   findResourceById,
   findResourceIdByTrait,
-  getBalance,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { memo, useEffect, useRef, useState } from "react";
 

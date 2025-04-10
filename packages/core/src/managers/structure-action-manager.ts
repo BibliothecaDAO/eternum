@@ -1,8 +1,6 @@
 import { getComponentValue, type Entity } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { BiomeType, FELT_CENTER, getNeighborHexes } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import { ContractAddress, HexEntityInfo, ID } from "../types";
+import { BiomeType, FELT_CENTER, getNeighborHexes, ClientComponents, ContractAddress, HexEntityInfo, ID } from "@bibliothecadao/types";
 import { ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 
 export class StructureActionManager {

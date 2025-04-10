@@ -1,5 +1,4 @@
-import { BiomeType } from "../constants";
-import { TroopTier, TroopType } from "../types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { divideWithPrecision } from "./utils";
 
 export class Percentage {

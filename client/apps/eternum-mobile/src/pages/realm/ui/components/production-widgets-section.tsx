@@ -1,7 +1,7 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { ProductionWidget } from "@/widgets/production-widget";
 import { LaborBuilding } from "@/widgets/production-widget/model/types";
-import { Building, getProducedResource, RealmInfo } from "@bibliothecadao/eternum";
+import { Building, getProducedResource, RealmInfo } from "@bibliothecadao/types";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 
@@ -47,9 +47,8 @@ export function ProductionWidgetsSection({ selectedRealm, isVertical = false }: 
   return (
     <div className="overflow-x-auto">
       <div
-        className={`grid ${
-          isVertical ? "grid-cols-1 gap-4" : "grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4"
-        }`}
+        className={`grid ${isVertical ? "grid-cols-1 gap-4" : "grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4"
+          }`}
       >
         {buildingsWithProduction.map((building) => (
           <ProductionWidget

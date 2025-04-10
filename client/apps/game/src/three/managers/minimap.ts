@@ -3,7 +3,7 @@ import { type ArmyManager } from "@/three/managers/army-manager";
 import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import { type StructureManager } from "@/three/managers/structure-manager";
 import type WorldmapScene from "@/three/scenes/worldmap";
-import { BiomeType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { BiomeType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
 import { getHexForWorldPosition } from "../utils";
@@ -185,7 +185,7 @@ class Minimap {
     const zoomRatio = Math.min(
       1,
       (this.mapSize.width - MINIMAP_CONFIG.MIN_ZOOM_RANGE) /
-        (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
+      (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
     );
 
     // Scale from 0.5 (at max zoom) to 2.0 (at min zoom)

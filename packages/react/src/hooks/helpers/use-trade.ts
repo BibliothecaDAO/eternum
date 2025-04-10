@@ -1,4 +1,5 @@
-import { computeTrades, getEntityIdFromKeys, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
+import { computeTrades, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";

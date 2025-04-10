@@ -1,6 +1,7 @@
 import { EntityArmyList } from "@/ui/components/military/army-list";
 import { EntitiesArmyTable } from "@/ui/components/military/entities-army-table";
-import { getEntityIdFromKeys, ID } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 

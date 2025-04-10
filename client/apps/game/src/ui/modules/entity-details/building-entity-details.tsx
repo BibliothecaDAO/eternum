@@ -7,19 +7,21 @@ import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
+  ResourceIdToMiningType,
+  TileManager,
+  configManager,
+  getEntityInfo,
+} from "@bibliothecadao/eternum";
+import {
   BUILDINGS_CENTER,
   BuildingType,
   ContractAddress,
   ID,
-  ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
-  TileManager,
-  configManager,
-  getEntityInfo,
   getProducedResource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";

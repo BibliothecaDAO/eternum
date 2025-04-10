@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getTroopResourceId, resources, Troops, TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { getTroopResourceId, } from "@bibliothecadao/eternum";
+import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export const TroopChip = ({
   troops,
@@ -20,9 +21,8 @@ export const TroopChip = ({
   return (
     <div className={`relative w-full ${className}`}>
       <div
-        className={`px-2 py-1 bg-gold/10 h-full flex ${
-          direction === "row" ? "flex-row" : "flex-col"
-        } justify-between gap-2 border border-gold/10`}
+        className={`px-2 py-1 bg-gold/10 h-full flex ${direction === "row" ? "flex-row" : "flex-col"
+          } justify-between gap-2 border border-gold/10`}
       >
         <div className="flex items-center gap-2">
           <ResourceIcon
@@ -34,9 +34,8 @@ export const TroopChip = ({
             size={iconSize}
           />
           <div
-            className={`${
-              Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
-            } text-xs self-center`}
+            className={`${Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
+              } text-xs self-center`}
           >
             {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}
             {currencyFormat(Number(troops.count || 0), 0)}

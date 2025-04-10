@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 // Constants for minimap dimensions and settlement configuration
 export const MINIMAP_WIDTH = 900;

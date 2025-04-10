@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectTroopProps {

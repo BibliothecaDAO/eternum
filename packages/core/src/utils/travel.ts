@@ -1,7 +1,6 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ClientComponents } from "../dojo";
-import { ID } from "../types";
+import { ClientComponents, ID } from "@bibliothecadao/types";
 import { calculateDistance } from "./utils";
 
 export const computeTravelTime = (

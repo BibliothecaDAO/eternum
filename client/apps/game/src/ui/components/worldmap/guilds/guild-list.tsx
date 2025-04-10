@@ -3,7 +3,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { GuildInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { Globe, Lock, MessageCircle } from "lucide-react";
 import { useMemo, useState } from "react";

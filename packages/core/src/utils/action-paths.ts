@@ -1,5 +1,4 @@
-import { BiomeType, FELT_CENTER } from "../constants";
-import { HexPosition } from "../types";
+import { BiomeType, FELT_CENTER, HexPosition } from "@bibliothecadao/types";
 
 export type ActionPath = {
   hex: HexPosition;

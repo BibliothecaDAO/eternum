@@ -1,4 +1,5 @@
-import { BiomeType, CombatSimulator, TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { CombatSimulator } from "@bibliothecadao/eternum";
 import { Map, Zap } from "lucide-react";
 
 export const getStaminaDisplay = (

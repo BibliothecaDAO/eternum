@@ -10,18 +10,20 @@ import {
   computeTravelTime,
   configManager,
   divideByPrecision,
-  EntityType,
-  findResourceById,
   getAddressNameFromEntity,
   getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  EntityType,
+  findResourceById,
   ResourcesIds,
   StructureType,
   type ID,
   type MarketInterface,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
@@ -66,9 +68,8 @@ export const MarketResource = memo(
         onClick={() => {
           onClick(resourceId);
         }}
-        className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
-          active ? "panel-gold" : ""
-        }`}
+        className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${active ? "panel-gold" : ""
+          }`}
       >
         <div className="flex items-center gap-2 col-span-2">
           <ResourceIcon size="sm" resource={resource?.trait || ""} withTooltip={false} />
@@ -142,9 +143,8 @@ const MarketOrders = memo(
       <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-2xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
-            !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
-          }`}
+          className={`text-2xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${!isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
+            }`}
         >
           <div className="self-center flex">
             <div className="flex flex-col">
@@ -161,9 +161,8 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
-            isBuy ? "order-buy-selector" : "order-sell-selector"
-          }`}
+          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${isBuy ? "order-buy-selector" : "order-sell-selector"
+            }`}
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
 
@@ -366,7 +365,7 @@ const OrderRow = memo(
     const renderConfirmationPopup = useCallback(() => {
       const isVillageAndMilitaryResource =
         getComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-          StructureType.Village &&
+        StructureType.Village &&
         (isMilitaryResource(offer.makerGets[0].resourceId) || isMilitaryResource(offer.takerGets[0].resourceId));
 
       return (
@@ -439,9 +438,8 @@ const OrderRow = memo(
     return (
       <div
         key={offer.tradeId}
-        className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${
-          isSelf ? "bg-blueish/10" : "bg-white/10"
-        }`}
+        className={`flex flex-col p-1  px-2  hover:bg-white/15 duration-150 border-gold/10 border relative rounded text-sm ${isSelf ? "bg-blueish/10" : "bg-white/10"
+          }`}
       >
         <div className="grid grid-cols-5 gap-1">
           <div className={`flex gap-1  ${isBuy ? "text-red" : "text-green"} `}>
@@ -616,7 +614,7 @@ const OrderCreation = memo(
     const renderConfirmationPopupCreateOrder = useCallback(() => {
       const isVillageAndMilitaryResource =
         getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-          StructureType.Village && isMilitaryResource(resourceId);
+        StructureType.Village && isMilitaryResource(resourceId);
 
       return (
         <ConfirmationPopup
@@ -646,9 +644,8 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  border-gold/10 panel-wood  ${
-          isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
-        }`}
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto  border-gold/10 panel-wood  ${isBuy ? "order-create-buy-selector" : "order-create-sell-selector"
+          }`}
       >
         <div className="flex w-full gap-8">
           <div className="w-1/3 gap-1 flex flex-col">

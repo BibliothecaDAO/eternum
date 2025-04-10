@@ -8,12 +8,14 @@ import {
   canTransferMilitaryResources,
   divideByPrecision,
   getBalance,
-  ID,
   isMilitaryResource,
+} from "@bibliothecadao/eternum";
+import {
+  ID,
   RESOURCE_TIERS,
   resources,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

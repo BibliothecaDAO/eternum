@@ -6,14 +6,16 @@ import { useLords } from "@/hooks/use-lords";
 import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  Resources,
-  ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
   getTotalResourceWeightKg,
-  resources,
 } from "@bibliothecadao/eternum";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  Resources,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/types";
 import { useAccount, useBalance } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
@@ -217,12 +219,12 @@ export const BridgeIn = () => {
               <SelectContent>
                 {playerStructures?.length
                   ? playerStructures.map((structure) => {
-                      return (
-                        <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
-                          #{structure.realmId} - {structure.name}
-                        </SelectItem>
-                      );
-                    })
+                    return (
+                      <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
+                        #{structure.realmId} - {structure.name}
+                      </SelectItem>
+                    );
+                  })
                   : "No Structure settled in Eternum"}
               </SelectContent>
             </Select>

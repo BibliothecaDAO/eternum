@@ -1,6 +1,9 @@
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { ResourcesIds, configManager } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import {
+  ResourcesIds
+} from "@bibliothecadao/types"
 import { useMemo } from "react";
 
 interface RawResourcesPanelProps {
@@ -72,11 +75,10 @@ export const RawResourcesPanel = ({
               <ResourceIcon resource={ResourcesIds[input.resource]} size="lg" />
               <div className="flex items-center justify-between w-full">
                 <span
-                  className={`text-xl font-medium ${
-                    resourceBalances[input.resource] < input.amount * productionAmount
+                  className={`text-xl font-medium ${resourceBalances[input.resource] < input.amount * productionAmount
                       ? "text-order-giants"
                       : "text-gold"
-                  }`}
+                    }`}
                 >
                   {balance}
                 </span>

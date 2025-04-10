@@ -1,10 +1,8 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager, Structure } from "..";
-import { MERCENARIES, StructureType } from "../constants";
-import { ClientComponents } from "../dojo";
-import { ContractAddress, ID, Position, TickIds } from "../types";
+import { configManager, } from "..";
+import { ClientComponents, ContractAddress, ID, Position, TickIds, MERCENARIES, StructureType, Structure } from "@bibliothecadao/types";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 

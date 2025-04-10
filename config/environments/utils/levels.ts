@@ -1,4 +1,4 @@
-import { RealmLevels, ResourcesIds, type ResourceCost } from "@bibliothecadao/eternum";
+import { RealmLevels, ResourcesIds, type ResourceCost } from "@bibliothecadao/types";
 
 export const REALM_MAX_LEVEL = Object.keys(RealmLevels).length / 2;
 export const VILLAGE_MAX_LEVEL = 2;

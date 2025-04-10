@@ -1,4 +1,4 @@
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 
 export const LORDS_LIQUIDITY_PER_RESOURCE = 1_000;
 

@@ -2,7 +2,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useDonkeyArrivals } from "@/hooks/helpers/use-donkey-arrivals";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { displayAddress } from "@/lib/utils";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ChevronDown, ChevronUp, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -197,9 +197,8 @@ export const BridgeOutStep2 = () => {
                     return (
                       <TableRow
                         key={donkey?.donkeyEntityId}
-                        className={`${
-                          selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
-                        } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
+                        className={`${selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
+                          } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
                         onClick={(e) => {
                           if (!isArrived) return;
 

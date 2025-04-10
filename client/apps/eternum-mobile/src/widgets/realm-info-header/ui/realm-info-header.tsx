@@ -6,7 +6,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ProgressCircle } from "@/shared/ui/progress-circle";
 import { SelectStructureDrawer } from "@/shared/ui/select-structure-drawer";
-import { FELT_CENTER, getLevelName, ResourcesIds } from "@bibliothecadao/eternum";
+import { FELT_CENTER, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { ChevronDown, Copy } from "lucide-react";
 import { useMemo } from "react";

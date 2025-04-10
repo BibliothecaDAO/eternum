@@ -5,13 +5,15 @@ import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
 import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
   getTotalResourceWeightKg,
-  resources,
 } from "@bibliothecadao/eternum";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/types";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";

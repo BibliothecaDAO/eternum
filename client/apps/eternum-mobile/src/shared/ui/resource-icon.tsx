@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/utils";
-import { Resources, resources } from "@bibliothecadao/eternum";
+import { Resources, resources } from "@bibliothecadao/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
 
 export interface ResourceIconProps {

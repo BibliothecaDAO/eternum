@@ -1,14 +1,17 @@
 import { ResourceChip } from "@/ui/components/resources/resource-chip";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-  BuildingType,
   getBuildingQuantity,
   getRealmInfo,
+} from "@bibliothecadao/eternum";
+import {
+  BuildingType,
   ID,
   RESOURCE_TIERS,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+
+} from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";

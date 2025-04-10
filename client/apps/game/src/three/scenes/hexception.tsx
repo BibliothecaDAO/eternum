@@ -14,24 +14,26 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
   ActionType,
-  BUILDINGS_CENTER,
   Biome,
+  ResourceIdToMiningType,
+  ResourceManager,
+  TileManager,
+  getEntityIdFromKeys,
+} from "@bibliothecadao/eternum";
+import {
+  BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
   HexPosition,
   RealmLevels,
-  ResourceIdToMiningType,
-  ResourceManager,
   ResourceMiningTypes,
   ResourcesIds,
-  SetupResult,
   StructureType,
-  TileManager,
   findResourceById,
-  getEntityIdFromKeys,
   getNeighborHexes,
   getProducedResource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
+import { SetupResult } from "@bibliothecadao/dojo";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -241,7 +243,7 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -428,8 +430,8 @@ export default class HexceptionScene extends HexagonScene {
       });
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -472,7 +474,7 @@ export default class HexceptionScene extends HexagonScene {
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
-      let centers = [
+      const centers = [
         [0, 0], //0, 0 (Main hex)
         [-6, 5], //-1, 1
         [7, 4], //1, 0

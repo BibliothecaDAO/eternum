@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { ActionPath, configManager, ID } from "@bibliothecadao/eternum";
+import { ActionPath, configManager } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { useStaminaManager } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo } from "react";

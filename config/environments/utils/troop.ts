@@ -1,4 +1,4 @@
-import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/eternum";
+import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/types";
 
 // Food consumption rates (wheat/fish) per troop unit, scaled by resource precision
 // Example: explore_wheat_burn_amount of 10 means 10 * RESOURCE_PRECISION wheat consumed per troop during exploration
