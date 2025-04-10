@@ -13,7 +13,7 @@ export function HexInfo({ selectedLocation }: HexInfoProps) {
       </CardHeader>
       <CardContent>
         {selectedLocation ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="text-sm font-semibold">Column:</div>
             <div className="text-sm">{selectedLocation.col}</div>
             <div className="text-sm font-semibold">Row:</div>
