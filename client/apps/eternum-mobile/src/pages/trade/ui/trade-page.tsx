@@ -21,7 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
-  const search = useSearch({ from: "/trade" });
+  const search = useSearch({ from: "/protected/trade" });
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
@@ -32,44 +32,43 @@ export const TradePage = () => {
   useEffect(() => {
     // Handle buy resource ID from URL
     if (search.buyResourceId) {
-      const buyId = parseInt(search.buyResourceId);
+      const buyId = search.buyResourceId;
       if (!isNaN(buyId)) {
         setBuyResourceId(buyId);
       }
     }
-    
+
     // Handle sell resource ID from URL
     if (search.sellResourceId) {
-      const sellId = parseInt(search.sellResourceId);
+      const sellId = search.sellResourceId;
       if (!isNaN(sellId)) {
         setSellResourceId(sellId);
       }
     }
-    
+
     // If both are set to the same resource, adjust one of them
-    if (search.buyResourceId && search.sellResourceId && 
-        search.buyResourceId === search.sellResourceId) {
+    if (search.buyResourceId && search.sellResourceId && search.buyResourceId === search.sellResourceId) {
       // If both are Lords, set sell to another resource
-      if (parseInt(search.buyResourceId) === ResourcesIds.Lords) {
+      if (search.buyResourceId === ResourcesIds.Lords) {
         setSellResourceId(1); // First non-Lords resource
       } else {
         // Otherwise set buy to Lords
         setBuyResourceId(ResourcesIds.Lords);
       }
     }
-    
+
     // If only one is set, set the other to a complementary value
     if (search.buyResourceId && !search.sellResourceId) {
-      const buyId = parseInt(search.buyResourceId);
+      const buyId = search.buyResourceId;
       if (buyId === ResourcesIds.Lords) {
         setSellResourceId(1); // First non-Lords resource
       } else {
         setSellResourceId(ResourcesIds.Lords);
       }
     }
-    
+
     if (!search.buyResourceId && search.sellResourceId) {
-      const sellId = parseInt(search.sellResourceId);
+      const sellId = search.sellResourceId;
       if (sellId === ResourcesIds.Lords) {
         setBuyResourceId(1); // First non-Lords resource
       } else {

@@ -6,7 +6,7 @@ import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { divideByPrecision, ID, RESOURCE_TIERS, resources } from "@bibliothecadao/eternum";
+import { divideByPrecision, ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/eternum";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -39,17 +39,16 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
   const navigate = useNavigate();
 
   const handleTradeClick = (resourceId: number) => {
-    // If the resource is Lords, set it as sell resource
-    if (resourceId === ResourcesIds.Lords) {
+    const amount = resourceAmounts.find((r) => r.id === resourceId)?.amount || 0;
+    if (amount > 0) {
       navigate({
         to: ROUTES.TRADE,
-        search: { sellResourceId: resourceId.toString(), buyResourceId: "1" }
+        search: { sellResourceId: resourceId, buyResourceId: ResourcesIds.Lords },
       });
     } else {
-      // If it's not Lords, set Lords as sell and the selected resource as buy
       navigate({
         to: ROUTES.TRADE,
-        search: { sellResourceId: ResourcesIds.Lords.toString(), buyResourceId: resourceId.toString() }
+        search: { sellResourceId: ResourcesIds.Lords, buyResourceId: resourceId },
       });
     }
   };
@@ -70,11 +69,7 @@ export const ResourcesCard = ({ className, entityId }: ResourcesCardProps) => {
                 <span className="text-sm text-muted-foreground">{currencyFormat(amount)}</span>
               </div>
             </div>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => handleTradeClick(resource.id)}
-            >
+            <Button variant="secondary" size="sm" onClick={() => handleTradeClick(resource.id)}>
               Trade
             </Button>
           </div>
