@@ -22,7 +22,7 @@ export function HexagonCanvas({
   onHexClick,
 }: HexagonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [animationFrame, setAnimationFrame] = useState<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Canvas offset for panning
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -269,17 +269,17 @@ export function HexagonCanvas({
   // Animation loop
   const animate = () => {
     drawHexGrid();
-    const frame = requestAnimationFrame(animate);
-    setAnimationFrame(frame);
+    animationFrameRef.current = requestAnimationFrame(animate);
   };
 
   // Setup and cleanup
   useEffect(() => {
-    animate();
+    animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (animationFrame !== null) {
-        cancelAnimationFrame(animationFrame);
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
