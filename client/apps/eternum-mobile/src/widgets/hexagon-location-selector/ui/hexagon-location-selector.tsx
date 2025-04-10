@@ -1,14 +1,5 @@
 import { Button } from "@/shared/ui/button";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/shared/ui/drawer";
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { useEffect, useState } from "react";
 import { HexLocation } from "../model/types";
 import { HexInfo } from "./hex-info";
@@ -19,7 +10,8 @@ interface HexagonLocationSelectorProps {
   occupiedLocations: HexLocation[];
   onSelect: (col: number, row: number) => void;
   initialSelectedLocation?: HexLocation | null;
-  children?: React.ReactNode;
+  open: boolean;
+  onClose: () => void;
 }
 
 export function HexagonLocationSelector({
@@ -27,17 +19,18 @@ export function HexagonLocationSelector({
   occupiedLocations,
   onSelect,
   initialSelectedLocation = null,
-  children,
+  open,
+  onClose,
 }: HexagonLocationSelectorProps) {
   const [selectedLocation, setSelectedLocation] = useState<HexLocation | null>(initialSelectedLocation);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 300 });
-  const hexSize = 30;
+  const hexSize = 20;
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       const width = Math.min(window.innerWidth - 40, 600);
-      const height = Math.min(window.innerHeight - 200, 500);
+      const height = Math.min(window.innerWidth - 40, 600);
       setCanvasSize({ width, height });
     };
 
@@ -66,13 +59,17 @@ export function HexagonLocationSelector({
   const handleConfirm = () => {
     if (selectedLocation) {
       onSelect(selectedLocation.col, selectedLocation.row);
+      onClose();
     }
   };
 
-  return (
-    <Drawer dismissible={false}>
-      {children && <DrawerTrigger asChild>{children}</DrawerTrigger>}
+  // Handle cancel
+  const handleCancel = () => {
+    onClose();
+  };
 
+  return (
+    <Drawer open={open} onOpenChange={onClose}>
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Select Hexagon Location</DrawerTitle>
@@ -103,11 +100,9 @@ export function HexagonLocationSelector({
           <Button onClick={handleConfirm} disabled={!selectedLocation} className="w-full">
             Confirm Selection
           </Button>
-          <DrawerClose asChild>
-            <Button variant="outline" className="w-full">
-              Cancel
-            </Button>
-          </DrawerClose>
+          <Button variant="outline" className="w-full" onClick={handleCancel}>
+            Cancel
+          </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
