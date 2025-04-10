@@ -313,9 +313,10 @@ export function HexagonCanvas({
     const effectiveSize = size * gapScale;
 
     // Generate hexagon corner points with the reduced size
+    // Rotate by -90 degrees (subtract PI/2 from the angle)
     const points = [];
     for (let i = 0; i < 6; i++) {
-      const angle = ((2 * Math.PI) / 6) * i;
+      const angle = ((2 * Math.PI) / 6) * i - Math.PI / 2; // Subtract PI/2 to rotate -90 degrees
       const hx = x + effectiveSize * Math.cos(angle);
       const hy = y + effectiveSize * Math.sin(angle);
       points.push({ x: hx, y: hy });

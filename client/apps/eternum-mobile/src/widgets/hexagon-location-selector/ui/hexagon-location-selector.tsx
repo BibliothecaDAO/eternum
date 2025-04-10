@@ -24,7 +24,7 @@ export function HexagonLocationSelector({
 }: HexagonLocationSelectorProps) {
   const [selectedLocation, setSelectedLocation] = useState<HexLocation | null>(initialSelectedLocation);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 300 });
-  const hexSize = 20;
+  const hexSize = 30;
 
   // Handle window resize
   useEffect(() => {
