@@ -1,5 +1,6 @@
 import { useResourceArrivals } from "@/features/resource-arrivals";
 import { useStore } from "@/shared/store";
+import { Button } from "@/shared/ui/button";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
 import { HexagonLocationSelector, HexLocation } from "@/widgets/hexagon-location-selector";
 import { NearbyEnemies } from "@/widgets/nearby-enemies";
@@ -17,6 +18,7 @@ export function OverviewTab() {
 
   // Hexagon selector example state
   const [selectedHexLocation, setSelectedHexLocation] = useState<HexLocation | null>(null);
+  const [isHexSelectorOpen, setIsHexSelectorOpen] = useState(false);
 
   // Generate a larger grid of hexagons for the example
   const generateHexGrid = (radius: number): HexLocation[] => {
@@ -62,6 +64,14 @@ export function OverviewTab() {
     switchTab("claim");
   }, [switchTab, summary.readyArrivals]);
 
+  const openHexSelector = useCallback(() => {
+    setIsHexSelectorOpen(true);
+  }, []);
+
+  const closeHexSelector = useCallback(() => {
+    setIsHexSelectorOpen(false);
+  }, []);
+
   return (
     <div className="space-y-4">
       <ResourcesCard entityId={structureEntityId} />
@@ -89,14 +99,18 @@ export function OverviewTab() {
               : "No location selected"}
           </div>
 
+          <Button onClick={openHexSelector} className="px-4 py-2 bg-primary text-primary-foreground rounded-md">
+            Select Hexagon Location
+          </Button>
+
           <HexagonLocationSelector
             availableLocations={dummyAvailableLocations}
             occupiedLocations={dummyOccupiedLocations}
             onSelect={handleHexSelect}
             initialSelectedLocation={selectedHexLocation}
-          >
-            <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md">Select Hexagon Location</button>
-          </HexagonLocationSelector>
+            open={isHexSelectorOpen}
+            onClose={closeHexSelector}
+          />
         </div>
       </div>
     </div>
