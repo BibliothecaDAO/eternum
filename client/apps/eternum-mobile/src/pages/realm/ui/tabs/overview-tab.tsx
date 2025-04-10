@@ -18,26 +18,35 @@ export function OverviewTab() {
   // Hexagon selector example state
   const [selectedHexLocation, setSelectedHexLocation] = useState<HexLocation | null>(null);
 
+  // Generate a larger grid of hexagons for the example
+  const generateHexGrid = (radius: number): HexLocation[] => {
+    const result: HexLocation[] = [];
+
+    for (let q = -radius; q <= radius; q++) {
+      const r1 = Math.max(-radius, -q - radius);
+      const r2 = Math.min(radius, -q + radius);
+
+      for (let r = r1; r <= r2; r++) {
+        result.push({ col: q, row: r });
+      }
+    }
+
+    return result;
+  };
+
   // Dummy data for the hexagon grid
-  const dummyAvailableLocations: HexLocation[] = [
-    { col: -2, row: 0 },
-    { col: -1, row: -1 },
-    { col: -1, row: 0 },
-    { col: 0, row: -2 },
-    { col: 0, row: -1 },
-    { col: 0, row: 0 },
-    { col: 0, row: 1 },
-    { col: 1, row: -1 },
-    { col: 1, row: 0 },
-    { col: 1, row: 1 },
-    { col: 2, row: 0 },
-    { col: -2, row: 1 },
-  ];
+  const dummyAvailableLocations = generateHexGrid(5); // Generate a grid with radius 5
 
   const dummyOccupiedLocations: HexLocation[] = [
     { col: -1, row: 1 },
     { col: 0, row: 2 },
     { col: 2, row: -1 },
+    { col: 3, row: -3 },
+    { col: -2, row: -2 },
+    { col: 4, row: 1 },
+    { col: -4, row: 2 },
+    { col: -3, row: 4 },
+    { col: 5, row: -3 },
   ];
 
   const handleHexSelect = useCallback((col: number, row: number) => {
