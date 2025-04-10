@@ -1,5 +1,6 @@
 import { ClientComponents, ContractAddress, StructureType } from "@bibliothecadao/eternum";
 import { Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Query, ToriiClient } from "@dojoengine/torii-wasm";
 
 export const getRandomRealmEntity = (components: ClientComponents) => {
   const realms = runQuery([
@@ -32,4 +33,38 @@ export const getPlayerFirstRealm = (components: ClientComponents, address: Contr
   const realm = realms.values().next().value;
 
   return realm;
+};
+
+export const getRandomRealmWithVillageSlots = async (toriiClient: ToriiClient) => {
+  const query: Query = {
+    limit: 1,
+    offset: 0,
+    clause: {
+      Member: {
+        model: "Structure",
+        member: "metadata.villages_count",
+        operator: "Lte",
+        value: { Primitive: { U8: 5 } },
+      },
+    },
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["Structure"],
+    entity_updated_after: 0,
+  };
+
+  const entities = await toriiClient.getEntities(query);
+
+  // Filter for realms (category = StructureType.Realm)
+  const realms = Object.values(entities).filter(
+    (entity) => entity.Structure && entity.Structure.category.value === StructureType.Realm,
+  );
+
+  if (realms.length === 0) {
+    return null;
+  }
+
+  // Select a random realm
+  const randomIndex = Math.floor(Math.random() * realms.length);
+  return realms[randomIndex];
 };
