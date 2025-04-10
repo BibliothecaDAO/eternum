@@ -1,10 +1,8 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { ROUTES } from "@/shared/consts/routes";
 import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
-import { useSearch } from "@tanstack/react-router";
 import {
   configManager,
   ContractAddress,
@@ -17,12 +15,13 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { useSearch } from "@tanstack/react-router";
 import { ArrowDownUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
-  const search = useSearch({ from: ROUTES.TRADE });
+  const search = useSearch({ from: "/trade" });
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
