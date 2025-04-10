@@ -1,4 +1,5 @@
-import { BRIDGE_FEE_DENOMINATOR, configManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { BRIDGE_FEE_DENOMINATOR, ResourcesIds } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum"
 
 import { Minus, Plus } from "lucide-react";
 import { useMemo } from "react";

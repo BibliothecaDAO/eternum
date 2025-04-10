@@ -1,4 +1,4 @@
-import { RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { LaborProductionControls } from "./labor-production-controls";
 import { ResourceProductionControls } from "./resource-production-controls";

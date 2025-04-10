@@ -1,5 +1,5 @@
 import { BuildingThumbs } from "@/ui/config";
-import { RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/eternum";
+import { RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { BuildingsList } from "./buildings-list";
 import { ProductionControls } from "./production-controls";

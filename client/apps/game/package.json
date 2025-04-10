@@ -17,6 +17,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@bibliothecadao/dojo": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@dojoengine/predeployed-connector": "catalog:",
     "@dojoengine/sdk": "catalog:",

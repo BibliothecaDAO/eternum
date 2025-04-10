@@ -1,6 +1,7 @@
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
-import { getHyperstructureProgress, getStructureTypeName, Structure, StructureType } from "@bibliothecadao/eternum";
+import { getHyperstructureProgress, getStructureTypeName } from "@bibliothecadao/eternum";
+import { Structure, StructureType } from "@bibliothecadao/types"
 import { useDojo, useGuardsByStructure } from "@bibliothecadao/react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 
@@ -35,9 +36,8 @@ export const StructureListItem = ({
   return (
     <div className="flex justify-between flex-row mt-2 ">
       <div
-        className={`flex h-full justify-between  ${
-          structure.isMine ? "bg-blueish/20" : "bg-red/20"
-        } rounded-md border-gold/20 p-2`}
+        className={`flex h-full justify-between  ${structure.isMine ? "bg-blueish/20" : "bg-red/20"
+          } rounded-md border-gold/20 p-2`}
       >
         <div className="grid grid-cols-[2fr_3fr] gap-4">
           <div className="flex flex-col justify-between">

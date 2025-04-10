@@ -1,5 +1,6 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { Structure, formatTime, getStructureImmunityTimer, isStructureImmune } from "@bibliothecadao/eternum";
+import { Structure } from "@bibliothecadao/types";
+import { formatTime, getStructureImmunityTimer, isStructureImmune } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {

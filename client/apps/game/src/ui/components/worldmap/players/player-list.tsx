@@ -5,7 +5,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
-import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildInfo, PlayerInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { MessageCircle, Search, User } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -49,10 +49,10 @@ export const PlayerList = ({
     // Then filter by search query if present
     const searchFiltered = searchQuery
       ? filteredPlayers.filter(
-          (player) =>
-            player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            player.guild?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
+        (player) =>
+          player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          player.guild?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
       : filteredPlayers;
 
     return sortItems(searchFiltered, activeSort, { sortKey: "rank", sort: "asc" });

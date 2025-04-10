@@ -1,4 +1,3 @@
-import type { SeasonAddresses } from "@bibliothecadao/eternum";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
@@ -7,6 +6,23 @@ import localGameManifest from "../../contracts/game/manifest_local.json";
 import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
 import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
 import slotGameManifest from "../../contracts/game/manifest_slot.json";
+
+/**
+ * Interface representing season contract addresses and resources
+ * @interface SeasonAddresses
+ */
+export interface SeasonAddresses {
+  /** Address of the season pass contract */
+  seasonPass: string;
+  /** Address of the realms contract */
+  realms: string;
+  /** Address of the LORDS token contract */
+  lords: string;
+  /** Map of resource name to [resourceId, contractAddress] */
+  resources: {
+    [key: string]: (string | number)[];
+  };
+}
 
 /** Valid chain identifiers */
 export type Chain = "sepolia" | "mainnet" | "slot" | "local";

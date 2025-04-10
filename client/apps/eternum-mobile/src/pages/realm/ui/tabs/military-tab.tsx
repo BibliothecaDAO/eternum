@@ -2,7 +2,7 @@ import { useArmiesInRadius } from "@/features/armies";
 import { cn } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { ResourceAmount } from "@/shared/ui/resource-amount";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { AlertTriangle, Eye, Swords } from "lucide-react";
 
 export interface MilitaryTabProps {
@@ -32,7 +32,7 @@ const getDangerLevel = (distance: number) => {
   };
 };
 
-export function MilitaryTab({}: MilitaryTabProps) {
+export function MilitaryTab({ }: MilitaryTabProps) {
   const { selectedRealm } = useStore();
   const { armies, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
 

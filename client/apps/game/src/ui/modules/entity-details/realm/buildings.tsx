@@ -4,16 +4,18 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
-  Building,
   getEntityIdFromKeys,
   getRealmInfo,
+  TileManager,
+  toHexString,
+} from "@bibliothecadao/eternum";
+import {
+  Building,
   isFoodBuilding,
   isMilitaryBuilding,
   isResourceBuilding,
   ResourcesIds,
-  TileManager,
-  toHexString,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { useMemo, useState } from "react";

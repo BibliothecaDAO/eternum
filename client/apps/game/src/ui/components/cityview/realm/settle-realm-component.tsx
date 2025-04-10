@@ -9,7 +9,8 @@ import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getSeasonPassAddress } from "@/utils/addresses";
 import { getMaxLayer } from "@/utils/settlement";
-import { getOffchainRealm, RealmInterface, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
+import { getOffchainRealm, unpackValue } from "@bibliothecadao/eternum";
+import { RealmInterface, ResourcesIds } from "@bibliothecadao/types"
 import { gql } from "graphql-request";
 import { useEffect, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -184,9 +185,8 @@ export const SeasonPassRealm = ({
   return (
     <div
       key={seasonPassRealm.realmId}
-      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md bg-dark-wood transition-colors duration-200 ${
-        selected ? "border-gold/40 bg-black/80" : "border-transparent"
-      } ${className} border hover:border-gold cursor-pointer`}
+      className={`flex flex-col gap-2 p-4 h-[200px] panel-wood rounded-md bg-dark-wood transition-colors duration-200 ${selected ? "border-gold/40 bg-black/80" : "border-transparent"
+        } ${className} border hover:border-gold cursor-pointer`}
       onClick={() => setSelected(!selected)}
     >
       <div className="flex flex-row items-center gap-2 justify-between">
@@ -250,7 +250,7 @@ export const getUnusedSeasonPasses = async (accountAddress: string, realmIds: nu
       (token: { node: { tokenMetadata: { __typename: string; contractAddress?: string } } }) =>
         token?.node?.tokenMetadata.__typename == "ERC721__Token" &&
         addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-          addAddressPadding(seasonPassAddress ?? "0x0"),
+        addAddressPadding(seasonPassAddress ?? "0x0"),
     )
     .map((token: { node: { tokenMetadata: { tokenId: string } } }) => {
       const realmsResourcesPacked = getOffchainRealm(Number(token.node.tokenMetadata.tokenId));

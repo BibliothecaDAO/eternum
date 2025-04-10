@@ -1,5 +1,8 @@
 import Button from "@/ui/elements/button";
-import { ContractAddress, HexPosition, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
+import { ContractAddress, HexPosition, ResourcesIds, } from "@bibliothecadao/types";
+import {
+  unpackValue
+} from "@bibliothecadao/eternum"
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -74,7 +77,7 @@ export const VillageResourceReveal = ({
     if (revealedResource) {
       selected.push(
         Object.keys(ResourcesIds).find((key) => ResourcesIds[key as keyof typeof ResourcesIds] === revealedResource) ||
-          "Wood",
+        "Wood",
       );
     }
 

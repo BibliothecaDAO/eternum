@@ -3,12 +3,14 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
-  ContractAddress,
   getEntityName,
   getGuildFromPlayerAddress,
-  PlayerInfo,
   toHexString,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  PlayerInfo,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { Search } from "lucide-react";

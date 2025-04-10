@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/eternum";
+import { BiomeType } from "@bibliothecadao/types";
 import * as THREE from "three";
 
 export const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {

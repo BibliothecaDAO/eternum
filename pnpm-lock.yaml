@@ -269,6 +269,18 @@ importers:
 
   client/apps/eternum-mobile:
     dependencies:
+      '@bibliothecadao/dojo':
+        specifier: workspace:*
+        version: link:../../../packages/dojo
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../../../packages/provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@dojoengine/core':
         specifier: 'catalog:'
         version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.6.3)(utf-8-validate@5.0.10)
@@ -402,6 +414,18 @@ importers:
 
   client/apps/game:
     dependencies:
+      '@bibliothecadao/dojo':
+        specifier: workspace:*
+        version: link:../../../packages/dojo
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../../../packages/provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@dojoengine/core':
         specifier: 'catalog:'
         version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)
@@ -562,6 +586,18 @@ importers:
       '@ark-project/react':
         specifier: 2.0.0-beta.2
         version: 2.0.0-beta.2(encoding@0.1.13)(typescript@5.8.2)(viem@2.24.3(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.24.2))
+      '@bibliothecadao/dojo':
+        specifier: workspace:*
+        version: link:../../../packages/dojo
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../../packages/core
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../../../packages/provider
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       '@dojoengine/core':
         specifier: 'catalog:'
         version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.2)(utf-8-validate@5.0.10)

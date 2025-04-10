@@ -1,5 +1,8 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { divideByPrecision, findResourceById } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
+import {
+  findResourceById
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { currencyFormat } from "../utils/utils";

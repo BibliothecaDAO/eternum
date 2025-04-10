@@ -1,6 +1,6 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
-import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 
@@ -83,7 +83,7 @@ export default class InstancedModel {
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
-          tmp.raycast = () => {};
+          tmp.raycast = () => { };
         }
 
         this.mixer = new AnimationMixer(gltf.scene);

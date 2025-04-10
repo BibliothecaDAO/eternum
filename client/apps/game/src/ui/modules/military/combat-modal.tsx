@@ -1,6 +1,6 @@
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { Suspense, useState } from "react";
 import { AttackContainer } from "./attack-container";
 import { HelpContainer } from "./help-container";
@@ -28,9 +28,8 @@ export const CombatModal = ({
             {Object.values(ModalTab).map((tab) => (
               <button
                 key={tab}
-                className={`px-6 py-3 text-lg font-semibold ${
-                  activeTab === tab ? "text-gold border-b-2 border-gold" : "text-gold/50 hover:text-gold/70"
-                }`}
+                className={`px-6 py-3 text-lg font-semibold ${activeTab === tab ? "text-gold border-b-2 border-gold" : "text-gold/50 hover:text-gold/70"
+                  }`}
                 onClick={() => setActiveTab(tab)}
               >
                 {tab}

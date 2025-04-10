@@ -1,6 +1,6 @@
 import { Position } from "@/types/position";
 import { getPlayerFirstRealm, getRandomRealmEntity } from "@/utils/realms";
-import { ClientComponents, ContractAddress } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useAccount } from "@starknet-react/core";
 import { useEffect } from "react";

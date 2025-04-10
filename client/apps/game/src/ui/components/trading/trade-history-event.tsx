@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { divideByPrecision, getAddressNameFromEntity, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { divideByPrecision, getAddressNameFromEntity } from "@bibliothecadao/eternum";
+import { Resource, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { TradeEvent } from "./market-trading-history";
 
@@ -60,9 +61,9 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         <ResourceIcon
           resource={
             ResourcesIds[
-              Number(
-                resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
-              )
+            Number(
+              resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
+            )
             ]
           }
           size={"sm"}

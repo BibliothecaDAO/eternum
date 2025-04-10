@@ -1,4 +1,5 @@
-import { ClientComponents, ID, ResourceManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourceManager } from "@bibliothecadao/eternum";
+import { ClientComponents, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { execute } from "../gql/execute";

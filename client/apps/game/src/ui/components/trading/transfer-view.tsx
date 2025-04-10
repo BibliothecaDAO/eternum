@@ -1,13 +1,15 @@
 import { TransferBetweenEntities } from "@/ui/components/trading/transfer-between-entities";
 import {
-  ContractAddress,
-  PlayerStructure,
-  RealmWithPosition,
-  StructureType,
   getEntityName,
   getGuildMembersFromPlayerAddress,
   getRealmNameById,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  PlayerStructure,
+  RealmWithPosition,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
