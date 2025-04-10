@@ -45,6 +45,16 @@ export function HexagonLocationSelector({
   // Handle hexagon click
   const handleHexClick = (col: number, row: number) => {
     console.log(`Hex clicked: col=${col}, row=${row}`);
+
+    // Check if the hex is occupied
+    const isOccupied = occupiedLocations.some((loc) => loc.col === col && loc.row === row);
+
+    // Don't allow selection of occupied hexes
+    if (isOccupied) {
+      console.log("This location is occupied and cannot be selected");
+      return;
+    }
+
     const newLocation = { col, row };
 
     // Is this hex already selected? If so, deselect it

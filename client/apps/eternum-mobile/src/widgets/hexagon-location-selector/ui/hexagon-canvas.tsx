@@ -249,9 +249,13 @@ export function HexagonCanvas({
     // Check if the clicked hex is available
     const isAvailable = availableLocations.some((loc) => loc.col === hex.col && loc.row === hex.row);
 
-    console.log(`Is hex available: ${isAvailable}`);
+    // Check if the hex is occupied
+    const isOccupied = occupiedLocations.some((loc) => loc.col === hex.col && loc.row === hex.row);
 
-    if (isAvailable) {
+    console.log(`Is hex available: ${isAvailable}, Is hex occupied: ${isOccupied}`);
+
+    // Only call onHexClick if the hex is available and not occupied
+    if (isAvailable && !isOccupied) {
       onHexClick(hex.col, hex.row);
     }
   };
