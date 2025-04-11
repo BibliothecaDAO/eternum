@@ -121,6 +121,7 @@ const DojoContextProvider = ({
   const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
+  const [retries, setRetries] = useState(0);
 
   const navigateToHexView = useNavigateToHexView();
 
@@ -214,11 +215,22 @@ const DojoContextProvider = ({
         }
 
         setAccountsInitialized(true);
+      } else {
+        setTimeout(() => {
+          setRetries((prevRetries) => {
+            if (prevRetries < 10) {
+              return prevRetries + 1;
+            } else {
+              setAccountsInitialized(true);
+              return prevRetries;
+            }
+          });
+        }, 100);
       }
     };
 
     handleAddressName();
-  }, [controllerAccount]);
+  }, [controllerAccount, retries]);
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;
