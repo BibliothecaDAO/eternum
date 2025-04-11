@@ -2,6 +2,7 @@
 
 import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
+import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, ComparisonOperator, LogicalOperator, Query } from "@dojoengine/torii-wasm";
@@ -133,14 +134,14 @@ export const getConfigFromTorii = async <S extends Schema>(
       Keys: {
         keys: [undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: oneKeyConfigModels,
       },
     },
     {
       Keys: {
         keys: [undefined, undefined],
         pattern_matching: "FixedLen",
-        models: [],
+        models: twoKeyConfigModels,
       },
     },
   ];
@@ -391,4 +392,59 @@ export const getBuildingsFromTorii = async <S extends Schema>(
   };
 
   await getEntities(client, query, components as any, [], ["s1_eternum-Building"], 1000, false);
+};
+
+export const getMapFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  startCol: number,
+  startRow: number,
+  range: number,
+) => {
+  const promiseTiles = getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
+      MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
+      MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
+      MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-Tile"],
+    1000,
+    false,
+  );
+  // todo: verify that this works with nested struct
+  const promiseExplorers = getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
+      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
+    1000,
+    false,
+  );
+
+  const promiseStructures = getEntities(
+    client,
+    AndComposeClause([
+      MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
+      MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
+      MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
+      MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
+    ]).build(),
+    components as any,
+    [],
+    ["s1_eternum-Structure", "s1_eternum-Resource"],
+    1000,
+    false,
+  );
+
+  return Promise.all([promiseTiles, promiseExplorers, promiseStructures]);
 };

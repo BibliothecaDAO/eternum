@@ -54,6 +54,8 @@ export const LeftNavigationModule = memo(() => {
 
   const disableButtons = !structureIsMine && account.address !== "0x0";
 
+  console.log({ disableButtons, structureIsMine, account });
+
   const isRealmOrVillage = useMemo(
     () =>
       Boolean(structureInfo) &&
@@ -161,13 +163,12 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.trade,
         button: (
           <CircleButton
-            disabled={false}
+            disabled={disableButtons}
             className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
             label={trade}
-            // active={isPopupOpen(trade)}
-            active={true}
+            active={isPopupOpen(trade)}
             size={"xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
           />

@@ -158,7 +158,32 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   //   );
   // }
 
-  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
+  // try {
+  //   let start = performance.now();
+  //   try {
+  //     await Promise.all([
+  //       await getEntities(
+  //         setup.network.toriiClient,
+  //         { Composite: { operator: "Or", clauses: configClauses } },
+  //         setup.network.contractComponents as any,
+  //         [],
+  //         configModels,
+  //         40_000,
+  //         false,
+  //       ),
+  //     ]);
+  //     let end = performance.now();
+  //     console.log("[sync] big config query", end - start);
+  //   } catch (error) {
+  //     console.error("[sync] Error fetching config entities:", error);
+  //     throw error; // Re-throw to be caught by outer try-catch
+  //   }
+  // } catch (error) {
+  //   console.error("[sync] Fatal error during config sync:", error);
+  // } finally {
+  // }
+
+  await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
 
   // // Sync Tile model

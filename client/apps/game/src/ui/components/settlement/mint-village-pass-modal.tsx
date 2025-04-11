@@ -100,6 +100,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     setIsLoading(true);
     try {
       const randomRealm = await getRandomRealmWithVillageSlots(toriiClient, components);
+      console.log({ randomRealm });
 
       if (randomRealm && randomRealm) {
         // Extract values safely with type assertions
