@@ -30,9 +30,12 @@ world_block = 940000
 
 [sql]
 all_model_indices = false
-model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+model_indices = [
+	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
+	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner"]},
+]
 historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
-cache_size = -1_000_000 # 1024MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
+cache_size = -78_125_000 # 10GB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance. 10GB is 50% of an insane slot instance's RAM.
 page_size = 32_768
 
 [server]

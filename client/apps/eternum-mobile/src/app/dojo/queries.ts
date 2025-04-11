@@ -32,6 +32,7 @@ export const getEntitiesFromTorii = async <S extends Schema>(
                   models: [],
                 },
               })),
+              // Gets the buildings inside the structure
               ...(positions
                 ? positions.map((position) => ({
                     Keys: {
