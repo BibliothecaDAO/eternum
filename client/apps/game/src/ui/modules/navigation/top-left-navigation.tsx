@@ -53,7 +53,8 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   const { isMapView, hexPosition } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  console.log("structureEntityId", structureEntityId);
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -77,7 +78,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return structures
       .map((structure) => ({
         ...structure,
-        isFavorite: favorites.includes(structure.structure.entity_id),
+        isFavorite: favorites.includes(structure.entityId),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures.length]);
@@ -117,11 +118,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     [navigateToMapView, hexPosition.col, hexPosition.row],
   );
 
-  const { progress } = useMemo(() => {
-    const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
-    const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
-    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
-  }, [currentBlockTimestamp]);
+  const onSelectStructure = useCallback(
+    (entityId: ID) => {
+      setStructureEntityId(entityId);
+      isMapView ? goToMapView(entityId) : goToHexView(entityId);
+    },
+    [isMapView, goToMapView, goToHexView, setStructureEntityId],
+  );
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
@@ -137,7 +140,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(a: string) => {
-                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                  onSelectStructure(ID(a));
                 }}
               >
                 <SelectTrigger className="truncate ">
@@ -146,17 +149,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectContent className=" panel-wood bg-dark-wood">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
-                      <button
-                        className="p-1"
-                        type="button"
-                        onClick={() => toggleFavorite(structure.structure.entity_id)}
-                      >
+                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
                       <SelectItem
                         className="flex justify-between"
                         key={index}
-                        value={structure.structure.entity_id?.toString() || ""}
+                        value={structure.entityId?.toString() || ""}
                       >
                         <div className="self-center flex gap-4 text-xl">{structure.name}</div>
                       </SelectItem>

@@ -10,14 +10,14 @@ import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
 import { getRandomRealmEntity } from "@/utils/realms";
-import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
+import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
-import { cairoShortStringToFelt } from "@dojoengine/torii-client";
+import { getComponentValue } from "@dojoengine/recs";
+import { cairoShortStringToFelt, Query } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AccountInterface, RpcProvider } from "starknet";
+import { Account, AccountInterface, RpcProvider, shortString } from "starknet";
 import { Env, env } from "../../../env";
 import { useNavigateToHexView } from "../helpers/use-navigate";
 import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
@@ -109,7 +109,7 @@ const DojoContextProvider = ({
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
 }) => {
-  useNavigateToRealmViewByAccount(value.components);
+  useNavigateToRealmViewByAccount(value);
 
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
@@ -123,8 +123,6 @@ const DojoContextProvider = ({
   const [accountsInitialized, setAccountsInitialized] = useState(false);
 
   const navigateToHexView = useNavigateToHexView();
-
-  const [retries, setRetries] = useState(0);
 
   const connectWallet = () => {
     try {
@@ -175,31 +173,52 @@ const DojoContextProvider = ({
       setAddressName(username);
     };
 
-    if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
+    const getAddressName = async () => {
+      if (!controllerAccount) return null;
 
-      const addressName = runQuery([
-        HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-      ]);
-
-      if (addressName.size === 0) {
-        setUserName();
+      const query: Query = {
+        limit: 1,
+        offset: 0,
+        entity_models: ["s1_eternum-AddressName"],
+        dont_include_hashed_keys: false,
+        entity_updated_after: 0,
+        order_by: [],
+        clause: {
+          Keys: {
+            keys: [controllerAccount.address],
+            pattern_matching: "FixedLen",
+            models: ["s1_eternum-AddressName"],
+          },
+        },
+      };
+      const addressName = await value.network.toriiClient.getEntities(query);
+      if (Object.keys(addressName).length > 0) {
+        return shortString.decodeShortString(
+          addressName[Object.keys(addressName)[0]]["s1_eternum-AddressName"]["name"]["value"] as string,
+        );
+      } else {
+        return null;
       }
+    };
 
-      setAccountsInitialized(true);
-    } else {
-      setTimeout(() => {
-        setRetries((prevRetries) => {
-          if (prevRetries < 10) {
-            return prevRetries + 1;
-          } else {
-            setAccountsInitialized(true);
-            return prevRetries;
-          }
-        });
-      }, 100);
-    }
-  }, [controllerAccount, retries]);
+    const handleAddressName = async () => {
+      if (controllerAccount) {
+        useAccountStore.getState().setAccount(controllerAccount);
+
+        const addressName = await getAddressName();
+
+        if (!addressName) {
+          await setUserName();
+        } else {
+          setAddressName(addressName);
+        }
+
+        setAccountsInitialized(true);
+      }
+    };
+
+    handleAddressName();
+  }, [controllerAccount]);
 
   if (!accountsInitialized) {
     return <LoadingScreen backgroundImage={backgroundImage} />;

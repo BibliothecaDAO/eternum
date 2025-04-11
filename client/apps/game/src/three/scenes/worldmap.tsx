@@ -738,7 +738,7 @@ export default class WorldmapScene extends HexagonScene {
       const batchSize = 25; // Adjust batch size as needed
       let currentIndex = 0;
 
-      this.computeTileEntities(this.currentChunk);
+      // this.computeTileEntities(this.currentChunk);
 
       const processBatch = async () => {
         const endIndex = Math.min(currentIndex + batchSize, rows * cols);

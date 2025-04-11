@@ -12,7 +12,6 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
-import ChatModule from "../ws-chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -162,12 +161,13 @@ export const LeftNavigationModule = memo(() => {
         name: MenuEnum.trade,
         button: (
           <CircleButton
-            disabled={disableButtons}
+            disabled={false}
             className="trade-selector"
             image={BuildingThumbs.scale}
             tooltipLocation="top"
             label={trade}
-            active={isPopupOpen(trade)}
+            // active={isPopupOpen(trade)}
+            active={true}
             size={"xl"}
             onClick={() => toggleModal(isPopupOpen(trade) ? null : <MarketModal />)}
           />
@@ -248,7 +248,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       <div className="flex">
         {/* <Chat /> */}
-        <ChatModule />
+        {/* <ChatModule /> */}
       </div>
     </div>
   );

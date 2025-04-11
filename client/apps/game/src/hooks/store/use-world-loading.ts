@@ -3,11 +3,12 @@
  * Each property indicates whether that part is currently loading data from the blockchain.
  */
 export enum LoadingStateKey {
-  SelectedStructure = "selectedStructure",
+  Realm = "realm",
+  SpectatorRealm = "spectatorRealm",
   Market = "market",
-  PlayerStructuresOneKey = "playerStructuresOneKey",
-  PlayerStructuresTwoKey = "playerStructuresTwoKey",
-  DonkeysAndArmies = "donkeysAndArmies",
+  AllPlayerStructures = "allPlayerStructures",
+  // Armies = "armies",
+  // Buildings = "buildings",
   Map = "map",
   Bank = "bank",
   World = "world",
@@ -28,11 +29,12 @@ export interface WorldStore {
 
 export const createWorldStoreSlice = (set: any) => ({
   loadingStates: {
-    [LoadingStateKey.SelectedStructure]: false,
+    [LoadingStateKey.Realm]: false,
+    [LoadingStateKey.SpectatorRealm]: false,
     [LoadingStateKey.Market]: false,
-    [LoadingStateKey.PlayerStructuresOneKey]: false,
-    [LoadingStateKey.PlayerStructuresTwoKey]: false,
-    [LoadingStateKey.DonkeysAndArmies]: false,
+    [LoadingStateKey.AllPlayerStructures]: false,
+    // [LoadingStateKey.Armies]: false,
+    // [LoadingStateKey.Buildings]: false,
     [LoadingStateKey.Map]: false,
     [LoadingStateKey.Bank]: false,
     [LoadingStateKey.World]: false,

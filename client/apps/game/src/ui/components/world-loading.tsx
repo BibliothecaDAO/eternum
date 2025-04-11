@@ -8,11 +8,10 @@ export const WorldLoading = () => {
 
   const getLoadingItems = () => {
     const items = [];
-    if (loadingStates[LoadingStateKey.SelectedStructure]) items.push("Summoning Realm"); // Selected Structure
+    if (loadingStates[LoadingStateKey.Realm]) items.push("Summoning Realm"); // Realm
+    if (loadingStates[LoadingStateKey.SpectatorRealm]) items.push("Summoning Spectator Realm"); // Spectator Realm
     if (loadingStates[LoadingStateKey.Market]) items.push("Gathering Merchants"); // Market
-    if (loadingStates[LoadingStateKey.PlayerStructuresOneKey] || loadingStates[LoadingStateKey.PlayerStructuresTwoKey])
-      items.push("Constructing Settlements"); // Player Structures
-    if (loadingStates[LoadingStateKey.DonkeysAndArmies]) items.push("Rallying Troops"); // Donkeys and Armies
+    if (loadingStates[LoadingStateKey.AllPlayerStructures]) items.push("Constructing Settlements"); // Player Structures
     if (loadingStates[LoadingStateKey.Map]) items.push("Charting Territories"); // Map
     if (loadingStates[LoadingStateKey.Bank]) items.push("Counting Gold"); // Bank
     if (loadingStates[LoadingStateKey.World]) items.push("Forging Eternum"); // World

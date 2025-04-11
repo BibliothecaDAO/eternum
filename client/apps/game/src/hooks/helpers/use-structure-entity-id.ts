@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
-import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -29,6 +28,8 @@ export const useStructureEntityId = () => {
 
     const newStructureId = structure?.entity_id;
 
-    setStructureEntityId(newStructureId || UNDEFINED_STRUCTURE_ENTITY_ID);
+    if (newStructureId) {
+      setStructureEntityId(newStructureId);
+    }
   }, [hexPosition.col, hexPosition.row]);
 };

@@ -1,12 +1,10 @@
-import { syncMarketAndBankData, syncPlayerStructuresData, syncStructureData } from "@/dojo/sync";
-import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
+import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
+import { PlayerStructure } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Leva } from "leva";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { env } from "../../../env";
@@ -103,16 +101,20 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const navigateToHexView = useNavigateToHexView();
 
   // Setup hooks
-  useStructureEntityId();
+  // useStructureEntityId();
 
   // We could optimise this deeper....
   const setLoading = useUIStore((state) => state.setLoading);
 
   const dojo = useDojo();
 
+  // todo: use torii client
+  // this will actually be only the synced structures, so if i don't sync, i wont have anything here
   const playerStructures = usePlayerStructures();
+  console.log({ playerStructures });
 
   const filteredStructures = useMemo(
     () =>
@@ -121,42 +123,31 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   );
 
   useEffect(() => {
-    if (
-      !structureEntityId ||
-      subscriptions[structureEntityId.toString()] ||
-      subscriptions[ADMIN_BANK_ENTITY_ID.toString()] ||
-      structureEntityId === 999999999
-    ) {
-      return;
-    }
+    const fetchStructureData = async () => {
+      if (!structureEntityId || subscriptions[structureEntityId.toString()]) {
+        return;
+      }
 
-    const structureBase = getComponentValue(
-      dojo.setup.components.Structure,
-      getEntityIdFromKeys([BigInt(structureEntityId)]),
-    )?.base;
+      setSubscriptions((prev) => ({
+        ...prev,
+        [structureEntityId.toString()]: true,
+        // ...Object.fromEntries(filteredStructures.map((structure) => [structure.structure.entity_id.toString(), true])),
+      }));
 
-    setSubscriptions((prev) => ({
-      ...prev,
-      [structureEntityId.toString()]: true,
-      [ADMIN_BANK_ENTITY_ID.toString()]: true,
-      ...Object.fromEntries(filteredStructures.map((structure) => [structure.structure.entity_id.toString(), true])),
-    }));
-
-    syncStructureData(
-      dojo.setup,
-      structureEntityId.toString(),
-      setLoading,
-      structureBase ? { x: structureBase.coord_x, y: structureBase.coord_y } : undefined,
-    );
+      await getStructuresDataFromTorii(dojo.setup.network.toriiClient, dojo.setup.network.contractComponents as any, [
+        structureEntityId,
+      ]);
+    };
+    fetchStructureData();
   }, [structureEntityId, subscriptions]);
 
-  useEffect(() => {
-    syncPlayerStructuresData(dojo.setup, filteredStructures, setLoading);
-  }, [playerStructures.length]);
-
-  useEffect(() => {
-    syncMarketAndBankData(dojo.setup, setLoading);
-  }, []);
+  // useEffect(() => {
+  //   syncStructuresData(
+  //     dojo.setup,
+  //     filteredStructures.map((structure) => structure.structure.entity_id),
+  //     setLoading,
+  //   );
+  // }, [playerStructures.length]);
 
   return (
     <>
