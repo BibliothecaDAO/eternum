@@ -2,10 +2,10 @@ import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { getAllStructures, PlayerStructure } from "@bibliothecadao/eternum";
+import { getAllStructures } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -97,31 +97,25 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 };
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [syncedStructures, setSyncedStructures] = useState<Set<string>>(new Set());
+  const syncedStructures = useRef<Set<string>>(new Set());
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const { setup, account } = useDojo();
   const playerStructures = usePlayerStructures();
 
   // Consolidated subscription logic into a single function
   const syncStructures = useCallback(
-    async (structureIds: number[]) => {
-      if (!structureIds.length) return;
+    async ({ structures }: { structures: { entityId: number; position: { col: number; row: number } }[] }) => {
+      if (!structures.length) return;
 
       try {
         const start = performance.now();
         await getStructuresDataFromTorii(
           setup.network.toriiClient,
           setup.network.contractComponents as any,
-          structureIds,
+          structures,
         );
         const end = performance.now();
-        console.log("[keys] structures query", end - start);
-
-        setSyncedStructures((prev) => {
-          const newSet = new Set(prev);
-          structureIds.forEach((id) => newSet.add(id.toString()));
-          return newSet;
-        });
+        console.log(`[keys] structures query structures ${structures.map((s) => s.entityId)}`, end - start);
       } catch (error) {
         console.error("Failed to sync structures:", error);
       }
@@ -129,39 +123,56 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     [setup.network.toriiClient, setup.network.contractComponents],
   );
 
-  // Handle initial structure fetch and sync
+  // Function to update the synced structures ref
+  const setSyncedStructures = useCallback((updater: (prev: Set<string>) => Set<string>) => {
+    syncedStructures.current = updater(syncedStructures.current);
+  }, []);
+
+  // Combine both effects into a single effect that handles all syncing
   useEffect(() => {
-    const fetchAndSyncStructures = async () => {
+    const syncAllStructures = async () => {
       if (!account.account) return;
 
       try {
-        const structures = await getAllStructures(setup, account.account.address);
-        if (!structures) return;
+        // Get structures from both sources
+        const fetchedStructures = (await getAllStructures(setup, account.account.address)) || [];
+        const allStructures = new Set([
+          ...fetchedStructures.map((structure) => structure.entityId.toString()),
+          ...playerStructures.map((structure) => structure.structure.entity_id.toString()),
+        ]);
 
-        const unsyncedStructureIds = structures
-          .map((structure) => Number(structure.entityId))
-          .filter((id) => !syncedStructures.has(id.toString()));
+        // Filter out already synced structures
+        const unsyncedStructureIds = Array.from(allStructures)
+          .filter((id) => !syncedStructures.current.has(id))
+          .map(Number);
 
-        await syncStructures(unsyncedStructureIds);
+        if (unsyncedStructureIds.length > 0) {
+          // Update synced structures first
+          setSyncedStructures((prev) => {
+            const newSet = new Set(prev);
+            unsyncedStructureIds.forEach((id) => newSet.add(id.toString()));
+            return newSet;
+          });
+
+          // Then sync the unsynced structures
+          const structuresAndPositions = unsyncedStructureIds.map((id) => ({
+            entityId: id,
+            position: fetchedStructures.find((structure) => structure.entityId === id)?.position || {
+              col: 0,
+              row: 0,
+            },
+          }));
+          await syncStructures({
+            structures: structuresAndPositions,
+          });
+        }
       } catch (error) {
-        console.error("Failed to fetch structures:", error);
+        console.error("Failed to sync structures:", error);
       }
     };
 
-    fetchAndSyncStructures();
-  }, [account.account, syncStructures]);
-
-  // Handle syncing of new structures from playerStructures
-  useEffect(() => {
-    const unsyncedStructures = playerStructures.filter(
-      (structure: PlayerStructure) => !syncedStructures.has(structure.structure.entity_id.toString()),
-    );
-
-    if (unsyncedStructures.length > 0) {
-      const structureIds = unsyncedStructures.map((structure) => Number(structure.structure.entity_id));
-      syncStructures(structureIds);
-    }
-  }, [playerStructures, syncStructures]);
+    syncAllStructures();
+  }, [account.account, playerStructures, syncStructures, setSyncedStructures]);
 
   return (
     <>

@@ -142,7 +142,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
 
 // initial sync runs before the game is playable and should sync minimal data
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   let start = performance.now();
   let end;
@@ -151,7 +151,7 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
   if (firstNonOwnedStructure) {
     state.setSpectatorRealmEntityId(firstNonOwnedStructure.entityId);
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
-      firstNonOwnedStructure.entityId,
+      { entityId: firstNonOwnedStructure.entityId, position: firstNonOwnedStructure.position },
     ]);
     end = performance.now();
     console.log("[keys] first structure query", end - start);

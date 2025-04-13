@@ -9,7 +9,7 @@ import {
   ID,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ModalContainer } from "../modal-container";
 import { VillageResourceReveal } from "./village-resource-reveal";
 
@@ -27,7 +27,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     },
   } = useDojo();
 
-  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID } | null>(null);
+  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID; position: HexPosition } | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<HexPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,9 +41,17 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     villagesCount: number;
     hasSlots: boolean;
     availableSlots: number;
+    position: HexPosition;
   } | null>(null);
   const [isCheckingRealm, setIsCheckingRealm] = useState(false);
   const [realmCheckError, setRealmCheckError] = useState<string | null>(null);
+  const [directionOptions, setDirectionOptions] = useState<
+    Array<{
+      value: Direction;
+      label: string;
+      coord: { col: number; row: number };
+    }>
+  >([]);
 
   const handleSettleVillage = async () => {
     if (selectedRealm !== null && selectedDirection !== null) {
@@ -75,10 +83,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     setRealmCheckError(null);
 
     try {
-      const result = await checkOpenVillageSlot(toriiClient, components, realmId);
+      const result = await checkOpenVillageSlot(toriiClient, realmId);
 
       if (!result) {
-        setRealmCheckError("Realm not found");
+        setRealmCheckError("Realm not found or");
         setRealmCheckResult(null);
       } else if (!result.hasSlots) {
         setRealmCheckError(`Realm #${realmId} has no available village slots`);
@@ -100,7 +108,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     setIsLoading(true);
     try {
       const randomRealm = await getRandomRealmWithVillageSlots(toriiClient, components);
-      console.log({ randomRealm });
 
       if (randomRealm && randomRealm) {
         // Extract values safely with type assertions
@@ -114,13 +121,15 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           villagesCount: villagesCountValue,
           hasSlots: villagesCountValue < 6,
           availableSlots: 6 - villagesCountValue,
+          position: { col: randomRealm.base.coord_x, row: randomRealm.base.coord_y },
         };
 
         setRealmCheckResult(result);
 
         setSelectedRealm({
-          realmId: realmIdValue,
-          entityId: entityIdValue,
+          realmId: result.realmId,
+          entityId: result.entityId,
+          position: { col: result.position.col, row: result.position.row },
         });
 
         setRealmIdInput(realmIdValue.toString());
@@ -142,33 +151,48 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
       setSelectedRealm({
         realmId: realmCheckResult.realmId,
         entityId: realmCheckResult.entityId,
+        position: { col: realmCheckResult.position.col, row: realmCheckResult.position.row },
       });
       setSelectedDirection(null);
       setSelectedCoords(null);
     }
   };
 
-  const directionOptions = useMemo(() => {
-    if (!selectedRealm) return [];
+  useEffect(() => {
+    const loadDirectionOptions = async () => {
+      if (!selectedRealm) {
+        setDirectionOptions([]);
+        return;
+      }
 
-    const freePositions = getFreeVillagePositions(selectedRealm.entityId, components);
+      try {
+        const freePositions = await getFreeVillagePositions(toriiClient, selectedRealm.position);
 
-    return Object.keys(Direction)
-      .filter((key) => isNaN(Number(key)))
-      .filter((dir) => {
-        const direction = Direction[dir as keyof typeof Direction];
-        return freePositions.some((pos) => pos.direction === direction);
-      })
-      .map((dir) => {
-        const direction = Direction[dir as keyof typeof Direction];
-        const position = freePositions.find((pos) => pos.direction === direction);
-        return {
-          value: direction,
-          label: dir.replace(/_/g, " "),
-          coord: { col: position?.col ?? 0, row: position?.row ?? 0 },
-        };
-      });
-  }, [selectedRealm, components]);
+        const options = Object.keys(Direction)
+          .filter((key) => isNaN(Number(key)))
+          .filter((dir) => {
+            const direction = Direction[dir as keyof typeof Direction];
+            return freePositions.some((pos) => pos.direction === direction);
+          })
+          .map((dir) => {
+            const direction = Direction[dir as keyof typeof Direction];
+            const position = freePositions.find((pos) => pos.direction === direction);
+            return {
+              value: direction,
+              label: dir.replace(/_/g, " "),
+              coord: { col: position?.col ?? 0, row: position?.row ?? 0 },
+            };
+          });
+
+        setDirectionOptions(options);
+      } catch (error) {
+        console.error("Error loading direction options:", error);
+        setDirectionOptions([]);
+      }
+    };
+
+    loadDirectionOptions();
+  }, [selectedRealm, toriiClient]);
 
   useEffect(() => {
     if (selectedDirection) {

@@ -1,11 +1,11 @@
 // onload -> fetch single key entities
 
-import { ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { HexPosition, ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-import { Clause, ComparisonOperator, LogicalOperator, Query } from "@dojoengine/torii-wasm";
+import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
@@ -16,7 +16,7 @@ import { EVENT_QUERY_LIMIT } from "./sync";
 export const getStructuresDataFromTorii = async (
   client: ToriiClient,
   components: Component<Schema, Metadata, undefined>[],
-  structures: ID[],
+  structures: { entityId: ID; position: HexPosition }[],
 ) => {
   const playerStructuresModels = [
     "s1_eternum-Structure",
@@ -25,68 +25,28 @@ export const getStructuresDataFromTorii = async (
     "s1_eternum-ResourceArrival",
   ];
 
-  const query: Query = {
-    limit: EVENT_QUERY_LIMIT,
-    offset: 0,
-    clause:
-      structures.length === 1
-        ? {
-            Keys: {
-              keys: [structures[0].toString()],
-              pattern_matching: "FixedLen" as PatternMatching,
-              models: ["s1_eternum-Structure"],
-            },
-          }
-        : {
-            Composite: {
-              operator: "And",
-              clauses: [
-                ...structures.map((structure) => ({
-                  Keys: {
-                    keys: [structure.toString()],
-                    pattern_matching: "FixedLen" as PatternMatching,
-                    models: ["s1_eternum-Structure"],
-                  },
-                })),
-              ],
-            },
-          },
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
-  };
-
-  const structurePositionEntities = await client.getEntities(query);
-
-  // Extract positions from the structure data
-  const positions = Object.values(structurePositionEntities || {})
-    .filter((model) => model && typeof model === "object" && "s1_eternum-Structure" in model)
-    .map((model) => {
-      const structure = model["s1_eternum-Structure"] as any;
-      if (structure && structure.base && structure.base.value) {
-        const baseValue = structure.base.value;
-        return {
-          x: baseValue.coord_x.value,
-          y: baseValue.coord_y.value,
-        };
-      }
-      return null;
-    })
-    .filter((pos) => pos !== null);
-
   // Create promises for both queries without awaiting them
   const structuresPromise = debouncedGetEntitiesFromTorii(
     client,
     components as any,
-    structures,
+    structures.map((structure) => structure.entityId),
     playerStructuresModels,
     () => {},
   );
 
-  const armiesPromise = debouncedGetOwnedArmiesFromTorii(client, components as any, structures, () => {});
+  const armiesPromise = debouncedGetOwnedArmiesFromTorii(
+    client,
+    components as any,
+    structures.map((structure) => structure.entityId),
+    () => {},
+  );
 
-  const buildingsPromise = debouncedGetBuildingsFromTorii(client, components as any, positions, () => {});
+  const buildingsPromise = debouncedGetBuildingsFromTorii(
+    client,
+    components as any,
+    structures.map((structure) => structure.position),
+    () => {},
+  );
 
   // Execute both promises in parallel
   return Promise.all([structuresPromise, armiesPromise, buildingsPromise]);
@@ -380,17 +340,16 @@ export const getOwnedArmiesFromTorii = async <S extends Schema>(
 export const getBuildingsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
-  structurePositions: { x: number; y: number }[],
+  structurePositions: HexPosition[],
 ) => {
   const query = {
     Composite: {
       operator: "Or" as LogicalOperator,
       clauses: structurePositions.map((position) => ({
-        Member: {
-          model: "s1_eternum-Building",
-          member: "outer_col",
-          operator: "Eq" as ComparisonOperator,
-          value: { Primitive: { U32: position.x } },
+        Keys: {
+          keys: [position.col.toString(), position.row.toString()],
+          pattern_matching: "VariableLen" as PatternMatching,
+          models: ["s1_eternum-Building"],
         },
       })),
     },
@@ -420,7 +379,6 @@ export const getMapFromTorii = async <S extends Schema>(
     EVENT_QUERY_LIMIT,
     false,
   );
-  // todo: verify that this works with nested struct
   const promiseExplorers = getEntities(
     client,
     AndComposeClause([
