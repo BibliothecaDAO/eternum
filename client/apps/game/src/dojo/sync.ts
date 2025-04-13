@@ -141,7 +141,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
 };
 
 // initial sync runs before the game is playable and should sync minimal data
-export const initialSync = async (setup: SetupResult, state: AppStore) => {
+export const initialSync = async (
+  setup: SetupResult,
+  state: AppStore,
+  setInitialSyncProgress: (progress: number) => void,
+) => {
   await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   let start = performance.now();
@@ -155,20 +159,24 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
     ]);
     end = performance.now();
     console.log("[keys] first structure query", end - start);
+    setInitialSyncProgress(25);
   }
 
   start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[keys] config query", end - start);
+  setInitialSyncProgress(50);
 
   start = performance.now();
   await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
   end = performance.now();
   console.log("[keys] season prize query", end - start);
+  setInitialSyncProgress(75);
 
   start = performance.now();
   await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
   console.log("[keys] address names query", end - start);
+  setInitialSyncProgress(100);
 };
