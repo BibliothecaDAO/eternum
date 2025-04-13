@@ -14,6 +14,8 @@ export enum LoadingStateKey {
   SingleKey = "singleKey",
   Config = "config",
   Events = "events",
+  MarketHistory = "marketHistory",
+  Leaderboard = "leaderboard",
 }
 
 type LoadingState = {
@@ -38,6 +40,8 @@ export const createWorldStoreSlice = (set: any) => ({
     [LoadingStateKey.SingleKey]: false,
     [LoadingStateKey.Config]: false,
     [LoadingStateKey.Events]: false,
+    [LoadingStateKey.Leaderboard]: false,
+    [LoadingStateKey.MarketHistory]: false,
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>

@@ -7,6 +7,8 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 import { Subscription, useSyncStore } from "../store/use-sync-store";
+import { useUIStore } from "../store/use-ui-store";
+import { LoadingStateKey } from "../store/use-world-loading";
 
 export const useSyncLeaderboard = () => {
   const {
@@ -17,10 +19,12 @@ export const useSyncLeaderboard = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
       setIsSyncing(true);
+      setLoading(LoadingStateKey.Leaderboard, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
         : getHyperstructureFromTorii(toriiClient, components as any);
@@ -35,7 +39,7 @@ export const useSyncLeaderboard = () => {
 
       setSubscription(Subscription.Hyperstructure, true);
       setSubscription(Subscription.Guild, true);
-
+      setLoading(LoadingStateKey.Leaderboard, false);
       setIsSyncing(false);
     };
     syncState();
@@ -53,10 +57,12 @@ export const useSyncHyperstructure = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
       setIsSyncing(true);
+      setLoading(LoadingStateKey.Hyperstructure, true);
       const hyperstructurePromise = subscriptions[Subscription.Hyperstructure]
         ? Promise.resolve()
         : getHyperstructureFromTorii(toriiClient, components as any);
@@ -67,6 +73,7 @@ export const useSyncHyperstructure = () => {
       console.log("[keys] hyperstructure query", end - start);
 
       setSubscription(Subscription.Hyperstructure, true);
+      setLoading(LoadingStateKey.Hyperstructure, false);
       setIsSyncing(false);
     };
     syncState();
@@ -84,10 +91,12 @@ export const useSyncMarket = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
       setIsSyncing(true);
+      setLoading(LoadingStateKey.Market, true);
       const marketPromise = subscriptions[Subscription.Market]
         ? Promise.resolve()
         : getMarketFromTorii(toriiClient, components as any);
@@ -99,6 +108,7 @@ export const useSyncMarket = () => {
 
       setSubscription(Subscription.Market, true);
       setIsSyncing(false);
+      setLoading(LoadingStateKey.Market, false);
     };
     syncState();
   }, [components]);
@@ -115,10 +125,12 @@ export const useSyncMarketHistory = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const subscriptions = useSyncStore((state) => state.subscriptions);
   const setSubscription = useSyncStore((state) => state.setSubscription);
+  const setLoading = useUIStore((state) => state.setLoading);
 
   useEffect(() => {
     const syncState = async () => {
       setIsSyncing(true);
+      setLoading(LoadingStateKey.MarketHistory, true);
       const marketHistoryPromise = subscriptions[Subscription.MarketHistory]
         ? Promise.resolve()
         : getMarketEventsFromTorii(toriiClient, components as any);
@@ -129,6 +141,7 @@ export const useSyncMarketHistory = () => {
       console.log("[keys] market history query", end - start);
 
       setSubscription(Subscription.MarketHistory, true);
+      setLoading(LoadingStateKey.MarketHistory, false);
       setIsSyncing(false);
     };
     syncState();

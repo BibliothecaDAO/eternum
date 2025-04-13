@@ -1,5 +1,6 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { getAllStructures } from "@bibliothecadao/eternum";
@@ -101,6 +102,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const { setup, account } = useDojo();
   const playerStructures = usePlayerStructures();
+  const setLoading = useUIStore((state) => state.setLoading);
 
   // Consolidated subscription logic into a single function
   const syncStructures = useCallback(
@@ -109,6 +111,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
       try {
         const start = performance.now();
+        setLoading(LoadingStateKey.AllPlayerStructures, true);
         await getStructuresDataFromTorii(
           setup.network.toriiClient,
           setup.network.contractComponents as any,
@@ -118,6 +121,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         console.log(`[keys] structures query structures ${structures.map((s) => s.entityId)}`, end - start);
       } catch (error) {
         console.error("Failed to sync structures:", error);
+      } finally {
+        setLoading(LoadingStateKey.AllPlayerStructures, false);
       }
     },
     [setup.network.toriiClient, setup.network.contractComponents],

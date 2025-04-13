@@ -19,6 +19,8 @@ export const WorldLoading = () => {
     if (loadingStates[LoadingStateKey.SingleKey]) items.push("Unlocking Secrets"); // Single Key
     if (loadingStates[LoadingStateKey.Config]) items.push("Consulting Scrolls"); // Config
     if (loadingStates[LoadingStateKey.Events]) items.push("Weaving Tales"); // Events
+    if (loadingStates[LoadingStateKey.MarketHistory]) items.push("Counting Gold"); // Market History
+    if (loadingStates[LoadingStateKey.Leaderboard]) items.push("Ranking Players"); // Leaderboard
     return items.join(", ");
   };
 
