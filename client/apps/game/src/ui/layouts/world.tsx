@@ -1,12 +1,11 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { PlayerStructure } from "@bibliothecadao/eternum";
+import { getAllStructures, PlayerStructure } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -98,56 +97,71 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 };
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
+  const [syncedStructures, setSyncedStructures] = useState<Set<string>>(new Set());
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const navigateToHexView = useNavigateToHexView();
-
-  // Setup hooks
-  // useStructureEntityId();
-
-  // We could optimise this deeper....
-  const setLoading = useUIStore((state) => state.setLoading);
-
-  const dojo = useDojo();
-
-  // todo: use torii client
-  // this will actually be only the synced structures, so if i don't sync, i wont have anything here
+  const { setup, account } = useDojo();
   const playerStructures = usePlayerStructures();
-  console.log({ playerStructures });
 
-  const filteredStructures = useMemo(
-    () =>
-      playerStructures.filter((structure: PlayerStructure) => !subscriptions[structure.structure.entity_id.toString()]),
-    [playerStructures, subscriptions],
+  // Consolidated subscription logic into a single function
+  const syncStructures = useCallback(
+    async (structureIds: number[]) => {
+      if (!structureIds.length) return;
+
+      try {
+        const start = performance.now();
+        await getStructuresDataFromTorii(
+          setup.network.toriiClient,
+          setup.network.contractComponents as any,
+          structureIds,
+        );
+        const end = performance.now();
+        console.log("[keys] structures query", end - start);
+
+        setSyncedStructures((prev) => {
+          const newSet = new Set(prev);
+          structureIds.forEach((id) => newSet.add(id.toString()));
+          return newSet;
+        });
+      } catch (error) {
+        console.error("Failed to sync structures:", error);
+      }
+    },
+    [setup.network.toriiClient, setup.network.contractComponents],
   );
 
+  // Handle initial structure fetch and sync
   useEffect(() => {
-    const fetchStructureData = async () => {
-      if (!structureEntityId || subscriptions[structureEntityId.toString()]) {
-        return;
+    const fetchAndSyncStructures = async () => {
+      if (!account.account) return;
+
+      try {
+        const structures = await getAllStructures(setup, account.account.address);
+        if (!structures) return;
+
+        const unsyncedStructureIds = structures
+          .map((structure) => Number(structure.entityId))
+          .filter((id) => !syncedStructures.has(id.toString()));
+
+        await syncStructures(unsyncedStructureIds);
+      } catch (error) {
+        console.error("Failed to fetch structures:", error);
       }
-
-      setSubscriptions((prev) => ({
-        ...prev,
-        [structureEntityId.toString()]: true,
-        // ...Object.fromEntries(filteredStructures.map((structure) => [structure.structure.entity_id.toString(), true])),
-      }));
-
-      await getStructuresDataFromTorii(dojo.setup.network.toriiClient, dojo.setup.network.contractComponents as any, [
-        structureEntityId,
-      ]);
     };
-    fetchStructureData();
-  }, [structureEntityId, subscriptions]);
 
-  // useEffect(() => {
-  //   syncStructuresData(
-  //     dojo.setup,
-  //     filteredStructures.map((structure) => structure.structure.entity_id),
-  //     setLoading,
-  //   );
-  // }, [playerStructures.length]);
+    fetchAndSyncStructures();
+  }, [account.account, syncStructures]);
+
+  // Handle syncing of new structures from playerStructures
+  useEffect(() => {
+    const unsyncedStructures = playerStructures.filter(
+      (structure: PlayerStructure) => !syncedStructures.has(structure.structure.entity_id.toString()),
+    );
+
+    if (unsyncedStructures.length > 0) {
+      const structureIds = unsyncedStructures.map((structure) => Number(structure.structure.entity_id));
+      syncStructures(structureIds);
+    }
+  }, [playerStructures, syncStructures]);
 
   return (
     <>

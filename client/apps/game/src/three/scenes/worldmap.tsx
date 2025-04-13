@@ -841,6 +841,7 @@ export default class WorldmapScene extends HexagonScene {
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
 
+    const start = performance.now();
     try {
       this.state.setLoading(LoadingStateKey.Map, true);
       await getMapFromTorii(
@@ -850,12 +851,14 @@ export default class WorldmapScene extends HexagonScene {
         startRow,
         range,
       );
-
-      this.state.setLoading(LoadingStateKey.Map, false);
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
       this.fetchedChunks.delete(chunkKey);
       console.error("Error fetching tile entities:", error);
+    } finally {
+      this.state.setLoading(LoadingStateKey.Map, false);
+      const end = performance.now();
+      console.log("[keys] map query", end - start);
     }
   }
 

@@ -1,9 +1,10 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
+import { Clause, PatternMatching, Query } from "@dojoengine/torii-client";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager, Structure } from "..";
 import { MERCENARIES, StructureType } from "../constants";
-import { ClientComponents } from "../dojo";
+import { ClientComponents, SetupResult } from "../dojo";
 import { ContractAddress, ID, Position, TickIds } from "../types";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
@@ -98,4 +99,98 @@ export const getStructureTypeName = (structureType: StructureType) => {
     default:
       return "Unknown";
   }
+};
+
+export const getAllStructures = async (setup: SetupResult, ownedBy?: string) => {
+  const clause: Clause = !ownedBy
+    ? {
+        Keys: {
+          keys: [undefined], // matches any key
+          pattern_matching: "FixedLen" as PatternMatching,
+          models: ["s1_eternum-Structure"], // specify the model you want to query
+        },
+      }
+    : {
+        Member: {
+          model: "s1_eternum-Structure",
+          member: "owner",
+          operator: "Eq",
+          value: { Primitive: { ContractAddress: ownedBy } },
+        },
+      };
+
+  const query: Query = {
+    limit: 100,
+    offset: 0,
+    clause,
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["s1_eternum-Structure"],
+    entity_updated_after: 0,
+  };
+
+  const entities = await setup.network.toriiClient.getEntities(query);
+  const result = Object.keys(entities).map((entity) => {
+    const structure = entities[entity]["s1_eternum-Structure"] as any;
+    const entityId = structure.entity_id.value;
+    const owner = structure.owner.value as string;
+    return { entityId, owner };
+  });
+  return result;
+};
+
+export const getFirstStructure = async (setup: SetupResult, ownedBy?: string) => {
+  const clause: Clause = !ownedBy
+    ? {
+        Keys: {
+          keys: [undefined], // matches any key
+          pattern_matching: "FixedLen" as PatternMatching,
+          models: ["s1_eternum-Structure"], // specify the model you want to query
+        },
+      }
+    : {
+        Composite: {
+          operator: "And",
+          clauses: [
+            {
+              Keys: {
+                keys: [undefined], // matches any key
+                pattern_matching: "FixedLen" as PatternMatching,
+                models: ["s1_eternum-Structure"], // specify the model you want to query
+              },
+            },
+            {
+              Member: {
+                model: "s1_eternum-Structure",
+                member: "owner",
+                operator: "Eq",
+                value: { Primitive: { ContractAddress: ownedBy } },
+              },
+            },
+          ],
+        },
+      };
+
+  const query: Query = {
+    limit: 1,
+    offset: 0,
+    clause,
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["s1_eternum-Structure"],
+    entity_updated_after: 0,
+  };
+
+  const entities = await setup.network.toriiClient.getEntities(query);
+  const realmEntity = Object.keys(entities)[0] as Entity;
+
+  if (!realmEntity) {
+    return;
+  }
+
+  const structure = entities[realmEntity]["s1_eternum-Structure"] as any;
+  const entityId = structure.entity_id.value;
+  const owner = structure.owner.value as string;
+
+  return { entityId, owner };
 };

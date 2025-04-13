@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useNavigateToHexView, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -50,11 +50,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { isMapView, hexPosition } = useQuery();
+  const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  console.log("structureEntityId", structureEntityId);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -91,39 +89,20 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     });
   }, []);
 
-  const navigateToHexView = useNavigateToHexView();
-  const navigateToMapView = useNavigateToMapView();
+  const goToStructure = useGoToStructure();
 
-  const goToHexView = useCallback(
+  const onSelectStructure = useCallback(
     (entityId: ID) => {
       const structurePosition = getComponentValue(
         setup.components.Structure,
         getEntityIdFromKeys([BigInt(entityId)]),
       )?.base;
+
       if (!structurePosition) return;
-      navigateToHexView(new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }));
-    },
-    [navigateToHexView],
-  );
 
-  const goToMapView = useCallback(
-    (entityId?: ID) => {
-      const position = entityId
-        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base
-        : { coord_x: hexPosition.col, coord_y: hexPosition.row };
-
-      if (!position) return;
-      navigateToMapView(new Position({ x: position.coord_x, y: position.coord_y }));
+      goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
     },
-    [navigateToMapView, hexPosition.col, hexPosition.row],
-  );
-
-  const onSelectStructure = useCallback(
-    (entityId: ID) => {
-      setStructureEntityId(entityId);
-      isMapView ? goToMapView(entityId) : goToHexView(entityId);
-    },
-    [isMapView, goToMapView, goToHexView, setStructureEntityId],
+    [isMapView, setup.components.Structure],
   );
 
   return (
@@ -194,9 +173,17 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               className="self-center"
               onClick={() => {
                 if (!isMapView) {
-                  goToMapView();
+                  goToStructure(
+                    structureEntityId,
+                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    true,
+                  );
                 } else {
-                  goToHexView(structureEntityId);
+                  goToStructure(
+                    structureEntityId,
+                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    false,
+                  );
                 }
               }}
             >
@@ -298,7 +285,6 @@ const TickProgress = memo(() => {
   const cycleTime = configManager.getTick(TickIds.Armies);
   const { play } = useUiSounds(soundSelector.gong);
 
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const lastProgressRef = useRef(0);
 
   // Calculate progress once and memoize
@@ -333,7 +319,6 @@ const TickProgress = memo(() => {
 
   // Handle tooltip visibility
   const handleMouseEnter = useCallback(() => {
-    setIsTooltipOpen(true);
     setTooltip({
       position: "bottom",
       content: tooltipContent,
@@ -341,7 +326,6 @@ const TickProgress = memo(() => {
   }, [setTooltip, tooltipContent]);
 
   const handleMouseLeave = useCallback(() => {
-    setIsTooltipOpen(false);
     setTooltip(null);
   }, [setTooltip]);
 

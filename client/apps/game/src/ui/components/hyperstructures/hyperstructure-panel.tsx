@@ -1,7 +1,9 @@
+import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
@@ -53,6 +55,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
     network: { provider },
     setup: { systemCalls, components },
   } = dojo;
+
+  const { isSyncing } = useSyncHyperstructure();
 
   // Add initialize function manually since it's not in the type definition
   const { contribute_to_construction, set_access, initialize_hyperstructure } = systemCalls;
@@ -130,8 +134,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
-
-    console.log({ formattedContributions });
 
     try {
       await contribute_to_construction({
@@ -226,7 +228,9 @@ export const HyperstructurePanel = ({ entity }: any) => {
       : "Private",
   );
 
-  return (
+  return isSyncing ? (
+    <LoadingAnimation />
+  ) : (
     <div className="flex flex-col justify-between h-full">
       <div className="flex flex-col p-2">
         <div className="flex">

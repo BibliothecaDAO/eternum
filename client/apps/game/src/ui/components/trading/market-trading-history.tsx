@@ -1,5 +1,7 @@
+import { useSyncMarketHistory } from "@/hooks/helpers/use-sync";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { ContractAddress, getTradeResources, ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -21,7 +23,13 @@ export type TradeEvent = {
   };
 };
 
-export const MarketTradingHistory = memo(() => {
+export const MarketTradingHistory = () => {
+  const { isSyncing } = useSyncMarketHistory();
+
+  return isSyncing ? <LoadingAnimation /> : <MarketTradingHistoryContent />;
+};
+
+export const MarketTradingHistoryContent = memo(() => {
   const {
     account: {
       account: { address },

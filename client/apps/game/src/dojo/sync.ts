@@ -1,10 +1,14 @@
-import { getFirstStructure } from "@/hooks/helpers/use-navigate-to-realm-view-by-account";
 import { AppStore } from "@/hooks/store/use-ui-store";
-import { SetupResult } from "@bibliothecadao/eternum";
+import { getFirstStructure, SetupResult } from "@bibliothecadao/eternum";
 import { Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
-import { getConfigFromTorii, getSeasonPrizeFromTorii, getStructuresDataFromTorii } from "./queries";
+import {
+  getAddressNamesFromTorii,
+  getConfigFromTorii,
+  getSeasonPrizeFromTorii,
+  getStructuresDataFromTorii,
+} from "./queries";
 import { handleExplorerTroopsIfDeletion } from "./utils";
 
 export const EVENT_QUERY_LIMIT = 40_000;
@@ -140,6 +144,8 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: AppStore) => {
   await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
 
+  let start = performance.now();
+  let end;
   // SPECTATOR REALM
   const firstNonOwnedStructure = await getFirstStructure(setup);
   if (firstNonOwnedStructure) {
@@ -147,79 +153,22 @@ export const initialSync = async (setup: SetupResult, state: AppStore) => {
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [
       firstNonOwnedStructure.entityId,
     ]);
+    end = performance.now();
+    console.log("[keys] first structure query", end - start);
   }
 
-  // can't sync if dont know player address
-  // SYNC FIRST PLAYER OWNED REALM
-  // const firstPlayerOwnedStructure = await getFirstStructure(setup, setup);
-  // if (firstPlayerOwnedStructure) {
-  //   await syncStructuresData(setup, [firstPlayerOwnedStructure.entityId], (isLoading: boolean) =>
-  //     setLoading(LoadingStateKey.Realm, isLoading),
-  //   );
-  // }
-
-  // try {
-  //   let start = performance.now();
-  //   try {
-  //     await Promise.all([
-  //       await getEntities(
-  //         setup.network.toriiClient,
-  //         { Composite: { operator: "Or", clauses: configClauses } },
-  //         setup.network.contractComponents as any,
-  //         [],
-  //         configModels,
-  //         40_000,
-  //         false,
-  //       ),
-  //     ]);
-  //     let end = performance.now();
-  //     console.log("[sync] big config query", end - start);
-  //   } catch (error) {
-  //     console.error("[sync] Error fetching config entities:", error);
-  //     throw error; // Re-throw to be caught by outer try-catch
-  //   }
-  // } catch (error) {
-  //   console.error("[sync] Fatal error during config sync:", error);
-  // } finally {
-  // }
-
+  start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  end = performance.now();
+  console.log("[keys] config query", end - start);
+
+  start = performance.now();
   await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
+  end = performance.now();
+  console.log("[keys] season prize query", end - start);
 
-  // // Sync Tile model
-  // start = performance.now();
-  // try {
-  //   await getEntities(
-  //     setup.network.toriiClient,
-  //     {
-  //       Keys: {
-  //         keys: [undefined, undefined],
-  //         pattern_matching: "FixedLen",
-  //         models: ["s1_eternum-Tile"],
-  //       },
-  //     },
-  //     setup.network.contractComponents as any,
-  //     [],
-  //     ["s1_eternum-Tile"],
-  //     40_000,
-  //     false,
-  //   );
-  // } catch (error) {
-  //   console.error("[sync] Error fetching tile entities:", error);
-  // }
-  // end = performance.now();
-  // console.log("[sync] tile query", end - start);
+  start = performance.now();
+  await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  end = performance.now();
+  console.log("[keys] address names query", end - start);
 };
-
-// const singleKeyModels = [
-//   // Guild
-//   "s1_eternum-Guild",
-//   "s1_eternum-GuildMember",
-// ];
-
-// for each structure:
-// get the structure
-// get the buildings
-// get the resources
-// get the resource arrivals
-// get the armies

@@ -3,24 +3,20 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { getRandomRealmEntity } from "@/utils/realms";
 import { SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { getComponentValue } from "@dojoengine/recs";
 import { cairoShortStringToFelt, Query } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider, shortString } from "starknet";
 import { Env, env } from "../../../env";
-import { useNavigateToHexView } from "../helpers/use-navigate";
-import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
+import { useSpectatorModeClick } from "../helpers/use-navigate";
 
 export const NULL_ACCOUNT = {
   address: "0x0",
@@ -109,8 +105,6 @@ const DojoContextProvider = ({
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
 }) => {
-  useNavigateToRealmViewByAccount(value);
-
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
 
@@ -122,8 +116,6 @@ const DojoContextProvider = ({
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
   const [retries, setRetries] = useState(0);
-
-  const navigateToHexView = useNavigateToHexView();
 
   const connectWallet = () => {
     try {
@@ -139,11 +131,7 @@ const DojoContextProvider = ({
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
   );
 
-  const onSpectatorModeClick = () => {
-    const randomRealmEntity = getRandomRealmEntity(value.components);
-    const structureBase = randomRealmEntity && getComponentValue(value.components.Structure, randomRealmEntity)?.base;
-    structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
-  };
+  const onSpectatorModeClick = useSpectatorModeClick(value.components);
 
   useEffect(() => {
     if (!controllerAccount) {

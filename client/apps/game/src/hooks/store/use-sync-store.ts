@@ -1,23 +1,24 @@
-import { ID } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 
 export enum Subscription {
   Market = "market",
+  MarketHistory = "marketHistory",
   Hyperstructure = "hyperstructure",
+  Guild = "guild",
 }
 
 export interface SyncStore {
   subscriptions: Record<string, boolean>;
-  setSubscription: (id: ID, type: Subscription, subscribed: boolean) => void;
+  setSubscription: (type: Subscription, subscribed: boolean) => void;
 }
 
 export const createSyncStoreSlice = (set: any) => ({
   subscriptions: {},
-  setSubscription: (id: ID, type: Subscription, subscribed: boolean) =>
+  setSubscription: (type: Subscription, subscribed: boolean) =>
     set((state: SyncStore) => ({
       subscriptions: {
         ...state.subscriptions,
-        [`${type}_${id}`]: subscribed,
+        [type]: subscribed,
       },
     })),
 });
