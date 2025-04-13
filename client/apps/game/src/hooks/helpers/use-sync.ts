@@ -35,7 +35,7 @@ export const useSyncLeaderboard = () => {
       const start = performance.now();
       await Promise.all([hyperstructurePromise, guildPromise]);
       const end = performance.now();
-      console.log("[keys] guild and hyperstructure query", end - start);
+      console.log("[sync] guild and hyperstructure query", end - start);
 
       setSubscription(Subscription.Hyperstructure, true);
       setSubscription(Subscription.Guild, true);
@@ -70,7 +70,7 @@ export const useSyncHyperstructure = () => {
       const start = performance.now();
       await Promise.all([hyperstructurePromise]);
       const end = performance.now();
-      console.log("[keys] hyperstructure query", end - start);
+      console.log("[sync] hyperstructure query", end - start);
 
       setSubscription(Subscription.Hyperstructure, true);
       setLoading(LoadingStateKey.Hyperstructure, false);
@@ -104,7 +104,7 @@ export const useSyncMarket = () => {
       const start = performance.now();
       await Promise.all([marketPromise]);
       const end = performance.now();
-      console.log("[keys] market query", end - start);
+      console.log("[sync] market query", end - start);
 
       setSubscription(Subscription.Market, true);
       setIsSyncing(false);
@@ -138,7 +138,7 @@ export const useSyncMarketHistory = () => {
       const start = performance.now();
       await Promise.all([marketHistoryPromise]);
       const end = performance.now();
-      console.log("[keys] market history query", end - start);
+      console.log("[sync] market history query", end - start);
 
       setSubscription(Subscription.MarketHistory, true);
       setLoading(LoadingStateKey.MarketHistory, false);

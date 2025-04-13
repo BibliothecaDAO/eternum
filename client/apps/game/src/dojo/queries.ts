@@ -1,6 +1,6 @@
 // onload -> fetch single key entities
 
-import { HexPosition, ID, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { HexPosition, ID, StructureType, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";
@@ -283,7 +283,25 @@ export const getMarketFromTorii = async <S extends Schema>(
     EVENT_QUERY_LIMIT,
     false,
   );
-  return Promise.all([promiseResourceList, promiseMarket]);
+
+  const promiseBankStructures = getBankStructuresFromTorii(client, components as any);
+
+  return Promise.all([promiseResourceList, promiseMarket, promiseBankStructures]);
+};
+
+export const getBankStructuresFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+) => {
+  return getEntities(
+    client,
+    MemberClause("s1_eternum-Structure", "category", "Eq", StructureType.Bank).build(),
+    components,
+    [],
+    ["s1_eternum-Structure"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
 };
 
 export const getMarketEventsFromTorii = async <S extends Schema>(

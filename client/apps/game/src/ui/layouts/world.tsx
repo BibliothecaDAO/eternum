@@ -118,7 +118,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           structures,
         );
         const end = performance.now();
-        console.log(`[keys] structures query structures ${structures.map((s) => s.entityId)}`, end - start);
+        console.log(`[sync] structures query structures ${structures.map((s) => s.entityId)}`, end - start);
       } catch (error) {
         console.error("Failed to sync structures:", error);
       } finally {

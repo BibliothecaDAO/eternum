@@ -858,7 +858,7 @@ export default class WorldmapScene extends HexagonScene {
     } finally {
       this.state.setLoading(LoadingStateKey.Map, false);
       const end = performance.now();
-      console.log("[keys] map query", end - start);
+      console.log("[sync] map query", end - start);
     }
   }
 

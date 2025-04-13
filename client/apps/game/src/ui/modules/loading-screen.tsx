@@ -56,7 +56,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
               style={{ width: `${initialSyncProgress}%` }}
             />
           </div>
-          <div className="text-sm mt-2 text-gray-300">{initialSyncProgress}%</div>
+          <div className="text-sm mt-2 text-gray-300">{initialSyncProgress === 100 ? 99 : initialSyncProgress}%</div>
         </div>
       </div>
     </OnboardingContainer>

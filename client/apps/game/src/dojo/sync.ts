@@ -5,6 +5,7 @@ import { setEntities } from "@dojoengine/state";
 import { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import {
   getAddressNamesFromTorii,
+  getBankStructuresFromTorii,
   getConfigFromTorii,
   getSeasonPrizeFromTorii,
   getStructuresDataFromTorii,
@@ -150,6 +151,14 @@ export const initialSync = async (
 
   let start = performance.now();
   let end;
+
+  // BANKS
+  // todo: this is not needed for initial sync, should be placed to market sync but currently not working
+  await getBankStructuresFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+  end = performance.now();
+  console.log("[sync] bank structures query", end - start);
+  setInitialSyncProgress(10);
+
   // SPECTATOR REALM
   const firstNonOwnedStructure = await getFirstStructure(setup);
   if (firstNonOwnedStructure) {
@@ -158,25 +167,25 @@ export const initialSync = async (
       { entityId: firstNonOwnedStructure.entityId, position: firstNonOwnedStructure.position },
     ]);
     end = performance.now();
-    console.log("[keys] first structure query", end - start);
+    console.log("[sync] first structure query", end - start);
     setInitialSyncProgress(25);
   }
 
   start = performance.now();
   await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
-  console.log("[keys] config query", end - start);
+  console.log("[sync] config query", end - start);
   setInitialSyncProgress(50);
 
   start = performance.now();
   await getSeasonPrizeFromTorii(setup.network.toriiClient, setup.network.contractComponents.events as any);
   end = performance.now();
-  console.log("[keys] season prize query", end - start);
+  console.log("[sync] season prize query", end - start);
   setInitialSyncProgress(75);
 
   start = performance.now();
   await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
   end = performance.now();
-  console.log("[keys] address names query", end - start);
+  console.log("[sync] address names query", end - start);
   setInitialSyncProgress(100);
 };
