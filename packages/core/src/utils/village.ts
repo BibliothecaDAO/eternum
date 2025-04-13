@@ -1,10 +1,11 @@
-import { Entity } from "@dojoengine/recs";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause, OrComposeClause } from "@dojoengine/sdk";
 import { Query, ToriiClient } from "@dojoengine/torii-client";
-import { getNeighborHexes, Steps, StructureType } from "../constants";
+import { getNeighborHexes, Steps, StructureType, WORLD_CONFIG_ID } from "../constants";
 import { ClientComponents } from "../dojo";
 import { HexPosition, ID } from "../types";
 import { getStructureFromToriiEntity } from "./structure";
+import { getEntityIdFromKeys } from "./utils";
 
 export const getFreeVillagePositions = async (toriiClient: ToriiClient, contractPosition: HexPosition) => {
   const neighborHexes = getNeighborHexes(contractPosition.col, contractPosition.row, Steps.Two);
@@ -51,9 +52,16 @@ export const getFreeVillagePositions = async (toriiClient: ToriiClient, contract
 
 // Function to get a random realm with village slots
 export const getRandomRealmWithVillageSlots = async (toriiClient: ToriiClient, components: ClientComponents) => {
+  const realmCount =
+    getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.realm_count_config.count || 0;
+
+  // Generate a random offset
+  const randomOffset = Math.floor(Math.random() * realmCount);
+
+  // Query with random offset
   const query: Query = {
     limit: 1,
-    offset: 0,
+    offset: randomOffset,
     clause: AndComposeClause([
       MemberClause("s1_eternum-Structure", "metadata.villages_count", "Lte", 5),
       MemberClause("s1_eternum-Structure", "base.category", "Eq", StructureType.Realm),
@@ -65,15 +73,12 @@ export const getRandomRealmWithVillageSlots = async (toriiClient: ToriiClient, c
   };
 
   const entities = await toriiClient.getEntities(query);
-
-  // Filter for realms (category = StructureType.Realm)
   const entity = Object.keys(entities)[0];
   if (!entity) {
     return null;
   }
 
   const entityData = entities[entity]["s1_eternum-Structure"] as any;
-
   return getStructureFromToriiEntity(entityData);
 };
 

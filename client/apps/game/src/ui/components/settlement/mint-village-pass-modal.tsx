@@ -55,14 +55,12 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   const handleSettleVillage = async () => {
     if (selectedRealm !== null && selectedDirection !== null) {
-      setIsLoading(true);
-      await create_village({
+      create_village({
         connected_realm: selectedRealm.entityId,
         direction: selectedDirection,
         signer: account,
-      })
-        .then(() => setShowResourceReveal(true))
-        .finally(() => setIsLoading(false));
+      });
+      setShowResourceReveal(true);
     }
   };
 
@@ -153,8 +151,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         entityId: realmCheckResult.entityId,
         position: { col: realmCheckResult.position.col, row: realmCheckResult.position.row },
       });
-      setSelectedDirection(null);
-      setSelectedCoords(null);
     }
   };
 
@@ -180,11 +176,19 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
             return {
               value: direction,
               label: dir.replace(/_/g, " "),
-              coord: { col: position?.col ?? 0, row: position?.row ?? 0 },
+              coord: {
+                col: position?.col ?? 0,
+                row: position?.row ?? 0,
+              },
             };
           });
 
         setDirectionOptions(options);
+
+        // Auto-select the first direction if available
+        if (options.length > 0) {
+          setSelectedDirection(options[0].value);
+        }
       } catch (error) {
         console.error("Error loading direction options:", error);
         setDirectionOptions([]);
@@ -195,7 +199,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   }, [selectedRealm, toriiClient]);
 
   useEffect(() => {
-    if (selectedDirection) {
+    if (selectedDirection !== null) {
       const coord = directionOptions.find((option) => option.value === selectedDirection)?.coord;
       setSelectedCoords(coord ? coord : null);
     } else {
@@ -296,7 +300,10 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     ))}
                   </select>
                   {selectedRealm && directionOptions.length === 0 && (
-                    <div className="text-xs text-red-400 mt-1">No available directions for this Realm</div>
+                    <div className="text-xs text-red-400 mt-1">
+                      No available spots for this realm. This can happen if mines or hyperstructures are discovered on
+                      the village spots.
+                    </div>
                   )}
                 </div>
 
