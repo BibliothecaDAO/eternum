@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { getAllStructuresFromToriiClient, HexPosition } from "@bibliothecadao/eternum";
+import { getAllStructuresFromToriiClient } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { Leva } from "leva";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -140,90 +140,91 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     { entityId: number; position: { col: number; row: number } }[]
   >([]);
 
+  // Fetch all structures from Torii client
   useEffect(() => {
     const fetchAllStructures = async () => {
-      const fetchedStructures = await getAllStructuresFromToriiClient(setup, account.account.address);
-      console.log("fetchedStructures", fetchedStructures);
-      setFetchedStructures(fetchedStructures);
-    };
-    fetchAllStructures();
-  }, [account.account, setup]);
-
-  // Combine both effects into a single effect that handles all syncing
-  useEffect(() => {
-    const syncAllStructures = async () => {
       if (!account.account) return;
 
       try {
-        // Get structures from both sources
-        const allStructures = new Set([
+        const structures = await getAllStructuresFromToriiClient(setup, account.account.address);
+        setFetchedStructures(structures);
+      } catch (error) {
+        console.error("Failed to fetch structures:", error);
+      }
+    };
+
+    fetchAllStructures();
+  }, [account.account, setup]);
+
+  // Handle structure synchronization
+  useEffect(() => {
+    if (!account.account) return;
+
+    const syncUnsyncedStructures = async () => {
+      try {
+        // Combine structures from both sources
+        const allStructureIds = new Set([
           ...fetchedStructures.map((structure) => structure.entityId.toString()),
           ...playerStructures.map((structure) => structure.structure.entity_id.toString()),
         ]);
 
-        // Filter out already synced structures
-        const unsyncedStructureIds = Array.from(allStructures)
+        // Find structures that haven't been synced yet
+        const unsyncedIds = Array.from(allStructureIds)
           .filter((id) => !syncedStructures.current.has(id))
           .map(Number);
 
-        if (unsyncedStructureIds.length > 0) {
-          // Process each unsynced structure ID individually
-          const structuresAndPositions = [];
+        if (unsyncedIds.length === 0) return;
 
-          for (const unsyncedId of unsyncedStructureIds) {
-            // Find position for this structure
-            let structurePosition: HexPosition | undefined;
-
-            // Check in fetchedStructures first
-            const fetchedStructure = fetchedStructures.find((structure) => structure.entityId === unsyncedId);
+        // Prepare structures with positions for syncing
+        const structuresToSync = unsyncedIds.reduce(
+          (acc, entityId) => {
+            // Try to find position from fetched structures
+            const fetchedStructure = fetchedStructures.find((s) => s.entityId === entityId);
 
             if (fetchedStructure) {
-              // Use position from fetchedStructures if found
-              structurePosition = fetchedStructure.position;
-            } else {
-              // Otherwise look in playerStructures
-              const playerStructure = playerStructures.find(
-                (structure) => Number(structure.structure.entity_id) === unsyncedId,
-              );
-
-              structurePosition = playerStructure?.structure.base
-                ? {
-                    col: playerStructure.structure.base.coord_x,
-                    row: playerStructure.structure.base.coord_y,
-                  }
-                : undefined;
+              acc.push({
+                entityId,
+                position: fetchedStructure.position,
+              });
+              return acc;
             }
 
-            if (structurePosition) {
-              // Add to our list of structures to sync
-              structuresAndPositions.push({
-                entityId: unsyncedId,
-                position: structurePosition,
-              });
+            // Otherwise try to find in player structures
+            const playerStructure = playerStructures.find((s) => Number(s.structure.entity_id) === entityId);
 
-              // Mark this structure as synced
-              setSyncedStructures((prev) => {
-                const newSet = new Set(prev);
-                newSet.add(unsyncedId.toString());
-                return newSet;
+            if (playerStructure?.structure.base) {
+              acc.push({
+                entityId,
+                position: {
+                  col: playerStructure.structure.base.coord_x,
+                  row: playerStructure.structure.base.coord_y,
+                },
               });
             }
-          }
 
-          // Sync all structures that had valid positions
-          if (structuresAndPositions.length > 0) {
-            await syncStructures({
-              structures: structuresAndPositions,
-            });
-          }
+            return acc;
+          },
+          [] as { entityId: number; position: { col: number; row: number } }[],
+        );
+
+        // Mark all these structures as synced
+        if (structuresToSync.length > 0) {
+          setSyncedStructures((prev) => {
+            const newSet = new Set(prev);
+            structuresToSync.forEach((s) => newSet.add(s.entityId.toString()));
+            return newSet;
+          });
+
+          // Sync the structures with the network
+          await syncStructures({ structures: structuresToSync });
         }
       } catch (error) {
         console.error("Failed to sync structures:", error);
       }
     };
 
-    syncAllStructures();
-  }, [account.account, playerStructures, syncStructures, setSyncedStructures, fetchedStructures]);
+    syncUnsyncedStructures();
+  }, [account.account, playerStructures, fetchedStructures, syncStructures, setSyncedStructures]);
 
   return (
     <>
