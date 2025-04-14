@@ -15,6 +15,7 @@ import App from "./app";
 import { initialSync } from "./dojo/sync";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
@@ -38,7 +39,7 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-  // Redirect mobile users to the mobile version
+  // Redirect mobile users to the mobile version of the game
   if (IS_MOBILE) {
     root.render(
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
@@ -127,6 +128,7 @@ async function init() {
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
   const state = useUIStore.getState();
+  const syncingStore = useSyncStore.getState();
 
   console.log("starting setupResult");
   const setupResult = await setup(
@@ -147,7 +149,7 @@ async function init() {
     },
   );
 
-  await initialSync(setupResult, state);
+  await initialSync(setupResult, state, syncingStore.setInitialSyncProgress);
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);

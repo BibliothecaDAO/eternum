@@ -277,6 +277,10 @@ export function createSystemCalls({
     await provider.attack_guard_vs_explorer(props);
   };
 
+  const raid_explorer_vs_guard = async (props: SystemProps.RaidExplorerVsGuardProps) => {
+    await provider.raid_explorer_vs_guard(props);
+  };
+
   const troop_troop_adjacent_transfer = async (props: SystemProps.TroopTroopAdjacentTransferProps) => {
     await provider.troop_troop_adjacent_transfer(props);
   };
@@ -360,6 +364,7 @@ export function createSystemCalls({
     attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
+    raid_explorer_vs_guard: withAuth(raid_explorer_vs_guard),
 
     troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),

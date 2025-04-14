@@ -13,6 +13,7 @@ import {
   divideByPrecision,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
+  getHyperstructureTotalContributableAmounts,
   LeaderboardManager,
   MAX_NAME_LENGTH,
   multiplyByPrecision,
@@ -130,8 +131,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
 
-    console.log({ formattedContributions });
-
     try {
       await contribute_to_construction({
         signer: account,
@@ -149,33 +148,31 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
 
-    const requiredAmounts = configManager.getHyperstructureTotalContributableAmounts(entity.entity_id);
+    const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
 
-    return Object.values(requiredAmounts)
-      .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
-      .map(({ resource }) => {
-        const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-        const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
-        const progress = {
-          percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
-          costNeeded: requiredAmount,
-          hyperstructure_entity_id: entity.entity_id,
-          resource_type: resource,
-          amount: currentAmount,
-        };
+    return Object.values(requiredAmounts).map(({ resource }) => {
+      const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const progress = {
+        percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
+        costNeeded: requiredAmount,
+        hyperstructure_entity_id: entity.entity_id,
+        resource_type: resource,
+        amount: currentAmount,
+      };
 
-        return (
-          <HyperstructureResourceChip
-            structureEntityId={structureEntityId}
-            setContributions={setNewContributions}
-            contributions={newContributions}
-            progress={progress}
-            key={resource}
-            resourceId={resource}
-            resetContributions={resetContributions}
-          />
-        );
-      });
+      return (
+        <HyperstructureResourceChip
+          structureEntityId={structureEntityId}
+          setContributions={setNewContributions}
+          contributions={newContributions}
+          progress={progress}
+          key={resource}
+          resourceId={resource}
+          resetContributions={resetContributions}
+        />
+      );
+    });
   }, [progresses, currentAmounts, newContributions]);
 
   const canContribute = useMemo(() => {
@@ -403,6 +400,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
                       content: <>Not the correct access</>,
                       position: "right",
                     });
+                  } else if (!progresses.initialized) {
+                    setTooltip({
+                      content: <>Hyperstructure must be initialized first</>,
+                      position: "right",
+                    });
                   }
                 }}
                 onMouseLeave={() => {
@@ -412,7 +414,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
                 <Button
                   isLoading={isLoading === Loading.Contribute}
                   variant="primary"
-                  disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
+                  disabled={
+                    Object.keys(newContributions).length === 0 ||
+                    isLoading !== Loading.None ||
+                    !canContribute ||
+                    !progresses.initialized
+                  }
                   onClick={contributeToConstruction}
                 >
                   Contribute To Construction

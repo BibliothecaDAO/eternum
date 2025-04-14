@@ -5,7 +5,6 @@ import {
   BuildingType,
   CapacityConfig,
   getProducedResource,
-  HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
@@ -263,6 +262,10 @@ export class ClientConfigManager {
     return 0;
   }
 
+  public getHyperstructureTotalCosts() {
+    return this.hyperstructureTotalCosts;
+  }
+
   public getHyperstructureConstructionCosts() {
     const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
@@ -312,11 +315,11 @@ export class ClientConfigManager {
         case BiomeType.Taiga:
           return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Snow:
-          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+          return baseStaminaCost + (troopType !== TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Bare:
           return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
         case BiomeType.Scorched:
-          return baseStaminaCost + biomeBonus;
+          return baseStaminaCost + biomeBonus; // +10 for all troops
         default:
           return baseStaminaCost;
       }
@@ -626,23 +629,6 @@ export class ClientConfigManager {
     );
   }
 
-  getHyperstructureTotalConstructionPoints() {
-    let totalPoints = 0;
-    for (const resource of Object.values(ResourcesIds)) {
-      const HyperstructureConstructConfig = getComponentValue(
-        this.components.HyperstructureConstructConfig,
-        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resource)]),
-      );
-
-      if (!HyperstructureConstructConfig) continue;
-
-      const pointsForConstruction = Number(HyperstructureConstructConfig.resource_contribution_points);
-      totalPoints += pointsForConstruction;
-    }
-
-    return totalPoints;
-  }
-
   getHyperstructureConfig() {
     return this.getValueOrDefault(
       () => {
@@ -664,172 +650,6 @@ export class ClientConfigManager {
         pointsForWin: 0,
       },
     );
-  }
-
-  getHyperstructureTotalContributableAmounts(hyperstructureId: number): { resource: ResourcesIds; amount: number }[] {
-    const hyperstructure = getComponentValue(
-      this.components.Hyperstructure,
-      getEntityIdFromKeys([BigInt(hyperstructureId)]),
-    );
-
-    if (!hyperstructure?.randomness) {
-      return [];
-    }
-
-    const result: { resource: ResourcesIds; amount: number }[] = [];
-    const randomness = BigInt(hyperstructure.randomness);
-
-    for (const resourceConfig of this.hyperstructureTotalCosts) {
-      const { resource, min_amount, max_amount } = resourceConfig;
-
-      let neededAmount;
-      if (min_amount === max_amount) {
-        neededAmount = max_amount;
-      } else {
-        const uniqueResourceRandomness = randomness / BigInt(resource);
-        const additional = Number(uniqueResourceRandomness % BigInt(max_amount - min_amount));
-        neededAmount = min_amount + additional;
-      }
-
-      result.push({
-        resource,
-        amount: neededAmount,
-      });
-    }
-
-    return result;
-  }
-
-  getHyperstructureCurrentAmounts(hyperstructureId: number) {
-    const hyperstructureRequirements = getComponentValue(
-      this.components.HyperstructureRequirements,
-      getEntityIdFromKeys([BigInt(hyperstructureId)]),
-    );
-
-    if (!hyperstructureRequirements) {
-      return [];
-    }
-
-    const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
-
-    // Map all resources from the HyperstructureRequirements component
-    if (hyperstructureRequirements.stone_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Stone,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.stone_amount_current)),
-      });
-    if (hyperstructureRequirements.coal_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Coal,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.coal_amount_current)),
-      });
-    if (hyperstructureRequirements.wood_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Wood,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.wood_amount_current)),
-      });
-    if (hyperstructureRequirements.copper_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Copper,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.copper_amount_current)),
-      });
-    if (hyperstructureRequirements.ironwood_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Ironwood,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.ironwood_amount_current)),
-      });
-    if (hyperstructureRequirements.obsidian_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Obsidian,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.obsidian_amount_current)),
-      });
-    if (hyperstructureRequirements.gold_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Gold,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.gold_amount_current)),
-      });
-    if (hyperstructureRequirements.silver_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Silver,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.silver_amount_current)),
-      });
-    if (hyperstructureRequirements.mithral_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Mithral,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.mithral_amount_current)),
-      });
-    if (hyperstructureRequirements.alchemicsilver_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.AlchemicalSilver,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.alchemicsilver_amount_current)),
-      });
-    if (hyperstructureRequirements.coldiron_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.ColdIron,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.coldiron_amount_current)),
-      });
-    if (hyperstructureRequirements.deepcrystal_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.DeepCrystal,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.deepcrystal_amount_current)),
-      });
-    if (hyperstructureRequirements.ruby_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Ruby,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.ruby_amount_current)),
-      });
-    if (hyperstructureRequirements.diamonds_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Diamonds,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.diamonds_amount_current)),
-      });
-    if (hyperstructureRequirements.hartwood_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Hartwood,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.hartwood_amount_current)),
-      });
-    if (hyperstructureRequirements.ignium_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Ignium,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.ignium_amount_current)),
-      });
-    if (hyperstructureRequirements.twilightquartz_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.TwilightQuartz,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.twilightquartz_amount_current)),
-      });
-    if (hyperstructureRequirements.trueice_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.TrueIce,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.trueice_amount_current)),
-      });
-    if (hyperstructureRequirements.adamantine_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Adamantine,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.adamantine_amount_current)),
-      });
-    if (hyperstructureRequirements.sapphire_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Sapphire,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.sapphire_amount_current)),
-      });
-    if (hyperstructureRequirements.etherealsilica_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.EtherealSilica,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.etherealsilica_amount_current)),
-      });
-    if (hyperstructureRequirements.dragonhide_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Dragonhide,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.dragonhide_amount_current)),
-      });
-    if (hyperstructureRequirements.labor_amount_current)
-      requiredAmounts.push({
-        resource: ResourcesIds.Labor,
-        amount: this.divideByPrecision(Number(hyperstructureRequirements.labor_amount_current)),
-      });
-
-    return requiredAmounts;
   }
 
   getBasePopulationCapacity(): number {

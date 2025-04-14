@@ -27,19 +27,21 @@ export const SepoliaEternumGlobalConfig: Config = {
     hyperstructureInitializationShardsCost: {
       resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
       amount: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.amount / 100_000,
-     },
-      hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map((cost) => ({
-      ...cost,
-      min_amount: cost.min_amount / 100_000,
-      max_amount: cost.max_amount / 100_000,
-    })),
+    },
+    hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map(
+      (cost) => ({
+        ...cost,
+        min_amount: cost.min_amount / 100_000,
+        max_amount: cost.max_amount / 100_000,
+      }),
+    ),
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
     agentFindProbability: 1,
-    agentFindFailProbability: 5,
+    agentFindFailProbability: 9,
     shardsMinesFailProbability: 1,
-    shardsMinesWinProbability: 20,
+    shardsMinesWinProbability: 19,
   },
   resources: {
     ...CommonEternumGlobalConfig.resources,

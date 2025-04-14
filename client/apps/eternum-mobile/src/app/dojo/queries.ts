@@ -70,7 +70,7 @@ export const getMarketFromTorii = async <S extends Schema>(
     false,
   );
   let end = performance.now();
-  console.log("[keys] detached resource query", end - start);
+  console.log("[sync] detached resource query", end - start);
 
   start = performance.now();
   const marketPromise = await getEntities(
@@ -90,7 +90,7 @@ export const getMarketFromTorii = async <S extends Schema>(
   );
   await Promise.all([resourcePromise, marketPromise]);
   end = performance.now();
-  console.log("[keys] market query", end - start);
+  console.log("[sync] market query", end - start);
 };
 
 export const addDonkeysAndArmiesSubscription = async <S extends Schema>(

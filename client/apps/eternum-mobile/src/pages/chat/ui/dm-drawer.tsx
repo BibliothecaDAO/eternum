@@ -7,48 +7,29 @@ import { useState } from "react";
 
 interface User {
   id: string;
-  name: string;
-  guild: string;
-  avatar?: string;
-  online: boolean;
+  username?: string;
+  is_online?: boolean;
 }
 
 interface DMDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectUser: (user: User) => void;
+  onSelectUser: (userId: string) => void;
+  onlineUsers: User[];
+  offlineUsers: User[];
 }
 
-const dummyUsers: User[] = [
-  {
-    id: "1",
-    name: "Alice",
-    guild: "Knights of the Round Table",
-    online: true,
-  },
-  {
-    id: "2",
-    name: "Bob",
-    guild: "Dragon Slayers",
-    online: false,
-  },
-  {
-    id: "3",
-    name: "Charlie",
-    guild: "Mage Academy",
-    online: true,
-  },
-  // Add more dummy users here
-];
-
-export function DMDrawer({ isOpen, onClose, onSelectUser }: DMDrawerProps) {
+export function DMDrawer({ isOpen, onClose, onSelectUser, onlineUsers, offlineUsers }: DMDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [users] = useState<User[]>(dummyUsers);
 
-  const filteredUsers = users.filter(
+  const filteredOnlineUsers = onlineUsers.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.guild.toLowerCase().includes(searchQuery.toLowerCase()),
+      (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredOfflineUsers = offlineUsers.filter(
+    (user) =>
+      (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -67,28 +48,65 @@ export function DMDrawer({ isOpen, onClose, onSelectUser }: DMDrawerProps) {
           </div>
         </DrawerHeader>
         <ScrollArea className="h-[50vh] px-4">
-          <div className="space-y-2">
-            {filteredUsers.map((user) => (
-              <DrawerClose key={user.id} asChild>
-                <Button variant="ghost" className="w-full justify-start" onClick={() => onSelectUser(user)}>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-10 h-10 bg-muted rounded-full" />
-                      <div
-                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${
-                          user.online ? "bg-green-500" : "bg-gray-400"
-                        }`}
-                      />
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">{user.name}</span>
-                      <span className="text-sm text-muted-foreground">{user.guild}</span>
-                    </div>
+          {filteredOnlineUsers.length === 0 && filteredOfflineUsers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No users match your search
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Online Users */}
+              {filteredOnlineUsers.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Online</h3>
+                  <div className="space-y-2">
+                    {filteredOnlineUsers.map((user) => (
+                      <DrawerClose key={user.id} asChild>
+                        <Button variant="ghost" className="w-full justify-start" onClick={() => onSelectUser(user.id)}>
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                              </div>
+                              <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-green-500" />
+                            </div>
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{user.username || user.id}</span>
+                            </div>
+                          </div>
+                        </Button>
+                      </DrawerClose>
+                    ))}
                   </div>
-                </Button>
-              </DrawerClose>
-            ))}
-          </div>
+                </div>
+              )}
+
+              {/* Offline Users */}
+              {filteredOfflineUsers.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Offline</h3>
+                  <div className="space-y-2">
+                    {filteredOfflineUsers.map((user) => (
+                      <DrawerClose key={user.id} asChild>
+                        <Button variant="ghost" className="w-full justify-start opacity-60" onClick={() => onSelectUser(user.id)}>
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                                {((user.username || user.id || "?").charAt(0) || "?").toUpperCase()}
+                              </div>
+                              <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background bg-gray-400" />
+                            </div>
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{user.username || user.id}</span>
+                            </div>
+                          </div>
+                        </Button>
+                      </DrawerClose>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
       </DrawerContent>
     </Drawer>

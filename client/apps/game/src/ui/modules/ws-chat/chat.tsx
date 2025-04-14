@@ -795,13 +795,18 @@ function ChatModule() {
                 stroke="currentColor"
               >
                 {isExpanded ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16v16H4z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 14h6m0 0v6m0-6l-7 7m17-11h-6m0 0V4m0 6l7-7"
+                  />
                 ) : (
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M4 14h6m0 0v6m0-6L4 20m16-6h-6m0 0v6m0-6l6 6"
+                    d="M15 3h6v6M9 3H3v6m12 12h6v-6M3 15v6h6"
                   />
                 )}
               </svg>
