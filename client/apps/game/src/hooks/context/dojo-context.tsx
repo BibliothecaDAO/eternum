@@ -8,13 +8,13 @@ import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboar
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { SetupResult } from "@bibliothecadao/eternum";
+import { getAddressNameFromToriiClient, SetupResult } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { cairoShortStringToFelt, Query } from "@dojoengine/torii-client";
+import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AccountInterface, RpcProvider, shortString } from "starknet";
+import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
 import { useSpectatorModeClick } from "../helpers/use-navigate";
 
@@ -162,39 +162,11 @@ const DojoContextProvider = ({
       setAddressName(username);
     };
 
-    const getAddressName = async () => {
-      if (!controllerAccount) return null;
-
-      const query: Query = {
-        limit: 1,
-        offset: 0,
-        entity_models: ["s1_eternum-AddressName"],
-        dont_include_hashed_keys: false,
-        entity_updated_after: 0,
-        order_by: [],
-        clause: {
-          Keys: {
-            keys: [controllerAccount.address],
-            pattern_matching: "FixedLen",
-            models: ["s1_eternum-AddressName"],
-          },
-        },
-      };
-      const addressName = await value.network.toriiClient.getEntities(query);
-      if (Object.keys(addressName).length > 0) {
-        return shortString.decodeShortString(
-          addressName[Object.keys(addressName)[0]]["s1_eternum-AddressName"]["name"]["value"] as string,
-        );
-      } else {
-        return null;
-      }
-    };
-
     const handleAddressName = async () => {
       if (controllerAccount) {
         useAccountStore.getState().setAccount(controllerAccount);
 
-        const addressName = await getAddressName();
+        const addressName = await getAddressNameFromToriiClient(value.network.toriiClient, controllerAccount.address);
 
         if (!addressName) {
           await setUserName();
