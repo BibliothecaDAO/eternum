@@ -1,4 +1,5 @@
 import { LoadingStateKey, WorldSlice } from "@/shared/store/slices/world-loading-slice";
+import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
@@ -7,7 +8,6 @@ import {
   PlayerStructure,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
-import { SetupResult } from "@bibliothecadao/dojo";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
@@ -110,19 +110,16 @@ const syncEntitiesDebounced = async (
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(
-    entityKeyClause,
-    (fetchedEntities: any, data: any) => {
-      if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
+    if (logging) console.log("Event message updated", fetchedEntities);
 
-      // Merge new data with existing data for this entity
-      entityBatch[fetchedEntities] = {
-        ...entityBatch[fetchedEntities],
-        ...data,
-      };
-      debouncedSetEntities();
-    },
-  );
+    // Merge new data with existing data for this entity
+    entityBatch[fetchedEntities] = {
+      ...entityBatch[fetchedEntities],
+      ...data,
+    };
+    debouncedSetEntities();
+  });
 
   // Return combined subscription that can cancel both
   return {
@@ -473,8 +470,8 @@ export const syncMarketAndBankData = async (
       undefined,
       () => setLoading(LoadingStateKey.Bank, false),
     );
-    const end = performance.now();
-    console.log("[keys] bank query", end - start);
+    let end = performance.now();
+    console.log("[sync] bank query", end - start);
 
     await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
       setLoading(LoadingStateKey.Market, false),

@@ -136,6 +136,7 @@ class PromiseQueue {
                 reject(error);
               }
             } else {
+              console.log("batch", batch);
               try {
                 // Extract the actual calls from the providerCalls
                 const allCalls = await Promise.all(

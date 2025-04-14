@@ -1,3 +1,4 @@
+import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
@@ -6,6 +7,7 @@ import { GuildMembers } from "@/ui/components/worldmap/guilds/guild-members";
 import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { Tabs } from "@/ui/elements/tab";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
@@ -152,17 +154,11 @@ export const Social = () => {
     [selectedTab, isExpanded, selectedGuild, selectedPlayer, playerInfo],
   );
 
-  return (
-    <ExpandableOSWindow
-      width="900px"
-      widthExpanded="400px"
-      onClick={() => togglePopup(social)}
-      show={isOpen}
-      title={social}
-      hintSection={HintSection.Tribes}
-      childrenExpanded={tabs[selectedTab].expandedContent}
-      isExpanded={isExpanded}
-    >
+  const SocialContent = () => {
+    const { isSyncing } = useSyncLeaderboard();
+    return isSyncing ? (
+      <LoadingAnimation />
+    ) : (
       <Tabs
         size="medium"
         selectedIndex={selectedTab}
@@ -217,6 +213,21 @@ export const Social = () => {
           </Tabs.Panels>
         </div>
       </Tabs>
+    );
+  };
+
+  return (
+    <ExpandableOSWindow
+      width="900px"
+      widthExpanded="400px"
+      onClick={() => togglePopup(social)}
+      show={isOpen}
+      title={social}
+      hintSection={HintSection.Tribes}
+      childrenExpanded={tabs[selectedTab].expandedContent}
+      isExpanded={isExpanded}
+    >
+      {isOpen ? <SocialContent /> : null}
     </ExpandableOSWindow>
   );
 };
