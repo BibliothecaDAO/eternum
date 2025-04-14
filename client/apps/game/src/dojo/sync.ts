@@ -1,5 +1,5 @@
 import { AppStore } from "@/hooks/store/use-ui-store";
-import { getFirstStructure, SetupResult } from "@bibliothecadao/eternum";
+import { getFirstStructureFromToriiClient, SetupResult } from "@bibliothecadao/eternum";
 import { Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
@@ -160,7 +160,7 @@ export const initialSync = async (
   setInitialSyncProgress(10);
 
   // SPECTATOR REALM
-  const firstNonOwnedStructure = await getFirstStructure(setup);
+  const firstNonOwnedStructure = await getFirstStructureFromToriiClient(setup);
   if (firstNonOwnedStructure) {
     state.setSpectatorRealmEntityId(firstNonOwnedStructure.entityId);
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [

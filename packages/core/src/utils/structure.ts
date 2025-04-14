@@ -101,7 +101,7 @@ export const getStructureTypeName = (structureType: StructureType) => {
   }
 };
 
-export const getAllStructures = async (setup: SetupResult, ownedBy?: string) => {
+export const getAllStructuresFromToriiClient = async (setup: SetupResult, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
         Keys: {
@@ -141,7 +141,7 @@ export const getAllStructures = async (setup: SetupResult, ownedBy?: string) => 
   return result;
 };
 
-export const getFirstStructure = async (setup: SetupResult, ownedBy?: string) => {
+export const getFirstStructureFromToriiClient = async (setup: SetupResult, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
         Keys: {

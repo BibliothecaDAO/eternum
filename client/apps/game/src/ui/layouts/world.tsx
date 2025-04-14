@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { getAllStructures } from "@bibliothecadao/eternum";
+import { getAllStructuresFromToriiClient } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { Leva } from "leva";
 import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
@@ -140,7 +140,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
       try {
         // Get structures from both sources
-        const fetchedStructures = (await getAllStructures(setup, account.account.address)) || [];
+        const fetchedStructures = (await getAllStructuresFromToriiClient(setup, account.account.address)) || [];
         const allStructures = new Set([
           ...fetchedStructures.map((structure) => structure.entityId.toString()),
           ...playerStructures.map((structure) => structure.structure.entity_id.toString()),

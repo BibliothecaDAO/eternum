@@ -6,8 +6,6 @@ export enum LoadingStateKey {
   Market = "market",
   AllPlayerStructures = "allPlayerStructures",
   Map = "map",
-  Bank = "bank",
-  World = "world",
   Hyperstructure = "hyperstructure",
   MarketHistory = "marketHistory",
   Leaderboard = "leaderboard",

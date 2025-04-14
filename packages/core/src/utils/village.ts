@@ -7,7 +7,10 @@ import { HexPosition, ID } from "../types";
 import { getStructureFromToriiEntity } from "./structure";
 import { getEntityIdFromKeys } from "./utils";
 
-export const getFreeVillagePositions = async (toriiClient: ToriiClient, contractPosition: HexPosition) => {
+export const getFreeVillagePositionsFromToriiClient = async (
+  toriiClient: ToriiClient,
+  contractPosition: HexPosition,
+) => {
   const neighborHexes = getNeighborHexes(contractPosition.col, contractPosition.row, Steps.Two);
   const freePositions: typeof neighborHexes = [];
 
@@ -83,7 +86,7 @@ export const getRandomRealmWithVillageSlots = async (toriiClient: ToriiClient, c
 };
 
 // Function to check if a specific realm has village slots
-export const checkOpenVillageSlot = async (toriiClient: ToriiClient, realmId: ID) => {
+export const checkOpenVillageSlotFromToriiClient = async (toriiClient: ToriiClient, realmId: ID) => {
   const query: Query = {
     limit: 1,
     offset: 0,

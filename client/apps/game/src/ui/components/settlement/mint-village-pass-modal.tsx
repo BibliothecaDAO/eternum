@@ -1,8 +1,8 @@
 import Button from "@/ui/elements/button";
 import {
-  checkOpenVillageSlot,
+  checkOpenVillageSlotFromToriiClient,
   Direction,
-  getFreeVillagePositions,
+  getFreeVillagePositionsFromToriiClient,
   getRandomRealmWithVillageSlots,
   getRealmNameById,
   HexPosition,
@@ -81,7 +81,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     setRealmCheckError(null);
 
     try {
-      const result = await checkOpenVillageSlot(toriiClient, realmId);
+      const result = await checkOpenVillageSlotFromToriiClient(toriiClient, realmId);
 
       if (!result) {
         setRealmCheckError("Realm not found or");
@@ -162,7 +162,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
       }
 
       try {
-        const freePositions = await getFreeVillagePositions(toriiClient, selectedRealm.position);
+        const freePositions = await getFreeVillagePositionsFromToriiClient(toriiClient, selectedRealm.position);
 
         const options = Object.keys(Direction)
           .filter((key) => isNaN(Number(key)))
