@@ -3,7 +3,7 @@ import {
   checkOpenVillageSlotFromToriiClient,
   Direction,
   getFreeVillagePositionsFromToriiClient,
-  getRandomRealmWithVillageSlots,
+  getRandomRealmWithVillageSlotsFromTorii,
   getRealmNameById,
   HexPosition,
   ID,
@@ -105,7 +105,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const selectRandomRealm = async () => {
     setIsLoading(true);
     try {
-      const randomRealm = await getRandomRealmWithVillageSlots(toriiClient, components);
+      const randomRealm = await getRandomRealmWithVillageSlotsFromTorii(toriiClient, components);
 
       if (randomRealm && randomRealm) {
         // Extract values safely with type assertions

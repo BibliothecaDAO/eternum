@@ -54,7 +54,10 @@ export const getFreeVillagePositionsFromToriiClient = async (
 };
 
 // Function to get a random realm with village slots
-export const getRandomRealmWithVillageSlots = async (toriiClient: ToriiClient, components: ClientComponents) => {
+export const getRandomRealmWithVillageSlotsFromTorii = async (
+  toriiClient: ToriiClient,
+  components: ClientComponents,
+) => {
   const realmCount =
     getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.realm_count_config.count || 0;
 
