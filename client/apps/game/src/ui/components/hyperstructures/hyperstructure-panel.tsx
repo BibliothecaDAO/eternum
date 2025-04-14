@@ -131,8 +131,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
 
-    console.log({ formattedContributions });
-
     try {
       await contribute_to_construction({
         signer: account,

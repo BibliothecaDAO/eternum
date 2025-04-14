@@ -15,6 +15,7 @@ import App from "./app";
 import { initialSync } from "./dojo/sync";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
@@ -127,6 +128,7 @@ async function init() {
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
   const state = useUIStore.getState();
+  const syncingStore = useSyncStore.getState();
 
   console.log("starting setupResult");
   const setupResult = await setup(
@@ -147,7 +149,7 @@ async function init() {
     },
   );
 
-  await initialSync(setupResult, state);
+  await initialSync(setupResult, state, syncingStore.setInitialSyncProgress);
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);

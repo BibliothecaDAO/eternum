@@ -1,6 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/elements/button";
-import { useAccount } from "@starknet-react/core";
 import { X } from "lucide-react";
 import React from "react";
 
@@ -23,9 +21,6 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
   isLoading = false,
   disabled,
 }) => {
-  const { account } = useAccount();
-  const setModal = useUIStore((state) => state.setModal);
-
   return (
     <div className="fixed bottom-100 inset-0 bg-brown bg-opacity-60 z-50 flex justify-center items-center">
       <div className="border border-gold/10 bg-brown/90 bg-hex-bg rounded p-8 w-full max-w-md mx-auto flex flex-col items-center relative">

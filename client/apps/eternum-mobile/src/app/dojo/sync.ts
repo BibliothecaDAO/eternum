@@ -478,7 +478,7 @@ export const syncMarketAndBankData = async (
       () => setLoading(LoadingStateKey.Bank, false),
     );
     let end = performance.now();
-    console.log("[keys] bank query", end - start);
+    console.log("[sync] bank query", end - start);
 
     await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
       setLoading(LoadingStateKey.Market, false),

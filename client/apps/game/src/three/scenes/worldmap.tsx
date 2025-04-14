@@ -1,6 +1,7 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
 import throttle from "lodash/throttle";
 
+import { getMapFromTorii } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -33,8 +34,6 @@ import {
   SetupResult,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
-import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { getEntities } from "@dojoengine/state";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
@@ -842,60 +841,24 @@ export default class WorldmapScene extends HexagonScene {
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
 
+    const start = performance.now();
     try {
       this.state.setLoading(LoadingStateKey.Map, true);
-      const promiseTiles = getEntities(
+      await getMapFromTorii(
         this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
-          MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
-          MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
-          MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
-        ]).build(),
         this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-Tile"],
-        1000,
-        false,
+        startCol,
+        startRow,
+        range,
       );
-      // todo: verify that this works with nested struct
-      const promiseExplorers = getEntities(
-        this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
-        ]).build(),
-        this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-        1000,
-        false,
-      );
-
-      const promiseStructures = getEntities(
-        this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
-          MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
-          MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
-          MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
-        ]).build(),
-        this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-Structure", "s1_eternum-Resource"],
-        1000,
-        false,
-      );
-
-      Promise.all([promiseTiles, promiseExplorers, promiseStructures]).then(() => {
-        this.state.setLoading(LoadingStateKey.Map, false);
-      });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
       this.fetchedChunks.delete(chunkKey);
       console.error("Error fetching tile entities:", error);
+    } finally {
+      this.state.setLoading(LoadingStateKey.Map, false);
+      const end = performance.now();
+      console.log("[sync] map query", end - start);
     }
   }
 
