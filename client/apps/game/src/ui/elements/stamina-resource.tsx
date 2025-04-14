@@ -1,7 +1,8 @@
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BiomeType, configManager, ID, StaminaManager, TroopType } from "@bibliothecadao/eternum";
+import { configManager, StaminaManager } from "@bibliothecadao/eternum";
+import { BiomeType, ID, TroopType } from "@bibliothecadao/types";
 import { useDojo, useStaminaManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

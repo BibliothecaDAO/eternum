@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { BuildingType, configManager, getRealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager, getRealmInfo } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -107,11 +108,11 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
 
   const populationPercentage = realmInfo?.capacity
     ? Math.min(
-        100,
-        Math.round(
-          ((realmInfo.population || 0) / (realmInfo.capacity + configManager.getBasePopulationCapacity())) * 100,
-        ),
-      )
+      100,
+      Math.round(
+        ((realmInfo.population || 0) / (realmInfo.capacity + configManager.getBasePopulationCapacity())) * 100,
+      ),
+    )
     : 0;
 
   const isPopulationNearCapacity = populationPercentage >= 80;

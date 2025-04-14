@@ -1,11 +1,18 @@
+import {
+  ClientComponents,
+  ContractAddress,
+  ID,
+  MERCENARIES,
+  Position,
+  Structure,
+  StructureType,
+  TickIds,
+} from "@bibliothecadao/types";
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
-import { Clause, PatternMatching, Query } from "@dojoengine/torii-client";
+import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-client";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { configManager, Structure } from "..";
-import { MERCENARIES, StructureType } from "../constants";
-import { ClientComponents, SetupResult } from "../dojo";
-import { ContractAddress, ID, Position, TickIds } from "../types";
+import { configManager } from "../managers";
 import { getEntityName } from "./entities";
 import { currentTickCount } from "./utils";
 
@@ -101,7 +108,7 @@ export const getStructureTypeName = (structureType: StructureType) => {
   }
 };
 
-export const getAllStructuresFromToriiClient = async (setup: SetupResult, ownedBy?: string) => {
+export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
         Keys: {
@@ -129,7 +136,7 @@ export const getAllStructuresFromToriiClient = async (setup: SetupResult, ownedB
     entity_updated_after: 0,
   };
 
-  const entities = await setup.network.toriiClient.getEntities(query);
+  const entities = await toriiClient.getEntities(query, false);
   const result = Object.keys(entities).map((entity) => {
     const structure = getStructureFromToriiEntity(entities[entity]["s1_eternum-Structure"]);
     return {
@@ -141,7 +148,7 @@ export const getAllStructuresFromToriiClient = async (setup: SetupResult, ownedB
   return result;
 };
 
-export const getFirstStructureFromToriiClient = async (setup: SetupResult, ownedBy?: string) => {
+export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
         Keys: {
@@ -183,7 +190,7 @@ export const getFirstStructureFromToriiClient = async (setup: SetupResult, owned
     entity_updated_after: 0,
   };
 
-  const entities = await setup.network.toriiClient.getEntities(query);
+  const entities = await toriiClient.getEntities(query, false);
   const realmEntity = Object.keys(entities)[0] as Entity;
 
   if (!realmEntity) {

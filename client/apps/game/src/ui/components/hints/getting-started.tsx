@@ -1,14 +1,14 @@
 import { Headline } from "@/ui/elements/headline";
-import { configManager, TickIds } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import { TickIds } from "@bibliothecadao/types";
 import { tableOfContents } from "./utils";
 
 export const GettingStarted = () => {
   const chapters = [
     {
       title: "The Time Cycle",
-      content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${
-        configManager.getTick(TickIds.Armies) / 60
-      } minutes.`,
+      content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${configManager.getTick(TickIds.Armies) / 60
+        } minutes.`,
     },
     {
       title: "Resources",

@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 

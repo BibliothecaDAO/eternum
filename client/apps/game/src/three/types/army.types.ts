@@ -1,4 +1,4 @@
-import { TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { AnimationMixer } from "three";
 

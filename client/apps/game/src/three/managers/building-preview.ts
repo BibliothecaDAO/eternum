@@ -2,7 +2,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { gltfLoader } from "@/three/helpers/utils";
 import { buildingModelPaths, BUILDINGS_GROUPS, PREVIEW_BUILD_COLOR_VALID } from "@/three/scenes/constants";
 import { HoverSound } from "@/three/sound/hover-sound";
-import { BuildingType, ResourceIdToMiningType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
+import { BuildingType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import * as THREE from "three";
 
 export class BuildingPreview {
@@ -54,7 +55,7 @@ export class BuildingPreview {
       }
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   public getBuildingModel(

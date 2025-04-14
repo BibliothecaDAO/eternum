@@ -1,10 +1,8 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import { CapacityConfig, StructureType } from "../constants";
-import { ClientComponents } from "../dojo";
 import { configManager } from "../managers/config-manager";
-import { ContractAddress, EntityType, ID } from "../types";
+import { CapacityConfig, StructureType, ClientComponents, ContractAddress, EntityType, ID } from "@bibliothecadao/types";
 import { getRealmNameById } from "./realm";
 
 export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {

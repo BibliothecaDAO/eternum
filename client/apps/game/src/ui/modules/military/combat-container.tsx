@@ -7,21 +7,23 @@ import {
   Biome,
   CombatSimulator,
   configManager,
-  ContractAddress,
   divideByPrecision,
   getArmy,
-  getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
   getGuardsByStructure,
   getTroopResourceId,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  getDirectionBetweenAdjacentHexes,
   ID,
   RESOURCE_PRECISION,
   resources,
-  StaminaManager,
   StructureType,
   TroopTier,
   TroopType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -373,9 +375,8 @@ export const CombatContainer = ({
             <button
               key={guard.slot}
               onClick={() => setSelectedGuardSlot(guard.slot)}
-              className={`flex items-center bg-brown-900/90 border ${
-                selectedGuardSlot === guard.slot ? "border-gold" : "border-gold/20"
-              } rounded-md px-2 py-1.5 hover:border-gold/60 transition-colors`}
+              className={`flex items-center bg-brown-900/90 border ${selectedGuardSlot === guard.slot ? "border-gold" : "border-gold/20"
+                } rounded-md px-2 py-1.5 hover:border-gold/60 transition-colors`}
             >
               <ResourceIcon
                 withTooltip={false}
@@ -599,9 +600,8 @@ export const CombatContainer = ({
                     {winner && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span
-                          className={`px-3 py-0.5 rounded-full text-xs font-bold ${
-                            winner === attackerEntityId ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"
-                          }`}
+                          className={`px-3 py-0.5 rounded-full text-xs font-bold ${winner === attackerEntityId ? "bg-green-500/80 text-white" : "bg-red-500/80 text-white"
+                            }`}
                         >
                           {winner === attackerEntityId ? "VICTORY" : "DEFEAT"}
                         </span>
@@ -623,8 +623,8 @@ export const CombatContainer = ({
                   (
                   {battleSimulation
                     ? Math.round(
-                        (battleSimulation.attackerDamage / divideByPrecision(attackerArmyData.troops.count)) * 100,
-                      )
+                      (battleSimulation.attackerDamage / divideByPrecision(attackerArmyData.troops.count)) * 100,
+                    )
                     : 0}
                   %)
                 </span>
@@ -638,8 +638,8 @@ export const CombatContainer = ({
                   (
                   {battleSimulation
                     ? Math.round(
-                        (battleSimulation.defenderDamage / divideByPrecision(targetArmyData.troops.count)) * 100,
-                      )
+                      (battleSimulation.defenderDamage / divideByPrecision(targetArmyData.troops.count)) * 100,
+                    )
                     : 0}
                   %)
                 </span>
@@ -694,11 +694,11 @@ export const CombatContainer = ({
                     StaminaManager.getMaxStamina(
                       target?.info
                         ? {
-                            count: BigInt(Number(target.info.count || 0)),
-                            category: target.info.category,
-                            tier: target.info.tier,
-                            stamina: target.info.stamina || { amount: 0n, updated_tick: 0n },
-                          }
+                          count: BigInt(Number(target.info.count || 0)),
+                          category: target.info.category,
+                          tier: target.info.tier,
+                          stamina: target.info.stamina || { amount: 0n, updated_tick: 0n },
+                        }
                         : undefined,
                     ),
                     getBlockTimestamp().currentArmiesTick,

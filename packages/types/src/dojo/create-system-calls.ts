@@ -1,4 +1,4 @@
-import type { EternumProvider } from "../provider";
+// import type { EternumProvider } from "../types/provider";
 import * as SystemProps from "../types";
 
 export type SystemCallAuthHandler = {
@@ -12,7 +12,7 @@ export function createSystemCalls({
   provider,
   authHandler,
 }: {
-  provider: EternumProvider;
+  provider: any;
   authHandler?: SystemCallAuthHandler;
 }) {
   const withAuth = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {

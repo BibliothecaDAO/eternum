@@ -17,8 +17,19 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@dojoengine/predeployed-connector": "^1.0.13",
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@bibliothecadao/dojo": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
+    "@dojoengine/core": "catalog:",
+    "@dojoengine/predeployed-connector": "catalog:",
+    "@dojoengine/sdk": "catalog:",
+    "@dojoengine/state": "catalog:",
+    "@dojoengine/torii-client": "catalog:",
+    "@dojoengine/torii-wasm": "catalog:",
     "@latticexyz/utils": "^2.0.0-next.12",
+    "@starknet-react/chains": "catalog:",
+    "@starknet-react/core": "catalog:",
     "@vercel/analytics": "^1.2.2",
     "buffer": "^6.0.3",
     "graphql-request": "^7.1.2",
@@ -32,6 +43,7 @@
     "react-shepherd": "^6.1.6",
     "shepherd.js": "^14.3.0",
     "socket.io-client": "^4.8.1",
+    "starknet": "catalog:",
     "three": "^0.166.0",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",
@@ -50,8 +62,5 @@
     "@vitest/ui": "^2.0.1",
     "eslint-config-love": "^114.0.0",
     "workbox-window": "^7.3.0"
-  },
-  "peerDependencies": {
-    "starknet": "6.23.1"
   }
 }

@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { SettlementLocation } from "./settlement-types";

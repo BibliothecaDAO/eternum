@@ -9,13 +9,15 @@ import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
-  ContractAddress,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  HyperstructureInfo,
   LeaderboardManager,
-  MERCENARIES,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  HyperstructureInfo,
+  MERCENARIES,
+} from "@bibliothecadao/types";
 import { useDojo, useHyperstructures } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { ArrowLeft, ArrowRight, Filter, Search } from "lucide-react";

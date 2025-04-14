@@ -1,7 +1,7 @@
 import { ReactComponent as CollapseIcon } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as ExpandIcon } from "@/assets/icons/common/expand.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 // Define entity types for the toggle controls
@@ -139,9 +139,8 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] text-xxs pointer-events-auto flex flex-col self-end panel-wood panel-wood-corners relative ${
-        isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
-      }`}
+      className={` z-[1001] text-xxs pointer-events-auto flex flex-col self-end panel-wood panel-wood-corners relative ${isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
+        }`}
     >
       {/* <EventStream hideChat={false} /> */}
       {showMinimap && (

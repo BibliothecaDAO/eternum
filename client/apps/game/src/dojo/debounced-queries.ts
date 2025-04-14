@@ -1,4 +1,4 @@
-import { HexPosition, ID } from "@bibliothecadao/eternum";
+import { HexPosition, ID } from "@bibliothecadao/types";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
 import { getBuildingsFromTorii, getEntitiesFromTorii, getOwnedArmiesFromTorii } from "./queries";
@@ -90,12 +90,4 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
     // Make sure onComplete is called even if there's an error
     onComplete?.();
   }
-};
-
-export const debouncedGetMarketFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  onComplete?: () => void,
-) => {
-  // await marketQueue.add(() => getMarketFromTorii(client, components), onComplete);
 };

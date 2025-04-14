@@ -146,7 +146,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
       if (!account.account) return;
 
       try {
-        const structures = await getAllStructuresFromToriiClient(setup, account.account.address);
+        const structures = await getAllStructuresFromToriiClient(setup.network.toriiClient, account.account.address);
         setFetchedStructures(structures);
       } catch (error) {
         console.error("Failed to fetch structures:", error);

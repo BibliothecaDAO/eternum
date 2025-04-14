@@ -3,7 +3,7 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { sortItems } from "@/ui/utils/utils";
-import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 

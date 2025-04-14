@@ -1,8 +1,10 @@
-import { AppStore } from "@/hooks/store/use-ui-store";
-import { getFirstStructureFromToriiClient, SetupResult } from "@bibliothecadao/eternum";
-import { Schema } from "@dojoengine/recs";
+import type { AppStore } from "@/hooks/store/use-ui-store";
+import { type SetupResult } from "@bibliothecadao/dojo";
+
+import { getFirstStructureFromToriiClient } from "@bibliothecadao/eternum";
+import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
-import { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
+import type { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import {
   getAddressNamesFromTorii,
   getBankStructuresFromTorii,
@@ -10,7 +12,6 @@ import {
   getSeasonPrizeFromTorii,
   getStructuresDataFromTorii,
 } from "./queries";
-import { handleExplorerTroopsIfDeletion } from "./utils";
 
 export const EVENT_QUERY_LIMIT = 40_000;
 
@@ -18,8 +19,8 @@ const syncEntitiesDebounced = async <S extends Schema>(
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
-  logging: boolean = true,
-  historical: boolean = false,
+  logging = true,
+  historical = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -28,7 +29,7 @@ const syncEntitiesDebounced = async <S extends Schema>(
   let isProcessing = false;
 
   const {
-    network: { contractComponents: components },
+    network: { contractComponents: components, world },
   } = setupResult;
 
   // Function to process the next item in the queue
@@ -58,8 +59,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
       try {
         if (logging) console.log("Applying batch update", batch);
 
-        handleExplorerTroopsIfDeletion(batch, components, logging);
-        setEntities(batch, components as any, logging);
+        for (const entityId in batch) {
+          const value = batch[entityId];
+          // this is an entity that has been deleted
+          if (Object.keys(value).length === 0) {
+            world.deleteEntity(entityId as Entity);
+          }
+        }
+
+        setEntities(batch, world.components, logging);
       } catch (error) {
         console.error("Error processing entity batch:", error);
       }
@@ -118,19 +126,15 @@ const syncEntitiesDebounced = async <S extends Schema>(
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(
-    entityKeyClause,
-    historical,
-    (fetchedEntities: any, data: any) => {
-      if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
+    if (logging) console.log("Event message updated", fetchedEntities);
 
-      try {
-        queueUpdate(fetchedEntities, data);
-      } catch (error) {
-        console.error("Error queuing event message update:", error);
-      }
-    },
-  );
+    try {
+      queueUpdate(fetchedEntities, data);
+    } catch (error) {
+      console.error("Error queuing event message update:", error);
+    }
+  });
 
   // Return combined subscription that can cancel both
   return {
@@ -160,7 +164,7 @@ export const initialSync = async (
   setInitialSyncProgress(10);
 
   // SPECTATOR REALM
-  const firstNonOwnedStructure = await getFirstStructureFromToriiClient(setup);
+  const firstNonOwnedStructure = await getFirstStructureFromToriiClient(setup.network.toriiClient);
   if (firstNonOwnedStructure) {
     state.setSpectatorRealmEntityId(firstNonOwnedStructure.entityId);
     await getStructuresDataFromTorii(setup.network.toriiClient, setup.network.contractComponents as any, [

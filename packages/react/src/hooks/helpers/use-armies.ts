@@ -1,11 +1,14 @@
 import {
-  ContractAddress,
   formatArmies,
   getEntityIdFromKeys,
   getGuardsByStructure,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
   ID,
   type Position,
-} from "@bibliothecadao/eternum";
+
+} from "@bibliothecadao/types"
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";

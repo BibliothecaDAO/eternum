@@ -5,7 +5,8 @@ import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { ContractAddress, StructureType, getAddressName, getEntityName, toHexString } from "@bibliothecadao/eternum";
+import { getAddressName, getEntityName, toHexString } from "@bibliothecadao/eternum";
+import { ContractAddress, StructureType } from "@bibliothecadao/types"
 import { useDojo } from "@bibliothecadao/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { Map, MapPin, User } from "lucide-react";
@@ -213,7 +214,7 @@ export const PlayerId = ({
 
 const AvatarImage = ({ address }: { address: string }) => {
   const randomAvatarIndex = ((parseInt(address.slice(0, 8), 16) % 7) + 1).toString().padStart(2, "0");
-  let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
+  const imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   return (
     <div className="w-24 h-24 rounded-md overflow-hidden border-2 border-gold/20 shadow-lg bg-brown/30">

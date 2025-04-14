@@ -1,5 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resources } from "@bibliothecadao/eternum";
+import { resources } from "@bibliothecadao/types";
 import { memo } from "react";
 import { OSWindow } from "../navigation/os-window";
 import { RealmTransfer } from "./realm-transfer";

@@ -4,7 +4,7 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { StructureModelPaths } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { FELT_CENTER } from "@/ui/config";
-import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { StructureInfo, StructureSystemUpdate } from "../types";
@@ -416,13 +416,12 @@ export class StructureManager {
 
     // Add structure type and level
     const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
           : "Foundation"
         : ""
-    }`;
+      }`;
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);

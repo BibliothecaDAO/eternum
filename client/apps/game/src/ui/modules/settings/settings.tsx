@@ -18,7 +18,10 @@ import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
-import { ContractAddress, getAddressName } from "@bibliothecadao/eternum";
+import { getAddressName } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+} from "@bibliothecadao/types";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import * as platform from "platform";
 import { useEffect, useRef, useState } from "react";

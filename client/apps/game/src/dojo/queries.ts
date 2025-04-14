@@ -1,6 +1,6 @@
 // onload -> fetch single key entities
 
-import { HexPosition, ID, StructureType, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { HexPosition, ID, StructureType, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities, getEvents } from "@dojoengine/state";

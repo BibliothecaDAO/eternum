@@ -1,4 +1,4 @@
-import { ResourceArrivalInfo } from "@bibliothecadao/eternum";
+import { ResourceArrivalInfo } from "@bibliothecadao/types";
 
 export interface ResourceArrivalsState {
   structureEntityId: string | null;

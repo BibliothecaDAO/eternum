@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/eternum";
+import { TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";

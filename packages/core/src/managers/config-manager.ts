@@ -9,9 +9,8 @@ import {
   ResourcesIds,
   StructureType,
   WORLD_CONFIG_ID,
-} from "../constants";
-import { ContractComponents } from "../dojo/contract-components";
-import { Config, EntityType, TickIds, TroopType } from "../types";
+  ContractComponents, Config, EntityType, TickIds, TroopType
+} from "@bibliothecadao/types";
 import { gramToKg } from "../utils";
 
 type LaborConfig = {

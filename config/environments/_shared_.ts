@@ -1,12 +1,11 @@
 import {
   CapacityConfig,
-  getContractByName,
-  NAMESPACE,
   RESOURCE_PRECISION,
   RESOURCE_RARITY,
   ResourcesIds,
   type Config,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
+import { NAMESPACE, getContractByName } from "@bibliothecadao/provider";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {

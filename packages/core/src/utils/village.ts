@@ -1,9 +1,15 @@
+import {
+  ClientComponents,
+  getNeighborHexes,
+  HexPosition,
+  ID,
+  Steps,
+  StructureType,
+  WORLD_CONFIG_ID,
+} from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause, OrComposeClause } from "@dojoengine/sdk";
 import { Query, ToriiClient } from "@dojoengine/torii-client";
-import { getNeighborHexes, Steps, StructureType, WORLD_CONFIG_ID } from "../constants";
-import { ClientComponents } from "../dojo";
-import { HexPosition, ID } from "../types";
 import { getStructureFromToriiEntity } from "./structure";
 import { getEntityIdFromKeys } from "./utils";
 
@@ -31,7 +37,7 @@ export const getFreeVillagePositionsFromToriiClient = async (
     entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query);
+  const entities = await toriiClient.getEntities(query, false);
 
   // Create a set of occupied positions
   const occupiedPositions = new Set<string>();
@@ -78,7 +84,7 @@ export const getRandomRealmWithVillageSlotsFromTorii = async (
     entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query);
+  const entities = await toriiClient.getEntities(query, false);
   const entity = Object.keys(entities)[0];
   if (!entity) {
     return null;
@@ -100,7 +106,7 @@ export const checkOpenVillageSlotFromToriiClient = async (toriiClient: ToriiClie
     entity_updated_after: 0,
   };
 
-  const entities = await toriiClient.getEntities(query);
+  const entities = await toriiClient.getEntities(query, false);
   const realmEntityId = Object.keys(entities)[0] as Entity;
 
   if (!realmEntityId) {

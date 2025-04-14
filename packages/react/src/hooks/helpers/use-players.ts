@@ -1,4 +1,4 @@
-import { Player } from "@bibliothecadao/eternum";
+import { Player } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useMemo } from "react";

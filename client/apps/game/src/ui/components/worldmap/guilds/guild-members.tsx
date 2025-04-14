@@ -4,7 +4,8 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import TwitterShareButton from "@/ui/elements/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
-import { ContractAddress, getGuild, getGuildFromPlayerAddress, PlayerInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
+import { getGuild, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo, useGuildMembers, useGuildWhitelist, usePlayerWhitelist } from "@bibliothecadao/react";
 import { Building, CalendarDays, Edit, Mail, Shield, UserMinus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -84,7 +85,7 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   }, []);
 
   const disbandGuild = () => {
-    let calldata = [
+    const calldata = [
       ...guildMembers.filter((member) => !member.isGuildMaster).map((member) => ({ address: member.address })),
       { address: account.address },
     ];
@@ -116,10 +117,10 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const socialsText =
     userGuild?.entityId === selectedGuildEntityId
       ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
-          tribeName: selectedGuild?.name,
-          addressName: playerName,
-          url: env.VITE_SOCIAL_LINK,
-        })
+        tribeName: selectedGuild?.name,
+        addressName: playerName,
+        url: env.VITE_SOCIAL_LINK,
+      })
       : undefined;
 
   const handleChangeName = async () => {

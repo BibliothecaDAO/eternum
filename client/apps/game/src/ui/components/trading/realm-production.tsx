@@ -1,7 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { configManager, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
+import { configManager, unpackValue } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useAllRealms } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

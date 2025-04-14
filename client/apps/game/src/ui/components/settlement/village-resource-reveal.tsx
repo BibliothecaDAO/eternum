@@ -1,7 +1,8 @@
 import Button from "@/ui/elements/button";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ContractAddress, HexPosition, ResourcesIds, unpackValue } from "@bibliothecadao/eternum";
+import { unpackValue } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

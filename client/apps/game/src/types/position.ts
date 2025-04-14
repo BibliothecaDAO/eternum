@@ -1,4 +1,4 @@
-import { FELT_CENTER } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@bibliothecadao/types";
 
 export class Position {
   private x: number;

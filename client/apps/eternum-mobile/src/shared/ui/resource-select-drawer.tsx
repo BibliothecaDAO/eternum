@@ -5,7 +5,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle, DrawerTr
 import { Input } from "@/shared/ui/input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { ID, resources } from "@bibliothecadao/eternum";
+import { ID, resources } from "@bibliothecadao/types";
 import { Search } from "lucide-react";
 import { ReactNode, useState } from "react";
 

@@ -5,7 +5,7 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { ID, PlayerStructure, resources } from "@bibliothecadao/eternum";
+import { ID, PlayerStructure, resources } from "@bibliothecadao/types";
 import { useBridgeAsset, useDojo } from "@bibliothecadao/react";
 import { useSendTransaction } from "@starknet-react/core";
 import { Star, X } from "lucide-react";

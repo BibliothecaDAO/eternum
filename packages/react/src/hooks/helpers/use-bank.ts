@@ -1,4 +1,4 @@
-import { ID, MERCENARIES, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ID, MERCENARIES, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue, getComponentValueStrict } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";

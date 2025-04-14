@@ -1,6 +1,6 @@
 import { Position } from "@/types/position";
-import { ClientComponents, ID } from "@bibliothecadao/eternum";
 import { useQuery } from "@bibliothecadao/react";
+import { ClientComponents, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";

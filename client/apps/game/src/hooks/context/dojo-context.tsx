@@ -8,7 +8,8 @@ import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboar
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { getAddressNameFromToriiClient, SetupResult } from "@bibliothecadao/eternum";
+import { SetupResult } from "@bibliothecadao/dojo";
+import { getAddressNameFromToriiClient } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
@@ -134,9 +135,7 @@ const DojoContextProvider = ({
   const onSpectatorModeClick = useSpectatorModeClick(value.components);
 
   useEffect(() => {
-    if (!controllerAccount) {
-      setAccountToUse(new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey));
-    } else {
+    if (controllerAccount) {
       setAccountToUse(controllerAccount);
     }
   }, [controllerAccount]);

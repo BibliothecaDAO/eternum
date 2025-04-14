@@ -9,19 +9,22 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  BiomeType,
-  ClientComponents,
   CombatSimulator,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
   getBalance,
   getGuardsByStructure,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
+import {
+
+  BiomeType,
+  ClientComponents,
   ID,
   ResourcesIds,
-  StaminaManager,
   TroopType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

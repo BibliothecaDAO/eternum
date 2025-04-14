@@ -1,5 +1,5 @@
 import { CapacityInfo } from "@/ui/modules/navigation/capacity-info";
-import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/eternum";
+import { RealmInfo as RealmInfoType, RealmLevels } from "@bibliothecadao/types";
 import { memo } from "react";
 
 const CASTLE_IMAGES: Partial<Record<RealmLevels, string>> = {

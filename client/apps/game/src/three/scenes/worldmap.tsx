@@ -19,11 +19,15 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  StructureActionManager,
+} from "@bibliothecadao/eternum";
+import {
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -31,9 +35,7 @@ import {
   HexEntityInfo,
   HexPosition,
   ID,
-  SetupResult,
-  StructureActionManager,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";

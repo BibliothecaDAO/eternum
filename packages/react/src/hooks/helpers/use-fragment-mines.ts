@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { shortString } from "starknet";

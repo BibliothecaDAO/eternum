@@ -1,14 +1,12 @@
 import Button from "@/ui/elements/button";
 import {
   checkOpenVillageSlotFromToriiClient,
-  Direction,
   getFreeVillagePositionsFromToriiClient,
   getRandomRealmWithVillageSlotsFromTorii,
   getRealmNameById,
-  HexPosition,
-  ID,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { Direction, HexPosition, ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { ModalContainer } from "../modal-container";
 import { VillageResourceReveal } from "./village-resource-reveal";
