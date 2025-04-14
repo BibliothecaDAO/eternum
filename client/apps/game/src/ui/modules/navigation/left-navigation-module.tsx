@@ -12,6 +12,7 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
+import ChatModule from "../ws-chat/chat";
 
 const EntityDetails = lazy(() =>
   import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
@@ -247,7 +248,7 @@ export const LeftNavigationModule = memo(() => {
       </div>
       <div className="flex">
         {/* <Chat /> */}
-        {/* <ChatModule /> */}
+        <ChatModule />
       </div>
     </div>
   );
