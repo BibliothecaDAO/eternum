@@ -3,10 +3,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { getAllStructuresFromToriiClient } from "@bibliothecadao/eternum";
+import { getAllStructuresFromToriiClient, HexPosition } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -118,7 +118,10 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           structures,
         );
         const end = performance.now();
-        console.log(`[sync] structures query structures ${structures.map((s) => s.entityId)}`, end - start);
+        console.log(
+          `[sync] structures query structures ${structures.map((s) => `${s.entityId}(${s.position.col},${s.position.row})`)}`,
+          end - start,
+        );
       } catch (error) {
         console.error("Failed to sync structures:", error);
       } finally {
@@ -133,6 +136,19 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     syncedStructures.current = updater(syncedStructures.current);
   }, []);
 
+  const [fetchedStructures, setFetchedStructures] = useState<
+    { entityId: number; position: { col: number; row: number } }[]
+  >([]);
+
+  useEffect(() => {
+    const fetchAllStructures = async () => {
+      const fetchedStructures = await getAllStructuresFromToriiClient(setup, account.account.address);
+      console.log("fetchedStructures", fetchedStructures);
+      setFetchedStructures(fetchedStructures);
+    };
+    fetchAllStructures();
+  }, [account.account, setup]);
+
   // Combine both effects into a single effect that handles all syncing
   useEffect(() => {
     const syncAllStructures = async () => {
@@ -140,7 +156,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
       try {
         // Get structures from both sources
-        const fetchedStructures = (await getAllStructuresFromToriiClient(setup, account.account.address)) || [];
         const allStructures = new Set([
           ...fetchedStructures.map((structure) => structure.entityId.toString()),
           ...playerStructures.map((structure) => structure.structure.entity_id.toString()),
@@ -152,24 +167,55 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
           .map(Number);
 
         if (unsyncedStructureIds.length > 0) {
-          // Update synced structures first
-          setSyncedStructures((prev) => {
-            const newSet = new Set(prev);
-            unsyncedStructureIds.forEach((id) => newSet.add(id.toString()));
-            return newSet;
-          });
+          // Process each unsynced structure ID individually
+          const structuresAndPositions = [];
 
-          // Then sync the unsynced structures
-          const structuresAndPositions = unsyncedStructureIds.map((id) => ({
-            entityId: id,
-            position: fetchedStructures.find((structure) => structure.entityId === id)?.position || {
-              col: 0,
-              row: 0,
-            },
-          }));
-          await syncStructures({
-            structures: structuresAndPositions,
-          });
+          for (const unsyncedId of unsyncedStructureIds) {
+            // Find position for this structure
+            let structurePosition: HexPosition | undefined;
+
+            // Check in fetchedStructures first
+            const fetchedStructure = fetchedStructures.find((structure) => structure.entityId === unsyncedId);
+
+            if (fetchedStructure) {
+              // Use position from fetchedStructures if found
+              structurePosition = fetchedStructure.position;
+            } else {
+              // Otherwise look in playerStructures
+              const playerStructure = playerStructures.find(
+                (structure) => Number(structure.structure.entity_id) === unsyncedId,
+              );
+
+              structurePosition = playerStructure?.structure.base
+                ? {
+                    col: playerStructure.structure.base.coord_x,
+                    row: playerStructure.structure.base.coord_y,
+                  }
+                : undefined;
+            }
+
+            if (structurePosition) {
+              // Add to our list of structures to sync
+              structuresAndPositions.push({
+                entityId: unsyncedId,
+                position: structurePosition,
+              });
+
+              // Mark this structure as synced
+              setSyncedStructures((prev) => {
+                const newSet = new Set(prev);
+                newSet.add(unsyncedId.toString());
+                return newSet;
+              });
+            }
+          }
+
+          // Sync all structures that had valid positions
+          if (structuresAndPositions.length > 0) {
+            await syncStructures({
+              structures: structuresAndPositions,
+            });
+          }
         }
       } catch (error) {
         console.error("Failed to sync structures:", error);
@@ -177,7 +223,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
     };
 
     syncAllStructures();
-  }, [account.account, playerStructures, syncStructures, setSyncedStructures]);
+  }, [account.account, playerStructures, syncStructures, setSyncedStructures, fetchedStructures]);
 
   return (
     <>

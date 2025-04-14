@@ -120,7 +120,7 @@ export const getAllStructuresFromToriiClient = async (setup: SetupResult, ownedB
       };
 
   const query: Query = {
-    limit: 100,
+    limit: 1000,
     offset: 0,
     clause,
     dont_include_hashed_keys: false,
