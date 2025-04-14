@@ -33,7 +33,7 @@ all_model_indices = false
 model_indices = [
 	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
 	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner", "coord.x", "coord.y"]},
-	{ model_tag = "s1_eternum-Structure", fields = ["base.coord_x", "base.coord_y"]},
+	{ model_tag = "s1_eternum-Structure", fields = ["entity_id", "base.coord_x", "base.coord_y", "category"]},
 	{ model_tag = "s1_eternum-Hyperstructure", fields = ["hyperstructure_id"] },
 	{ model_tag = "s1_eternum-Resource", fields = ["entity_id"] },
 	{ model_tag = "s1_eternum-Building", fields = ["outer_col", "outer_row"] },
