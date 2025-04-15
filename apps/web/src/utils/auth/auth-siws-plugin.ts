@@ -1,5 +1,4 @@
 import type { BetterAuthPlugin } from "better-auth";
-import { jsonRpcProvider, useProvider } from "@starknet-react/core";
 //import { createConfig, getEnsAvatar, getEnsName, http } from "@wagmi/core";
 //import { mainnet, sepolia } from "@wagmi/core/chains";
 import { generateId } from "better-auth";
@@ -12,7 +11,7 @@ import { eq, user as userTable } from "@realms-world/db";
 // Database Instance
 import { db } from "@realms-world/db/client";
 // SIWE deps
-import { ISiwsMessage, SiwsTypedData } from "@realms-world/siws";
+import { SiwsTypedData } from "@realms-world/siws";
 
 const size = 256;
 let index = size;
@@ -64,7 +63,6 @@ export const siws = (options: SIWSPluginOptions) =>
           const nonce = uid(64);
           // Store nonce with 15-minute expiration
           await ctx.context.internalAdapter.createVerificationValue({
-            id: generateId(),
             identifier: `siws_${ctx.body.address.toLowerCase()}`,
             value: nonce,
             expiresAt: new Date(Date.now() + 15 * 60 * 1000),
