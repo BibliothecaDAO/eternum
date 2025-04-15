@@ -3,8 +3,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getQuestLocation } from "@/ui/components/quest/quest-utils";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { type ID, ResourcesIds } from "@bibliothecadao/types";
 import { useMiniGames, useOwnedGames } from "metagame-sdk";
 import { useMemo, useState } from "react";
 import gameImage from "../../../assets/games/dark-shuffle.png";
@@ -149,7 +149,7 @@ export const QuestContainer = ({
           <h2>My Games</h2>
           {ownedGames.length > 0 ? (
             <div className="flex flex-row mt-4 gap-4">
-              {ownedGames.map((game) => (
+              {ownedGames.map((game: any) => (
                 <div
                   className="flex flex-col w-60"
                   key={game.token_id}
