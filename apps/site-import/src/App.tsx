@@ -441,7 +441,7 @@ function FooterSection() {
                 </ul>
               </div>
               <div></div>
-              {/* Newsletter */}
+              {/* Newsletter
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Stay Updated</h3>
                 <p className="text-muted-foreground">
@@ -462,7 +462,7 @@ function FooterSection() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         </div>
@@ -472,7 +472,7 @@ function FooterSection() {
           <div className="container mx-auto px-4">
             <div className="py-6 flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
-                © 2024 BiblioDAO. All rights reserved.
+                © {new Date().getFullYear()} BiblioDAO. All rights reserved.
               </p>
               <div className="flex space-x-6 text-sm text-muted-foreground">
                 <a href="#" className="hover:text-primary transition-colors">

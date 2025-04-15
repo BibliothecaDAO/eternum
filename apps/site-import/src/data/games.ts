@@ -25,13 +25,13 @@ export const games: Game[] = [
   {
     id: 9,
     title: "Realms: Eternum",
-    image: "/games/realms-eternum/cover.webp",
-    backgroundImage: "/games/realms-eternum/cover.webp",
+    image: "/games/realms-eternum/cover.png",
+    backgroundImage: "/games/realms-eternum/cover.png",
     backgroundImages: [
-      "/games/realms-eternum/screenshots/1.jpg",
-      "/games/realms-eternum/screenshots/2.jpg",
-      "/games/realms-eternum/screenshots/3.jpg",
-      "/games/realms-eternum/screenshots/4.jpg"
+      "/games/realms-eternum/screenshots/1.png",
+      "/games/realms-eternum/screenshots/2.png",
+      "/games/realms-eternum/screenshots/3.png",
+      "/games/realms-eternum/screenshots/4.png"
     ],
     genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
     description: "Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.",
@@ -127,12 +127,13 @@ export const games: Game[] = [
       "/games/pistols/screenshots/6.png",
     ],
     genre: ["Social", "Casual", "Strategy", "PVP"],
-    description: "Thou art an offence to all that is decent, dog. I challenge you... to a duel! In Pistols at Ten Blocks, you face off against your opponent for honour or profit, in a pistol duel at '10' paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself glory on the leaderboard, or a shallow grave behind the Fool & Flintlock tavern.",
+    description: "Thou art an offence to all that is decent, dog. I challenge you... to a duel!\". In Pistols at Ten Blocks, you face off against your opponent for honour or profit, in a pistol duel at \"10\" paces. Will you duel with honour, or turn early and shoot the wretched cur in the back? Earn yourself fame and riches, or a shallow grave in the crypt beneath the Fool & Flintlock tavern",
     status: "development",
     isLive: true,
     studio: "Underware",
     links: {
-      homepage: "https://lootunder.world/pistols",
+      homepage: "https://pistols.underware.gg/",
+      discord: "https://discord.gg/realmsworld",
       twitter: "https://x.com/underware_gg"
     }
   },
