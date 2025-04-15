@@ -136,27 +136,6 @@ export const games: Game[] = [
       twitter: "https://x.com/underware_gg"
     }
   },
-  {
-    id: 10,
-    title: "Rising Revenant",
-    image: "/games/rising-revenant/cover.webp",
-    backgroundImage: "/games/rising-revenant/cover.webp",
-    backgroundImages: [
-      "/games/rising-revenant/screenshots/1.png",
-      "/games/rising-revenant/screenshots/2.png",
-      "/games/rising-revenant/screenshots/3.png",
-      "/games/rising-revenant/screenshots/4.png",
-    ],
-    genre: ["Last Man Standing", "Strategy"],
-    description: "Rising Revenant is an immersive last man standing strategy game built on Starknet and powered by Dojo. The game unfolds in two distinct stages. In the preparation phase, players meticulously plan their strategies, allocate resources, and invest in critical upgrades. Once preparations are complete, the game transitions into the action-packed game phase, where players unleash their reinforcements, trade and engage in intense events. Success in Rising Revenant hinges on strategic planning and tactical prowess, with performance in both phases determining the rewards. The ultimate objective: to be the last Revenant standing.",
-    status: "development",
-    isLive: true,
-    studio: "Grugs Lair",
-    links: {
-      twitter: "https://twitter.com/RRisingRevenant",
-      github: "https://github.com/GrugLikesRocks/Rising-Revenant"
-    }
-  },
   /*{
     id: 11,
     title: "Underdark",
@@ -204,13 +183,12 @@ export const games: Game[] = [
   {
     id: 13,
     title: "zKube",
-    image: "/games/zkube/cover.webp",
-    backgroundImage: "/games/zkube/cover.webp",
+    image: "/games/zkube/cover.png",
+    backgroundImage: "/games/zkube/cover.png",
     backgroundImages: [
-      "/games/zkube/screenshots/0.webm",
       "/games/zkube/screenshots/1.png",
       "/games/zkube/screenshots/2.png",
-      "/games/zkube/screenshots/3.png"
+      "/games/zkube/screenshots/0.png"
     ],
     genre: ["Strategy", "Mobile", "Casual"],
     description: "zKube is a casual puzzle game you can play on your mobile seamlessly. Join the daily or monthly tournament to conquer the leaderboard and earn rewards!",
@@ -242,6 +220,27 @@ export const games: Game[] = [
       discord: "https://discord.gg/Aa43XBgYvh",
       twitter: "https://x.com/Blobarena",
       github: "https://github.com/grugslair/Blob-arena"
+    }
+  },
+  {
+    id: 10,
+    title: "Rising Revenant",
+    image: "/games/rising-revenant/cover.webp",
+    backgroundImage: "/games/rising-revenant/cover.webp",
+    backgroundImages: [
+      "/games/rising-revenant/screenshots/1.png",
+      "/games/rising-revenant/screenshots/2.png",
+      "/games/rising-revenant/screenshots/3.png",
+      "/games/rising-revenant/screenshots/4.png",
+    ],
+    genre: ["Last Man Standing", "Strategy"],
+    description: "Rising Revenant is an immersive last man standing strategy game built on Starknet and powered by Dojo. The game unfolds in two distinct stages. In the preparation phase, players meticulously plan their strategies, allocate resources, and invest in critical upgrades. Once preparations are complete, the game transitions into the action-packed game phase, where players unleash their reinforcements, trade and engage in intense events. Success in Rising Revenant hinges on strategic planning and tactical prowess, with performance in both phases determining the rewards. The ultimate objective: to be the last Revenant standing.",
+    status: "development",
+    isLive: false,
+    studio: "Grugs Lair",
+    links: {
+      twitter: "https://twitter.com/RRisingRevenant",
+      github: "https://github.com/GrugLikesRocks/Rising-Revenant"
     }
   },
   {
@@ -298,7 +297,7 @@ export const games: Game[] = [
     genre: ["Tile-matching", "Puzzle", "Strategy"],
     description: "In PAVED, players compete for high scores and rewards by laying tiles to form an expanding medieval landscape. Inspired by the board game Carcassonne, solo and multiplayer modes offer unique, strategic experiences that test both planning and decisiveness. Think you've got what it takes? Pave your way to victory in a fully onchain strategy game like no other.",
     status: "development",
-    isLive: true,
+    isLive: false,
     studio: "Paved Studios",
     links: {
       homepage: "https://sepolia.paved.gg/",

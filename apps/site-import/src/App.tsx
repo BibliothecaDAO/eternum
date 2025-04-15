@@ -254,7 +254,7 @@ function TopBar({
                   className="text-2xl font-bold cursor-pointer text-primary transition-colors"
                   onClick={onTitleClick}
                 >
-                  Realms World
+                  <img src="/rw-logo.svg" alt="Realms.World" className="w-18" />
                 </h1>
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <span className="text-sm">
@@ -305,8 +305,18 @@ function TopBar({
                     </a>
                   ))}
                 </div>
+                <span className="h-6 w-px bg-border" />
 
-    
+                {/* Auth Buttons */}
+                <div className="flex items-center space-x-4">
+                  <a
+                    href="https://account.realms.world/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button className="cursor-pointer">Log In</Button>
+                  </a>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -462,7 +472,7 @@ function FooterSection() {
           <div className="container mx-auto px-4">
             <div className="py-6 flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
-                © 2024 LORDS. All rights reserved.
+                © 2024 BiblioDAO. All rights reserved.
               </p>
               <div className="flex space-x-6 text-sm text-muted-foreground">
                 <a href="#" className="hover:text-primary transition-colors">
@@ -740,8 +750,23 @@ function TreasurySection() {
           {/* Recent Proposals */}
           <Card className="backdrop-blur-md bg-black/20 border-white/10">
             <CardHeader>
-              <CardTitle>Recent Proposals</CardTitle>
-              <CardDescription>Latest governance activities</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Recent Proposals</CardTitle>
+                  <CardDescription>
+                    Latest governance activities
+                  </CardDescription>
+                </div>
+                <a
+                  href="https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button size={"sm"} variant="outline">
+                    View All
+                  </Button>
+                </a>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
