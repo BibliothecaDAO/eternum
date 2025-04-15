@@ -4,10 +4,10 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
+import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
-import * as SystemProps from "@bibliothecadao/types";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
@@ -79,7 +79,7 @@ class PromiseQueue {
   private readonly BATCH_DELAY = 2000; // ms to wait for batching
   private readonly MAX_BATCH_SIZE = 3; // Maximum number of calls to batch together
 
-  constructor(private provider: EternumProvider) { }
+  constructor(private provider: EternumProvider) {}
 
   async enqueue<T>(providerCall: () => Promise<T>, batchId?: string): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -247,10 +247,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       // For multiple calls, use the first call's entrypoint
       txType =
         TransactionType[
-        transactionDetails
-          // remove VRF provider call from the list to define the transaction type
-          .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
-          ?.entrypoint.toUpperCase() as keyof typeof TransactionType
+          transactionDetails
+            // remove VRF provider call from the list to define the transaction type
+            .filter((detail) => detail.contractAddress !== this.VRF_PROVIDER_ADDRESS)[0]
+            ?.entrypoint.toUpperCase() as keyof typeof TransactionType
         ];
     } else {
       txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
@@ -1630,7 +1630,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue(call);
   }
-
   /**
    * Attack an explorer with another explorer
    *
@@ -1638,16 +1637,28 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.aggressor_id - ID of the attacking explorer
    * @param props.defender_id - ID of the defending explorer
    * @param props.defender_direction - Direction to the defender
+   * @param props.steal_resources - Resources to steal, as array of [resourceId, amount] tuples
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
   public async attack_explorer_vs_explorer(props: SystemProps.AttackExplorerVsExplorerProps) {
-    const { aggressor_id, defender_id, defender_direction, signer } = props;
+    const { aggressor_id, defender_id, defender_direction, steal_resources, signer } = props;
+
+    const calldata = [aggressor_id, defender_id, defender_direction];
+
+    // Add steal_resources array length
+    calldata.push(steal_resources.length);
+
+    // Add each resource entry to calldata
+    steal_resources.forEach((resource) => {
+      calldata.push(resource.resourceId); // resourceId
+      calldata.push(resource.amount); // amount
+    });
 
     const call = this.createProviderCall(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
       entrypoint: "attack_explorer_vs_explorer",
-      calldata: [aggressor_id, defender_id, defender_direction],
+      calldata,
     });
 
     return await this.promiseQueue.enqueue(call);

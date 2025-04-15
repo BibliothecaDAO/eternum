@@ -40,7 +40,6 @@ export interface BridgeWithdrawFromRealmProps extends SystemSigner {
   from_structure_id: num.BigNumberish;
   recipient_address: num.BigNumberish;
   client_fee_recipient: num.BigNumberish;
-
 }
 
 export interface SetAddressNameProps extends SystemSigner {
@@ -732,6 +731,8 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
   defender_id: number;
   /** Direction to the defender */
   defender_direction: number;
+  /** Resources to steal */
+  steal_resources: Resource[];
 }
 
 /**
