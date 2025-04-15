@@ -17,6 +17,7 @@ import {
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
@@ -27,7 +28,6 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { BiomeInfoPanel, formatTypeAndBonuses } from "./combat-utils";
@@ -293,7 +293,7 @@ export const RaidContainer = ({
   };
 
   const onExplorerVsStructureRaid = async () => {
-    if (!selectedHex || stealableResources.length === 0) return;
+    // if (!selectedHex || stealableResources.length === 0) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
     if (direction === null) return;
 
@@ -428,7 +428,7 @@ export const RaidContainer = ({
                             (
                             {Math.floor(
                               (raidSimulation.attackerTroopsLeft / divideByPrecision(attackerArmyData.troops.count)) *
-                              100,
+                                100,
                             )}
                             %)
                           </span>
@@ -574,24 +574,26 @@ export const RaidContainer = ({
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-gold/70">Success Chance:</span>
                         <span
-                          className={`text-lg font-bold ${raidSimulation?.successChance && raidSimulation.successChance >= 80
+                          className={`text-lg font-bold ${
+                            raidSimulation?.successChance && raidSimulation.successChance >= 80
                               ? "text-green-400"
                               : raidSimulation?.successChance && raidSimulation.successChance >= 50
                                 ? "text-yellow-400"
                                 : "text-red-400"
-                            }`}
+                          }`}
                         >
                           {raidSimulation?.successChance.toFixed(2)}%
                         </span>
                       </div>
                       <div className="w-full h-4 bg-brown-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full ${raidSimulation?.successChance && raidSimulation.successChance >= 80
+                          className={`h-full ${
+                            raidSimulation?.successChance && raidSimulation.successChance >= 80
                               ? "bg-green-600"
                               : raidSimulation?.successChance && raidSimulation.successChance >= 50
                                 ? "bg-yellow-600"
                                 : "bg-red-600"
-                            }`}
+                          }`}
                           style={{ width: `${raidSimulation?.successChance || 0}%` }}
                         ></div>
                       </div>
@@ -601,12 +603,13 @@ export const RaidContainer = ({
                       <div className="flex justify-between items-center">
                         <span className="text-gold/70">Outcome Type:</span>
                         <span
-                          className={`text-base font-medium px-2 py-1 rounded ${raidSimulation?.outcomeType === RaidOutcome.Success
+                          className={`text-base font-medium px-2 py-1 rounded ${
+                            raidSimulation?.outcomeType === RaidOutcome.Success
                               ? "bg-green-900/50 text-green-400 border border-green-700/50"
                               : raidSimulation?.outcomeType === RaidOutcome.Failure
                                 ? "bg-red-900/50 text-red-400 border border-red-700/50"
                                 : "bg-yellow-900/50 text-yellow-400 border border-yellow-700/50"
-                            }`}
+                          }`}
                         >
                           {raidSimulation?.outcomeType === RaidOutcome.Success
                             ? "Guaranteed Success"
@@ -631,10 +634,10 @@ export const RaidContainer = ({
                             (
                             {raidSimulation && attackerArmyData && attackerArmyData.troops.count
                               ? Math.floor(
-                                (raidSimulation.raiderDamageTaken /
-                                  divideByPrecision(attackerArmyData.troops.count)) *
-                                100,
-                              )
+                                  (raidSimulation.raiderDamageTaken /
+                                    divideByPrecision(attackerArmyData.troops.count)) *
+                                    100,
+                                )
                               : 0}
                             %)
                           </span>
@@ -648,8 +651,8 @@ export const RaidContainer = ({
                             (
                             {raidSimulation && raidSimulation.totalDefenderTroops
                               ? Math.floor(
-                                (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
-                              )
+                                  (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
+                                )
                               : 0}
                             %)
                           </span>
@@ -729,7 +732,7 @@ export const RaidContainer = ({
               variant="primary"
               className={`px-8 py-3 rounded-lg font-bold text-lg transition-colors ${!canRaid ? "opacity-70" : "hover:bg-yellow-600"}`}
               isLoading={loading}
-              disabled={!canRaid}
+              disabled={false}
               onClick={onRaid}
             >
               {buttonMessage}

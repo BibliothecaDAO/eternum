@@ -1,8 +1,8 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ClientComponents, ID, resources } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { ClientComponents, ID, resources } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { syncEvents } from "@dojoengine/state";
@@ -34,6 +34,7 @@ export const RaidResult = ({
 
   const [raidTimestamp, setRaidTimestamp] = useState<number | null>(null);
   const [spinComplete, setSpinComplete] = useState(false);
+  const [isSlowingDown, setIsSlowingDown] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [outcomeItems, setOutcomeItems] = useState<Array<{ type: string; emoji: string }>>([]);
 
@@ -48,6 +49,8 @@ export const RaidResult = ({
     contractComponents.events.ExplorerRaidEvent,
     getEntityIdFromKeys([BigInt(raiderId), BigInt(structureId)]),
   );
+
+  console.log({ latestRaidResult, raidResult, raidTimestamp });
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -95,13 +98,14 @@ export const RaidResult = ({
     if (raidResult && raidTimestamp) {
       if (raidResult.timestamp > raidTimestamp) {
         setLatestRaidResult(raidResult);
+        setIsSlowingDown(true);
       }
     }
   }, [raidResult, raidTimestamp]);
 
   useEffect(() => {
-    if (latestRaidResult) {
-      // Finish spinning after 1 seconds
+    if (latestRaidResult && isSlowingDown) {
+      // Finish spinning after 2 seconds of slowing down
       spinTimeout.current = setTimeout(() => {
         setSpinComplete(true);
 
@@ -109,14 +113,14 @@ export const RaidResult = ({
         confettiTimeout.current = setTimeout(() => {
           setShowCelebration(true);
         }, 500);
-      }, 1000);
+      }, 2000);
     }
 
     return () => {
       if (spinTimeout.current) clearTimeout(spinTimeout.current);
       if (confettiTimeout.current) clearTimeout(confettiTimeout.current);
     };
-  }, [latestRaidResult]);
+  }, [latestRaidResult, isSlowingDown]);
 
   useEffect(() => {
     let sub: Subscription | undefined;
@@ -168,31 +172,44 @@ export const RaidResult = ({
 
       <div className="relative w-64 h-64 overflow-hidden rounded-2xl border-4 border-gold/30 bg-dark-brown/80 backdrop-blur-sm shadow-xl">
         {/* Spinning roulette container */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90">
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-brown/60 to-dark-brown/90 overflow-hidden">
           <AnimatePresence>
             {!spinComplete && (
-              <motion.div
-                initial={{ y: "-100%" }}
-                animate={{
-                  y: "100%",
-                  transition: {
-                    duration: 3,
-                    ease: [0.2, 0.8, 0.8, 0.2],
-                  },
-                }}
-                exit={{ opacity: 0 }}
-                className="absolute flex flex-col items-center gap-4"
-              >
-                {outcomeItems.map((item, index) => (
-                  <div
-                    key={`${item.emoji}-${index}`}
-                    className={`p-4 rounded-lg shadow-inner flex items-center justify-center text-2xl
-                      ${item.type === "success" ? "bg-order-brilliance/20" : "bg-order-giants/20"}`}
-                  >
-                    {item.emoji}
-                  </div>
-                ))}
-              </motion.div>
+              <div className="absolute w-full h-64 overflow-hidden">
+                <motion.div
+                  className="absolute flex flex-col items-center gap-4 w-full"
+                  style={{
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                  }}
+                  animate={{
+                    y: [0, -2000],
+                    transition: {
+                      y: {
+                        duration: isSlowingDown ? 0.5 : 3,
+                        ease: isSlowingDown ? "easeOut" : "linear",
+                        repeat: isSlowingDown ? 0 : Infinity,
+                        repeatType: "loop",
+                      },
+                    },
+                  }}
+                >
+                  {/* Create a repeating pattern with enough items for seamless looping */}
+                  {[...Array(60)].map((_, i) => {
+                    const item = outcomeItems[i % outcomeItems.length];
+                    return (
+                      <div
+                        key={`spin-item-${i}`}
+                        className={`p-4 rounded-lg shadow-inner flex items-center justify-center text-2xl
+                          ${item?.type === "success" ? "bg-order-brilliance/20" : "bg-order-giants/20"}`}
+                      >
+                        {item?.emoji}
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
