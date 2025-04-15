@@ -43,8 +43,8 @@ const BridgeTransactionItems = () => {
   }) => {
     const hash = await writeAsync({
       hash: transaction.req_hash,
-      l1Address: transaction.to_address,
-      l2Address: transaction.from_address,
+      l1Address: transaction.from_address,
+      l2Address: transaction.to_address,
       tokenIds: transaction.token_ids.map((id) => BigInt(id)),
     });
     if (hash) {

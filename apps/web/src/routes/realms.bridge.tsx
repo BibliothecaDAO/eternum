@@ -37,6 +37,7 @@ function RouteComponent() {
     getL1RealmsQueryOptions({ address: l1Address }),
   );
   const l1Realms = l1RealmsQuery.data;
+  console.log(l1Realms);
 
   const l2RealmsQuery = useQuery(
     getRealmsQueryOptions({

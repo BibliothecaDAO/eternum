@@ -14,7 +14,7 @@ export const CollectionAddresses: Readonly<
 > = {
   [Collections.REALMS]: {
     [ChainId.MAINNET]: "0x7afe30cb3e53dba6801aa0ea647a0ecea7cbe18d",
-    [ChainId.SEPOLIA]: "0x0A642270Cc73B2FC1605307F853712F944394564",
+    [ChainId.SEPOLIA]: "0x0a642270cc73b2fc1605307f853712f944394564",
     [ChainId.SN_SEPOLIA]:
       "0x03e64aa2c669ffd66a1c78d120812005d8f7e03b75696dd9c0f06e8def143844",
     [ChainId.SN_MAIN]:
