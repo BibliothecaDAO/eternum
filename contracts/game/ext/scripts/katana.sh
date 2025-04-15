@@ -66,7 +66,6 @@ PORT=5050
 
 # Katana settings
 KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
-KATANA_BLOCK_TIME=2500 # 2.5 seconds
 
 #==============================================================================
 # UTILITY FUNCTIONS

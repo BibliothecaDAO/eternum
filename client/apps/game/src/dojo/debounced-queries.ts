@@ -64,12 +64,12 @@ export const debouncedGetOwnedArmiesFromTorii = async <S extends Schema>(
 export const debouncedGetEntitiesFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
-  entityID: ID[],
+  entityIDs: ID[],
   entityModels: string[],
   onComplete?: () => void,
 ) => {
   try {
-    await subscriptionQueue.add(() => getEntitiesFromTorii(client, components, entityID, entityModels), onComplete);
+    await subscriptionQueue.add(() => getEntitiesFromTorii(client, components, entityIDs, entityModels), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetEntitiesFromTorii:", error);
     // Make sure onComplete is called even if there's an error
