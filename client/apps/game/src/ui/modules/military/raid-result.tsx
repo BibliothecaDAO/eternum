@@ -1,12 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { getBlockTimestamp } from "@/utils/timestamp";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ID, resources } from "@bibliothecadao/types";
-import { useComponentValue } from "@dojoengine/react";
-import { ComponentValue } from "@dojoengine/recs";
-import { syncEvents } from "@dojoengine/state";
-import { Subscription } from "@dojoengine/torii-wasm";
+import { ClientComponents, ID, resources, world } from "@bibliothecadao/types";
+import { ComponentValue, defineComponentSystem, isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -26,13 +21,12 @@ export const RaidResult = ({
 }) => {
   const {
     setup: {
-      network: { toriiClient, contractComponents },
+      network: { contractComponents },
     },
   } = useDojo();
 
   const [initialStolenResources] = useState(stolenResources);
 
-  const [raidTimestamp, setRaidTimestamp] = useState<number | null>(null);
   const [spinComplete, setSpinComplete] = useState(false);
   const [isSlowingDown, setIsSlowingDown] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -41,16 +35,28 @@ export const RaidResult = ({
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const [latestRaidResult, setLatestRaidResult] = useState<ComponentValue<
+  const [raidResult, setRaidResult] = useState<ComponentValue<
     ClientComponents["events"]["ExplorerRaidEvent"]["schema"]
   > | null>(null);
 
-  const raidResult = useComponentValue(
-    contractComponents.events.ExplorerRaidEvent,
-    getEntityIdFromKeys([BigInt(raiderId), BigInt(structureId)]),
-  );
+  useEffect(() => {
+    const handleRaidEventUpdate = (update: any) => {
+      if (isComponentUpdate(update, contractComponents.events.ExplorerRaidEvent)) {
+        const [currentState, _prevState] = update.value;
 
-  console.log({ latestRaidResult, raidResult, raidTimestamp });
+        // Check if this event matches our current raid
+        if (currentState?.explorer_id === raiderId && currentState?.structure_id === structureId) {
+          setRaidResult(currentState);
+          setIsSlowingDown(true);
+        }
+      }
+    };
+
+    // Register the component system to listen for raid events
+    defineComponentSystem(world, contractComponents.events.ExplorerRaidEvent, handleRaidEventUpdate, {
+      runOnInit: false,
+    });
+  }, [contractComponents.events.ExplorerRaidEvent, raiderId, structureId]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -88,23 +94,12 @@ export const RaidResult = ({
   );
 
   useEffect(() => {
-    setRaidTimestamp(getBlockTimestamp().currentBlockTimestamp);
-
     // Generate initial wheel items
     setOutcomeItems(generateOutcomeItems(20));
   }, [generateOutcomeItems]);
 
   useEffect(() => {
-    if (raidResult && raidTimestamp) {
-      if (raidResult.timestamp > raidTimestamp) {
-        setLatestRaidResult(raidResult);
-        setIsSlowingDown(true);
-      }
-    }
-  }, [raidResult, raidTimestamp]);
-
-  useEffect(() => {
-    if (latestRaidResult && isSlowingDown) {
+    if (raidResult && isSlowingDown) {
       // Finish spinning after 2 seconds of slowing down
       spinTimeout.current = setTimeout(() => {
         setSpinComplete(true);
@@ -120,51 +115,23 @@ export const RaidResult = ({
       if (spinTimeout.current) clearTimeout(spinTimeout.current);
       if (confettiTimeout.current) clearTimeout(confettiTimeout.current);
     };
-  }, [latestRaidResult, isSlowingDown]);
-
-  useEffect(() => {
-    let sub: Subscription | undefined;
-    const syncRaidResult = async () => {
-      sub = await syncEvents(
-        toriiClient,
-        contractComponents.events as any,
-        [
-          {
-            Keys: {
-              keys: [raiderId.toString(), structureId.toString()],
-              pattern_matching: "FixedLen",
-              models: ["s1_eternum-ExplorerRaidEvent"],
-            },
-          },
-        ],
-        // logging
-        false,
-      );
-    };
-    if (raiderId && structureId) {
-      syncRaidResult();
-    }
-
-    return () => {
-      sub?.free();
-    };
-  }, [raiderId, structureId]);
+  }, [raidResult, isSlowingDown]);
 
   // Determine outcome text and styles
-  const outcomeText = latestRaidResult?.success ? "Raid Successful!" : "Raid Failed!";
-  const outcomeColor = latestRaidResult?.success ? "text-order-brilliance" : "text-order-giants";
-  const outcomeBgColor = latestRaidResult?.success ? "bg-order-brilliance/20" : "bg-order-giants/20";
-  const outcomeBorderColor = latestRaidResult?.success ? "border-order-brilliance/30" : "border-order-giants/30";
-  const outcomeEmoji = latestRaidResult?.success ? "💰" : "💀";
+  const outcomeText = raidResult?.success ? "Raid Successful!" : "Raid Failed!";
+  const outcomeColor = raidResult?.success ? "text-order-brilliance" : "text-order-giants";
+  const outcomeBgColor = raidResult?.success ? "bg-order-brilliance/20" : "bg-order-giants/20";
+  const outcomeBorderColor = raidResult?.success ? "border-order-brilliance/30" : "border-order-giants/30";
+  const outcomeEmoji = raidResult?.success ? "💰" : "💀";
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <div className="text-center mb-4">
         <h3 className="text-xl font-bold text-gold">Raid Result</h3>
         <p className="text-sm text-gold/70">
-          {latestRaidResult
+          {raidResult
             ? spinComplete
-              ? `${outcomeText} ${latestRaidResult.success ? "Resources were captured!" : "Your troops were repelled!"}`
+              ? `${outcomeText} ${raidResult.success ? "Resources were captured!" : "Your troops were repelled!"}`
               : "Determining raid outcome..."
             : "Waiting for raid transaction..."}
         </p>
@@ -215,7 +182,7 @@ export const RaidResult = ({
         </div>
 
         {/* Revealed result (shown after spin) */}
-        {spinComplete && latestRaidResult && (
+        {spinComplete && raidResult && (
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{
@@ -236,7 +203,7 @@ export const RaidResult = ({
         )}
 
         {/* Celebration effects (only on success) */}
-        {showCelebration && latestRaidResult?.success && (
+        {showCelebration && raidResult?.success && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -327,7 +294,7 @@ export const RaidResult = ({
         )}
 
         {/* Failure effects (only on failure) */}
-        {showCelebration && latestRaidResult && !latestRaidResult.success && (
+        {showCelebration && raidResult && !raidResult.success && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -387,15 +354,15 @@ export const RaidResult = ({
       </div>
 
       {/* Additional result details */}
-      {spinComplete && latestRaidResult && (
+      {spinComplete && raidResult && (
         <div className="mt-6 w-full max-w-md">
           <div className={`p-4 rounded-lg border ${outcomeBorderColor} text-center`}>
             <h4 className={`text-lg font-bold ${outcomeColor} mb-2`}>
-              {latestRaidResult.success ? "Raid Successful" : "Raid Repelled"}
+              {raidResult.success ? "Raid Successful" : "Raid Repelled"}
             </h4>
 
             {/* Show stolen resources only if raid was successful */}
-            {latestRaidResult.success && initialStolenResources.length > 0 ? (
+            {raidResult.success && initialStolenResources.length > 0 ? (
               <div className="mt-3 pt-3 border-t border-gold/10">
                 <h5 className="text-md font-semibold text-gold mb-2">Stolen Resources:</h5>
                 {initialStolenResources.map((resource, index) => (
@@ -413,7 +380,7 @@ export const RaidResult = ({
                 ))}
               </div>
             ) : (
-              !latestRaidResult.success && (
+              !raidResult.success && (
                 <div className="mt-3 pt-3 border-t border-gold/10">
                   <div className="flex flex-col items-center text-red-400">
                     <p>Your raid was unsuccessful. No resources were stolen.</p>

@@ -293,7 +293,7 @@ export const RaidContainer = ({
   };
 
   const onExplorerVsStructureRaid = async () => {
-    // if (!selectedHex || stealableResources.length === 0) return;
+    if (!selectedHex || stealableResources.length === 0) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
     if (direction === null) return;
 
