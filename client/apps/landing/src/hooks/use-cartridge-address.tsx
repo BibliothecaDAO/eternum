@@ -4,6 +4,7 @@ export const useCartridgeAddress = () => {
   const [address, setAddress] = useState<string | null>(null);
   const [searchId, setSearchId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState<string | null>(null);
 
   const fetchAddress = useCallback(async (id: string) => {
     setSearchId(id);
@@ -15,31 +16,24 @@ export const useCartridgeAddress = () => {
 
       setLoading(true);
       try {
-        const response = await fetch("https://api.cartridge.gg/query", {
+        const response = await fetch("https://api.cartridge.gg/lookup", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            query: `
-              query Account {
-                account(id: "${searchId}") {
-                  controllers {
-                    edges {
-                      node {
-                        address
-                      }
-                    }
-                  }
-                }
-              }
-            `,
-          }),
+          body: JSON.stringify({ usernames: [searchId] }),
         });
 
         const data = await response.json();
-        const controllerAddress = data?.data?.account?.controllers?.edges?.[0]?.node?.address;
-        setAddress(controllerAddress);
+        console.log(data);
+
+        if (data.results.length > 0) {
+          setAddress(data.results[0].addresses[0]);
+          setName(data.results[0].username);
+        } else {
+          setAddress(null);
+          setName(null);
+        }
       } catch (error) {
         console.error("Error fetching address:", error);
         setAddress(null);

@@ -11,7 +11,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       <div className="">
         <TopNavigation />
       </div>
-      <div className="flex-grow border-gold/15 border-t overflow-auto rounded">{children}</div>
+      <div className="flex-grow overflow-auto rounded-t-xl">{children}</div>
     </div>
   );
 };

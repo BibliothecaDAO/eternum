@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
@@ -65,8 +65,8 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       onClick={handleCardClick}
       className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
     >
-      <img src={image} alt={name} className="w-full object-cover h-24 p-2 rounded-2xl" />
-      <CardHeader>
+      <img src={image} alt={name} className="w-full object-cover h-32 opacity-75 rounded-t-xl" />
+      <CardHeader className="p-4">
         <CardTitle className=" items-center gap-2">
           <div className="uppercase text-sm mb-2 flex justify-between">
             Realm
@@ -74,7 +74,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
               {isFetching && <Loader className="animate-spin" />}
               {error ? (
                 <div className="flex items-center gap-2">
-                  Mint: <Checkbox checked={isSelected} disabled={isSuccess} />
+                  Claim <Checkbox checked={isSelected} disabled={isSuccess} />
                 </div>
               ) : (
                 isSuccess && <div className="text-green">Pass Minted!</div>
@@ -85,21 +85,20 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
             <div className=" text-2xl">{name}</div>
           </div>
         </CardTitle>
-        <CardDescription>{/*description*/}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         <div className="flex flex-wrap gap-2">
           {attributes
             ?.filter((attribute) => attribute.trait_type === "Resource")
             .map((attribute, index) => (
-              <ResourceIcon resource={attribute.value as string} size="md" key={`${attribute.trait_type}-${index}`} />
+              <ResourceIcon resource={attribute.value as string} size="xl" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
 
         {/* {Number(tokenId)} */}
       </CardContent>
       {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
-        <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
+        <CardFooter className="border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center p-4">
           {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
         </CardFooter>
       )}
