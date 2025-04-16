@@ -1,14 +1,10 @@
 import { relations } from "drizzle-orm";
 import {
-  char,
-  index,
   integer,
-  jsonb,
   numeric,
   pgEnum,
   pgTable,
   primaryKey,
-  serial,
   text,
   timestamp,
 
@@ -61,7 +57,7 @@ export const realmsBridgeEventsRelations = relations(
 export const velords_burns = pgTable(
   "dune_velords_burns",
   {
-    id_: text("_id"),
+    _id: text("_id"),
     source: text("source").notNull(),
     amount: numeric("amount").notNull(),
     transaction_hash: text("transaction_hash").notNull(),
@@ -77,7 +73,7 @@ export const velords_burns = pgTable(
 );
 
 export const velords_supply = pgTable("dune_velords_supply", {
-  id_: text("_id"),
+  _id: text("_id"),
   old_supply: text("old_supply").notNull(),
   new_supply: numeric("new_supply").notNull(),
   transaction_hash: text("transaction_hash").notNull().primaryKey(),
@@ -90,7 +86,7 @@ export const velords_supply = pgTable("dune_velords_supply", {
 export const realmsLordsClaims = pgTable(
   "realms_lords_claims",
   {
-    id_: text("_id"),
+    _id: text("_id"),
     hash: text("hash").notNull(),
     amount: numeric("amount", { scale: 0 }).notNull(),
     recipient: text("recipient").notNull(),

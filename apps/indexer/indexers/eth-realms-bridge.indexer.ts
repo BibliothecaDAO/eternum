@@ -158,7 +158,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             token_ids: tokenIds,
             timestamp: header.timestamp,
             tx_hash: log.transactionHash,
-            id: decoded.args.payload,
+            _id: decoded.args.payload,
             req_hash: uint256.uint256ToBN({
               low: decoded.args.payload[0],
               high: decoded.args.payload[1],
@@ -181,7 +181,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
               timestamp: header.timestamp,
               hash: log.transactionHash,
               type: eventType,
-              id: decoded.args.payload,
+              _id: decoded.args.payload,
             })
             .onConflictDoNothing();
         }

@@ -77,6 +77,7 @@ export function createIndexer<
         await db
           .insert(realmsLordsClaims)
           .values({
+            _id: transactionHash,
             hash: transactionHash,
             recipient: args.recipient,
             amount: args.amount,

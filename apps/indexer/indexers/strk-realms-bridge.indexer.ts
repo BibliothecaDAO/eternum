@@ -109,7 +109,7 @@ export function createIndexer<
               token_ids: args.req_content.ids,
               timestamp: block.header.timestamp,
               tx_hash: transactionHash,
-              id,
+              _id: id,
               req_hash: args.req_content.hash,
             })
             .onConflictDoNothing();
@@ -152,7 +152,7 @@ export function createIndexer<
               timestamp: block.header.timestamp,
               tx_hash: transactionHash,
               req_hash: args.req_content.hash,
-              id,
+              _id: id,
             })
             .onConflictDoNothing();
           await db
@@ -161,7 +161,7 @@ export function createIndexer<
               timestamp: block.header.timestamp,
               hash: transactionHash,
               type: "deposit_initiated_l2",
-              id,
+              _id: id,
             })
             .onConflictDoNothing();
         }
