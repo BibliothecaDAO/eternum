@@ -51,6 +51,7 @@ export class GameConfigDeployer {
 		const config = { account, provider, config: this.globalConfig };
 		await setWorldConfig(config);
 		await setAgentControllerConfig(config);
+		await setVillageControllersConfig(config);
 		await SetResourceFactoryConfig(config);
 		await setResourceBridgeWhitelistConfig(config);
 		await setTradeConfig(config);
@@ -964,6 +965,35 @@ export const setAgentControllerConfig = async (config: Config) => {
 			"\n",
 	);
 };
+
+
+export const setVillageControllersConfig = async (config: Config) => {
+	const calldata = {
+		signer: config.account,
+		village_controllers: config.config.village.controller_addresses,
+	};
+
+	console.log(
+		chalk.cyan(`
+  📦 Village Controllers Configuration
+  ═══════════════════════════════`),
+	);
+
+	console.log(
+		chalk.cyan(`
+    ┌─ ${chalk.yellow("Village Controllers")}
+    │  ${chalk.gray("Addresses:")} ${chalk.white(calldata.village_controllers)}
+    └────────────────────────────────`),
+	);
+
+	const villageTx = await config.provider.set_village_controllers(calldata);
+	console.log(
+		chalk.green(`\n    ✔ Village Controllers configured `) +
+			chalk.gray(villageTx.statusReceipt) +
+			"\n",
+	);
+};
+
 
 export const setCapacityConfig = async (config: Config) => {
 	const calldata = {

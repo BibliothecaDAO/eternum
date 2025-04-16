@@ -4,10 +4,10 @@
  * @param katana - The katana manifest containing contract addresses and ABIs
  * @param url - Optional RPC URL for the provider
  */
+import * as SystemProps from "@bibliothecadao/types";
 import { DojoCall, DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData, uint256 } from "starknet";
-import * as SystemProps from "@bibliothecadao/types";
 import { TransactionType } from "./types";
 export const NAMESPACE = "s1_eternum";
 export { TransactionType };
@@ -1957,6 +1957,16 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_agent_controller",
       calldata: [agent_controller],
+    });
+  }
+
+  public async set_village_controllers(props: SystemProps.SetVillageControllersProps) {
+    const { village_controllers, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_village_controllers",
+      calldata: [village_controllers.length, ...village_controllers],
     });
   }
 

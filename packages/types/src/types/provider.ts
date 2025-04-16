@@ -366,6 +366,10 @@ export interface SetAgentControllerProps extends SystemSigner {
   agent_controller: num.BigNumberish;
 }
 
+export interface SetVillageControllersProps extends SystemSigner {
+  village_controllers: num.BigNumberish[];
+}
+
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: num.BigNumberish;
 }

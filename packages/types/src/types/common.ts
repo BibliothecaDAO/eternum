@@ -304,6 +304,9 @@ export interface Config {
   agent: {
     controller_address: string;
   };
+  village: {
+    controller_addresses: string[];
+  };
   resources: {
     resourcePrecision: number;
     productionByComplexRecipe: ResourceInputs;
