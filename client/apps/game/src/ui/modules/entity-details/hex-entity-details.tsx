@@ -1,8 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
+import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import { ArmyEntityDetail } from "@/ui/components/worldmap/entities/army-entity-detail";
 import { StructureEntityDetail } from "@/ui/components/worldmap/entities/structure-entity-detail";
 import {
+  Biome,
   getArmy,
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
@@ -35,23 +37,16 @@ export const HexEntityDetails = () => {
     );
   }, [selectedHex?.col, selectedHex?.row]);
 
-  // Early return if no tile or no occupier
-  if (!tile?.occupier_id) {
-    return <div className="h-full flex items-center justify-center text-center">Select a tile with an entity</div>;
-  }
-
   const userAddress = ContractAddress(dojo.account.account.address);
 
-  // Get available resources for the entity
-  const availableResources = new ResourceManager(dojo.setup.components, tile.occupier_id || 0).getResourceBalances();
-
-  // Determine entity type and get relevant data
-  const occupierId = tile.occupier_id || 0;
   let entityContent = null;
 
+  const hasOccupier = tile && tile.occupier_id;
+
   // Handle structure types
-  if (isTileOccupierStructure(tile.occupier_type)) {
-    const structure = getStructure(occupierId, userAddress, dojo.setup.components) as Structure;
+  if (hasOccupier && isTileOccupierStructure(tile.occupier_type)) {
+    // Determine entity type and get relevant data
+    const structure = getStructure(tile.occupier_id, userAddress, dojo.setup.components) as Structure;
     if (!structure) return null;
 
     const playerGuild = getGuildFromPlayerAddress(ContractAddress(structure.owner || 0n), dojo.setup.components);
@@ -70,13 +65,16 @@ export const HexEntityDetails = () => {
     );
   }
   // Handle army types
-  else if (tile.occupier_type === TileOccupier.Explorer) {
-    const army = getArmy(occupierId, userAddress, dojo.setup.components) as ArmyInfo;
+  else if (hasOccupier && tile.occupier_type === TileOccupier.Explorer) {
+    const army = getArmy(tile.occupier_id, userAddress, dojo.setup.components) as ArmyInfo;
     if (!army) return null;
 
     const playerGuild = getGuildFromPlayerAddress(ContractAddress(army.owner || 0n), dojo.setup.components);
     const realmId = army.structure?.metadata.realm_id || 0;
     const originRealmName = getRealmNameById(realmId);
+
+    // Get available resources for the entity
+    const availableResources = new ResourceManager(dojo.setup.components, tile.occupier_id || 0).getResourceBalances();
 
     entityContent = (
       <div className={`p-4 ${army.isMine ? "bg-ally/20" : "bg-red/10"}`}>
@@ -92,9 +90,16 @@ export const HexEntityDetails = () => {
     );
   }
 
+  const biome = useMemo(() => {
+    return Biome.getBiome(selectedHex?.col || 0, selectedHex?.row || 0);
+  }, [selectedHex]);
+
   return (
     <div className="h-full overflow-auto">
-      {entityContent || <div className="h-full flex items-center justify-center text-center">Unknown entity type</div>}
+      <div className={`${!!entityContent ? "h-50" : "h-full"}`}>
+        <BiomeInfoPanel biome={biome} compact={!!entityContent} />
+      </div>
+      {entityContent}
     </div>
   );
 };

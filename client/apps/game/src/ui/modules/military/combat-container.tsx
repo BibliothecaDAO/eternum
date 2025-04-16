@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -31,7 +32,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { BiomeInfoPanel, formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
 
 const STEALABLE_RESOURCES = [
   ResourcesIds.Wheat,
@@ -527,7 +528,7 @@ export const CombatContainer = ({
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
-      <BiomeInfoPanel combatSimulator={combatSimulator} biome={biome} />
+      <BiomeInfoPanel biome={biome} />
 
       {/* Troop Selector for Structure */}
       {TroopSelector()}
@@ -543,7 +544,7 @@ export const CombatContainer = ({
                 {formatTypeAndBonuses(
                   attackerArmyData.troops.category as TroopType,
                   attackerArmyData.troops.tier as TroopTier,
-                  combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
+                  configManager.getBiomeCombatBonus(attackerArmyData.troops.category as TroopType, biome),
                   combatSimulator.calculateStaminaModifier(Number(attackerStamina), true),
                   true,
                 )}
@@ -581,7 +582,7 @@ export const CombatContainer = ({
                 {formatTypeAndBonuses(
                   targetArmyData.troops.category as TroopType,
                   targetArmyData.troops.tier as TroopTier,
-                  combatSimulator.getBiomeBonus(targetArmyData.troops.category as TroopType, biome),
+                  configManager.getBiomeCombatBonus(targetArmyData.troops.category as TroopType, biome),
                   combatSimulator.calculateStaminaModifier(Number(defenderStamina), false),
                   false,
                 )}
@@ -859,7 +860,7 @@ export const CombatContainer = ({
                     {formatTypeAndBonuses(
                       originalTroops.category as TroopType,
                       originalTroops.tier as TroopTier,
-                      combatSimulator.getBiomeBonus(originalTroops.category as TroopType, biome),
+                      configManager.getBiomeCombatBonus(originalTroops.category as TroopType, biome),
                       combatSimulator.calculateStaminaModifier(currentStamina, isAttacker),
                       isAttacker,
                     )}

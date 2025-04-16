@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatStringNumber } from "@/ui/utils/utils";
@@ -30,7 +31,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { BiomeInfoPanel, formatTypeAndBonuses } from "./combat-utils";
+import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
 
 const RAIDABLE_RESOURCES = [
@@ -359,7 +360,7 @@ export const RaidContainer = ({
       ) : (
         <>
           {/* Biome Info Panel */}
-          <BiomeInfoPanel combatSimulator={combatSimulator} biome={biome} />
+          <BiomeInfoPanel biome={biome} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Attacker Panel */}
             <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
@@ -372,7 +373,7 @@ export const RaidContainer = ({
                       {formatTypeAndBonuses(
                         attackerArmyData.troops.category as TroopType,
                         attackerArmyData.troops.tier as TroopTier,
-                        combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
+                        configManager.getBiomeCombatBonus(attackerArmyData.troops.category as TroopType, biome),
                         combatSimulator.calculateStaminaModifier(Number(attackerArmyData.troops.stamina.amount), true),
                         true,
                         false, // Not compact for attacker (single entity)
@@ -493,7 +494,7 @@ export const RaidContainer = ({
                           {formatTypeAndBonuses(
                             troops.category as TroopType,
                             troops.tier as TroopTier,
-                            combatSimulator.getBiomeBonus(troops.category as TroopType, biome),
+                            configManager.getBiomeCombatBonus(troops.category as TroopType, biome),
                             combatSimulator.calculateStaminaModifier(Number(troops.stamina || 0), false),
                             false,
                             defenderTroops.length > 2, // Use compact layout when there are more than 2 guards
