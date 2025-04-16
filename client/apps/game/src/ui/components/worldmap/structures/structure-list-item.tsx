@@ -1,20 +1,22 @@
 import { InventoryResources } from "@/ui/components/resources/inventory-resources";
 import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import { getHyperstructureProgress, getStructureTypeName } from "@bibliothecadao/eternum";
-import { Structure, StructureType } from "@bibliothecadao/types"
 import { useDojo, useGuardsByStructure } from "@bibliothecadao/react";
+import { Structure, StructureType } from "@bibliothecadao/types";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
 
 type StructureListItemProps = {
   structure: Structure;
   maxInventory?: number;
   showButtons?: boolean;
+  compact?: boolean;
 };
 
 export const StructureListItem = ({
   structure,
   maxInventory = Infinity,
   showButtons = false,
+  compact = false,
 }: StructureListItemProps) => {
   const {
     setup: { components },
@@ -25,50 +27,87 @@ export const StructureListItem = ({
   );
 
   const isRealm = structure.structure.base.category === StructureType.Realm;
-
+  const isHyperstructure = structure.structure.base.category === StructureType.Hyperstructure;
   const structureTypeName = isRealm ? structure.name : getStructureTypeName(structure.structure.category);
-
-  const progress =
-    structure.structure.base.category === StructureType.Hyperstructure
-      ? getHyperstructureProgress(structure.entityId, components)
-      : undefined;
+  const progress = isHyperstructure ? getHyperstructureProgress(structure.entityId, components) : undefined;
 
   return (
-    <div className="flex justify-between flex-row mt-2 ">
-      <div
-        className={`flex h-full justify-between  ${structure.isMine ? "bg-blueish/20" : "bg-red/20"
-          } rounded-md border-gold/20 p-2`}
-      >
-        <div className="grid grid-cols-[2fr_3fr] gap-4">
-          <div className="flex flex-col justify-between">
-            <div className="h4 text-xl flex flex-col">
-              <div className="text-base font-semibold text-gold">{structureTypeName}</div>
-              {!isRealm && <div className="text-sm text-gold/80">{structure.name}</div>}
+    <div className="flex flex-col gap-2 w-full">
+      <div className="flex flex-col w-full gap-2">
+        {/* Top section - Structure info */}
+        <div className="flex flex-col w-full gap-2">
+          {/* Structure info */}
+          <div className="flex flex-col justify-between gap-1">
+            {/* Type and name */}
+            <div className="flex flex-col gap-0.5">
+              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
+                {structureTypeName}
+              </div>
+              <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
+                <h6 className={`${compact ? "text-xs" : "text-base"} font-bold truncate`}>{structure.name}</h6>
+              </div>
             </div>
-            {structure.structure.base.category === StructureType.Hyperstructure && (
-              <div className="text-xs">Progress: {progress?.percentage ?? 0}%</div>
+
+            {/* Progress bar for hyperstructures */}
+            {isHyperstructure && (
+              <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
+                <div className="flex justify-between items-center">
+                  <div className="text-xs font-bold text-gold/90 uppercase">Construction Progress</div>
+                  <div className="text-xs font-semibold bg-gold/20 px-2 py-0.5 rounded-full">
+                    {progress?.percentage ?? 0}%
+                  </div>
+                </div>
+                <div className="w-full bg-gray-700/70 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-gold/80 to-gold h-full rounded-full transition-all duration-500 shadow-glow-sm"
+                    style={{ width: `${progress?.percentage ?? 0}%` }}
+                  />
+                </div>
+                {progress?.percentage !== 100 && (
+                  <div className="text-xxs text-gold/60 italic text-center mt-0.5">
+                    {progress?.percentage === 0 ? "Construction not started" : "Construction in progress"}
+                  </div>
+                )}
+              </div>
             )}
 
-            {isRealm && <RealmResourcesIO realmEntityId={structure.entityId} />}
+            {/* Realm resources input/output display */}
+            {isRealm && (
+              <div className="mt-0.5">
+                <RealmResourcesIO realmEntityId={structure.entityId} compact={true} size="xs" />
+              </div>
+            )}
           </div>
-          <div className="flex flex-col content-center">
-            <CompactDefenseDisplay
-              troops={guards.map((army) => ({
-                slot: army.slot,
-                troops: army.troops,
-              }))}
-            />
-            <InventoryResources
-              max={maxInventory}
-              entityId={structure.entityId}
-              className="flex gap-1 mt-2 no-scrollbar"
-              resourcesIconSize="xs"
-              textSize="xxs"
-            />
-          </div>
+
+          {/* Guards/Defense section - full width */}
+          {guards.length > 0 && (
+            <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
+              <div className={`${compact ? "text-xxs" : "text-xs"} text-gold/80 uppercase font-semibold`}>Defense</div>
+              <CompactDefenseDisplay
+                troops={guards.map((army) => ({
+                  slot: army.slot,
+                  troops: army.troops,
+                }))}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom section - Resources (full width) */}
+        <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
+          <div className={`${compact ? "text-xxs" : "text-xs"} text-gold/80 uppercase font-semibold`}>Resources</div>
+          <InventoryResources
+            max={maxInventory}
+            entityId={structure.entityId}
+            className="flex flex-wrap gap-1 w-full no-scrollbar"
+            resourcesIconSize="xs"
+            textSize="xxs"
+          />
         </div>
       </div>
-      {showButtons}
+
+      {/* Action buttons */}
+      {showButtons && <div className="flex justify-end gap-1 mt-0.5">{showButtons}</div>}
     </div>
   );
 };
