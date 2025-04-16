@@ -11,12 +11,14 @@ import {
   getArmy,
   getEntityIdFromKeys,
   getGuardsByStructure,
+  getRemainingCapacityInKg,
   getTroopResourceId,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
+  CapacityConfig,
   ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
@@ -283,9 +285,9 @@ export const CombatContainer = ({
     const defenderTroopsLeft = defenderArmy.troopCount - defenderTroopsLost;
 
     let winner = null;
-    if (attackerTroopsLeft === 0 && defenderTroopsLeft > 0) {
+    if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
       winner = defenderArmy.entity_id;
-    } else if (defenderTroopsLeft === 0 && attackerTroopsLeft > 0) {
+    } else if (defenderTroopsLeft <= 0 && attackerTroopsLeft > 0) {
       winner = attackerArmy.entity_id;
     }
 
@@ -382,6 +384,53 @@ export const CombatContainer = ({
 
     return availableResources;
   }, [target, components]);
+
+  const remainingCapacity = useMemo(() => {
+    const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
+    const remainingCapacityAfterRaid =
+      remainingCapacity -
+      (battleSimulation?.defenderDamage || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
+    return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
+  }, [battleSimulation]);
+
+  const stealableResourcesUI = useMemo(() => {
+    let capacityAfterRaid = remainingCapacity.afterRaid;
+    const stealableResources: Array<{ resourceId: number; amount: number }> = [];
+
+    // If no capacity, return empty array immediately
+    if (capacityAfterRaid <= 0) {
+      return stealableResources;
+    }
+
+    targetArmyResourcesByRarity
+      .sort((a, b) => b.amount - a.amount)
+      .forEach((resource) => {
+        const availableAmount = divideByPrecision(resource.amount);
+        const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
+        if (capacityAfterRaid > 0) {
+          let maxStealableAmount;
+          if (resourceWeight === 0) {
+            // If resource has no weight, can take all of it
+            maxStealableAmount = availableAmount;
+          } else {
+            maxStealableAmount = Math.min(
+              Math.floor(Number(capacityAfterRaid) / Number(resourceWeight)),
+              availableAmount,
+            );
+          }
+          if (maxStealableAmount > 0) {
+            stealableResources.push({
+              ...resource,
+              amount: maxStealableAmount,
+            });
+          }
+          capacityAfterRaid -= maxStealableAmount * Number(resourceWeight);
+        } else {
+          return; // Exit the forEach loop if no more capacity
+        }
+      });
+    return stealableResources;
+  }, [targetArmyResourcesByRarity]);
 
   const onExplorerVsExplorerAttack = async () => {
     if (!selectedHex) return;
@@ -723,6 +772,36 @@ export const CombatContainer = ({
               </div>
             </div>
           </div>
+
+          {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
+          {winner === attackerEntityId && target?.targetType === TargetType.Army && stealableResourcesUI.length > 0 && (
+            <div className="mb-6 p-4 border border-gold/10 rounded bg-brown-900/30">
+              <h4 className="text-lg font-medium text-gold/90 mb-4 flex items-center">
+                <span className="mr-2">💰</span> Resources You Will Steal
+              </h4>
+              <div className="max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/40 scrollbar-track-brown-900/30">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {stealableResourcesUI.map((resource) => (
+                    <div
+                      key={resource.resourceId}
+                      className="flex justify-between items-center p-2 border border-gold/10 rounded-md bg-brown-900/20"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ResourceIcon
+                          resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                          size="md"
+                        />
+                        <span className="text-gold/80">
+                          {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                        </span>
+                      </div>
+                      <span className="text-lg font-bold text-gold">{resource.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[

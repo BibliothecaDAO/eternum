@@ -5,6 +5,7 @@ import { StructureListItem } from "@/ui/components/worldmap/structures/structure
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
 import { Headline } from "@/ui/elements/headline";
+import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import {
   getArmy,
@@ -13,15 +14,10 @@ import {
   getRealmNameById,
   getStructure,
   isTileOccupierStructure,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
-import {
-  ArmyInfo,
-  ClientComponents,
-  ContractAddress,
-  Structure,
-  TileOccupier,
-} from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
+import { ArmyInfo, ClientComponents, ContractAddress, resources, Structure, TileOccupier } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { memo, useMemo } from "react";
 import { TroopChip } from "../../military/troop-chip";
@@ -55,6 +51,10 @@ export const EntityInfoLabel = memo(() => {
 const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponents["Tile"]["schema"]> }) => {
   const dojo = useDojo();
   const userAddress = ContractAddress(dojo.account.account.address);
+
+  const availabeResources = useMemo(() => {
+    return new ResourceManager(dojo.setup.components, tile.occupier_id || 0).getResourceBalances();
+  }, [tile.occupier_id]);
 
   // Get entity info only if we have a valid tile with an occupier
   const entityInfo = useMemo(() => {
@@ -111,8 +111,6 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
     const realmId = army.structure?.metadata.realm_id || 0;
     const originRealmName = getRealmNameById(realmId);
 
-    console.log(playerGuild);
-
     return (
       <BaseThreeTooltip
         position={Position.CLEAN}
@@ -150,7 +148,26 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
           <div className="flex justify-between items-start">
             {/* Army name and status */}
             <div className="flex flex-col">
-              <div className="text-xs text-gold/80">{army.name}</div>
+              <div className="flex justify-between items-center w-full">
+                <div className="text-sm font-semibold text-gold truncate mr-2">{army.name}</div>
+                {availabeResources.length > 0 && (
+                  <div className="flex items-center">
+                    {availabeResources.slice(0, 4).map((resource) => (
+                      <ResourceIcon
+                        key={resource.resourceId}
+                        resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                        size="sm"
+                        withTooltip={true}
+                        tooltipText={`${resources.find((r) => r.id === resource.resourceId)?.trait || ""}: ${resource.amount}`}
+                        className="hover:scale-110 transition-transform ml-1"
+                      />
+                    ))}
+                    {availabeResources.length > 4 && (
+                      <span className="text-xs text-gold/80 ml-1 font-medium">+{availabeResources.length - 3}</span>
+                    )}
+                  </div>
+                )}
+              </div>
               {army.isHome && <div className="text-xs text-green mt-1">At Base</div>}
             </div>
 
