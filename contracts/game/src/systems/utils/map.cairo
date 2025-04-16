@@ -1,6 +1,7 @@
 use dojo::model::ModelStorage;
 use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
+use s1_eternum::constants::DAYDREAMS_AGENT_ID;
 use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::troop::{TroopTier, TroopType};
 use s1_eternum::utils::map::biomes::Biome;
@@ -19,39 +20,75 @@ pub impl IMapImpl of IMapTrait {
         }
     }
 
-    fn get_troop_occupier(troop_type: TroopType, troop_tier: TroopTier) -> TileOccupier {
-        if troop_type == TroopType::Knight {
-            if troop_tier == TroopTier::T1 {
-                return TileOccupier::ExplorerKnightT1;
-            } else if troop_tier == TroopTier::T2 {
-                return TileOccupier::ExplorerKnightT2;
-            } else if troop_tier == TroopTier::T3 {
-                return TileOccupier::ExplorerKnightT3;
+    fn get_troop_occupier(owner_id: ID, troop_type: TroopType, troop_tier: TroopTier) -> TileOccupier {
+        if owner_id != DAYDREAMS_AGENT_ID {
+            if troop_type == TroopType::Knight {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerKnightT1Regular;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerKnightT2Regular;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerKnightT3Regular;
+                } else {
+                    panic!("invalid troop tier")
+                }
+            } else if troop_type == TroopType::Paladin {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerPaladinT1Regular;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerPaladinT2Regular;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerPaladinT3Regular;
+                } else {
+                    panic!("invalid troop tier")
+                }
+            } else if troop_type == TroopType::Crossbowman {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerCrossbowmanT1Regular;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerCrossbowmanT2Regular;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerCrossbowmanT3Regular;
+                } else {
+                    panic!("invalid troop tier")
+                }
             } else {
-                panic!("invalid troop tier")
-            }
-        } else if troop_type == TroopType::Paladin {
-            if troop_tier == TroopTier::T1 {
-                return TileOccupier::ExplorerPaladinT1;
-            } else if troop_tier == TroopTier::T2 {
-                return TileOccupier::ExplorerPaladinT2;
-            } else if troop_tier == TroopTier::T3 {
-                return TileOccupier::ExplorerPaladinT3;
-            } else {
-                panic!("invalid troop tier")
-            }
-        } else if troop_type == TroopType::Crossbowman {
-            if troop_tier == TroopTier::T1 {
-                return TileOccupier::ExplorerCrossbowmanT1;
-            } else if troop_tier == TroopTier::T2 {
-                return TileOccupier::ExplorerCrossbowmanT2;
-            } else if troop_tier == TroopTier::T3 {
-                return TileOccupier::ExplorerCrossbowmanT3;
-            } else {
-                panic!("invalid troop tier")
+                panic!("invalid troop type")
             }
         } else {
-            panic!("invalid troop type")
+            if troop_type == TroopType::Knight {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerKnightT1Daydreams;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerKnightT2Daydreams;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerKnightT3Daydreams;
+                } else {
+                    panic!("invalid troop tier")
+                }
+            } else if troop_type == TroopType::Paladin {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerPaladinT1Daydreams;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerPaladinT2Daydreams;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerPaladinT3Daydreams;
+                } else {
+                    panic!("invalid troop tier")
+                }
+            } else if troop_type == TroopType::Crossbowman {
+                if troop_tier == TroopTier::T1 {
+                    return TileOccupier::ExplorerCrossbowmanT1Daydreams;
+                } else if troop_tier == TroopTier::T2 {
+                    return TileOccupier::ExplorerCrossbowmanT2Daydreams;
+                } else if troop_tier == TroopTier::T3 {
+                    return TileOccupier::ExplorerCrossbowmanT3Daydreams;
+                } else {
+                    panic!("invalid troop tier")
+                }
+            } else {
+                panic!("invalid troop type")
+            }
         }
     }
 
@@ -95,15 +132,25 @@ pub impl IMapImpl of IMapTrait {
         tile.occupier_id = id;
         tile.occupier_is_structure = match category {
             TileOccupier::None => false,
-            TileOccupier::ExplorerKnightT1 => false,
-            TileOccupier::ExplorerKnightT2 => false,
-            TileOccupier::ExplorerKnightT3 => false,
-            TileOccupier::ExplorerPaladinT1 => false,
-            TileOccupier::ExplorerPaladinT2 => false,
-            TileOccupier::ExplorerPaladinT3 => false,
-            TileOccupier::ExplorerCrossbowmanT1 => false,
-            TileOccupier::ExplorerCrossbowmanT2 => false,
-            TileOccupier::ExplorerCrossbowmanT3 => false,
+            TileOccupier::ExplorerKnightT1Regular => false,
+            TileOccupier::ExplorerKnightT2Regular => false,
+            TileOccupier::ExplorerKnightT3Regular => false,
+            TileOccupier::ExplorerPaladinT1Regular => false,
+            TileOccupier::ExplorerPaladinT2Regular => false,
+            TileOccupier::ExplorerPaladinT3Regular => false,
+            TileOccupier::ExplorerCrossbowmanT1Regular => false,
+            TileOccupier::ExplorerCrossbowmanT2Regular => false,
+            TileOccupier::ExplorerCrossbowmanT3Regular => false,
+            //
+            TileOccupier::ExplorerKnightT1Daydreams => false,
+            TileOccupier::ExplorerKnightT2Daydreams => false,
+            TileOccupier::ExplorerKnightT3Daydreams => false,
+            TileOccupier::ExplorerPaladinT1Daydreams => false,
+            TileOccupier::ExplorerPaladinT2Daydreams => false,
+            TileOccupier::ExplorerPaladinT3Daydreams => false,
+            TileOccupier::ExplorerCrossbowmanT1Daydreams => false,
+            TileOccupier::ExplorerCrossbowmanT2Daydreams => false,
+            TileOccupier::ExplorerCrossbowmanT3Daydreams => false,
             _ => true,
         };
         world.write_model(@tile);

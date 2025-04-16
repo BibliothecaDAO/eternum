@@ -135,7 +135,7 @@ pub impl iExplorerImpl of iExplorerTrait {
         current_tick: u64,
     ) -> ExplorerTroops {
         // set explorer as occupier of tile
-        let tile_occupier = IMapImpl::get_troop_occupier(troop_type, troop_tier);
+        let tile_occupier = IMapImpl::get_troop_occupier(owner, troop_type, troop_tier);
         IMapImpl::occupy(ref world, ref tile, tile_occupier, explorer_id);
 
         // ensure explorer amount does not exceed max

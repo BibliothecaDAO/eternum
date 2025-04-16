@@ -164,7 +164,9 @@ pub mod troop_movement_systems {
 
                 // set explorer as occupier of target coordinate
                 if directions.len().is_zero() {
-                    let tile_occupier = IMapImpl::get_troop_occupier(explorer.troops.category, explorer.troops.tier);
+                    let tile_occupier = IMapImpl::get_troop_occupier(
+                        explorer.owner, explorer.troops.category, explorer.troops.tier,
+                    );
                     if occupy_destination {
                         // ensure explorer does not occupy fragment mine
                         // tile when mines are discovered
