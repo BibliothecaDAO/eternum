@@ -5,8 +5,8 @@ import { drizzle } from "drizzle-orm/neon-http";
 
 import config from "../drizzle.config";
 import { env } from "../env";
-import * as authSchema from "./auth-schema";
-import * as schema from "./schema";
+import * as authSchema from "./schema/auth";
+import * as schema from "./schema/bridge";
 
 if (!env.VERCEL_ENV) {
   neonConfig.wsProxy = (/*host*/) => `127.0.0.1/v1`;

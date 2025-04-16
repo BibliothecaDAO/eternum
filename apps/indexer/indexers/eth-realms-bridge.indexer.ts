@@ -1,10 +1,6 @@
 //import type { ApibaraRuntimeConfig } from "apibara/types";
 import type { ApibaraRuntimeConfig } from "apibara/types";
-import type {
-  ExtractTablesWithRelations,
-  TablesRelationalConfig,
-} from "drizzle-orm";
-import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+
 import { EvmStream } from "@apibara/evm";
 import { defineIndexer } from "@apibara/indexer";
 import { useLogger } from "@apibara/indexer/plugins";

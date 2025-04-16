@@ -1,3 +1,3 @@
 export * from "drizzle-orm";
-export * from "./schema";
-export * from "./auth-schema";
+export * from "./schema/bridge";
+export * from "./schema/auth";
