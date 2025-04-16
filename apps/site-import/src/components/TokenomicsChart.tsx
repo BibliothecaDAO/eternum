@@ -1,5 +1,3 @@
-"use client";
-
 import { Pie, PieChart } from "recharts";
 import {
   Card,
@@ -18,10 +16,12 @@ const tokenomicsData = [
 
 export function TokenomicsChart() {
   return (
-    <Card className="backdrop-blur-md bg-black/20 border-white/10">
+    <Card className="backdrop-blur-md border-0 bg-transparent">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Token Distribution</CardTitle>
-        <CardDescription>Total Supply: 500,000,000 LORDS</CardDescription>
+        <CardTitle className="text-4xl">Token Distribution</CardTitle>
+        <CardDescription className="text-2xl">
+          Total Supply: 500,000,000 LORDS
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <div className="mx-auto aspect-square max-h-[250px]">
@@ -38,7 +38,7 @@ export function TokenomicsChart() {
           </PieChart>
         </div>
       </CardContent>
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-4 text-2xl">
         {tokenomicsData.map((item) => (
           <div
             key={item.allocation}
@@ -49,9 +49,7 @@ export function TokenomicsChart() {
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: item.fill }}
               />
-              <span className="text-sm text-muted-foreground">
-                {item.allocation}
-              </span>
+              <span className=" text-muted-foreground">{item.allocation}</span>
             </div>
             <span className="font-bold">{item.value}%</span>
           </div>

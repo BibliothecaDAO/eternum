@@ -1,299 +1,188 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { createNoise3D } from "simplex-noise";
 
-interface TracingLine {
-  line: THREE.Line;
-  currentPoint: THREE.Vector3;
-  targetPoint: THREE.Vector3;
-  points: THREE.Vector3[];
-  maxPoints: number;
-}
-
-const TRACE_COLORS = [
-  0x00ff88, // cyan
-  0xff1f1f, // red
-  0x00ffff, // bright cyan
-  0xff00ff, // magenta
-  0xffff00, // yellow
-  0x4444ff, // blue
-  0xff8800, // orange
+// Biome color palette
+const BIOME_COLORS = [
+  0x2e8b57, // forest (green)
+  0xdeb887, // desert (tan)
+  0x87ceeb, // water (blue)
+  0xffffff, // snow (white)
+  0x808080, // mountain (gray)
+  0x228b22, // jungle (dark green)
+  0xf4a460, // savanna (light brown)
 ];
+
+// Helper to get biome color from noise value
+function getBiomeColor(n: number) {
+  if (n < -0.25) return BIOME_COLORS[2]; // water
+  if (n < 0) return BIOME_COLORS[0]; // forest
+  if (n < 0.25) return BIOME_COLORS[1]; // desert
+  if (n < 0.5) return BIOME_COLORS[6]; // savanna
+  if (n < 0.7) return BIOME_COLORS[4]; // mountain
+  if (n < 0.85) return BIOME_COLORS[3]; // snow
+  return BIOME_COLORS[5]; // jungle
+}
 
 export function Background() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
-  const targetRotationRef = useRef({ x: 0, y: 0 });
-  const currentRotationRef = useRef({ x: 0, y: 0 });
-  const tracingLinesRef = useRef<TracingLine[]>([]);
+  const animationIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    sceneRef.current = scene;
+    scene.background = new THREE.Color(0x101018);
 
     // Camera setup
     const camera = new THREE.PerspectiveCamera(
-      75,
+      60,
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 10, 20);
-    camera.lookAt(0, 0, -50);
-    cameraRef.current = camera;
+    camera.position.set(0, 0, 6);
 
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     containerRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
 
-    // Main grid
-    const mainGrid = new THREE.GridHelper(200, 50, 0x222222, 0x222222);
-    mainGrid.position.z = -100;
-    scene.add(mainGrid);
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
 
-    // Secondary grid (smaller divisions)
-    const secondaryGrid = new THREE.GridHelper(200, 100, 0x111111, 0x111111);
-    secondaryGrid.position.z = -100;
-    scene.add(secondaryGrid);
+    // Create a simple globe
+    const radius = 2;
+    const detail = 50; // Reduced for better performance
+    const geometry = new THREE.IcosahedronGeometry(radius, detail);
 
-    // Add vertical lines for depth
-    const verticalLinesGeometry = new THREE.BufferGeometry();
-    const verticalLinesCount = 20;
-    const verticalLinesPositions = [];
-    const verticalLinesSpacing = 20;
-
-    for (let i = -verticalLinesCount / 2; i < verticalLinesCount / 2; i++) {
-      verticalLinesPositions.push(
-        i * verticalLinesSpacing,
-        -10,
-        -200,
-        i * verticalLinesSpacing,
-        10,
-        -200
-      );
-    }
-
-    verticalLinesGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(verticalLinesPositions, 3)
+    // Color the globe with biomes
+    const simplex = createNoise3D();
+    const colorAttr = new THREE.BufferAttribute(
+      new Float32Array(geometry.attributes.position.count * 3),
+      3
     );
 
-    const verticalLinesMaterial = new THREE.LineBasicMaterial({
-      color: 0x333333,
-      transparent: true,
-      opacity: 0.5,
+    // Store forest locations for tree placement
+    const forestLocations: {
+      position: THREE.Vector3;
+      normal: THREE.Vector3;
+    }[] = [];
+
+    for (let i = 0; i < geometry.attributes.position.count; i++) {
+      const vertex = new THREE.Vector3().fromBufferAttribute(
+        geometry.attributes.position,
+        i
+      );
+      const n = simplex(vertex.x * 0.9, vertex.y * 0.9, vertex.z * 0.9);
+      const color = new THREE.Color(getBiomeColor(n));
+      colorAttr.setXYZ(i, color.r, color.g, color.b);
+
+      // Check if the vertex is in a forest biome
+      if (getBiomeColor(n) === BIOME_COLORS[0] && Math.random() > 0.95) {
+        // Add a random chance
+        const normal = vertex.clone().normalize(); // Get the normal (direction outwards)
+        forestLocations.push({ position: vertex, normal });
+      }
+    }
+
+    geometry.setAttribute("color", colorAttr);
+
+    // Material
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      flatShading: true,
+      roughness: 0.3,
+      metalness: 0.2,
     });
 
-    const verticalLines = new THREE.LineSegments(
-      verticalLinesGeometry,
-      verticalLinesMaterial
+    // Globe mesh
+    const globe = new THREE.Mesh(geometry, material);
+    scene.add(globe);
+
+    // Add Trees using InstancedMesh
+    const treeGeometry = new THREE.ConeGeometry(0.05, 0.2, 4); // Simple cone shape
+    const treeMaterial = new THREE.MeshStandardMaterial({
+      color: 0x1a4d2e,
+      roughness: 0.8,
+    }); // Dark green
+    const treeCount = forestLocations.length;
+    const treeInstancedMesh = new THREE.InstancedMesh(
+      treeGeometry,
+      treeMaterial,
+      treeCount
     );
-    scene.add(verticalLines);
 
-    // Add fog for depth
-    scene.fog = new THREE.Fog(0x000000, 50, 150);
+    const dummy = new THREE.Object3D(); // Used to position each instance
+    const up = new THREE.Vector3(0, 1, 0);
+    const coneHeight = 0.2;
+    for (let i = 0; i < treeCount; i++) {
+      const { position, normal } = forestLocations[i];
 
-    // Mouse movement handler
-    const handleMouseMove = (event: MouseEvent) => {
-      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      // 1. Set position to the vertex location on the sphere
+      dummy.position.copy(position);
 
-      // Set target rotation based on mouse position with reduced sensitivity
-      targetRotationRef.current.x = mouseRef.current.y * 0.05; // reduced from 0.1
-      targetRotationRef.current.y = mouseRef.current.x * 0.05; // reduced from 0.1
-    };
+      // 2. Orient the tree to stand upright on the sphere surface
+      // Align the cone's local Y-axis with the surface normal
+      dummy.quaternion.setFromUnitVectors(up, normal);
 
-    window.addEventListener("mousemove", handleMouseMove);
+      // 3. Translate the cone along its local Y-axis (now aligned with normal)
+      // so its base sits on the surface (cone origin is center)
+      dummy.translateY(coneHeight / 2);
 
-    // Animation
-    let offset = 0;
-    const speed = 0.5;
+      // 4. Apply random slight rotation around its *local* up axis (the normal)
+      dummy.rotateY(Math.random() * Math.PI * 2);
 
-    // Create tracing lines
-    const createTracingLine = (colorIndex: number) => {
-      const material = new THREE.LineBasicMaterial({
-        color: TRACE_COLORS[colorIndex % TRACE_COLORS.length],
-        transparent: true,
-        opacity: 0.6,
-        linewidth: 2,
-      });
-
-      const geometry = new THREE.BufferGeometry();
-      const line = new THREE.Line(geometry, material);
-      scene.add(line);
-
-      // Start at a random grid intersection
-      const gridSize = 20;
-      const gridDivisions = 10;
-      const startX =
-        Math.floor(Math.random() * gridDivisions - gridDivisions / 2) *
-        gridSize;
-      const startZ = -100;
-
-      return {
-        line,
-        currentPoint: new THREE.Vector3(startX, 0, startZ),
-        targetPoint: new THREE.Vector3(startX, 0, startZ),
-        points: [new THREE.Vector3(startX, 0, startZ)],
-        maxPoints: 50,
-      };
-    };
-
-    // Create multiple tracing lines with different colors
-    const numLines = 7; // One for each color
-    for (let i = 0; i < numLines; i++) {
-      tracingLinesRef.current.push(createTracingLine(i));
+      dummy.updateMatrix();
+      treeInstancedMesh.setMatrixAt(i, dummy.matrix);
     }
+    treeInstancedMesh.instanceMatrix.needsUpdate = true;
+    globe.add(treeInstancedMesh); // Add trees as children of the globe
 
-    // Function to get new target point that aligns with grid
-    const getNewTargetPoint = (currentPoint: THREE.Vector3) => {
-      const gridSize = 20; // Must match the size between grid lines
-      const direction = Math.floor(Math.random() * 4); // 0: forward, 1: right, 2: left
-      const newPoint = currentPoint.clone();
-
-      switch (direction) {
-        case 0: // forward
-          newPoint.z += gridSize;
-          break;
-        case 1: // right
-          newPoint.x += gridSize;
-          break;
-        case 2: // left
-          newPoint.x -= gridSize;
-          break;
-      }
-
-      // Keep within bounds and snap to grid
-      newPoint.x = Math.round(newPoint.x / gridSize) * gridSize;
-      newPoint.x = Math.max(-100, Math.min(100, newPoint.x));
-      return newPoint;
-    };
-
-    // Update tracing lines in animation
-    const updateTracingLines = () => {
-      tracingLinesRef.current.forEach((tracingLine) => {
-        const { line, currentPoint, targetPoint, points } = tracingLine;
-
-        // Move current point towards target in a straight line
-        const moveSpeed = 0.8;
-        currentPoint.lerp(targetPoint, moveSpeed);
-
-        // If close to target, set new target at next grid intersection
-        if (currentPoint.distanceTo(targetPoint) < 0.1) {
-          tracingLine.targetPoint = getNewTargetPoint(currentPoint);
-        }
-
-        // Add point to line
-        points.push(currentPoint.clone());
-
-        // Remove old points if too many
-        if (points.length > tracingLine.maxPoints) {
-          points.shift();
-        }
-
-        // Update line geometry
-        const positions = new Float32Array(points.length * 3);
-        points.forEach((point, i) => {
-          positions[i * 3] = point.x;
-          positions[i * 3 + 1] = point.y;
-          positions[i * 3 + 2] = point.z;
-        });
-
-        line.geometry.setAttribute(
-          "position",
-          new THREE.BufferAttribute(positions, 3)
-        );
-
-        // Reset line if it's gone too far forward
-        if (currentPoint.z > 20) {
-          const gridSize = 20;
-          const gridDivisions = 10;
-          const startX =
-            Math.floor(Math.random() * gridDivisions - gridDivisions / 2) *
-            gridSize;
-          const startZ = -100;
-          currentPoint.set(startX, 0, startZ);
-          targetPoint.set(startX, 0, startZ);
-          points.length = 0;
-          points.push(currentPoint.clone());
-        }
-
-        // Move all points forward
-        points.forEach((point) => {
-          point.z += speed;
-        });
-      });
-    };
-
+    // Simple Animation loop - just rotation, no vertex updates
     const animate = () => {
-      requestAnimationFrame(animate);
+      // Rotate the globe on Y axis (simple spinning)
+      globe.rotation.y += 0.005;
 
-      // Slower interpolation for smoother camera movement
-      const rotationLerpFactor = 0.02; // reduced from 0.05
-
-      // Smoothly interpolate current rotation towards target rotation
-      currentRotationRef.current.x +=
-        (targetRotationRef.current.x - currentRotationRef.current.x) *
-        rotationLerpFactor;
-      currentRotationRef.current.y +=
-        (targetRotationRef.current.y - currentRotationRef.current.y) *
-        rotationLerpFactor;
-
-      // Reduced camera movement range
-      camera.position.x = Math.sin(currentRotationRef.current.y) * 15; // reduced from 20
-      camera.position.y = 10 + currentRotationRef.current.x * 5; // reduced from 10
-      camera.lookAt(0, 0, -50);
-
-      // Move grids forward
-      offset += speed;
-      mainGrid.position.z += speed;
-      secondaryGrid.position.z += speed;
-      verticalLines.position.z += speed;
-
-      // Reset positions when they get too close
-      if (mainGrid.position.z > 20) {
-        mainGrid.position.z = -100;
-        secondaryGrid.position.z = -100;
-        verticalLines.position.z = 0;
-      }
-
-      // Update tracing lines
-      updateTracingLines();
+      // Add a slight tilt on X and Z for more interesting movement
+      globe.rotation.x = Math.sin(Date.now() * 0.0005) * 0.1;
+      globe.rotation.z = Math.cos(Date.now() * 0.0005) * 0.1;
 
       renderer.render(scene, camera);
+      animationIdRef.current = requestAnimationFrame(animate);
     };
 
+    // Start animation
     animate();
 
     // Handle resize
     const handleResize = () => {
-      if (!renderer || !camera) return;
-
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
-
     window.addEventListener("resize", handleResize);
 
+    // Cleanup
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
+      if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
       window.removeEventListener("resize", handleResize);
-      renderer.dispose();
-      containerRef.current?.removeChild(renderer.domElement);
-      tracingLinesRef.current.forEach((tracingLine) => {
-        scene.remove(tracingLine.line);
-        tracingLine.line.geometry.dispose();
-        (tracingLine.line.material as THREE.Material).dispose();
-      });
+      if (
+        containerRef.current &&
+        containerRef.current.contains(renderer.domElement)
+      ) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
+      geometry.dispose();
+      material.dispose();
+      treeGeometry.dispose();
+      treeMaterial.dispose();
     };
   }, []);
 
