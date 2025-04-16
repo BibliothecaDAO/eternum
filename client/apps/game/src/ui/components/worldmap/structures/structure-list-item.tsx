@@ -40,11 +40,11 @@ export const StructureListItem = ({
           <div className="flex flex-col justify-between gap-1">
             {/* Type and name */}
             <div className="flex flex-col gap-0.5">
-              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
-                {structureTypeName}
-              </div>
               <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
                 <h6 className={`${compact ? "text-xs" : "text-base"} font-bold truncate`}>{structure.name}</h6>
+              </div>
+              <div className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}>
+                {structureTypeName}
               </div>
             </div>
 

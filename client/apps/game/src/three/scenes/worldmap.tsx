@@ -125,7 +125,7 @@ export default class WorldmapScene extends HexagonScene {
     useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
       (selectedEntityId) => {
-        if (!selectedEntityId) this.clearSelection();
+        if (!selectedEntityId) this.clearEntitySelection();
       },
     );
 
@@ -190,13 +190,15 @@ export default class WorldmapScene extends HexagonScene {
         if (this.isNavigationViewOpen()) {
           this.closeNavigationViews();
         } else {
-          this.clearSelection();
+          this.clearEntitySelection();
+          this.clearHexSelection();
         }
       }
     });
 
     window.addEventListener("urlChanged", () => {
-      this.clearSelection();
+      this.clearEntitySelection();
+      this.clearHexSelection();
     });
   }
 
@@ -261,33 +263,37 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    this.handleHexSelection(hexCoords);
-
     const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
     const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
+
+    const isMine = army?.owner === account || structure?.owner === account;
+    this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id);
     } else {
-      this.clearSelection();
+      this.clearEntitySelection();
     }
   }
 
-  protected handleHexSelection(hexCoords: HexPosition) {
+  protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
-      playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
       this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({
         col: contractHexPosition.x,
         row: contractHexPosition.y,
       });
-      this.armyManager.removeLabelsFromScene();
-      this.structureManager.removeLabelsFromScene();
+
+      if (isMine) {
+        playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
+        this.armyManager.removeLabelsFromScene();
+        this.structureManager.removeLabelsFromScene();
+      }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
     }
@@ -329,7 +335,8 @@ export default class WorldmapScene extends HexagonScene {
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
-    this.clearSelection();
+    this.clearEntitySelection();
+    this.clearHexSelection();
   }
 
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -394,12 +401,17 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
-  private clearSelection() {
-    console.log("clearSelection");
+  private clearHexSelection() {
+    console.log("clearHexSelection");
+    this.selectedHexManager.resetPosition();
+    this.state.setSelectedHex(null);
+  }
+
+  private clearEntitySelection() {
+    console.log("clearEntitySelection");
     this.highlightHexManager.highlightHexes([]);
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
-    this.state.setSelectedHex(null);
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
   }
