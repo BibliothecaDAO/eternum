@@ -164,16 +164,17 @@ pub mod troop_movement_systems {
 
                 // set explorer as occupier of target coordinate
                 if directions.len().is_zero() {
+                    let tile_occupier = IMapImpl::get_troop_occupier(explorer.troops.category, explorer.troops.tier);
                     if occupy_destination {
                         // ensure explorer does not occupy fragment mine
                         // tile when mines are discovered
-                        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+                        IMapImpl::occupy(ref world, ref tile, tile_occupier, explorer_id);
                     } else {
                         // move explorer back to previous coordinate
                         explorer.coord = from;
                         // set explorer as occupier of previous coordinate
                         let mut from_tile: Tile = world.read_model((from.x, from.y));
-                        IMapImpl::occupy(ref world, ref from_tile, TileOccupier::Explorer, explorer_id);
+                        IMapImpl::occupy(ref world, ref from_tile, tile_occupier, explorer_id);
                         world.write_model(@from_tile);
                     }
                     break;

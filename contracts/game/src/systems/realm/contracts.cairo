@@ -179,9 +179,9 @@ pub mod realm_systems {
             // create structure
             let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
             let structure_id = world.dispatcher.uuid();
-            let mut tile_occupier = TileOccupier::RealmRegular;
+            let mut tile_occupier = TileOccupier::RealmRegularLevel1;
             if has_wonder {
-                tile_occupier = TileOccupier::RealmWonder;
+                tile_occupier = TileOccupier::RealmWonderLevel1;
             }
 
             // create structure

@@ -14,6 +14,7 @@ pub mod structure_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SeasonConfigImpl, SettlementConfigImpl, StructureLevelConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::map::Tile;
     use s1_eternum::models::owner::{OwnerAddressTrait};
     use s1_eternum::models::resource::production::building::{BuildingImpl};
     use s1_eternum::models::resource::resource::{ResourceList};
@@ -21,10 +22,11 @@ pub mod structure_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl,
-        StructureOwnerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
     };
     use s1_eternum::models::weight::{Weight};
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
 
@@ -87,6 +89,16 @@ pub mod structure_systems {
             structure_base.level = next_level;
             structure_base.troop_max_guard_count += 1;
             StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+
+            // update structure tile
+            if structure_base.category == StructureCategory::Realm.into() {
+                let mut structure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                    ref world, structure_id,
+                );
+                let tile_occupier = IMapImpl::get_realm_occupier(structure_metadata.has_wonder, structure_base.level);
+                IMapImpl::occupy(ref world, ref structure_tile, tile_occupier, structure_id);
+            }
 
             // [Achievement] Upgrade to max level
             if structure_base.level == max_level {

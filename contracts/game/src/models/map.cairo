@@ -42,26 +42,62 @@ pub impl TileImpl of TileTrait {
 #[derive(Copy, Drop, Serde, PartialEq)]
 pub enum TileOccupier {
     None,
-    RealmRegular,
-    RealmWonder,
-    Hyperstructure,
+    RealmRegularLevel1,
+    RealmWonderLevel1,
+    HyperstructureLevel1,
     FragmentMine,
     Village,
     Bank,
-    Explorer,
+    //
+    ExplorerKnightT1,
+    ExplorerKnightT2,
+    ExplorerKnightT3,
+    ExplorerPaladinT1,
+    ExplorerPaladinT2,
+    ExplorerPaladinT3,
+    ExplorerCrossbowmanT1,
+    ExplorerCrossbowmanT2,
+    ExplorerCrossbowmanT3,
+    //
+    RealmRegularLevel2,
+    RealmRegularLevel3,
+    RealmRegularLevel4,
+    //
+    RealmWonderLevel2,
+    RealmWonderLevel3,
+    RealmWonderLevel4,
+    //
+    HyperstructureLevel2,
+    HyperstructureLevel3,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
     fn into(self: TileOccupier) -> u8 {
         match self {
             TileOccupier::None => 0,
-            TileOccupier::RealmRegular => 1,
-            TileOccupier::RealmWonder => 2,
-            TileOccupier::Hyperstructure => 3,
+            TileOccupier::RealmRegularLevel1 => 1,
+            TileOccupier::RealmWonderLevel1 => 2,
+            TileOccupier::HyperstructureLevel1 => 3,
             TileOccupier::FragmentMine => 4,
             TileOccupier::Village => 5,
             TileOccupier::Bank => 6,
-            TileOccupier::Explorer => 7,
+            TileOccupier::ExplorerKnightT1 => 7,
+            TileOccupier::ExplorerKnightT2 => 8,
+            TileOccupier::ExplorerKnightT3 => 9,
+            TileOccupier::ExplorerPaladinT1 => 10,
+            TileOccupier::ExplorerPaladinT2 => 11,
+            TileOccupier::ExplorerPaladinT3 => 12,
+            TileOccupier::ExplorerCrossbowmanT1 => 13,
+            TileOccupier::ExplorerCrossbowmanT2 => 14,
+            TileOccupier::ExplorerCrossbowmanT3 => 15,
+            TileOccupier::RealmRegularLevel2 => 16,
+            TileOccupier::RealmRegularLevel3 => 17,
+            TileOccupier::RealmRegularLevel4 => 18,
+            TileOccupier::RealmWonderLevel2 => 19,
+            TileOccupier::RealmWonderLevel3 => 20,
+            TileOccupier::RealmWonderLevel4 => 21,
+            TileOccupier::HyperstructureLevel2 => 22,
+            TileOccupier::HyperstructureLevel3 => 23,
         }
     }
 }
