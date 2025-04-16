@@ -6,8 +6,9 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { type Config } from "@bibliothecadao/eternum";
+import { BuildingType, RealmLevels, ResourcesIds, type Config } from "@bibliothecadao/eternum";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
+import { getAllResourcesWithAmount } from "./utils/resource";
 
 /**
  * Configuration specific to the Sepolia testnet environment.
@@ -19,48 +20,37 @@ export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
   tick: {
     ...CommonEternumGlobalConfig.tick,
-    // 3 minutes
-    armiesTickIntervalInSeconds: 180,
+    // 5 minutes
+    armiesTickIntervalInSeconds: 300,
   },
-  hyperstructures: {
-    ...CommonEternumGlobalConfig.hyperstructures,
-    hyperstructureInitializationShardsCost: {
-      resource: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.resource,
-      amount: CommonEternumGlobalConfig.hyperstructures.hyperstructureInitializationShardsCost.amount / 100_000,
-     },
-      hyperstructureConstructionCost: CommonEternumGlobalConfig.hyperstructures.hyperstructureConstructionCost.map((cost) => ({
-      ...cost,
-      min_amount: cost.min_amount / 100_000,
-      max_amount: cost.max_amount / 100_000,
-    })),
+  // no stamina cost
+  troop: {
+    ...CommonEternumGlobalConfig.troop,
+    limit: {
+      ...CommonEternumGlobalConfig.troop.limit,
+      mercenariesTroopLowerBound: 100,
+      mercenariesTroopUpperBound: 200,
+    },
+    stamina: {
+      ...CommonEternumGlobalConfig.troop.stamina,
+      staminaTravelStaminaCost: 0,
+      staminaExploreStaminaCost: 0,
+      staminaBonusValue: 0,
+    },
   },
   exploration: {
     ...CommonEternumGlobalConfig.exploration,
-    agentFindProbability: 1,
-    agentFindFailProbability: 5,
-    shardsMinesFailProbability: 1,
-    shardsMinesWinProbability: 20,
+    shardsMinesWinProbability: 1_000,
+    shardsMinesFailProbability: 15_000,
+    hyperstructureWinProbAtCenter: 20_000,
+    hyperstructureFailProbAtCenter: 100_000,
+    hyperstructureFailProbIncreasePerHexDistance: 20,
+    agentFindProbability: 3_000,
+    agentFindFailProbability: 10_000,
   },
-  resources: {
-    ...CommonEternumGlobalConfig.resources,
-    productionByComplexRecipeOutputs: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.resources.productionByComplexRecipeOutputs).map(([key, value]) => [
-        key,
-        value * 10,
-      ]),
-    ),
-    productionBySimpleRecipeOutputs: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.resources.productionBySimpleRecipeOutputs).map(([key, value]) => [
-        key,
-        value * 10,
-      ]),
-    ),
-    laborOutputPerResource: Object.fromEntries(
-      Object.entries(CommonEternumGlobalConfig.resources.laborOutputPerResource).map(([key, value]) => [
-        key,
-        value * 10,
-      ]),
-    ),
+  // cheap hyperstructures
+  hyperstructures: {
+    ...CommonEternumGlobalConfig.hyperstructures,
   },
   // no grace period
   battle: {
@@ -69,15 +59,97 @@ export const SepoliaEternumGlobalConfig: Config = {
     graceTickCountHyp: 0,
     delaySeconds: 0,
   },
+  // starting resources x1000
+  startingResources: getAllResourcesWithAmount(1000000),
+  villageStartingResources: getAllResourcesWithAmount(1000000),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km
-    donkey: 3,
+    donkey: 0,
   },
   season: {
     ...CommonEternumGlobalConfig.season,
-    startSettlingAfterSeconds: 0,
-    startMainAfterSeconds: 1,
+    startSettlingAfterSeconds: 59, // 1 minute
+    startMainAfterSeconds: 60,
+  },
+  realmUpgradeCosts: {
+    ...CommonEternumGlobalConfig.realmUpgradeCosts,
+    [RealmLevels.Settlement]: [],
+    [RealmLevels.City]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Kingdom]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+    [RealmLevels.Empire]: [
+      { resource: ResourcesIds.Wheat, amount: 1 },
+      { resource: ResourcesIds.Fish, amount: 1 },
+    ],
+  },
+  buildings: {
+    ...CommonEternumGlobalConfig.buildings,
+    buildingFixedCostScalePercent: 1,
+    complexBuildingCosts: {
+      ...CommonEternumGlobalConfig.buildings.complexBuildingCosts,
+      [BuildingType.ResourceWheat]: [{ resource: ResourcesIds.Fish, amount: 1 }],
+      [BuildingType.ResourceFish]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+      [BuildingType.ResourceKnightT1]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourceKnightT2]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourceKnightT3]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourceCrossbowmanT1]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourceCrossbowmanT2]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourceCrossbowmanT3]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourcePaladinT1]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourcePaladinT2]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+      [BuildingType.ResourcePaladinT3]: [{ resource: ResourcesIds.Labor, amount: 1 }],
+    },
+    buildingPopulation: {
+        ...CommonEternumGlobalConfig.buildings.buildingPopulation,
+        [BuildingType.ResourceWheat]: 0,
+        [BuildingType.ResourceFish]: 0,
+        [BuildingType.ResourceKnightT1]: 0,
+        [BuildingType.ResourceKnightT2]: 0,
+        [BuildingType.ResourceKnightT3]: 0,
+        [BuildingType.ResourceCrossbowmanT1]: 0,
+        [BuildingType.ResourceCrossbowmanT2]: 0,
+        [BuildingType.ResourceCrossbowmanT3]: 0,
+        [BuildingType.ResourcePaladinT1]: 0,
+        [BuildingType.ResourcePaladinT2]: 0,
+        [BuildingType.ResourcePaladinT3]: 0,
+      },  
+  },
+  resources: {
+    ...CommonEternumGlobalConfig.resources,
+    resourceWeightsGrams: {
+      ...CommonEternumGlobalConfig.resources.resourceWeightsGrams,
+      [ResourcesIds.Wheat]: 1,
+      [ResourcesIds.Fish]: 1,
+      [ResourcesIds.Knight]: 1,
+      [ResourcesIds.KnightT2]: 1,
+      [ResourcesIds.KnightT3]: 1,
+      [ResourcesIds.Crossbowman]: 1,
+      [ResourcesIds.CrossbowmanT2]: 1,
+      [ResourcesIds.CrossbowmanT3]: 1,
+      [ResourcesIds.Paladin]: 1,
+      [ResourcesIds.PaladinT2]: 1,
+      [ResourcesIds.PaladinT3]: 1,
+    },
+    productionByComplexRecipe: {
+      ...CommonEternumGlobalConfig.resources.productionByComplexRecipe,
+      [ResourcesIds.Wheat]: [{resource: ResourcesIds.Fish, amount: 1}],
+      [ResourcesIds.Fish]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.Knight]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.KnightT2]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.KnightT3]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.Crossbowman]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.CrossbowmanT2]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.CrossbowmanT3]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.Paladin]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.PaladinT2]: [{resource: ResourcesIds.Wheat, amount: 1}],
+      [ResourcesIds.PaladinT3]: [{resource: ResourcesIds.Wheat, amount: 1}],
+    },
   },
 };
 

@@ -1,5 +1,6 @@
 use core::num::traits::zero::Zero;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::TickImpl;
 use s1_eternum::models::config::{MapConfig, TickConfig, TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl};
@@ -17,7 +18,6 @@ use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
-use s1_eternum::alias::ID;
 
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {

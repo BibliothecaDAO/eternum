@@ -1,8 +1,8 @@
 use core::dict::Felt252Dict;
-use core::num::traits::zero::Zero;
+// use core::num::traits::zero::Zero;
 use core::poseidon::poseidon_hash_span;
-use s1_eternum::utils::cartridge::vrf::Source;
-use s1_eternum::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
+// use s1_eternum::utils::cartridge::vrf::Source;
+// use s1_eternum::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
 use starknet::TxInfo;
 use starknet::{ContractAddress};
 
@@ -10,17 +10,20 @@ use starknet::{ContractAddress};
 pub impl VRFImpl of VRFTrait {
     fn seed(player_id: ContractAddress, vrf_provider_address: ContractAddress) -> u256 {
         let tx_info: TxInfo = starknet::get_tx_info().unbox();
+        return tx_info.transaction_hash.into();
+        // if vrf_provider_address.is_zero() {
+    //     // workaround for testnet
+    //     assert!(tx_info.chain_id.is_zero() || tx_info.chain_id == 'KATANA', "VRF provider address must be set");
 
-        if vrf_provider_address.is_zero() {
-            // workaround for testnet
-            assert!(tx_info.chain_id.is_zero() || tx_info.chain_id == 'KATANA', "VRF provider address must be set");
+        // if vrf_provider_address.is_zero() {
+    //     // workaround for testnet
+    //     assert!(tx_info.chain_id.is_zero() || tx_info.chain_id == 'KATANA', "VRF provider address must be set");
 
-            return tx_info.transaction_hash.into();
-        } else {
-            let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
-            let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
-            return random_value.into();
-        }
+        // } else {
+    //     let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
+    //     let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
+    //     return random_value.into();
+    // }
     }
 }
 

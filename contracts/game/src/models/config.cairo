@@ -275,29 +275,29 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         // each layer's capacity can be obtained by calling the function
         // above (fn log_layer_capacity)
 
-        if realm_count <= 1500 {
-            return 26; // 2106 capacity
-        }
+        // if realm_count <= 1500 {
+        //     return 26; // 2106 capacity
+        // }
 
-        if realm_count <= 2500 {
-            return 32; // 3168 capacity
-        }
+        // if realm_count <= 2500 {
+        //     return 32; // 3168 capacity
+        // }
 
-        if realm_count <= 3500 {
-            return 37; // 4218 capacity
-        }
+        // if realm_count <= 3500 {
+        //     return 37; // 4218 capacity
+        // }
 
-        if realm_count <= 4500 {
-            return 41; // 5166 capacity
-        }
+        // if realm_count <= 4500 {
+        //     return 41; // 5166 capacity
+        // }
 
-        if realm_count <= 5500 {
-            return 45; // 6210 capacity
-        }
+        // if realm_count <= 5500 {
+        //     return 45; // 6210 capacity
+        // }
 
-        if realm_count <= 6500 {
-            return 49; // 7350 capacity
-        }
+        // if realm_count <= 6500 {
+        //     return 49; // 7350 capacity
+        // }
 
         return 52; // 8268 capacity
     }

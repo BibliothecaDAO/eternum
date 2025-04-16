@@ -12,7 +12,8 @@ export interface CreateVillageProps extends SystemSigner {
   direction: num.BigNumberish;
 }
 
-export interface MintAndSettleTestRealmsProps extends SystemSigner {
+export interface MintAndSettleTestRealmsProps {
+  signers: Account[];
   calls: MintTestRealm[];
 }
 export interface MintTestRealm {

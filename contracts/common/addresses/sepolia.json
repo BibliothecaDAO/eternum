@@ -1,7 +1,7 @@
 {
-  "seasonPass": "0x10e102ef6b51d7f9926fdb9be1590b05856f5dddc14abadebd29e84ea5bf73a",
-  "realms": "0x26f7b8d707200c91024f9e562e728c31e66a0987b35148bc9efd368ed1f1b4d",
-  "lords": "0x61e21253139085b01e19ece9c0498aa2e65fa43cdbbbf62921ad06f07e11720",
+  "seasonPass": "0x4c65504c7e7df16928cc1e8e476e6f8ea6e4f56cdef7f6b51eac014c19c1fd2",
+  "realms": "0x1948e239f559bcbdf9388938a3c46bc79f52bcba7c4d5c9732568cb8eb6a53d",
+  "lords": "0x43da677785217130c6c9d82cea88ca19e098387d664774986ccdcc6162611bd",
   "resources": {
     "STONE": [
       1,

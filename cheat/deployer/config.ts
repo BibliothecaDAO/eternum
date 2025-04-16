@@ -8,7 +8,7 @@ import { Account } from "starknet";
 // import type { Chain } from "@conf";
 
 interface Config {
-  account: Account;
+  accounts: Account[];
   provider: EternumProvider;
   config: EternumConfig;
 }
@@ -20,8 +20,8 @@ export class GamePopulator {
     this.globalConfig = config;
   }
 
-  async populate(account: Account, provider: EternumProvider) {
-    const config = { account, provider, config: this.globalConfig };
+  async populate(accounts: Account[], provider: EternumProvider) {
+    const config = { accounts, provider, config: this.globalConfig };
     await createFakeWorld(config);
   }
 }
@@ -34,15 +34,24 @@ export const createFakeWorld = async (config: Config) => {
   );
 
   let firstRealmId = 1;
-  let lastRealmId = 8000;
+  let lastRealmId = 7998;
   let realmId = firstRealmId;
   let startRealmEntityId = 157;
-  let batchSize = 1;
   let batch = [];
+  let batchSize = 2;
+  let signersStartIndex = 0;
+  let signersEndIndex = batchSize * 7;
   for (let side = 0; side < 6; side++) {
-    for (let layer = 1; layer < 2; layer++) {
+    for (let layer = 1; layer < 53; layer++) {
       for (let point = 0; point < layer; point++) {
-
+        //
+        //
+        //
+        if (realmId <= 2070) {
+          realmId += 1;
+          startRealmEntityId += 3
+          continue;
+        }
         if (realmId > lastRealmId) {
           break;
         }
@@ -58,18 +67,27 @@ export const createFakeWorld = async (config: Config) => {
           },
           realm_entity_id: startRealmEntityId
         });
-        if (batch.length === batchSize) {
+        if (batch.length === batchSize || realmId === lastRealmId) {
           try {
 
-            // await config.provider.cheat_test_realms({signer:config.account, calls:batch});
-            // await config.provider.cheat_create_villages({signer:config.account, calls:batch});
-            // await config.provider.cheat_create_tiles_and_mines({signer:config.account, calls:batch});
-            // await config.provider.cheat_create_troops({signer:config.account, calls:batch});
-            // await config.provider.cheat_create_realm_buildings({signer:config.account, calls:batch});
-            // await config.provider.cheat_create_village_buildings({signer:config.account, calls:batch});
+            // set batch size = 12, signers length = 12
+            // await config.provider.cheat_test_realms({signers:config.accounts, calls:batch});
+
+            // set batch size = 2, signers length = 12
+            let actualSigners = config.accounts.slice(signersStartIndex, signersEndIndex);
+            // await config.provider.cheat_create_villages({signers: actualSigners, calls:batch});
+            // await config.provider.cheat_create_tiles_and_mines({signers: actualSigners, calls:batch});
+            // await config.provider.cheat_create_troops({signers: actualSigners, calls:batch});
+            await config.provider.cheat_create_realm_and_village_buildings({signers: actualSigners, calls:batch});
             // await config.provider.cheat_create_village_resource_arrivals({signer:config.account, calls:batch});
-            await config.provider.cheat_create_5_trades_per_realm_and_village({signer:config.account, calls:batch});
+            // await config.provider.cheat_create_5_trades_per_realm_and_village({signer:config.account, calls:batch});
             batch = [];
+            signersStartIndex += batchSize * 7;
+            signersEndIndex += batchSize * 7;
+            if (signersEndIndex >= config.accounts.length) {
+              signersStartIndex = 0;
+              signersEndIndex = batchSize * 7;
+            }
           } catch (error) {
             console.error("Error creating realms:", error);
             throw error;

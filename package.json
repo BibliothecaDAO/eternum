@@ -28,6 +28,7 @@
     "indexer:start:local": "pnpm run toml:update:local && cd ./contracts/game && ./ext/scripts/indexer.sh --network local",
     "config:deploy:local": "pnpm run build:packages && pnpm --dir ./config run local",
     "cheat:deploy:local": "pnpm run build:packages && pnpm --dir ./config build && pnpm --dir ./cheat run local",
+    "cheat:deploy:sepolia": "pnpm run build:packages && pnpm --dir ./config build && pnpm --dir ./cheat run sepolia",
     "indexer:stop:local": "cd ./contracts/game && ./ext/scripts/indexer.sh --kill --network local",
     "katana:stop:local": "cd ./contracts/game && ./ext/scripts/katana.sh --kill",
     "contract:start:local": "pnpm run katana:start:local && pnpm run game:migrate:local && pnpm run seasonpass:deploy:local && pnpm run seasonresources:deploy:local && pnpm run indexer:start:local && pnpm run config:deploy:local",

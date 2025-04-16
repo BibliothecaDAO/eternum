@@ -30,8 +30,9 @@ pub mod trade_systems {
 
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SeasonConfigImpl, SpeedImpl, TradeConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::map::{Tile};
     use s1_eternum::models::owner::{OwnerAddressTrait};
-    use s1_eternum::models::position::{ Direction, CoordImpl};
+    use s1_eternum::models::position::{CoordImpl, Direction};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
@@ -42,7 +43,6 @@ pub mod trade_systems {
     };
     use s1_eternum::models::trade::{Trade, TradeCount, TradeCountImpl};
     use s1_eternum::models::weight::{Weight};
-    use s1_eternum::models::map::{Tile};
     use s1_eternum::systems::utils::distance::{iDistanceKmImpl};
     use s1_eternum::systems::utils::donkey::{iDonkeyImpl};
     use s1_eternum::systems::utils::village::{iVillageImpl};
@@ -107,9 +107,16 @@ pub mod trade_systems {
             // maker_structure_owner.assert_caller_owner();
 
             let mut all_structure_ids: Array<ID> = array![maker_id];
-            for direction in array![Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest, Direction::SouthEast] {
+            for direction in array![
+                Direction::East,
+                Direction::NorthEast,
+                Direction::NorthWest,
+                Direction::West,
+                Direction::SouthWest,
+                Direction::SouthEast,
+            ] {
                 let village_coord = first_maker_structure.coord().neighbor_after_distance(direction, 2);
-                let mut tile : Tile = world.read_model((village_coord.x, village_coord.y));
+                let mut tile: Tile = world.read_model((village_coord.x, village_coord.y));
                 all_structure_ids.append(tile.occupier_id);
             };
 
@@ -156,7 +163,9 @@ pub mod trade_systems {
                     true,
                 );
                 maker_resource
-                    .spend(maker_gives_max_resource_amount.into(), ref maker_structure_weight, maker_resource_weight_grams);
+                    .spend(
+                        maker_gives_max_resource_amount.into(), ref maker_structure_weight, maker_resource_weight_grams,
+                    );
                 maker_resource.store(ref world);
 
                 // burn enough maker donkeys to carry resources given by taker
@@ -189,7 +198,10 @@ pub mod trade_systems {
                 trade_count.count += 1;
                 world.write_model(@trade_count);
 
-                world.emit_event(@CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() });
+                world
+                    .emit_event(
+                        @CreateOrder { taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp() },
+                    );
             };
             0
         }
