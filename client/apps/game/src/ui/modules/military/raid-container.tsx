@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatStringNumber } from "@/ui/utils/utils";
@@ -17,6 +18,7 @@ import {
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
@@ -27,10 +29,9 @@ import {
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
-import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { BiomeInfoPanel, formatTypeAndBonuses } from "./combat-utils";
+import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
 
 const RAIDABLE_RESOURCES = [
@@ -359,7 +360,7 @@ export const RaidContainer = ({
       ) : (
         <>
           {/* Biome Info Panel */}
-          <BiomeInfoPanel combatSimulator={combatSimulator} biome={biome} />
+          <BiomeInfoPanel biome={biome} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Attacker Panel */}
             <div className="flex flex-col gap-3 p-4 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood">
@@ -372,7 +373,7 @@ export const RaidContainer = ({
                       {formatTypeAndBonuses(
                         attackerArmyData.troops.category as TroopType,
                         attackerArmyData.troops.tier as TroopTier,
-                        combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
+                        configManager.getBiomeCombatBonus(attackerArmyData.troops.category as TroopType, biome),
                         combatSimulator.calculateStaminaModifier(Number(attackerArmyData.troops.stamina.amount), true),
                         true,
                         false, // Not compact for attacker (single entity)
@@ -428,7 +429,7 @@ export const RaidContainer = ({
                             (
                             {Math.floor(
                               (raidSimulation.attackerTroopsLeft / divideByPrecision(attackerArmyData.troops.count)) *
-                              100,
+                                100,
                             )}
                             %)
                           </span>
@@ -493,7 +494,7 @@ export const RaidContainer = ({
                           {formatTypeAndBonuses(
                             troops.category as TroopType,
                             troops.tier as TroopTier,
-                            combatSimulator.getBiomeBonus(troops.category as TroopType, biome),
+                            configManager.getBiomeCombatBonus(troops.category as TroopType, biome),
                             combatSimulator.calculateStaminaModifier(Number(troops.stamina || 0), false),
                             false,
                             defenderTroops.length > 2, // Use compact layout when there are more than 2 guards
@@ -574,24 +575,26 @@ export const RaidContainer = ({
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-gold/70">Success Chance:</span>
                         <span
-                          className={`text-lg font-bold ${raidSimulation?.successChance && raidSimulation.successChance >= 80
+                          className={`text-lg font-bold ${
+                            raidSimulation?.successChance && raidSimulation.successChance >= 80
                               ? "text-green-400"
                               : raidSimulation?.successChance && raidSimulation.successChance >= 50
                                 ? "text-yellow-400"
                                 : "text-red-400"
-                            }`}
+                          }`}
                         >
                           {raidSimulation?.successChance.toFixed(2)}%
                         </span>
                       </div>
                       <div className="w-full h-4 bg-brown-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full ${raidSimulation?.successChance && raidSimulation.successChance >= 80
+                          className={`h-full ${
+                            raidSimulation?.successChance && raidSimulation.successChance >= 80
                               ? "bg-green-600"
                               : raidSimulation?.successChance && raidSimulation.successChance >= 50
                                 ? "bg-yellow-600"
                                 : "bg-red-600"
-                            }`}
+                          }`}
                           style={{ width: `${raidSimulation?.successChance || 0}%` }}
                         ></div>
                       </div>
@@ -601,12 +604,13 @@ export const RaidContainer = ({
                       <div className="flex justify-between items-center">
                         <span className="text-gold/70">Outcome Type:</span>
                         <span
-                          className={`text-base font-medium px-2 py-1 rounded ${raidSimulation?.outcomeType === RaidOutcome.Success
+                          className={`text-base font-medium px-2 py-1 rounded ${
+                            raidSimulation?.outcomeType === RaidOutcome.Success
                               ? "bg-green-900/50 text-green-400 border border-green-700/50"
                               : raidSimulation?.outcomeType === RaidOutcome.Failure
                                 ? "bg-red-900/50 text-red-400 border border-red-700/50"
                                 : "bg-yellow-900/50 text-yellow-400 border border-yellow-700/50"
-                            }`}
+                          }`}
                         >
                           {raidSimulation?.outcomeType === RaidOutcome.Success
                             ? "Guaranteed Success"
@@ -631,10 +635,10 @@ export const RaidContainer = ({
                             (
                             {raidSimulation && attackerArmyData && attackerArmyData.troops.count
                               ? Math.floor(
-                                (raidSimulation.raiderDamageTaken /
-                                  divideByPrecision(attackerArmyData.troops.count)) *
-                                100,
-                              )
+                                  (raidSimulation.raiderDamageTaken /
+                                    divideByPrecision(attackerArmyData.troops.count)) *
+                                    100,
+                                )
                               : 0}
                             %)
                           </span>
@@ -648,8 +652,8 @@ export const RaidContainer = ({
                             (
                             {raidSimulation && raidSimulation.totalDefenderTroops
                               ? Math.floor(
-                                (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
-                              )
+                                  (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
+                                )
                               : 0}
                             %)
                           </span>
