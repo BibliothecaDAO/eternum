@@ -9,7 +9,7 @@ import {
   TickIds,
 } from "@bibliothecadao/types";
 import { ComponentValue, Entity, getComponentValue } from "@dojoengine/recs";
-import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-client";
+import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { configManager } from "../managers";
@@ -111,20 +111,20 @@ export const getStructureTypeName = (structureType: StructureType) => {
 export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
-        Keys: {
-          keys: [undefined], // matches any key
-          pattern_matching: "FixedLen" as PatternMatching,
-          models: ["s1_eternum-Structure"], // specify the model you want to query
-        },
-      }
+      Keys: {
+        keys: [undefined], // matches any key
+        pattern_matching: "FixedLen" as PatternMatching,
+        models: ["s1_eternum-Structure"], // specify the model you want to query
+      },
+    }
     : {
-        Member: {
-          model: "s1_eternum-Structure",
-          member: "owner",
-          operator: "Eq",
-          value: { Primitive: { ContractAddress: ownedBy } },
-        },
-      };
+      Member: {
+        model: "s1_eternum-Structure",
+        member: "owner",
+        operator: "Eq",
+        value: { Primitive: { ContractAddress: ownedBy } },
+      },
+    };
 
   const query: Query = {
     limit: 1000,
@@ -151,34 +151,34 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
 export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
     ? {
-        Keys: {
-          keys: [undefined], // matches any key
-          pattern_matching: "FixedLen" as PatternMatching,
-          models: ["s1_eternum-Structure"], // specify the model you want to query
-        },
-      }
+      Keys: {
+        keys: [undefined], // matches any key
+        pattern_matching: "FixedLen" as PatternMatching,
+        models: ["s1_eternum-Structure"], // specify the model you want to query
+      },
+    }
     : {
-        Composite: {
-          operator: "And",
-          clauses: [
-            {
-              Keys: {
-                keys: [undefined], // matches any key
-                pattern_matching: "FixedLen" as PatternMatching,
-                models: ["s1_eternum-Structure"], // specify the model you want to query
-              },
+      Composite: {
+        operator: "And",
+        clauses: [
+          {
+            Keys: {
+              keys: [undefined], // matches any key
+              pattern_matching: "FixedLen" as PatternMatching,
+              models: ["s1_eternum-Structure"], // specify the model you want to query
             },
-            {
-              Member: {
-                model: "s1_eternum-Structure",
-                member: "owner",
-                operator: "Eq",
-                value: { Primitive: { ContractAddress: ownedBy } },
-              },
+          },
+          {
+            Member: {
+              model: "s1_eternum-Structure",
+              member: "owner",
+              operator: "Eq",
+              value: { Primitive: { ContractAddress: ownedBy } },
             },
-          ],
-        },
-      };
+          },
+        ],
+      },
+    };
 
   const query: Query = {
     limit: 1,

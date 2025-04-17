@@ -1,4 +1,4 @@
-import { Query, ToriiClient } from "@dojoengine/torii-client";
+import { Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { shortString } from "starknet";
 
 export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, address: string) => {
