@@ -9,7 +9,7 @@ import {
 } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause, OrComposeClause } from "@dojoengine/sdk";
-import { Query, ToriiClient } from "@dojoengine/torii-client";
+import { Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "./structure";
 import { getEntityIdFromKeys } from "./utils";
 

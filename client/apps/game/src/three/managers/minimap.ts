@@ -6,6 +6,7 @@ import type WorldmapScene from "@/three/scenes/worldmap";
 import { BiomeType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
 import type * as THREE from "three";
+import { CameraView } from "../scenes/hexagon-scene";
 import { getHexForWorldPosition } from "../utils";
 
 const LABELS = {
@@ -185,7 +186,7 @@ class Minimap {
     const zoomRatio = Math.min(
       1,
       (this.mapSize.width - MINIMAP_CONFIG.MIN_ZOOM_RANGE) /
-      (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
+        (MINIMAP_CONFIG.MAX_ZOOM_RANGE - MINIMAP_CONFIG.MIN_ZOOM_RANGE),
     );
 
     // Scale from 0.5 (at max zoom) to 2.0 (at min zoom)
@@ -325,6 +326,7 @@ class Minimap {
     if (!this.context) return;
 
     const cameraPosition = this.camera.position;
+    const currentCameraView: CameraView = this.worldmapScene.getCurrentCameraView();
     const { col, row } = getHexForWorldPosition(cameraPosition);
     const cacheKey = `${col},${row}`;
     if (this.scaledCoords.has(cacheKey)) {
@@ -332,11 +334,20 @@ class Minimap {
 
       this.context.strokeStyle = MINIMAP_CONFIG.COLORS.CAMERA;
       this.context.beginPath();
-      this.context.moveTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-      this.context.lineTo(scaledCol + this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
-      this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth / 2, scaledRow);
-      this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth / 2, scaledRow);
-      this.context.lineTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+      if (currentCameraView !== CameraView.Far) {
+        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth / 2, scaledRow);
+        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth / 2, scaledRow);
+        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth / 2, scaledRow - this.cameraSize.height);
+      }
+      if (currentCameraView === CameraView.Far) {
+        this.context.moveTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
+        this.context.lineTo(scaledCol + this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
+        this.context.lineTo(scaledCol + this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
+        this.context.lineTo(scaledCol - this.cameraSize.bottomSideWidth, scaledRow - this.cameraSize.height * 0.5);
+        this.context.lineTo(scaledCol - this.cameraSize.topSideWidth, scaledRow - this.cameraSize.height * 2.85);
+      }
       this.context.closePath();
       this.context.lineWidth = 1;
       this.context.stroke();

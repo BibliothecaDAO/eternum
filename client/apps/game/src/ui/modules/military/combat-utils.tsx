@@ -1,5 +1,4 @@
-import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
-import { CombatSimulator } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { Map, Zap } from "lucide-react";
 
 export const getStaminaDisplay = (
@@ -108,50 +107,6 @@ export const formatTypeAndBonuses = (
           <div>
             <div className="text-xs text-gold/70 font-medium uppercase">Stamina {isAttacker ? "Bonus" : "Penalty"}</div>
             <div className="font-bold text-lg">{formatStaminaModifier(staminaModifier, isAttacker)}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export const BiomeInfoPanel = ({ combatSimulator, biome }: { combatSimulator: CombatSimulator; biome: BiomeType }) => {
-  return (
-    <div className="p-4 border panel-wood rounded-lg backdrop-blur-sm shadow-inner">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gold flex items-center gap-2">
-            <span className="text-gold/70 text-lg">Terrain:</span> {biome}
-          </h2>
-          <p className="text-sm text-gold/60 mt-1">Terrain affects combat effectiveness of different troop types</p>
-        </div>
-
-        <div className="flex flex-wrap gap-3 mt-2 sm:mt-0">
-          <div
-            className={`px-3 py-2 rounded-md border ${combatSimulator.getBiomeBonus(TroopType.Knight, biome) > 0 ? "border-green-500/50 bg-green-900/20" : combatSimulator.getBiomeBonus(TroopType.Knight, biome) < 0 ? "border-red-500/50 bg-red-900/20" : "border-gold/20 bg-brown-800/50"}`}
-          >
-            <div className="text-xs uppercase tracking-wider text-gold/50 mb-1">Melee</div>
-            <div className="text-lg font-bold">
-              {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}
-            </div>
-          </div>
-
-          <div
-            className={`px-3 py-2 rounded-md border ${combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome) > 0 ? "border-green-500/50 bg-green-900/20" : combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome) < 0 ? "border-red-500/50 bg-red-900/20" : "border-gold/20 bg-brown-800/50"}`}
-          >
-            <div className="text-xs uppercase tracking-wider text-gold/50 mb-1">Ranged</div>
-            <div className="text-lg font-bold">
-              {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}
-            </div>
-          </div>
-
-          <div
-            className={`px-3 py-2 rounded-md border ${combatSimulator.getBiomeBonus(TroopType.Paladin, biome) > 0 ? "border-green-500/50 bg-green-900/20" : combatSimulator.getBiomeBonus(TroopType.Paladin, biome) < 0 ? "border-red-500/50 bg-red-900/20" : "border-gold/20 bg-brown-800/50"}`}
-          >
-            <div className="text-xs uppercase tracking-wider text-gold/50 mb-1">Paladins</div>
-            <div className="text-lg font-bold">
-              {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Paladin, biome))}
-            </div>
           </div>
         </div>
       </div>
