@@ -733,7 +733,7 @@ export const RaidContainer = ({
               variant="primary"
               className={`px-8 py-3 rounded-lg font-bold text-lg transition-colors ${!canRaid ? "opacity-70" : "hover:bg-yellow-600"}`}
               isLoading={loading}
-              disabled={false}
+              disabled={!canRaid}
               onClick={onRaid}
             >
               {buttonMessage}
