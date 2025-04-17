@@ -19,6 +19,10 @@ pub trait IAgentControllerConfig<T> {
     fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
 }
 
+#[starknet::interface]
+pub trait IVillageControllerConfig<T> {
+    fn set_village_controllers(ref self: T, village_controller_addresses: Span<starknet::ContractAddress>);
+}
 
 #[starknet::interface]
 pub trait ISeasonConfig<T> {
@@ -186,7 +190,7 @@ pub mod config_systems {
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
         StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        WeightConfig, WorldConfig, WorldConfigUtilImpl, VillageControllerConfig
     };
     use s1_eternum::models::name::AddressName;
 
@@ -271,6 +275,17 @@ pub mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
+    impl VillageControllerConfigImpl of super::IVillageControllerConfig<ContractState> {
+        fn set_village_controllers(ref self: ContractState, village_controller_addresses: Span<starknet::ContractAddress>) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut village_controller_config: VillageControllerConfig 
+                = VillageControllerConfig {addresses: village_controller_addresses};
+            WorldConfigUtilImpl::set_member(ref world, selector!("village_controller_config"), village_controller_config);
+        }
+    }
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {

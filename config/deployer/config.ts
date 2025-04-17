@@ -1,18 +1,18 @@
 import type { EternumProvider } from "@bibliothecadao/provider";
 import {
-  HexGrid,
-  scaleResourceInputs,
-  scaleResourceOutputs,
-  scaleResources,
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
   BuildingType,
   CapacityConfig,
   type Config as EternumConfig,
+  HexGrid,
   type ResourceInputs,
   type ResourceOutputs,
   type ResourceWhitelistConfig,
   ResourcesIds,
+  scaleResourceInputs,
+  scaleResourceOutputs,
+  scaleResources,
 } from "@bibliothecadao/types";
 
 import chalk from "chalk";
@@ -20,12 +20,7 @@ import chalk from "chalk";
 import fs from "fs";
 import type { Account } from "starknet";
 import type { Chain } from "utils/utils";
-import {
-  addCommas,
-  hourMinutesSeconds,
-  inGameAmount,
-  shortHexAddress,
-} from "../utils/formatting";
+import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
 interface Config {
   account: Account;
@@ -49,6 +44,7 @@ export class GameConfigDeployer {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
     await setAgentControllerConfig(config);
+    await setVillageControllersConfig(config);
     await SetResourceFactoryConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setTradeConfig(config);
@@ -132,11 +128,7 @@ export const setStartingResourcesConfig = async (config: Config) => {
     ✧ Realm Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
     );
 
-    console.log(
-      chalk.cyan(
-        `      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`,
-      ),
-    );
+    console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
 
     realmStartResourcesArray.push(calldata);
   }
@@ -153,11 +145,7 @@ export const setStartingResourcesConfig = async (config: Config) => {
     ✧ Village Resource ${chalk.yellow(ResourcesIds[calldata.resource])}:`),
     );
 
-    console.log(
-      chalk.cyan(
-        `      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`,
-      ),
-    );
+    console.log(chalk.cyan(`      ∙ ${chalk.cyan(inGameAmount(calldata.amount, config.config))}`));
     villageStartResourcesArray.push(calldata);
   }
 
@@ -249,23 +237,16 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     config.config.resources.resourcePrecision,
   );
 
-  for (const resourceId of Object.keys(
-    scaledProductionByResourceRecipe,
-  ) as unknown as ResourcesIds[]) {
+  for (const resourceId of Object.keys(scaledProductionByResourceRecipe) as unknown as ResourcesIds[]) {
     const calldata = {
       resource_type: resourceId,
-      realm_output_per_second:
-        scaledProductionByResourceRecipeOutputs[resourceId],
-      village_output_per_second:
-        scaledProductionByResourceRecipeOutputs[resourceId] / 2,
+      realm_output_per_second: scaledProductionByResourceRecipeOutputs[resourceId],
+      village_output_per_second: scaledProductionByResourceRecipeOutputs[resourceId] / 2,
       labor_output_per_resource: scaledProductionOfLaborOutputs[resourceId],
-      resource_output_per_simple_input:
-        scaledProductionBySimpleRecipeOutputs[resourceId],
+      resource_output_per_simple_input: scaledProductionBySimpleRecipeOutputs[resourceId],
       simple_input_resources_list: scaledProductionBySimpleRecipe[resourceId],
-      resource_output_per_complex_input:
-        scaledProductionByResourceRecipeOutputs[resourceId],
-      complex_input_resources_list:
-        scaledProductionByResourceRecipe[resourceId],
+      resource_output_per_complex_input: scaledProductionByResourceRecipeOutputs[resourceId],
+      complex_input_resources_list: scaledProductionByResourceRecipe[resourceId],
     };
 
     calldataArray.push(calldata);
@@ -280,32 +261,30 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     │  ${chalk.gray(`${chalk.white(`${inGameAmount(calldata.labor_output_per_resource, config.config)}`)}  ${chalk.yellow(`Labor`)} is produced, for every ${chalk.white(`1`)} ${chalk.yellow(`${ResourcesIds[calldata.resource_type]}`)} given`)} 
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Complex Burn Production Strategy:`)}
-    │  ${calldata.complex_input_resources_list.length > 0
-          ? chalk.gray(
-            ` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`,
-          ) +
+    │  ${
+      calldata.complex_input_resources_list.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.complex_input_resources_list
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-          : `    ${chalk.blue("Can't be produced with complex strategy")}`
-        }
+        : `    ${chalk.blue("Can't be produced with complex strategy")}`
+    }
     │  ${chalk.gray(``)}
     │  ${chalk.gray(`Using Labor Burn Production Strategy:`)}
-    │  ${calldata.simple_input_resources_list.length > 0
-          ? chalk.gray(
-            ` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`,
-          ) +
+    │  ${
+      calldata.simple_input_resources_list.length > 0
+        ? chalk.gray(` Cost of producing 1 ${ResourcesIds[calldata.resource_type]}:`) +
           calldata.simple_input_resources_list
             .map(
               (c) => `
     │       ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
             )
             .join("")
-          : `    ${chalk.blue("Can't be produced using labor")}`
-        }
+        : `    ${chalk.blue("Can't be produced using labor")}`
+    }
     └────────────────────────────────`),
     );
   }
@@ -329,13 +308,8 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 
   const resourceWhitelistConfigs: ResourceWhitelistConfig[] = [];
-  for (const [resourceName, resourceData] of Object.entries(
-    config.config.setup!.addresses.resources,
-  )) {
-    const [resourceId, tokenAddress] = resourceData as unknown as [
-      string,
-      string,
-    ];
+  for (const [resourceName, resourceData] of Object.entries(config.config.setup!.addresses.resources)) {
+    const [resourceId, tokenAddress] = resourceData as unknown as [string, string];
     const data = {
       token: tokenAddress,
       resource_type: resourceId,
@@ -344,12 +318,12 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
 
     console.log(
       chalk.yellow("     ➔ ") +
-      chalk.white(resourceName.padEnd(12)) +
-      chalk.gray("[") +
-      chalk.cyan(`#${data.resource_type}`.padEnd(4)) +
-      chalk.gray("]") +
-      chalk.gray(" ⟶  ") +
-      chalk.white(shortHexAddress(data.token)),
+        chalk.white(resourceName.padEnd(12)) +
+        chalk.gray("[") +
+        chalk.cyan(`#${data.resource_type}`.padEnd(4)) +
+        chalk.gray("]") +
+        chalk.gray(" ⟶  ") +
+        chalk.white(shortHexAddress(data.token)),
     );
   }
 
@@ -359,12 +333,7 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   });
 
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
-  console.log(
-    chalk.green("✔ ") +
-    chalk.white("Configuration complete ") +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green("✔ ") + chalk.white("Configuration complete ") + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setBuildingConfig = async (config: Config) => {
@@ -374,8 +343,7 @@ export const setBuildingConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const buildingResourceProduced =
-    config.config.buildings.buildingResourceProduced;
+  const buildingResourceProduced = config.config.buildings.buildingResourceProduced;
   const buildingPopulation = config.config.buildings.buildingPopulation;
   const buildingCapacity = config.config.buildings.buildingCapacity;
   const complexBuildingCosts = config.config.buildings.complexBuildingCosts;
@@ -384,13 +352,9 @@ export const setBuildingConfig = async (config: Config) => {
     config.config.resources.resourcePrecision,
   );
   const simpleBuildingCosts = config.config.buildings.simpleBuildingCost;
-  const scaledSimpleBuildingCosts = scaleResourceInputs(
-    simpleBuildingCosts,
-    config.config.resources.resourcePrecision,
-  );
+  const scaledSimpleBuildingCosts = scaleResourceInputs(simpleBuildingCosts, config.config.resources.resourcePrecision);
   const BUILDING_COST_DISPLAY_ROWS = 6;
-  const buildingScalePercent =
-    config.config.buildings.buildingFixedCostScalePercent;
+  const buildingScalePercent = config.config.buildings.buildingFixedCostScalePercent;
 
   // Set base building config
   const tx = await config.provider.set_building_config({
@@ -407,15 +371,10 @@ export const setBuildingConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  console.log(
-    chalk.green(`    ✔ Base configuration complete `) +
-    chalk.gray(tx.statusReceipt),
-  );
+  console.log(chalk.green(`    ✔ Base configuration complete `) + chalk.gray(tx.statusReceipt));
 
   // Non Resource Building Config
-  for (const buildingId of Object.keys(
-    scaledComplexBuildingCosts,
-  ) as unknown as BuildingType[]) {
+  for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
     const costs = scaledComplexBuildingCosts[buildingId];
     const population = buildingPopulation[buildingId] ?? 0;
     const capacity = buildingCapacity[buildingId] ?? 0;
@@ -435,32 +394,25 @@ export const setBuildingConfig = async (config: Config) => {
     │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
     │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
-        { length: BUILDING_COST_DISPLAY_ROWS },
-        (_, i) => {
-          const buildingNum = i + 1;
-          const costsStr = costs
-            .map((c) => {
-              const multiplier = Math.pow(
-                1 + buildingScalePercent / 10_000,
-                buildingNum - 1,
-              );
-              return chalk.white(
-                inGameAmount(c.amount * multiplier, config.config).padEnd(12),
-              );
-            })
-            .join("");
-          return `
+      { length: BUILDING_COST_DISPLAY_ROWS },
+      (_, i) => {
+        const buildingNum = i + 1;
+        const costsStr = costs
+          .map((c) => {
+            const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+            return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+          })
+          .join("");
+        return `
     │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
-        },
-      ).join("")}
+      },
+    ).join("")}
     │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
     └────────────────────────────────`),
     );
   }
 
-  for (const buildingId of Object.keys(
-    scaledSimpleBuildingCosts,
-  ) as unknown as BuildingType[]) {
+  for (const buildingId of Object.keys(scaledSimpleBuildingCosts) as unknown as BuildingType[]) {
     const costs = scaledSimpleBuildingCosts[buildingId];
     const population = buildingPopulation[buildingId] ?? 0;
     const capacity = buildingCapacity[buildingId] ?? 0;
@@ -480,24 +432,19 @@ export const setBuildingConfig = async (config: Config) => {
         │  ${chalk.gray("┌──────────")}${costs.map((c) => "─".repeat(12)).join("")}
         │  ${chalk.gray("│")} Building ${costs.map((c) => chalk.white(ResourcesIds[c.resource].padEnd(12))).join("")}
         │  ${chalk.gray("├──────────")}${costs.map((c) => "─".repeat(12)).join("")}${Array.from(
-        { length: BUILDING_COST_DISPLAY_ROWS },
-        (_, i) => {
-          const buildingNum = i + 1;
-          const costsStr = costs
-            .map((c) => {
-              const multiplier = Math.pow(
-                1 + buildingScalePercent / 10_000,
-                buildingNum - 1,
-              );
-              return chalk.white(
-                inGameAmount(c.amount * multiplier, config.config).padEnd(12),
-              );
-            })
-            .join("");
-          return `
+          { length: BUILDING_COST_DISPLAY_ROWS },
+          (_, i) => {
+            const buildingNum = i + 1;
+            const costsStr = costs
+              .map((c) => {
+                const multiplier = Math.pow(1 + buildingScalePercent / 10_000, buildingNum - 1);
+                return chalk.white(inGameAmount(c.amount * multiplier, config.config).padEnd(12));
+              })
+              .join("");
+            return `
         │  ${chalk.yellow(("No #" + buildingNum).padEnd(8))}${chalk.gray("│")} ${costsStr}`;
-        },
-      ).join("")}
+          },
+        ).join("")}
         │  ${chalk.gray("└──────────")}${costs.map((c) => "─".repeat(12)).join("")}
         └────────────────────────────────`),
     );
@@ -505,9 +452,7 @@ export const setBuildingConfig = async (config: Config) => {
 
   const calldataArray = [];
 
-  for (const buildingId of Object.keys(
-    scaledComplexBuildingCosts,
-  ) as unknown as BuildingType[]) {
+  for (const buildingId of Object.keys(scaledComplexBuildingCosts) as unknown as BuildingType[]) {
     calldataArray.push({
       building_category: buildingId,
       complex_building_cost: scaledComplexBuildingCosts[buildingId],
@@ -520,10 +465,7 @@ export const setBuildingConfig = async (config: Config) => {
     signer: config.account,
     calls: calldataArray,
   });
-  console.log(
-    chalk.green(`   ✔ Category configuration complete `) +
-    chalk.gray(categoryTx.statusReceipt),
-  );
+  console.log(chalk.green(`   ✔ Category configuration complete `) + chalk.gray(categoryTx.statusReceipt));
 };
 
 export const setRealmUpgradeConfig = async (config: Config) => {
@@ -539,9 +481,7 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     config.config.resources.resourcePrecision,
   );
 
-  for (const level of Object.keys(
-    REALM_UPGRADE_COSTS_SCALED,
-  ) as unknown as number[]) {
+  for (const level of Object.keys(REALM_UPGRADE_COSTS_SCALED) as unknown as number[]) {
     if (REALM_UPGRADE_COSTS_SCALED[level].length !== 0) {
       const costs = REALM_UPGRADE_COSTS_SCALED[level];
       const calldata = {
@@ -556,11 +496,11 @@ export const setRealmUpgradeConfig = async (config: Config) => {
         chalk.cyan(`
     ┌─ ${chalk.yellow(`Level ${calldata.level}`)}
     │  ${chalk.gray("Upgrade Costs:")}${calldata.cost_of_level
-            .map(
-              (c) => `
+      .map(
+        (c) => `
     │     ${chalk.white(`${inGameAmount(c.amount, config.config)} ${ResourcesIds[c.resource]}`)}`,
-            )
-            .join("")}
+      )
+      .join("")}
     └────────────────────────────────`),
       );
 
@@ -572,11 +512,7 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     signer: config.account,
     calls: calldataArray,
   });
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setStructureMaxLevelConfig = async (config: Config) => {
@@ -604,11 +540,7 @@ export const setStructureMaxLevelConfig = async (config: Config) => {
 
   const tx = await config.provider.set_structure_max_level_config(calldata);
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setWeightConfig = async (config: Config) => {
@@ -623,9 +555,7 @@ export const setWeightConfig = async (config: Config) => {
     ┌─ ${chalk.yellow("Resource Weights")}`),
   );
 
-  const calldataArray = Object.entries(
-    config.config.resources.resourceWeightsGrams,
-  ).map(([resourceId, weight]) => {
+  const calldataArray = Object.entries(config.config.resources.resourceWeightsGrams).map(([resourceId, weight]) => {
     const calldata = {
       entity_type: resourceId,
       weight_nanogram: weight,
@@ -644,11 +574,7 @@ export const setWeightConfig = async (config: Config) => {
     calls: calldataArray,
   });
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setBattleConfig = async (config: Config) => {
@@ -658,10 +584,8 @@ export const setBattleConfig = async (config: Config) => {
   ═══════════════════════════════`),
   );
 
-  const {
-    graceTickCount: regular_immunity_ticks,
-    graceTickCountHyp: hyperstructure_immunity_ticks,
-  } = config.config.battle;
+  const { graceTickCount: regular_immunity_ticks, graceTickCountHyp: hyperstructure_immunity_ticks } =
+    config.config.battle;
 
   const calldata = {
     signer: config.account,
@@ -679,11 +603,7 @@ export const setBattleConfig = async (config: Config) => {
 
   const tx = await config.provider.set_battle_config(calldata);
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setTroopConfig = async (config: Config) => {
@@ -817,11 +737,7 @@ export const setTroopConfig = async (config: Config) => {
 
   const tx = await config.provider.set_troop_config(calldata);
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setupGlobals = async (config: Config) => {
@@ -848,9 +764,7 @@ export const setupGlobals = async (config: Config) => {
   );
 
   const txBank = await config.provider.set_bank_config(bankCalldata);
-  console.log(
-    chalk.green(`    ✔ Bank configured `) + chalk.gray(txBank.statusReceipt),
-  );
+  console.log(chalk.green(`    ✔ Bank configured `) + chalk.gray(txBank.statusReceipt));
 
   // Tick Configs
 
@@ -866,54 +780,35 @@ export const setupGlobals = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  const txArmiesTick =
-    await config.provider.set_tick_config(armiesTickCalldata);
-  console.log(
-    chalk.green(`    ✔ Armies tick configured `) +
-    chalk.gray(txArmiesTick.statusReceipt),
-  );
+  const txArmiesTick = await config.provider.set_tick_config(armiesTickCalldata);
+  console.log(chalk.green(`    ✔ Armies tick configured `) + chalk.gray(txArmiesTick.statusReceipt));
 
   // Map Config
   const mapCalldata = {
     signer: config.account,
     reward_amount: config.config.exploration.reward,
-    shards_mines_win_probability:
-      config.config.exploration.shardsMinesWinProbability,
-    shards_mines_fail_probability:
-      config.config.exploration.shardsMinesFailProbability,
+    shards_mines_win_probability: config.config.exploration.shardsMinesWinProbability,
+    shards_mines_fail_probability: config.config.exploration.shardsMinesFailProbability,
     agent_find_probability: config.config.exploration.agentFindProbability,
-    agent_find_fail_probability:
-      config.config.exploration.agentFindFailProbability,
+    agent_find_fail_probability: config.config.exploration.agentFindFailProbability,
     hyps_win_prob: config.config.exploration.hyperstructureWinProbAtCenter,
     hyps_fail_prob: config.config.exploration.hyperstructureFailProbAtCenter,
-    hyps_fail_prob_increase_p_hex:
-      config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
-    hyps_fail_prob_increase_p_fnd:
-      config.config.exploration
-        .hyperstructureFailProbIncreasePerHyperstructureFound,
-    mine_wheat_grant_amount:
-      config.config.exploration.shardsMineInitialWheatBalance,
-    mine_fish_grant_amount:
-      config.config.exploration.shardsMineInitialFishBalance,
+    hyps_fail_prob_increase_p_hex: config.config.exploration.hyperstructureFailProbIncreasePerHexDistance,
+    hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
+    mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
+    mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
 
   const shardsMinesFailRate =
     (mapCalldata.shards_mines_fail_probability /
-      (mapCalldata.shards_mines_fail_probability +
-        mapCalldata.shards_mines_win_probability)) *
+      (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
     100;
   const hyperstructureFailRateAtTheCenter =
-    (mapCalldata.hyps_fail_prob /
-      (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) *
-    100;
+    (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   const hyperstructureFailRateIncreasePerHex =
-    (mapCalldata.hyps_fail_prob_increase_p_hex /
-      (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) *
-    100;
+    (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   const hyperstructureFailRateIncreasePerHyperstructureFound =
-    (mapCalldata.hyps_fail_prob_increase_p_fnd /
-      (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) *
-    100;
+    (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Map Parameters")}
@@ -929,9 +824,7 @@ export const setupGlobals = async (config: Config) => {
   );
 
   const txMap = await config.provider.set_map_config(mapCalldata);
-  console.log(
-    chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt),
-  );
+  console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
 
 export const setAgentControllerConfig = async (config: Config) => {
@@ -954,22 +847,39 @@ export const setAgentControllerConfig = async (config: Config) => {
   );
 
   const tx = await config.provider.set_agent_controller(calldata);
+  console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
+};
+
+export const setVillageControllersConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    village_controllers: config.config.village.controller_addresses,
+  };
+
   console.log(
-    chalk.green(`\n    ✔ Agent Controller configured `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
+    chalk.cyan(`
+  📦 Village Controllers Configuration
+  ═══════════════════════════════`),
   );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Village Controllers")}
+    │  ${chalk.gray("Addresses:")} ${chalk.white(calldata.village_controllers)}
+    └────────────────────────────────`),
+  );
+
+  const villageTx = await config.provider.set_village_controllers(calldata);
+  console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
 };
 
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    structure_capacity:
-      config.config.carryCapacityGram[CapacityConfig.Structure],
+    structure_capacity: config.config.carryCapacityGram[CapacityConfig.Structure],
     troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
-    storehouse_boost_capacity:
-      config.config.carryCapacityGram[CapacityConfig.Storehouse],
+    storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
   };
 
   console.log(
@@ -991,21 +901,17 @@ export const setCapacityConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Max Weight Per Category")}${capacities
-        .map(
-          ({ name, value }) => `
+      .map(
+        ({ name, value }) => `
     │  ${chalk.gray(name.padEnd(12))} ${chalk.white(addCommas(BigInt(value)))} ${chalk.gray("grams")} 
     │  ${chalk.gray("").padEnd(12)} ${chalk.gray("i.e (")} ${chalk.white(addCommas(BigInt(value) / BigInt(1000)))} ${chalk.gray("kg")} ${chalk.gray(")")}`,
-        )
-        .join("")}
+      )
+      .join("")}
     └────────────────────────────────`),
   );
 
   const tx = await config.provider.set_capacity_config(calldata);
-  console.log(
-    chalk.green(`\n    ✔ Capacity configured `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Capacity configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setTradeConfig = async (config: Config) => {
@@ -1022,11 +928,7 @@ export const setTradeConfig = async (config: Config) => {
   );
 
   const tx = await config.provider.set_trade_config(calldata);
-  console.log(
-    chalk.green(`\n    ✔ Trade configured `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Trade configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSeasonConfig = async (config: Config) => {
@@ -1054,14 +956,11 @@ export const setSeasonConfig = async (config: Config) => {
     chalk.cyan(`
     ┌─ ${chalk.yellow("Season Parameters")}
     │  ${chalk.gray("Start Setting Time:")}   ${chalk.white(
-      new Date(seasonCalldata.start_settling_at * 1000).toLocaleString(
-        "en-US",
-        {
-          dateStyle: "full",
-          timeStyle: "short",
-          timeZone: "UTC",
-        },
-      ),
+      new Date(seasonCalldata.start_settling_at * 1000).toLocaleString("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "UTC",
+      }),
     )} UTC
     │  ${chalk.gray("Start Main Game Time:")}   ${chalk.white(
       new Date(seasonCalldata.start_main_at * 1000).toLocaleString("en-US", {
@@ -1080,22 +979,12 @@ export const setSeasonConfig = async (config: Config) => {
   );
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
-  console.log(
-    chalk.green(`    ✔ Season configured `) +
-    chalk.gray(setSeasonTx.statusReceipt),
-  );
+  console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
 };
 
 export const setVRFConfig = async (config: Config) => {
-  if (
-    config.config.setup?.chain !== "mainnet" &&
-    config.config.setup?.chain !== "sepolia"
-  ) {
-    console.log(
-      chalk.yellow(
-        "    ⚠ Skipping VRF configuration for slot or local environment",
-      ),
-    );
+  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
+    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for slot or local environment"));
     return;
   }
 
@@ -1128,21 +1017,16 @@ export const setVRFConfig = async (config: Config) => {
   );
 
   const tx = await config.provider.set_vrf_config(vrfCalldata);
-  console.log(
-    chalk.green(`    ✔ VRF configured `) + chalk.gray(tx.statusReceipt) + "\n",
-  );
+  console.log(chalk.green(`    ✔ VRF configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {
   const bridgeFeesCalldata = {
     signer: config.account,
     velords_fee_on_dpt_percent: config.config.bridge.velords_fee_on_dpt_percent,
-    velords_fee_on_wtdr_percent:
-      config.config.bridge.velords_fee_on_wtdr_percent,
-    season_pool_fee_on_dpt_percent:
-      config.config.bridge.season_pool_fee_on_dpt_percent,
-    season_pool_fee_on_wtdr_percent:
-      config.config.bridge.season_pool_fee_on_wtdr_percent,
+    velords_fee_on_wtdr_percent: config.config.bridge.velords_fee_on_wtdr_percent,
+    season_pool_fee_on_dpt_percent: config.config.bridge.season_pool_fee_on_dpt_percent,
+    season_pool_fee_on_wtdr_percent: config.config.bridge.season_pool_fee_on_wtdr_percent,
     client_fee_on_dpt_percent: config.config.bridge.client_fee_on_dpt_percent,
     client_fee_on_wtdr_percent: config.config.bridge.client_fee_on_wtdr_percent,
     velords_fee_recipient: config.config.bridge.velords_fee_recipient,
@@ -1158,66 +1042,36 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
 
   const fees = {
     deposits: {
-      "veLORDS Deposit":
-        (bridgeFeesCalldata.velords_fee_on_dpt_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
-      "Season Pool Deposit":
-        (bridgeFeesCalldata.season_pool_fee_on_dpt_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
-      "Client Deposit":
-        (bridgeFeesCalldata.client_fee_on_dpt_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
+      "veLORDS Deposit": (bridgeFeesCalldata.velords_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Season Pool Deposit": (bridgeFeesCalldata.season_pool_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Client Deposit": (bridgeFeesCalldata.client_fee_on_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Max Realm Fee on Deposit By Village":
-        (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
+        (bridgeFeesCalldata.realm_fee_dpt_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
     withdrawals: {
-      "veLORDS Withdraw":
-        (bridgeFeesCalldata.velords_fee_on_wtdr_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
-      "Season Pool Withdraw":
-        (bridgeFeesCalldata.season_pool_fee_on_wtdr_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
-      "Client Withdraw":
-        (bridgeFeesCalldata.client_fee_on_wtdr_percent /
-          BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
+      "veLORDS Withdraw": (bridgeFeesCalldata.velords_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Season Pool Withdraw": (bridgeFeesCalldata.season_pool_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
+      "Client Withdraw": (bridgeFeesCalldata.client_fee_on_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
       "Max Realm Fee on Withdrawal By Village":
-        (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) *
-        100 +
-        "%",
+        (bridgeFeesCalldata.realm_fee_wtdr_percent / BRIDGE_FEE_DENOMINATOR) * 100 + "%",
     },
   };
 
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Deposit Fee Structure")}${Object.entries(fees.deposits)
-        .map(
-          ([name, value]) => `
+      .map(
+        ([name, value]) => `
     │  ${chalk.gray(name.padEnd(20))} ${chalk.white(value)}`,
-        )
-        .join("")}
+      )
+      .join("")}
     │
-    │  ${chalk.yellow("Withdrawal Fee Structure")}${Object.entries(
-          fees.withdrawals,
-        )
-        .map(
-          ([name, value]) => `
+    │  ${chalk.yellow("Withdrawal Fee Structure")}${Object.entries(fees.withdrawals)
+      .map(
+        ([name, value]) => `
     │  ${chalk.gray(name.padEnd(20))} ${chalk.white(value)}`,
-        )
-        .join("")}
+      )
+      .join("")}
     │
     │  ${chalk.yellow("Recipients")}
     │  ${chalk.gray("veLORDS:")}          ${chalk.white(shortHexAddress(config.config.bridge.velords_fee_recipient.toString()))}
@@ -1225,13 +1079,8 @@ export const setResourceBridgeFeesConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  const tx =
-    await config.provider.set_resource_bridge_fees_config(bridgeFeesCalldata);
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  const tx = await config.provider.set_resource_bridge_fees_config(bridgeFeesCalldata);
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSpeedConfig = async (config: Config) => {
@@ -1255,9 +1104,7 @@ export const setSpeedConfig = async (config: Config) => {
   );
 
   const tx = await config.provider.set_donkey_speed_config(donkeyCalldata);
-  console.log(
-    chalk.green(` ✔ Donkey speed configured `) + chalk.gray(tx.statusReceipt),
-  );
+  console.log(chalk.green(` ✔ Donkey speed configured `) + chalk.gray(tx.statusReceipt));
 };
 
 export const setHyperstructureConfig = async (config: Config) => {
@@ -1274,12 +1121,10 @@ export const setHyperstructureConfig = async (config: Config) => {
     hyperstructureInitializationShardsCost,
   } = config.config.hyperstructures;
 
-  const initializationShardsAmount =
-    hyperstructureInitializationShardsCost.amount;
+  const initializationShardsAmount = hyperstructureInitializationShardsCost.amount;
   const hyperstructureCalldata = {
     signer: config.account,
-    initialize_shards_amount:
-      initializationShardsAmount * config.config.resources.resourcePrecision,
+    initialize_shards_amount: initializationShardsAmount * config.config.resources.resourcePrecision,
     construction_resources: hyperstructureConstructionCost,
     points_per_second: hyperstructurePointsPerCycle,
     points_for_win: hyperstructurePointsForWin,
@@ -1294,22 +1139,16 @@ export const setHyperstructureConfig = async (config: Config) => {
     │  ${chalk.gray("Initialization Shards:")}     ${chalk.white(inGameAmount(hyperstructureCalldata.initialize_shards_amount, config.config))}
     │
     │  ${chalk.gray("Construction Cost")}${hyperstructureCalldata.construction_resources
-        .map(
-          (c) => `
+      .map(
+        (c) => `
     │  ${chalk.yellow(ResourcesIds[c.resource_type].padEnd(12))} ${chalk.white(c.min_amount)} ${chalk.gray("to")} ${chalk.white(c.max_amount)}`,
-        )
-        .join("")}
+      )
+      .join("")}
     └────────────────────────────────`),
   );
-  const tx = await config.provider.set_hyperstructure_config(
-    hyperstructureCalldata,
-  );
+  const tx = await config.provider.set_hyperstructure_config(hyperstructureCalldata);
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setSettlementConfig = async (config: Config) => {
@@ -1319,8 +1158,7 @@ export const setSettlementConfig = async (config: Config) => {
   ═══════════════════════════`),
   );
 
-  const { center, base_distance, subsequent_distance } =
-    config.config.settlement;
+  const { center, base_distance, subsequent_distance } = config.config.settlement;
 
   const calldata = {
     signer: config.account,
@@ -1341,11 +1179,7 @@ export const setSettlementConfig = async (config: Config) => {
 
   const tx = await config.provider.set_settlement_config(calldata);
 
-  console.log(
-    chalk.green(`\n    ✔ Configuration complete `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config) => {
@@ -1398,11 +1232,7 @@ export const createBanks = async (config: Config) => {
   }
 
   const tx = await config.provider.create_banks(calldata);
-  console.log(
-    chalk.green(`\n    ✔ Banks created successfully `) +
-    chalk.gray(tx.statusReceipt) +
-    "\n",
-  );
+  console.log(chalk.green(`\n    ✔ Banks created successfully `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const mintResources = async (config: Config) => {
@@ -1412,16 +1242,12 @@ export const mintResources = async (config: Config) => {
   ══════════════════════════`),
   );
 
-  const { ammStartingLiquidity, lordsLiquidityPerResource } =
-    config.config.banks;
+  const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
   const ammResourceIds = Object.keys(ammStartingLiquidity).map(Number);
   const totalResourceCount = ammResourceIds.length;
 
   // Mint LORDS
-  const lordsAmount =
-    config.config.resources.resourcePrecision *
-    lordsLiquidityPerResource *
-    totalResourceCount;
+  const lordsAmount = config.config.resources.resourcePrecision * lordsLiquidityPerResource * totalResourceCount;
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Minting LORDS")}
@@ -1472,14 +1298,12 @@ export const addLiquidity = async (config: Config) => {
   ══════════════════════════`),
   );
 
-  const { ammStartingLiquidity, lordsLiquidityPerResource } =
-    config.config.banks;
+  const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
   const calls = [];
 
   for (const [resourceId, amount] of Object.entries(ammStartingLiquidity)) {
     const resourceAmount = amount * config.config.resources.resourcePrecision;
-    const lordsAmount =
-      lordsLiquidityPerResource * config.config.resources.resourcePrecision;
+    const lordsAmount = lordsLiquidityPerResource * config.config.resources.resourcePrecision;
 
     const calldata = {
       resource_type: resourceId,
@@ -1505,15 +1329,9 @@ export const addLiquidity = async (config: Config) => {
       entity_id: ADMIN_BANK_ENTITY_ID,
       calls,
     });
-    console.log(
-      chalk.green(`\n    ✔ Liquidity added successfully `) +
-      chalk.gray(tx.statusReceipt) +
-      "\n",
-    );
+    console.log(chalk.green(`\n    ✔ Liquidity added successfully `) + chalk.gray(tx.statusReceipt) + "\n");
   } catch (e) {
-    console.log(
-      chalk.red(`\n    ✖ Failed to add liquidity: `) + chalk.gray(e) + "\n",
-    );
+    console.log(chalk.red(`\n    ✖ Failed to add liquidity: `) + chalk.gray(e) + "\n");
   }
 };
 
@@ -1540,8 +1358,6 @@ export const nodeReadConfig = async (chain: Chain) => {
     const config = JSON.parse(fs.readFileSync(path, "utf8"));
     return config.configuration as any; // as any to avoid type errors
   } catch (error) {
-    throw new Error(
-      `Failed to load configuration for chain ${chain}: ${error}`,
-    );
+    throw new Error(`Failed to load configuration for chain ${chain}: ${error}`);
   }
 };
