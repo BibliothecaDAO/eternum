@@ -190,15 +190,13 @@ export default class WorldmapScene extends HexagonScene {
         if (this.isNavigationViewOpen()) {
           this.closeNavigationViews();
         } else {
-          this.clearEntitySelection();
-          this.clearHexSelection();
+          this.clearSelection();
         }
       }
     });
 
     window.addEventListener("urlChanged", () => {
-      this.clearEntitySelection();
-      this.clearHexSelection();
+      this.clearSelection();
     });
   }
 
@@ -255,6 +253,12 @@ export default class WorldmapScene extends HexagonScene {
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
+  protected getHexagonEntity(hexCoords: HexPosition) {
+    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    return { army, structure };
+  }
+
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
@@ -263,8 +267,7 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
-    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const { army, structure } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
 
     const isMine = army?.owner === account || structure?.owner === account;
@@ -335,8 +338,7 @@ export default class WorldmapScene extends HexagonScene {
       this.state.updateEntityActionHoveredHex(null);
     }
     // clear after movement
-    this.clearEntitySelection();
-    this.clearHexSelection();
+    this.clearSelection();
   }
 
   private onArmyAttack(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -401,10 +403,11 @@ export default class WorldmapScene extends HexagonScene {
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
 
-  private clearHexSelection() {
-    console.log("clearHexSelection");
+  private clearSelection() {
+    console.log("clearSelection");
     this.selectedHexManager.resetPosition();
     this.state.setSelectedHex(null);
+    this.clearEntitySelection();
   }
 
   private clearEntitySelection() {
@@ -914,7 +917,6 @@ export default class WorldmapScene extends HexagonScene {
   updateVisibleChunks(force: boolean = false) {
     const cameraPosition = dummyVector;
     cameraPosition.copy(this.controls.target);
-    const { selectedEntityId } = this.state.entityActions;
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
     const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;

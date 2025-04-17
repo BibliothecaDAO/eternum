@@ -1,17 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
-import {
-  getArmy,
-  getEntityIdFromKeys,
-  getGuildFromPlayerAddress,
-  getRealmNameById,
-  getStructure,
-  isTileOccupierStructure,
-  ResourceManager,
-} from "@bibliothecadao/eternum";
+import { getArmy, getEntityIdFromKeys, getStructure, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ArmyInfo, ClientComponents, ContractAddress, Structure, TileOccupier } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, TileOccupier } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { memo, useMemo } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
@@ -46,10 +38,6 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
   const dojo = useDojo();
   const userAddress = ContractAddress(dojo.account.account.address);
 
-  const availableResources = useMemo(() => {
-    return new ResourceManager(dojo.setup.components, tile.occupier_id || 0).getResourceBalances();
-  }, [tile.occupier_id]);
-
   // Get entity info only if we have a valid tile with an occupier
   const entityInfo = useMemo(() => {
     const occupierId = tile.occupier_id || 0;
@@ -78,15 +66,11 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
   // Early return if no entity info
   if (!entityInfo) return null;
 
-  const playerGuild = getGuildFromPlayerAddress(ContractAddress(entityInfo.owner || 0n), dojo.setup.components);
-
   if (isTileOccupierStructure(tile.occupier_type)) {
-    const structure = entityInfo as Structure;
     return (
-      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min`}>
+      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood`}>
         <StructureEntityDetail
-          structure={structure}
-          playerGuild={playerGuild}
+          structureEntityId={tile.occupier_id}
           compact={true}
           showButtons={false}
           maxInventory={3}
@@ -94,22 +78,9 @@ const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponent
       </BaseThreeTooltip>
     );
   } else if (tile.occupier_type === TileOccupier.Explorer) {
-    const army = entityInfo as ArmyInfo;
-    const realmId = army.structure?.metadata.realm_id || 0;
-    const originRealmName = getRealmNameById(realmId);
-
     return (
-      <BaseThreeTooltip
-        position={Position.CLEAN}
-        className={`pointer-events-none w-min p-2 panel-wood ${army.isMine ? "bg-ally" : ""}`}
-      >
-        <ArmyEntityDetail
-          army={army}
-          playerGuild={playerGuild}
-          availableResources={availableResources}
-          originRealmName={originRealmName}
-          compact={true}
-        />
+      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood `}>
+        <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={true} />
       </BaseThreeTooltip>
     );
   }
