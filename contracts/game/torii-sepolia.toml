@@ -19,10 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-    "erc721:0x3990b4fcc6768cb85b157bb5f5494a37375e9106450d6abac361ae810be63ef",
-    "erc721:0x6b1969d9ae7c0f2299bcdf79bc84530d6f00a0524d2380f9dd5e3108a14d042",
+    "erc721:0x2ee35358ca0b5c98bbe399b7e9b3d60563ab95e18cc66a16e82fb6ea5619ba5",
+    "erc721:0x309bf5d591a5d20f85b401a580b0e7477e43d7a53611bf253aeaa14297e211f",
     "erc721:0x4359aee29873cd9603207d29b4140468bac3e042aa10daab2e1a8b2dd60ef7b", # DARK SHUFFLE
-    "erc20:0x498529e6b97cc378727cd91155fd5b616fcc873da3ee4cdc690e6ec67016bb8",
+    "erc20:0x725e06a90c99d4ce0c6b9f5ff31fb9b2ce88e4d23d4425a8410f2fba4503ab3",
 ]
 
 [erc]
