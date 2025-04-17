@@ -178,7 +178,7 @@ pub mod hyperstructure_systems {
             config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl},
             guild::{GuildMember},
             hyperstructure::{
-                ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl,
+                ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
                 HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerConstructionPoints,
                 PlayerRegisteredPoints,
             },
@@ -346,6 +346,11 @@ pub mod hyperstructure_systems {
             if new_total_resource_amount_contributed_by_all == needed_total_resource_amount_contributed_by_all {
                 hyperstructure.completed = true;
                 world.write_model(@hyperstructure);
+
+                // increase hyperstructure completed count
+                let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
+                hyperstructure_globals.completed_count += 1;
+                world.write_model(@hyperstructure_globals);
 
                 // make hyperstructure owner start receiving points
                 world
