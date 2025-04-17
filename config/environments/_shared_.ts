@@ -1,3 +1,4 @@
+import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
 import {
   CapacityConfig,
   RESOURCE_PRECISION,
@@ -5,7 +6,6 @@ import {
   ResourcesIds,
   type Config,
 } from "@bibliothecadao/types";
-import { NAMESPACE, getContractByName } from "@bibliothecadao/provider";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
@@ -184,10 +184,14 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const VILLAGE_CONTROLLER_ADDRESSES = ["0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"]; // set in indexer.sh
 
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
+  },
+  village: {
+    controller_addresses: VILLAGE_CONTROLLER_ADDRESSES,
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
