@@ -117,7 +117,9 @@ pub mod trade_systems {
             ] {
                 let village_coord = first_maker_structure.coord().neighbor_after_distance(direction, 2);
                 let mut tile: Tile = world.read_model((village_coord.x, village_coord.y));
-                all_structure_ids.append(tile.occupier_id);
+                if tile.occupier_id.is_non_zero() {
+                    all_structure_ids.append(tile.occupier_id);
+                }
             };
 
             for structure_id in all_structure_ids {
