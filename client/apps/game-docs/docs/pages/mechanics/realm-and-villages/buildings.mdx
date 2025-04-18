@@ -54,63 +54,24 @@ the Keep. This structure represents your seat of power and the central point of 
 functions such as Realm/Village upgrades and Labor production. This building cannot be destroyed and provides a baseline
 population capacity of 5.
 
+<BuildingCard
+  title="Labor Camp"
+  image="/images/buildings/construction/castleZero.png"
+  buildingType={25}
+  description={[
+    "Produces Labor resource",
+    "No population requirement",
+    "Available in both simple and standard building modes",
+  ]}
+/>
+
 ### Resource Buildings
 
 There is a specific resource building for each of the 22 resources in the game, so Lords will require separate resource
 buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
 have the same requirements in simple and standard mode.
 
-[resource building table, including population cost]
-
-### Economic Buildings
-
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
-
-[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
-increase (Storehouse)]
-
-### Military Buildings
-
-Your military buildings are essential for training up armies to defend your territories and project your might. There
-are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
-such, there are a total of 9 military buildings in the game.
-
-Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
-available for construction in standard mode.
-
-### Building Cards
-
-#### Economic Buildings
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-<BuildingCard 
-  title="Worker's Hut" 
-  image="/images/buildings/construction/workers_hut.png" 
-  buildingType={1} 
-  description={[
-    "Increases population capacity by 5",
-    "Required to construct and sustain production buildings",
-    "Available in both simple and standard building modes"
-  ]}
-/>
-
-<BuildingCard 
-  title="Storehouse" 
-  image="/images/buildings/construction/storehouse.png" 
-  buildingType={2} 
-  description={[
-    "Increases storage capacity for resources",
-    "Requires 2 population to operate",
-    "Available in both simple and standard building modes"
-  ]}
-/>
-</div>
-
-#### Resource Buildings
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BuildingCard 
   title="Stone Quarry" 
   image="/images/buildings/construction/mine.png" 
@@ -352,52 +313,59 @@ available for construction in standard mode.
     "Same construction cost in both simple and standard modes",
   ]}
 />
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, population
+capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+varying costs and population requirements:
+
+[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
+increase (Storehouse)]
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+<BuildingCard 
+  title="Worker's Hut" 
+  image="/images/buildings/construction/workers_hut.png" 
+  buildingType={1} 
+  description={[
+    "Increases population capacity by 5",
+    "Required to construct and sustain production buildings",
+    "Available in both simple and standard building modes"
+  ]}
+/>
 
 <BuildingCard
-  title="Labor Camp"
-  image="/images/buildings/construction/castleZero.png"
-  buildingType={25}
+  title="Storehouse"
+  image="/images/buildings/construction/storehouse.png"
+  buildingType={2}
   description={[
-    "Produces Labor resource",
-    "No population requirement",
+    "Increases storage capacity for resources",
+    "Requires 2 population to operate",
     "Available in both simple and standard building modes",
   ]}
 />
 
 <BuildingCard
-  title="Ancient Fragment Excavator"
-  image=""
-  buildingType={26}
-  description={[
-    "Produces Ancient Fragment resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard 
-  title="Donkey Stable" 
-  image="/images/buildings/construction/market.png" 
-  buildingType={27} 
+  title="Donkey Stable"
+  image="/images/buildings/construction/market.png"
+  buildingType={27}
   description={[
     "Produces Donkeys for transportation",
     "Requires 3 population to operate",
-    "Available in both simple and standard building modes"
+    "Available in both simple and standard building modes",
   ]}
 />
-</div>
 
-#### Food Production Buildings
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-<BuildingCard 
-  title="Farm" 
-  image="/images/buildings/construction/farm.png" 
-  buildingType={37} 
+<BuildingCard
+  title="Farm"
+  image="/images/buildings/construction/farm.png"
+  buildingType={37}
   description={[
     "Produces Wheat (food) resource",
     "Requires 1 population to operate",
-    "Same construction cost in both simple and standard modes"
+    "Same construction cost in both simple and standard modes",
   ]}
 />
 
@@ -413,9 +381,16 @@ available for construction in standard mode.
 />
 </div>
 
-#### Military Buildings
+### Military Buildings
 
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
+available for construction in standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BuildingCard 
   title="Knight Barracks (T1)" 
   image="/images/buildings/construction/barracks.png" 

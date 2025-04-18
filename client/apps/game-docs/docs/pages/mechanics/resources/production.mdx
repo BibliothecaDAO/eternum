@@ -1,4 +1,4 @@
-import ResourceTable from "@/components/ResourceTable";
+import { SimpleResourceProduction, StandardResourceProduction, LaborProduction } from "@/components/ResourceProduction";
 
 ## Production
 
@@ -8,7 +8,7 @@ As for building construction, Lords can choose between standard and simple produ
 wish to produce their materials. This can be done by selecting the appropriate panel when making an order in the
 production screen.
 
-[screenshot]
+![Simple Mode Production](/gifs/simple-mode.gif)
 
 Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
 unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
@@ -42,8 +42,9 @@ two other resources (standard mode), or labor (simple mode). Resources are also 
 construction, troop production and Hyperstructure contributions - so mastery of these assets is key to success and
 security.
 
-[big resource table with a column each for standard and simple mode - fix order and include Realm & Village production
-rates]
+<SimpleResourceProduction />
+
+<StandardResourceProduction />
 
 #### Labor
 
@@ -55,7 +56,7 @@ Labor is produced by permanently burning resources in the central structure of a
 stream of Labor at a fixed rate. Each of the 22 resources can be burned to produce Labor at varying efficiency,
 dependent on rarity. The amount of resources burned per second to produce Labor at the fixed rate is as follows:
 
-[resource -> labor table - this needs to be divided into a Realm and Village column with input and output for each]
+<LaborProduction />
 
 #### Troops
 
