@@ -1,6 +1,6 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { findResourceById } from "@/utils/resources";
-import { RealmLevels } from "@/utils/types";
+import { RealmLevels } from "@bibliothecadao/types";
 import { formatAmount } from "../utils/formatting";
 import ResourceIcon from "./ResourceIcon";
 
@@ -10,17 +10,18 @@ type Props = {
 };
 
 export default function RealmUpgradeCosts({ level, description }: Props) {
-  const costs = ETERNUM_CONFIG().realmUpgradeCosts[level];
+  const config = ETERNUM_CONFIG();
+  const realmUpgradeCosts = config.realmUpgradeCosts[level];
 
   return (
     <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
       <h4 className="text-lg font-bold mb-4">{description}</h4>
-      {costs.length > 0 ? (
+      {realmUpgradeCosts.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {costs.map((cost) => {
+          {realmUpgradeCosts.map((cost) => {
             const resource = findResourceById(cost.resource);
             return (
-              <div key={cost.resource} className="flex items-center gap-2  rounded-md ">
+              <div key={cost.resource} className="flex items-center gap-2 rounded-md">
                 <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
                 <div className="flex flex-col">
                   <span className="font-medium">{resource?.trait}</span>

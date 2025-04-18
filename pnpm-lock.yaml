@@ -544,6 +544,9 @@ importers:
 
   client/apps/game-docs:
     dependencies:
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../../packages/types
       vocs:
         specifier: v1.0.0-alpha.57
         version: 1.0.0-alpha.57(@types/node@20.17.30)(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(acorn@8.14.1)(lightningcss@1.29.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.40.0)(terser@5.39.0)(typescript@5.8.3)

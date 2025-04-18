@@ -1,7 +1,22 @@
-import { ResourcesIds } from "@/utils/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 
 const RESOURCE_RARITIES = [
+  {
+    rarity: "Food",
+    resources: [
+      { name: "Wheat", id: ResourcesIds.Wheat },
+      { name: "Fish", id: ResourcesIds.Fish },
+    ],
+  },
+  {
+    rarity: "Special",
+    resources: [
+      { name: "Ancient Fragment", id: ResourcesIds.AncientFragment },
+      { name: "Labor", id: ResourcesIds.Labor },
+      { name: "Lords", id: ResourcesIds.Lords },
+    ],
+  },
   {
     rarity: "Common (Widely Available)",
     resources: [
@@ -47,6 +62,21 @@ const RESOURCE_RARITIES = [
       { name: "Adamantine", id: ResourcesIds.Adamantine },
       { name: "Mithral", id: ResourcesIds.Mithral },
       { name: "Dragonhide", id: ResourcesIds.Dragonhide },
+    ],
+  },
+  {
+    rarity: "Units & Transport",
+    resources: [
+      { name: "Donkey", id: ResourcesIds.Donkey },
+      { name: "Knight", id: ResourcesIds.Knight },
+      { name: "Knight T2", id: ResourcesIds.KnightT2 },
+      { name: "Knight T3", id: ResourcesIds.KnightT3 },
+      { name: "Crossbowman", id: ResourcesIds.Crossbowman },
+      { name: "Crossbowman T2", id: ResourcesIds.CrossbowmanT2 },
+      { name: "Crossbowman T3", id: ResourcesIds.CrossbowmanT3 },
+      { name: "Paladin", id: ResourcesIds.Paladin },
+      { name: "Paladin T2", id: ResourcesIds.PaladinT2 },
+      { name: "Paladin T3", id: ResourcesIds.PaladinT3 },
     ],
   },
 ];

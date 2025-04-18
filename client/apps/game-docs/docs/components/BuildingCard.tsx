@@ -1,5 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { BuildingType } from "@/utils/types";
+import { BuildingType } from "@bibliothecadao/types";
 import BuildingCosts from "./BuildingCosts";
 
 interface ImageType {
