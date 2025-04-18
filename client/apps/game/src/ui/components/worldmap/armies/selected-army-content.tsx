@@ -1,9 +1,17 @@
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ArmyInfo } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { ArmyChip } from "../../military/army-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "./army-warning";
 
 export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(playerArmy.owner)]));
+
   return (
     <div
       className={`
@@ -15,13 +23,15 @@ export const SelectedArmyContent = ({ playerArmy }: { playerArmy: ArmyInfo }) =>
       `}
     >
       <div className="flex flex-col w-[27rem]">
-        <ArmyWarning army={playerArmy} />
+        {resources && <ArmyWarning army={playerArmy.explorer} resource={resources} />}
         <ArmyChip className="bg-black/90" army={playerArmy} showButtons={false} />
-        <InventoryResources
-          entityId={playerArmy.entityId}
-          className="flex gap-1 mt-2 overflow-x-auto no-scrollbar"
-          resourcesIconSize="xs"
-        />
+        {resources && (
+          <InventoryResources
+            resources={resources}
+            className="flex gap-1 mt-2 overflow-x-auto no-scrollbar"
+            resourcesIconSize="xs"
+          />
+        )}
       </div>
     </div>
   );

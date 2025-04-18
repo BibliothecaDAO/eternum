@@ -4,20 +4,8 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
-import {
-  Biome,
-  configManager,
-  getTroopName,
-} from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  ContractAddress,
-  HexEntityInfo,
-  ID,
-  orders,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
+import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { TROOP_TO_MODEL } from "../constants/army.constants";
@@ -94,6 +82,7 @@ export class ArmyManager {
               1,
               TroopType.Paladin,
               TroopTier.T1,
+              false,
             );
           },
         },
@@ -170,7 +159,7 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier);
+      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent);
     }
     return false;
   }
@@ -281,6 +270,7 @@ export class ArmyManager {
         order: army.order,
         category: army.category,
         tier: army.tier,
+        isDaydreamsAgent: army.isDaydreamsAgent,
       }));
 
     return visibleArmies;
@@ -293,6 +283,7 @@ export class ArmyManager {
     order: number,
     category: TroopType,
     tier: TroopTier,
+    isDaydreamsAgent: boolean,
   ) {
     if (this.armies.has(entityId)) return;
 
@@ -312,6 +303,7 @@ export class ArmyManager {
       order: orderData?.orderName || "",
       category,
       tier,
+      isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
   }
@@ -408,9 +400,8 @@ export class ArmyManager {
       e.stopPropagation();
     });
 
-    const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
-    img.src = isDaydreamsAgent
+    img.src = army.isDaydreamsAgent
       ? "/images/logos/daydreams.png"
       : `/images/labels/${army.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
@@ -439,7 +430,7 @@ export class ArmyManager {
 
     const line1 = document.createElement("span");
     line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
-    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
+    line1.style.color = army.isDaydreamsAgent ? "inherit" : army.color;
     const line2 = document.createElement("strong");
     line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 

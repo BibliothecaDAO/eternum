@@ -1,10 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position as PositionInterface } from "@/types/position";
 import { BaseThreeTooltip, Position } from "@/ui/elements/base-three-tooltip";
-import { getArmy, getEntityIdFromKeys, getStructure, isTileOccupierStructure } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys, isTileOccupierStructure } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, TileOccupier } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { memo, useMemo } from "react";
 import { ArmyEntityDetail } from "./army-entity-detail";
 import { StructureEntityDetail } from "./structure-entity-detail";
@@ -27,65 +26,30 @@ export const EntityInfoLabel = memo(() => {
     );
   }, [hoveredHex?.col, hoveredHex?.row]);
 
+  const isStructure = useMemo(() => {
+    return isTileOccupierStructure(tile?.occupier_type || 0);
+  }, [tile]);
+
   if (!tile?.occupier_id) {
     return null;
   }
 
-  return <EntityInfoContent tile={tile} />;
-});
+  console.log({ isStructure });
 
-const EntityInfoContent = memo(({ tile }: { tile: ComponentValue<ClientComponents["Tile"]["schema"]> }) => {
-  const dojo = useDojo();
-  const userAddress = ContractAddress(dojo.account.account.address);
-
-  // Get entity info only if we have a valid tile with an occupier
-  const entityInfo = useMemo(() => {
-    const occupierId = tile.occupier_id || 0;
-
-    // Structure types
-    const isStructure = [
-      TileOccupier.RealmRegular,
-      TileOccupier.RealmWonder,
-      TileOccupier.Hyperstructure,
-      TileOccupier.FragmentMine,
-      TileOccupier.Village,
-      TileOccupier.Bank,
-    ].includes(tile.occupier_type);
-
-    if (isStructure) {
-      return getStructure(occupierId, userAddress, dojo.setup.components);
-    }
-
-    if (tile.occupier_type === TileOccupier.Explorer) {
-      return getArmy(occupierId, userAddress, dojo.setup.components);
-    }
-
-    return null;
-  }, [tile]);
-
-  // Early return if no entity info
-  if (!entityInfo) return null;
-
-  if (isTileOccupierStructure(tile.occupier_type)) {
-    return (
-      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood`}>
+  return (
+    <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood`}>
+      {isStructure ? (
         <StructureEntityDetail
           structureEntityId={tile.occupier_id}
           compact={true}
           showButtons={false}
           maxInventory={3}
         />
-      </BaseThreeTooltip>
-    );
-  } else if (tile.occupier_type === TileOccupier.Explorer) {
-    return (
-      <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood `}>
+      ) : (
         <ArmyEntityDetail armyEntityId={tile.occupier_id} compact={true} />
-      </BaseThreeTooltip>
-    );
-  }
-
-  return null;
+      )}
+    </BaseThreeTooltip>
+  );
 });
 
 EntityInfoLabel.displayName = "EntityInfoLabel";

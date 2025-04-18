@@ -40,6 +40,7 @@ export interface ArmyData {
   color: string;
   category: TroopType;
   tier: TroopTier;
+  isDaydreamsAgent: boolean;
 }
 
 export interface RenderChunkSize {

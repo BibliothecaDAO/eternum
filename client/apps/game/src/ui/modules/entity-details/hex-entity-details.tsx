@@ -35,6 +35,10 @@ export const HexEntityDetails = () => {
     return tile?.occupier_id !== 0;
   }, [tile]);
 
+  const isStructure = useMemo(() => {
+    return isTileOccupierStructure(tile?.occupier_type || 0);
+  }, [tile]);
+
   return (
     <div className="h-full overflow-auto">
       <div className={`${hasOccupier ? "h-50" : "h-full"}`}>
@@ -42,7 +46,7 @@ export const HexEntityDetails = () => {
       </div>
       {hasOccupier && tile && (
         <div className="p-4">
-          {isTileOccupierStructure(tile.occupier_type) ? (
+          {isStructure ? (
             <StructureEntityDetail
               structureEntityId={tile.occupier_id}
               compact={false}
