@@ -41,11 +41,17 @@ pub struct WorldConfig {
     pub agent_controller_config: AgentControllerConfig,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
+    pub village_controller_config: VillageControllerConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct AgentControllerConfig {
     pub address: ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct VillageControllerConfig {
+    pub addresses: Span<ContractAddress>,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
