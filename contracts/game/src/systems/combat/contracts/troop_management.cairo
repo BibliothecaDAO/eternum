@@ -226,7 +226,7 @@ pub mod troop_management_systems {
             iExplorerImpl::create(
                 ref world,
                 ref tile,
-                world.dispatcher.uuid(),
+                explorer_id,
                 for_structure_id,
                 category,
                 tier,

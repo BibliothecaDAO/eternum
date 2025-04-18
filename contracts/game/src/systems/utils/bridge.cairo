@@ -202,15 +202,17 @@ pub impl iBridgeImpl of iBridgeTrait {
 
     fn inefficiency_percentage(ref world: WorldStorage, resource_type: u8) -> (u32, u32) {
         if resource_type == ResourceTypes::LORDS {
-            return (100, 100);
+            return (100 - 100, 100);
         }
 
         let hyperstructures_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         let hyperstructures_completed: u32 = hyperstructures_globals.completed_count;
         let troop_inefficiencies: Array<(u32, u32)> = array![
-            (0, 100), (25, 100), (50, 100), (70, 100), (85, 100), (95, 100),
+            (100 - 0, 100), (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100),
         ];
-        let non_troop_inefficiencies = array![(25, 100), (50, 100), (70, 100), (85, 100), (95, 100), (95, 100)];
+        let non_troop_inefficiencies = array![
+            (100 - 25, 100), (100 - 50, 100), (100 - 70, 100), (100 - 85, 100), (100 - 95, 100), (100 - 95, 100),
+        ];
         assert!(
             troop_inefficiencies.len() == non_troop_inefficiencies.len(),
             "Bridge: troop inefficiencies must be equal to non-troop inefficiencies",
