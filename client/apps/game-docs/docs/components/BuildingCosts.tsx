@@ -1,5 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
 
@@ -10,36 +10,6 @@ type Props = {
 // Helper function to format numbers with commas
 const formatAmount = (amount: number): string => {
   return new Intl.NumberFormat().format(Math.round(amount));
-};
-
-// Map resource IDs to their names
-const resourceNames: Record<number, string> = {
-  [ResourcesIds.Stone]: "Stone",
-  [ResourcesIds.Coal]: "Coal",
-  [ResourcesIds.Wood]: "Wood",
-  [ResourcesIds.Copper]: "Copper",
-  [ResourcesIds.Ironwood]: "Ironwood",
-  [ResourcesIds.Obsidian]: "Obsidian",
-  [ResourcesIds.Gold]: "Gold",
-  [ResourcesIds.Silver]: "Silver",
-  [ResourcesIds.Mithral]: "Mithral",
-  [ResourcesIds.AlchemicalSilver]: "Alchemical Silver",
-  [ResourcesIds.ColdIron]: "Cold Iron",
-  [ResourcesIds.DeepCrystal]: "Deep Crystal",
-  [ResourcesIds.Ruby]: "Ruby",
-  [ResourcesIds.Diamonds]: "Diamonds",
-  [ResourcesIds.Hartwood]: "Hartwood",
-  [ResourcesIds.Ignium]: "Ignium",
-  [ResourcesIds.TwilightQuartz]: "Twilight Quartz",
-  [ResourcesIds.TrueIce]: "True Ice",
-  [ResourcesIds.Adamantine]: "Adamantine",
-  [ResourcesIds.Sapphire]: "Sapphire",
-  [ResourcesIds.EtherealSilica]: "Ethereal Silica",
-  [ResourcesIds.Dragonhide]: "Dragonhide",
-  [ResourcesIds.Labor]: "Labor",
-  [ResourcesIds.AncientFragment]: "Ancient Fragment",
-  [ResourcesIds.Wheat]: "Wheat",
-  [ResourcesIds.Fish]: "Fish",
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
@@ -68,9 +38,15 @@ export default function BuildingCosts({ buildingType }: Props) {
         <div className="flex flex-row items-center gap-3">
           {costs.map((cost) => (
             <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
-              <ResourceIcon id={cost.resource} name={resourceNames[cost.resource]} size="xs" />
+              <ResourceIcon
+                id={cost.resource}
+                name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                size="xs"
+              />
               <div className="flex flex-col">
-                <span className="font-medium text-sm">{resourceNames[cost.resource]}</span>
+                <span className="font-medium text-sm">
+                  {resources.find((r) => r.id === cost.resource)?.trait || ""}
+                </span>
                 <span className="font-semibold">{formatAmount(cost.amount)}</span>
               </div>
             </div>
@@ -104,9 +80,15 @@ export default function BuildingCosts({ buildingType }: Props) {
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {complexCosts.map((cost) => (
               <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
-                <ResourceIcon id={cost.resource} name={resourceNames[cost.resource]} size="xs" />
+                <ResourceIcon
+                  id={cost.resource}
+                  name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                  size="xs"
+                />
                 <div className="flex flex-col">
-                  <span className="font-medium text-sm">{resourceNames[cost.resource]}</span>
+                  <span className="font-medium text-sm">
+                    {resources.find((r) => r.id === cost.resource)?.trait || ""}
+                  </span>
                   <span className="font-semibold">{formatAmount(cost.amount)}</span>
                 </div>
               </div>
@@ -141,9 +123,15 @@ export default function BuildingCosts({ buildingType }: Props) {
             <div className="grid grid-cols-1 gap-2">
               {simpleCosts.map((cost) => (
                 <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
-                  <ResourceIcon id={cost.resource} name={resourceNames[cost.resource]} size="xs" />
+                  <ResourceIcon
+                    id={cost.resource}
+                    name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                    size="xs"
+                  />
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm">{resourceNames[cost.resource]}</span>
+                    <span className="font-medium text-sm">
+                      {resources.find((r) => r.id === cost.resource)?.trait || ""}
+                    </span>
                     <span className="font-semibold">{formatAmount(cost.amount)}</span>
                   </div>
                 </div>
@@ -155,9 +143,15 @@ export default function BuildingCosts({ buildingType }: Props) {
             <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
               {complexCosts.map((cost) => (
                 <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
-                  <ResourceIcon id={cost.resource} name={resourceNames[cost.resource]} size="xs" />
+                  <ResourceIcon
+                    id={cost.resource}
+                    name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                    size="xs"
+                  />
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm">{resourceNames[cost.resource]}</span>
+                    <span className="font-medium text-sm">
+                      {resources.find((r) => r.id === cost.resource)?.trait || ""}
+                    </span>
                     <span className="font-semibold">{formatAmount(cost.amount)}</span>
                   </div>
                 </div>
