@@ -1,16 +1,11 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
-import { findResourceById } from "@/utils/resources";
 import { ResourcesIds } from "@/utils/types";
-import { formatAmount, formatNumberWithSpaces } from "../utils/formatting";
-import ResourceIcon from "./ResourceIcon";
-
-const eternumConfig = ETERNUM_CONFIG();
 
 export default function TroopsTable() {
   const troops = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
+
   return (
     <div className="my-4 p-4">
-      <div className="font-bold mb-6 text-xl">Military Units</div>
+      {/* <div className="font-bold mb-6 text-xl">Military Units</div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {troops.map((troopId) => {
           const resource = findResourceById(troopId);
@@ -77,7 +72,7 @@ export default function TroopsTable() {
             </div>
           );
         })}
-      </div>
+      </div> */}
     </div>
   );
 }

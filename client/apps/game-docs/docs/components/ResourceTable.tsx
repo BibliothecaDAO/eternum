@@ -1,39 +1,34 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { RESOURCE_PRECISION } from "@/utils/constants";
-import { findResourceById } from "@/utils/resources";
-import { ResourcesIds } from "@/utils/types";
-import { useMemo } from "react";
-import ResourceIcon from "./ResourceIcon";
 
 const eternumConfig = ETERNUM_CONFIG();
 
 export default function ResourceTable() {
-  const resourceTable = useMemo(() => {
-    const resources = [];
-    for (const resourceId of Object.keys(
-      eternumConfig.resources.productionByComplexRecipe,
-    ) as unknown as ResourcesIds[]) {
-      if (resourceId === ResourcesIds.Lords) continue;
-      const calldata = {
-        resource: findResourceById(Number(resourceId)),
-        amount: eternumConfig.resources.productionByComplexRecipe[resourceId],
-        resource_type: resourceId,
-        cost: eternumConfig.resources.productionByComplexRecipe[resourceId].map((cost: any) => ({
-          ...cost,
-          amount: cost.amount * RESOURCE_PRECISION,
-          name: findResourceById(cost.resource)?.trait || "",
-        })),
-      };
+  // const resourceTable = useMemo(() => {
+  //   const resources = [];
+  //   for (const resourceId of Object.keys(
+  //     eternumConfig.resources.productionByComplexRecipe,
+  //   ) as unknown as ResourcesIds[]) {
+  //     if (resourceId === ResourcesIds.Lords) continue;
+  //     const calldata = {
+  //       resource: findResourceById(Number(resourceId)),
+  //       amount: eternumConfig.resources.productionByComplexRecipe[resourceId],
+  //       resource_type: resourceId,
+  //       cost: eternumConfig.resources.productionByComplexRecipe[resourceId].map((cost: any) => ({
+  //         ...cost,
+  //         amount: cost.amount * RESOURCE_PRECISION,
+  //         name: findResourceById(cost.resource)?.trait || "",
+  //       })),
+  //     };
 
-      resources.push(calldata);
-    }
+  //     resources.push(calldata);
+  //   }
 
-    return resources;
-  }, []);
+  //   return resources;
+  // }, []);
 
   return (
     <div className="px-6 pt-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
-      <table className="w-full border-separate border-gray-700 border-spacing-y-5">
+      {/* <table className="w-full border-separate border-gray-700 border-spacing-y-5">
         <thead>
           <tr>
             <th className="border-b border-gray-500 text-left">Resource</th>
@@ -73,7 +68,7 @@ export default function ResourceTable() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table> */}
     </div>
   );
 }
