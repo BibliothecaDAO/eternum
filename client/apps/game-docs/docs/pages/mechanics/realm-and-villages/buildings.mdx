@@ -42,8 +42,8 @@ Most buildings can be constructed in either simple or standard mode, which toggl
 Population is the total population utilised by the currently constructed production buildings on a Realm or Village,
 while the population capacity is the maximum available population with which to construct production buildings. Worker
 Huts can be built to increase population capacity, while all other buildings require population capacity to be available
-in order to be constructed. Lords must balance their construction to ensure there is enough population capacity
-available to construct their desired production buildings.
+in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
+construct their desired production buildings.
 
 ## Building Types
 
@@ -84,38 +84,41 @@ available for construction in standard mode.
 
 #### Economic Buildings
 
-<BuildingCard
-  title="Worker's Hut"
-  image="/images/buildings/construction/workers_hut.png"
-  buildingType={1}
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+<BuildingCard 
+  title="Worker's Hut" 
+  image="/images/buildings/construction/workers_hut.png" 
+  buildingType={1} 
   description={[
     "Increases population capacity by 5",
     "Required to construct and sustain production buildings",
-    "Available in both simple and standard building modes",
+    "Available in both simple and standard building modes"
   ]}
 />
 
-<BuildingCard
-  title="Storehouse"
-  image="/images/buildings/construction/storehouse.png"
-  buildingType={2}
+<BuildingCard 
+  title="Storehouse" 
+  image="/images/buildings/construction/storehouse.png" 
+  buildingType={2} 
   description={[
     "Increases storage capacity for resources",
     "Requires 2 population to operate",
-    "Available in both simple and standard building modes",
+    "Available in both simple and standard building modes"
   ]}
 />
+</div>
 
 #### Resource Buildings
 
-<BuildingCard
-  title="Stone Quarry"
-  image="/images/buildings/construction/mine.png"
-  buildingType={3}
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+<BuildingCard 
+  title="Stone Quarry" 
+  image="/images/buildings/construction/mine.png" 
+  buildingType={3} 
   description={[
     "Produces Stone resource",
     "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
+    "Same construction cost in both simple and standard modes"
   ]}
 />
 
@@ -372,51 +375,55 @@ available for construction in standard mode.
   ]}
 />
 
-<BuildingCard
-  title="Donkey Stable"
-  image="/images/buildings/construction/market.png"
-  buildingType={27}
+<BuildingCard 
+  title="Donkey Stable" 
+  image="/images/buildings/construction/market.png" 
+  buildingType={27} 
   description={[
     "Produces Donkeys for transportation",
     "Requires 3 population to operate",
-    "Available in both simple and standard building modes",
+    "Available in both simple and standard building modes"
   ]}
 />
+</div>
 
 #### Food Production Buildings
 
-<BuildingCard
-  title="Farm"
-  image="/images/buildings/construction/farm.png"
-  buildingType={37}
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+<BuildingCard 
+  title="Farm" 
+  image="/images/buildings/construction/farm.png" 
+  buildingType={37} 
   description={[
     "Produces Wheat (food) resource",
     "Requires 1 population to operate",
-    "Same construction cost in both simple and standard modes",
+    "Same construction cost in both simple and standard modes"
   ]}
 />
 
-<BuildingCard
-  title="Fishing Village"
-  image="/images/buildings/construction/fishing_village.png"
-  buildingType={38}
+<BuildingCard 
+  title="Fishing Village" 
+  image="/images/buildings/construction/fishing_village.png" 
+  buildingType={38} 
   description={[
     "Produces Fish (food) resource",
     "Requires 1 population to operate",
-    "Same construction cost in both simple and standard modes",
+    "Same construction cost in both simple and standard modes"
   ]}
 />
+</div>
 
 #### Military Buildings
 
-<BuildingCard
-  title="Knight Barracks (T1)"
-  image="/images/buildings/construction/barracks.png"
-  buildingType={28}
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+<BuildingCard 
+  title="Knight Barracks (T1)" 
+  image="/images/buildings/construction/barracks.png" 
+  buildingType={28} 
   description={[
     "Produces T1 Knight units",
     "Requires 3 population to operate",
-    "Available in both simple and standard building modes",
+    "Available in both simple and standard building modes"
   ]}
 />
 
@@ -497,13 +504,14 @@ available for construction in standard mode.
   ]}
 />
 
-<BuildingCard
-  title="Paladin Sanctum (T3)"
-  image="/images/buildings/construction/stable.png"
-  buildingType={36}
+<BuildingCard 
+  title="Paladin Sanctum (T3)" 
+  image="/images/buildings/construction/stable.png" 
+  buildingType={36} 
   description={[
     "Produces T3 Paladin units",
     "Requires 3 population to operate",
-    "Only available in standard building mode",
+    "Only available in standard building mode"
   ]}
 />
+</div>

@@ -14,6 +14,7 @@ const formatAmount = (amount: number): string => {
 
 export default function BuildingCosts({ buildingType }: Props) {
   const [activeMode, setActiveMode] = useState<"simple" | "complex">("simple");
+  console.log({ activeMode });
 
   const config = ETERNUM_CONFIG();
 
@@ -27,34 +28,99 @@ export default function BuildingCosts({ buildingType }: Props) {
     buildingType === BuildingType.ResourceWheat ||
     buildingType === BuildingType.ResourceFish;
 
+  // Shared styles
+  const containerStyle = {
+    margin: "1rem 0",
+    padding: "1rem",
+    backgroundColor: "rgba(30, 25, 20, 0.8)",
+    borderRadius: "0.5rem",
+    border: "1px solid #6d4923",
+  };
+
+  const titleStyle = {
+    fontWeight: "bold",
+    marginBottom: "0.75rem",
+    fontSize: "1.125rem",
+    color: "#f6c297",
+  };
+
+  const costItemStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    padding: "0.5rem 0.75rem",
+    backgroundColor: "rgba(40, 30, 25, 0.9)",
+    borderRadius: "0.375rem",
+    border: "1px solid #5a3a1a",
+  };
+
+  const costGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: "0.5rem",
+  };
+
+  const costSingleColumnStyle = {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "0.5rem",
+  };
+
+  const buttonBaseStyle = {
+    padding: "0.5rem 1rem",
+    borderRadius: "0.375rem",
+    border: "1px solid",
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3)",
+    transition: "all 0.2s ease",
+    cursor: "pointer",
+  };
+
+  const activeButtonStyle = {
+    ...buttonBaseStyle,
+    backgroundColor: "#8b5a2b",
+    borderColor: "#c69c6d",
+    color: "white",
+  };
+
+  const inactiveButtonStyle = {
+    ...buttonBaseStyle,
+    backgroundColor: "#2a2018",
+    borderColor: "#3a2a20",
+    color: "#d0d0d0",
+  };
+
+  const noteStyle = {
+    marginTop: "0.75rem",
+    fontSize: "0.875rem",
+    color: "#a0a0a0",
+  };
+
   // Resource buildings have the same cost in both modes
   if (isResourceBuilding) {
     // Get costs directly from config
     const costs = config.buildings.complexBuildingCosts[buildingType] || [];
 
     return (
-      <div className="my-4 p-4 bg-gray-900 rounded-lg">
-        <div className="font-bold mb-3 text-lg">Building Costs</div>
-        <div className="flex flex-row items-center gap-3">
+      <div style={containerStyle}>
+        <div style={titleStyle}>Building Costs</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
           {costs.map((cost) => (
-            <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
+            <div key={cost.resource} style={costItemStyle}>
               <ResourceIcon
                 id={cost.resource}
                 name={resources.find((r) => r.id === cost.resource)?.trait || ""}
                 size="xs"
               />
-              <div className="flex flex-col">
-                <span className="font-medium text-sm">
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontWeight: "500", fontSize: "0.875rem" }}>
                   {resources.find((r) => r.id === cost.resource)?.trait || ""}
                 </span>
-                <span className="font-semibold">{formatAmount(cost.amount)}</span>
+                <span style={{ fontWeight: "600" }}>{formatAmount(cost.amount)}</span>
               </div>
             </div>
           ))}
         </div>
-        <div className="mt-3 text-sm text-gray-400">
-          Note: Resource buildings have the same cost in both Simple and Complex modes.
-        </div>
+        <div style={noteStyle}>Note: Resource buildings have the same cost in both Simple and Complex modes.</div>
       </div>
     );
   }
@@ -71,48 +137,42 @@ export default function BuildingCosts({ buildingType }: Props) {
   if (simpleCosts.length === 0 && complexCosts.length === 0) return null;
 
   return (
-    <div className="my-4 p-4 bg-gray-900 rounded-lg">
-      <div className="font-bold mb-3 text-lg">Building Costs</div>
+    <div style={containerStyle}>
+      <div style={titleStyle}>Building Costs</div>
 
       {isComplexOnly ? (
         <div>
-          <div className="mb-2 text-amber-400 font-medium">Complex Mode Only</div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+          <div style={{ marginBottom: "0.5rem", color: "#f0b060", fontWeight: "500" }}>Complex Mode Only</div>
+          <div style={costGridStyle}>
             {complexCosts.map((cost) => (
-              <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
+              <div key={cost.resource} style={costItemStyle}>
                 <ResourceIcon
                   id={cost.resource}
                   name={resources.find((r) => r.id === cost.resource)?.trait || ""}
                   size="xs"
                 />
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontWeight: "500", fontSize: "0.875rem" }}>
                     {resources.find((r) => r.id === cost.resource)?.trait || ""}
                   </span>
-                  <span className="font-semibold">{formatAmount(cost.amount)}</span>
+                  <span style={{ fontWeight: "600" }}>{formatAmount(cost.amount)}</span>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-3 text-sm text-gray-400">
-            Note: T2 and T3 military buildings can only be constructed in Complex mode.
-          </div>
+          <div style={noteStyle}>Note: T2 and T3 military buildings can only be constructed in Complex mode.</div>
         </div>
       ) : (
         <div>
-          <div className="flex space-x-2 mb-4">
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <button
-              className={`px-4 py-2 rounded-md ${
-                activeMode === "simple" ? "bg-amber-700 text-white" : "bg-gray-800 text-gray-300"
-              }`}
+              style={activeMode === "simple" ? activeButtonStyle : inactiveButtonStyle}
               onClick={() => setActiveMode("simple")}
             >
               Simple (Labor)
             </button>
             <button
-              className={`px-4 py-2 rounded-md ${
-                activeMode === "complex" ? "bg-amber-700 text-white" : "bg-gray-800 text-gray-300"
-              }`}
+              style={activeMode === "complex" ? activeButtonStyle : inactiveButtonStyle}
               onClick={() => setActiveMode("complex")}
             >
               Complex (Raw Resources)
@@ -120,19 +180,19 @@ export default function BuildingCosts({ buildingType }: Props) {
           </div>
 
           {activeMode === "simple" && (
-            <div className="grid grid-cols-1 gap-2">
+            <div style={costSingleColumnStyle}>
               {simpleCosts.map((cost) => (
-                <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
+                <div key={cost.resource} style={costItemStyle}>
                   <ResourceIcon
                     id={cost.resource}
                     name={resources.find((r) => r.id === cost.resource)?.trait || ""}
                     size="xs"
                   />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontWeight: "500", fontSize: "0.875rem" }}>
                       {resources.find((r) => r.id === cost.resource)?.trait || ""}
                     </span>
-                    <span className="font-semibold">{formatAmount(cost.amount)}</span>
+                    <span style={{ fontWeight: "600" }}>{formatAmount(cost.amount)}</span>
                   </div>
                 </div>
               ))}
@@ -140,19 +200,19 @@ export default function BuildingCosts({ buildingType }: Props) {
           )}
 
           {activeMode === "complex" && (
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            <div style={costGridStyle}>
               {complexCosts.map((cost) => (
-                <div key={cost.resource} className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded-md">
+                <div key={cost.resource} style={costItemStyle}>
                   <ResourceIcon
                     id={cost.resource}
                     name={resources.find((r) => r.id === cost.resource)?.trait || ""}
                     size="xs"
                   />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontWeight: "500", fontSize: "0.875rem" }}>
                       {resources.find((r) => r.id === cost.resource)?.trait || ""}
                     </span>
-                    <span className="font-semibold">{formatAmount(cost.amount)}</span>
+                    <span style={{ fontWeight: "600" }}>{formatAmount(cost.amount)}</span>
                   </div>
                 </div>
               ))}
