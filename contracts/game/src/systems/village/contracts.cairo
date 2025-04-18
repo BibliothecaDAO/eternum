@@ -3,11 +3,13 @@ use s1_eternum::models::position::{Direction};
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
-    fn create(ref self: T, connected_realm: ID, direction: Direction) -> ID;
+    fn create(ref self: T, connected_realm_entity_id: ID, direction: Direction) -> ID;
 }
 
 #[dojo::contract]
 pub mod village_systems {
+    use core::num::traits::zero::Zero;
+    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
 
@@ -21,7 +23,7 @@ pub mod village_systems {
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
-        StructureMetadataStoreImpl, StructureOwnerStoreImpl,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureVillageSlots,
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
@@ -31,7 +33,7 @@ pub mod village_systems {
 
     #[abi(embed_v0)]
     impl VillageSystemsImpl of super::IVillageSystems<ContractState> {
-        fn create(ref self: ContractState, connected_realm: ID, direction: Direction) -> ID {
+        fn create(ref self: ContractState, connected_realm_entity_id: ID, direction: Direction) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
@@ -39,15 +41,17 @@ pub mod village_systems {
             // todo: add payment
 
             // ensure connected entity is a realm
-            let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, connected_realm);
+            let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                ref world, connected_realm_entity_id,
+            );
             assert!(connected_structure.category == StructureCategory::Realm.into(), "connected entity is not a realm");
 
             // update village count for the realm
             let mut connected_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
-                ref world, connected_realm,
+                ref world, connected_realm_entity_id,
             );
             connected_structure_metadata.villages_count += 1;
-            StructureMetadataStoreImpl::store(connected_structure_metadata, ref world, connected_realm);
+            StructureMetadataStoreImpl::store(connected_structure_metadata, ref world, connected_realm_entity_id);
 
             // ensure there can't be more than 6 villages per realm
             assert!(
@@ -55,6 +59,27 @@ pub mod village_systems {
                 "connected realm already has {} villages",
                 NUM_DIRECTIONS,
             );
+
+            // ensure the slot is available
+            let mut slot_available = false;
+            let mut new_directions_left: Array<Direction> = array![];
+            let mut structure_village_slots: StructureVillageSlots = world.read_model(connected_realm_entity_id);
+            for slot_direction in structure_village_slots.directions_left {
+                if *slot_direction == direction {
+                    slot_available = true;
+                } else {
+                    new_directions_left.append(*slot_direction);
+                }
+            };
+            assert!(slot_available, "the chosen slot is not available");
+
+            // remove the used village slot from available slots
+            if new_directions_left.len().is_zero() {
+                world.erase_model(@structure_village_slots);
+            } else {
+                structure_village_slots.directions_left = new_directions_left.span();
+                world.write_model(@structure_village_slots);
+            }
 
             // make village parameters
             let village_id: ID = world.dispatcher.uuid();
@@ -68,7 +93,7 @@ pub mod village_systems {
 
             // set village metadata
             let mut villiage_metadata: StructureMetadata = Default::default();
-            villiage_metadata.village_realm = connected_realm;
+            villiage_metadata.village_realm = connected_realm_entity_id;
 
             // create village
             iStructureImpl::create(

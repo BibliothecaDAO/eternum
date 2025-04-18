@@ -1,3 +1,4 @@
+use core::num::traits::zero::Zero;
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::Coord;
 
@@ -31,11 +32,11 @@ pub impl TileImpl of TileTrait {
     }
 
     fn occupied(self: Tile) -> bool {
-        self.occupier_type != 0 && self.occupier_id != 0
+        self.occupier_type.is_non_zero()
     }
 
     fn not_occupied(self: Tile) -> bool {
-        self.occupier_type == 0 || self.occupier_id == 0
+        !self.occupied()
     }
 }
 
