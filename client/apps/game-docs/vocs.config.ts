@@ -3,6 +3,7 @@ import { defineConfig } from "vocs";
 
 export default defineConfig({
   vite: {
+    publicDir: path.resolve(__dirname, "../../../client/public"),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./docs"),
