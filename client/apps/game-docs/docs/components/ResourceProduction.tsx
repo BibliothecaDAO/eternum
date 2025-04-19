@@ -52,7 +52,7 @@ const styles = {
     verticalAlign: "middle" as const,
   },
   resourceCellStyle: {
-    padding: "0.5rem",
+    padding: "0.8rem",
     borderBottom: "1px solid #4d3923",
     backgroundColor: "rgba(30, 20, 10, 0.3)",
     verticalAlign: "middle" as const,
