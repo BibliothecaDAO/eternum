@@ -7,6 +7,7 @@ export default defineConfig({
       alias: {
         "@": path.resolve(__dirname, "./docs"),
         "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+        "@contracts": path.resolve(__dirname, "../../../contracts/utils"),
       },
     },
   },
@@ -14,7 +15,7 @@ export default defineConfig({
   description: "Your Complete Guide to Mastering Eternum",
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
-  ogImageUrl: "/images/covers/eternum_documentation.png",
+  ogImageUrl: "/images/covers/01.png",
   theme: {
     colorScheme: "dark",
     variables: {
@@ -36,6 +37,7 @@ export default defineConfig({
       text: "Overview",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
+        { text: "World Physics", link: "/overview/world-physics" },
         { text: "Game Entry", link: "/overview/entry" },
         { text: "Cartridge Controller", link: "/overview/controller" },
         { text: "Quick Links", link: "/overview/links" },
@@ -45,48 +47,50 @@ export default defineConfig({
       ],
     },
     {
-      text: "Seasons",
-      items: [
-        { text: "Overview", link: "/seasons/overview" },
-        { text: "Rewards", link: "/seasons/rewards" },
-      ],
-    },
-    {
       text: "Game Mechanics",
       items: [
         { text: "Key Concepts", link: "/mechanics/key-concepts" },
         {
-          text: "Realm Management",
+          text: "Realm and Villages",
+          link: "/mechanics/realm-and-villages/realm",
           collapsed: true,
           items: [
-            { text: "Realm", link: "/mechanics/realm/realm" },
-            { text: "Buildings", link: "/mechanics/realm/buildings" },
-            { text: "Wonders", link: "/mechanics/realm/wonders" },
+            { text: "Realm", link: "/mechanics/realm-and-villages/realm" },
+            { text: "Villages", link: "/mechanics/realm-and-villages/villages" },
+            { text: "Buildings", link: "/mechanics/realm-and-villages/buildings" },
+            { text: "Wonders", link: "/mechanics/realm-and-villages/wonders" },
           ],
         },
         {
           text: "Resources",
+          link: "/mechanics/resources/resources",
           collapsed: true,
           items: [
-            { text: "Resources", link: "/mechanics/resources/resources" },
+            // { text: "Resources", link: "/mechanics/resources/resources" },
             { text: "Production", link: "/mechanics/resources/production" },
             { text: "Storage", link: "/mechanics/resources/storage" },
+            { text: "Transfers & Trade", link: "/mechanics/resources/transfers-and-trade" },
           ],
         },
-
         {
           text: "Military",
+          link: "/mechanics/military/combat",
           collapsed: true,
           items: [
-            { text: "Units", link: "/mechanics/military/units" },
             { text: "Combat", link: "/mechanics/military/combat" },
+            { text: "Raiding", link: "/mechanics/military/raiding" },
           ],
         },
-
-        { text: "Trading", link: "/mechanics/trading" },
-        { text: "World Map", link: "/mechanics/world-map" },
-        { text: "Hyperstructures & Victory Points", link: "/mechanics/hyperstructures" },
+        { text: "World Map & Movement", link: "/mechanics/worldmap-and-movement" },
+        {
+          text: "World Structures",
+          link: "/mechanics/world-structures/world-structures",
+          collapsed: true,
+          items: [{ text: "Hyperstructures", link: "/mechanics/world-structures/hyperstructures" }],
+        },
+        { text: "Victory", link: "/mechanics/victory" },
         { text: "Tribes", link: "/mechanics/tribes" },
+        { text: "Achievements", link: "/mechanics/achievements" },
       ],
     },
     {

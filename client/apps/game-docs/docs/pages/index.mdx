@@ -7,7 +7,7 @@ import { HomePage } from "vocs/components";
 <HomePage.Root>
   <div className="absolute inset-0 -z-10">
     <img 
-      src="/images/covers/03.png"
+      src={`/images/covers/0${Math.floor(Math.random() * 8) + 1}.png`}
       alt="Eternum Cover"
       className="w-full h-full object-cover"
     />
