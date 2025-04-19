@@ -13,10 +13,12 @@ Eternum is a fully onchain game with immutable smart contracts, meaning the game
 tokens in and out of the game is a core mechanic, but you must carefully manage this process.
 
 <Callout type="warning">
-  ### End Game Bridge Closure - The game bridge closes **permanently** 48 hours after "End Season" is triggered - Only
-  resources in your Realm's direct balance can be bridged out - Resources in the following locations are NOT part of
-  your bridgeable balance: - AMM Liquidity Pool positions - Open market orders - Resources in transit - Any resources
-  not bridged out by the deadline are **permanently locked** in the contract
+  ### End Game Bridge Closure
+  <div />
+  The game bridge closes **permanently** 48 hours after "End Season" is triggered - Only resources in your Realm's
+  direct balance can be bridged out - Resources in the following locations are NOT part of your bridgeable balance: -
+  AMM Liquidity Pool positions - Open market orders - Resources in transit - Any resources not bridged out by the
+  deadline are **permanently locked** in the contract
 </Callout>
 
 ## Bridging in
@@ -34,26 +36,20 @@ You need to first initialize the transfer.
 
 Once you finish the first step, the Lords/resources will appear in your inventory to be used in the game.
 
-<img src="/gifs/final-bridge-in.gif" alt="Bridge" width="800" className="mx-auto" />
+<img src="/gifs/resource-arrival.gif" alt="Bridge" width="800" className="mx-auto" />
 
 ## Bridging out
 
 You can bridge out resources from the game, which will be converted to the ERC20 contracts.
 
 <Callout type="error">
-  ### ⚠️ Critical Security Warning ⚠️ - Your Realm remains vulnerable to being claimed by other players until you
-  complete the **final withdrawal step** - Because bridged resources are linked to your realm until the final withdraw,
-  if your Realm is claimed during the bridging process, the bridged resources can be stolen - **Always maintain
-  sufficient troops** to defend your Realm during the bridging process
+  ### ⚠️ Critical Security Warning ⚠️
+  <div />
+  Your Realm remains vulnerable to being claimed by other players until you complete the **final withdrawal step** -
+  Because bridged resources are linked to your realm until the final withdraw, if your Realm is claimed during the
+  bridging process, the bridged resources can be stolen - **Always maintain sufficient troops** to defend your Realm
+  during the bridging process
 </Callout>
-
-### Step 1: Start the bridge
-
-<img src="/gifs/bridge-out-start.gif" alt="Bridge" width="800" className="mx-auto" />
-
-### Step 2: Finalize the bridge
-
-<img src="/gifs/bridge-out-final.gif" alt="Bridge" width="800" className="mx-auto" />
 
 ### Security Best Practices
 

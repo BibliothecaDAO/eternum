@@ -1,5 +1,60 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
+import ResourceIcon from "./ResourceIcon";
+
+// Helper function to format numbers with commas
+const formatAmount = (amount: number): string => {
+  return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
+};
+
+// Common styles shared with WeightTable component
+const styles = {
+  sectionStyle: {
+    marginBottom: "2rem",
+  },
+  subtitleStyle: {
+    fontWeight: "bold",
+    fontSize: "0.9rem",
+    color: "#f0b060",
+    marginBottom: "0.75rem",
+    marginTop: "1.5rem",
+  },
+  tableStyle: {
+    width: "100%",
+    borderCollapse: "collapse" as const,
+    fontSize: "0.85rem",
+  },
+  headerCellStyle: {
+    padding: "0.5rem",
+    backgroundColor: "rgba(60, 40, 20, 0.5)",
+    color: "#f0b060",
+    fontWeight: "bold",
+    textAlign: "left" as const,
+    borderBottom: "1px solid #6d4923",
+  },
+  cellStyle: {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+  },
+  resourceCellStyle: {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  weightCellStyle: {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+    color: "#dfc296",
+  },
+};
 
 export default function ResourceTable() {
   const config = ETERNUM_CONFIG();
@@ -47,85 +102,133 @@ export default function ResourceTable() {
   };
 
   return (
-    <div className="my-4">
-      <div className="font-bold mb-6 text-xl">Resources</div>
+    <div>
+      <div style={{ fontWeight: "bold", marginBottom: "1.5rem", fontSize: "1.25rem" }}>Resources</div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
         {/* Basic Resources Section */}
-        <div className="border border-gray-700 p-4 rounded-lg bg-white/5">
-          <div className="font-bold mb-4">Basic Resources</div>
+        <div
+          style={{
+            border: "1px solid #4d3923",
+            padding: "1rem",
+            borderRadius: "0.5rem",
+            backgroundColor: "rgba(30, 20, 10, 0.3)",
+          }}
+        >
+          <div style={styles.subtitleStyle}>Basic Resources</div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="font-semibold">Resource</div>
-            <div className="font-semibold">Weight (g)</div>
-            <div className="font-semibold">Production</div>
-          </div>
-
-          {[ResourcesIds.Wheat, ResourcesIds.Fish].map((id) => (
-            <div key={id} className="grid grid-cols-3 gap-2 py-2 border-t border-gray-700">
-              <div>{getResourceName(id)}</div>
-              <div>{config.resources.resourceWeightsGrams[id] / 1000000}</div>
-              <div>{config.resources.productionBySimpleRecipeOutputs[id]}</div>
-            </div>
-          ))}
+          <table style={styles.tableStyle}>
+            <thead>
+              <tr>
+                <th style={styles.headerCellStyle}>Resource</th>
+                <th style={styles.headerCellStyle}>Weight (kg)</th>
+                <th style={styles.headerCellStyle}>Production</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[ResourcesIds.Wheat, ResourcesIds.Fish].map((id) => (
+                <tr key={id}>
+                  <td style={styles.resourceCellStyle}>
+                    <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                    {getResourceName(id)}
+                  </td>
+                  <td style={styles.weightCellStyle}>
+                    {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
+                  </td>
+                  <td style={styles.cellStyle}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Starting Resources */}
-        <div className="border border-gray-700 p-4 rounded-lg bg-white/5">
-          <div className="font-bold mb-4">Starting Resources</div>
+        <div
+          style={{
+            border: "1px solid #4d3923",
+            padding: "1rem",
+            borderRadius: "0.5rem",
+            backgroundColor: "rgba(30, 20, 10, 0.3)",
+          }}
+        >
+          <div style={styles.subtitleStyle}>Starting Resources</div>
 
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            <div className="font-semibold">Resource</div>
-            <div className="font-semibold">Realm</div>
-            <div className="font-semibold">Village</div>
-          </div>
-
-          {config.startingResources.map(({ resource, amount }) => (
-            <div key={resource} className="grid grid-cols-3 gap-2 py-2 border-t border-gray-700">
-              <div>{getResourceName(resource)}</div>
-              <div>{amount.toLocaleString()}</div>
-              <div>
-                {config.villageStartingResources.find((r) => r.resource === resource)?.amount.toLocaleString() || 0}
-              </div>
-            </div>
-          ))}
+          <table style={styles.tableStyle}>
+            <thead>
+              <tr>
+                <th style={styles.headerCellStyle}>Resource</th>
+                <th style={styles.headerCellStyle}>Realm</th>
+                <th style={styles.headerCellStyle}>Village</th>
+              </tr>
+            </thead>
+            <tbody>
+              {config.startingResources.map(({ resource, amount }) => (
+                <tr key={resource}>
+                  <td style={styles.resourceCellStyle}>
+                    <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
+                    {getResourceName(resource)}
+                  </td>
+                  <td style={styles.cellStyle}>{formatAmount(amount)}</td>
+                  <td style={styles.cellStyle}>
+                    {formatAmount(config.villageStartingResources.find((r) => r.resource === resource)?.amount || 0)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Main Resource Table */}
-      <div className="mt-6 border border-gray-700 p-4 rounded-lg bg-white/5">
-        <div className="font-bold mb-4">Resource Production</div>
+      <div
+        style={{
+          ...styles.sectionStyle,
+          marginTop: "1.5rem",
+          border: "1px solid #4d3923",
+          padding: "1rem",
+          borderRadius: "0.5rem",
+          backgroundColor: "rgba(30, 20, 10, 0.3)",
+        }}
+      >
+        <div style={styles.subtitleStyle}>Resource Production</div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div style={{ overflowX: "auto" }}>
+          <table style={styles.tableStyle}>
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-2">Resource</th>
-                <th className="text-right py-2">Weight (kg)</th>
-                <th className="text-right py-2">Output (p/s)</th>
-                <th className="text-left py-2">Inputs</th>
-                <th className="text-right py-2">Labor Value</th>
+              <tr>
+                <th style={styles.headerCellStyle}>Resource</th>
+                <th style={styles.headerCellStyle}>Weight (kg)</th>
+                <th style={styles.headerCellStyle}>Output (p/s)</th>
+                <th style={styles.headerCellStyle}>Inputs</th>
+                <th style={styles.headerCellStyle}>Labor Value</th>
               </tr>
             </thead>
             <tbody>
               {resourceTypes.map((id) => {
                 const inputs = config.resources.productionByComplexRecipe[id] || [];
                 return (
-                  <tr key={id} className="border-b border-gray-700">
-                    <td className="py-3">{getResourceName(id)}</td>
-                    <td className="text-right">{config.resources.resourceWeightsGrams[id] / 1000000}</td>
-                    <td className="text-right">{config.resources.productionByComplexRecipeOutputs[id]}</td>
-                    <td>
-                      <div className="flex flex-col gap-1">
+                  <tr key={id}>
+                    <td style={styles.resourceCellStyle}>
+                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                      {getResourceName(id)}
+                    </td>
+                    <td style={styles.weightCellStyle}>
+                      {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
+                    </td>
+                    <td style={styles.cellStyle}>
+                      {formatAmount(config.resources.productionByComplexRecipeOutputs[id])}
+                    </td>
+                    <td style={styles.cellStyle}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                         {inputs.map((input) => (
-                          <div key={input.resource} className="flex justify-between">
+                          <div key={input.resource} style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{getResourceName(input.resource)}:</span>
-                            <span className="text-gray-400">{input.amount}</span>
+                            <span style={{ color: "#dfc296" }}>{formatAmount(input.amount)}</span>
                           </div>
                         ))}
                       </div>
                     </td>
-                    <td className="text-right">{config.resources.laborOutputPerResource[id]}</td>
+                    <td style={styles.cellStyle}>{formatAmount(config.resources.laborOutputPerResource[id])}</td>
                   </tr>
                 );
               })}
@@ -135,17 +238,26 @@ export default function ResourceTable() {
       </div>
 
       {/* Simple Production System */}
-      <div className="mt-6 border border-gray-700 p-4 rounded-lg bg-white/5">
-        <div className="font-bold mb-4">Simple Production System</div>
+      <div
+        style={{
+          ...styles.sectionStyle,
+          marginTop: "1.5rem",
+          border: "1px solid #4d3923",
+          padding: "1rem",
+          borderRadius: "0.5rem",
+          backgroundColor: "rgba(30, 20, 10, 0.3)",
+        }}
+      >
+        <div style={styles.subtitleStyle}>Simple Production System</div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div style={{ overflowX: "auto" }}>
+          <table style={styles.tableStyle}>
             <thead>
-              <tr className="border-b border-gray-700">
-                <th className="text-left py-2">Resource</th>
-                <th className="text-right py-2">Output (p/s)</th>
-                <th className="text-left py-2">Labor Input</th>
-                <th className="text-left py-2">Food Input</th>
+              <tr>
+                <th style={styles.headerCellStyle}>Resource</th>
+                <th style={styles.headerCellStyle}>Output (p/s)</th>
+                <th style={styles.headerCellStyle}>Labor Input</th>
+                <th style={styles.headerCellStyle}>Food Input</th>
               </tr>
             </thead>
             <tbody>
@@ -157,15 +269,20 @@ export default function ResourceTable() {
                 );
 
                 return (
-                  <tr key={id} className="border-b border-gray-700">
-                    <td className="py-3">{getResourceName(id)}</td>
-                    <td className="text-right">{config.resources.productionBySimpleRecipeOutputs[id]}</td>
-                    <td>{laborInput ? laborInput.amount : "-"}</td>
-                    <td>
+                  <tr key={id}>
+                    <td style={styles.resourceCellStyle}>
+                      <ResourceIcon id={id} name={getResourceName(id)} size="md" />
+                      {getResourceName(id)}
+                    </td>
+                    <td style={styles.cellStyle}>
+                      {formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}
+                    </td>
+                    <td style={styles.cellStyle}>{laborInput ? formatAmount(laborInput.amount) : "-"}</td>
+                    <td style={styles.cellStyle}>
                       {foodInput ? (
-                        <div className="flex items-center gap-2">
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span>{getResourceName(foodInput.resource)}</span>
-                          <span className="text-gray-400">{foodInput.amount}</span>
+                          <span style={{ color: "#dfc296" }}>{formatAmount(foodInput.amount)}</span>
                         </div>
                       ) : (
                         "-"

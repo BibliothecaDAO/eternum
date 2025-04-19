@@ -61,22 +61,19 @@ const getRarityTier = (probability: number): string => {
   return "legendary";
 };
 
-const ResourceProbability = () => {
-  // Sort resources by probability (highest to lowest)
-  const sortedResources = [...resourceProbabilities].sort((a, b) => b.probability - a.probability);
-
-  // Define styles
-  const containerStyle = {
-    margin: "2rem 0",
-  };
-
-  const headingStyle = {
-    fontSize: "1.5rem",
+// Common styles shared with other components
+const styles = {
+  sectionStyle: {
+    marginBottom: "2rem",
+  },
+  subtitleStyle: {
     fontWeight: "bold",
-    marginBottom: "1rem",
-  };
-
-  const gridStyle = {
+    fontSize: "0.9rem",
+    color: "#f0b060",
+    marginBottom: "0.75rem",
+    marginTop: "1.5rem",
+  },
+  resourceGridStyle: {
     display: "grid",
     gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
     gap: "1rem",
@@ -86,72 +83,91 @@ const ResourceProbability = () => {
     "@media (min-width: 1024px)": {
       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     },
-  };
-
-  const itemStyle = {
+  },
+  resourceItemStyle: {
     display: "flex",
     alignItems: "center",
     gap: "0.75rem",
-    backgroundColor: "rgba(17, 24, 39, 0.5)",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
     borderRadius: "0.5rem",
     padding: "0.75rem",
-    border: "1px solid rgb(31, 41, 55)",
-    transition: "all",
-    ":hover": {
-      borderColor: "rgb(75, 85, 99)",
-    },
-  };
-
-  const contentStyle = {
+    borderBottom: "1px solid #4d3923",
+    transition: "all 0.2s",
+  },
+  contentStyle: {
     flexGrow: 1,
-  };
-
-  const headerStyle = {
+  },
+  headerStyle: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: "0.25rem",
-  };
-
-  const nameStyle = {
+  },
+  nameStyle: {
     fontWeight: 500,
-    color: "white",
-  };
-
-  const probabilityStyle = {
+    color: "#f9fafb",
+    fontSize: "0.85rem",
+  },
+  probabilityStyle: {
     fontSize: "0.875rem",
     fontWeight: "bold",
-    color: "white",
-  };
-
-  const barContainerStyle = {
+    color: "#dfc296",
+  },
+  barContainerStyle: {
     width: "100%",
-    backgroundColor: "rgb(31, 41, 55)",
+    backgroundColor: "rgba(40, 30, 20, 0.5)",
     borderRadius: "9999px",
     height: "0.5rem",
-  };
-
-  const rarityTextStyle = {
+  },
+  rarityTextStyle: {
     marginTop: "0.25rem",
     fontSize: "0.75rem",
-    color: "rgb(156, 163, 175)",
-    textTransform: "capitalize",
-  };
-
-  const legendContainerStyle = {
+    color: "#c0c0c0",
+    textTransform: "capitalize" as "capitalize",
+  },
+  legendContainerStyle: {
     marginTop: "2rem",
     display: "flex",
+    flexWrap: "wrap" as "wrap",
     alignItems: "center",
     justifyContent: "center",
     gap: "1.5rem",
     fontSize: "0.875rem",
-  };
-
-  const legendItemStyle = {
+    padding: "0.75rem",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    borderRadius: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+  },
+  legendItemStyle: {
     display: "flex",
     alignItems: "center",
+    color: "#f9fafb",
+  },
+};
+
+const ResourceProbability = () => {
+  // Sort resources by probability (highest to lowest)
+  const sortedResources = [...resourceProbabilities].sort((a, b) => b.probability - a.probability);
+
+  // Get bar color based on rarity - using gold tones instead of varied colors
+  const getBarColor = (rarityTier: string) => {
+    switch (rarityTier) {
+      case "common":
+        return "#f0b060"; // amber gold
+      case "uncommon":
+        return "#d4af37"; // darker gold
+      case "rare":
+        return "#b8860b"; // dark goldenrod
+      case "epic":
+        return "#a67c00"; // bronze gold
+      case "legendary":
+        return "#85540f"; // deep bronze
+      default:
+        return "#dfc296"; // light gold
+    }
   };
 
+  // Function for legend dot style
   const legendDotStyle = (color: string) => ({
     width: "0.75rem",
     height: "0.75rem",
@@ -160,28 +176,10 @@ const ResourceProbability = () => {
     marginRight: "0.5rem",
   });
 
-  // Get bar color based on rarity
-  const getBarColor = (rarityTier: string) => {
-    switch (rarityTier) {
-      case "common":
-        return "rgb(34, 197, 94)"; // green-500
-      case "uncommon":
-        return "rgb(59, 130, 246)"; // blue-500
-      case "rare":
-        return "rgb(168, 85, 247)"; // purple-500
-      case "epic":
-        return "rgb(245, 158, 11)"; // amber-500
-      case "legendary":
-        return "rgb(239, 68, 68)"; // red-500
-      default:
-        return "gray";
-    }
-  };
-
   return (
-    <div style={containerStyle}>
-      <h3 style={headingStyle}>Village Resource Roll Probabilities</h3>
-      <div style={gridStyle}>
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Village Resource Roll Probabilities</div>
+      <div style={styles.resourceGridStyle}>
         {sortedResources.map((item) => {
           const id = resourceNameToId[item.name];
           const rarityTier = getRarityTier(item.probability);
@@ -200,54 +198,60 @@ const ResourceProbability = () => {
           };
 
           return (
-            <div key={id} style={itemStyle}>
+            <div
+              key={id}
+              style={{
+                ...styles.resourceItemStyle,
+                borderLeft: `3px solid ${barColor}`,
+              }}
+            >
               <div
                 style={{
                   position: "relative",
-                  height: "3rem",
-                  width: "3rem",
+                  height: "2.5rem",
+                  width: "2.5rem",
                   flexShrink: 0,
                 }}
               >
-                <ResourceIcon name={item.name} id={id} size="xl" />
+                <ResourceIcon name={item.name} id={id} size="md" />
               </div>
 
-              <div style={contentStyle}>
-                <div style={headerStyle}>
-                  <span style={nameStyle}>{item.name}</span>
-                  <span style={probabilityStyle}>{item.probability.toFixed(3)}%</span>
+              <div style={styles.contentStyle}>
+                <div style={styles.headerStyle}>
+                  <span style={styles.nameStyle}>{item.name}</span>
+                  <span style={styles.probabilityStyle}>{item.probability.toFixed(3)}%</span>
                 </div>
 
-                <div style={barContainerStyle}>
+                <div style={styles.barContainerStyle}>
                   <div style={barStyle}></div>
                 </div>
 
-                <div style={rarityTextStyle as React.CSSProperties}>{rarityTier}</div>
+                <div style={styles.rarityTextStyle}>{rarityTier}</div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div style={legendContainerStyle}>
-        <div style={legendItemStyle}>
-          <div style={legendDotStyle("rgb(34, 197, 94)")}></div>
+      <div style={styles.legendContainerStyle}>
+        <div style={styles.legendItemStyle}>
+          <div style={legendDotStyle("#f0b060")}></div>
           <span>Common</span>
         </div>
-        <div style={legendItemStyle}>
-          <div style={legendDotStyle("rgb(59, 130, 246)")}></div>
+        <div style={styles.legendItemStyle}>
+          <div style={legendDotStyle("#d4af37")}></div>
           <span>Uncommon</span>
         </div>
-        <div style={legendItemStyle}>
-          <div style={legendDotStyle("rgb(168, 85, 247)")}></div>
+        <div style={styles.legendItemStyle}>
+          <div style={legendDotStyle("#b8860b")}></div>
           <span>Rare</span>
         </div>
-        <div style={legendItemStyle}>
-          <div style={legendDotStyle("rgb(245, 158, 11)")}></div>
+        <div style={styles.legendItemStyle}>
+          <div style={legendDotStyle("#a67c00")}></div>
           <span>Epic</span>
         </div>
-        <div style={legendItemStyle}>
-          <div style={legendDotStyle("rgb(239, 68, 68)")}></div>
+        <div style={styles.legendItemStyle}>
+          <div style={legendDotStyle("#85540f")}></div>
           <span>Legendary</span>
         </div>
       </div>

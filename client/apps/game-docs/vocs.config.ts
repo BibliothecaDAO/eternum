@@ -7,6 +7,7 @@ export default defineConfig({
       alias: {
         "@": path.resolve(__dirname, "./docs"),
         "@config": path.resolve(__dirname, "../../../config/utils/utils"),
+        "@contracts": path.resolve(__dirname, "../../../contracts/utils"),
       },
     },
   },
