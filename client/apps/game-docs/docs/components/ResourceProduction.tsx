@@ -111,13 +111,15 @@ export const SimpleResourceProduction = () => {
           <tr>
             <th style={styles.headerCellStyle}>Resource</th>
             <th style={styles.headerCellStyle}>Input Resources</th>
-            <th style={styles.headerCellStyle}>Output</th>
+            <th style={styles.headerCellStyle}>Realm Output</th>
+            <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
         <tbody>
           {simpleResourceIds.map((resourceId) => {
             const resourceName = getResourceName(resourceId);
-            const outputAmount = resourceOutputSimpleMode[resourceId] || 0;
+            const realmOutputAmount = resourceOutputSimpleMode[resourceId] || 0;
+            const villageOutputAmount = realmOutputAmount / 2;
 
             return (
               <tr key={`simple-${resourceId}`}>
@@ -138,7 +140,13 @@ export const SimpleResourceProduction = () => {
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
                     <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    {formatAmount(outputAmount)}/s
+                    {formatAmount(realmOutputAmount)}/s
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
+                    {formatAmount(villageOutputAmount)}/s
                   </div>
                 </td>
               </tr>
@@ -172,13 +180,15 @@ export const StandardResourceProduction = () => {
           <tr>
             <th style={styles.headerCellStyle}>Resource</th>
             <th style={styles.headerCellStyle}>Input Resources</th>
-            <th style={styles.headerCellStyle}>Output</th>
+            <th style={styles.headerCellStyle}>Realm Output</th>
+            <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
         <tbody>
           {complexResourceIds.map((resourceId) => {
             const resourceName = getResourceName(resourceId);
-            const outputAmount = resourceOutputComplexMode[resourceId] || 0;
+            const realmOutputAmount = resourceOutputComplexMode[resourceId] || 0;
+            const villageOutputAmount = realmOutputAmount / 2;
 
             return (
               <tr key={`complex-${resourceId}`}>
@@ -199,7 +209,13 @@ export const StandardResourceProduction = () => {
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
                     <ResourceIcon id={resourceId} name={resourceName} size="md" />
-                    {formatAmount(outputAmount)}/s
+                    {formatAmount(realmOutputAmount)}/s
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
+                    {formatAmount(villageOutputAmount)}/s
                   </div>
                 </td>
               </tr>
@@ -232,13 +248,15 @@ export const SimpleTroopProduction = () => {
           <tr>
             <th style={styles.headerCellStyle}>Troop</th>
             <th style={styles.headerCellStyle}>Input Resources</th>
-            <th style={styles.headerCellStyle}>Output</th>
+            <th style={styles.headerCellStyle}>Realm Output</th>
+            <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
         <tbody>
           {simpleTroopIds.map((troopId) => {
             const troopName = getResourceName(troopId);
-            const outputAmount = troopOutputSimpleMode[troopId] || 0;
+            const realmOutputAmount = troopOutputSimpleMode[troopId] || 0;
+            const villageOutputAmount = realmOutputAmount / 2;
 
             return (
               <tr key={`simple-troop-${troopId}`}>
@@ -257,7 +275,16 @@ export const SimpleTroopProduction = () => {
                   </div>
                 </td>
                 <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceItemStyle}>{formatAmount(outputAmount)}/s</div>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={troopId} name={troopName} size="md" />
+                    {formatAmount(realmOutputAmount)}/s
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={troopId} name={troopName} size="md" />
+                    {formatAmount(villageOutputAmount)}/s
+                  </div>
                 </td>
               </tr>
             );
@@ -288,33 +315,44 @@ export const StandardTroopProduction = () => {
         <thead>
           <tr>
             <th style={styles.headerCellStyle}>Troop</th>
-            <th style={styles.headerCellStyle}>Input Resources</th>
-            <th style={styles.headerCellStyle}>Output</th>
+            <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>Input Resources</th>
+            <th style={styles.headerCellStyle}>Realm Output</th>
+            <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
         <tbody>
           {complexTroopIds.map((troopId) => {
             const troopName = getResourceName(troopId);
-            const outputAmount = troopOutputComplexMode[troopId] || 0;
+            const realmOutputAmount = troopOutputComplexMode[troopId] || 0;
+            const villageOutputAmount = realmOutputAmount / 2;
 
             return (
               <tr key={`complex-troop-${troopId}`}>
                 <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={troopId} name={troopName} size="md" />
+                  <ResourceIcon id={troopId} name={troopName} size="sm" />
                   {troopName}
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceGroupStyle}>
                     {troopInputComplexMode[troopId].map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="sm" />
                         {formatAmount(input.amount)}/s
                       </div>
                     ))}
                   </div>
                 </td>
                 <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceItemStyle}>{formatAmount(outputAmount)}/s</div>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={troopId} name={troopName} size="sm" />
+                    {formatAmount(realmOutputAmount)}/s
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>
+                    <ResourceIcon id={troopId} name={troopName} size="sm" />
+                    {formatAmount(villageOutputAmount)}/s
+                  </div>
                 </td>
               </tr>
             );
@@ -392,7 +430,8 @@ export const DonkeyProduction = () => {
           <tr>
             <th style={styles.headerCellStyle}>Resource</th>
             <th style={styles.headerCellStyle}>Input Resources</th>
-            <th style={styles.headerCellStyle}>Output</th>
+            <th style={styles.headerCellStyle}>Realm Output</th>
+            <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
         <tbody>
@@ -409,6 +448,12 @@ export const DonkeyProduction = () => {
                     {formatAmount(input.amount)}/s
                   </div>
                 ))}
+              </div>
+            </td>
+            <td style={styles.productionCellStyle}>
+              <div style={styles.resourceItemStyle}>
+                <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+                {formatAmount(donkeyOutput)}/s
               </div>
             </td>
             <td style={styles.productionCellStyle}>
