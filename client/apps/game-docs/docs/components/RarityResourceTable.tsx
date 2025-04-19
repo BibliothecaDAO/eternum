@@ -81,29 +81,126 @@ const RESOURCE_RARITIES = [
   },
 ];
 
+// Common styles shared with other components
+const styles = {
+  sectionStyle: {
+    marginBottom: "2rem",
+  },
+  subtitleStyle: {
+    fontWeight: "bold",
+    fontSize: "0.9rem",
+    color: "#f0b060",
+    marginBottom: "0.75rem",
+    marginTop: "1.5rem",
+  },
+  tableStyle: {
+    width: "100%",
+    borderCollapse: "collapse" as const,
+    fontSize: "0.85rem",
+  },
+  headerCellStyle: {
+    padding: "0.5rem",
+    backgroundColor: "rgba(60, 40, 20, 0.5)",
+    color: "#f0b060",
+    fontWeight: "bold",
+    textAlign: "left" as const,
+    borderBottom: "1px solid #6d4923",
+  },
+  cellStyle: {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+  },
+  rarityCellStyle: {
+    padding: "0.5rem",
+    borderBottom: "1px solid #4d3923",
+    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    verticalAlign: "middle" as const,
+    color: "#dfc296",
+    fontWeight: 500,
+  },
+  resourcesGroupStyle: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.5rem",
+    alignItems: "center",
+  },
+};
+
+// Function to get color based on rarity
+const getRarityColor = (rarity: string): string => {
+  switch (rarity) {
+    case "Food":
+      return "#e5c687"; // pale gold
+    case "Special":
+      return "#c0c0c0"; // silver
+    case "Common (Widely Available)":
+      return "#aa6c39"; // copper
+    case "Uncommon (Limited Availability)":
+      return "#b78d4b"; // tan gold
+    case "Rare (Scarce)":
+      return "#c19a49"; // bronze gold
+    case "Unique (Very Scarce)":
+      return "#d4af37"; // darker gold
+    case "Mythic (Extremely Rare)":
+      return "#e6be8a"; // light gold
+    case "Units & Transport":
+      return "#8c7853"; // bronze
+    default:
+      return "#dfc296"; // default gold
+  }
+};
+
 const RarityResourceTable = () => {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-gray">
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Resource Rarity Categories</div>
+      <table style={styles.tableStyle}>
         <thead>
           <tr>
-            <th className="py-2 px-4 border-b-2 border-gray-300 text-left">Rarity</th>
-            <th className="py-2 px-4 border-b-2 border-gray-300 text-left">Resources</th>
+            <th style={styles.headerCellStyle}>Rarity</th>
+            <th style={styles.headerCellStyle}>Resources</th>
           </tr>
         </thead>
         <tbody>
-          {RESOURCE_RARITIES.map((category) => (
-            <tr key={category.rarity}>
-              <td className="py-2 px-4 border-b border-gray-300">{category.rarity}</td>
-              <td className="py-2 px-4 border-b border-gray-300">
-                <div className="flex items-baseline gap-1">
-                  {category.resources.map((resource) => (
-                    <ResourceIcon key={resource.id} name={resource.name} id={resource.id} />
-                  ))}
-                </div>
-              </td>
-            </tr>
-          ))}
+          {RESOURCE_RARITIES.map((category) => {
+            const rarityColor = getRarityColor(category.rarity);
+
+            return (
+              <tr key={category.rarity}>
+                <td
+                  style={{
+                    ...styles.rarityCellStyle,
+                    borderLeft: `3px solid ${rarityColor}`,
+                  }}
+                >
+                  {category.rarity}
+                </td>
+                <td style={styles.cellStyle}>
+                  <div style={styles.resourcesGroupStyle}>
+                    {category.resources.map((resource) => (
+                      <div
+                        key={resource.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          padding: "0.125rem 0.25rem",
+                          backgroundColor: "rgba(40, 30, 25, 0.6)",
+                          borderRadius: "0.25rem",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        <ResourceIcon name={resource.name} id={resource.id} size="sm" />
+                        <span style={{ color: "#f9fafb" }}>{resource.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
