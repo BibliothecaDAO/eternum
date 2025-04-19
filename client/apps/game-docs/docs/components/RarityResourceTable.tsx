@@ -1,5 +1,6 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { colors, section, table } from "./styles";
 
 const RESOURCE_RARITIES = [
   {
@@ -81,50 +82,27 @@ const RESOURCE_RARITIES = [
   },
 ];
 
-// Common styles shared with other components
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
-  tableStyle: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
-  },
-  headerCellStyle: {
-    padding: "0.5rem",
-    backgroundColor: "rgba(60, 40, 20, 0.5)",
-    color: "#f0b060",
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: "1px solid #6d4923",
-  },
-  cellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-  },
-  rarityCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    color: "#dfc296",
-    fontWeight: 500,
-  },
+// Component styles
+const componentStyles = {
   resourcesGroupStyle: {
     display: "flex",
     flexWrap: "wrap" as const,
     gap: "0.5rem",
     alignItems: "center",
+  },
+  resourceItemStyle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.25rem",
+    padding: "0.125rem 0.25rem",
+    backgroundColor: "rgba(40, 30, 25, 0.6)",
+    borderRadius: "0.25rem",
+    fontSize: "0.75rem",
+  },
+  rarityCellStyle: {
+    ...table.cell,
+    color: colors.secondary,
+    fontWeight: 500,
   },
 };
 
@@ -154,13 +132,13 @@ const getRarityColor = (rarity: string): string => {
 
 const RarityResourceTable = () => {
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Resource Rarity Categories</div>
-      <table style={styles.tableStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Resource Rarity Categories</div>
+      <table style={table.table}>
         <thead>
           <tr>
-            <th style={styles.headerCellStyle}>Rarity</th>
-            <th style={styles.headerCellStyle}>Resources</th>
+            <th style={table.headerCell}>Rarity</th>
+            <th style={table.headerCell}>Resources</th>
           </tr>
         </thead>
         <tbody>
@@ -171,29 +149,18 @@ const RarityResourceTable = () => {
               <tr key={category.rarity}>
                 <td
                   style={{
-                    ...styles.rarityCellStyle,
+                    ...componentStyles.rarityCellStyle,
                     borderLeft: `3px solid ${rarityColor}`,
                   }}
                 >
                   {category.rarity}
                 </td>
-                <td style={styles.cellStyle}>
-                  <div style={styles.resourcesGroupStyle}>
+                <td style={table.cell}>
+                  <div style={componentStyles.resourcesGroupStyle}>
                     {category.resources.map((resource) => (
-                      <div
-                        key={resource.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.25rem",
-                          padding: "0.125rem 0.25rem",
-                          backgroundColor: "rgba(40, 30, 25, 0.6)",
-                          borderRadius: "0.25rem",
-                          fontSize: "0.75rem",
-                        }}
-                      >
+                      <div key={resource.id} style={componentStyles.resourceItemStyle}>
                         <ResourceIcon name={resource.name} id={resource.id} size="sm" />
-                        <span style={{ color: "#f9fafb" }}>{resource.name}</span>
+                        <span style={{ color: colors.text.light }}>{resource.name}</span>
                       </div>
                     ))}
                   </div>

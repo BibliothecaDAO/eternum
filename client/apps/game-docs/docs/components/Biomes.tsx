@@ -1,3 +1,5 @@
+import { colors, section } from "./styles";
+
 export const Biomes = () => {
   // Map biome names to their corresponding image filenames
   const biomeImageMap: Record<string, string> = {
@@ -28,18 +30,8 @@ export const Biomes = () => {
       .replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
   };
 
-  // Styling similar to WeightTable component
+  // Additional styles specific to this component
   const styles = {
-    sectionStyle: {
-      marginBottom: "2rem",
-    },
-    subtitleStyle: {
-      fontWeight: "bold",
-      fontSize: "0.9rem",
-      color: "#f0b060",
-      marginBottom: "0.75rem",
-      marginTop: "1.5rem",
-    },
     biomesGridStyle: {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
@@ -48,15 +40,15 @@ export const Biomes = () => {
     biomeCardStyle: {
       borderRadius: "6px",
       overflow: "hidden",
-      backgroundColor: "rgba(30, 20, 10, 0.3)",
-      border: "1px solid #4d3923",
+      backgroundColor: colors.background.light,
+      border: `1px solid ${colors.border}`,
     },
     biomeHeaderStyle: {
       padding: "0.75rem",
-      backgroundColor: "rgba(60, 40, 20, 0.5)",
-      color: "#f0b060",
+      backgroundColor: colors.background.header,
+      color: colors.primary,
       fontWeight: "bold",
-      borderBottom: "1px solid #6d4923",
+      borderBottom: `1px solid ${colors.borderDark}`,
       margin: 0,
       fontSize: "1rem",
       textAlign: "center" as const,
@@ -74,8 +66,8 @@ export const Biomes = () => {
   };
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Available Biome Types</div>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Available Biome Types</div>
       <div style={styles.biomesGridStyle}>
         {biomes.map((biome) => (
           <div key={biome} style={styles.biomeCardStyle}>

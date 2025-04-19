@@ -1,6 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
+import { colors, formatNumber, resource, section } from "./styles";
 
 export enum StructureType {
   Village = "Village",
@@ -9,11 +10,6 @@ export enum StructureType {
 
 type Props = {
   structureType: StructureType;
-};
-
-// Helper function to format numbers with commas
-const formatNumber = (num: number) => {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 // Map resource IDs to names
@@ -27,130 +23,26 @@ const resourceIdToName: Record<number, string> = {
   32: "Paladin",
 };
 
-// Common styles shared with other components
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
-  resourceCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  resourceGridStyle: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-    gap: "1rem",
-    marginBottom: "1.5rem",
-  },
-  resourceItemStyle: {
-    display: "flex",
-    alignItems: "center",
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    borderRadius: "0.5rem",
-    transition: "all 0.2s",
-    position: "relative" as "relative",
-    overflow: "hidden",
-  },
-  resourceNameStyle: {
-    fontWeight: 500,
-    color: "#f9fafb",
-    fontSize: "0.85rem",
-  },
-  resourceAmountStyle: {
-    fontSize: "1rem",
-    fontWeight: "bold",
-    color: "#dfc296",
-  },
-  summaryContainerStyle: {
-    marginTop: "2rem",
-    borderTop: "1px solid #6d4923",
-    paddingTop: "1.5rem",
-  },
-  summaryTitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-  },
-  summaryGridStyle: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-    gap: "1rem",
-  },
-  summaryCategoryStyle: {
-    padding: "0.75rem",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    borderRadius: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-  },
-  categoryTitleStyle: {
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    marginBottom: "0.5rem",
-    display: "flex",
-    alignItems: "center",
-    color: "#f0b060",
-  },
-  totalStyle: {
-    fontSize: "1.25rem",
-    fontWeight: 700,
-    color: "#dfc296",
-  },
-  indicatorStyle: {
-    position: "absolute" as "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "3px",
-    backgroundColor: "#f0b060",
-    opacity: 0.7,
-  },
-  labelStyle: {
-    position: "absolute" as "absolute",
-    top: "0.25rem",
-    right: "0.5rem",
-    fontSize: "0.65rem",
-    fontWeight: 600,
-    color: "#dfc296",
-    textTransform: "uppercase" as "uppercase",
-    letterSpacing: "0.05em",
-  },
-};
-
 // Get resource category label
 const getResourceCategory = (resourceId: number): { label: string; shade: string } => {
   // Military resources
   if ([26, 27, 28, 29, 30, 31, 32, 33, 34].includes(resourceId)) {
-    return { label: "Military", shade: "#d4af37" }; // Darker gold
+    return { label: "Military", shade: colors.resource.military };
   }
   // Food resources
   else if ([35, 36].includes(resourceId)) {
-    return { label: "Food", shade: "#f0b060" }; // Amber gold
+    return { label: "Food", shade: colors.resource.food };
   }
   // Labor
   else if (resourceId === 23) {
-    return { label: "Labor", shade: "#c0c0c0" }; // Silver gray
+    return { label: "Labor", shade: colors.resource.labor };
   }
   // Transport (Donkey)
   else if (resourceId === 25) {
-    return { label: "Transport", shade: "#a67c00" }; // Bronze gold
+    return { label: "Transport", shade: colors.resource.transport };
   }
   // Default
-  return { label: "Resource", shade: "#dfc296" }; // Light gold
+  return { label: "Resource", shade: colors.resource.default };
 };
 
 // ResourceItem component to handle individual resource items with hover state
@@ -162,8 +54,8 @@ const ResourceItem = ({ resourceId, amount }: { resourceId: number; amount: numb
   return (
     <div
       style={{
-        ...styles.resourceItemStyle,
-        backgroundColor: isHovered ? "rgba(40, 30, 20, 0.5)" : "rgba(30, 20, 10, 0.3)",
+        ...resource.itemStyle,
+        backgroundColor: isHovered ? colors.background.medium : colors.background.light,
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -171,22 +63,22 @@ const ResourceItem = ({ resourceId, amount }: { resourceId: number; amount: numb
       {/* Category indicator at top of item */}
       <div
         style={{
-          ...styles.indicatorStyle,
+          ...resource.indicatorStyle,
           backgroundColor: category.shade,
           opacity: isHovered ? 1 : 0.7,
         }}
       ></div>
 
       {/* Category label in top right */}
-      <div style={styles.labelStyle}>{category.label}</div>
+      <div style={resource.labelStyle}>{category.label}</div>
 
       <div style={{ marginRight: "0.75rem" }}>
         <ResourceIcon name={resourceName} id={resourceId} size="md" />
       </div>
 
       <div style={{ flexGrow: 1, paddingTop: "0.5rem" }}>
-        <div style={styles.resourceNameStyle}>{resourceName}</div>
-        <div style={styles.resourceAmountStyle}>{formatNumber(amount)}</div>
+        <div style={resource.nameStyle}>{resourceName}</div>
+        <div style={resource.amountStyle}>{formatNumber(amount)}</div>
       </div>
     </div>
   );
@@ -199,8 +91,8 @@ export const StartingResources = ({ structureType }: Props) => {
 
   // Calculate resource totals by category
   const resourceTotals = startingResources.reduce(
-    (acc, { resource, amount }) => {
-      const category = getResourceCategory(resource).label;
+    (acc, { resource: resourceId, amount }) => {
+      const category = getResourceCategory(resourceId).label;
 
       if (!acc[category]) {
         acc[category] = {
@@ -210,7 +102,7 @@ export const StartingResources = ({ structureType }: Props) => {
       }
 
       acc[category].total += amount;
-      acc[category].items.push({ resource, amount });
+      acc[category].items.push({ resource: resourceId, amount });
 
       return acc;
     },
@@ -218,10 +110,10 @@ export const StartingResources = ({ structureType }: Props) => {
   );
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Starting Resources for {structureType}</div>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Starting Resources for {structureType}</div>
 
-      <div style={styles.resourceGridStyle}>
+      <div style={resource.gridStyle}>
         {startingResources.map((item, index) => (
           <ResourceItem key={index} resourceId={item.resource} amount={item.amount} />
         ))}
@@ -234,16 +126,16 @@ export const StartingResources = ({ structureType }: Props) => {
       )}
 
       {Object.keys(resourceTotals).length > 0 && (
-        <div style={styles.summaryContainerStyle}>
-          <div style={styles.summaryTitleStyle}>Resource Summary</div>
-          <div style={styles.summaryGridStyle}>
+        <div style={resource.summaryContainerStyle}>
+          <div style={resource.summaryTitleStyle}>Resource Summary</div>
+          <div style={resource.summaryGridStyle}>
             {Object.entries(resourceTotals).map(([category, data], index) => {
               // Get the shade for this category (always gold/amber now)
-              const goldShade = "#f0b060";
+              const goldShade = colors.primary;
 
               return (
-                <div key={index} style={styles.summaryCategoryStyle}>
-                  <div style={styles.categoryTitleStyle}>
+                <div key={index} style={resource.summaryCategoryStyle}>
+                  <div style={resource.categoryTitleStyle}>
                     <div
                       style={{
                         width: "0.5rem",
@@ -255,7 +147,7 @@ export const StartingResources = ({ structureType }: Props) => {
                     ></div>
                     {category}
                   </div>
-                  <div style={styles.totalStyle}>{formatNumber(data.total)}</div>
+                  <div style={resource.totalStyle}>{formatNumber(data.total)}</div>
                 </div>
               );
             })}

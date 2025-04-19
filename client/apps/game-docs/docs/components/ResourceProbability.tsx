@@ -1,4 +1,5 @@
 import ResourceIcon from "./ResourceIcon";
+import { colors, section } from "./styles";
 
 // Define a mapping from resource name to ID in the game-docs context
 const resourceNameToId: Record<string, number> = {
@@ -61,18 +62,8 @@ const getRarityTier = (probability: number): string => {
   return "legendary";
 };
 
-// Common styles shared with other components
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
+// Component-specific styles
+const componentStyles = {
   resourceGridStyle: {
     display: "grid",
     gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
@@ -88,10 +79,10 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "0.75rem",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    backgroundColor: colors.background.light,
     borderRadius: "0.5rem",
     padding: "0.75rem",
-    borderBottom: "1px solid #4d3923",
+    borderBottom: `1px solid ${colors.border}`,
     transition: "all 0.2s",
   },
   contentStyle: {
@@ -105,17 +96,17 @@ const styles = {
   },
   nameStyle: {
     fontWeight: 500,
-    color: "#f9fafb",
+    color: colors.text.light,
     fontSize: "0.85rem",
   },
   probabilityStyle: {
     fontSize: "0.875rem",
     fontWeight: "bold",
-    color: "#dfc296",
+    color: colors.secondary,
   },
   barContainerStyle: {
     width: "100%",
-    backgroundColor: "rgba(40, 30, 20, 0.5)",
+    backgroundColor: colors.background.medium,
     borderRadius: "9999px",
     height: "0.5rem",
   },
@@ -134,14 +125,14 @@ const styles = {
     gap: "1.5rem",
     fontSize: "0.875rem",
     padding: "0.75rem",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
+    backgroundColor: colors.background.light,
     borderRadius: "0.5rem",
-    borderBottom: "1px solid #4d3923",
+    borderBottom: `1px solid ${colors.border}`,
   },
   legendItemStyle: {
     display: "flex",
     alignItems: "center",
-    color: "#f9fafb",
+    color: colors.text.light,
   },
 };
 
@@ -177,9 +168,9 @@ const ResourceProbability = () => {
   });
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Village Resource Roll Probabilities</div>
-      <div style={styles.resourceGridStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Village Resource Roll Probabilities</div>
+      <div style={componentStyles.resourceGridStyle}>
         {sortedResources.map((item) => {
           const id = resourceNameToId[item.name];
           const rarityTier = getRarityTier(item.probability);
@@ -201,7 +192,7 @@ const ResourceProbability = () => {
             <div
               key={id}
               style={{
-                ...styles.resourceItemStyle,
+                ...componentStyles.resourceItemStyle,
                 borderLeft: `3px solid ${barColor}`,
               }}
             >
@@ -216,41 +207,43 @@ const ResourceProbability = () => {
                 <ResourceIcon name={item.name} id={id} size="md" />
               </div>
 
-              <div style={styles.contentStyle}>
-                <div style={styles.headerStyle}>
-                  <span style={styles.nameStyle}>{item.name}</span>
-                  <span style={{ ...styles.probabilityStyle, color: barColor }}>{item.probability.toFixed(3)}%</span>
+              <div style={componentStyles.contentStyle}>
+                <div style={componentStyles.headerStyle}>
+                  <span style={componentStyles.nameStyle}>{item.name}</span>
+                  <span style={{ ...componentStyles.probabilityStyle, color: barColor }}>
+                    {item.probability.toFixed(3)}%
+                  </span>
                 </div>
 
-                <div style={styles.barContainerStyle}>
+                <div style={componentStyles.barContainerStyle}>
                   <div style={barStyle}></div>
                 </div>
 
-                <div style={{ ...styles.rarityTextStyle, color: barColor }}>{rarityTier}</div>
+                <div style={{ ...componentStyles.rarityTextStyle, color: barColor }}>{rarityTier}</div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div style={styles.legendContainerStyle}>
-        <div style={styles.legendItemStyle}>
+      <div style={componentStyles.legendContainerStyle}>
+        <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("common"))}></div>
           <span>Common</span>
         </div>
-        <div style={styles.legendItemStyle}>
+        <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("uncommon"))}></div>
           <span>Uncommon</span>
         </div>
-        <div style={styles.legendItemStyle}>
+        <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("rare"))}></div>
           <span>Rare</span>
         </div>
-        <div style={styles.legendItemStyle}>
+        <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("epic"))}></div>
           <span>Epic</span>
         </div>
-        <div style={styles.legendItemStyle}>
+        <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("legendary"))}></div>
           <span>Legendary</span>
         </div>

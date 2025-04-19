@@ -1,60 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
-
-// Helper function to format numbers with commas
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
-};
-
-// Common styles shared with WeightTable component
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
-  tableStyle: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
-  },
-  headerCellStyle: {
-    padding: "0.5rem",
-    backgroundColor: "rgba(60, 40, 20, 0.5)",
-    color: "#f0b060",
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: "1px solid #6d4923",
-  },
-  cellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-  },
-  resourceCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  weightCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    color: "#dfc296",
-  },
-};
+import { formatAmount, section, table } from "./styles";
 
 export default function ResourceTable() {
   const config = ETERNUM_CONFIG();
@@ -103,39 +50,30 @@ export default function ResourceTable() {
 
   return (
     <div>
-      <div style={{ fontWeight: "bold", marginBottom: "1.5rem", fontSize: "1.25rem" }}>Resources</div>
+      <div style={section.title}>Resources</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
+      <div style={section.grid}>
         {/* Basic Resources Section */}
-        <div
-          style={{
-            border: "1px solid #4d3923",
-            padding: "1rem",
-            borderRadius: "0.5rem",
-            backgroundColor: "rgba(30, 20, 10, 0.3)",
-          }}
-        >
-          <div style={styles.subtitleStyle}>Basic Resources</div>
+        <div style={section.card}>
+          <div style={section.subtitle}>Basic Resources</div>
 
-          <table style={styles.tableStyle}>
+          <table style={table.table}>
             <thead>
               <tr>
-                <th style={styles.headerCellStyle}>Resource</th>
-                <th style={styles.headerCellStyle}>Weight (kg)</th>
-                <th style={styles.headerCellStyle}>Production</th>
+                <th style={table.headerCell}>Resource</th>
+                <th style={table.headerCell}>Weight (kg)</th>
+                <th style={table.headerCell}>Production</th>
               </tr>
             </thead>
             <tbody>
               {[ResourcesIds.Wheat, ResourcesIds.Fish].map((id) => (
                 <tr key={id}>
-                  <td style={styles.resourceCellStyle}>
+                  <td style={table.resourceCell}>
                     <ResourceIcon id={id} name={getResourceName(id)} size="md" />
                     {getResourceName(id)}
                   </td>
-                  <td style={styles.weightCellStyle}>
-                    {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
-                  </td>
-                  <td style={styles.cellStyle}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
+                  <td style={table.weightCell}>{formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}</td>
+                  <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
                 </tr>
               ))}
             </tbody>
@@ -143,33 +81,26 @@ export default function ResourceTable() {
         </div>
 
         {/* Starting Resources */}
-        <div
-          style={{
-            border: "1px solid #4d3923",
-            padding: "1rem",
-            borderRadius: "0.5rem",
-            backgroundColor: "rgba(30, 20, 10, 0.3)",
-          }}
-        >
-          <div style={styles.subtitleStyle}>Starting Resources</div>
+        <div style={section.card}>
+          <div style={section.subtitle}>Starting Resources</div>
 
-          <table style={styles.tableStyle}>
+          <table style={table.table}>
             <thead>
               <tr>
-                <th style={styles.headerCellStyle}>Resource</th>
-                <th style={styles.headerCellStyle}>Realm</th>
-                <th style={styles.headerCellStyle}>Village</th>
+                <th style={table.headerCell}>Resource</th>
+                <th style={table.headerCell}>Realm</th>
+                <th style={table.headerCell}>Village</th>
               </tr>
             </thead>
             <tbody>
               {config.startingResources.map(({ resource, amount }) => (
                 <tr key={resource}>
-                  <td style={styles.resourceCellStyle}>
+                  <td style={table.resourceCell}>
                     <ResourceIcon id={resource} name={getResourceName(resource)} size="md" />
                     {getResourceName(resource)}
                   </td>
-                  <td style={styles.cellStyle}>{formatAmount(amount)}</td>
-                  <td style={styles.cellStyle}>
+                  <td style={table.cell}>{formatAmount(amount)}</td>
+                  <td style={table.cell}>
                     {formatAmount(config.villageStartingResources.find((r) => r.resource === resource)?.amount || 0)}
                   </td>
                 </tr>
@@ -180,27 +111,18 @@ export default function ResourceTable() {
       </div>
 
       {/* Main Resource Table */}
-      <div
-        style={{
-          ...styles.sectionStyle,
-          marginTop: "1.5rem",
-          border: "1px solid #4d3923",
-          padding: "1rem",
-          borderRadius: "0.5rem",
-          backgroundColor: "rgba(30, 20, 10, 0.3)",
-        }}
-      >
-        <div style={styles.subtitleStyle}>Resource Production</div>
+      <div style={{ ...section.wrapper, marginTop: "1.5rem", ...section.card }}>
+        <div style={section.subtitle}>Resource Production</div>
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={styles.tableStyle}>
+        <div style={table.wrapper}>
+          <table style={table.table}>
             <thead>
               <tr>
-                <th style={styles.headerCellStyle}>Resource</th>
-                <th style={styles.headerCellStyle}>Weight (kg)</th>
-                <th style={styles.headerCellStyle}>Output (p/s)</th>
-                <th style={styles.headerCellStyle}>Inputs</th>
-                <th style={styles.headerCellStyle}>Labor Value</th>
+                <th style={table.headerCell}>Resource</th>
+                <th style={table.headerCell}>Weight (kg)</th>
+                <th style={table.headerCell}>Output (p/s)</th>
+                <th style={table.headerCell}>Inputs</th>
+                <th style={table.headerCell}>Labor Value</th>
               </tr>
             </thead>
             <tbody>
@@ -208,17 +130,15 @@ export default function ResourceTable() {
                 const inputs = config.resources.productionByComplexRecipe[id] || [];
                 return (
                   <tr key={id}>
-                    <td style={styles.resourceCellStyle}>
+                    <td style={table.resourceCell}>
                       <ResourceIcon id={id} name={getResourceName(id)} size="md" />
                       {getResourceName(id)}
                     </td>
-                    <td style={styles.weightCellStyle}>
+                    <td style={table.weightCell}>
                       {formatAmount(config.resources.resourceWeightsGrams[id] / 1000000)}
                     </td>
-                    <td style={styles.cellStyle}>
-                      {formatAmount(config.resources.productionByComplexRecipeOutputs[id])}
-                    </td>
-                    <td style={styles.cellStyle}>
+                    <td style={table.cell}>{formatAmount(config.resources.productionByComplexRecipeOutputs[id])}</td>
+                    <td style={table.cell}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                         {inputs.map((input) => (
                           <div key={input.resource} style={{ display: "flex", justifyContent: "space-between" }}>
@@ -228,7 +148,7 @@ export default function ResourceTable() {
                         ))}
                       </div>
                     </td>
-                    <td style={styles.cellStyle}>{formatAmount(config.resources.laborOutputPerResource[id])}</td>
+                    <td style={table.cell}>{formatAmount(config.resources.laborOutputPerResource[id])}</td>
                   </tr>
                 );
               })}
@@ -238,26 +158,17 @@ export default function ResourceTable() {
       </div>
 
       {/* Simple Production System */}
-      <div
-        style={{
-          ...styles.sectionStyle,
-          marginTop: "1.5rem",
-          border: "1px solid #4d3923",
-          padding: "1rem",
-          borderRadius: "0.5rem",
-          backgroundColor: "rgba(30, 20, 10, 0.3)",
-        }}
-      >
-        <div style={styles.subtitleStyle}>Simple Production System</div>
+      <div style={{ ...section.wrapper, marginTop: "1.5rem", ...section.card }}>
+        <div style={section.subtitle}>Simple Production System</div>
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={styles.tableStyle}>
+        <div style={table.wrapper}>
+          <table style={table.table}>
             <thead>
               <tr>
-                <th style={styles.headerCellStyle}>Resource</th>
-                <th style={styles.headerCellStyle}>Output (p/s)</th>
-                <th style={styles.headerCellStyle}>Labor Input</th>
-                <th style={styles.headerCellStyle}>Food Input</th>
+                <th style={table.headerCell}>Resource</th>
+                <th style={table.headerCell}>Output (p/s)</th>
+                <th style={table.headerCell}>Labor Input</th>
+                <th style={table.headerCell}>Food Input</th>
               </tr>
             </thead>
             <tbody>
@@ -270,15 +181,13 @@ export default function ResourceTable() {
 
                 return (
                   <tr key={id}>
-                    <td style={styles.resourceCellStyle}>
+                    <td style={table.resourceCell}>
                       <ResourceIcon id={id} name={getResourceName(id)} size="md" />
                       {getResourceName(id)}
                     </td>
-                    <td style={styles.cellStyle}>
-                      {formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}
-                    </td>
-                    <td style={styles.cellStyle}>{laborInput ? formatAmount(laborInput.amount) : "-"}</td>
-                    <td style={styles.cellStyle}>
+                    <td style={table.cell}>{formatAmount(config.resources.productionBySimpleRecipeOutputs[id])}</td>
+                    <td style={table.cell}>{laborInput ? formatAmount(laborInput.amount) : "-"}</td>
+                    <td style={table.cell}>
                       {foodInput ? (
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           <span>{getResourceName(foodInput.resource)}</span>

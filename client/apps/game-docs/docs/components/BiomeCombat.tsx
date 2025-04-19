@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { colors, icon, modifiers, section, table } from "./styles";
 
 // Biome types enum to match the provided code
 enum BiomeType {
@@ -27,96 +28,6 @@ enum TroopType {
   Knight = "Knight",
   Crossbowman = "Crossbowman",
 }
-
-// Styles for the component
-const styles = {
-  container: {
-    marginBottom: "2.5rem",
-  },
-  title: {
-    fontWeight: "bold",
-    fontSize: "1.2rem",
-    color: "#f0b060",
-    marginBottom: "1.5rem",
-    borderLeft: "3px solid #f0b060",
-    paddingLeft: "0.75rem",
-  },
-  tableContainer: {
-    overflowX: "auto" as const,
-    borderRadius: "0.75rem",
-    backgroundColor: "rgba(40, 30, 20, 0.5)",
-    borderBottom: "1px solid #4d3923",
-    borderLeft: "1px solid #4d3923",
-    marginBottom: "1.5rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.9rem",
-  },
-  tableHead: {
-    backgroundColor: "rgba(40, 30, 20, 0.7)",
-  },
-  tableHeaderCell: {
-    textAlign: "center" as const,
-    padding: "0.75rem 1rem",
-    color: "#f0b060",
-    fontWeight: "bold",
-    borderBottom: "1px solid #6d4923",
-  },
-  biomeCell: {
-    padding: "0.75rem 1rem",
-    borderBottom: "1px solid rgba(109, 73, 35, 0.3)",
-    color: "#f9fafb",
-    fontWeight: 500,
-    display: "flex" as const,
-    alignItems: "center" as const,
-    gap: "0.5rem",
-  },
-  tableCell: {
-    padding: "0.75rem 1rem",
-    borderBottom: "1px solid rgba(109, 73, 35, 0.3)",
-    textAlign: "center" as const,
-    color: "#dfc296",
-  },
-  positiveModifier: {
-    color: "#69db7c",
-    fontWeight: "bold",
-  },
-  negativeModifier: {
-    color: "#ff6b6b",
-    fontWeight: "bold",
-  },
-  noModifier: {
-    color: "#dfc296",
-  },
-  biomeIcon: {
-    display: "inline-block",
-    width: "1.5rem",
-    textAlign: "center" as const,
-  },
-  iconWrapper: {
-    display: "flex" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    width: "2rem",
-    height: "2rem",
-    borderRadius: "50%",
-    backgroundColor: "rgba(240, 176, 96, 0.1)",
-    marginRight: "0.5rem",
-  },
-  legend: {
-    backgroundColor: "rgba(30, 20, 10, 0.4)",
-    padding: "1rem 1.5rem",
-    borderRadius: "0.5rem",
-    marginTop: "1rem",
-    fontStyle: "italic" as const,
-    fontSize: "0.9rem",
-    color: "#f9fafb",
-    opacity: 0.85,
-  },
-};
 
 // Function to get biome icon
 const getBiomeIcon = (biome: BiomeType): string => {
@@ -263,19 +174,16 @@ export const BiomeCombat = () => {
     return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   };
 
-  // Function to render cell content with appropriate styling
+  // Render function for the combat bonus
   const renderCombatBonus = (biome: BiomeType, troopType: TroopType) => {
-    const bonus = getBiomeCombatBonus(biome, troopType);
-    const diff = bonus - 1;
-
-    let style = styles.noModifier;
-    if (diff > 0) style = styles.positiveModifier;
-    if (diff < 0) style = styles.negativeModifier;
-
-    // Format the bonus as a percentage with a sign
-    const formattedBonus = diff === 0 ? "0%" : `${diff > 0 ? "+" : ""}${(diff * 100).toFixed(1)}%`;
-
-    return <div style={style}>{formattedBonus}</div>;
+    const bonus = getBiomeCombatBonus(biome, troopType) - 1;
+    if (bonus > 0) {
+      return <span style={modifiers.positive}>+{(bonus * 100).toFixed(0)}%</span>;
+    } else if (bonus < 0) {
+      return <span style={modifiers.negative}>{(bonus * 100).toFixed(0)}%</span>;
+    } else {
+      return <span style={modifiers.neutral}>0%</span>;
+    }
   };
 
   // Group biomes into categories for better organization
@@ -309,22 +217,29 @@ export const BiomeCombat = () => {
   ];
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Biome Combat Bonuses</h2>
+    <div style={section.wrapper}>
+      <div style={section.accentedTitle}>Biome Combat Modifiers</div>
 
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
-          <thead style={styles.tableHead}>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
             <tr>
-              <th style={styles.tableHeaderCell}>Biome</th>
-              {Object.values(TroopType).map((troopType) => (
-                <th key={troopType} style={styles.tableHeaderCell}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={styles.iconWrapper}>{getTroopIcon(troopType)}</span>
-                    {troopType}
-                  </div>
-                </th>
-              ))}
+              <th style={table.headerCell}>Biome</th>
+              <th style={table.headerCell}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={icon.biome}>{getTroopIcon(TroopType.Knight)}</span> Knight
+                </div>
+              </th>
+              <th style={table.headerCell}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={icon.biome}>{getTroopIcon(TroopType.Crossbowman)}</span> Crossbowman
+                </div>
+              </th>
+              <th style={table.headerCell}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={icon.biome}>{getTroopIcon(TroopType.Paladin)}</span> Paladin
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -334,11 +249,11 @@ export const BiomeCombat = () => {
                   <td
                     colSpan={4}
                     style={{
-                      ...styles.tableCell,
+                      ...table.cell,
                       textAlign: "left",
                       fontWeight: "bold",
-                      backgroundColor: "rgba(40, 30, 20, 0.5)",
-                      color: "#f0b060",
+                      backgroundColor: colors.background.medium,
+                      color: colors.primary,
                     }}
                   >
                     {group.name}
@@ -346,15 +261,17 @@ export const BiomeCombat = () => {
                 </tr>
                 {group.biomes.map((biome) => (
                   <tr key={biome}>
-                    <td style={styles.biomeCell}>
-                      <span style={styles.biomeIcon}>{getBiomeIcon(biome)}</span>
+                    <td style={table.cell}>
+                      <span style={icon.biome}>{getBiomeIcon(biome)}</span>
                       {biome.replace(/([A-Z])/g, " $1").trim()}
                     </td>
-                    {Object.values(TroopType).map((troopType) => (
-                      <td key={`${biome}-${troopType}`} style={styles.tableCell}>
-                        {renderCombatBonus(biome, troopType)}
-                      </td>
-                    ))}
+                    <td style={{ ...table.cell, textAlign: "center" }}>{renderCombatBonus(biome, TroopType.Knight)}</td>
+                    <td style={{ ...table.cell, textAlign: "center" }}>
+                      {renderCombatBonus(biome, TroopType.Crossbowman)}
+                    </td>
+                    <td style={{ ...table.cell, textAlign: "center" }}>
+                      {renderCombatBonus(biome, TroopType.Paladin)}
+                    </td>
                   </tr>
                 ))}
               </>
@@ -363,14 +280,9 @@ export const BiomeCombat = () => {
         </table>
       </div>
 
-      <div style={styles.legend}>
-        <p>
-          <span style={styles.positiveModifier}>Green values</span> indicate increased damage (advantageous).
-          <br />
-          <span style={styles.negativeModifier}>Red values</span> indicate decreased damage (disadvantageous).
-          <br />
-          Biome combat modifier value: ±{(biomeBonus * 100).toFixed(1)}%
-        </p>
+      <div style={section.legend}>
+        Note: These modifiers affect combat damage in different biomes. Positive values mean the troop does more damage
+        in that biome, negative values mean they do less damage.
       </div>
     </div>
   );

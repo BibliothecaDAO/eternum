@@ -1,65 +1,15 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { formatAmount, section, table } from "./styles";
 
-// Helper function to format numbers with commas
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
+// Helper function to get resource name
+const getResourceName = (id: number): string => {
+  return resources.find((r) => r.id === id)?.trait || `Resource ${id}`;
 };
 
-// Common styles shared between components
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
-  tableStyle: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
-  },
-  headerCellStyle: {
-    padding: "0.5rem",
-    backgroundColor: "rgba(60, 40, 20, 0.5)",
-    color: "#f0b060",
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: "1px solid #6d4923",
-  },
-  cellStyle: {
-    padding: "0.8rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-  },
-  resourceCellStyle: {
-    padding: "0.8rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  productionCellStyle: {
-    padding: "0.8rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    color: "#dfc296",
-  },
-  resourceGroupStyle: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: "0.25rem",
-    alignItems: "center",
-  },
+// Additional component-specific styles
+const componentStyles = {
   resourceItemStyle: {
     display: "flex",
     alignItems: "center",
@@ -69,11 +19,12 @@ const styles = {
     borderRadius: "0.25rem",
     fontSize: "0.75rem",
   },
-};
-
-// Helper function to get resource name
-const getResourceName = (id: number): string => {
-  return resources.find((r) => r.id === id)?.trait || `Resource ${id}`;
+  resourceGroupStyle: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "0.25rem",
+    alignItems: "center",
+  },
 };
 
 // Component for Hyperstructure Construction Costs
@@ -89,15 +40,15 @@ export const HyperstructureConstructionCostTable = () => {
   });
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Hyperstructure Construction Costs</div>
-      <table style={styles.tableStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Hyperstructure Construction Costs</div>
+      <table style={table.table}>
         <thead>
           <tr>
-            <th style={styles.headerCellStyle}>Resource</th>
-            <th style={styles.headerCellStyle}>Completion Points</th>
-            <th style={styles.headerCellStyle}>Min Amount</th>
-            <th style={styles.headerCellStyle}>Max Amount</th>
+            <th style={table.headerCell}>Resource</th>
+            <th style={table.headerCell}>Completion Points</th>
+            <th style={table.headerCell}>Min Amount</th>
+            <th style={table.headerCell}>Max Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -109,21 +60,21 @@ export const HyperstructureConstructionCostTable = () => {
 
             return (
               <tr key={`construction-${hyperstructureId}`}>
-                <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceItemStyle}>
+                <td style={table.weightCell}>
+                  <div style={componentStyles.resourceItemStyle}>
                     <ResourceIcon id={resourceId} name={resourceName} size="md" />
                     {resourceName}
                   </div>
                 </td>
-                <td style={styles.productionCellStyle}>
+                <td style={table.weightCell}>
                   {resource_completion_points > 0 ? formatAmount(Number(resource_completion_points)) : "-"}
                 </td>
-                <td style={styles.productionCellStyle}>
+                <td style={table.weightCell}>
                   {min_amount && min_amount !== max_amount
                     ? formatAmount(Number(min_amount))
                     : formatAmount(Number(max_amount))}
                 </td>
-                <td style={styles.productionCellStyle}>{formatAmount(Number(max_amount))}</td>
+                <td style={table.weightCell}>{formatAmount(Number(max_amount))}</td>
               </tr>
             );
           })}
@@ -142,24 +93,24 @@ export const HyperstructureInitializationShardsTable = () => {
   const amount = hyperstructureInitializationShardsCost.amount;
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Hyperstructure Initialization Shards Cost</div>
-      <table style={styles.tableStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Hyperstructure Initialization Shards Cost</div>
+      <table style={table.table}>
         <thead>
           <tr>
-            <th style={styles.headerCellStyle}>Resource</th>
-            <th style={styles.headerCellStyle}>Amount</th>
+            <th style={table.headerCell}>Resource</th>
+            <th style={table.headerCell}>Amount</th>
           </tr>
         </thead>
         <tbody>
           <tr key={`shards-${resourceId}`}>
-            <td style={styles.productionCellStyle}>
-              <div style={styles.resourceItemStyle}>
+            <td style={table.weightCell}>
+              <div style={componentStyles.resourceItemStyle}>
                 <ResourceIcon id={resourceId} name={resourceName} size="md" />
                 {resourceName}
               </div>
             </td>
-            <td style={styles.productionCellStyle}>{formatAmount(Number(amount))}</td>
+            <td style={table.weightCell}>{formatAmount(Number(amount))}</td>
           </tr>
         </tbody>
       </table>
@@ -174,26 +125,30 @@ export const HyperstructurePointsTable = () => {
   const hyperstructurePointsForWin = config.hyperstructures.hyperstructurePointsForWin;
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Hyperstructure Points Information</div>
-      <table style={styles.tableStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Hyperstructure Points Information</div>
+      <table style={table.table}>
         <thead>
           <tr>
-            <th style={styles.headerCellStyle}>Metric</th>
-            <th style={styles.headerCellStyle}>Value</th>
+            <th style={table.headerCell}>Metric</th>
+            <th style={table.headerCell}>Value</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style={styles.productionCellStyle}>Points Per Cycle</td>
-            <td style={styles.productionCellStyle}>
-              <div style={styles.resourceItemStyle}>{formatAmount(Number(hyperstructurePointsPerCycle))} points</div>
+            <td style={table.weightCell}>Points Per Cycle</td>
+            <td style={table.weightCell}>
+              <div style={componentStyles.resourceItemStyle}>
+                {formatAmount(Number(hyperstructurePointsPerCycle))} points
+              </div>
             </td>
           </tr>
           <tr>
-            <td style={styles.productionCellStyle}>Points Required For Win</td>
-            <td style={styles.productionCellStyle}>
-              <div style={styles.resourceItemStyle}>{formatAmount(Number(hyperstructurePointsForWin))} points</div>
+            <td style={table.weightCell}>Points Required For Win</td>
+            <td style={table.weightCell}>
+              <div style={componentStyles.resourceItemStyle}>
+                {formatAmount(Number(hyperstructurePointsForWin))} points
+              </div>
             </td>
           </tr>
         </tbody>

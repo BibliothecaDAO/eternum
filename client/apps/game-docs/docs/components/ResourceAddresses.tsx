@@ -1,61 +1,10 @@
 import { getResourceAddresses } from "@/utils/addresses";
 import { resources, ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { colors, section, table } from "./styles";
 
-// Helper function to format numbers with commas
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
-};
-
-// Common styles shared with WeightTable component
-const styles = {
-  sectionStyle: {
-    marginBottom: "2rem",
-  },
-  subtitleStyle: {
-    fontWeight: "bold",
-    fontSize: "0.9rem",
-    color: "#f0b060",
-    marginBottom: "0.75rem",
-    marginTop: "1.5rem",
-  },
-  tableStyle: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
-  },
-  headerCellStyle: {
-    padding: "0.5rem",
-    backgroundColor: "rgba(60, 40, 20, 0.5)",
-    color: "#f0b060",
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: "1px solid #6d4923",
-  },
-  cellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-  },
-  resourceCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  addressCellStyle: {
-    padding: "0.5rem",
-    borderBottom: "1px solid #4d3923",
-    backgroundColor: "rgba(30, 20, 10, 0.3)",
-    verticalAlign: "middle" as const,
-    color: "#dfc296",
-    fontFamily: "monospace",
-    fontSize: "0.8rem",
-  },
+// Additional component-specific styles
+const componentStyles = {
   resourceNameWithId: {
     display: "flex",
     flexDirection: "column" as const,
@@ -64,6 +13,12 @@ const styles = {
     fontSize: "0.7rem",
     color: "#999",
     marginTop: "0.2rem",
+  },
+  addressCell: {
+    ...table.cell,
+    color: colors.secondary,
+    fontFamily: "monospace",
+    fontSize: "0.8rem",
   },
 };
 
@@ -95,26 +50,26 @@ export const ResourceAddresses = () => {
     .sort((a, b) => a.id - b.id);
 
   return (
-    <div style={styles.sectionStyle}>
-      <div style={styles.subtitleStyle}>Resource Addresses</div>
-      <table style={styles.tableStyle}>
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Resource Addresses</div>
+      <table style={table.table}>
         <thead>
           <tr>
-            <th style={styles.headerCellStyle}>Resource</th>
-            <th style={styles.headerCellStyle}>Address</th>
+            <th style={table.headerCell}>Resource</th>
+            <th style={table.headerCell}>Address</th>
           </tr>
         </thead>
         <tbody>
           {addressesArray.map((item) => (
             <tr key={`address-${item.id}`}>
-              <td style={styles.resourceCellStyle}>
+              <td style={table.resourceCell}>
                 <ResourceIcon id={item.id} name={item.resourceName} size="md" />
-                <div style={styles.resourceNameWithId}>
+                <div style={componentStyles.resourceNameWithId}>
                   {item.resourceName.charAt(0) + item.resourceName.slice(1).toLowerCase()}
-                  <span style={styles.resourceId}>ID: {item.id}</span>
+                  <span style={componentStyles.resourceId}>ID: {item.id}</span>
                 </div>
               </td>
-              <td style={styles.addressCellStyle}>{item.address}</td>
+              <td style={componentStyles.addressCell}>{item.address}</td>
             </tr>
           ))}
         </tbody>

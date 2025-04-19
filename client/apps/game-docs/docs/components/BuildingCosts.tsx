@@ -1,14 +1,10 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { BuildingType, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { colors, formatAmount } from "./styles";
 
 type Props = {
   buildingType: BuildingType;
-};
-
-// Helper function to format numbers with commas
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat().format(Math.round(amount));
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
@@ -34,44 +30,42 @@ export default function BuildingCosts({ buildingType }: Props) {
     buildingType === BuildingType.ResourcePaladinT3;
 
   // Compact styles
-  const containerStyle = {
-    marginTop: "0.5rem",
-    borderTop: "1px solid #6d4923",
-    paddingTop: "0.5rem",
-  };
-
-  const titleStyle = {
-    fontWeight: "bold",
-    fontSize: "0.875rem",
-    color: "#f6c297",
-    marginBottom: "0.375rem",
-  };
-
-  const modeHeaderStyle = {
-    fontSize: "0.75rem",
-    color: "#f0b060",
-    backgroundColor: "rgba(60, 40, 20, 0.3)",
-    padding: "0.125rem 0.375rem",
-    borderRadius: "0.25rem",
-    marginBottom: "0.25rem",
-    display: "inline-block",
-  };
-
-  const costsContainerStyle = {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: "0.25rem",
-    marginBottom: "0.5rem",
-  };
-
-  const costItemStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.25rem",
-    padding: "0.25rem 0.375rem",
-    backgroundColor: "rgba(40, 30, 25, 0.6)",
-    borderRadius: "0.25rem",
-    fontSize: "0.75rem",
+  const styles = {
+    container: {
+      marginTop: "0.5rem",
+      borderTop: `1px solid ${colors.borderDark}`,
+      paddingTop: "0.5rem",
+    },
+    title: {
+      fontWeight: "bold",
+      fontSize: "0.875rem",
+      color: "#f6c297",
+      marginBottom: "0.375rem",
+    },
+    modeHeader: {
+      fontSize: "0.75rem",
+      color: colors.primary,
+      backgroundColor: "rgba(60, 40, 20, 0.3)",
+      padding: "0.125rem 0.375rem",
+      borderRadius: "0.25rem",
+      marginBottom: "0.25rem",
+      display: "inline-block",
+    },
+    costsContainer: {
+      display: "flex",
+      flexWrap: "wrap" as const,
+      gap: "0.25rem",
+      marginBottom: "0.5rem",
+    },
+    costItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.25rem",
+      padding: "0.25rem 0.375rem",
+      backgroundColor: "rgba(40, 30, 25, 0.6)",
+      borderRadius: "0.25rem",
+      fontSize: "0.75rem",
+    },
   };
 
   if (simpleCosts.length === 0 && complexCosts.length === 0) return null;
@@ -80,11 +74,11 @@ export default function BuildingCosts({ buildingType }: Props) {
   if (isResourceBuilding) {
     const costs = complexCosts;
     return (
-      <div style={containerStyle}>
-        <div style={titleStyle}>Building Costs</div>
-        <div style={costsContainerStyle}>
+      <div style={styles.container}>
+        <div style={styles.title}>Building Costs</div>
+        <div style={styles.costsContainer}>
           {costs.map((cost) => (
-            <div key={cost.resource} style={costItemStyle}>
+            <div key={cost.resource} style={styles.costItem}>
               <ResourceIcon
                 id={cost.resource}
                 name={resources.find((r) => r.id === cost.resource)?.trait || ""}
@@ -101,12 +95,12 @@ export default function BuildingCosts({ buildingType }: Props) {
   // Military T2/T3 buildings are complex mode only
   if (isComplexOnly) {
     return (
-      <div style={containerStyle}>
-        <div style={titleStyle}>Building Costs</div>
-        <div style={modeHeaderStyle}>Complex Only</div>
-        <div style={costsContainerStyle}>
+      <div style={styles.container}>
+        <div style={styles.title}>Building Costs</div>
+        <div style={styles.modeHeader}>Complex Only</div>
+        <div style={styles.costsContainer}>
           {complexCosts.map((cost) => (
-            <div key={cost.resource} style={costItemStyle}>
+            <div key={cost.resource} style={styles.costItem}>
               <ResourceIcon
                 id={cost.resource}
                 name={resources.find((r) => r.id === cost.resource)?.trait || ""}
@@ -122,14 +116,14 @@ export default function BuildingCosts({ buildingType }: Props) {
 
   // For regular buildings that have both simple and complex modes
   return (
-    <div style={containerStyle}>
-      <div style={titleStyle}>Building Costs</div>
+    <div style={styles.container}>
+      <div style={styles.title}>Building Costs</div>
 
       <div>
-        <div style={modeHeaderStyle}>Simple</div>
-        <div style={costsContainerStyle}>
+        <div style={styles.modeHeader}>Simple</div>
+        <div style={styles.costsContainer}>
           {simpleCosts.map((cost) => (
-            <div key={cost.resource} style={costItemStyle}>
+            <div key={cost.resource} style={styles.costItem}>
               <ResourceIcon
                 id={cost.resource}
                 name={resources.find((r) => r.id === cost.resource)?.trait || ""}
@@ -142,10 +136,10 @@ export default function BuildingCosts({ buildingType }: Props) {
       </div>
 
       <div>
-        <div style={modeHeaderStyle}>Complex</div>
-        <div style={costsContainerStyle}>
+        <div style={styles.modeHeader}>Complex</div>
+        <div style={styles.costsContainer}>
           {complexCosts.map((cost) => (
-            <div key={cost.resource} style={costItemStyle}>
+            <div key={cost.resource} style={styles.costItem}>
               <ResourceIcon
                 id={cost.resource}
                 name={resources.find((r) => r.id === cost.resource)?.trait || ""}

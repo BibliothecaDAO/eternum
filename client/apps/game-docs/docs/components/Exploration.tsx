@@ -1,3 +1,5 @@
+import { section } from "./styles";
+
 export const Exploration = () => {
-  return <div>Exploration</div>;
+  return <div style={section.wrapper}>Exploration content coming soon</div>;
 };

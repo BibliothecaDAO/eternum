@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { colors, icon, modifiers, section, table } from "./styles";
 
 // Biome types enum to match the provided code
 enum BiomeType {
@@ -26,96 +27,6 @@ enum TroopType {
   Knight = "Knight",
   Crossbowman = "Crossbowman",
 }
-
-// Styles for the component
-const styles = {
-  container: {
-    marginBottom: "2.5rem",
-  },
-  title: {
-    fontWeight: "bold",
-    fontSize: "1.2rem",
-    color: "#f0b060",
-    marginBottom: "1.5rem",
-    borderLeft: "3px solid #f0b060",
-    paddingLeft: "0.75rem",
-  },
-  tableContainer: {
-    overflowX: "auto" as const,
-    borderRadius: "0.75rem",
-    backgroundColor: "rgba(40, 30, 20, 0.5)",
-    borderBottom: "1px solid #4d3923",
-    borderLeft: "1px solid #4d3923",
-    marginBottom: "1.5rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.9rem",
-  },
-  tableHead: {
-    backgroundColor: "rgba(40, 30, 20, 0.7)",
-  },
-  tableHeaderCell: {
-    textAlign: "center" as const,
-    padding: "0.75rem 1rem",
-    color: "#f0b060",
-    fontWeight: "bold",
-    borderBottom: "1px solid #6d4923",
-  },
-  biomeCell: {
-    padding: "0.75rem 1rem",
-    borderBottom: "1px solid rgba(109, 73, 35, 0.3)",
-    color: "#f9fafb",
-    fontWeight: 500,
-    display: "flex" as const,
-    alignItems: "center" as const,
-    gap: "0.5rem",
-  },
-  tableCell: {
-    padding: "0.75rem 1rem",
-    borderBottom: "1px solid rgba(109, 73, 35, 0.3)",
-    textAlign: "center" as const,
-    color: "#dfc296",
-  },
-  positiveModifier: {
-    color: "#ff6b6b",
-    fontWeight: "bold",
-  },
-  negativeModifier: {
-    color: "#69db7c",
-    fontWeight: "bold",
-  },
-  noModifier: {
-    color: "#dfc296",
-  },
-  biomeIcon: {
-    display: "inline-block",
-    width: "1.5rem",
-    textAlign: "center" as const,
-  },
-  iconWrapper: {
-    display: "flex" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    width: "2rem",
-    height: "2rem",
-    borderRadius: "50%",
-    backgroundColor: "rgba(240, 176, 96, 0.1)",
-    marginRight: "0.5rem",
-  },
-  legend: {
-    backgroundColor: "rgba(30, 20, 10, 0.4)",
-    padding: "1rem 1.5rem",
-    borderRadius: "0.5rem",
-    marginTop: "1rem",
-    fontStyle: "italic" as const,
-    fontSize: "0.9rem",
-    color: "#f9fafb",
-    opacity: 0.85,
-  },
-};
 
 // Function to get biome icon
 const getBiomeIcon = (biome: BiomeType): string => {
@@ -207,11 +118,14 @@ export const BiomeStamina = () => {
     const cost = getTravelStaminaCost(biome, troopType);
     const diff = cost - baseStaminaCost;
 
-    let style = styles.noModifier;
-    if (diff > 0) style = styles.positiveModifier;
-    if (diff < 0) style = styles.negativeModifier;
-
-    return <div style={style}>{cost}</div>;
+    // Note: For stamina, lower is better so the colors are reversed from combat
+    if (diff > 0) {
+      return <div style={modifiers.negative}>{cost}</div>;
+    } else if (diff < 0) {
+      return <div style={modifiers.positive}>{cost}</div>;
+    } else {
+      return <div style={modifiers.neutral}>{cost}</div>;
+    }
   };
 
   // Group biomes into categories for better organization
@@ -245,18 +159,18 @@ export const BiomeStamina = () => {
   ];
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Biome Movement Stamina Costs</h2>
+    <div style={section.wrapper}>
+      <div style={section.accentedTitle}>Biome Movement Stamina Costs</div>
 
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
-          <thead style={styles.tableHead}>
+      <div style={table.container}>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
             <tr>
-              <th style={styles.tableHeaderCell}>Biome</th>
+              <th style={table.headerCell}>Biome</th>
               {Object.values(TroopType).map((troopType) => (
-                <th key={troopType} style={styles.tableHeaderCell}>
+                <th key={troopType} style={table.headerCell}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={styles.iconWrapper}>{getTroopIcon(troopType)}</span>
+                    <span style={icon.wrapper}>{getTroopIcon(troopType)}</span>
                     {troopType}
                   </div>
                 </th>
@@ -270,11 +184,11 @@ export const BiomeStamina = () => {
                   <td
                     colSpan={4}
                     style={{
-                      ...styles.tableCell,
+                      ...table.cell,
                       textAlign: "left",
                       fontWeight: "bold",
-                      backgroundColor: "rgba(40, 30, 20, 0.5)",
-                      color: "#f0b060",
+                      backgroundColor: colors.background.medium,
+                      color: colors.primary,
                     }}
                   >
                     {group.name}
@@ -282,12 +196,12 @@ export const BiomeStamina = () => {
                 </tr>
                 {group.biomes.map((biome) => (
                   <tr key={biome}>
-                    <td style={styles.biomeCell}>
-                      <span style={styles.biomeIcon}>{getBiomeIcon(biome)}</span>
+                    <td style={table.resourceCell}>
+                      <span style={icon.biome}>{getBiomeIcon(biome)}</span>
                       {biome.replace(/([A-Z])/g, " $1").trim()}
                     </td>
                     {Object.values(TroopType).map((troopType) => (
-                      <td key={`${biome}-${troopType}`} style={styles.tableCell}>
+                      <td key={`${biome}-${troopType}`} style={{ ...table.cell, textAlign: "center" }}>
                         {renderStaminaCost(biome, troopType)}
                       </td>
                     ))}
@@ -299,11 +213,11 @@ export const BiomeStamina = () => {
         </table>
       </div>
 
-      <div style={styles.legend}>
+      <div style={section.legend}>
         <p>
-          <span style={styles.negativeModifier}>Green values</span> indicate reduced stamina cost (advantageous).
+          <span style={modifiers.positive}>Green values</span> indicate reduced stamina cost (advantageous).
           <br />
-          <span style={styles.positiveModifier}>Red values</span> indicate increased stamina cost (disadvantageous).
+          <span style={modifiers.negative}>Red values</span> indicate increased stamina cost (disadvantageous).
           <br />
           Base stamina cost for movement: {baseStaminaCost} per hex.
           <br />

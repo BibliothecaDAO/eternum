@@ -1,6 +1,7 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { colors, section, table } from "./styles";
 
 const isMilitary = (id: number): boolean => {
   if (id === ResourcesIds.Knight) return true;
@@ -87,6 +88,67 @@ const styles = {
 // Helper function to get resource name
 const getResourceName = (id: number): string => {
   return resources.find((r) => r.id === id)?.trait || `Resource ${id}`;
+};
+
+// Component-specific styles
+const componentStyles = {
+  infoStyle: {
+    marginTop: "0.5rem",
+    marginBottom: "1rem",
+    padding: "0.5rem 1rem",
+    backgroundColor: "rgba(255, 220, 150, 0.1)",
+    borderRadius: "0.375rem",
+    fontSize: "0.875rem",
+    color: colors.text.light,
+    borderLeft: `3px solid ${colors.primary}`,
+  },
+  gridStyle: {
+    display: "grid",
+    gridTemplateColumns: "repeat(1, minmax(0, 1fr))",
+    gap: "1rem",
+    marginTop: "1rem",
+    marginBottom: "1rem",
+    "@media (min-width: 640px)": {
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    },
+  },
+  sectionItemStyle: {
+    backgroundColor: colors.background.light,
+    borderBottom: `1px solid ${colors.border}`,
+    borderRadius: "0.5rem",
+    padding: "1rem",
+  },
+  sectionTitleStyle: {
+    fontSize: "0.875rem",
+    fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: "0.75rem",
+  },
+  valueStyle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "0.5rem",
+    fontSize: "0.875rem",
+  },
+  labelStyle: {
+    color: colors.text.muted,
+  },
+  amountStyle: {
+    fontWeight: 500,
+    color: colors.text.light,
+  },
+  buildingRequiredStyle: {
+    fontSize: "0.75rem",
+    color: colors.primary,
+    fontStyle: "italic",
+  },
+  tableFootnoteStyle: {
+    fontSize: "0.75rem",
+    color: colors.text.muted,
+    marginTop: "0.5rem",
+    fontStyle: "italic",
+  },
 };
 
 // Component for Simple Mode Resource Production
@@ -468,3 +530,112 @@ export const DonkeyProduction = () => {
     </div>
   );
 };
+
+export default function ResourceProduction() {
+  return (
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Resource Production & Consumption</div>
+
+      <div style={componentStyles.infoStyle}>
+        Resources are produced and consumed in real-time based on your realm's buildings and infrastructure.
+      </div>
+
+      <div style={componentStyles.gridStyle}>
+        {/* Food Production Section */}
+        <div style={componentStyles.sectionItemStyle}>
+          <div style={componentStyles.sectionTitleStyle}>Food Production</div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Base production</span>
+            <span style={componentStyles.amountStyle}>10 per hour</span>
+          </div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Farm (level 1)</span>
+            <span style={componentStyles.amountStyle}>+5 per hour</span>
+          </div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Farm (level 2)</span>
+            <span style={componentStyles.amountStyle}>+10 per hour</span>
+          </div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Farm (level 3)</span>
+            <span style={componentStyles.amountStyle}>+20 per hour</span>
+          </div>
+        </div>
+
+        {/* Food Consumption Section */}
+        <div style={componentStyles.sectionItemStyle}>
+          <div style={componentStyles.sectionTitleStyle}>Food Consumption</div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Worker</span>
+            <span style={componentStyles.amountStyle}>-2 per hour</span>
+          </div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Warrior</span>
+            <span style={componentStyles.amountStyle}>-5 per hour</span>
+          </div>
+
+          <div style={componentStyles.valueStyle}>
+            <span style={componentStyles.labelStyle}>Archer</span>
+            <span style={componentStyles.amountStyle}>-4 per hour</span>
+          </div>
+
+          <div style={componentStyles.buildingRequiredStyle}>* Units will desert if food supplies run out</div>
+        </div>
+      </div>
+
+      <div style={table.wrapper}>
+        <div style={section.subtitle}>Resource Gathering Buildings</div>
+        <table style={table.table}>
+          <thead style={table.tableHead}>
+            <tr>
+              <th style={table.headerCell}>Building</th>
+              <th style={table.headerCell}>Resource</th>
+              <th style={table.headerCell}>Level 1</th>
+              <th style={table.headerCell}>Level 2</th>
+              <th style={table.headerCell}>Level 3</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={table.cell}>Farm</td>
+              <td style={table.cell}>Food</td>
+              <td style={table.cell}>5/hr</td>
+              <td style={table.cell}>10/hr</td>
+              <td style={table.cell}>20/hr</td>
+            </tr>
+            <tr>
+              <td style={table.cell}>Lumbermill</td>
+              <td style={table.cell}>Wood</td>
+              <td style={table.cell}>3/hr</td>
+              <td style={table.cell}>6/hr</td>
+              <td style={table.cell}>12/hr</td>
+            </tr>
+            <tr>
+              <td style={table.cell}>Quarry</td>
+              <td style={table.cell}>Stone</td>
+              <td style={table.cell}>2/hr</td>
+              <td style={table.cell}>4/hr</td>
+              <td style={table.cell}>8/hr</td>
+            </tr>
+            <tr>
+              <td style={table.cell}>Mine</td>
+              <td style={table.cell}>Ore</td>
+              <td style={table.cell}>1/hr</td>
+              <td style={table.cell}>3/hr</td>
+              <td style={table.cell}>6/hr</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={componentStyles.tableFootnoteStyle}>
+          * Resource production is boosted by corresponding realm traits and nearby resources
+        </div>
+      </div>
+    </div>
+  );
+}
