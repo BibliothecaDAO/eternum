@@ -1,3 +1,6 @@
+import TroopMovementTable from "@/components/TroopMovementTable";
+import { BiomeStamina } from "@/components/BiomeStamina";
+
 # 🗺️ World Map & Movement
 
 ## The World Map
@@ -38,7 +41,7 @@ against enemy forces. Each of these actions has a specific stamina cost, making 
 maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
 troop type possesses different maximum stamina capacities, outlined in the table below:
 
-[Table of Troop Types/Tiers and Maximum Stamina]
+<TroopMovementTable />
 
 Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
 themselves severely disadvantaged if attacked by enemy forces.
@@ -53,7 +56,7 @@ destination, and the army has sufficient stamina available for the entire journe
 The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
 within the army. The table below details biome-specific stamina costs for each troop type:
 
-[Table: Biome and Troop Type Stamina Costs]
+<BiomeStamina />
 
 ### Exploring
 

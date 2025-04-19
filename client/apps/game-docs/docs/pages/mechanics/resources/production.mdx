@@ -1,4 +1,10 @@
-import { SimpleResourceProduction, StandardResourceProduction, LaborProduction } from "@/components/ResourceProduction";
+import {
+  StandardTroopProduction,
+  SimpleTroopProduction,
+  SimpleResourceProduction,
+  StandardResourceProduction,
+  LaborProduction,
+} from "@/components/ResourceProduction";
 
 ## Production
 
@@ -68,7 +74,8 @@ tier as input for production.
 Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
 mode.
 
-[troop table - include tiers and simple/standard mode]
+<SimpleTroopProduction />
+<StandardTroopProduction />
 
 #### Donkeys
 

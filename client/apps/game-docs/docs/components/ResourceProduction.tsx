@@ -2,6 +2,19 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { ResourcesIds, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 
+const isMilitary = (id: number): boolean => {
+  if (id === ResourcesIds.Knight) return true;
+  if (id === ResourcesIds.KnightT2) return true;
+  if (id === ResourcesIds.KnightT3) return true;
+  if (id === ResourcesIds.Crossbowman) return true;
+  if (id === ResourcesIds.CrossbowmanT2) return true;
+  if (id === ResourcesIds.CrossbowmanT3) return true;
+  if (id === ResourcesIds.Paladin) return true;
+  if (id === ResourcesIds.PaladinT2) return true;
+  if (id === ResourcesIds.PaladinT3) return true;
+  return false;
+};
+
 // Helper function to format numbers with commas
 const formatAmount = (amount: number): string => {
   return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
@@ -86,6 +99,7 @@ export const SimpleResourceProduction = () => {
   const simpleResourceIds = Object.keys(resourceInputSimpleMode)
     .map(Number)
     .filter((id) => id !== ResourcesIds.Labor && resourceInputSimpleMode[id]?.length > 0)
+    .filter((id) => !isMilitary(id))
     .sort((a, b) => a - b);
 
   return (
@@ -145,8 +159,10 @@ export const StandardResourceProduction = () => {
   const complexResourceIds = Object.keys(resourceInputComplexMode)
     .map(Number)
     .filter((id) => id !== ResourcesIds.Labor && resourceInputComplexMode[id]?.length > 0)
+    .filter((id) => !isMilitary(id))
     .sort((a, b) => a - b);
 
+  console.log(complexResourceIds);
   return (
     <div style={styles.sectionStyle}>
       <div style={styles.subtitleStyle}>Standard Mode Production</div>
@@ -184,6 +200,120 @@ export const StandardResourceProduction = () => {
                     <ResourceIcon id={resourceId} name={resourceName} size="xs" />
                     {formatAmount(outputAmount)}/s
                   </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// Component for Simple Mode Troop Production
+export const SimpleTroopProduction = () => {
+  const config = ETERNUM_CONFIG();
+  const troopInputSimpleMode = config.resources.productionBySimpleRecipe;
+  const troopOutputSimpleMode = config.resources.productionBySimpleRecipeOutputs;
+
+  // Get all troop IDs with production data for simple mode
+  const simpleTroopIds = Object.keys(troopInputSimpleMode)
+    .map(Number)
+    .filter((id) => troopInputSimpleMode[id]?.length > 0)
+    .filter((id) => isMilitary(id))
+    .sort((a, b) => a - b);
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Simple Mode Troop Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Troop</th>
+            <th style={styles.headerCellStyle}>Input Resources</th>
+            <th style={styles.headerCellStyle}>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          {simpleTroopIds.map((troopId) => {
+            const troopName = getResourceName(troopId);
+            const outputAmount = troopOutputSimpleMode[troopId] || 0;
+
+            return (
+              <tr key={`simple-troop-${troopId}`}>
+                <td style={styles.resourceCellStyle}>
+                  <ResourceIcon id={troopId} name={troopName} size="md" />
+                  {troopName}
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceGroupStyle}>
+                    {troopInputSimpleMode[troopId].map((input, idx) => (
+                      <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        {formatAmount(input.amount)}/s
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>{formatAmount(outputAmount)}/s</div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// Component for Standard Mode Troop Production
+export const StandardTroopProduction = () => {
+  const config = ETERNUM_CONFIG();
+  const troopInputComplexMode = config.resources.productionByComplexRecipe;
+  const troopOutputComplexMode = config.resources.productionByComplexRecipeOutputs;
+
+  // Get all troop IDs with production data for complex mode
+  const complexTroopIds = Object.keys(troopInputComplexMode)
+    .map(Number)
+    .filter((id) => troopInputComplexMode[id]?.length > 0)
+    .filter((id) => isMilitary(id))
+    .sort((a, b) => a - b);
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Standard Mode Troop Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Troop</th>
+            <th style={styles.headerCellStyle}>Input Resources</th>
+            <th style={styles.headerCellStyle}>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          {complexTroopIds.map((troopId) => {
+            const troopName = getResourceName(troopId);
+            const outputAmount = troopOutputComplexMode[troopId] || 0;
+
+            return (
+              <tr key={`complex-troop-${troopId}`}>
+                <td style={styles.resourceCellStyle}>
+                  <ResourceIcon id={troopId} name={troopName} size="md" />
+                  {troopName}
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceGroupStyle}>
+                    {troopInputComplexMode[troopId].map((input, idx) => (
+                      <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        {formatAmount(input.amount)}/s
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td style={styles.productionCellStyle}>
+                  <div style={styles.resourceItemStyle}>{formatAmount(outputAmount)}/s</div>
                 </td>
               </tr>
             );

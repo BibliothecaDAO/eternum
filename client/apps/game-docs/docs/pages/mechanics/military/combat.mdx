@@ -1,3 +1,10 @@
+import { BiomeCombat } from "@/components/BiomeCombat";
+import {
+  TotalArmiesTable,
+  RealmDefenseSlotsTable,
+  WorldStructureDefenseSlotsTable,
+} from "@/components/DefendingArmies";
+
 # ⚔️ Combat
 
 ## Armies
@@ -9,12 +16,7 @@ opportunities.
 Each Realm and Village has a limited number of total armies, from which Lords can choose to deploy either attacking or
 defending armies. The number of total armies can be increased by upgrading the Realm / Village level:
 
-| Realm / Village Level | Base No. Total Armies |
-| --------------------- | --------------------- |
-| Settlement            | 2                     |
-| City                  | 3                     |
-| Kingdom               | 5                     |
-| Empire                | 7                     |
+<TotalArmiesTable />
 
 Each military building constructed on a Realm also increases total armies by 1. The maximum size of an army is 100,000
 troops.
@@ -34,21 +36,11 @@ Defending armies do not appear on the world map; instead, they occupy defense sl
 Local view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
 opening up the details tab. Realms and Villages have a maximum number of defensive slots based on their current level:
 
-| Realm / Village Level | No. Defense Slots |
-| --------------------- | ----------------- |
-| Settlement            | 1                 |
-| City                  | 2                 |
-| Kingdom               | 3                 |
-| Empire                | 4                 |
+<RealmDefenseSlotsTable />
 
 Other world structures have a static number of defence slots:
 
-| World Structure           | No. Defense Slots |
-| ------------------------- | ----------------- |
-| Fragment Mine             | 1                 |
-| Hyperstructure Foundation | 2                 |
-| Hyperstructure (complete) | 4                 |
-| Bank                      | 4                 |
+<WorldStructureDefenseSlotsTable />
 
 When attacked, defending armies are targeted sequentially, starting from the outermost slot (slot 4) and progressing
 inward. The outermost defensive army may also launch counter attacks against adjacent hexes. If a defensive army is
@@ -111,6 +103,8 @@ advantage.
 
 - Dominate on open terrain, leveraging mounted maneuverability
 - Dense forests, scorched earth, and aquatic environments reduce combat effectiveness significantly
+
+<BiomeCombat />
 
 ## Damage
 
