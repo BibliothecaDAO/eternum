@@ -66,7 +66,7 @@ export default defineConfig({
           link: "/mechanics/resources/resources",
           collapsed: true,
           items: [
-            { text: "Resources", link: "/mechanics/resources/resources" },
+            // { text: "Resources", link: "/mechanics/resources/resources" },
             { text: "Production", link: "/mechanics/resources/production" },
             { text: "Storage", link: "/mechanics/resources/storage" },
             { text: "Transfers & Trade", link: "/mechanics/resources/transfers-and-trade" },

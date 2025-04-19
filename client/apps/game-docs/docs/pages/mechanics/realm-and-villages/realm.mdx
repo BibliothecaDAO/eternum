@@ -1,4 +1,6 @@
 import { StartingResources, StructureType } from "@/components/StartingResources";
+import { TotalArmiesTable, RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BuildableHexes } from "@/components/BuildableHexes";
 
 ## Realms
 
@@ -26,4 +28,6 @@ Realms can grow from a Settlement into a City, then to a Kingdom, and finally an
 additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
 your defences. Each progression requires specific materials, outlined in the table below:
 
-[table TBC, include base no. armies, defensive army slots, and buildable hexes for each level]
+<BuildableHexes />
+<TotalArmiesTable />
+<RealmDefenseSlotsTable />

@@ -79,7 +79,7 @@ export const WeightTable = () => {
         <thead>
           <tr>
             <th style={styles.headerCellStyle}>Resource</th>
-            <th style={styles.headerCellStyle}>Weight (g)</th>
+            <th style={styles.headerCellStyle}>Weight (kg)</th>
           </tr>
         </thead>
         <tbody>

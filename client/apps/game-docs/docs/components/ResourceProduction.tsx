@@ -100,6 +100,7 @@ export const SimpleResourceProduction = () => {
     .map(Number)
     .filter((id) => id !== ResourcesIds.Labor && resourceInputSimpleMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
+    .filter((id) => id !== ResourcesIds.Donkey)
     .sort((a, b) => a - b);
 
   return (
@@ -128,7 +129,7 @@ export const SimpleResourceProduction = () => {
                   <div style={styles.resourceGroupStyle}>
                     {resourceInputSimpleMode[resourceId].map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
                       </div>
                     ))}
@@ -136,7 +137,7 @@ export const SimpleResourceProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="xs" />
+                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
                     {formatAmount(outputAmount)}/s
                   </div>
                 </td>
@@ -160,6 +161,7 @@ export const StandardResourceProduction = () => {
     .map(Number)
     .filter((id) => id !== ResourcesIds.Labor && resourceInputComplexMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
+    .filter((id) => id !== ResourcesIds.Donkey)
     .sort((a, b) => a - b);
 
   return (
@@ -188,7 +190,7 @@ export const StandardResourceProduction = () => {
                   <div style={styles.resourceGroupStyle}>
                     {resourceInputComplexMode[resourceId].map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
                       </div>
                     ))}
@@ -196,7 +198,7 @@ export const StandardResourceProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="xs" />
+                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
                     {formatAmount(outputAmount)}/s
                   </div>
                 </td>
@@ -248,7 +250,7 @@ export const SimpleTroopProduction = () => {
                   <div style={styles.resourceGroupStyle}>
                     {troopInputSimpleMode[troopId].map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
                       </div>
                     ))}
@@ -305,7 +307,7 @@ export const StandardTroopProduction = () => {
                   <div style={styles.resourceGroupStyle}>
                     {troopInputComplexMode[troopId].map((input, idx) => (
                       <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="xs" />
+                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
                         {formatAmount(input.amount)}/s
                       </div>
                     ))}
@@ -358,19 +360,64 @@ export const LaborProduction = () => {
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={resourceId} name={resourceName} size="xs" />
+                    <ResourceIcon id={resourceId} name={resourceName} size="md" />
                     1/s
                   </div>
                 </td>
                 <td style={styles.productionCellStyle}>
                   <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={ResourcesIds.Labor} name="Labor" size="xs" />
+                    <ResourceIcon id={ResourcesIds.Labor} name="Labor" size="md" />
                     {formatAmount(laborOutput)}/s
                   </div>
                 </td>
               </tr>
             );
           })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export const DonkeyProduction = () => {
+  const config = ETERNUM_CONFIG();
+  const donkeyOutput = config.resources.productionBySimpleRecipeOutputs[ResourcesIds.Donkey];
+  const donkeyInputs = config.resources.productionByComplexRecipe[ResourcesIds.Donkey] || [];
+
+  return (
+    <div style={styles.sectionStyle}>
+      <div style={styles.subtitleStyle}>Donkey Production</div>
+      <table style={styles.tableStyle}>
+        <thead>
+          <tr>
+            <th style={styles.headerCellStyle}>Resource</th>
+            <th style={styles.headerCellStyle}>Input Resources</th>
+            <th style={styles.headerCellStyle}>Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={styles.resourceCellStyle}>
+              <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+              Donkey
+            </td>
+            <td style={styles.productionCellStyle}>
+              <div style={styles.resourceGroupStyle}>
+                {donkeyInputs.map((input, idx) => (
+                  <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
+                    <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="md" />
+                    {formatAmount(input.amount)}/s
+                  </div>
+                ))}
+              </div>
+            </td>
+            <td style={styles.productionCellStyle}>
+              <div style={styles.resourceItemStyle}>
+                <ResourceIcon id={ResourcesIds.Donkey} name="Donkey" size="md" />
+                {formatAmount(donkeyOutput)}/s
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

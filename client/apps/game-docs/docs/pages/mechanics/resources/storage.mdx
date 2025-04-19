@@ -1,3 +1,4 @@
+import { WeightTable } from "@/components/WeightTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { divideByPrecision } from "@/utils/resources";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
@@ -12,22 +13,15 @@ your realm.
 
 Resources in Eternum have different weights that affect storage:
 
-- **Basic resources** (Wood, Stone, Coal,...):
-  {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wood])}kg per unit
-- **Military units**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Knight])}kg per
-  unit
-- **Food** (Wheat, Fish): {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wheat])}kg per
-  unit
-- **Lords**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
-- **Donkey**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
+<WeightTable />
 
 ### Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
 
 Expand your storage capacity to support your growing realm:
 
 - **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(divideByPrecision(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse] ))}kg of
-  storage per resource
+  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage per
+  resource
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **When storage is full**:
