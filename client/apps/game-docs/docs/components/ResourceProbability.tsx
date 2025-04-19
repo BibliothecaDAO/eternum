@@ -149,19 +149,19 @@ const ResourceProbability = () => {
   // Sort resources by probability (highest to lowest)
   const sortedResources = [...resourceProbabilities].sort((a, b) => b.probability - a.probability);
 
-  // Get bar color based on rarity - using gold tones instead of varied colors
-  const getBarColor = (rarityTier: string) => {
+  // Get bar color based on rarity - using more distinct gold/metallic tones
+  const getTierColor = (rarityTier: string) => {
     switch (rarityTier) {
       case "common":
-        return "#f0b060"; // amber gold
+        return "#aa6c39"; // copper
       case "uncommon":
-        return "#d4af37"; // darker gold
+        return "#b78d4b"; // tan gold
       case "rare":
-        return "#b8860b"; // dark goldenrod
+        return "#c19a49"; // bronze gold
       case "epic":
-        return "#a67c00"; // bronze gold
+        return "#d4af37"; // darker gold
       case "legendary":
-        return "#85540f"; // deep bronze
+        return "#e5c687"; // pale gold
       default:
         return "#dfc296"; // light gold
     }
@@ -188,7 +188,7 @@ const ResourceProbability = () => {
 
           // Calculate the width of the probability bar
           const barWidth = `${Math.max(item.probability * 3, 5)}%`;
-          const barColor = getBarColor(rarityTier);
+          const barColor = getTierColor(rarityTier);
 
           const barStyle = {
             height: "100%",
@@ -219,14 +219,14 @@ const ResourceProbability = () => {
               <div style={styles.contentStyle}>
                 <div style={styles.headerStyle}>
                   <span style={styles.nameStyle}>{item.name}</span>
-                  <span style={styles.probabilityStyle}>{item.probability.toFixed(3)}%</span>
+                  <span style={{ ...styles.probabilityStyle, color: barColor }}>{item.probability.toFixed(3)}%</span>
                 </div>
 
                 <div style={styles.barContainerStyle}>
                   <div style={barStyle}></div>
                 </div>
 
-                <div style={styles.rarityTextStyle}>{rarityTier}</div>
+                <div style={{ ...styles.rarityTextStyle, color: barColor }}>{rarityTier}</div>
               </div>
             </div>
           );
@@ -235,23 +235,23 @@ const ResourceProbability = () => {
 
       <div style={styles.legendContainerStyle}>
         <div style={styles.legendItemStyle}>
-          <div style={legendDotStyle("#f0b060")}></div>
+          <div style={legendDotStyle(getTierColor("common"))}></div>
           <span>Common</span>
         </div>
         <div style={styles.legendItemStyle}>
-          <div style={legendDotStyle("#d4af37")}></div>
+          <div style={legendDotStyle(getTierColor("uncommon"))}></div>
           <span>Uncommon</span>
         </div>
         <div style={styles.legendItemStyle}>
-          <div style={legendDotStyle("#b8860b")}></div>
+          <div style={legendDotStyle(getTierColor("rare"))}></div>
           <span>Rare</span>
         </div>
         <div style={styles.legendItemStyle}>
-          <div style={legendDotStyle("#a67c00")}></div>
+          <div style={legendDotStyle(getTierColor("epic"))}></div>
           <span>Epic</span>
         </div>
         <div style={styles.legendItemStyle}>
-          <div style={legendDotStyle("#85540f")}></div>
+          <div style={legendDotStyle(getTierColor("legendary"))}></div>
           <span>Legendary</span>
         </div>
       </div>
