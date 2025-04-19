@@ -162,7 +162,6 @@ export const StandardResourceProduction = () => {
     .filter((id) => !isMilitary(id))
     .sort((a, b) => a - b);
 
-  console.log(complexResourceIds);
   return (
     <div style={styles.sectionStyle}>
       <div style={styles.subtitleStyle}>Standard Mode Production</div>
