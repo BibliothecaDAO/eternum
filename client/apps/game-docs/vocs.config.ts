@@ -82,7 +82,12 @@ export default defineConfig({
           ],
         },
         { text: "World Map & Movement", link: "/mechanics/worldmap-and-movement" },
-        { text: "World Structures", link: "/mechanics/world-structures" },
+        {
+          text: "World Structures",
+          link: "/mechanics/world-structures/world-structures",
+          collapsed: true,
+          items: [{ text: "Hyperstructures", link: "/mechanics/world-structures/hyperstructures" }],
+        },
         { text: "Victory", link: "/mechanics/victory" },
         { text: "Tribes", link: "/mechanics/tribes" },
         { text: "Achievements", link: "/mechanics/achievements" },
