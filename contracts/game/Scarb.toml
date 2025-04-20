@@ -14,17 +14,27 @@ alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.g
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "162bed1" }
 achievement = { git = "https://github.com/cartridge-gg/arcade", branch = "main" }
 cubit = { git = "https://github.com/edisontim/cubit.git", branch = "feat/cairo-2.9.2" }
-
+tournaments = { git = "https://github.com/Provable-Games/tournaments.git", tag = "v0.1.5" }
 
 [dev-dependencies]
 dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.4.0" }
+openzeppelin_token = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0"}
 
 [[target.starknet-contract]]
 casm = true
 build-external-contracts = [
-  "dojo::world::world_contract::world",
-  "achievement::events::index::e_TrophyCreation",
-  "achievement::events::index::e_TrophyProgression",
+	"dojo::world::world_contract::world",
+	"achievement::events::index::e_TrophyCreation",
+	"achievement::events::index::e_TrophyProgression",
+	"tournaments::components::tests::mocks::game_mock::game_mock",
+	"tournaments::components::models::game::m_GameMetadata",
+	"tournaments::components::models::game::m_GameCounter",
+	"tournaments::components::models::game::m_TokenMetadata",
+	"tournaments::components::models::game::m_Score",
+	"tournaments::components::models::game::m_Settings",
+	"tournaments::components::models::game::m_SettingsCounter",
+	"tournaments::components::models::game::m_SettingsDetails",
+	
 ]
 
 [tool.fmt]

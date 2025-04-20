@@ -49,6 +49,7 @@ pub enum TileOccupier {
     Village,
     Bank,
     Explorer,
+    Quest,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -62,6 +63,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::Village => 5,
             TileOccupier::Bank => 6,
             TileOccupier::Explorer => 7,
+            TileOccupier::Quest => 8,
         }
     }
 }
