@@ -49,6 +49,9 @@ pub impl iStructureImpl of IStructureTrait {
 
                 // delete explorer if tile is still occupied
                 if tile.occupied() {
+                    // set explorer troop count to zero
+                    explorer.troops.count = 0;
+                    
                     if explorer.owner == DAYDREAMS_AGENT_ID {
                         iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer);
                     } else {
