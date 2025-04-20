@@ -51,7 +51,7 @@ pub impl iStructureImpl of IStructureTrait {
                 if tile.occupied() {
                     // set explorer troop count to zero
                     explorer.troops.count = 0;
-                    
+
                     if explorer.owner == DAYDREAMS_AGENT_ID {
                         iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer);
                     } else {
@@ -75,7 +75,8 @@ pub impl iStructureImpl of IStructureTrait {
             }
         }
 
-        // ensure tile is not occupied
+        // retrieve tile again and ensure tile is not occupied
+        let mut tile: Tile = world.read_model((coord.x, coord.y));
         assert!(tile.not_occupied(), "tile is occupied");
 
         // explore the tile if biome is not set
