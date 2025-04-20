@@ -74,8 +74,11 @@ pub mod troop_movement_systems {
             // ensure explorer is alive
             assert!(explorer.troops.count.is_non_zero(), "explorer is dead");
 
-            // remove explorer from current occupier
+            // ensure explorer tile is correct
             let mut tile: Tile = world.read_model((explorer.coord.x, explorer.coord.y));
+            assert!(explorer_id == tile.occupier_id, "tile occupier should be explorer");
+
+            // remove explorer from current tile
             IMapImpl::occupy(ref world, ref tile, TileOccupier::None, 0);
 
             let mut explore_find = ExploreFind::None;

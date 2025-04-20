@@ -44,29 +44,36 @@ pub impl iStructureImpl of IStructureTrait {
                 let mut explorer: ExplorerTroops = world.read_model(tile.occupier_id);
                 assert!(explorer.owner.is_non_zero(), "explorer occupying tile should have owner");
 
-                // delete explorer since tile is occupied by explorer
-                if explorer.owner == DAYDREAMS_AGENT_ID {
-                    iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer);
-                } else {
-                    let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
-                        ref world, explorer.owner,
-                    );
-                    let mut explorer_structure_explorers_list: Array<ID> = StructureTroopExplorerStoreImpl::retrieve(
-                        ref world, explorer.owner,
-                    )
-                        .into();
-                    iExplorerImpl::explorer_from_structure_delete(
-                        ref world,
-                        ref explorer,
-                        explorer_structure_explorers_list,
-                        ref explorer_owner_structure,
-                        explorer.owner,
-                    );
+                // attempt to move the troop
+                iExplorerImpl::attempt_move_to_adjacent_tile(ref world, ref explorer, ref tile);
+
+                // delete explorer if tile is still occupied
+                if tile.occupied() {
+                    if explorer.owner == DAYDREAMS_AGENT_ID {
+                        iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer);
+                    } else {
+                        let mut explorer_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                            ref world, explorer.owner,
+                        );
+                        let mut explorer_structure_explorers_list: Array<ID> =
+                            StructureTroopExplorerStoreImpl::retrieve(
+                            ref world, explorer.owner,
+                        )
+                            .into();
+                        iExplorerImpl::explorer_from_structure_delete(
+                            ref world,
+                            ref explorer,
+                            explorer_structure_explorers_list,
+                            ref explorer_owner_structure,
+                            explorer.owner,
+                        );
+                    }
                 }
             }
-        } else {
-            assert!(tile.not_occupied(), "tile is occupied");
         }
+
+        // ensure tile is not occupied
+        assert!(tile.not_occupied(), "tile is occupied");
 
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
