@@ -57,14 +57,14 @@ const styles = {
     borderRadius: "0.375rem",
   },
   image: {
-    objectFit: "contain",
+    objectFit: "contain" as const,
     width: "100%",
     height: "100%",
     padding: "0.5rem",
   },
   contentContainer: {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "column" as const,
   },
   title: {
     fontSize: "1.125rem",
