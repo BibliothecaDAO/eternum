@@ -1,7 +1,10 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { context, createDreams, LogLevel, render, validateEnv } from "@daydreamsai/core";
 import { discord } from "@daydreamsai/discord";
+import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
+
+import llmtxt from "../../public/llm.txt";
+import virgil from "./virgil.txt";
 
 validateEnv(
   z.object({
@@ -14,12 +17,12 @@ validateEnv(
 
 const character = {
   id: "vpk3a9b2q7bn5zj3o920nl",
-  name: "Lars the Mystic of Detection",
+  name: "Serf",
   traits: {
     aggression: 10,
     agreeability: 1,
     openness: 2,
-    conscientiousness: 1,
+    conscientiousness: 10,
     extraversion: 7,
     neuroticism: 1,
     empathy: 6,
@@ -37,6 +40,14 @@ const character = {
 };
 
 const template = `
+
+<documentation>
+${llmtxt}
+</documentation>
+
+<virgil>
+${virgil}
+</virgil>
 
 This is the personality of the AI assistant:
 
@@ -108,11 +119,11 @@ const chatContext = context({
 
 const agent = createDreams({
   logger: LogLevel.DEBUG,
-  model: anthropic("claude-3-7-sonnet-latest"),
-  contexts: [chatContext],
+  model: openrouter("google/gemini-2.5-flash-preview"),
+  context: chatContext,
   extensions: [discord],
 });
 
 console.log("Starting Daydreams Discord Bot...");
-await agent.start();
+await agent.start({ id: character.id });
 console.log("Daydreams Discord Bot started");
