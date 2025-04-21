@@ -27,6 +27,7 @@ const LABELS = {
     [StructureType.Village]: "/images/labels/village.png",
     [StructureType.Realm]: "/images/labels/realm.png",
   },
+  QUEST: "/images/labels/quest.png",
 };
 
 const MINIMAP_CONFIG = {
@@ -44,6 +45,7 @@ const MINIMAP_CONFIG = {
       [StructureType.Hyperstructure]: "#FFFFFF",
       [StructureType.Bank]: "#FFFF00",
       [StructureType.FragmentMine]: "#00FFFF",
+      [StructureType.Quest]: "#0000FF",
     },
   },
   SIZES: {
@@ -119,6 +121,7 @@ class Minimap {
   private showHyperstructures: boolean = true;
   private showBanks: boolean = true;
   private showFragmentMines: boolean = true;
+  private showQuests: boolean = true;
 
   // Clustering properties
   private armyClusters: EntityCluster[] = [];
@@ -556,13 +559,16 @@ class Minimap {
 
   // draw quests on the minimap
   private drawQuests() {
+    if (!this.context || !this.showQuests) return;
+
     const allQuests = this.questManager.getQuests();
+    console.log("allQuests", allQuests);
     allQuests.forEach((quest) => {
       const { x: col, y: row } = quest.hexCoords.getNormalized();
       const cacheKey = `${col},${row}`;
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        const labelImg = this.labelImages.get("ARMY");
+        const labelImg = this.labelImages.get("QUEST");
         if (!labelImg) return;
 
         this.context.drawImage(
@@ -760,7 +766,7 @@ class Minimap {
     this.loadImage("MY_REALM", LABELS.MY_REALM);
     this.loadImage("MY_REALM_WONDER", LABELS.MY_REALM_WONDER);
     this.loadImage("REALM_WONDER", LABELS.REALM_WONDER);
-    // this.loadImage("QUEST", LABELS.QUEST);
+    this.loadImage("QUEST", LABELS.QUEST);
     // Load structure labels
     Object.entries(LABELS.STRUCTURES).forEach(([type, path]) => {
       this.loadImage(`STRUCTURE_${type}`, path);
@@ -815,6 +821,11 @@ class Minimap {
     if (this.context) this.draw();
   }
 
+  toggleQuests(visible: boolean) {
+    this.showQuests = visible;
+    if (this.context) this.draw();
+  }
+
   // Method to get current visibility states for UI
   getVisibilityStates() {
     return {
@@ -823,6 +834,7 @@ class Minimap {
       hyperstructures: this.showHyperstructures,
       banks: this.showBanks,
       fragmentMines: this.showFragmentMines,
+      quests: this.showQuests,
     };
   }
 
@@ -833,12 +845,14 @@ class Minimap {
     hyperstructures?: boolean;
     banks?: boolean;
     fragmentMines?: boolean;
+    quests?: boolean;
   }) {
     if (states.realms !== undefined) this.showRealms = states.realms;
     if (states.armies !== undefined) this.showArmies = states.armies;
     if (states.hyperstructures !== undefined) this.showHyperstructures = states.hyperstructures;
     if (states.banks !== undefined) this.showBanks = states.banks;
     if (states.fragmentMines !== undefined) this.showFragmentMines = states.fragmentMines;
+    if (states.quests !== undefined) this.showQuests = states.quests;
     if (this.context) this.draw();
   }
 }

@@ -1,7 +1,7 @@
 import { Account, AccountInterface, BigNumberish, num } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
-import { Resource } from "./common";
+import { QuestLevel, Resource } from "./common";
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
@@ -344,6 +344,8 @@ export interface SetMapConfigProps extends SystemSigner {
   hyps_fail_prob_increase_p_fnd: num.BigNumberish;
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
+  quest_discovery_probability: num.BigNumberish;
+  quest_discovery_fail_probability: num.BigNumberish;
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
@@ -925,6 +927,14 @@ export interface EditMarketplaceOrderProps {
   order_id: num.BigNumberish;
   new_price: num.BigNumberish;
   signer: AccountInterface;
+}
+
+export interface SetQuestGamesProps extends SystemSigner {
+  quest_games: {
+    address: string;
+    levels: QuestLevel[];
+    overwrite: boolean;
+  }[];
 }
 
 export interface StartQuestProps extends SystemSigner {

@@ -154,6 +154,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
+      console.log("ArmyManager.onUpdate called with update", update);
       this.updateArmyHexes(update);
       this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
     });
@@ -196,6 +197,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // perform some updates for the quest manager
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
+      console.log("QuestManager.onUpdate called with update", update);
       this.updateQuestHexes(update);
       this.questManager.updateChunk(this.currentChunk);
       this.questManager.onUpdate(update);
@@ -1033,7 +1035,6 @@ export default class WorldmapScene extends HexagonScene {
     this.armyManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime);
-    // this.questManager.onUpdate();
     this.minimap.update();
   }
 

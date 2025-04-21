@@ -357,6 +357,12 @@ export interface ResourceOutputs {
   [key: number]: number;
 }
 
+export interface QuestLevel {
+  target_score: number;
+  settings_id: number;
+  time_limit: number;
+}
+
 export interface Config {
   agent: {
     controller_address: string;

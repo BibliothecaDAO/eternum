@@ -351,12 +351,12 @@ export class SystemManager {
     return {
       onUpdate: (callback: (value: any) => void) => {
         this.setupSystem(
-          this.setup.components.QuestDetails,
+          this.setup.components.QuestTile,
           callback,
           (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.QuestDetails)) {
-              const questDetails = getComponentValue(this.setup.components.QuestDetails, update.entity);
-              if (!questDetails) return;
+            if (isComponentUpdate(update, this.setup.components.QuestTile)) {
+              const questTile = getComponentValue(this.setup.components.QuestTile, update.entity);
+              if (!questTile) return;
 
               return {
                 entityId: update.entity,

@@ -1867,6 +1867,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       hyps_fail_prob_increase_p_fnd,
       mine_wheat_grant_amount,
       mine_fish_grant_amount,
+      quest_discovery_probability,
+      quest_discovery_fail_probability,
       signer,
     } = props;
 
@@ -1885,6 +1887,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         hyps_fail_prob_increase_p_fnd,
         mine_wheat_grant_amount,
         mine_fish_grant_amount,
+        quest_discovery_probability,
+        quest_discovery_fail_probability,
       ],
     });
   }
@@ -2703,6 +2707,17 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
 
     return await this.promiseQueue.enqueue(call);
+  }
+
+  public async set_quest_games(props: SystemProps.SetQuestGamesProps) {
+    const { signer, quest_games } = props;
+    for (const quest_game of quest_games) {
+      return await this.executeAndCheckTransaction(signer, {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-quest_systems`),
+        entrypoint: "add_game",
+        calldata: quest_game,
+      });
+    }
   }
 
   public async start_quest(props: SystemProps.StartQuestProps) {

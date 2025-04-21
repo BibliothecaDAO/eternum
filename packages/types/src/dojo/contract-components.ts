@@ -477,47 +477,43 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          id: RecsType.Number,
-          details_id: RecsType.Number,
-          explorer_id: RecsType.Number,
           game_token_id: RecsType.Number,
+          game_address: RecsType.String,
+          quest_tile_id: RecsType.Number,
+          explorer_id: RecsType.Number,
           completed: RecsType.Boolean,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "Quest",
-            types: ["u64", "u64", "u32", "u64", "bool"],
+            types: ["u64", "ContractAddress", "u32", "u32", "bool"],
             customTypes: [],
           },
         },
       );
     })(),
-    QuestDetails: (() => {
+    QuestTile: (() => {
       return defineComponent(
         world,
         {
           id: RecsType.Number,
+          game_address: RecsType.String,
           coord: {
             x: RecsType.Number,
             y: RecsType.Number,
           },
-          reward: {
-            resource_type: RecsType.Number,
-            amount: RecsType.BigInt,
-          },
+          level: RecsType.Number,
+          resource_type: RecsType.Number,
+          amount: RecsType.BigInt,
           capacity: RecsType.Number,
           participant_count: RecsType.Number,
-          settings_id: RecsType.Number,
-          target_score: RecsType.Number,
-          expires_at: RecsType.BigInt,
-          game_address: RecsType.String,
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "QuestDetails",
-            types: ["u64", "u32", "u32", "u8", "u128", "u16", "u16", "u32", "u32", "u64", "ContractAddress"],
+            types: ["u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
             customTypes: ["Coord", "Reward"],
           },
         },

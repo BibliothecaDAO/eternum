@@ -1,6 +1,6 @@
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { Suspense } from "react";
 import { QuestContainer } from "./quest-container";
 

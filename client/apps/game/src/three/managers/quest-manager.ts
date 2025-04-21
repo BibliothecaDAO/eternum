@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
@@ -60,6 +60,7 @@ export class QuestManager {
   }
 
   async updateChunk(chunkKey: string) {
+    console.log("QuestManager.updateChunk called with chunkKey", chunkKey);
     if (this.currentChunkKey === chunkKey) {
       return;
     }
@@ -221,7 +222,7 @@ export class QuestManager {
     });
 
     const img = document.createElement("img");
-    img.src = `/textures/army_label.png`;
+    img.src = `/images/labels/quest.png`;
     img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
     labelDiv.appendChild(img);
 

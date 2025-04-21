@@ -1045,6 +1045,8 @@
     "hyperstructureFailProbIncreasePerHyperstructureFound": 500,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
+    "questDiscoveryProbability": 19,
+    "questDiscoveryFailProbability": 1,
     "questFindProbability": 1,
     "questFindFailProbability": 10
   },
@@ -4801,6 +4803,70 @@
             },
             {
               "type": "impl",
+              "name": "VillageTokenConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IVillageTokenConfig"
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::VillageTokenConfig",
+              "members": [
+                {
+                  "name": "token_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "mint_recipient_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IVillageTokenConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_village_token_config",
+                  "inputs": [
+                    {
+                      "name": "village_token_config",
+                      "type": "s1_eternum::models::config::VillageTokenConfig"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "WonderBonusConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IWonderBonusConfig"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IWonderBonusConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_wonder_bonus_config",
+                  "inputs": [
+                    {
+                      "name": "within_tile_distance",
+                      "type": "core::integer::u8"
+                    },
+                    {
+                      "name": "bonus_percent_num",
+                      "type": "core::integer::u128"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
               "name": "WorldConfigImpl",
               "interface_name": "s1_eternum::systems::config::contracts::IWorldConfig"
             },
@@ -5000,6 +5066,14 @@
                 {
                   "name": "mine_fish_grant_amount",
                   "type": "core::integer::u32"
+                },
+                {
+                  "name": "quest_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "quest_discovery_fail_prob",
+                  "type": "core::integer::u16"
                 }
               ]
             },
@@ -14114,6 +14188,14 @@
                 {
                   "name": "mine_fish_grant_amount",
                   "type": "core::integer::u32"
+                },
+                {
+                  "name": "quest_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "quest_discovery_fail_prob",
+                  "type": "core::integer::u16"
                 }
               ]
             },
