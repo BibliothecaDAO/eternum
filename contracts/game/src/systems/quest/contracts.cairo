@@ -485,11 +485,8 @@ mod tests {
     use s1_eternum::systems::resources::contracts::resource_systems::{resource_systems};
     use s1_eternum::utils::map::biomes::{Biome};
     use s1_eternum::utils::testing::helpers::{
-        MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_DAMAGE_CONFIG, MOCK_TROOP_LIMIT_CONFIG,
-        MOCK_TROOP_STAMINA_CONFIG, MOCK_WEIGHT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
-        tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_world, tstore_capacity_config,
-        tstore_map_config, tstore_tick_config, tstore_troop_damage_config, tstore_troop_limit_config,
-        tstore_troop_stamina_config, tstore_weight_config,
+        MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
+        tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_world,
     };
     use starknet::ContractAddress;
     use tournaments::components::models::game::{
@@ -627,7 +624,7 @@ mod tests {
                 let tile = *discovered_tiles.at(0);
                 // println!("Discovered tile {:?}", tile);
 
-                if tile.occupier_type > 0 && tile.occupier_type != TileOccupier::Explorer.into() {
+                if tile.occupier_type > 0 && tile.occupier_type != TileOccupier::ExplorerCrossbowmanT2Regular.into() {
                     // if we find a quest tile, we're done
                     if tile.occupier_type == TileOccupier::Quest.into() {
                         found_quest = true;
@@ -2380,7 +2377,7 @@ mod tests {
             col: coord.x,
             row: coord.y,
             biome: Biome::Ocean.into(),
-            occupier_type: TileOccupier::RealmRegular.into(),
+            occupier_type: TileOccupier::RealmRegularLevel1.into(),
             occupier_id: 99,
             occupier_is_structure: true,
         };
