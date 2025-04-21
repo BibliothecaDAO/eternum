@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # =============================================================================
-#     Season Pass Deployment Script
+#     Village Pass Deployment Script
 # =============================================================================
 #
 # DESCRIPTION:
-#   This script handles the deployment process for the Season Pass smart 
+#   This script handles the deployment process for the Village Pass smart 
 #   contracts. It manages the build process using Scarb and executes the 
 #   deployment using Bun.
 #
 # USAGE:
-#   ./deploy.sh [network]  - Builds and deploys the Season Pass contracts
+#   ./deploy.sh [network]  - Builds and deploys the Village Pass contracts
 #                           where [network] is optional and defaults to 'local'
 #   Examples:
 #   ./deploy.sh      - Deploys to local
@@ -60,23 +60,23 @@ trap 'error_handler ${LINENO}' ERR
 
 echo -e "\n"
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║               Building Season Pass Contracts             ║${NC}"
+echo -e "${BLUE}║               Building Village Pass Contracts             ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo -e "\n"
 
 # Navigate to root contract directory
-echo -e "${GREEN}► Navigating to season pass contract root directory...${NC}"
+echo -e "${GREEN}► Navigating to village pass contract root directory...${NC}"
 cd ../../
 
 # Build contracts
-echo -e "${GREEN}► Building season pass contracts with Scarb...${NC}"
+echo -e "${GREEN}► Building village pass contracts with Scarb...${NC}"
 scarb --release build
 
 # Return to script directory
 cd - > /dev/null
 
 # Navigate to deployment directory
-echo -e "${GREEN}► Installing season pass deployment dependencies...${NC}"
+echo -e "${GREEN}► Installing village pass deployment dependencies...${NC}"
 cd deployment
 bun install
 
@@ -86,7 +86,7 @@ NETWORK=${1:-local}
 echo -e "${BLUE}► Deploying to ${NETWORK}${NC}"
 
 # Execute deployment
-echo -e "${GREEN}► Executing season pass deployment script...${NC}"
+echo -e "${GREEN}► Executing village pass deployment script...${NC}"
 bun run deploy:${NETWORK}
 
-echo -e "\n${GREEN}✔ Season Pass deployment process completed on ${NETWORK}${NC}\n"
+echo -e "\n${GREEN}✔ village Pass deployment process completed on ${NETWORK}${NC}\n"

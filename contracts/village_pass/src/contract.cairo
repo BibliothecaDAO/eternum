@@ -1,18 +1,14 @@
 // Eternum Village Pass
-use starknet::ContractAddress;
+// SPDX-License-Identifier: MIT
+// Compatible with OpenZeppelin Contracts for Cairo ^1.0.0
 
-#[starknet::interface]
-trait IRealmMetadataEncoded<TState> {
-    fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
-}
+use starknet::ContractAddress;
 
 #[starknet::interface]
 trait IVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
 }
 
-// SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts for Cairo ^1.0.0
 
 const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
 const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
@@ -34,7 +30,6 @@ mod EternumVillagePass {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
     use super::{DISTRIBUTOR_ROLE, MINTER_ROLE, UPGRADER_ROLE};
-    use super::{IRealmMetadataEncoded, IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -70,8 +65,6 @@ mod EternumVillagePass {
     #[storage]
     struct Storage {
         counter: u16,
-        realms_contract: IERC721Dispatcher,
-        //
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -106,7 +99,6 @@ mod EternumVillagePass {
         upgrader: ContractAddress,
         minter: ContractAddress,
         distributors: Span<ContractAddress>,
-        realms_contract_address: ContractAddress,
     ) {
         self.erc721.initializer("EternumVillagePass", "EVP1", "");
         self.accesscontrol.initializer();
@@ -118,8 +110,6 @@ mod EternumVillagePass {
         for distributor in distributors {
             self.accesscontrol._grant_role(DISTRIBUTOR_ROLE, *distributor);
         };
-
-        self.realms_contract.write(IERC721Dispatcher { contract_address: realms_contract_address });
     }
 
     impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
