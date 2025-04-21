@@ -5,7 +5,6 @@ import {
   Steps
 } from "@bibliothecadao/types";
 import { Clause, Query, ToriiClient } from "@dojoengine/torii-wasm";
-import { getStructureFromToriiEntity } from "./structure";
 
 // Types
 interface VillageSlot {
@@ -75,23 +74,6 @@ const createStructureVillageSlotsQuery = (clause?: Clause): Query => ({
   entity_updated_after: 0
 });
 
-const createStructureQuery = (entityId: number): Query => ({
-  limit: 1,
-  offset: 0,
-  clause: {
-    Member: {
-      model: "s1_eternum-Structure",
-      member: "entity_id",
-      operator: "Eq",
-      value: { Primitive: { U32: entityId } }
-    }
-  },
-  dont_include_hashed_keys: false,
-  order_by: [],
-  entity_models: ["s1_eternum-Structure"],
-  entity_updated_after: 0
-});
-
 // Main functions
 export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient) => {
   const villageSlots = await toriiClient.getEntities(createStructureVillageSlotsQuery(), false);
@@ -102,20 +84,19 @@ export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: Torii
   const villageSlotsData = villageSlots[entityId]["s1_eternum-StructureVillageSlots"] as any;
   const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
   
-  const structureEntities = await toriiClient.getEntities(
-    createStructureQuery(villageSlotsData.connected_realm_entity_id?.value),
-    false
-  );
-  
-  const structure = getStructureFromToriiEntity(structureEntities[entityId]["s1_eternum-Structure"]);
-  
   return {
-    structure,
+    realmId: villageSlotsData.connected_realm_id?.value,
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
+    hasSlots: true,
     availableSlots: formatVillageSlots(
       availableSlots,
-      structure.base.coord_x,
-      structure.base.coord_y
-    )
+      villageSlotsData.connected_realm_coord?.value.x.value,
+      villageSlotsData.connected_realm_coord?.value.y.value
+    ),
+    position: {
+      col: villageSlotsData.connected_realm_coord?.value.x.value,
+      row: villageSlotsData.connected_realm_coord?.value.y.value
+    }
   };
 };
 
@@ -133,36 +114,27 @@ export const checkOpenVillageSlotFromToriiClient = async (
   });
 
   const villageSlots = await toriiClient.getEntities(villageSlotQuery, false);
-  const realmEntityId = Object.keys(villageSlots)[0];
+  const entity = Object.keys(villageSlots)[0];
   
-  if (!realmEntityId) return null;
+  if (!entity) return null;
 
-  const villageSlotsData = villageSlots[realmEntityId]["s1_eternum-StructureVillageSlots"] as any;
-  const structureEntities = await toriiClient.getEntities(
-    createStructureQuery(villageSlotsData.connected_realm_entity_id?.value),
-    false
-  );
-
-  const structure = getStructureFromToriiEntity(
-    structureEntities[realmEntityId]["s1_eternum-Structure"]
-  );
-  
+  const villageSlotsData = villageSlots[entity]["s1_eternum-StructureVillageSlots"] as any;
   const availableSlots = villageSlotsData.directions_left.value.map(
     (v: any) => v.value.option
   );
 
   return {
-    realmId: structure.metadata.realm_id,
-    entityId: structure.entity_id,
+    realmId: villageSlotsData.connected_realm_id?.value,
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
     hasSlots: true,
     availableSlots: formatVillageSlots(
       availableSlots,
-      structure.base.coord_x,
-      structure.base.coord_y
+      villageSlotsData.connected_realm_coord?.value.x.value,
+      villageSlotsData.connected_realm_coord?.value.y.value
     ),
     position: {
-      col: structure.base.coord_x,
-      row: structure.base.coord_y
+      col: villageSlotsData.connected_realm_coord?.value.x.value,
+      row: villageSlotsData.connected_realm_coord?.value.y.value
     }
   };
 };

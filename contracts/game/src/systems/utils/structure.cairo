@@ -128,7 +128,9 @@ pub impl iStructureImpl of IStructureTrait {
             let structure_village_slots = StructureVillageSlots {
                 connected_realm_entity_id: structure_id,
                 connected_realm_id: metadata.realm_id,
+                connected_realm_coord: coord,
                 directions_left: possible_village_slots.span(),
+                
             };
             world.write_model(@structure_village_slots);
         }

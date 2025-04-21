@@ -403,13 +403,17 @@ export function defineContractComponents(world: World) {
         {
           connected_realm_entity_id: RecsType.Number,
           connected_realm_id: RecsType.Number,
+          connected_realm_coord: {
+            x: RecsType.Number,
+            y: RecsType.Number,
+          },
           directions_left: RecsType.NumberArray
         },
         {
           metadata: {
             namespace: "s1_eternum",
             name: "StructureVillageSlots",
-            types: ["u32", "u16", "Span<u8>"],
+            types: ["u32", "u16", "Span<u8>", "u32", "u32"],
             customTypes: [],
           },
         },

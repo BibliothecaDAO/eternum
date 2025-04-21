@@ -17,6 +17,7 @@ pub struct StructureVillageSlots {
     #[key]
     pub connected_realm_entity_id: ID,
     pub connected_realm_id: u16,
+    pub connected_realm_coord: Coord,
     pub directions_left: Span<Direction>,
 }
 

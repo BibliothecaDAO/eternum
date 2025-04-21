@@ -109,20 +109,16 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     try {
       const data = await getRandomRealmWithVillageSlotsFromTorii(toriiClient);
       if (data && data) {
-        const randomRealm = data.structure;
-        const availableSlots = data.availableSlots;
         // Extract values safely with type assertions
-        const realmIdValue = Number(randomRealm.metadata?.realm_id || 0);
-        const entityIdValue = Number(randomRealm.entity_id || 0);
-
         const result = {
-          realmId: realmIdValue,
-          entityId: entityIdValue,
+          realmId: data.realmId,
+          entityId: data.entityId,
           hasSlots: true,
-          availableSlots: availableSlots,
-          position: { col: randomRealm.base.coord_x, row: randomRealm.base.coord_y },
+          availableSlots: data.availableSlots,
+          position: { col: data.position.col, row: data.position.row },
         };
 
+        console.log({result})
         setRealmCheckResult(result);
 
         setSelectedRealm({
@@ -130,7 +126,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           entityId: result.entityId,
         });
 
-        setRealmIdInput(realmIdValue.toString());
+        setRealmIdInput(data.realmId.toString());
         setRealmCheckError(null);
       } else {
         setRealmCheckError("No realms with available village slots found");
