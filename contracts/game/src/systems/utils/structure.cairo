@@ -114,6 +114,9 @@ pub impl iStructureImpl of IStructureTrait {
                 }
 
                 // ensure village tile is only useable if no structure is on it
+
+                // todo: ensure quest tiles cant be used also
+
                 if !village_tile.occupier_is_structure {
                     possible_village_slots.append(direction);
                 }
