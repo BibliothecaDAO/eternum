@@ -1,5 +1,6 @@
 import path from "path";
 import { defineConfig } from "vocs";
+import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
 export default defineConfig({
   vite: {
@@ -11,6 +12,7 @@ export default defineConfig({
         "@contracts": path.resolve(__dirname, "../../../contracts/utils"),
       },
     },
+    plugins: [llmTxtPlugin()],
   },
 
   description: "Your Complete Guide to Mastering Eternum",
@@ -104,6 +106,7 @@ export default defineConfig({
         { text: "Contracts", link: "/development/contracts" },
         { text: "SDK", link: "/development/sdk" },
         { text: "Collaborators", link: "/development/collaborators" },
+        { text: "LLM", link: "/development/llm" },
       ],
     },
   ],
