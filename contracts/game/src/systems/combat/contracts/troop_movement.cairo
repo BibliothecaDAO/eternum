@@ -250,7 +250,9 @@ pub mod troop_movement_util_systems {
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::models::{
+        config::{CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
+    };
     use s1_eternum::systems::quest::constants::VERSION;
     use s1_eternum::systems::quest::contracts::{
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl,
@@ -307,11 +309,14 @@ pub mod troop_movement_util_systems {
                         );
                         return (true, ExploreFind::Agent);
                     } else {
+                        let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
+                            world, selector!("quest_config"),
+                        );
                         let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
                         let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
                         let quest_game_count = quest_game_registry.games.len();
                         if quest_game_count > 0 && feature_toggle.enabled {
-                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(map_config, vrf_seed);
+                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
                             if quest_lottery_won {
                                 let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
                                 let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_address };

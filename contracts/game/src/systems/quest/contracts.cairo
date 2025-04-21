@@ -1,7 +1,7 @@
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{MapConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{MapConfig, QuestConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::quest::{Level, Quest, QuestDetails, QuestGameRegistry, QuestLevels, QuestTile};
@@ -419,7 +419,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
     }
 
 
-    fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+    fn lottery(quest_config: QuestConfig, vrf_seed: u256) -> bool {
         let quest_vrf_seed = if vrf_seed > VRF_OFFSET {
             vrf_seed - VRF_OFFSET
         } else {
@@ -428,7 +428,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
 
         let success: bool = *random::choices(
             array![true, false].span(),
-            array![map_config.quest_discovery_prob.into(), map_config.quest_discovery_fail_prob.into()].span(),
+            array![quest_config.quest_discovery_prob.into(), quest_config.quest_discovery_fail_prob.into()].span(),
             array![].span(),
             1,
             true,
@@ -568,21 +568,7 @@ mod tests {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
         // set weight config
-        tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
-        tstore_tick_config(ref world, MOCK_TICK_CONFIG());
-        tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
-        tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());
-        tstore_troop_damage_config(ref world, MOCK_TROOP_DAMAGE_CONFIG());
-        tstore_weight_config(
-            ref world,
-            array![
-                MOCK_WEIGHT_CONFIG(ResourceTypes::KNIGHT_T1),
-                MOCK_WEIGHT_CONFIG(ResourceTypes::WHEAT),
-                MOCK_WEIGHT_CONFIG(ResourceTypes::FISH),
-            ]
-                .span(),
-        );
-        tstore_map_config(ref world, MOCK_MAP_CONFIG());
+        init_config(ref world);
 
         let (troop_management_system_addr, _) = world.dns(@"troop_management_systems").unwrap();
         let (troop_movement_system_addr, _) = world.dns(@"troop_movement_systems").unwrap();

@@ -6,8 +6,8 @@ use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_te
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    CapacityConfig, MapConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig,
-    WorldConfigUtilImpl,
+    CapacityConfig, MapConfig, QuestConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+    WeightConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
 use s1_eternum::models::config::{ResourceFactoryConfig};
@@ -38,8 +38,6 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         mine_fish_grant_amount: 1,
         agent_discovery_prob: 5000,
         agent_discovery_fail_prob: 5000,
-        quest_discovery_prob: 5000,
-        quest_discovery_fail_prob: 5000,
     }
 }
 
@@ -290,6 +288,7 @@ pub fn init_config(ref world: WorldStorage) {
             .span(),
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
+    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
 }
 
 pub fn tspawn_quest_tile(
@@ -306,4 +305,12 @@ pub fn tspawn_quest_tile(
     };
     world.write_model_test(quest_details);
     quest_details
+}
+
+pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
+    QuestConfig { quest_discovery_prob: 5000, quest_discovery_fail_prob: 5000 }
+}
+
+pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
+    WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), config);
 }
