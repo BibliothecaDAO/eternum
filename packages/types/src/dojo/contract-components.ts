@@ -397,7 +397,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-
+    StructureVillageSlots: (() => {
+      return defineComponent(
+        world,
+        {
+          connected_realm_entity_id: RecsType.Number,
+          connected_realm_id: RecsType.Number,
+          directions_left: RecsType.NumberArray
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "StructureVillageSlots",
+            types: ["u32", "u16", "Span<u8>"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     ResourceFactoryConfig: (() => {
       return defineComponent(
         world,
@@ -1244,7 +1261,7 @@ export function defineContractComponents(world: World) {
             resources_list_id: RecsType.Number,
             resources_list_count: RecsType.Number,
           },
-          // village_controller_config: RecsType.BigIntArray
+          village_controller_config: RecsType.BigIntArray
         },
         {
           metadata: {
@@ -1346,7 +1363,7 @@ export function defineContractComponents(world: World) {
               "u8", // realm StartingResourcesConfig resources_list_count
               "u32", // village StartingResourcesConfig resources_list_id
               "u8", // village StartingResourcesConfig resources_list_count
-              // "Span<ContractAddress>", // village controller addresses
+              "Span<ContractAddress>", // village controller addresses
             ],
             customTypes: [],
           },
