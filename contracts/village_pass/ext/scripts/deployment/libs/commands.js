@@ -61,8 +61,8 @@ export const saveVillagePassAddressToCommonFolder = async (villagePassAddress) =
 
     // Merge new addresses with existing data
     const updatedData = {
+      villagePass: villagePassAddress,
       ...existingData,
-      villagePass: villagePassAddress
     };
 
     const jsonString = JSON.stringify(
