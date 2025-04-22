@@ -5,6 +5,8 @@ import {
   type ContractAddress,
   type DojoAccount,
   FELT_CENTER,
+  getDirectionBetweenAdjacentHexes,
+  getNeighborHexes,
   type HexEntityInfo,
   type HexPosition,
   type ID,
@@ -13,9 +15,6 @@ import {
   TileOccupier,
   TravelTypes,
   type TroopType,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-  world,
 } from "@bibliothecadao/types";
 import { type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -130,15 +129,11 @@ export class ArmyActionManager {
   ): ActionPaths {
     const armyStamina = this.staminaManager.getStamina(currentArmiesTick).amount;
 
-    console.log({ armyStamina });
-
     const troopType = this._getTroopType();
     const startPos = this._getCurrentPosition();
     // max hex based on food
     const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
-    console.log({ maxHex });
     const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
-    console.log({ canExplore });
 
     const actionPaths = new ActionPaths();
     const lowestStaminaUse = new Map<string, number>();
@@ -345,32 +340,15 @@ export class ArmyActionManager {
 
     const overrideId2 = uuid();
 
-    const newEntity = world.registerEntity({
-      id: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
-    });
-    // createEntity(world, [
-    //   this.components.Tile,
-    //   {
-    //     col: newPosition.col,
-    //     row: newPosition.row,
-    //     occupier_id: this.entityId,
-    //     occupier_type: TileOccupier.Explorer,
-    //     biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
-    //   },
-    // ]);
-
-    const newTile = getComponentValue(this.components.Tile, newEntity);
-
     this.components.Tile.addOverride(overrideId2, {
-      entity: newEntity,
+      entity: getEntityIdFromKeys([BigInt(newPosition.col), BigInt(newPosition.row)]),
       value: {
-        ...newTile,
         col: newPosition.col,
         row: newPosition.row,
         occupier_id: this.entityId,
-        // todo: fix this
-        occupier_type: TileOccupier.ExplorerKnightT1Regular,
+        occupier_type: previousTile?.occupier_type,
         biome: BiomeTypeToId[Biome.getBiome(newPosition.col, newPosition.row)],
+        occupier_is_structure: false,
       },
     });
 

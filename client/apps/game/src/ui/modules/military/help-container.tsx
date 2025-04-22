@@ -21,7 +21,7 @@ export const HelpContainer = ({
 }) => {
   const {
     setup: {
-      components: { Structure, Tile },
+      components: { Tile },
     },
   } = useDojo();
 
@@ -33,8 +33,11 @@ export const HelpContainer = ({
 
   // Determine if the selected entity is a structure or an explorer
   const selectedEntityType = (() => {
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-    return structure ? "structure" : "explorer";
+    const tile = getComponentValue(
+      Tile,
+      getEntityIdFromKeys([BigInt(selectedHex?.col || 0), BigInt(selectedHex?.row || 0)]),
+    );
+    return tile?.occupier_is_structure ? "structure" : "explorer";
   })();
 
   // Determine if the target entity is a structure or an explorer
