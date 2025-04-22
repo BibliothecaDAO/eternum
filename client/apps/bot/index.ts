@@ -1,4 +1,4 @@
-import { context, createDreams, LogLevel, render, validateEnv } from "@daydreamsai/core";
+import { context, createDreams, render, validateEnv } from "@daydreamsai/core";
 import { discord } from "@daydreamsai/discord";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
@@ -10,8 +10,8 @@ validateEnv(
   z.object({
     DISCORD_TOKEN: z.string().min(1, "DISCORD_TOKEN is required"),
     DISCORD_BOT_NAME: z.string().min(1, "DISCORD_BOT_NAME is required"),
-    TAVILY_API_KEY: z.string().min(1, "TAVILY_API_KEY is required"),
     OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
+    OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
   }),
 );
 
@@ -118,7 +118,6 @@ const chatContext = context({
 });
 
 const agent = createDreams({
-  logger: LogLevel.DEBUG,
   model: openrouter("google/gemini-2.5-flash-preview"),
   context: chatContext,
   extensions: [discord],

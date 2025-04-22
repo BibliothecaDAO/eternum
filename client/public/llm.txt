@@ -610,8 +610,13 @@ meta: {
 * [Collaborators](/development/collaborators)
 
 \n\n---\n\nfile: docs/pages/development/llm.mdx
-meta: {}
+meta: {
+  "title": "LLM"
+}
 
+# LLM
+
+These docs are experted at [https://eternum-docs.realms.world/llm.txt](https://eternum-docs.realms.world/llm.txt) for consumption by the LLM.
 
 \n\n---\n\nfile: docs/pages/development/sdk.mdx
 meta: {}
@@ -633,6 +638,264 @@ the constants/types of the world that needed to be transcribed to Typescript.
 
 Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
 this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
+
+\n\n---\n\nfile: docs/pages/mechanics/achievements.mdx
+meta: {}
+
+# Achievements & Quests
+
+## Cartridge Achievements
+
+Achievements are a lasting testament to your accomplishments across all seasons, awarded for completing specific in-game
+objectives. Players earn achievements through the Cartridge Controller, with requirements accessible by clicking on
+their controller name. Completing achievements earns Victory Points, allowing players to compete for positions on the
+achievement leaderboard.
+
+### Achievement Categories
+
+🏰 **Realm Development**
+
+⚔️ **Military**
+
+🫏 **Trading**
+
+🌟 **Special**
+
+\n\n---\n\nfile: docs/pages/mechanics/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Eternum"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
+
+This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
+
+## Realms
+
+* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum
+* **Settling**: Players must burn a Season Pass to settle their Realm during the initial 7-day settling period or after
+* **Starting Resources**: Each newly settled Realm begins with a set of starting materials
+* **Progression Path**: Realms advance from Settlements → Cities → Kingdoms → Empires, unlocking additional buildable
+  hexes and defensive army slots
+* **Resource Production**: Each Realm can produce 1-7 different resources based on its Season Pass and original NFT
+  metadata
+
+## Villages
+
+* **Accessible Entry**: Villages can be established around settled Realms, offering a gateway for new players
+* **Limited Production**: Produce resources at 50% the rate of Realms
+* **Parent Realm**: Each Village is tied to a parent Realm and can only receive troops from it
+* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
+* **Simple Progression**: Villages can upgrade from Settlement to City
+
+## Resources
+
+* **Economy Foundation**: 22 distinct resources drive all gameplay activities
+* **Resource Categories**:
+  * **Basic Resources**: Food (Wheat, Fish) - essential for production, troop maintenance, and construction
+  * **Tiered Resources**: Distributed based on rarity across the 8,000 Realms, creating natural scarcity and trade
+    opportunities
+  * **Strategic Resources**:
+    * **Military Resources**: Units with unique properties that can be assigned to armies
+    * **Transport**: Donkeys required for moving resources and essential for logistics
+  * **Special Resources**: $LORDS currency for all market transactions and Ancient Fragments for Hyperstructures
+* **ERC20 Compatibility**: All resources can be traded freely and bridged out as ERC20 tokens through the central bank
+
+## Buildings
+
+* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused)
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity
+  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct
+  * **Economic Buildings**: Includes farms, fishing villages, worker huts, storehouses, and markets
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  progress
+
+## Production
+
+* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
+  labor) mode
+* **Production Types**:
+  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs
+  * **Resources**: Require combinations of other resources (standard) or labor (simple)
+  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production
+  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs
+  * **Donkeys**: One-time-use transport, consumed after a single journey
+* **Production Efficiency**: Realms produce at full capacity, while Villages produce at 50% rate
+
+## World Map
+
+* **Exploration System**: The world begins shrouded in mystery, with only six ancient Banks visible at season start;
+  adjacent hexes are revealed when settling, and armies can explore to reveal new areas
+* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
+  movement differently
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
+  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
+  exploring armies may discover resources or encounter world structures and agent armies
+
+## Military
+
+<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
+
+* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins)
+* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength (two T1 troops combine to make one T2, two T2
+  make one T3)
+* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects
+* **Army Types**:
+  * **Attacking Armies**: Deploy onto the world map for exploration and conquest, require 30+ stamina to attack
+  * **Defending Armies**: Protect Realms and structures in defense slots, with slots increasing by Realm level
+* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness
+* **Biome Effects**: Each troop type has advantages (+30% damage) or disadvantages (-30% damage) in specific biomes
+* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders
+  * Success depends on the raiding army's damage relative to defending armies
+  * Undefended structures can be raided without casualties
+
+## Social Structures
+
+* **Tribes**: Player-formed organizations enabling cooperation and coordination
+* **Types**: Public (open to all) or Private (invitation only)
+* **Benefits**: Access to tribe-only features and Hyperstructure contributions
+
+## Victory Conditions
+
+Eternum's seasonal gameplay culminates in victory through various achievement paths, with winners earning recognition
+and rewards that impact future seasons.
+
+\n\n---\n\nfile: docs/pages/mechanics/tribes.mdx
+meta: {
+  "title": "Tribes",
+  "description": "Social organizations in Eternum"
+}
+
+# 👥 Tribes
+
+<img src="/images/covers/09.png" alt="Eternum Tribes" className="w-full rounded-lg my-6" />
+
+In Eternum, Tribes represent player-formed organizations that enable cooperation and coordination among members.
+
+## Types of Tribes
+
+* **Public Tribes**: Open to all, allowing anyone to join
+* **Private Tribes**: Require an invitation to join
+
+## Benefits of Tribes
+
+* Access to tribe-only features
+* Contribution to Hyperstructures as a collective
+
+## Formation & Membership
+
+🫂 **Tribe System**
+
+* Any player can create a tribe
+* Set tribe name and description
+* Two types of tribes:
+  > * **Public**: Anyone can join directly
+  > * **Private**: Requires an invitation to join
+
+## Functionality
+
+🏗️ **Current Features**
+
+* Social coordination tool
+* Access to tribe-only Hyperstructure contributions
+  > *When Hyperstructure is set to tribe-only mode*
+
+\n\n---\n\nfile: docs/pages/mechanics/victory.mdx
+meta: {}
+
+# Victory
+
+Prize Pool & Split
+
+\n\n---\n\nfile: docs/pages/mechanics/worldmap-and-movement.mdx
+meta: {}
+
+import TroopMovementTable from "@/components/TroopMovementTable";
+import { BiomeStamina } from "@/components/BiomeStamina";
+
+# 🗺️ World Map & Movement
+
+<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+
+## The World Map
+
+### An Unexplored World
+
+At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
+exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
+can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
+another.
+
+When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
+been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
+their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
+structure or army) is permanently revealed to all Lords.
+
+### Biomes
+
+Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
+procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
+coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
+
+Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
+potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
+explained in more detail in the Combat section. Additionally, biomes have the potential to enhance or impede army
+maneuvers, as the various biomes impact the stamina consumption of each troop type differently as they move between
+hexes—this is explained further in the subsection below.
+
+## Movement & Exploration
+
+<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+### Stamina
+
+Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
+stamina, a critical resource Lords must carefully manage.
+
+Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
+against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
+troop type possesses different maximum stamina capacities, outlined in the table below:
+
+<TroopMovementTable />
+
+Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
+themselves severely disadvantaged if attacked by enemy forces.
+
+### Movement
+
+![Simple Mode Production](/gifs/moving-army.gif)
+
+Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
+Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
+move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
+destination, and the army has sufficient stamina available for the entire journey.
+
+The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
+within the army. The table below details biome-specific stamina costs for each troop type:
+
+<BiomeStamina />
+
+### Exploring
+
+When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
+the known boundaries of the world.
+
+If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
+back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
+an army becomes overloaded, resources can be dropped to free up space, but any discarded materials will be permanently
+lost (burned).
+
+Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
+armies are well-prepared and capable of defending themselves in unexpected combat situations.
 
 \n\n---\n\nfile: docs/pages/overview/bridging.mdx
 meta: {}
@@ -1144,264 +1407,6 @@ Initial scouting reports have revealed some key details about the world:
 
 * Bandits roam throughout the lands and have established lairs in all of these locations. The newly arrived Lords will
   need to overcome these lawless brigands to bring order and control back to Eternum.
-
-\n\n---\n\nfile: docs/pages/mechanics/achievements.mdx
-meta: {}
-
-# Achievements & Quests
-
-## Cartridge Achievements
-
-Achievements are a lasting testament to your accomplishments across all seasons, awarded for completing specific in-game
-objectives. Players earn achievements through the Cartridge Controller, with requirements accessible by clicking on
-their controller name. Completing achievements earns Victory Points, allowing players to compete for positions on the
-achievement leaderboard.
-
-### Achievement Categories
-
-🏰 **Realm Development**
-
-⚔️ **Military**
-
-🫏 **Trading**
-
-🌟 **Special**
-
-\n\n---\n\nfile: docs/pages/mechanics/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum
-* **Settling**: Players must burn a Season Pass to settle their Realm during the initial 7-day settling period or after
-* **Starting Resources**: Each newly settled Realm begins with a set of starting materials
-* **Progression Path**: Realms advance from Settlements → Cities → Kingdoms → Empires, unlocking additional buildable
-  hexes and defensive army slots
-* **Resource Production**: Each Realm can produce 1-7 different resources based on its Season Pass and original NFT
-  metadata
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a gateway for new players
-* **Limited Production**: Produce resources at 50% the rate of Realms
-* **Parent Realm**: Each Village is tied to a parent Realm and can only receive troops from it
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Simple Progression**: Villages can upgrade from Settlement to City
-
-## Resources
-
-* **Economy Foundation**: 22 distinct resources drive all gameplay activities
-* **Resource Categories**:
-  * **Basic Resources**: Food (Wheat, Fish) - essential for production, troop maintenance, and construction
-  * **Tiered Resources**: Distributed based on rarity across the 8,000 Realms, creating natural scarcity and trade
-    opportunities
-  * **Strategic Resources**:
-    * **Military Resources**: Units with unique properties that can be assigned to armies
-    * **Transport**: Donkeys required for moving resources and essential for logistics
-  * **Special Resources**: $LORDS currency for all market transactions and Ancient Fragments for Hyperstructures
-* **ERC20 Compatibility**: All resources can be traded freely and bridged out as ERC20 tokens through the central bank
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused)
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct
-  * **Economic Buildings**: Includes farms, fishing villages, worker huts, storehouses, and markets
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  progress
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs
-  * **Resources**: Require combinations of other resources (standard) or labor (simple)
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs
-  * **Donkeys**: One-time-use transport, consumed after a single journey
-* **Production Efficiency**: Realms produce at full capacity, while Villages produce at 50% rate
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only six ancient Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement differently
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins)
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength (two T1 troops combine to make one T2, two T2
-  make one T3)
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects
-* **Army Types**:
-  * **Attacking Armies**: Deploy onto the world map for exploration and conquest, require 30+ stamina to attack
-  * **Defending Armies**: Protect Realms and structures in defense slots, with slots increasing by Realm level
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness
-* **Biome Effects**: Each troop type has advantages (+30% damage) or disadvantages (-30% damage) in specific biomes
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders
-  * Success depends on the raiding army's damage relative to defending armies
-  * Undefended structures can be raided without casualties
-
-## Social Structures
-
-* **Tribes**: Player-formed organizations enabling cooperation and coordination
-* **Types**: Public (open to all) or Private (invitation only)
-* **Benefits**: Access to tribe-only features and Hyperstructure contributions
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through various achievement paths, with winners earning recognition
-and rewards that impact future seasons.
-
-\n\n---\n\nfile: docs/pages/mechanics/tribes.mdx
-meta: {
-  "title": "Tribes",
-  "description": "Social organizations in Eternum"
-}
-
-# 👥 Tribes
-
-<img src="/images/covers/09.png" alt="Eternum Tribes" className="w-full rounded-lg my-6" />
-
-In Eternum, Tribes represent player-formed organizations that enable cooperation and coordination among members.
-
-## Types of Tribes
-
-* **Public Tribes**: Open to all, allowing anyone to join
-* **Private Tribes**: Require an invitation to join
-
-## Benefits of Tribes
-
-* Access to tribe-only features
-* Contribution to Hyperstructures as a collective
-
-## Formation & Membership
-
-🫂 **Tribe System**
-
-* Any player can create a tribe
-* Set tribe name and description
-* Two types of tribes:
-  > * **Public**: Anyone can join directly
-  > * **Private**: Requires an invitation to join
-
-## Functionality
-
-🏗️ **Current Features**
-
-* Social coordination tool
-* Access to tribe-only Hyperstructure contributions
-  > *When Hyperstructure is set to tribe-only mode*
-
-\n\n---\n\nfile: docs/pages/mechanics/victory.mdx
-meta: {}
-
-# Victory
-
-Prize Pool & Split
-
-\n\n---\n\nfile: docs/pages/mechanics/worldmap-and-movement.mdx
-meta: {}
-
-import TroopMovementTable from "@/components/TroopMovementTable";
-import { BiomeStamina } from "@/components/BiomeStamina";
-
-# 🗺️ World Map & Movement
-
-<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-## The World Map
-
-### An Unexplored World
-
-At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
-exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
-can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
-another.
-
-When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
-been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
-their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
-structure or army) is permanently revealed to all Lords.
-
-### Biomes
-
-Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
-coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
-
-Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
-potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the Combat section. Additionally, biomes have the potential to enhance or impede army
-maneuvers, as the various biomes impact the stamina consumption of each troop type differently as they move between
-hexes—this is explained further in the subsection below.
-
-## Movement & Exploration
-
-<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-### Stamina
-
-Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
-stamina, a critical resource Lords must carefully manage.
-
-Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
-against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
-
-<TroopMovementTable />
-
-Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
-themselves severely disadvantaged if attacked by enemy forces.
-
-### Movement
-
-![Simple Mode Production](/gifs/moving-army.gif)
-
-Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
-Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
-move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
-destination, and the army has sufficient stamina available for the entire journey.
-
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
-
-<BiomeStamina />
-
-### Exploring
-
-When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
-the known boundaries of the world.
-
-If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
-back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
-an army becomes overloaded, resources can be dropped to free up space, but any discarded materials will be permanently
-lost (burned).
-
-Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
-armies are well-prepared and capable of defending themselves in unexpected combat situations.
 
 \n\n---\n\nfile: docs/pages/mechanics/military/combat.mdx
 meta: {}
