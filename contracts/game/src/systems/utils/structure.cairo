@@ -3,7 +3,7 @@ use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST};
-use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, VillageTokenConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{
@@ -20,6 +20,7 @@ use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
 use s1_eternum::systems::utils::village::{iVillageImpl};
 use s1_eternum::utils::map::biomes::{Biome, get_biome};
+use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 #[generate_trait]
 pub impl iStructureImpl of IStructureTrait {
@@ -95,6 +96,10 @@ pub impl iStructureImpl of IStructureTrait {
             Direction::SouthEast,
         ];
         let mut possible_village_slots: Array<Direction> = array![];
+        let village_pass_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("village_pass_config"),
+        );
+
         for direction in structure_surrounding {
             let neighbor_coord: Coord = coord.neighbor(direction);
             let mut neighbor_tile: Tile = world.read_model((neighbor_coord.x, neighbor_coord.y));
@@ -118,6 +123,10 @@ pub impl iStructureImpl of IStructureTrait {
                 // todo: ensure quest tiles cant be used also
 
                 if !village_tile.occupier_is_structure {
+                    // mint village nft
+                    IVillagePassDispatcher { contract_address: village_pass_config.token_address }
+                        .mint(village_pass_config.mint_recipient_address);
+                    // append village slot
                     possible_village_slots.append(direction);
                 }
             }
@@ -130,7 +139,6 @@ pub impl iStructureImpl of IStructureTrait {
                 connected_realm_id: metadata.realm_id,
                 connected_realm_coord: coord,
                 directions_left: possible_village_slots.span(),
-                
             };
             world.write_model(@structure_village_slots);
         }

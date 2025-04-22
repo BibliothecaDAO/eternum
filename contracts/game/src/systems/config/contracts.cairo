@@ -1,7 +1,7 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-    TroopStaminaConfig,
+    TroopStaminaConfig, VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -20,8 +20,8 @@ pub trait IAgentControllerConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IVillageControllerConfig<T> {
-    fn set_village_controllers(ref self: T, village_controller_addresses: Span<starknet::ContractAddress>);
+pub trait IVillageTokenConfig<T> {
+    fn set_village_token_config(ref self: T, village_token_config: VillageTokenConfig);
 }
 
 #[starknet::interface]
@@ -190,7 +190,7 @@ pub mod config_systems {
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
         StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VillageControllerConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        VillageTokenConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
 
@@ -276,19 +276,12 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl VillageControllerConfigImpl of super::IVillageControllerConfig<ContractState> {
-        fn set_village_controllers(
-            ref self: ContractState, village_controller_addresses: Span<starknet::ContractAddress>,
-        ) {
+    impl VillageTokenConfigImpl of super::IVillageTokenConfig<ContractState> {
+        fn set_village_token_config(ref self: ContractState, village_token_config: VillageTokenConfig) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut village_controller_config: VillageControllerConfig = VillageControllerConfig {
-                addresses: village_controller_addresses,
-            };
-            WorldConfigUtilImpl::set_member(
-                ref world, selector!("village_controller_config"), village_controller_config,
-            );
+            WorldConfigUtilImpl::set_member(ref world, selector!("village_pass_config"), village_token_config);
         }
     }
 

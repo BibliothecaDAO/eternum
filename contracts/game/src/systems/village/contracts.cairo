@@ -1,10 +1,9 @@
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Direction};
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IVillageSystems<T> {
-    fn create(ref self: T, village_owner: ContractAddress, connected_realm_entity_id: ID, direction: Direction) -> ID;
+    fn create(ref self: T, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction) -> ID;
 }
 
 #[dojo::contract]
@@ -16,7 +15,7 @@ pub mod village_systems {
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SeasonConfigImpl, VillageControllerConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, VillageTokenConfig, WorldConfigUtilImpl};
 
     use s1_eternum::models::map::{TileOccupier};
     use s1_eternum::models::position::{Coord};
@@ -29,37 +28,26 @@ pub mod village_systems {
     use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
-    use starknet::ContractAddress;
+    use s1_eternum::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
     impl VillageSystemsImpl of super::IVillageSystems<ContractState> {
         fn create(
-            ref self: ContractState,
-            village_owner: ContractAddress,
-            connected_realm_entity_id: ID,
-            direction: Direction,
+            ref self: ContractState, village_pass_token_id: u16, connected_realm_entity_id: ID, direction: Direction,
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
-            // ensure village owner is non zero
-            assert!(village_owner.is_non_zero(), "village owner can't be zero");
-
-            // ensure caller is authorized
+            // recieve the nft from the caller
             let caller = starknet::get_caller_address();
-            let village_controller_config: VillageControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("village_controller_config"),
+            let this = starknet::get_contract_address();
+            let village_token_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("village_pass_config"),
             );
-            let mut caller_authorized: bool = false;
-            for address in village_controller_config.addresses {
-                if *address == caller {
-                    caller_authorized = true;
-                    break;
-                }
-            };
-            assert!(caller_authorized, "caller not authorized to create village");
+            IVillagePassDispatcher { contract_address: village_token_config.token_address }
+                .transfer_from(caller, this, village_pass_token_id.into());
 
             // ensure connected entity is a realm
             let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(
@@ -109,7 +97,7 @@ pub mod village_systems {
                 village_coord = village_coord.neighbor(direction);
             };
 
-            let village_resources: Span<u8> = array![iVillageResourceImpl::random(village_owner, world)].span();
+            let village_resources: Span<u8> = array![iVillageResourceImpl::random(caller, world)].span();
 
             // set village metadata
             let mut villiage_metadata: StructureMetadata = Default::default();
@@ -119,7 +107,7 @@ pub mod village_systems {
             iStructureImpl::create(
                 ref world,
                 village_coord,
-                village_owner,
+                caller,
                 village_id,
                 StructureCategory::Village,
                 village_resources,

@@ -1,18 +1,18 @@
 import type { EternumProvider } from "@bibliothecadao/provider";
 import {
-	ADMIN_BANK_ENTITY_ID,
-	BRIDGE_FEE_DENOMINATOR,
-	BuildingType,
-	CapacityConfig,
-	type Config as EternumConfig,
-	HexGrid,
-	type ResourceInputs,
-	type ResourceOutputs,
-	type ResourceWhitelistConfig,
-	ResourcesIds,
-	scaleResourceInputs,
-	scaleResourceOutputs,
-	scaleResources,
+  ADMIN_BANK_ENTITY_ID,
+  BRIDGE_FEE_DENOMINATOR,
+  BuildingType,
+  CapacityConfig,
+  type Config as EternumConfig,
+  HexGrid,
+  type ResourceInputs,
+  type ResourceOutputs,
+  type ResourceWhitelistConfig,
+  ResourcesIds,
+  scaleResourceInputs,
+  scaleResourceOutputs,
+  scaleResources,
 } from "@bibliothecadao/types";
 
 import chalk from "chalk";
@@ -853,23 +853,25 @@ export const setAgentControllerConfig = async (config: Config) => {
 export const setVillageControllersConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    village_controllers: config.config.village.controller_addresses,
+    village_pass_nft_address: config.config.village.village_pass_nft_address,
+    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
   };
-
+  
   console.log(
     chalk.cyan(`
-  📦 Village Controllers Configuration
+  📦 Village Token Configuration
   ═══════════════════════════════`),
   );
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Village Controllers")}
-    │  ${chalk.gray("Addresses:")}${calldata.village_controllers.map(addr => `\n    │     ${chalk.white(shortHexAddress(addr))}`).join('')}
+    ┌─ ${chalk.yellow("Village Token Config")}
+    │  ${chalk.gray("Village Pass Nft Address:")}         ${chalk.white(shortHexAddress(calldata.village_pass_nft_address))}
+    │  ${chalk.gray("Village Pass Initial Mint Recipient:")}         ${chalk.white(shortHexAddress(calldata.village_mint_initial_recipient))}
     └────────────────────────────────`),
   );
 
-  const villageTx = await config.provider.set_village_controllers(calldata);
+  const villageTx = await config.provider.set_village_token_config(calldata);
   console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
 };
 

@@ -42,11 +42,17 @@ pub struct WorldConfig {
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
+    pub village_pass_config: VillageTokenConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct AgentControllerConfig {
     pub address: ContractAddress,
+}
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct VillageTokenConfig {
+    pub token_address: ContractAddress,
+    pub mint_recipient_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]

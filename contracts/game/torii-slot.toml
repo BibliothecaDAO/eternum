@@ -1,10 +1,10 @@
 # Please be mindful that changing the content of this file will impact the Eternum Launcher app
 
-rpc = "https://api.cartridge.gg/x/slot-real-cave/katana"
+rpc = "https://api.cartridge.gg/x/hello/katana"
 
-world_address = "0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa"
+world_address = "0x06a490e1f152b0d4537886fbafdf139dfcd0a3b80538b03bff4933a0a906d561"
 
-db_dir = "torii-slot"
+db_dir = "torii-slot-9"
 
 [indexing]
 events_chunk_size = 1024  # Size of events page to fetch
@@ -19,9 +19,10 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-	"erc721:0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
-	"erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
-	"erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+	"erc721:0x1c7a75093daab29ced347aee0511291803376274c10285da0337ea3ae83dc21",
+	"erc721:0x5254b0deadf825b1355e048c7427330d335dc65d60888effea3115b915e38d7",
+	"erc721:0x24b8651b4ab2e5b1c11d63455309f0c84897b7027a57e56d59678559c64189e",
+	"erc20:0x65e3f93a75b6260b31950a8e1baaea85a41c46f993251f313ac8e14da5d5224",
 ]
 
 namespaces = ["s1_eternum"]
