@@ -10,7 +10,7 @@ interface ModalContainerProps {
 }
 
 export const ModalContainer = ({ children, size = "full", title }: ModalContainerProps) => {
-  const { toggleModal } = useUIStore();
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const containerClasses = (() => {

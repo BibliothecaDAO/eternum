@@ -12,7 +12,7 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const { connect, connectors } = useConnect();
-  const { connector, account, setAccount } = useAccountStore();
+  const { connector, account, setAccount } = useAccountStore((state) => state);
   const { disconnect } = useDisconnect();
 
   const connectWallet = () => {

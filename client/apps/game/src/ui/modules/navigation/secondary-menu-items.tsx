@@ -23,7 +23,7 @@ export const SecondaryMenuItems = () => {
   } = useDojo();
 
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { connector } = useAccountStore();
+  const { connector } = useAccountStore((state) => state);
 
   const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 

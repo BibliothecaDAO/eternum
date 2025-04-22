@@ -20,7 +20,7 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  const { account: ConnectedAccount } = useAccountStore();
+  const ConnectedAccount = useAccountStore((state) => state.account);
 
   const navigation = useMemo(
     () => [
@@ -76,8 +76,9 @@ export const RightNavigationModule = ({ structures }: { structures: PlayerStruct
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${isOffscreen ? "translate-x-[83%]" : ""
-        }`}
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${
+        isOffscreen ? "translate-x-[83%]" : ""
+      }`}
     >
       {ConnectedAccount && (
         <>
