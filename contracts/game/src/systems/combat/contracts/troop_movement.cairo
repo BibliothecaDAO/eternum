@@ -245,13 +245,14 @@ pub mod troop_movement_util_systems {
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
     };
     use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+    use super::{ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait};
 
     #[abi(embed_v0)]
     impl TroopMovementUtilImpl of ITroopMovementUtilSystems<ContractState> {
         fn find_treasure(
             self: @ContractState,
             vrf_seed: u256,
-            tile: Tile,
+            mut tile: Tile,
             caller: starknet::ContractAddress,
             map_config: MapConfig,
             troop_limit_config: TroopLimitConfig,
@@ -267,29 +268,59 @@ pub mod troop_movement_util_systems {
                 starknet::get_caller_address() == troop_movement_systems_address,
                 "caller must be the troop movement systems",
             );
-            let mut tile = tile;
-            let hyps_lottery_won: bool = iHyperstructureDiscoveryImpl::lottery(
-                world, tile.into(), map_config, vrf_seed,
-            );
-            if hyps_lottery_won {
-                iHyperstructureDiscoveryImpl::create(
-                    ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+
+            let (hyperstructure_discovery_systems, _) = world.dns(@"hyperstructure_discovery_systems").unwrap();
+            let hyperstructure_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                contract_address: hyperstructure_discovery_systems,
+            };
+
+            let (found_hyperstructure, _) = hyperstructure_discovery_systems
+                .find_treasure(
+                    vrf_seed,
+                    tile,
+                    starknet::get_caller_address(),
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    current_tick,
                 );
+            if found_hyperstructure {
                 return (true, ExploreFind::Hyperstructure);
             } else {
                 // perform lottery to discover mine
-                let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
-                if mine_lottery_won {
-                    iMineDiscoveryImpl::create(
-                        ref world, tile.into(), map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                let (mine_discovery_systems, _) = world.dns(@"mine_discovery_systems").unwrap();
+                let mine_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                    contract_address: mine_discovery_systems,
+                };
+                let (found_mine, _) = mine_discovery_systems
+                    .find_treasure(
+                        vrf_seed,
+                        tile,
+                        starknet::get_caller_address(),
+                        map_config,
+                        troop_limit_config,
+                        troop_stamina_config,
+                        current_tick,
                     );
+                if found_mine {
                     return (true, ExploreFind::Mine);
                 } else {
-                    let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
-                    if agent_lottery_won {
-                        iAgentDiscoveryImpl::create(
-                            ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
+                    let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
+                    let agent_discovery_systems = ITroopMovementUtilSystemsDispatcher {
+                        contract_address: agent_discovery_systems,
+                    };
+
+                    let (found_agent, _) = agent_discovery_systems
+                        .find_treasure(
+                            vrf_seed,
+                            tile,
+                            starknet::get_caller_address(),
+                            map_config,
+                            troop_limit_config,
+                            troop_stamina_config,
+                            current_tick,
                         );
+                    if found_agent {
                         return (true, ExploreFind::Agent);
                     } else {
                         return (false, ExploreFind::None);
@@ -299,3 +330,150 @@ pub mod troop_movement_util_systems {
         }
     }
 }
+
+
+#[dojo::contract]
+pub mod hyperstructure_discovery_systems {
+    use dojo::world::{WorldStorageTrait};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::utils::{
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
+        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
+    };
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+
+    #[abi(embed_v0)]
+    impl HyperstructureDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+        ) -> (bool, ExploreFind) {
+            // ensure caller is the troop utils systems because this changes state
+            let mut world = self.world(DEFAULT_NS());
+
+            // ensure caller is the troop utils movement systems
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            let hyps_lottery_won: bool = iHyperstructureDiscoveryImpl::lottery(
+                world, tile.into(), map_config, vrf_seed,
+            );
+            if hyps_lottery_won {
+                iHyperstructureDiscoveryImpl::create(
+                    ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                );
+                return (true, ExploreFind::Hyperstructure);
+            }
+            return (false, ExploreFind::None);
+        }
+    }
+}
+
+
+#[dojo::contract]
+pub mod mine_discovery_systems {
+    use dojo::world::{WorldStorageTrait};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::utils::{
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
+        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
+    };
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+
+    #[abi(embed_v0)]
+    impl MineDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+        ) -> (bool, ExploreFind) {
+            // ensure caller is the troop utils systems because this changes state
+            let mut world = self.world(DEFAULT_NS());
+
+            // ensure caller is the troop utils movement systems
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            let mine_lottery_won: bool = iMineDiscoveryImpl::lottery(map_config, vrf_seed);
+            if mine_lottery_won {
+                iMineDiscoveryImpl::create(
+                    ref world, tile.into(), map_config, troop_limit_config, troop_stamina_config, vrf_seed,
+                );
+                return (true, ExploreFind::Mine);
+            }
+            return (false, ExploreFind::None);
+        }
+    }
+}
+
+
+#[dojo::contract]
+pub mod agent_discovery_systems {
+    use dojo::world::{WorldStorageTrait};
+    use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
+    use s1_eternum::models::map::Tile;
+    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::systems::utils::{
+        hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
+        troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
+    };
+    use super::{ITroopMovementUtilSystems, troop_movement_systems::ExploreFind};
+
+    #[abi(embed_v0)]
+    impl AgentDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
+        fn find_treasure(
+            self: @ContractState,
+            vrf_seed: u256,
+            mut tile: Tile,
+            caller: starknet::ContractAddress,
+            map_config: MapConfig,
+            troop_limit_config: TroopLimitConfig,
+            troop_stamina_config: TroopStaminaConfig,
+            current_tick: u64,
+        ) -> (bool, ExploreFind) {
+            // ensure caller is the troop utils systems because this changes state
+            let mut world = self.world(DEFAULT_NS());
+
+            // ensure caller is the troop utils movement systems
+            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == troop_movement_util_systems,
+                "caller must be the troop_movement_util_systems",
+            );
+
+            let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
+            if agent_lottery_won {
+                iAgentDiscoveryImpl::create(
+                    ref world, ref tile, vrf_seed, troop_limit_config, troop_stamina_config, current_tick,
+                );
+                return (true, ExploreFind::Agent);
+            }
+            return (false, ExploreFind::None);
+        }
+    }
+}
+
