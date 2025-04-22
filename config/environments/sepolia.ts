@@ -6,7 +6,7 @@
  * @see {@link CommonEternumGlobalConfig} for base configuration
  */
 
-import { type Config } from "@bibliothecadao/eternum";
+import { type Config } from "@bibliothecadao/types";
 import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 
 /**
@@ -17,6 +17,12 @@ import { EternumGlobalConfig as CommonEternumGlobalConfig } from "./_shared_";
 // sepolia god mode
 export const SepoliaEternumGlobalConfig: Config = {
   ...CommonEternumGlobalConfig,
+  village: {
+    controller_addresses: [
+      "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
+      ...CommonEternumGlobalConfig.village.controller_addresses
+    ]
+  },
   tick: {
     ...CommonEternumGlobalConfig.tick,
     // 3 minutes

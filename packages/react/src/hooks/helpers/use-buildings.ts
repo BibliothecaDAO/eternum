@@ -1,10 +1,12 @@
 import {
+  configManager,
+} from "@bibliothecadao/eternum";
+import {
   Building,
   BuildingType,
   BuildingTypeToString,
-  configManager,
   getProducedResource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types"
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";

@@ -1,5 +1,5 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useNavigateToHexView, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
@@ -13,13 +13,15 @@ import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   configManager,
-  ContractAddress,
   formatTime,
   getEntityInfo,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
   ID,
   PlayerStructure,
   TickIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -50,10 +52,9 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
-  const { isMapView, hexPosition } = useQuery();
+  const { isMapView } = useQuery();
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const { currentBlockTimestamp } = useBlockTimestamp();
 
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
@@ -77,7 +78,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     return structures
       .map((structure) => ({
         ...structure,
-        isFavorite: favorites.includes(structure.structure.entity_id),
+        isFavorite: favorites.includes(structure.entityId),
       }))
       .sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }, [favorites, structures.length]);
@@ -90,38 +91,21 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
     });
   }, []);
 
-  const navigateToHexView = useNavigateToHexView();
-  const navigateToMapView = useNavigateToMapView();
+  const goToStructure = useGoToStructure();
 
-  const goToHexView = useCallback(
+  const onSelectStructure = useCallback(
     (entityId: ID) => {
       const structurePosition = getComponentValue(
         setup.components.Structure,
         getEntityIdFromKeys([BigInt(entityId)]),
       )?.base;
+
       if (!structurePosition) return;
-      navigateToHexView(new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }));
+
+      goToStructure(entityId, new Position({ x: structurePosition.coord_x, y: structurePosition.coord_y }), isMapView);
     },
-    [navigateToHexView],
+    [isMapView, setup.components.Structure],
   );
-
-  const goToMapView = useCallback(
-    (entityId?: ID) => {
-      const position = entityId
-        ? getComponentValue(setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.base
-        : { coord_x: hexPosition.col, coord_y: hexPosition.row };
-
-      if (!position) return;
-      navigateToMapView(new Position({ x: position.coord_x, y: position.coord_y }));
-    },
-    [navigateToMapView, hexPosition.col, hexPosition.row],
-  );
-
-  const { progress } = useMemo(() => {
-    const timeLeft = currentBlockTimestamp % configManager.getTick(TickIds.Armies);
-    const progressValue = (timeLeft / configManager.getTick(TickIds.Armies)) * 100;
-    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
-  }, [currentBlockTimestamp]);
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
@@ -137,7 +121,7 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               <Select
                 value={structureEntityId.toString()}
                 onValueChange={(a: string) => {
-                  isMapView ? goToMapView(ID(a)) : goToHexView(ID(a));
+                  onSelectStructure(ID(a));
                 }}
               >
                 <SelectTrigger className="truncate ">
@@ -146,17 +130,13 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
                 <SelectContent className=" panel-wood bg-dark-wood">
                   {structuresWithFavorites.map((structure, index) => (
                     <div key={index} className="flex flex-row items-center">
-                      <button
-                        className="p-1"
-                        type="button"
-                        onClick={() => toggleFavorite(structure.structure.entity_id)}
-                      >
+                      <button className="p-1" type="button" onClick={() => toggleFavorite(structure.entityId)}>
                         {<Star className={structure.isFavorite ? "h-4 w-4 fill-current" : "h-4 w-4"} />}
                       </button>
                       <SelectItem
                         className="flex justify-between"
                         key={index}
-                        value={structure.structure.entity_id?.toString() || ""}
+                        value={structure.entityId?.toString() || ""}
                       >
                         <div className="self-center flex gap-4 text-xl">{structure.name}</div>
                       </SelectItem>
@@ -195,13 +175,21 @@ export const TopLeftNavigation = memo(({ structures }: { structures: PlayerStruc
               className="self-center"
               onClick={() => {
                 if (!isMapView) {
-                  goToMapView();
+                  goToStructure(
+                    structureEntityId,
+                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    true,
+                  );
                 } else {
-                  goToHexView(structureEntityId);
+                  goToStructure(
+                    structureEntityId,
+                    new Position({ x: structurePosition.x, y: structurePosition.y }),
+                    false,
+                  );
                 }
               }}
             >
-              {isMapView ? "Realm" : "World"}
+              {isMapView ? "Local" : "World"}
             </Button>
           </div>
           <div className="flex flex-row">
@@ -299,7 +287,6 @@ const TickProgress = memo(() => {
   const cycleTime = configManager.getTick(TickIds.Armies);
   const { play } = useUiSounds(soundSelector.gong);
 
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const lastProgressRef = useRef(0);
 
   // Calculate progress once and memoize
@@ -334,7 +321,6 @@ const TickProgress = memo(() => {
 
   // Handle tooltip visibility
   const handleMouseEnter = useCallback(() => {
-    setIsTooltipOpen(true);
     setTooltip({
       position: "bottom",
       content: tooltipContent,
@@ -342,7 +328,6 @@ const TickProgress = memo(() => {
   }, [setTooltip, tooltipContent]);
 
   const handleMouseLeave = useCallback(() => {
-    setIsTooltipOpen(false);
     setTooltip(null);
   }, [setTooltip]);
 

@@ -1,4 +1,4 @@
-import { ArmyInfo } from "@bibliothecadao/eternum";
+import { ArmyInfo } from "@bibliothecadao/types";
 import { ArmyChip } from "../../military/army-chip";
 import { InventoryResources } from "../../resources/inventory-resources";
 import { ArmyWarning } from "./army-warning";

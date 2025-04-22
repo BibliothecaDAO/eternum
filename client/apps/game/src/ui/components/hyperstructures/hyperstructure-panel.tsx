@@ -7,19 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
-  Access,
   configManager,
-  ContractAddress,
   divideByPrecision,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
   getHyperstructureTotalContributableAmounts,
   LeaderboardManager,
-  MAX_NAME_LENGTH,
   multiplyByPrecision,
   ResourceManager,
-  ResourcesIds,
 } from "@bibliothecadao/eternum";
+import {
+  Access,
+  ContractAddress,
+  MAX_NAME_LENGTH,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
@@ -130,8 +132,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
-
-    console.log({ formattedContributions });
 
     try {
       await contribute_to_construction({
@@ -271,7 +271,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col items-center gap-1">
                     <h4 className="truncate">{entity.name}</h4>
-                    <Button size="xs" onClick={() => {}}>
+                    <Button size="xs" onClick={() => { }}>
                       Reload
                     </Button>
                   </div>
@@ -345,8 +345,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
               backgroundImage:
                 ancientFragmentProgress > 0
                   ? `linear-gradient(to right, #06D6A03c ${String(ancientFragmentProgress)}%, rgba(0,0,0,0) ${String(
-                      ancientFragmentProgress,
-                    )}%)`
+                    ancientFragmentProgress,
+                  )}%)`
                   : "",
             }}
           >

@@ -1,17 +1,20 @@
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BiomeType,
   BuildingType,
   CapacityConfig,
+  Config,
+  ContractComponents,
+  EntityType,
   getProducedResource,
   RESOURCE_PRECISION,
   ResourcesIds,
   StructureType,
+  TickIds,
+  TroopType,
   WORLD_CONFIG_ID,
-} from "../constants";
-import { ContractComponents } from "../dojo/contract-components";
-import { Config, EntityType, TickIds, TroopType } from "../types";
+} from "@bibliothecadao/types";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { gramToKg } from "../utils";
 
 type LaborConfig = {
@@ -279,7 +282,6 @@ export class ClientConfigManager {
   getResourceWeightKg(resourceId: number): number {
     return this.resourceWeightsKg[resourceId] || 0;
   }
-
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     return this.getValueOrDefault(() => {
       const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
@@ -324,6 +326,98 @@ export class ClientConfigManager {
           return baseStaminaCost;
       }
     }, 0);
+  }
+
+  public getBiomeCombatBonus(troopType: TroopType, biome: BiomeType): number {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const biomeBonusNum = worldConfig?.troop_damage_config?.damage_biome_bonus_num || 0;
+    const biomeBonus = biomeBonusNum / 10_000;
+
+    const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
+      [BiomeType.Ocean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.DeepOcean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Beach]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Grassland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.Shrubland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.SubtropicalDesert]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.TemperateDesert]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.TropicalRainForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TropicalSeasonalForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TemperateRainForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TemperateDeciduousForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Tundra]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.Taiga]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Snow]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Bare]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.Scorched]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+    };
+
+    return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   }
 
   getExploreStaminaCost() {

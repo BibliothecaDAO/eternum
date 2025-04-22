@@ -1,8 +1,9 @@
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount, type DojoAccount } from "..";
+import { ResourceManager, getBuildingCosts, getBuildingCount, setBuildingCount } from "..";
 import {
+  type DojoAccount,
   BUILDINGS_CENTER,
   BuildingType,
   Direction,
@@ -12,10 +13,10 @@ import {
   getDirectionBetweenAdjacentHexes,
   getNeighborHexes,
   getProducedResource,
-} from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import { SystemCalls } from "../dojo/create-system-calls";
-import { HexPosition, ID } from "../types";
+  ClientComponents,
+  SystemCalls,
+  HexPosition, ID
+} from "@bibliothecadao/types";
 import { configManager } from "./config-manager";
 
 export class TileManager {

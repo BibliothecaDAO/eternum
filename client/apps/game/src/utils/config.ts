@@ -9,20 +9,39 @@ export const ETERNUM_CONFIG = () => {
 
 export const TORII_SETTING = async (): Promise<string> => {
   let toriiSetting = localStorage.getItem("TORII_SETTING") as ToriiSetting;
-  if (!toriiSetting && !env.VITE_PUBLIC_TORII) {
+  if (!toriiSetting) {
     localStorage.setItem("TORII_SETTING", DEFAULT_TORII_SETTING);
     toriiSetting = DEFAULT_TORII_SETTING;
   }
 
-  let toriiUrl = toriiSetting === ToriiSetting.Local ? "http://localhost:8080" : env.VITE_PUBLIC_TORII;
+  let toriiUrl = settingToUrl(toriiSetting);
 
-  const aliveCheck = await fetch(toriiUrl);
-  if (!aliveCheck.ok && aliveCheck.status !== 200) {
-    localStorage.setItem("TORII_SETTING", ToriiSetting.Remote);
-    toriiUrl = env.VITE_PUBLIC_TORII;
+  let isAlive = await doAliveCheck(toriiUrl);
+
+  if (!isAlive) {
+    const newSetting = getOppositeSetting(toriiSetting);
+    localStorage.setItem("TORII_SETTING", newSetting);
+    toriiUrl = settingToUrl(newSetting);
   }
 
   return toriiUrl;
 };
 
 export const DEFAULT_TORII_SETTING = ToriiSetting.Local;
+
+const settingToUrl = (setting: ToriiSetting) => {
+  return setting === ToriiSetting.Local ? "http://localhost:8080" : env.VITE_PUBLIC_TORII;
+};
+
+const getOppositeSetting = (setting: ToriiSetting) => {
+  return setting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+};
+
+const doAliveCheck = async (url: string) => {
+  try {
+    const aliveCheck = await fetch(url);
+    return aliveCheck.ok && aliveCheck.status === 200;
+  } catch (error) {
+    return false;
+  }
+};

@@ -3,18 +3,12 @@
  * Each property indicates whether that part is currently loading data from the blockchain.
  */
 export enum LoadingStateKey {
-  SelectedStructure = "selectedStructure",
   Market = "market",
-  PlayerStructuresOneKey = "playerStructuresOneKey",
-  PlayerStructuresTwoKey = "playerStructuresTwoKey",
-  DonkeysAndArmies = "donkeysAndArmies",
+  AllPlayerStructures = "allPlayerStructures",
   Map = "map",
-  Bank = "bank",
-  World = "world",
   Hyperstructure = "hyperstructure",
-  SingleKey = "singleKey",
-  Config = "config",
-  Events = "events",
+  MarketHistory = "marketHistory",
+  Leaderboard = "leaderboard",
 }
 
 type LoadingState = {
@@ -28,18 +22,12 @@ export interface WorldStore {
 
 export const createWorldStoreSlice = (set: any) => ({
   loadingStates: {
-    [LoadingStateKey.SelectedStructure]: false,
     [LoadingStateKey.Market]: false,
-    [LoadingStateKey.PlayerStructuresOneKey]: false,
-    [LoadingStateKey.PlayerStructuresTwoKey]: false,
-    [LoadingStateKey.DonkeysAndArmies]: false,
+    [LoadingStateKey.AllPlayerStructures]: false,
     [LoadingStateKey.Map]: false,
-    [LoadingStateKey.Bank]: false,
-    [LoadingStateKey.World]: false,
     [LoadingStateKey.Hyperstructure]: false,
-    [LoadingStateKey.SingleKey]: false,
-    [LoadingStateKey.Config]: false,
-    [LoadingStateKey.Events]: false,
+    [LoadingStateKey.Leaderboard]: false,
+    [LoadingStateKey.MarketHistory]: false,
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>

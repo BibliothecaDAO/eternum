@@ -5,15 +5,17 @@ import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
 import {
   configManager,
-  ContractAddress,
   divideByPrecision,
   getBalance,
   getClosestBank,
   MarketManager,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
   resources,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useSearch } from "@tanstack/react-router";
 import { ArrowDownUp } from "lucide-react";

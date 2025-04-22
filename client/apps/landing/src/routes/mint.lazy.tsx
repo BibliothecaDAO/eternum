@@ -14,8 +14,7 @@ import { displayAddress } from "@/lib/utils";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-// todo: why not working
-// import { env } from "env";
+
 import { Loader2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";

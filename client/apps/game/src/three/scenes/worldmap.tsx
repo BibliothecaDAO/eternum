@@ -1,6 +1,7 @@
 import { soundSelector } from "@/hooks/helpers/use-ui-sound";
 import throttle from "lodash/throttle";
 
+import { getMapFromTorii } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -18,11 +19,15 @@ import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
 import { CombatModal } from "@/ui/modules/military/combat-modal";
 import { HelpModal } from "@/ui/modules/military/help-modal";
 import { getBlockTimestamp } from "@/utils/timestamp";
+import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionPath,
   ActionPaths,
   ActionType,
   ArmyActionManager,
+  StructureActionManager,
+} from "@bibliothecadao/eternum";
+import {
   BiomeType,
   ContractAddress,
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
@@ -30,11 +35,7 @@ import {
   HexEntityInfo,
   HexPosition,
   ID,
-  SetupResult,
-  StructureActionManager,
-} from "@bibliothecadao/eternum";
-import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { getEntities } from "@dojoengine/state";
+} from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
@@ -124,7 +125,7 @@ export default class WorldmapScene extends HexagonScene {
     useUIStore.subscribe(
       (state) => state.entityActions.selectedEntityId,
       (selectedEntityId) => {
-        if (!selectedEntityId) this.clearSelection();
+        if (!selectedEntityId) this.clearEntitySelection();
       },
     );
 
@@ -252,6 +253,12 @@ export default class WorldmapScene extends HexagonScene {
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {}
 
+  protected getHexagonEntity(hexCoords: HexPosition) {
+    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    return { army, structure };
+  }
+
   protected onHexagonClick(hexCoords: HexPosition | null) {
     const overlay = document.querySelector(".shepherd-modal-is-visible");
     const overlayClick = document.querySelector(".allow-modal-click");
@@ -260,33 +267,36 @@ export default class WorldmapScene extends HexagonScene {
     }
     if (!hexCoords) return;
 
-    this.handleHexSelection(hexCoords);
-
-    const army = this.armyHexes.get(hexCoords.col)?.get(hexCoords.row);
-    const structure = this.structureHexes.get(hexCoords.col)?.get(hexCoords.row);
+    const { army, structure } = this.getHexagonEntity(hexCoords);
     const account = ContractAddress(useAccountStore.getState().account?.address || "");
+
+    const isMine = army?.owner === account || structure?.owner === account;
+    this.handleHexSelection(hexCoords, isMine);
 
     if (army?.owner === account) {
       this.onArmySelection(army.id, account);
     } else if (structure?.owner === account) {
       this.onStructureSelection(structure.id);
     } else {
-      this.clearSelection();
+      this.clearEntitySelection();
     }
   }
 
-  protected handleHexSelection(hexCoords: HexPosition) {
+  protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
     const contractHexPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const position = getWorldPositionForHex(hexCoords);
     if (contractHexPosition.x !== this.state.selectedHex?.col || contractHexPosition.y !== this.state.selectedHex.row) {
-      playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
       this.selectedHexManager.setPosition(position.x, position.z);
       this.state.setSelectedHex({
         col: contractHexPosition.x,
         row: contractHexPosition.y,
       });
-      this.armyManager.removeLabelsFromScene();
-      this.structureManager.removeLabelsFromScene();
+
+      if (isMine) {
+        playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
+        this.armyManager.removeLabelsFromScene();
+        this.structureManager.removeLabelsFromScene();
+      }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);
     }
@@ -395,10 +405,16 @@ export default class WorldmapScene extends HexagonScene {
 
   private clearSelection() {
     console.log("clearSelection");
+    this.selectedHexManager.resetPosition();
+    this.state.setSelectedHex(null);
+    this.clearEntitySelection();
+  }
+
+  private clearEntitySelection() {
+    console.log("clearEntitySelection");
     this.highlightHexManager.highlightHexes([]);
     this.state.updateEntityActionActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
-    this.state.setSelectedHex(null);
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
   }
@@ -842,60 +858,24 @@ export default class WorldmapScene extends HexagonScene {
     // Add to fetched chunks before the query to prevent concurrent duplicate requests
     this.fetchedChunks.add(chunkKey);
 
+    const start = performance.now();
     try {
       this.state.setLoading(LoadingStateKey.Map, true);
-      const promiseTiles = getEntities(
+      await getMapFromTorii(
         this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
-          MemberClause("s1_eternum-Tile", "col", "Lte", startCol + range),
-          MemberClause("s1_eternum-Tile", "row", "Gte", startRow - range),
-          MemberClause("s1_eternum-Tile", "row", "Lte", startRow + range),
-        ]).build(),
         this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-Tile"],
-        1000,
-        false,
+        startCol,
+        startRow,
+        range,
       );
-      // todo: verify that this works with nested struct
-      const promiseExplorers = getEntities(
-        this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
-          MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
-        ]).build(),
-        this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-        1000,
-        false,
-      );
-
-      const promiseStructures = getEntities(
-        this.dojo.network.toriiClient,
-        AndComposeClause([
-          MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
-          MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
-          MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
-          MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
-        ]).build(),
-        this.dojo.network.contractComponents as any,
-        [],
-        ["s1_eternum-Structure", "s1_eternum-Resource"],
-        1000,
-        false,
-      );
-
-      Promise.all([promiseTiles, promiseExplorers, promiseStructures]).then(() => {
-        this.state.setLoading(LoadingStateKey.Map, false);
-      });
     } catch (error) {
       // If there's an error, remove the chunk from cached set so it can be retried
       this.fetchedChunks.delete(chunkKey);
       console.error("Error fetching tile entities:", error);
+    } finally {
+      this.state.setLoading(LoadingStateKey.Map, false);
+      const end = performance.now();
+      console.log("[sync] map query", end - start);
     }
   }
 
@@ -937,7 +917,6 @@ export default class WorldmapScene extends HexagonScene {
   updateVisibleChunks(force: boolean = false) {
     const cameraPosition = dummyVector;
     cameraPosition.copy(this.controls.target);
-    const { selectedEntityId } = this.state.entityActions;
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
     const adjustedZ = cameraPosition.z + (this.chunkSize * HEX_SIZE * 1.5) / 3;

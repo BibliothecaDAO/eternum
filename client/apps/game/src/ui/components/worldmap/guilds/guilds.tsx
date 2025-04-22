@@ -7,10 +7,12 @@ import TextInput from "@/ui/elements/text-input";
 import { sortItems } from "@/ui/utils/utils";
 import {
   calculateGuildLordsPrize,
-  ContractAddress,
   getGuildFromPlayerAddress,
-  PlayerInfo,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  PlayerInfo,
+} from "@bibliothecadao/types";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";

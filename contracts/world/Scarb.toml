@@ -8,10 +8,10 @@ sierra-replace-ids = true
 
 [dependencies]
 starknet = "2.9.2"
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.1.2" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.3.1" }
 
 [dev-dependencies]
-dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.1.2" }
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.3.1" }
 
 [tool.fmt]
 sort-module-level-items = true

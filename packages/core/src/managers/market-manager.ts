@@ -1,8 +1,6 @@
 import { getComponentValue, HasValue, runQuery, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import { ContractAddress, ID } from "../types";
+import { ResourcesIds, ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
 import { configManager } from "./config-manager";
 
 export class MarketManager {
@@ -10,7 +8,7 @@ export class MarketManager {
     private readonly components: ClientComponents,
     private readonly _player: ContractAddress,
     private readonly _resourceId: ResourcesIds,
-  ) {}
+  ) { }
 
   get player() {
     return this._player;

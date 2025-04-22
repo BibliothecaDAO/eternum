@@ -878,6 +878,9 @@ pub impl BuildingImpl of BuildingTrait {
             .read_model((outer_entity_coord.x, outer_entity_coord.y, inner_coord.x, inner_coord.y));
         assert!(building.entity_id != 0, "building does not exist");
 
+        // ensure labor building can't be destroyed
+        assert!(building.category.into() != BuildingCategory::ResourceLabor, "labor building can't be destroyed");
+
         // stop production related to building
         if !building.paused {
             building.stop_production(ref world, outer_structure_category);

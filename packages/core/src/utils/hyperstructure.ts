@@ -1,6 +1,5 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo";
+import { ResourcesIds, ClientComponents } from "@bibliothecadao/types";
 import { configManager } from "../managers";
 import { divideByPrecision, getEntityIdFromKeys } from "./utils";
 
@@ -13,9 +12,9 @@ export const getHyperstructureProgress = (hyperstructureId: number, components: 
   );
   const percentage = hyperstructureRequiredAmounts?.current_resource_total
     ? Number(
-        (hyperstructureRequiredAmounts.current_resource_total * 100n) /
-          hyperstructureRequiredAmounts.needed_resource_total,
-      )
+      (hyperstructureRequiredAmounts.current_resource_total * 100n) /
+      hyperstructureRequiredAmounts.needed_resource_total,
+    )
     : 0;
 
   return {

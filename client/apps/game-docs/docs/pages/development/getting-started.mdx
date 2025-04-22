@@ -4,54 +4,127 @@ layout: docs
 
 # Getting Started
 
+<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
+
 ## Prerequisites
 
-- [Dojo onchain game engine](https://book.dojoengine.org)
-- React
+- [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
+- [Node.js](https://nodejs.org/)
+- [pnpm](https://pnpm.io/) v9.12.3
+- [Bun](https://bun.sh/)
 
 ## Setup
 
-Install dojo via
+Install Dojo via:
 
-`curl -L https://install.dojoengine.org | bash`
-
-Make sure install the same version within the `Scarb.toml` file.
-
-Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
-installed also.
-
-`npm install -g pnpm`
-
-## Easy Method (3 commands)
-
-We have bundled up three scripts to run in three different CLI terminals. Run the scripts in order and leave the window
-open.
-
-### Terminal 1 - Client setup
-
-This will set the client up, however you **must** run the other scripts otherwise it will not work
-
-```
-sh scripts/client.sh
+```bash
+curl -L https://install.dojoengine.org | bash
 ```
 
-### Terminal 2 - Build the contracts and run the sequencer
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
 
-```
-sh scripts/contracts.sh
-```
-
-### Terminal 3 - Migrate the contracts and start the indexer
-
-```
-<!-- to set config -->
-sh scripts/indexer.sh --setConfig
-
-<!-- to just build and index -->
-sh scripts/indexer.sh
+```bash
+npm install -g pnpm
 ```
 
-# Environment Variables
+Install project dependencies:
+
+```bash
+pnpm install
+```
+
+Build shared packages:
+
+```bash
+pnpm run build:packages
+```
+
+## Development Scripts
+
+### Development
+
+- `pnpm dev` - Start game development server
+- `pnpm dev:docs` - Start documentation development server
+- `pnpm dev:landing` - Start landing page development server
+
+### Building
+
+- `pnpm build` - Build game client
+- `pnpm build:docs` - Build documentation
+- `pnpm build:landing` - Build landing page
+- `pnpm build:packages` - Build shared packages
+
+### Testing & Linting
+
+- `pnpm test` - Run all tests
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code
+- `pnpm format:check` - Check code formatting
+
+## Contract Deployment
+
+Eternum supports multiple deployment environments:
+
+| Environment | Description                 |
+| ----------- | --------------------------- |
+| Local       | For development and testing |
+| Slot        | Staging environment         |
+| Sepolia     | Public testnet              |
+| Mainnet     | Production environment      |
+
+### Deploying to Local
+
+Before deploying to any environment, confirm that you have a `.env.{environment}` file in the `contracts/common`
+directory, as well as in the `client/apps/game` directory.
+
+To deploy and run the game locally:
+
+```bash
+# Start local game contracts
+pnpm run contract:start:local
+```
+
+### Deploying to Sepolia
+
+To deploy the contracts to Sepolia testnet, run these commands in order:
+
+1. Deploy game contracts:
+
+```bash
+pnpm run game:migrate:sepolia
+```
+
+2. Deploy season pass contracts:
+
+```bash
+pnpm run seasonpass:deploy:sepolia
+```
+
+3. Deploy season resources contracts:
+
+```bash
+pnpm run seasonresources:deploy:sepolia
+```
+
+4. Update TOML configuration:
+
+```bash
+pnpm run toml:update:sepolia
+```
+
+5. Start the indexer:
+
+```bash
+pnpm run indexer:start:sepolia
+```
+
+6. Deploy game configuration:
+
+```bash
+pnpm run config:deploy:sepolia
+```
+
+## Environment Variables
 
 For local development, create a file called `.env.local` in the client repository and add the following:
 
@@ -59,19 +132,55 @@ For local development, create a file called `.env.local` in the client repositor
 VITE_PUBLIC_MASTER_ADDRESS="0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
 VITE_PUBLIC_MASTER_PRIVATE_KEY="0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 VITE_PUBLIC_ACCOUNT_CLASS_HASH="0x07dc7899aa655b0aae51eadff6d801a58e97dd99cf4666ee59e704249e51adf2"
-VITE_NETWORK_FEE_TOKEN="0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
-VITE_EVENT_KEY="0x1a2f334228cee715f1f0f54053bb6b5eac54fa336e0bc1aacf7516decb0471d"
-VITE_PUBLIC_TORII="http://localhost:8080"
-VITE_TORII_GRAPHQL="http://localhost:8080/graphql"
-VITE_TORII_WS="ws://localhost:8080/graphql/ws"
-VITE_PUBLIC_NODE_URL="http://localhost:5050/"
+VITE_PUBLIC_FEE_TOKEN_ADDRESS=0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+
+VITE_PUBLIC_TORII="http://127.0.0.1:8080"
+VITE_PUBLIC_NODE_URL="http://127.0.0.1:5050"
+VITE_PUBLIC_GAME_VERSION="v1.0.0-rc0"
 VITE_PUBLIC_GRAPHICS_DEV=false
-VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/tcp/9092/ws"
+VITE_PUBLIC_TORII_RELAY="/ip4/127.0.0.1/udp/9091/webrtc-direct/certhash/uEiDry6d-bDv3UdIS6L9VMugoiZnfwqOeXyFWm6jgKf7aTw"
+
+VITE_SOCIAL_LINK=http://bit.ly/3Zz1mpp
+
+VITE_PUBLIC_CHAIN=local
+VITE_PUBLIC_SLOT="eternum-prod"
+
+VITE_PUBLIC_VRF_PROVIDER_ADDRESS="0x0"
+VITE_PUBLIC_CLIENT_FEE_RECIPIENT=0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
+VITE_PUBLIC_MOBILE_VERSION_URL=https://next-eternum-mobile.realms.world
+
 ```
 
 This file is subject to change, please keep an eye on the repository for potential updates.
 
-# Stack
+## Project Structure
+
+- [Client](https://github.com/BibliothecaDAO/eternum/tree/main/client) - React apps built with Vite
+  - [Game](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game) - Main game client with Three.js
+    interface
+  - [Landing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/landing) - Landing page
+  - [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game-docs) - Game documentation
+  - [Balancing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/balancing) - Game balancing tools
+- [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
+  - Game contracts
+  - Season Pass contracts
+  - Season Resources contracts
+- [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
+  - [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
+  - [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
+- [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
+
+## Core Dependencies
+
+- [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
+- [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
+- [@cartridge/controller](https://www.npmjs.com/package/@cartridge/controller) - Game controller integration
+- [Starknet.js](https://www.npmjs.com/package/starknet) v6.23.1 - StarkNet interaction
+- [Vite](https://vitejs.dev/) - Frontend build tool
+
+## Stack
+
+<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
 
 - [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
   build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more

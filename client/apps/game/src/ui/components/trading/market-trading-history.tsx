@@ -1,7 +1,10 @@
+import { useSyncMarketHistory } from "@/hooks/helpers/use-sync";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "@/ui/components/trading/trade-history-event";
 import { Checkbox } from "@/ui/elements/checkbox";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { SelectResource } from "@/ui/elements/select-resource";
-import { ContractAddress, getTradeResources, ID, Resource, ResourcesIds, world } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, Resource, ResourcesIds, world } from "@bibliothecadao/types";
+import { getTradeResources, } from "@bibliothecadao/eternum"
 import { useDojo } from "@bibliothecadao/react";
 import { defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -21,7 +24,13 @@ export type TradeEvent = {
   };
 };
 
-export const MarketTradingHistory = memo(() => {
+export const MarketTradingHistory = () => {
+  const { isSyncing } = useSyncMarketHistory();
+
+  return isSyncing ? <LoadingAnimation /> : <MarketTradingHistoryContent />;
+};
+
+export const MarketTradingHistoryContent = memo(() => {
   const {
     account: {
       account: { address },
@@ -134,7 +143,7 @@ export const MarketTradingHistory = memo(() => {
         .filter((trade) =>
           trade.event.resourceGiven && trade.event.resourceTaken && selectedResourceId
             ? trade.event.resourceGiven.resourceId === selectedResourceId ||
-              trade.event.resourceTaken.resourceId === selectedResourceId
+            trade.event.resourceTaken.resourceId === selectedResourceId
             : true,
         )
         .slice(0, MAX_TRADES)

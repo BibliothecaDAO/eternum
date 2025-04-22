@@ -1,4 +1,4 @@
-import { BiomeType } from "../../constants/hex";
+import { BiomeType } from "@bibliothecadao/types";
 import { Fixed, FixedTrait } from "./fixed-point";
 import { noise as snoise } from "./simplex-noise";
 import { Vec3 } from "./vec3";
@@ -95,7 +95,7 @@ export class Biome {
 //   const start = 7785456456650;
 //   const end = start + 50000;
 //   let i = start;
-  
+
 //   while (true) {
 //     if (i > end) {
 //       break;
@@ -103,17 +103,17 @@ export class Biome {
 //     const x = i - 5;
 //     const z = i + 10;
 //     const biome = Biome.getBiome(x, z);
-  
+
 //     // Print JSON object with comma for all entries except the last one
 //     if (i !== end) {
 //       console.log(`  { "x": "${x}", "z": "${z}", "biome": "${biome}" },`);
 //     } else {
 //       console.log(`  { "x": "${x}", "z": "${z}", "biome": "${biome}" }`);
 //     }
-    
+
 //     i += 1;
 //   }
-  
+
 //   console.log("]");
 // }
 // testBiomeGeneration();

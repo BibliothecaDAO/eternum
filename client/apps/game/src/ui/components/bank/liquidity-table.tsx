@@ -1,5 +1,5 @@
 import { LiquidityResourceRow } from "@/ui/components/bank/liquidity-resource-row";
-import { ContractAddress, ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, RESOURCE_TIERS, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useState } from "react";
 

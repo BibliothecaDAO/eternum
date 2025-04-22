@@ -66,7 +66,6 @@ PORT=5050
 
 # Katana settings
 KATANA_MAX_INVOKE_STEPS=25000000 # 25,000,000
-KATANA_BLOCK_TIME=2500 # 2.5 seconds
 
 #==============================================================================
 # UTILITY FUNCTIONS
@@ -166,6 +165,8 @@ fi
 # Run katana in the background with log handling
 katana --invoke-max-steps $KATANA_MAX_INVOKE_STEPS \
     --http.cors_origins "*" \
+    --explorer \
+    --cartridge.paymaster \
     --dev \
     --dev.no-fee > >(setup_log_handling) 2>&1 &
 

@@ -3,6 +3,7 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
+import { useSyncMarket } from "@/hooks/helpers/use-sync";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ModalContainer } from "@/ui/components/modal-container";
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs } from "@/ui/elements/tab";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ID, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/types";
 import { useMarket, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { MarketHeader } from "./market-header";
@@ -44,6 +45,12 @@ const TransferView = lazy(() =>
 );
 
 export const MarketModal = () => {
+  const { isSyncing } = useSyncMarket();
+
+  return <ModalContainer>{isSyncing ? <LoadingAnimation /> : <MarketContent />}</ModalContainer>;
+};
+
+export const MarketContent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const playerStructures = usePlayerStructures();
@@ -150,64 +157,62 @@ export const MarketModal = () => {
   );
 
   return (
-    <ModalContainer>
-      <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
-        <div className="col-span-3 row-span-10 overflow-y-auto ">
-          <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center   rounded-xl w-full ">
-            <div className="">
-              <Select
-                value={structureEntityId.toString()}
-                onValueChange={(trait) => {
-                  setStructureEntityId(ID(trait));
-                }}
-              >
-                <SelectTrigger className="w-[180px] panel-wood-right">
-                  <SelectValue placeholder="Select Structure" />
-                </SelectTrigger>
-                <SelectContent>
-                  {playerStructures.map((structure, index) => (
-                    <SelectItem key={index} value={structure.entityId.toString()}>
-                      {structure.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className=" ml-2 bg-map align-middle flex gap-2">
-              {currencyFormat(Number(structureLordsBalance), 2)}{" "}
-              <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
-            </div>
+    <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
+      <div className="col-span-3 row-span-10 overflow-y-auto ">
+        <div className="market-realm-selector self-center text-xl justify-between flex gap-2 items-center   rounded-xl w-full ">
+          <div className="">
+            <Select
+              value={structureEntityId.toString()}
+              onValueChange={(trait) => {
+                setStructureEntityId(ID(trait));
+              }}
+            >
+              <SelectTrigger className="w-[180px] panel-wood-right">
+                <SelectValue placeholder="Select Structure" />
+              </SelectTrigger>
+              <SelectContent>
+                {playerStructures.map((structure, index) => (
+                  <SelectItem key={index} value={structure.entityId.toString()}>
+                    {structure.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Suspense fallback={<LoadingAnimation />}>
-            <MarketResourceSidebar
-              entityId={structureEntityId}
-              search={""}
-              onClick={(value) => setSelectedResource(value)}
-              selectedResource={selectedResource}
-              resourceAskOffers={askOffers}
-              resourceBidOffers={bidOffers}
-            />
-          </Suspense>
+          <div className="ml-2 bg-map align-middle flex gap-2">
+            {currencyFormat(Number(structureLordsBalance), 2)}{" "}
+            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="lg" />
+          </div>
         </div>
-        <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
-          <MarketHeader />
-          <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
-            <Tabs.List className=" flex w-full mt-4">
-              {tabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-              ))}
-            </Tabs.List>
-
-            <Tabs.Panels className="overflow-hidden h-full">
-              {tabs.map((tab, index) => (
-                <Tabs.Panel className="h-full" key={index}>
-                  {tab.component}
-                </Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </Tabs>
-        </div>
+        <Suspense fallback={<LoadingAnimation />}>
+          <MarketResourceSidebar
+            entityId={structureEntityId}
+            search={""}
+            onClick={(value) => setSelectedResource(value)}
+            selectedResource={selectedResource}
+            resourceAskOffers={askOffers}
+            resourceBidOffers={bidOffers}
+          />
+        </Suspense>
       </div>
-    </ModalContainer>
+      <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
+        <MarketHeader />
+        <Tabs size="large" selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)}>
+          <Tabs.List className="flex w-full mt-4">
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+
+          <Tabs.Panels className="overflow-hidden h-full">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel className="h-full" key={index}>
+                {tab.component}
+              </Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      </div>
+    </div>
   );
 };

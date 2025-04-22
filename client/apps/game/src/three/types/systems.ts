@@ -1,4 +1,4 @@
-import { BiomeType, BuildingType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, BuildingType, HexPosition, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { StructureProgress } from "./common";
 
 export type ArmySystemUpdate = {

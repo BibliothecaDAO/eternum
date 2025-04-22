@@ -10,24 +10,26 @@ import { Tabs } from "@/ui/elements/tab";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  BuildingType,
-  BuildingTypeToString,
-  CapacityConfig,
   configManager,
   divideByPrecision,
-  findResourceById,
   getBalance,
   getBuildingCosts,
-  getBuildingFromResource,
   getConsumedBy,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  ResourceIdToMiningType,
+} from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  CapacityConfig,
+  findResourceById,
+  getBuildingFromResource,
   ID,
   isEconomyBuilding,
-  ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -218,8 +220,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     resourceName={
                       configManager.getResourceBuildingProduced(building)
                         ? (ResourcesIds[
-                            configManager.getResourceBuildingProduced(building)
-                          ] as keyof typeof ResourcesIds)
+                          configManager.getResourceBuildingProduced(building)
+                        ] as keyof typeof ResourcesIds)
                         : undefined
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
@@ -329,7 +331,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               buildingName={`${BuildingTypeToString[building]} (T${info?.tier})`}
                               resourceName={
                                 ResourcesIds[
-                                  configManager.getResourceBuildingProduced(building)
+                                configManager.getResourceBuildingProduced(building)
                                 ] as keyof typeof ResourcesIds
                               }
                               toolTip={

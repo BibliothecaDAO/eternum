@@ -2,7 +2,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { useEffect, useState } from "react";
 import { getChecksumAddress, validateChecksumAddress } from "starknet";
-import { TypeH2 } from "../typography/type-h2";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent } from "../ui/dialog";
@@ -16,6 +15,7 @@ import useDebounce from "@/hooks/use-debounce";
 import { displayAddress } from "@/lib/utils";
 import { RealmMetadata, SeasonPassMint } from "@/types";
 import { AlertCircle } from "lucide-react";
+import { TypeH3 } from "../typography/type-h3";
 
 interface TransferSeasonPassProps {
   isOpen: boolean;
@@ -76,16 +76,19 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
         return;
       }
 
-      try {
-        if (validateChecksumAddress(getChecksumAddress(debouncedInput))) {
-          setTransferTo(debouncedInput);
-          return;
+      if (debouncedInput.startsWith("0x")) {
+        try {
+          if (validateChecksumAddress(getChecksumAddress(debouncedInput))) {
+            setTransferTo(debouncedInput);
+            return;
+          }
+        } catch (error) {
+          console.error("Error validating address:", error);
         }
-      } catch (error) {
-        console.error("Error validating address:", error);
+      } else {
+        await fetchAddress(debouncedInput);
       }
 
-      await fetchAddress(debouncedInput);
       if (cartridgeAddress) {
         setTransferTo(cartridgeAddress);
         return;
@@ -109,24 +112,26 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="flex flex-col h-[80vh]">
-        <TypeH2 className="text-gold justify-between flex">
-          Transfer Season Pass{" "}
+      <DialogContent className="flex flex-col h-[80vh] text-gold">
+        <div className="flex justify-between mt-4">
+          <TypeH3>Transfer Season Pass </TypeH3>
+
           <Button variant="secondary" onClick={toggleAllRealms} className="text-gold" size={"sm"}>
             {selectedRealms.length === seasonPassMints.length ? "Deselect All" : "Select All"}
           </Button>
-        </TypeH2>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background">
-              <TableRow>
+              <TableRow className="uppercase">
                 <TableHead>Token ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Resources</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Select</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="text-gold">
+            <TableBody>
               {seasonPassMints?.map((seasonPassMint) => {
                 const parsedMetadata: RealmMetadata | null = seasonPassMint?.node.tokenMetadata.metadata
                   ? JSON.parse(seasonPassMint?.node.tokenMetadata.metadata)
@@ -161,12 +166,12 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
             </TableBody>
           </Table>
         </div>
-        <div className="bottom-0 pt-4 mt-auto flex flex-col border-t bg-background">
-          <div className="flex gap-4">
+        <div className="bottom-0 pt-4 mt-auto flex flex-col">
+          <div className="flex gap-4 text-xl">
             <Input
               placeholder="Enter Controller ID or address for transfer"
               value={input}
-              className="text-gold"
+              className="text-gold text-xl"
               onChange={(e) => setInput(e.target.value)}
             />
             <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
@@ -179,11 +184,16 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               Please enter a valid Controller ID or address
             </div>
           )}
-          <div className="text-gold text-sm">
-            {cartridgeLoading
-              ? "loading"
-              : cartridgeAddress && <>Controller Address: {displayAddress(cartridgeAddress)}</>}
+          <div className=" mt-4 border p-2 rounded-md border-green ring-green text-green">
+            {cartridgeLoading ? (
+              "loading"
+            ) : cartridgeAddress ? (
+              <>Controller Address Found! {displayAddress(cartridgeAddress)}</>
+            ) : (
+              "Nothing found"
+            )}
           </div>
+          <div className="text-sm mt-2 text-red/80">Transfering to a wrong address may result in loss.</div>
         </div>
       </DialogContent>
     </Dialog>

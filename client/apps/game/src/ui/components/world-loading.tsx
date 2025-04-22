@@ -8,18 +8,12 @@ export const WorldLoading = () => {
 
   const getLoadingItems = () => {
     const items = [];
-    if (loadingStates[LoadingStateKey.SelectedStructure]) items.push("Summoning Realm"); // Selected Structure
     if (loadingStates[LoadingStateKey.Market]) items.push("Gathering Merchants"); // Market
-    if (loadingStates[LoadingStateKey.PlayerStructuresOneKey] || loadingStates[LoadingStateKey.PlayerStructuresTwoKey])
-      items.push("Constructing Settlements"); // Player Structures
-    if (loadingStates[LoadingStateKey.DonkeysAndArmies]) items.push("Rallying Troops"); // Donkeys and Armies
+    if (loadingStates[LoadingStateKey.AllPlayerStructures]) items.push("Constructing Settlements"); // Player Structures
     if (loadingStates[LoadingStateKey.Map]) items.push("Charting Territories"); // Map
-    if (loadingStates[LoadingStateKey.Bank]) items.push("Counting Gold"); // Bank
-    if (loadingStates[LoadingStateKey.World]) items.push("Forging Eternum"); // World
     if (loadingStates[LoadingStateKey.Hyperstructure]) items.push("Awakening Ancient Powers"); // Hyperstructure
-    if (loadingStates[LoadingStateKey.SingleKey]) items.push("Unlocking Secrets"); // Single Key
-    if (loadingStates[LoadingStateKey.Config]) items.push("Consulting Scrolls"); // Config
-    if (loadingStates[LoadingStateKey.Events]) items.push("Weaving Tales"); // Events
+    if (loadingStates[LoadingStateKey.MarketHistory]) items.push("Counting Gold"); // Market History
+    if (loadingStates[LoadingStateKey.Leaderboard]) items.push("Ranking Players"); // Leaderboard
     return items.join(", ");
   };
 

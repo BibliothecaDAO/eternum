@@ -1,5 +1,5 @@
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/shared/consts";
-import { ID, RealmInfo } from "@bibliothecadao/eternum";
+import { ID, RealmInfo } from "@bibliothecadao/types";
 
 export interface StructuresSlice {
   selectedRealm: RealmInfo | null;

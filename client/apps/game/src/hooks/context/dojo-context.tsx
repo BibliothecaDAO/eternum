@@ -3,24 +3,21 @@ import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.s
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useAddressStore } from "@/hooks/store/use-address-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { Position } from "@/types/position";
 import Button from "@/ui/elements/button";
 import { mintUrl, OnboardingContainer, StepContainer } from "@/ui/layouts/onboarding";
 import { CountdownTimer, LoadingScreen } from "@/ui/modules/loading-screen";
 import { SpectateButton } from "@/ui/modules/onboarding/steps";
 import { displayAddress } from "@/ui/utils/utils";
-import { getRandomRealmEntity } from "@/utils/realms";
-import { ContractAddress, SetupResult } from "@bibliothecadao/eternum";
+import { SetupResult } from "@bibliothecadao/dojo";
+import { getAddressNameFromToriiClient } from "@bibliothecadao/eternum";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { Env, env } from "../../../env";
-import { useNavigateToHexView } from "../helpers/use-navigate";
-import { useNavigateToRealmViewByAccount } from "../helpers/use-navigate-to-realm-view-by-account";
+import { useSpectatorModeClick } from "../helpers/use-navigate";
 
 export const NULL_ACCOUNT = {
   address: "0x0",
@@ -109,8 +106,6 @@ const DojoContextProvider = ({
   controllerAccount: AccountInterface | null;
   backgroundImage: string;
 }) => {
-  useNavigateToRealmViewByAccount(value.components);
-
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setAddressName = useAddressStore((state) => state.setAddressName);
 
@@ -121,9 +116,6 @@ const DojoContextProvider = ({
   const { isConnected, isConnecting, connector } = useAccount();
 
   const [accountsInitialized, setAccountsInitialized] = useState(false);
-
-  const navigateToHexView = useNavigateToHexView();
-
   const [retries, setRetries] = useState(0);
 
   const connectWallet = () => {
@@ -140,16 +132,10 @@ const DojoContextProvider = ({
     new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey),
   );
 
-  const onSpectatorModeClick = () => {
-    const randomRealmEntity = getRandomRealmEntity(value.components);
-    const structureBase = randomRealmEntity && getComponentValue(value.components.Structure, randomRealmEntity)?.base;
-    structureBase && navigateToHexView(new Position({ x: structureBase.coord_x, y: structureBase.coord_y }));
-  };
+  const onSpectatorModeClick = useSpectatorModeClick(value.components);
 
   useEffect(() => {
-    if (!controllerAccount) {
-      setAccountToUse(new Account(value.network.provider.provider, NULL_ACCOUNT.address, NULL_ACCOUNT.privateKey));
-    } else {
+    if (controllerAccount) {
       setAccountToUse(controllerAccount);
     }
   }, [controllerAccount]);
@@ -175,30 +161,34 @@ const DojoContextProvider = ({
       setAddressName(username);
     };
 
-    if (controllerAccount) {
-      useAccountStore.getState().setAccount(controllerAccount);
+    const handleAddressName = async () => {
+      if (controllerAccount) {
+        useAccountStore.getState().setAccount(controllerAccount);
 
-      const addressName = runQuery([
-        HasValue(value.components.AddressName, { address: ContractAddress(controllerAccount!.address) }),
-      ]);
+        const addressName = await getAddressNameFromToriiClient(value.network.toriiClient, controllerAccount.address);
 
-      if (addressName.size === 0) {
-        setUserName();
+        if (!addressName) {
+          await setUserName();
+        } else {
+          setAddressName(addressName);
+        }
+
+        setAccountsInitialized(true);
+      } else {
+        setTimeout(() => {
+          setRetries((prevRetries) => {
+            if (prevRetries < 10) {
+              return prevRetries + 1;
+            } else {
+              setAccountsInitialized(true);
+              return prevRetries;
+            }
+          });
+        }, 100);
       }
+    };
 
-      setAccountsInitialized(true);
-    } else {
-      setTimeout(() => {
-        setRetries((prevRetries) => {
-          if (prevRetries < 10) {
-            return prevRetries + 1;
-          } else {
-            setAccountsInitialized(true);
-            return prevRetries;
-          }
-        });
-      }, 100);
-    }
+    handleAddressName();
   }, [controllerAccount, retries]);
 
   if (!accountsInitialized) {

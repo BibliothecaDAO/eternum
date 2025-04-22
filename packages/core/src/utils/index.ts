@@ -1,4 +1,5 @@
 export * from "./action-paths";
+export * from "./address";
 export * from "./army";
 export * from "./banks";
 export * from "./biome";
