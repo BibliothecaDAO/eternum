@@ -9,6 +9,7 @@ pub trait IVillageSystems<T> {
 
 #[dojo::contract]
 pub mod village_systems {
+    use core::num::traits::Zero;
     use dojo::world::WorldStorage;
     use dojo::world::{IWorldDispatcherTrait};
 
@@ -32,15 +33,21 @@ pub mod village_systems {
 
     #[abi(embed_v0)]
     impl VillageSystemsImpl of super::IVillageSystems<ContractState> {
-        fn create(ref self: ContractState, village_owner: ContractAddress, connected_realm: ID, direction: Direction) -> ID {
+        fn create(
+            ref self: ContractState, village_owner: ContractAddress, connected_realm: ID, direction: Direction,
+        ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_settling_started_and_not_over();
 
+            // ensure village owner is non zero
+            assert!(village_owner.is_non_zero(), "village owner can't be zero");
+
             // ensure caller is authorized
             let caller = starknet::get_caller_address();
-            let village_controller_config: VillageControllerConfig 
-                = WorldConfigUtilImpl::get_member(world, selector!("village_controller_config"));
+            let village_controller_config: VillageControllerConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("village_controller_config"),
+            );
             let mut caller_authorized: bool = false;
             for address in village_controller_config.addresses {
                 if *address == caller {
@@ -48,7 +55,7 @@ pub mod village_systems {
                     break;
                 }
             };
-            assert!(caller_authorized == false, "caller not authorized to create village");
+            assert!(caller_authorized, "caller not authorized to create village");
 
             // ensure connected entity is a realm
             let connected_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, connected_realm);

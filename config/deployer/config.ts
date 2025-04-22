@@ -1,18 +1,18 @@
 import type { EternumProvider } from "@bibliothecadao/provider";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  BRIDGE_FEE_DENOMINATOR,
-  BuildingType,
-  CapacityConfig,
-  type Config as EternumConfig,
-  HexGrid,
-  type ResourceInputs,
-  type ResourceOutputs,
-  type ResourceWhitelistConfig,
-  ResourcesIds,
-  scaleResourceInputs,
-  scaleResourceOutputs,
-  scaleResources,
+	ADMIN_BANK_ENTITY_ID,
+	BRIDGE_FEE_DENOMINATOR,
+	BuildingType,
+	CapacityConfig,
+	type Config as EternumConfig,
+	HexGrid,
+	type ResourceInputs,
+	type ResourceOutputs,
+	type ResourceWhitelistConfig,
+	ResourcesIds,
+	scaleResourceInputs,
+	scaleResourceOutputs,
+	scaleResources,
 } from "@bibliothecadao/types";
 
 import chalk from "chalk";
@@ -865,7 +865,7 @@ export const setVillageControllersConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Village Controllers")}
-    │  ${chalk.gray("Addresses:")} ${chalk.white(calldata.village_controllers)}
+    │  ${chalk.gray("Addresses:")}${calldata.village_controllers.map(addr => `\n    │     ${chalk.white(shortHexAddress(addr))}`).join('')}
     └────────────────────────────────`),
   );
 
