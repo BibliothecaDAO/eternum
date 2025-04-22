@@ -73,12 +73,13 @@ export class ArmyActionManager {
     if (wheat < exploreFoodCosts.wheatPayAmount) {
       return false;
     }
+    const resource = getComponentValue(this.components.Resource, this.entity);
+    if (!resource) return false;
 
-    if (this._getArmyRemainingCapacity() < configManager.getExploreReward()) {
-      return false;
-    }
+    const remainingCapacity = getRemainingCapacityInKg(resource);
+    const requiredCapacity = configManager.getExploreReward();
 
-    return true;
+    return remainingCapacity >= requiredCapacity;
   }
 
   private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
@@ -522,9 +523,5 @@ export class ArmyActionManager {
     } else {
       this._travelToHex(signer, path, currentArmiesTick);
     }
-  };
-
-  private readonly _getArmyRemainingCapacity = () => {
-    return getRemainingCapacityInKg(this.entityId, this.components);
   };
 }

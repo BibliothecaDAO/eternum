@@ -35,9 +35,8 @@ export const formatArmies = (
 
       const position = explorerTroops.coord;
 
-      const totalCapacityKg = getArmyTotalCapacityInKg(explorerTroops.explorer_id, components);
-
       const resource = getComponentValue(components.Resource, armyEntity);
+      const totalCapacityKg = resource ? getArmyTotalCapacityInKg(resource) : 0;
       const weightKg = resource ? gramToKg(divideByPrecision(Number(resource.weight.weight))) : 0;
 
       const stamina = explorerTroops.troops.stamina.amount;
@@ -224,8 +223,8 @@ export const getFreeDirectionsAroundStructure = (structureEntityId: ID, componen
 };
 
 // troop count without precision
-export const getRemainingCapacityInKg = (entityId: ID, components: ClientComponents) => {
-  const weight = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId)]))?.weight;
+export const getRemainingCapacityInKg = (resource: ComponentValue<ClientComponents["Resource"]["schema"]>) => {
+  const weight = resource?.weight;
 
   if (!weight) return 0;
 
@@ -233,9 +232,8 @@ export const getRemainingCapacityInKg = (entityId: ID, components: ClientCompone
 };
 
 // number of troops needs to be divided by precision
-export const getArmyTotalCapacityInKg = (entityId: ID, components: ClientComponents) => {
-  const totalCapacity = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(entityId)]))?.weight
-    .capacity;
+export const getArmyTotalCapacityInKg = (resource: ComponentValue<ClientComponents["Resource"]["schema"]>) => {
+  const totalCapacity = resource?.weight.capacity;
 
   return nanogramToKg(Number(totalCapacity)) || 0;
 };

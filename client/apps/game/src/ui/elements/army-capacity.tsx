@@ -1,7 +1,6 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager, getArmyTotalCapacityInKg, getRemainingCapacityInKg } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { ClientComponents } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -14,19 +13,16 @@ enum CapacityColor {
 }
 
 type ArmyCapacityProps = {
-  army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined;
+  resource: ComponentValue<ClientComponents["Resource"]["schema"]> | undefined;
   className?: string;
 };
 
-export const ArmyCapacity = ({ army, className }: ArmyCapacityProps) => {
-  const {
-    setup: { components },
-  } = useDojo();
-  if (!army) return null;
+export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
+  if (!resource) return null;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(army.explorer_id, components), [army]);
-  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(army.explorer_id, components), [army]);
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
+  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(resource), [resource]);
 
   const currentWeight = useMemo(() => {
     return totalCapacity - remainingCapacity;

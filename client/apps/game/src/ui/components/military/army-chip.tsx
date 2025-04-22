@@ -10,9 +10,10 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { armyHasTroops, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { armyHasTroops, getEntityIdFromKeys, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ArmyInfo } from "@bibliothecadao/types";
+import { ArmyInfo, TroopType } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
@@ -82,6 +83,17 @@ export const ArmyChip = ({
   const isOnMap = useMemo(() => location.includes("map"), [location]);
 
   const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(army.entityId)]));
+
+  const stamina = useMemo(() => {
+    if (!army.troops) return { amount: 0n, updated_tick: 0n };
+    const { currentArmiesTick } = getBlockTimestamp();
+    return StaminaManager.getStamina(army.troops, currentArmiesTick);
+  }, [army.troops]);
+
+  const maxStamina = useMemo(() => {
+    if (!army.troops) return 0;
+    return StaminaManager.getMaxStamina(army.troops.category as TroopType);
+  }, [army.troops]);
 
   return (
     <div
@@ -163,8 +175,8 @@ export const ArmyChip = ({
                 <div className="flex justify-between items-end mt-auto">
                   <div className="flex items-center">{isHome && <div className="text-green text-xs">At Base</div>}</div>
                   <div className="flex flex-col items-end gap-1">
-                    <StaminaResource entityId={army.entityId} />
-                    <ArmyCapacity army={army.explorer} />
+                    <StaminaResource entityId={army.entityId} stamina={stamina} maxStamina={maxStamina} />
+                    <ArmyCapacity resource={resources} />
                   </div>
                 </div>
               )}

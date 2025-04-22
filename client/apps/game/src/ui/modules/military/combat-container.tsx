@@ -155,23 +155,11 @@ export const CombatContainer = ({
         const guard = structureGuards[0];
         if (!guard.troops.stamina) return 0n;
 
-        const maxStamina = StaminaManager.getMaxStamina(guard.troops);
-        return StaminaManager.getStamina(
-          guard.troops.stamina,
-          maxStamina,
-          getBlockTimestamp().currentArmiesTick,
-          components,
-        ).amount;
+        return StaminaManager.getStamina(guard.troops, getBlockTimestamp().currentArmiesTick).amount;
       } else if (selectedGuardSlot !== null) {
         const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
         if (selectedGuard && selectedGuard.troops.stamina) {
-          const maxStamina = StaminaManager.getMaxStamina(selectedGuard.troops);
-          return StaminaManager.getStamina(
-            selectedGuard.troops.stamina,
-            maxStamina,
-            getBlockTimestamp().currentArmiesTick,
-            components,
-          ).amount;
+          return StaminaManager.getStamina(selectedGuard.troops, getBlockTimestamp().currentArmiesTick).amount;
         }
       }
       return 0n;
@@ -200,13 +188,15 @@ export const CombatContainer = ({
 
     const getTarget = async () => {
       if (isStructure) {
-        const { structure } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
-        setTarget({
-          info: getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
-          id: targetTile?.occupier_id,
-          targetType: TargetType.Structure,
-          structureCategory: structure.category,
-        });
+        const result = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
+        if (result) {
+          setTarget({
+            info: getGuardsByStructure(result.structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
+            id: targetTile?.occupier_id,
+            targetType: TargetType.Structure,
+            structureCategory: result.structure.category,
+          });
+        }
       } else {
         const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
         const resourcesByRarity = orderResourcesByPriority(ResourceManager.getResourceBalances(resources));
@@ -224,7 +214,7 @@ export const CombatContainer = ({
   }, [targetTile]);
 
   // Get the current army states for display
-  const attackerArmyData = useMemo(() => {
+  const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
       if (selectedGuardSlot === null) return null;
 
@@ -233,10 +223,10 @@ export const CombatContainer = ({
 
       return {
         troops: {
-          count: Number(selectedGuard.troops.count || 0),
+          count: selectedGuard.troops.count || 0n,
           category: selectedGuard.troops.category as TroopType,
           tier: selectedGuard.troops.tier as TroopTier,
-          stamina: selectedGuard.troops.stamina,
+          stamina: selectedGuard.troops.stamina || { amount: 0n, updated_tick: 0n },
         },
       };
     } else {
@@ -244,10 +234,10 @@ export const CombatContainer = ({
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
       return {
         troops: {
-          count: Number(army?.troops.count || 0),
+          count: army?.troops.count || 0n,
           category: army?.troops.category as TroopType,
           tier: army?.troops.tier as TroopTier,
-          stamina: army?.troops.stamina,
+          stamina: army?.troops.stamina || { amount: 0n, updated_tick: 0n },
         },
       };
     }
@@ -268,13 +258,7 @@ export const CombatContainer = ({
 
   const defenderStamina = useMemo(() => {
     if (!target?.info?.stamina) return 0;
-    const maxStamina = StaminaManager.getMaxStamina(target?.info);
-    return StaminaManager.getStamina(
-      target?.info?.stamina,
-      maxStamina,
-      getBlockTimestamp().currentArmiesTick,
-      components,
-    ).amount;
+    return StaminaManager.getStamina(target?.info, getBlockTimestamp().currentArmiesTick).amount;
   }, [target]);
 
   const isVillageWithoutTroops = useMemo(() => {
@@ -399,7 +383,8 @@ export const CombatContainer = ({
   };
 
   const remainingCapacity = useMemo(() => {
-    const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
+    const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (battleSimulation?.defenderDamage || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
@@ -561,7 +546,7 @@ export const CombatContainer = ({
                   true,
                 )}
                 <div className="text-2xl font-bold text-gold">
-                  {divideByPrecision(attackerArmyData.troops.count)} troops
+                  {divideByPrecision(Number(attackerArmyData.troops.count))} troops
                 </div>
                 <div className="text-lg text-gold/80 mt-1">
                   Stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
@@ -647,7 +632,7 @@ export const CombatContainer = ({
                   0,
                   Math.min(
                     100,
-                    (remainingTroops.attackerTroops / divideByPrecision(attackerArmyData.troops.count)) * 100,
+                    (remainingTroops.attackerTroops / divideByPrecision(Number(attackerArmyData.troops.count))) * 100,
                   ),
                 );
                 const defenderPercentage = Math.max(
@@ -749,7 +734,8 @@ export const CombatContainer = ({
                   (
                   {battleSimulation
                     ? Math.round(
-                        (battleSimulation.attackerDamage / divideByPrecision(attackerArmyData.troops.count)) * 100,
+                        (battleSimulation.attackerDamage / divideByPrecision(Number(attackerArmyData.troops.count))) *
+                          100,
                       )
                     : 0}
                   %)
@@ -823,19 +809,9 @@ export const CombatContainer = ({
                 troops: remainingTroops.attackerTroops,
                 isWinner: winner === attackerEntityId,
                 originalTroops: attackerArmyData.troops,
-                currentStamina: Number(
-                  StaminaManager.getStamina(
-                    attackerArmyData.troops.stamina || { amount: 0n, updated_tick: 0n },
-                    StaminaManager.getMaxStamina({
-                      count: BigInt(attackerArmyData.troops.count),
-                      category: attackerArmyData.troops.category,
-                      tier: attackerArmyData.troops.tier,
-                      stamina: attackerArmyData.troops.stamina || { amount: 0n, updated_tick: 0n },
-                    }),
-                    getBlockTimestamp().currentArmiesTick,
-                    components,
-                  ).amount,
-                ),
+                currentStamina: attackerArmyData.troops
+                  ? StaminaManager.getStamina(attackerArmyData.troops, getBlockTimestamp().currentArmiesTick).amount
+                  : 0,
                 newStamina: battleSimulation?.newAttackerStamina || 0,
                 isAttacker: true,
               },
@@ -845,21 +821,7 @@ export const CombatContainer = ({
                 isWinner: winner !== null && winner !== attackerEntityId,
                 originalTroops: targetArmyData.troops,
                 currentStamina: Number(
-                  StaminaManager.getStamina(
-                    target?.info?.stamina || { amount: 0n, updated_tick: 0n },
-                    StaminaManager.getMaxStamina(
-                      target?.info
-                        ? {
-                            count: BigInt(Number(target.info.count || 0)),
-                            category: target.info.category,
-                            tier: target.info.tier,
-                            stamina: target.info.stamina || { amount: 0n, updated_tick: 0n },
-                          }
-                        : undefined,
-                    ),
-                    getBlockTimestamp().currentArmiesTick,
-                    components,
-                  ).amount,
+                  target ? StaminaManager.getStamina(target.info, getBlockTimestamp().currentArmiesTick).amount : 0,
                 ),
                 newStamina: battleSimulation?.newDefenderStamina || 0,
                 isAttacker: false,
@@ -873,12 +835,12 @@ export const CombatContainer = ({
                       originalTroops.category as TroopType,
                       originalTroops.tier as TroopTier,
                       configManager.getBiomeCombatBonus(originalTroops.category as TroopType, biome),
-                      combatSimulator.calculateStaminaModifier(currentStamina, isAttacker),
+                      combatSimulator.calculateStaminaModifier(Number(currentStamina), isAttacker),
                       isAttacker,
                     )}
                     <div className="text-2xl font-bold text-gold">
-                      {troops > 0 ? Math.floor(troops) : 0} / {Math.floor(divideByPrecision(originalTroops.count))}{" "}
-                      troops
+                      {troops > 0 ? Math.floor(Number(troops)) : 0} /{" "}
+                      {Math.floor(divideByPrecision(Number(originalTroops.count)))} troops
                     </div>
                   </div>
 
@@ -901,7 +863,12 @@ export const CombatContainer = ({
 
                   <div className="p-3 border border-gold/10 rounded">
                     <h4 className="text-sm font-medium text-gold/90 mb-2">Stamina</h4>
-                    {getStaminaDisplay(currentStamina, newStamina, isWinner, combatConfig.stamina_bonus_value)}
+                    {getStaminaDisplay(
+                      Number(currentStamina),
+                      Number(newStamina),
+                      isWinner,
+                      combatConfig.stamina_bonus_value,
+                    )}
                   </div>
                 </div>
               </div>

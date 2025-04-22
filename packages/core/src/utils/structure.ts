@@ -131,6 +131,9 @@ export const getStructureFromToriiClient = async (toriiClient: ToriiClient, enti
 
   const entities = await toriiClient.getEntities(query, false);
   const entity = Object.keys(entities)[0] as Entity;
+
+  if (!entity) return;
+
   return {
     structure: getStructureFromToriiEntity(entities[entity]["s1_eternum-Structure"]),
     resources: getResourcesFromToriiEntity(entities[entity]["s1_eternum-Resource"]),
@@ -238,7 +241,7 @@ export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient,
 export const getStructureFromToriiEntity = (entityData: any) => {
   const structure: ComponentValue<ClientComponents["Structure"]["schema"]> = {
     entity_id: entityData.entity_id?.value,
-    owner: entityData.owner?.value,
+    owner: ContractAddress(entityData.owner?.value),
     category: entityData.category?.value,
     resources_packed: entityData.resources_packed?.value,
     base: {

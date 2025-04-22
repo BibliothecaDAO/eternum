@@ -1,5 +1,6 @@
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import {
+  getAddressName,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
@@ -7,7 +8,7 @@ import {
   getStructureTypeName,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { CompactDefenseDisplay } from "../../military/compact-defense-display";
@@ -45,13 +46,15 @@ export const StructureEntityDetail = memo(
     useEffect(() => {
       const fetchStructure = async () => {
         setIsLoading(true);
-        const { structure, resources } = await getStructureFromToriiClient(toriiClient, structureEntityId);
-        setStructure(structure);
-        setResources(resources);
+        const result = await getStructureFromToriiClient(toriiClient, structureEntityId);
+        if (result) {
+          setStructure(result.structure);
+          setResources(result.resources);
+        }
         setIsLoading(false);
       };
       fetchStructure();
-    }, [structureEntityId, userAddress, components]);
+    }, [structureEntityId, userAddress]);
 
     const playerGuild = useMemo(() => {
       return getGuildFromPlayerAddress(ContractAddress(structure?.owner || 0n), components);
@@ -76,6 +79,10 @@ export const StructureEntityDetail = memo(
       return structure?.owner === userAddress;
     }, [structure?.owner, userAddress]);
 
+    const addressName = useMemo(() => {
+      return structure?.owner ? getAddressName(structure?.owner, components) : MERCENARIES;
+    }, [structure?.owner, components]);
+
     if (!structure) return null;
 
     return (
@@ -87,7 +94,9 @@ export const StructureEntityDetail = memo(
             {/* Header with owner and guild info */}
             <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
               <div className="flex flex-col">
-                <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>{"owner: WIP"}</h4>
+                <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>
+                  {addressName || structure.entity_id}
+                </h4>
                 {playerGuild && (
                   <div className="text-xs text-gold/80">
                     {"< "}
@@ -106,7 +115,7 @@ export const StructureEntityDetail = memo(
                 {/* Structure name and type */}
                 <div className="flex flex-col gap-0.5">
                   <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                    <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{"name: WIP"}</h6>
+                    <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{structure.entity_id}</h6>
                   </div>
                   <div
                     className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}

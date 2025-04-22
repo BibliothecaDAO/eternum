@@ -2,15 +2,16 @@ import { InventoryResources } from "@/ui/components/resources/inventory-resource
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  getEntityIdFromKeys,
   getExplorerFromToriiClient,
   getGuildFromPlayerAddress,
   getStructureFromToriiClient,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { ClientComponents, ContractAddress, ID, TroopType } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 
@@ -38,7 +39,9 @@ export const ArmyEntityDetail = memo(
     const [structureResources, setStructureResources] = useState<
       ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
     >(undefined);
-
+    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | undefined>(
+      undefined,
+    );
     const userAddress = ContractAddress(account.account.address);
 
     useEffect(() => {
@@ -47,15 +50,20 @@ export const ArmyEntityDetail = memo(
         setExplorer(explorer);
         setExplorerResources(resources);
       };
-      const fetchStructure = async () => {
-        const { resources } = await getStructureFromToriiClient(toriiClient, armyEntityId);
-        setStructureResources(resources);
-      };
       fetchExplorer();
-      fetchStructure();
     }, [armyEntityId]);
 
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(explorer?.owner || 0n)]));
+    useEffect(() => {
+      const fetchStructure = async () => {
+        if (!explorer) return;
+        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
+        if (result) {
+          setStructure(result.structure);
+          setStructureResources(result.resources);
+        }
+      };
+      fetchStructure();
+    }, [explorer]);
 
     const playerGuild = useMemo(() => {
       if (!structure) return null;
@@ -64,11 +72,22 @@ export const ArmyEntityDetail = memo(
 
     const isMine = structure?.owner === userAddress;
 
-    if (!explorer) return null;
+    const stamina = useMemo(() => {
+      if (!explorer) return { amount: 0n, updated_tick: 0n };
+      const { currentArmiesTick } = getBlockTimestamp();
+      return StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+    }, [explorer]);
+
+    const maxStamina = useMemo(() => {
+      if (!explorer) return 0;
+      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType);
+    }, [explorer]);
 
     // Precompute common class strings
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
+
+    if (!explorer) return null;
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
@@ -112,12 +131,12 @@ export const ArmyEntityDetail = memo(
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
-                <StaminaResource entityId={armyEntityId} />
+                <StaminaResource entityId={armyEntityId} stamina={stamina} maxStamina={maxStamina} className="flex-1" />
               </div>
 
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>CAPACITY</div>
-                <ArmyCapacity army={explorer} />
+                <ArmyCapacity resource={explorerResources} />
               </div>
             </div>
           </div>

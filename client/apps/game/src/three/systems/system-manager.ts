@@ -1,5 +1,5 @@
 import { type SetupResult } from "@bibliothecadao/dojo";
-import { getHyperstructureProgress } from "@bibliothecadao/eternum";
+import { getAddressName, getHyperstructureProgress } from "@bibliothecadao/eternum";
 import {
   BiomeIdToType,
   BiomeType,
@@ -262,6 +262,8 @@ export class SystemManager {
               getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
             )?.owner;
 
+            const ownerName = owner ? getAddressName(owner, this.setup.components) : undefined;
+
             return {
               entityId: currentState.occupier_id,
               hexCoords: {
@@ -272,7 +274,7 @@ export class SystemManager {
               initialized,
               stage: structureInfo.stage,
               level: structureInfo.level,
-              owner: { address: owner || 0n, ownerName: "", guildName: "" },
+              owner: { address: owner || 0n, ownerName: ownerName || "", guildName: "" },
               hasWonder: structureInfo.hasWonder,
             };
           }

@@ -20,7 +20,7 @@ interface ArmyWarningProps {
 
 export const ArmyWarning = ({ army, resource }: ArmyWarningProps) => {
   const dojo = useDojo();
-  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(army.explorer_id, dojo.setup.components), [army]);
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
   const food = getFood(resource, getBlockTimestamp().currentDefaultTick);
 
   const exploreFoodCosts = useMemo(
