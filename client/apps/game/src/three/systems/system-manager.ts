@@ -190,8 +190,27 @@ export class SystemManager {
                 troopType: explorer.troopType as TroopType,
                 troopTier: explorer.troopTier as TroopTier,
                 isDaydreamsAgent: explorer.isDaydreamsAgent,
-                deleted: false,
               };
+            }
+          },
+          true,
+        );
+      },
+      onDeadArmy: (callback: (value: ID) => void) => {
+        this.setupSystem(
+          this.setup.components.ExplorerTroops,
+          callback,
+          (update: any): ID | undefined => {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              const [currentState, prevState] = update.value;
+              const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
+              if (!explorer && !prevState) return;
+              if (!explorer && undefined === currentState && prevState) {
+                // when explorer_troop is removed, torii streams an empty object which is removed from components in setEntities.
+                // we need to catch that update update.value[currentState, prevState];
+                // if explorer is undefined && prevState has values, that means component has been removed
+                return prevState.explorer_id;
+              }
             }
           },
           true,

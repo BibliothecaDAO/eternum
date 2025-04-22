@@ -28,6 +28,8 @@ export const EntityInfoLabel = memo(() => {
       );
 
       setTile(tileValue);
+    } else {
+      setTile(undefined);
     }
   }, [hoveredHex?.col, hoveredHex?.row, isMapView]);
 

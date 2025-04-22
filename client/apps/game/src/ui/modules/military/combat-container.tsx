@@ -106,6 +106,15 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
+  const [target, setTarget] = useState<{
+    info: Troops;
+    id: ID;
+    targetType: TargetType;
+    structureCategory: StructureType | null;
+  } | null>(null);
+  const [targetArmyResourcesByRarity, setTargetArmyResourcesByRarity] = useState<
+    Array<{ resourceId: number; amount: number }>
+  >([]);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
@@ -170,16 +179,6 @@ export const CombatContainer = ({
     return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
   }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
 
-  const [target, setTarget] = useState<{
-    info: Troops;
-    id: ID;
-    targetType: TargetType;
-    structureCategory: StructureType | null;
-  } | null>(null);
-  const [targetArmyResourcesByRarity, setTargetArmyResourcesByRarity] = useState<
-    Array<{ resourceId: number; amount: number }>
-  >([]);
-
   // Function to order resources according to STEALABLE_RESOURCES order
   const orderResourcesByPriority = useCallback((resourceBalances: Resource[]): Resource[] => {
     const orderedResources: Resource[] = [];
@@ -210,7 +209,8 @@ export const CombatContainer = ({
         });
       } else {
         const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
-        setTargetArmyResourcesByRarity(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
+        const resourcesByRarity = orderResourcesByPriority(ResourceManager.getResourceBalances(resources));
+        setTargetArmyResourcesByRarity(resourcesByRarity);
         setTarget({
           info: explorer.troops,
           id: targetTile?.occupier_id,
