@@ -35,6 +35,9 @@ website = "https://alpha-eternum.realms.world/"
 	"s1_eternum-troop_raid_systems",
     "s1_eternum-troop_movement_systems",
     "s1_eternum-troop_movement_util_systems",
+    "s1_eternum-agent_discovery_systems",
+    "s1_eternum-hyperstructure_discovery_systems",
+    "s1_eternum-mine_discovery_systems",
 	"s1_eternum-season_systems",
 	"s1_eternum-village_systems"
 ]
