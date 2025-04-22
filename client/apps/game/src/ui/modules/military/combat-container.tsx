@@ -9,10 +9,11 @@ import {
   CombatSimulator,
   configManager,
   divideByPrecision,
-  getArmy,
   getEntityIdFromKeys,
+  getExplorerFromToriiClient,
   getGuardsByStructure,
   getRemainingCapacityInKg,
+  getStructureFromToriiClient,
   getTroopResourceId,
   ResourceManager,
   StaminaManager,
@@ -20,18 +21,19 @@ import {
 import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
-  ContractAddress,
   getDirectionBetweenAdjacentHexes,
   ID,
+  Resource,
   RESOURCE_PRECISION,
   resources,
   ResourcesIds,
   StructureType,
+  Troops,
   TroopTier,
   TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
 
 const STEALABLE_RESOURCES = [
@@ -94,6 +96,7 @@ export const CombatContainer = ({
 }) => {
   const {
     account: { account },
+    network: { toriiClient },
     setup: {
       systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
       components,
@@ -110,7 +113,7 @@ export const CombatContainer = ({
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const targetTile = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -167,31 +170,58 @@ export const CombatContainer = ({
     return new StaminaManager(components, attackerEntityId).getStamina(getBlockTimestamp().currentArmiesTick).amount;
   }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards]);
 
-  const target = useMemo(() => {
-    const occupierId = getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0n)]);
-    const structure = getComponentValue(Structure, occupierId);
-    const explorer = getComponentValue(ExplorerTroops, occupierId);
+  const [target, setTarget] = useState<{
+    info: Troops;
+    id: ID;
+    targetType: TargetType;
+    structureCategory: StructureType | null;
+  } | null>(null);
+  const [targetArmyResourcesByRarity, setTargetArmyResourcesByRarity] = useState<
+    Array<{ resourceId: number; amount: number }>
+  >([]);
 
-    if (structure) {
-      return {
-        info: getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
-        id: targetEntity?.occupier_id,
-        targetType: TargetType.Structure,
-        structureCategory: structure.category,
-      };
-    }
+  // Function to order resources according to STEALABLE_RESOURCES order
+  const orderResourcesByPriority = useCallback((resourceBalances: Resource[]): Resource[] => {
+    const orderedResources: Resource[] = [];
 
-    if (explorer) {
-      return {
-        info: getArmy(occupierId, ContractAddress(account.address), components)?.troops,
-        id: targetEntity?.occupier_id,
-        targetType: TargetType.Army,
-        structureCategory: null,
-      };
-    }
+    STEALABLE_RESOURCES.forEach((resourceId) => {
+      const resource = resourceBalances.find((r) => r.resourceId === resourceId);
+      if (resource) {
+        orderedResources.push(resource);
+      }
+    });
 
-    return null;
-  }, [targetEntity, account, components]);
+    return orderedResources;
+  }, []);
+
+  // target not synced so need to fetch from torii
+  useEffect(() => {
+    if (!targetTile?.occupier_id) return;
+    const isStructure = targetTile?.occupier_is_structure;
+
+    const getTarget = async () => {
+      if (isStructure) {
+        const { structure } = await getStructureFromToriiClient(toriiClient, targetTile.occupier_id);
+        setTarget({
+          info: getGuardsByStructure(structure).filter((guard) => guard.troops.count > 0n)[0]?.troops,
+          id: targetTile?.occupier_id,
+          targetType: TargetType.Structure,
+          structureCategory: structure.category,
+        });
+      } else {
+        const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, targetTile.occupier_id);
+        setTargetArmyResourcesByRarity(orderResourcesByPriority(ResourceManager.getResourceBalances(resources)));
+        setTarget({
+          info: explorer.troops,
+          id: targetTile?.occupier_id,
+          targetType: TargetType.Army,
+          structureCategory: null,
+        });
+      }
+    };
+
+    getTarget();
+  }, [targetTile]);
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
@@ -210,6 +240,7 @@ export const CombatContainer = ({
         },
       };
     } else {
+      // attacker always synced already
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
       return {
         troops: {
@@ -366,25 +397,6 @@ export const CombatContainer = ({
       setLoading(false);
     }
   };
-
-  // Get the available resources in the target structure
-  const targetArmyResourcesByRarity = useMemo(() => {
-    if (target?.targetType !== TargetType.Army || !target?.id) return [];
-
-    const availableResources: Array<{ resourceId: number; amount: number }> = [];
-
-    const resourceManager = new ResourceManager(components, target.id);
-    const resources = resourceManager.getResourceBalances();
-
-    STEALABLE_RESOURCES.sort((a, b) => b - a).forEach((resourceId) => {
-      const resource = resources.find((r) => r.resourceId === resourceId);
-      if (resource) {
-        availableResources.push({ resourceId, amount: resource.amount });
-      }
-    });
-
-    return availableResources;
-  }, [target, components]);
 
   const remainingCapacity = useMemo(() => {
     const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
