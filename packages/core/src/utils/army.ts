@@ -11,17 +11,9 @@ import {
   getNeighborHexes,
 } from "@bibliothecadao/types";
 import { type ComponentValue, type Entity, getComponentValue } from "@dojoengine/recs";
-import { PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import {
-  configManager,
-  divideByPrecision,
-  getAddressNameFromEntity,
-  getResourcesFromToriiEntity,
-  gramToKg,
-  nanogramToKg,
-} from "..";
+import { configManager, divideByPrecision, getAddressNameFromEntity, gramToKg, nanogramToKg } from "..";
 
 export const formatArmies = (
   armies: Entity[],
@@ -236,51 +228,4 @@ export const getArmyTotalCapacityInKg = (resource: ComponentValue<ClientComponen
   const totalCapacity = resource?.weight.capacity;
 
   return nanogramToKg(Number(totalCapacity)) || 0;
-};
-
-export const getExplorerFromToriiClient = async (toriiClient: ToriiClient, entityId: ID) => {
-  const query: Query = {
-    limit: 1,
-    offset: 0,
-    clause: {
-      Keys: {
-        keys: [entityId.toString()],
-        pattern_matching: "FixedLen" as PatternMatching,
-        models: [],
-      },
-    },
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-    entity_updated_after: 0,
-  };
-
-  const entities = await toriiClient.getEntities(query, false);
-  const entity = Object.keys(entities)[0] as Entity;
-  return {
-    explorer: getExplorerFromToriiEntity(entities[entity]["s1_eternum-ExplorerTroops"]),
-    resources: getResourcesFromToriiEntity(entities[entity]["s1_eternum-Resource"]),
-  };
-};
-
-export const getExplorerFromToriiEntity = (
-  entity: any,
-): ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> => {
-  return {
-    explorer_id: entity.explorer_id.value,
-    owner: entity.owner.value,
-    troops: {
-      category: entity.troops.value.category.value.option,
-      tier: entity.troops.value.tier.value.option,
-      count: BigInt(entity.troops.value.count.value),
-      stamina: {
-        amount: BigInt(entity.troops.value.stamina.value.amount.value),
-        updated_tick: BigInt(entity.troops.value.stamina.value.updated_tick.value),
-      },
-    },
-    coord: {
-      x: entity.coord.value.x.value,
-      y: entity.coord.value.y.value,
-    },
-  };
 };

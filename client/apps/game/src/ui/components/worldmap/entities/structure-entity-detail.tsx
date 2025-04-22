@@ -4,10 +4,11 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getStructureFromToriiClient,
   getStructureTypeName,
 } from "@bibliothecadao/eternum";
+
 import { useDojo } from "@bibliothecadao/react";
+import { getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, ID, MERCENARIES, StructureType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";

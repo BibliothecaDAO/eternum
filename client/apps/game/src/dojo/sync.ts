@@ -1,7 +1,7 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
-import { getFirstStructureFromToriiClient } from "@bibliothecadao/eternum";
+import { getFirstStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import type { Entity, Schema } from "@dojoengine/recs";
 import { setEntities } from "@dojoengine/state";
 import type { EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";

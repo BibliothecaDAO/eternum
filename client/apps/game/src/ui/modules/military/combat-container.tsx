@@ -10,15 +10,14 @@ import {
   configManager,
   divideByPrecision,
   getEntityIdFromKeys,
-  getExplorerFromToriiClient,
   getGuardsByStructure,
   getRemainingCapacityInKg,
-  getStructureFromToriiClient,
   getTroopResourceId,
   ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import {
   CapacityConfig,
   getDirectionBetweenAdjacentHexes,

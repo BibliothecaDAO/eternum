@@ -13,12 +13,11 @@ import {
   computeTravelFoodCosts,
   configManager,
   getBalance,
-  getExplorerFromToriiClient,
   getGuardsByStructure,
-  getStructureFromToriiClient,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

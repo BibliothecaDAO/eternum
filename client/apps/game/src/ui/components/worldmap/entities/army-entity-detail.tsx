@@ -3,13 +3,9 @@ import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  getExplorerFromToriiClient,
-  getGuildFromPlayerAddress,
-  getStructureFromToriiClient,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { ClientComponents, ContractAddress, ID, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
