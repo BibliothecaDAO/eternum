@@ -1,8 +1,8 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { findResourceById } from "@/utils/resources";
-import { RealmLevels } from "@/utils/types";
-import { formatAmount } from "../utils/formatting";
+import { RealmLevels } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
+import { colors, formatAmount } from "./styles";
 
 type Props = {
   level: RealmLevels;
@@ -10,28 +10,68 @@ type Props = {
 };
 
 export default function RealmUpgradeCosts({ level, description }: Props) {
-  const costs = ETERNUM_CONFIG().realmUpgradeCosts[level];
+  const config = ETERNUM_CONFIG();
+  const realmUpgradeCosts = config.realmUpgradeCosts[level];
+
+  const styles = {
+    container: {
+      padding: "1.5rem",
+      marginBottom: "1.5rem",
+      borderRadius: "0.5rem",
+      border: `1px solid ${colors.border}`,
+      backgroundColor: "rgba(255, 255, 255, 0.05)",
+    },
+    title: {
+      fontSize: "1.125rem",
+      fontWeight: "bold",
+      marginBottom: "1rem",
+    },
+    resourcesGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+      gap: "1rem",
+      "@media (min-width: 640px)": {
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+      },
+    },
+    resourceItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      borderRadius: "0.375rem",
+    },
+    resourceInfo: {
+      display: "flex",
+      flexDirection: "column" as const,
+    },
+    resourceName: {
+      fontWeight: "500",
+    },
+    resourceAmount: {
+      fontWeight: "500",
+    },
+  };
 
   return (
-    <div className="p-6 mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5">
-      <h4 className="text-lg font-bold mb-4">{description}</h4>
-      {costs.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {costs.map((cost) => {
+    <div style={styles.container}>
+      <h4 style={styles.title}>{description}</h4>
+      {realmUpgradeCosts.length > 0 ? (
+        <div style={styles.resourcesGrid}>
+          {realmUpgradeCosts.map((cost) => {
             const resource = findResourceById(cost.resource);
             return (
-              <div key={cost.resource} className="flex items-center gap-2  rounded-md ">
+              <div key={cost.resource} style={styles.resourceItem}>
                 <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
-                <div className="flex flex-col">
-                  <span className="font-medium">{resource?.trait}</span>
-                  <span className="font-medium">{formatAmount(cost.amount)}</span>
+                <div style={styles.resourceInfo}>
+                  <span style={styles.resourceName}>{resource?.trait}</span>
+                  <span style={styles.resourceAmount}>{formatAmount(cost.amount)}</span>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <p className="text-white">Your starting realm.</p>
+        <p style={{ color: colors.text.light }}>Your starting realm.</p>
       )}
     </div>
   );

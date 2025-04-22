@@ -1,6 +1,5 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
-import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
@@ -114,9 +113,8 @@ export const StepContainer = ({
               <div className="mt-auto pt-4 flex-shrink-0">
                 <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg p-2">
-                  <Lock className="w-6 h-6 fill-current relative bottom-0.45 mr-3" />
-                  <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing to Eternum's <br />{" "}
+                  <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
+                    By continuing you are agreeing to Eternum's{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>

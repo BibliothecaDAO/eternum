@@ -1,3 +1,5 @@
+import { colors } from "./styles";
+
 const sponsorsData = [
   {
     name: "Realms World",
@@ -25,25 +27,77 @@ const sponsorsData = [
     link: "https://www.starknet.io/",
     image: "/images/logos/Starknet.png",
     description:
-      "Starknet is a decentralized Layer 2 network built on Ethereum, harnessing ZK-Rollup technology to deliver high scalability and low-cost transactions, all while maintaining Ethereum’s robust security and trustless guarantees.",
+      "Starknet is a decentralized Layer 2 network built on Ethereum, harnessing ZK-Rollup technology to deliver high scalability and low-cost transactions, all while maintaining Ethereum's robust security and trustless guarantees.",
   },
 ];
 
+const styles = {
+  container: {
+    display: "grid",
+    gap: "1.5rem",
+  },
+  sponsorLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1rem",
+    padding: "0.5rem",
+    transition: "background-color 0.2s",
+    borderRadius: "0.5rem",
+    border: `1px solid ${colors.border}`,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    textDecoration: "none",
+  },
+  sponsorLinkHover: {
+    backgroundColor: colors.background.dark,
+  },
+  imageContainer: {
+    flexShrink: 0,
+    width: "6rem",
+    height: "6rem",
+    borderRadius: "0.375rem",
+  },
+  image: {
+    objectFit: "contain" as const,
+    width: "100%",
+    height: "100%",
+    padding: "0.5rem",
+  },
+  contentContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+  },
+  title: {
+    fontSize: "1.125rem",
+    fontWeight: "bold",
+    color: colors.text.light,
+  },
+  description: {
+    fontSize: "0.875rem",
+    color: colors.text.muted,
+  },
+};
+
 const Collaborators = () => {
   return (
-    <div className="grid gap-6">
+    <div style={styles.container}>
       {sponsorsData.map((sponsor) => (
         <a
           key={sponsor.name}
           href={sponsor.link}
-          className="flex items-center gap-4 p-2 transition hover:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/5"
+          style={styles.sponsorLink}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = styles.sponsorLinkHover.backgroundColor;
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+          }}
         >
-          <div className="flex-shrink-0 w-24 h-24 rounded-md ">
-            <img src={sponsor.image} alt={sponsor.name} className="object-contain w-full h-full p-2" />
+          <div style={styles.imageContainer}>
+            <img src={sponsor.image} alt={sponsor.name} style={styles.image} />
           </div>
-          <div>
-            <h4 className="text-lg font-bold">{sponsor.name}</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-300">{sponsor.description}</p>
+          <div style={styles.contentContainer}>
+            <h4 style={styles.title}>{sponsor.name}</h4>
+            <p style={styles.description}>{sponsor.description}</p>
           </div>
         </a>
       ))}

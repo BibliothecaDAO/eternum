@@ -1,5 +1,3 @@
-import { resources } from "../utils/constants";
-
 const STYLES = {
   size: {
     xs: "w-2 h-2 md:w-4 md:h-4",
@@ -18,10 +16,26 @@ type Props = {
 };
 
 export default function ResourceIcon({ name, id, size = "xl" }: Props) {
-  const imgPath = resources.find((r) => r.id === id)?.img;
   return (
-    <div className={`flex self-center justify-center`}>
-      <img className={STYLES.size[size]} src={`/images/resources/` + imgPath} alt={name} title={name} />
+    <div style={{ display: "flex", alignSelf: "center", justifyContent: "center" }}>
+      <img
+        style={
+          size === "xs"
+            ? { width: "0.5rem", height: "0.5rem" }
+            : size === "sm"
+              ? { width: "1rem", height: "1rem" }
+              : size === "md"
+                ? { width: "1.5rem", height: "1.5rem" }
+                : size === "lg"
+                  ? { width: "2rem", height: "2rem" }
+                  : size === "xl"
+                    ? { width: "3rem", height: "3rem" }
+                    : { width: "4rem", height: "4rem" }
+        }
+        src={`/images/resources/${id}.png`}
+        alt={name}
+        title={name}
+      />
     </div>
   );
 }

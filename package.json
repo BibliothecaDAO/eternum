@@ -98,8 +98,7 @@
     "dotenv": "^16.4.7",
     "eventemitter3": "^5.0.1",
     "starknet": "catalog:",
-    "viem": "^2.24.3",
-    "vocs": "latest"
+    "viem": "^2.24.3"
   },
   "devDependencies": {
     "@bibliothecadao/eternum": "workspace:^",
