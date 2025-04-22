@@ -420,6 +420,8 @@ pub mod hyperstructure_systems {
                 PercentageValueImpl::_100(),
             );
 
+            // todo check no adverse effect of duplicated shareholder address
+
             // claim points for current shareholders
             self.claim_share_points(array![hyperstructure_id].span());
 
