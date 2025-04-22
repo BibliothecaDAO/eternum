@@ -27,7 +27,15 @@ import {
   ArmyActionManager,
   StructureActionManager,
 } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress, getNeighborOffsets, HexEntityInfo, HexPosition, ID } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  ContractAddress,
+  DUMMY_HYPERSTRUCTURE_ENTITY_ID,
+  getNeighborOffsets,
+  HexEntityInfo,
+  HexPosition,
+  ID,
+} from "@bibliothecadao/types";
 import { Account, AccountInterface } from "starknet";
 import * as THREE from "three";
 import { Raycaster } from "three";
@@ -146,6 +154,23 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Structure updates
     this.systemManager.Structure.onUpdate((value) => {
       this.updateStructureHexes(value);
+
+      const optimisticStructure = this.structureManager.structures.removeStructure(
+        Number(DUMMY_HYPERSTRUCTURE_ENTITY_ID),
+      );
+      if (optimisticStructure) {
+        this.dojo.components.Structure.removeOverride(DUMMY_HYPERSTRUCTURE_ENTITY_ID.toString());
+        this.structureManager.structureHexCoords
+          .get(optimisticStructure.hexCoords.col)
+          ?.delete(optimisticStructure.hexCoords.row);
+        this.structureManager.updateChunk(this.currentChunk);
+      }
+      this.structureManager.onUpdate(value);
+      if (this.totalStructures !== this.structureManager.getTotalStructures()) {
+        this.totalStructures = this.structureManager.getTotalStructures();
+        this.clearCache();
+        this.updateVisibleChunks(true);
+      }
     });
 
     // Store the unsubscribe function for Structure contributions

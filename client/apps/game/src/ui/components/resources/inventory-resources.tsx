@@ -23,8 +23,6 @@ export const InventoryResources = ({
     return ResourceManager.getResourceBalances(resources).sort((a, b) => b.amount - a.amount);
   }, [resources]);
 
-  console.log({ sortedResources });
-
   const updatedMax = useMemo(() => {
     if (showAll) return Infinity;
     return max;

@@ -34,8 +34,6 @@ export const EntityInfoLabel = memo(() => {
     return null;
   }
 
-  console.log({ isStructure });
-
   return (
     <BaseThreeTooltip position={Position.CLEAN} className={`pointer-events-none w-min p-2 panel-wood`}>
       {isStructure ? (
