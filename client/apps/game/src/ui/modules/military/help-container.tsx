@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ID } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
@@ -41,9 +41,7 @@ export const HelpContainer = ({
   const targetEntityType = (() => {
     const targetTile = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
     if (!targetTile || !targetTile.occupier_id) return null;
-
-    const structure = getComponentValue(Structure, getEntityIdFromKeys([BigInt(targetTile.occupier_id)]));
-    return structure ? "structure" : "explorer";
+    return targetTile.occupier_is_structure ? "structure" : "explorer";
   })();
 
   // Get the target entity ID
@@ -93,10 +91,11 @@ export const HelpContainer = ({
           {availableTransferDirections.map((direction) => (
             <button
               key={direction}
-              className={`px-4 py-2 rounded-md border ${transferDirection === direction
+              className={`px-4 py-2 rounded-md border ${
+                transferDirection === direction
                   ? "bg-gold/20 border-gold"
                   : "bg-dark-brown border-gold/30 hover:border-gold/50"
-                }`}
+              }`}
               onClick={() => setTransferDirection(direction)}
             >
               {direction === TransferDirection.ExplorerToStructure && "Explorer → Structure"}
@@ -119,10 +118,11 @@ export const HelpContainer = ({
         <div className="flex justify-center mb-6 mx-auto mt-4">
           <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
             <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${transferType === TransferType.Resources
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
+                transferType === TransferType.Resources
                   ? "bg-gold/20 text-gold border-b-2 border-gold"
                   : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-                }`}
+              }`}
               onClick={() => setTransferType(TransferType.Resources)}
             >
               <div className="flex items-center">
@@ -131,10 +131,11 @@ export const HelpContainer = ({
               </div>
             </button>
             <button
-              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${transferType === TransferType.Troops
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${
+                transferType === TransferType.Troops
                   ? "bg-gold/20 text-gold border-b-2 border-gold"
                   : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
-                }`}
+              }`}
               onClick={() => setTransferType(TransferType.Troops)}
             >
               <div className="flex items-center">
