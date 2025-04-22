@@ -952,18 +952,9 @@ importers:
 
   packages/torii-client:
     dependencies:
-      '@bibliothecadao/dojo':
-        specifier: workspace:*
-        version: link:../dojo
-      '@bibliothecadao/provider':
-        specifier: workspace:*
-        version: link:../provider
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../types
-      '@dojoengine/core':
-        specifier: 'catalog:'
-        version: 1.4.1(bufferutil@4.0.9)(encoding@0.1.13)(typescript@5.8.3)(utf-8-validate@5.0.10)
       '@dojoengine/sdk':
         specifier: 'catalog:'
         version: 1.4.1(@tanstack/react-query@5.74.3(react@18.3.1))(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
