@@ -24,7 +24,7 @@ export function HexagonLocationSelector({
 }: HexagonLocationSelectorProps) {
   const [selectedLocation, setSelectedLocation] = useState<HexLocation | null>(initialSelectedLocation);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 300 });
-  const hexSize = 30;
+  const hexSize = 48;
 
   // Handle window resize
   useEffect(() => {
@@ -79,7 +79,7 @@ export function HexagonLocationSelector({
   };
 
   return (
-    <Drawer open={open} onOpenChange={onClose}>
+    <Drawer open={open} onOpenChange={onClose} dismissible={false}>
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>Select Hexagon Location</DrawerTitle>
