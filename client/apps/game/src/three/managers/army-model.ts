@@ -142,8 +142,8 @@ export class ArmyModel {
     const geometry = mesh.geometry.clone();
     const material = new THREE.MeshBasicMaterial({
       map: (mesh.material as THREE.MeshStandardMaterial).map,
-      transparent: mesh.material.transparent,
-      side: mesh.material.side,
+      transparent: (mesh.material as THREE.MeshStandardMaterial).transparent,
+      side: (mesh.material as THREE.MeshStandardMaterial).side,
     });
     // @ts-ignore
     if (mesh.material.name.includes("stand")) {
