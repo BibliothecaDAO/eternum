@@ -47,6 +47,7 @@ mod production_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::map::{Tile, TileOccupier};
     use s1_eternum::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
@@ -56,7 +57,7 @@ mod production_systems {
         resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
         resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
     };
-
+    use s1_eternum::systems::utils::map::IMapImpl;
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
 
@@ -326,6 +327,21 @@ mod production_systems {
                 structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
             };
             world.write_model(@production_wonder_bonus);
+
+            // update tile model
+            let mut structure_tile: Tile = world.read_model((structure_coord.x, structure_coord.y));
+            if structure_base.category == StructureCategory::Village.into() {
+                structure_tile.occupier_type = TileOccupier::VillageWonderBonus.into();
+            } else {
+                let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                    ref world, structure_id,
+                );
+                if !structure_metadata.has_wonder {
+                    let tile_occupier = IMapImpl::get_realm_occupier(false, true, structure_base.level);
+                    structure_tile.occupier_type = tile_occupier.into();
+                }
+            }
+            world.write_model(@structure_tile);
         }
     }
 }

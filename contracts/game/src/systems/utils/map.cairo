@@ -92,7 +92,7 @@ pub impl IMapImpl of IMapTrait {
         }
     }
 
-    fn get_realm_occupier(realm_has_wonder: bool, realm_level: u8) -> TileOccupier {
+    fn get_realm_occupier(realm_has_wonder: bool, realm_receives_wonder_bonus: bool, realm_level: u8) -> TileOccupier {
         if realm_has_wonder {
             if realm_level == 0 {
                 return TileOccupier::RealmWonderLevel1;
@@ -106,16 +106,30 @@ pub impl IMapImpl of IMapTrait {
                 panic!("invalid level")
             }
         } else {
-            if realm_level == 0 {
-                return TileOccupier::RealmRegularLevel1;
-            } else if realm_level == 1 {
-                return TileOccupier::RealmRegularLevel2;
-            } else if realm_level == 2 {
-                return TileOccupier::RealmRegularLevel3;
-            } else if realm_level == 3 {
-                return TileOccupier::RealmRegularLevel4;
+            if realm_receives_wonder_bonus {
+                if realm_level == 0 {
+                    return TileOccupier::RealmRegularLevel1WonderBonus;
+                } else if realm_level == 1 {
+                    return TileOccupier::RealmRegularLevel2WonderBonus;
+                } else if realm_level == 2 {
+                    return TileOccupier::RealmRegularLevel3WonderBonus;
+                } else if realm_level == 3 {
+                    return TileOccupier::RealmRegularLevel4WonderBonus;
+                } else {
+                    panic!("invalid level")
+                }
             } else {
-                panic!("invalid level")
+                if realm_level == 0 {
+                    return TileOccupier::RealmRegularLevel1;
+                } else if realm_level == 1 {
+                    return TileOccupier::RealmRegularLevel2;
+                } else if realm_level == 2 {
+                    return TileOccupier::RealmRegularLevel3;
+                } else if realm_level == 3 {
+                    return TileOccupier::RealmRegularLevel4;
+                } else {
+                    panic!("invalid level")
+                }
             }
         }
     }
