@@ -97,16 +97,16 @@ export default defineConfig({
         },
         {
           text: "World Structures",
-          link: "/mechanics/world-structures/hyperstructures",
-          collapsed: true,
-          items: [
-            { text: "Hyperstructures", link: "/mechanics/world-structures/hyperstructures" },
-            { text: "Fragment Mines", link: "/mechanics/world-structures/fragment-mines" },
-            { text: "Quest Tiles", link: "/mechanics/world-structures/quest-tiles" },
-          ],
+          link: "/mechanics/world-structures",
+        },
+        {
+          text: "Victory",
+          link: "/mechanics/victory",
         },
         { text: "Prize Pool", link: "/mechanics/prize-pool" },
         { text: "Achievements", link: "/mechanics/achievements" },
+        { text: "Tribes", link: "/mechanics/tribes" },
+        { text: "Agents", link: "/mechanics/agents" },
       ],
     },
     {
