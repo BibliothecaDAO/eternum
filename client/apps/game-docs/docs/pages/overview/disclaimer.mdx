@@ -1,6 +1,7 @@
 import { formatNumberWithSpaces } from "@/utils/formatting";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { Callout } from "vocs/components";
+import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
 
 # Disclaimer and Risk Acknowledgment
 
@@ -22,43 +23,33 @@ compensation. You acknowledge the **risk of loss of funds** and accept that you 
 financial impact incurred.
 
 A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)}** Victory Points and clicks the
-"End Season" button. At this point:
+**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
+Victory Points and clicks the "End Season" button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
-When the season ends, **ALL in-game actions are DISABLED.**
+When the season ends, **ALL in-game actions are DISABLED** except:
 
-#### ⛔️ Disabled Actions
-
-- You **cannot** retrieve LP positions from the AMM
-- You **cannot** cancel market orders to retrieve locked resources
+- transfer materials
+- deposit resource arrivals
+- retrieve LP positions
+- cancel market orders
+- bridge materials out of the game
 
 1. **48-Hour Withdrawal Window (starts immediately when "End Season" is clicked)**
 
    - Starting from the exact moment the season ends, you have **48 hours** to bridge out **ALL $LORDS** tokens and
-     resources from your Realms' balance
-   - **IMPORTANT:** Your Realm's balance withdrawal:
-     - Does NOT include resources that are:
-       - Locked in AMM LP positions
-       - Locked in market orders
-       - In transit to your Realm (not yet deposited)
-     - These locked/in-transit resources CANNOT be recovered after the season ends
+     bridgeable materials from your Realms' balance
 
 2. **After 48 Hours**
 
-   - Any remaining **$LORDS** tokens and **Resources** will be **permanently locked**
+   - Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
    - These assets **CANNOT** be recovered under any circumstances
 
 3. **Score Registration**
    - Players have **4 days** to register their scores
    - Registration is **MANDATORY** to be eligible for prizes
    - While registration has a deadline, prize claiming does not
-
-<Callout type="warning">
-  **PRO TIP:** Don't wait for the season to end! You can and should start bridging out tokens during active gameplay to
-  minimize risk.
-</Callout>
 
 Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
 
