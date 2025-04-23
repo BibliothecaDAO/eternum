@@ -13,7 +13,27 @@ use s1_eternum::models::resource::resource::{
 };
 use s1_eternum::models::structure::{StructureImpl};
 use s1_eternum::models::weight::{Weight};
+use s1_eternum::utils::math::{PercentageValueImpl};
 use s1_eternum::utils::math::{min};
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct ProductionWonderBonus {
+    #[key]
+    pub structure_id: ID,
+    pub bonus_percent_num: u128,
+}
+
+#[generate_trait]
+pub impl ProductionWonderBonusImpl of ProductionWonderBonusTrait {
+    fn include_wonder_bonus(ref world: WorldStorage, structure_id: ID, original_produced_amount: u128) -> u128 {
+        let production_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
+        let production_output_bonus_amount: u128 = (original_produced_amount
+            * production_wonder_bonus.bonus_percent_num)
+            / PercentageValueImpl::_100().into();
+        original_produced_amount + production_output_bonus_amount
+    }
+}
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq)]
 pub struct Production {
@@ -167,6 +187,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
         );
         let mut from_labor_resource_production: Production = from_labor_resource.production;
+        let produced_labor_amount = ProductionWonderBonusImpl::include_wonder_bonus(
+            ref world, from_entity_id, produced_labor_amount,
+        );
         from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
         from_labor_resource.production = from_labor_resource_production;
         from_labor_resource.store(ref world);
@@ -216,6 +239,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
             ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
         );
         let mut produced_resource_production: Production = produced_resource.production;
+        let produced_resource_amount = ProductionWonderBonusImpl::include_wonder_bonus(
+            ref world, from_entity_id, produced_resource_amount,
+        );
         produced_resource_production.increase_output_amout_left(produced_resource_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
@@ -269,6 +295,9 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         );
         let mut produced_resource_production: Production = produced_resource.production;
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
+        let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
+            ref world, from_entity_id, produceable_amount,
+        );
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);

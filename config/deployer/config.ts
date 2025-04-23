@@ -43,6 +43,7 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await setWonderBonusConfig(config);
     await setAgentControllerConfig(config);
     await setVillageControllersConfig(config);
     await SetResourceFactoryConfig(config);
@@ -770,7 +771,7 @@ export const setupGlobals = async (config: Config) => {
 
   const armiesTickCalldata = {
     signer: config.account,
-    tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
+    tick_interval_in_seconds: 10,
   };
 
   console.log(
@@ -827,6 +828,31 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
 
+export const setWonderBonusConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    within_tile_distance: config.config.wonderProductionBonus.within_tile_distance,
+    bonus_percent_num: config.config.wonderProductionBonus.bonus_percent_num,
+  };
+
+  console.log(
+    chalk.cyan(`
+  🏰 Wonder Bonus Configuration
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Wonder Bonus")}
+    │  ${chalk.gray("Within Tile Distance:")} ${chalk.white(calldata.within_tile_distance)}
+    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white(calldata.bonus_percent_num / 10_000 * 100)}%
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_wonder_bonus_config(calldata);
+  console.log(chalk.green(`    ✔ Wonder Bonus configured `) + chalk.gray(tx.statusReceipt));
+};
+
 export const setAgentControllerConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -854,7 +880,7 @@ export const setVillageControllersConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
     village_pass_nft_address: config.config.village.village_pass_nft_address,
-    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
+    village_mint_initial_recipient: "0x40db150844dc372928b3b47e23cb6e240e2c99ddc5381680afd73d777cbd6c8",
   };
   
   console.log(

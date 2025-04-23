@@ -36,22 +36,25 @@ trait IProductionContract<TContractState> {
         produced_resource_types: Span<u8>,
         production_cycles: Span<u128>,
     );
+
+    fn claim_wonder_production_bonus(ref self: TContractState, structure_id: ID, wonder_structure_id: ID);
 }
 
 #[dojo::contract]
 mod production_systems {
+    use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
-    use s1_eternum::models::config::{SeasonConfigImpl};
+    use s1_eternum::models::config::{SeasonConfigImpl, WonderProductionBonusConfig, WorldConfigUtilImpl};
     use s1_eternum::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
-        StructureResourcesImpl, StructureResourcesPackedStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureMetadata,
+        StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureResourcesPackedStoreImpl,
     };
     use s1_eternum::models::{
-        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait},
+        owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
         resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionStrategyImpl},
+        resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
     };
 
     use starknet::ContractAddress;
@@ -283,6 +286,46 @@ mod production_systems {
                     ref world, from_structure_id, *produced_resource_types.at(i), *production_cycles.at(i),
                 );
             }
+        }
+
+        fn claim_wonder_production_bonus(ref self: ContractState, structure_id: ID, wonder_structure_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            // ensure structure is a realm or village
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            assert!(
+                structure_base.category == StructureCategory::Realm.into()
+                    || structure_base.category == StructureCategory::Village.into(),
+                "structure is not a realm or village",
+            );
+
+            // ensure wonder structure is a wonder
+            let wonder_structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(
+                ref world, wonder_structure_id,
+            );
+            assert!(wonder_structure_metadata.has_wonder, "wonder structure is not a wonder");
+
+            // ensure wonder structure is within tile distance
+            let wonder_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, wonder_structure_id);
+            let wonder_structure_coord: Coord = wonder_structure_base.coord();
+            let structure_coord: Coord = structure_base.coord();
+            let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("wonder_production_bonus_config"),
+            );
+            assert!(
+                wonder_structure_coord
+                    .tile_distance(structure_coord) <= wonder_production_bonus_config
+                    .within_tile_distance
+                    .into(),
+                "wonder structure is not within tile distance",
+            );
+
+            // set wonder production bonus
+            let production_wonder_bonus: ProductionWonderBonus = ProductionWonderBonus {
+                structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
+            };
+            world.write_model(@production_wonder_bonus);
         }
     }
 }

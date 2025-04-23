@@ -34,7 +34,6 @@ pub trait IRealmSystems<T> {
 
 #[dojo::contract]
 pub mod realm_systems {
-    // use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};
@@ -58,7 +57,7 @@ pub mod realm_systems {
     };
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
-        StructureOwnerStoreImpl,
+        StructureOwnerStoreImpl, Wonder,
     };
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
@@ -179,6 +178,7 @@ pub mod realm_systems {
             let mut tile_occupier = TileOccupier::RealmRegularLevel1;
             if has_wonder {
                 tile_occupier = TileOccupier::RealmWonderLevel1;
+                world.write_model(@Wonder { structure_id: structure_id, coord: coord });
             }
 
             // create structure
