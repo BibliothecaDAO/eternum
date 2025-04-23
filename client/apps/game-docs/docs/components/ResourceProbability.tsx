@@ -53,13 +53,40 @@ const resourceProbabilities = [
   { name: "Dragonhide", probability: 0.093 },
 ];
 
-// Function to determine rarity tier from probability
-const getRarityTier = (probability: number): string => {
-  if (probability > 10) return "common";
-  if (probability > 5) return "uncommon";
-  if (probability > 1) return "rare";
-  if (probability > 0.5) return "epic";
-  return "legendary";
+// Function to determine rarity tier from resource name
+const getRarityTier = (resourceName: string): string => {
+  // Common tier resources
+  if (["Wood", "Stone", "Coal"].includes(resourceName)) {
+    return "common";
+  }
+
+  // Uncommon tier resources
+  if (["Copper", "Obsidian", "Silver", "Ironwood", "Cold Iron", "Gold"].includes(resourceName)) {
+    return "uncommon";
+  }
+
+  // Rare tier resources
+  if (["Hartwood", "Diamonds", "Sapphire", "Ruby"].includes(resourceName)) {
+    return "rare";
+  }
+
+  // Epic tier resources
+  if (["Deep Crystal", "Ignium", "Ethereal Silica"].includes(resourceName)) {
+    return "epic";
+  }
+
+  // Legendary tier resources
+  if (["True Ice", "Twilight Quartz", "Alchemical Silver"].includes(resourceName)) {
+    return "legendary";
+  }
+
+  // Mythic tier resources
+  if (["Adamantine", "Mithral", "Dragonhide"].includes(resourceName)) {
+    return "mythic";
+  }
+
+  // Default fallback
+  return "unknown";
 };
 
 // Component-specific styles
@@ -173,7 +200,7 @@ const ResourceProbability = () => {
       <div style={componentStyles.resourceGridStyle}>
         {sortedResources.map((item) => {
           const id = resourceNameToId[item.name];
-          const rarityTier = getRarityTier(item.probability);
+          const rarityTier = getRarityTier(item.name);
 
           if (!id) return null;
 
@@ -246,6 +273,10 @@ const ResourceProbability = () => {
         <div style={componentStyles.legendItemStyle}>
           <div style={legendDotStyle(getTierColor("legendary"))}></div>
           <span>Legendary</span>
+        </div>
+        <div style={componentStyles.legendItemStyle}>
+          <div style={legendDotStyle(getTierColor("mythic"))}></div>
+          <span>Mythic</span>
         </div>
       </div>
     </div>

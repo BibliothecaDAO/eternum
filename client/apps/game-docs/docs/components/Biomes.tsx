@@ -14,6 +14,7 @@ export const Biomes = () => {
     subtropicalDesert: "subtropicaldesert.png",
     taiga: "taiga.png",
     temperateDesert: "temperatedesert.png",
+    decidiousForest: "decidiousforest.png",
     temperateRainforest: "temperaterainforest.png",
     tropicalRainforest: "rainforest.png", // Different naming
     tropicalSeasonalForest: "tropicalseasonalforest.png",

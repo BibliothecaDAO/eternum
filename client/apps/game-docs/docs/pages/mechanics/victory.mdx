@@ -1,3 +1,62 @@
-# Victory
+import { ETERNUM_CONFIG } from "@/utils/config";
+import {
+  HyperstructureInitializationShardsTable,
+  HyperstructureConstructionCostTable,
+  HyperstructurePointsTable,
+  getTotalHyperstructureCompletionPoints,
+  HYPERSTRUCTURE_POINT_MULTIPLIER,
+} from "@/components/HyperstructureTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
 
-Prize Pool & Split
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Victory Points
+
+Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
+single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
+halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
+Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
+
+## Activating Foundations
+
+Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. After
+accumulating **{ formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)}
+Ancient Fragments** at a Hyperstructure Foundation, Lords can activate the foundation and begin construction. Upon
+activation, the exact quantity required for each resource is randomly determined within predefined minimum and maximum
+ranges shown below:
+
+<HyperstructureInitializationShardsTable />
+
+<HyperstructureConstructionCostTable />
+
+_Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
+complete construction._
+
+## Construction Victory Points
+
+The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
+or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
+requiring donkeys for transport. Upon completion of the Hyperstructure, all Lords who contributed resources and labor
+receive a proportional allocation of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())} victory
+points** based on their individual contributions.
+
+## Accumulation Victory Points
+
+Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
+accumulate
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+victory points** for every second the structure remains under their control. These accumulating victory points can be
+shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
+cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
+owner, who may similarly decide on sharing arrangements.
+
+## Total Victory
+
+Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
+to reach
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+
+<HyperstructurePointsTable />

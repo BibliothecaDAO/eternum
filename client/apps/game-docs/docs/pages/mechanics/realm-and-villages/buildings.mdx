@@ -1,6 +1,6 @@
 import BuildingCard from "../../../components/BuildingCard";
 
-# Buildings
+# 🪓 Buildings
 
 ## Standard vs. Simple
 
@@ -60,7 +60,7 @@ population capacity of 5.
   buildingType={25}
   description={[
     "Produces Labor resource",
-    "No population requirement",
+    "Provides a baseline population capacity of 5",
     "Available in both simple and standard building modes",
   ]}
 />
@@ -73,13 +73,24 @@ have the same requirements in simple and standard mode.
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BuildingCard 
-  title="Stone Quarry" 
-  image="/images/buildings/construction/mine.png" 
-  buildingType={3} 
+  title="Lumber Camp" 
+  image="/images/buildings/construction/lumber_mill.png" 
+  buildingType={5} 
+  description={[
+    "Produces Wood resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes"
+  ]}
+/>
+
+<BuildingCard
+  title="Stone Quarry"
+  image="/images/buildings/construction/mine.png"
+  buildingType={3}
   description={[
     "Produces Stone resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes"
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
   ]}
 />
 
@@ -89,18 +100,7 @@ have the same requirements in simple and standard mode.
   buildingType={4}
   description={[
     "Produces Coal resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Lumber Camp"
-  image="/images/buildings/construction/lumber_mill.png"
-  buildingType={5}
-  description={[
-    "Produces Wood resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -111,18 +111,7 @@ have the same requirements in simple and standard mode.
   buildingType={6}
   description={[
     "Produces Copper resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Ironwood Grove"
-  image="/images/buildings/construction/lumber_mill.png"
-  buildingType={7}
-  description={[
-    "Produces Ironwood resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -133,18 +122,7 @@ have the same requirements in simple and standard mode.
   buildingType={8}
   description={[
     "Produces Obsidian resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Gold Mine"
-  image="/images/buildings/construction/forge.png"
-  buildingType={9}
-  description={[
-    "Produces Gold resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -155,29 +133,18 @@ have the same requirements in simple and standard mode.
   buildingType={10}
   description={[
     "Produces Silver resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
 
 <BuildingCard
-  title="Mithral Forge"
-  image="/images/buildings/construction/forge.png"
-  buildingType={11}
+  title="Ironwood Grove"
+  image="/images/buildings/construction/lumber_mill.png"
+  buildingType={7}
   description={[
-    "Produces Mithral resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Alchemical Workshop"
-  image="/images/buildings/construction/forge.png"
-  buildingType={12}
-  description={[
-    "Produces Alchemical Silver resource",
-    "Requires 2 population to operate",
+    "Produces Ironwood resource",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -188,40 +155,18 @@ have the same requirements in simple and standard mode.
   buildingType={13}
   description={[
     "Produces Cold Iron resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
 
 <BuildingCard
-  title="Deep Crystal Cave"
-  image="/images/buildings/construction/mine.png"
-  buildingType={14}
+  title="Gold Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={9}
   description={[
-    "Produces Deep Crystal resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Ruby Mine"
-  image="/images/buildings/construction/mine.png"
-  buildingType={15}
-  description={[
-    "Produces Ruby resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Diamond Mine"
-  image="/images/buildings/construction/mine.png"
-  buildingType={16}
-  description={[
-    "Produces Diamond resource",
-    "Requires 2 population to operate",
+    "Produces Gold resource",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -232,51 +177,18 @@ have the same requirements in simple and standard mode.
   buildingType={17}
   description={[
     "Produces Hartwood resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
 
 <BuildingCard
-  title="Ignium Harvester"
-  image="/images/buildings/construction/forge.png"
-  buildingType={18}
-  description={[
-    "Produces Ignium resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Twilight Quartz Mine"
+  title="Diamond Mine"
   image="/images/buildings/construction/mine.png"
-  buildingType={19}
+  buildingType={16}
   description={[
-    "Produces Twilight Quartz resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="True Ice Harvester"
-  image="/images/buildings/construction/mine.png"
-  buildingType={20}
-  description={[
-    "Produces True Ice resource",
-    "Requires 2 population to operate",
-    "Same construction cost in both simple and standard modes",
-  ]}
-/>
-
-<BuildingCard
-  title="Adamantine Mine"
-  image="/images/buildings/construction/forge.png"
-  buildingType={21}
-  description={[
-    "Produces Adamantine resource",
-    "Requires 2 population to operate",
+    "Produces Diamond resource",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -287,7 +199,40 @@ have the same requirements in simple and standard mode.
   buildingType={22}
   description={[
     "Produces Sapphire resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ruby Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={15}
+  description={[
+    "Produces Ruby resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Deep Crystal Cave"
+  image="/images/buildings/construction/mine.png"
+  buildingType={14}
+  description={[
+    "Produces Deep Crystal resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Ignium Harvester"
+  image="/images/buildings/construction/forge.png"
+  buildingType={18}
+  description={[
+    "Produces Ignium resource",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -298,7 +243,62 @@ have the same requirements in simple and standard mode.
   buildingType={23}
   description={[
     "Produces Ethereal Silica resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="True Ice Harvester"
+  image="/images/buildings/construction/mine.png"
+  buildingType={20}
+  description={[
+    "Produces True Ice resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Twilight Quartz Mine"
+  image="/images/buildings/construction/mine.png"
+  buildingType={19}
+  description={[
+    "Produces Twilight Quartz resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Alchemical Workshop"
+  image="/images/buildings/construction/forge.png"
+  buildingType={12}
+  description={[
+    "Produces Alchemical Silver resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Adamantine Mine"
+  image="/images/buildings/construction/forge.png"
+  buildingType={21}
+  description={[
+    "Produces Adamantine resource",
+    "Requires 2 population to be constructed",
+    "Same construction cost in both simple and standard modes",
+  ]}
+/>
+
+<BuildingCard
+  title="Mithral Forge"
+  image="/images/buildings/construction/forge.png"
+  buildingType={11}
+  description={[
+    "Produces Mithral resource",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -309,7 +309,7 @@ have the same requirements in simple and standard mode.
   buildingType={24}
   description={[
     "Produces Dragonhide resource",
-    "Requires 2 population to operate",
+    "Requires 2 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -331,7 +331,6 @@ increase (Storehouse)]
   buildingType={1} 
   description={[
     "Increases population capacity by 5",
-    "Required to construct and sustain production buildings",
     "Available in both simple and standard building modes"
   ]}
 />
@@ -341,19 +340,19 @@ increase (Storehouse)]
   image="/images/buildings/construction/storehouse.png"
   buildingType={2}
   description={[
-    "Increases storage capacity for resources",
-    "Requires 2 population to operate",
+    "Increases storage capacity by 300,000 kg for each material",
+    "Requires 2 population to be constructed",
     "Available in both simple and standard building modes",
   ]}
 />
 
 <BuildingCard
-  title="Donkey Stable"
+  title="Market"
   image="/images/buildings/construction/market.png"
   buildingType={27}
   description={[
     "Produces Donkeys for transportation",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Available in both simple and standard building modes",
   ]}
 />
@@ -364,7 +363,7 @@ increase (Storehouse)]
   buildingType={37}
   description={[
     "Produces Wheat (food) resource",
-    "Requires 1 population to operate",
+    "Requires 1 population to be constructed",
     "Same construction cost in both simple and standard modes",
   ]}
 />
@@ -375,7 +374,7 @@ increase (Storehouse)]
   buildingType={38} 
   description={[
     "Produces Fish (food) resource",
-    "Requires 1 population to operate",
+    "Requires 1 population to be constructed",
     "Same construction cost in both simple and standard modes"
   ]}
 />
@@ -397,7 +396,7 @@ available for construction in standard mode.
   buildingType={28} 
   description={[
     "Produces T1 Footman units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Available in both simple and standard building modes"
   ]}
 />
@@ -408,7 +407,7 @@ available for construction in standard mode.
   buildingType={29}
   description={[
     "Produces T2 Knight units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode",
   ]}
 />
@@ -419,7 +418,7 @@ available for construction in standard mode.
   buildingType={30}
   description={[
     "Produces T3 Royal Guardian units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode",
   ]}
 />
@@ -430,7 +429,7 @@ available for construction in standard mode.
   buildingType={31}
   description={[
     "Produces T1 Archer units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Available in both simple and standard building modes",
   ]}
 />
@@ -441,7 +440,7 @@ available for construction in standard mode.
   buildingType={32}
   description={[
     "Produces T2 Crossbowman units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode",
   ]}
 />
@@ -452,7 +451,7 @@ available for construction in standard mode.
   buildingType={33}
   description={[
     "Produces T3 Beast Hunter units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode",
   ]}
 />
@@ -463,7 +462,7 @@ available for construction in standard mode.
   buildingType={34}
   description={[
     "Produces T1 Horseman units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Available in both simple and standard building modes",
   ]}
 />
@@ -474,7 +473,7 @@ available for construction in standard mode.
   buildingType={35}
   description={[
     "Produces T2 Paladin units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode",
   ]}
 />
@@ -485,7 +484,7 @@ available for construction in standard mode.
   buildingType={36} 
   description={[
     "Produces T3 Dragon Rider units",
-    "Requires 3 population to operate",
+    "Requires 3 population to be constructed",
     "Only available in standard building mode"
   ]}
 />

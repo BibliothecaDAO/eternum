@@ -166,8 +166,8 @@ export const BiomeCombat = () => {
       },
       [BiomeType.Scorched]: {
         [TroopType.Knight]: biomeBonus,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
       },
     };
 

@@ -3,9 +3,29 @@ import { resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 import { formatAmount, section, table } from "./styles";
 
+export const HYPERSTRUCTURE_POINT_MULTIPLIER = 1_000_000;
+
 // Helper function to get resource name
 const getResourceName = (id: number): string => {
   return resources.find((r) => r.id === id)?.trait || `Resource ${id}`;
+};
+
+// Helper function to get total hyperstructure completion points
+export const getTotalHyperstructureCompletionPoints = (): number => {
+  const config = ETERNUM_CONFIG();
+  const hyperstructureConstructionCost = config.hyperstructures.hyperstructureConstructionCost;
+
+  // Get all hyperstructure IDs
+  const resourceIds = Object.keys(hyperstructureConstructionCost);
+
+  // Calculate total completion points by summing all resource_completion_points
+  const totalPoints = resourceIds.reduce((total, hyperstructureId) => {
+    const costs = hyperstructureConstructionCost[hyperstructureId];
+    const completionPoints = Number(costs.resource_completion_points) || 0;
+    return total + completionPoints;
+  }, 0);
+
+  return totalPoints / HYPERSTRUCTURE_POINT_MULTIPLIER;
 };
 
 // Additional component-specific styles
@@ -67,7 +87,9 @@ export const HyperstructureConstructionCostTable = () => {
                   </div>
                 </td>
                 <td style={table.weightCell}>
-                  {resource_completion_points > 0 ? formatAmount(Number(resource_completion_points)) : "-"}
+                  {resource_completion_points > 0
+                    ? formatAmount(Number(resource_completion_points / HYPERSTRUCTURE_POINT_MULTIPLIER))
+                    : "-"}
                 </td>
                 <td style={table.weightCell}>
                   {min_amount && min_amount !== max_amount
@@ -139,7 +161,7 @@ export const HyperstructurePointsTable = () => {
             <td style={table.weightCell}>Points Per Cycle</td>
             <td style={table.weightCell}>
               <div style={componentStyles.resourceItemStyle}>
-                {formatAmount(Number(hyperstructurePointsPerCycle))} points
+                {formatAmount(Number(hyperstructurePointsPerCycle / HYPERSTRUCTURE_POINT_MULTIPLIER))} points
               </div>
             </td>
           </tr>
@@ -147,7 +169,7 @@ export const HyperstructurePointsTable = () => {
             <td style={table.weightCell}>Points Required For Win</td>
             <td style={table.weightCell}>
               <div style={componentStyles.resourceItemStyle}>
-                {formatAmount(Number(hyperstructurePointsForWin))} points
+                {formatAmount(Number(hyperstructurePointsForWin) / HYPERSTRUCTURE_POINT_MULTIPLIER)} points
               </div>
             </td>
           </tr>
