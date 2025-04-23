@@ -1,9 +1,9 @@
-import { getNeighborHexes, HexPosition, ID, Steps, StructureType } from "@bibliothecadao/types";
+import { Direction, getNeighborHexes, ID, Steps, } from "@bibliothecadao/types";
 import { Entity } from "@dojoengine/recs";
-import { AndComposeClause, MemberClause, OrComposeClause } from "@dojoengine/sdk";
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../parser";
 import { getResourcesFromToriiEntity } from "../parser/resources";
+
 
 export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
@@ -131,108 +131,137 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
   return result;
 };
 
-export const getFreeVillagePositionsFromToriiClient = async (
-  toriiClient: ToriiClient,
-  contractPosition: HexPosition,
-) => {
-  const neighborHexes = getNeighborHexes(contractPosition.col, contractPosition.row, Steps.Two);
-  const freePositions: typeof neighborHexes = [];
 
-  const query: Query = {
-    limit: 6,
-    offset: 0,
-    clause: OrComposeClause(
-      neighborHexes.map((hex) =>
-        AndComposeClause([
-          MemberClause("s1_eternum-Structure", "base.coord_x", "Eq", hex.col),
-          MemberClause("s1_eternum-Structure", "base.coord_y", "Eq", hex.row),
-        ]),
-      ),
-    ).build(),
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
+
+// Types For Getting Village Slots
+interface VillageSlot {
+  value: Direction;
+  label: string;
+  coord: {
+    col: number; 
+    row: number;
   };
+}
 
-  const entities = await toriiClient.getEntities(query, false);
+interface VillageSlotCheckResult {
+  realmId: number;
+  entityId: number;
+  hasSlots: boolean;
+  availableSlots: VillageSlot[];
+  position: {
+    col: number;
+    row: number;
+  };
+}
 
-  // Create a set of occupied positions
-  const occupiedPositions = new Set<string>();
+// Constants
+const DIRECTION_MAP: Record<string, Direction> = {
+  "East": Direction.EAST,
+  "NorthEast": Direction.NORTH_EAST,
+  "NorthWest": Direction.NORTH_WEST,
+  "West": Direction.WEST,
+  "SouthWest": Direction.SOUTH_WEST,
+  "SouthEast": Direction.SOUTH_EAST
+};
 
-  Object.keys(entities).forEach((entity) => {
-    const structure = getStructureFromToriiEntity(entities[entity]["s1_eternum-Structure"]);
-    const posKey = `${structure.base.coord_x},${structure.base.coord_y}`;
-    occupiedPositions.add(posKey);
+// Helper functions
+const convertDirectionsToEnum = (directions: string[]): Direction[] => 
+  directions
+    .map(direction => DIRECTION_MAP[direction])
+    .filter((dir): dir is Direction => dir !== undefined);
+
+const formatVillageSlots = (
+  availableSlotStrings: string[], 
+  col: number,  
+  row: number
+): VillageSlot[] => {
+  const availableSlots = convertDirectionsToEnum(availableSlotStrings);
+  const neighborHexes = getNeighborHexes(col, row, Steps.Two);
+  
+  return neighborHexes
+    .filter(neighbor => availableSlots.includes(neighbor.direction))
+    .map(neighbor => ({
+      value: neighbor.direction,
+      label: Direction[neighbor.direction].replace(/_/g, " "),
+      coord: {
+        col: neighbor?.col ?? 0,
+        row: neighbor?.row ?? 0,
+      }
+    }));
+};
+
+// Query builders
+const createStructureVillageSlotsQuery = (clause?: Clause): Query => ({
+  limit: 1,
+  offset: 0,
+  clause,
+  dont_include_hashed_keys: false,
+  order_by: [],
+  entity_models: ["s1_eternum-StructureVillageSlots"],
+  entity_updated_after: 0
+});
+
+// Main functions
+export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient) => {
+  const villageSlots = await toriiClient.getEntities(createStructureVillageSlotsQuery(), false);
+  const entityId = Object.keys(villageSlots)[0];
+  
+  if (!entityId) return null;
+
+  const villageSlotsData = villageSlots[entityId]["s1_eternum-StructureVillageSlots"] as any;
+  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
+  
+  return {
+    realmId: villageSlotsData.connected_realm_id?.value,
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
+    hasSlots: true,
+    availableSlots: formatVillageSlots(
+      availableSlots,
+      villageSlotsData.connected_realm_coord?.value.x.value,
+      villageSlotsData.connected_realm_coord?.value.y.value
+    ),
+    position: {
+      col: villageSlotsData.connected_realm_coord?.value.x.value,
+      row: villageSlotsData.connected_realm_coord?.value.y.value
+    }
+  };
+};
+
+export const checkOpenVillageSlotFromToriiClient = async (
+  toriiClient: ToriiClient,
+  realmId: ID
+): Promise<VillageSlotCheckResult | null> => {
+  const villageSlotQuery = createStructureVillageSlotsQuery({
+    Member: {
+      model: "s1_eternum-StructureVillageSlots",
+      member: "connected_realm_id",
+      operator: "Eq",
+      value: { Primitive: { U16: realmId } }
+    }
   });
 
-  // Only add positions that are not occupied by structures
-  for (const hex of neighborHexes) {
-    const posKey = `${hex.col},${hex.row}`;
-    if (!occupiedPositions.has(posKey)) {
-      freePositions.push(hex);
-    }
-  }
+  const villageSlots = await toriiClient.getEntities(villageSlotQuery, false);
+  const entity = Object.keys(villageSlots)[0];
+  
+  if (!entity) return null;
 
-  return freePositions;
-};
-
-// Function to get a random realm with village slots
-export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient, realmCount: number) => {
-  // Generate a random offset
-  const randomOffset = Math.floor(Math.random() * realmCount);
-
-  // Query with random offset
-  const query: Query = {
-    limit: 1,
-    offset: randomOffset,
-    clause: AndComposeClause([
-      MemberClause("s1_eternum-Structure", "metadata.villages_count", "Lte", 5),
-      MemberClause("s1_eternum-Structure", "base.category", "Eq", StructureType.Realm),
-    ]).build(),
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
-  };
-
-  const entities = await toriiClient.getEntities(query, false);
-  const entity = Object.keys(entities)[0];
-  if (!entity) {
-    return null;
-  }
-
-  const entityData = entities[entity]["s1_eternum-Structure"] as any;
-  return getStructureFromToriiEntity(entityData);
-};
-
-// Function to check if a specific realm has village slots
-export const checkOpenVillageSlotFromToriiClient = async (toriiClient: ToriiClient, realmId: ID) => {
-  const query: Query = {
-    limit: 1,
-    offset: 0,
-    clause: AndComposeClause([MemberClause("s1_eternum-Structure", "metadata.realm_id", "Eq", realmId)]).build(),
-    dont_include_hashed_keys: false,
-    order_by: [],
-    entity_models: ["s1_eternum-Structure"],
-    entity_updated_after: 0,
-  };
-
-  const entities = await toriiClient.getEntities(query, false);
-  const realmEntityId = Object.keys(entities)[0] as Entity;
-
-  if (!realmEntityId) {
-    return null;
-  }
-
-  const structure = getStructureFromToriiEntity(entities[realmEntityId]["s1_eternum-Structure"]);
+  const villageSlotsData = villageSlots[entity]["s1_eternum-StructureVillageSlots"] as any;
+  const availableSlots = villageSlotsData.directions_left.value.map(
+    (v: any) => v.value.option
+  );
 
   return {
-    realmId: structure.metadata.realm_id,
-    entityId: structure.entity_id,
-    villagesCount: structure.metadata.villages_count,
-    hasSlots: structure.metadata.villages_count < 6,
-    availableSlots: 6 - structure.metadata.villages_count,
-    position: { col: structure.base.coord_x, row: structure.base.coord_y },
+    realmId: villageSlotsData.connected_realm_id?.value,
+    entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
+    hasSlots: true,
+    availableSlots: formatVillageSlots(
+      availableSlots,
+      villageSlotsData.connected_realm_coord?.value.x.value,
+      villageSlotsData.connected_realm_coord?.value.y.value
+    ),
+    position: {
+      col: villageSlotsData.connected_realm_coord?.value.x.value,
+      row: villageSlotsData.connected_realm_coord?.value.y.value
+    }
   };
 };
