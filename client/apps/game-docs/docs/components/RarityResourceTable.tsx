@@ -133,12 +133,12 @@ const getRarityColor = (rarity: string): string => {
 const RarityResourceTable = () => {
   return (
     <div style={section.wrapper}>
-      <div style={section.subtitle}>Resource Rarity Categories</div>
+      <div style={section.subtitle}>Material Rarity Categories</div>
       <table style={table.table}>
         <thead>
           <tr>
             <th style={table.headerCell}>Rarity</th>
-            <th style={table.headerCell}>Resources</th>
+            <th style={table.headerCell}>Materials</th>
           </tr>
         </thead>
         <tbody>

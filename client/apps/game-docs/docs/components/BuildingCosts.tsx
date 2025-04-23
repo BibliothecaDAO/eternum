@@ -97,7 +97,7 @@ export default function BuildingCosts({ buildingType }: Props) {
     return (
       <div style={styles.container}>
         <div style={styles.title}>Building Costs</div>
-        <div style={styles.modeHeader}>Complex Only</div>
+        <div style={styles.modeHeader}>Standard Only</div>
         <div style={styles.costsContainer}>
           {complexCosts.map((cost) => (
             <div key={cost.resource} style={styles.costItem}>
@@ -136,7 +136,7 @@ export default function BuildingCosts({ buildingType }: Props) {
       </div>
 
       <div>
-        <div style={styles.modeHeader}>Complex</div>
+        <div style={styles.modeHeader}>Standard</div>
         <div style={styles.costsContainer}>
           {complexCosts.map((cost) => (
             <div key={cost.resource} style={styles.costItem}>

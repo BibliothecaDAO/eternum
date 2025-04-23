@@ -19,7 +19,11 @@ interface BuildingCardProps {
 
 export default function BuildingCard({ title, image, buildingType, description }: BuildingCardProps) {
   const population = ETERNUM_CONFIG().buildings.buildingPopulation[buildingType] || 0;
-  const populationCapacity = ETERNUM_CONFIG().buildings.buildingCapacity[buildingType] || 0;
+  let populationCapacity = ETERNUM_CONFIG().buildings.buildingCapacity[buildingType] || 0;
+  const isLaborBuilding = buildingType === BuildingType.ResourceLabor;
+  if (isLaborBuilding) {
+    populationCapacity = 5;
+  }
 
   // Determine if this building produces a resource
   const isResourceBuilding = buildingType !== BuildingType.WorkersHut && buildingType !== BuildingType.Storehouse;
@@ -108,8 +112,8 @@ export default function BuildingCard({ title, image, buildingType, description }
 
         <div style={styles.info}>
           <div style={styles.stats}>
-            {population > 0 && <div style={styles.stat}>Pop: +{population}</div>}
-            {populationCapacity > 0 && <div style={styles.stat}>Cap: +{populationCapacity}</div>}
+            {population > 0 && <div style={styles.stat}>Pop Req: {population}</div>}
+            {populationCapacity > 0 && <div style={styles.stat}>Pop Cap: +{populationCapacity}</div>}
           </div>
 
           <ul style={{ listStyleType: "disc", marginLeft: "1rem", marginBottom: "0.5rem" }}>

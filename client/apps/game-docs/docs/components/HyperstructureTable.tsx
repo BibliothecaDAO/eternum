@@ -8,6 +8,24 @@ const getResourceName = (id: number): string => {
   return resources.find((r) => r.id === id)?.trait || `Resource ${id}`;
 };
 
+// Helper function to get total hyperstructure completion points
+export const getTotalHyperstructureCompletionPoints = (): number => {
+  const config = ETERNUM_CONFIG();
+  const hyperstructureConstructionCost = config.hyperstructures.hyperstructureConstructionCost;
+
+  // Get all hyperstructure IDs
+  const resourceIds = Object.keys(hyperstructureConstructionCost);
+
+  // Calculate total completion points by summing all resource_completion_points
+  const totalPoints = resourceIds.reduce((total, hyperstructureId) => {
+    const costs = hyperstructureConstructionCost[hyperstructureId];
+    const completionPoints = Number(costs.resource_completion_points) || 0;
+    return total + completionPoints;
+  }, 0);
+
+  return totalPoints;
+};
+
 // Additional component-specific styles
 const componentStyles = {
   resourceItemStyle: {

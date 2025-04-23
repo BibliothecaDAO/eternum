@@ -2,43 +2,96 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { icon, section, stats, table } from "./styles";
 
-export default function TroopMovementTable() {
+// Helper functions for troop information
+export const getTroopName = (troopId: number) => {
+  switch (troopId) {
+    case ResourcesIds.Paladin:
+      return "Paladin";
+    case ResourcesIds.Knight:
+      return "Knight";
+    case ResourcesIds.Crossbowman:
+      return "Crossbowman";
+    default:
+      return "Unknown";
+  }
+};
+
+export const getTroopIcon = (troopId: number) => {
+  switch (troopId) {
+    case ResourcesIds.Paladin:
+      return "🛡️";
+    case ResourcesIds.Knight:
+      return "⚔️";
+    case ResourcesIds.Crossbowman:
+      return "🏹";
+    default:
+      return "👤";
+  }
+};
+
+// Separate component for Max Stamina Table
+export const MaxStaminaTable = () => {
   const troopTypes = [ResourcesIds.Paladin, ResourcesIds.Knight, ResourcesIds.Crossbowman];
   const config = ETERNUM_CONFIG();
 
-  const getTroopName = (troopId: number) => {
-    switch (troopId) {
-      case ResourcesIds.Paladin:
-        return "Paladin";
-      case ResourcesIds.Knight:
-        return "Knight";
-      case ResourcesIds.Crossbowman:
-        return "Crossbowman";
-      default:
-        return "Unknown";
-    }
-  };
+  return (
+    <div style={section.commonCard}>
+      <div style={section.commonHeader}>
+        <span>⚡️</span> Max Stamina Comparison
+      </div>
 
-  const getTroopIcon = (troopId: number) => {
-    switch (troopId) {
-      case ResourcesIds.Paladin:
-        return "🛡️";
-      case ResourcesIds.Knight:
-        return "⚔️";
-      case ResourcesIds.Crossbowman:
-        return "🏹";
-      default:
-        return "👤";
-    }
-  };
+      <table style={table.compareTable}>
+        <thead style={table.tableHead}>
+          <tr>
+            <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
+            {troopTypes.map((troopId) => (
+              <th key={troopId} style={table.tableHeaderCell}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span style={icon.wrapper}>{getTroopIcon(troopId)}</span>
+                  {getTroopName(troopId)}
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3].map((tier) => (
+            <tr key={tier} style={table.tableRow}>
+              <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
+                <div style={table.tableTierCell}>
+                  <span style={table.tierBadge}>T{tier}</span>
+                  {tier > 1 ? `+${(tier - 1) * 20} bonus` : "Base"}
+                </div>
+              </td>
+              {troopTypes.map((troopId) => {
+                const troopName = getTroopName(troopId);
+                const baseStamina = config.troop.stamina[`stamina${troopName}Max`];
+                const tierStamina = baseStamina + (tier - 1) * 20;
 
-  // Reusable component for stat items
-  const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div style={stats.item}>
-      <span style={stats.label}>{label}</span>
-      <span style={stats.value}>{value}</span>
+                return (
+                  <td key={troopId} style={{ ...table.tableCell, textAlign: "center", fontWeight: "bold" }}>
+                    {tierStamina}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
+};
+
+// Reusable component for stat items
+const StatItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div style={stats.item}>
+    <span style={stats.label}>{label}</span>
+    <span style={stats.value}>{value}</span>
+  </div>
+);
+
+export default function TroopMovementTable() {
+  const config = ETERNUM_CONFIG();
 
   return (
     <div style={section.wrapper}>
@@ -118,51 +171,8 @@ export default function TroopMovementTable() {
         </div>
       </div>
 
-      {/* Comparative Stamina Max Table */}
-      <div style={section.commonCard}>
-        <div style={section.commonHeader}>
-          <span>⚡️</span> Max Stamina Comparison
-        </div>
-
-        <table style={table.compareTable}>
-          <thead style={table.tableHead}>
-            <tr>
-              <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
-              {troopTypes.map((troopId) => (
-                <th key={troopId} style={table.tableHeaderCell}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={icon.wrapper}>{getTroopIcon(troopId)}</span>
-                    {getTroopName(troopId)}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3].map((tier) => (
-              <tr key={tier} style={table.tableRow}>
-                <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
-                  <div style={table.tableTierCell}>
-                    <span style={table.tierBadge}>T{tier}</span>
-                    {tier > 1 ? `+${(tier - 1) * 20} bonus` : "Base"}
-                  </div>
-                </td>
-                {troopTypes.map((troopId) => {
-                  const troopName = getTroopName(troopId);
-                  const baseStamina = config.troop.stamina[`stamina${troopName}Max`];
-                  const tierStamina = baseStamina + (tier - 1) * 20;
-
-                  return (
-                    <td key={troopId} style={{ ...table.tableCell, textAlign: "center", fontWeight: "bold" }}>
-                      {tierStamina}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Using the separate MaxStaminaTable component */}
+      <MaxStaminaTable />
     </div>
   );
 }
