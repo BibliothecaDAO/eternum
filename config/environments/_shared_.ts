@@ -1,11 +1,5 @@
 import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
-import {
-  CapacityConfig,
-  RESOURCE_PRECISION,
-  RESOURCE_RARITY,
-  ResourcesIds,
-  type Config,
-} from "@bibliothecadao/types";
+import { CapacityConfig, RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
@@ -19,7 +13,7 @@ import {
   HYPERSTRUCTURE_COSTS,
   HYPERSTRUCTURE_POINTS_FOR_WIN,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_SHARDS_COST
+  HYPERSTRUCTURE_SHARDS_COST,
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
@@ -69,7 +63,6 @@ const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 // ----- Buildings ----- //
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
-
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
@@ -129,23 +122,6 @@ export const ARMY_SPEED = 1;
 export const BATTLE_GRACE_TICK_COUNT = 24;
 export const BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES = 1;
 export const BATTLE_DELAY_SECONDS = 8 * 60 * 60;
-
-// ----- Troops ----- //
-export const TROOP_HEALTH = 1;
-export const TROOP_KNIGHT_STRENGTH = 1;
-export const TROOP_PALADIN_STRENGTH = 1;
-export const TROOP_CROSSBOWMAN_STRENGTH = 1;
-export const TROOP_ADVANTAGE_PERCENT = 1000;
-export const TROOP_DISADVANTAGE_PERCENT = 1000;
-export const TROOP_MAX_COUNT = 500_000;
-export const TROOP_BASE_ARMY_NUMBER_FOR_STRUCTURE = 3;
-export const TROOP_ARMY_EXTRA_PER_MILITARY_BUILDING = 1;
-export const TROOP_MAX_ARMIES_PER_STRUCTURE = 7;
-export const TROOP_PILLAGE_HEALTH_DIVISOR = 8;
-export const TROOP_BATTLE_LEAVE_SLASH_NUM = 25;
-export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
-export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
-export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;

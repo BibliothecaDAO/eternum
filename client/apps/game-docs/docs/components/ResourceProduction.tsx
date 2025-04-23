@@ -1,5 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { ResourcesIds, resources } from "@bibliothecadao/types";
+import { RESOURCE_RARITY, ResourcesIds, resources } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 import { colors, section, table } from "./styles";
 
@@ -163,7 +163,12 @@ export const SimpleResourceProduction = () => {
     .filter((id) => id !== ResourcesIds.Labor && resourceInputSimpleMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
     .filter((id) => id !== ResourcesIds.Donkey)
-    .sort((a, b) => a - b);
+    .sort((a, b) => {
+      // Sort by resource rarity (if available)
+      const rarityA = RESOURCE_RARITY[a] || 0;
+      const rarityB = RESOURCE_RARITY[b] || 0;
+      return rarityA - rarityB;
+    });
 
   return (
     <div style={styles.sectionStyle}>
@@ -232,7 +237,12 @@ export const StandardResourceProduction = () => {
     .filter((id) => id !== ResourcesIds.Labor && resourceInputComplexMode[id]?.length > 0)
     .filter((id) => !isMilitary(id))
     .filter((id) => id !== ResourcesIds.Donkey)
-    .sort((a, b) => a - b);
+    .sort((a, b) => {
+      // Sort by resource rarity (if available)
+      const rarityA = RESOURCE_RARITY[a] || 0;
+      const rarityB = RESOURCE_RARITY[b] || 0;
+      return rarityA - rarityB;
+    });
 
   return (
     <div style={styles.sectionStyle}>
@@ -370,9 +380,63 @@ export const StandardTroopProduction = () => {
     .filter((id) => isMilitary(id))
     .sort((a, b) => a - b);
 
+  // Group troops by tier
+  const tier1Troops = complexTroopIds.filter((id) =>
+    [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin].includes(id),
+  );
+  const tier2Troops = complexTroopIds.filter((id) =>
+    [ResourcesIds.KnightT2, ResourcesIds.CrossbowmanT2, ResourcesIds.PaladinT2].includes(id),
+  );
+  const tier3Troops = complexTroopIds.filter((id) =>
+    [ResourcesIds.KnightT3, ResourcesIds.CrossbowmanT3, ResourcesIds.PaladinT3].includes(id),
+  );
+
+  // Function to render troop rows by tier
+  const renderTroopRows = (troopIds) => {
+    return troopIds.map((troopId) => {
+      const troopName = getResourceName(troopId);
+      const realmOutputAmount = troopOutputComplexMode[troopId] || 0;
+      const villageOutputAmount = realmOutputAmount / 2;
+
+      return (
+        <tr key={`complex-troop-${troopId}`}>
+          <td style={styles.resourceCellStyle}>
+            <ResourceIcon id={troopId} name={troopName} size="sm" />
+            {troopName}
+          </td>
+          <td style={styles.productionCellStyle}>
+            <div style={styles.resourceGroupStyle}>
+              {troopInputComplexMode[troopId].map((input, idx) => (
+                <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
+                  <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="sm" />
+                  {formatAmount(input.amount)}/s
+                </div>
+              ))}
+            </div>
+          </td>
+          <td style={styles.productionCellStyle}>
+            <div style={styles.resourceItemStyle}>
+              <ResourceIcon id={troopId} name={troopName} size="sm" />
+              {formatAmount(realmOutputAmount)}/s
+            </div>
+          </td>
+          <td style={styles.productionCellStyle}>
+            <div style={styles.resourceItemStyle}>
+              <ResourceIcon id={troopId} name={troopName} size="sm" />
+              {formatAmount(villageOutputAmount)}/s
+            </div>
+          </td>
+        </tr>
+      );
+    });
+  };
+
   return (
     <div style={styles.sectionStyle}>
       <div style={styles.subtitleStyle}>Standard Mode Troop Production</div>
+
+      {/* Tier 1 Troops */}
+      <div style={{ ...styles.subtitleStyle, fontSize: "0.9rem", marginTop: "1rem" }}>Tier 1 Troops</div>
       <table style={styles.tableStyle}>
         <thead>
           <tr>
@@ -382,45 +446,44 @@ export const StandardTroopProduction = () => {
             <th style={styles.headerCellStyle}>Village Output</th>
           </tr>
         </thead>
-        <tbody>
-          {complexTroopIds.map((troopId) => {
-            const troopName = getResourceName(troopId);
-            const realmOutputAmount = troopOutputComplexMode[troopId] || 0;
-            const villageOutputAmount = realmOutputAmount / 2;
-
-            return (
-              <tr key={`complex-troop-${troopId}`}>
-                <td style={styles.resourceCellStyle}>
-                  <ResourceIcon id={troopId} name={troopName} size="sm" />
-                  {troopName}
-                </td>
-                <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceGroupStyle}>
-                    {troopInputComplexMode[troopId].map((input, idx) => (
-                      <div key={`${input.resource}-${idx}`} style={styles.resourceItemStyle}>
-                        <ResourceIcon id={input.resource} name={getResourceName(input.resource)} size="sm" />
-                        {formatAmount(input.amount)}/s
-                      </div>
-                    ))}
-                  </div>
-                </td>
-                <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={troopId} name={troopName} size="sm" />
-                    {formatAmount(realmOutputAmount)}/s
-                  </div>
-                </td>
-                <td style={styles.productionCellStyle}>
-                  <div style={styles.resourceItemStyle}>
-                    <ResourceIcon id={troopId} name={troopName} size="sm" />
-                    {formatAmount(villageOutputAmount)}/s
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
+        <tbody>{renderTroopRows(tier1Troops)}</tbody>
       </table>
+
+      {/* Tier 2 Troops */}
+      {tier2Troops.length > 0 && (
+        <>
+          <div style={{ ...styles.subtitleStyle, fontSize: "0.9rem", marginTop: "1.5rem" }}>Tier 2 Troops</div>
+          <table style={styles.tableStyle}>
+            <thead>
+              <tr>
+                <th style={styles.headerCellStyle}>Troop</th>
+                <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>Input Resources</th>
+                <th style={styles.headerCellStyle}>Realm Output</th>
+                <th style={styles.headerCellStyle}>Village Output</th>
+              </tr>
+            </thead>
+            <tbody>{renderTroopRows(tier2Troops)}</tbody>
+          </table>
+        </>
+      )}
+
+      {/* Tier 3 Troops */}
+      {tier3Troops.length > 0 && (
+        <>
+          <div style={{ ...styles.subtitleStyle, fontSize: "0.9rem", marginTop: "1.5rem" }}>Tier 3 Troops</div>
+          <table style={styles.tableStyle}>
+            <thead>
+              <tr>
+                <th style={styles.headerCellStyle}>Troop</th>
+                <th style={{ ...styles.headerCellStyle, width: "50%", minWidth: "300px" }}>Input Resources</th>
+                <th style={styles.headerCellStyle}>Realm Output</th>
+                <th style={styles.headerCellStyle}>Village Output</th>
+              </tr>
+            </thead>
+            <tbody>{renderTroopRows(tier3Troops)}</tbody>
+          </table>
+        </>
+      )}
     </div>
   );
 };
@@ -434,7 +497,12 @@ export const LaborProduction = () => {
   const laborProducingResources = Object.keys(laborOutputPerResource)
     .map(Number)
     .filter((id) => laborOutputPerResource[id] > 0)
-    .sort((a, b) => a - b);
+    .sort((a, b) => {
+      // Sort by resource rarity (if available)
+      const rarityA = RESOURCE_RARITY[a] || 0;
+      const rarityB = RESOURCE_RARITY[b] || 0;
+      return rarityA - rarityB;
+    });
 
   return (
     <div style={styles.sectionStyle}>

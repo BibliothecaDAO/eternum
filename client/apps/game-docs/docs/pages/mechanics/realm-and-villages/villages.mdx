@@ -1,13 +1,20 @@
 import ResourceProbability from "@/components/ResourceProbability";
 import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
 
-## Villages
+# 🛖 Villages
 
 Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
 surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
 settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
 wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
 Villages in Season 1!
+
+<img
+  src="/images/buildings/construction/village.png"
+  width="800"
+  style={{ margin: "0 auto", transform: "scale(1.2)" }}
+/>
 
 ### Settling
 
@@ -16,11 +23,23 @@ Realm by entering the asset ID of a settled Realm, or let fate guide them to a r
 the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
 possible hexes they spawn on by selecting a compass direction.
 
-[todo: add image of villages surrounding realm]
+<img src="/screenshots/villages.png" alt="Village Settling Screen" width="600" className="mx-auto" />
+
+<span style={{ fontSize: "0.9rem", display: "block", textAlign: "center" }}>
+  _Three villages settled next to a realm_
+</span>
 
 ### Starting Resources
 
 <StartingResources structureType={StructureType.Village} />
+
+### Starting Military
+
+Each Village begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
+military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary structureType={StructureType.Village} />
 
 ### Resource Roll
 

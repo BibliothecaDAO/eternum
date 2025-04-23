@@ -1,0 +1,14 @@
+# 💥 Damage
+
+import { DamageCalculation } from "@/components/DamageCalculation";
+
+## Damage Overview
+
+Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
+the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
+Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
+troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
+numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+
+<DamageCalculation />
