@@ -671,284 +671,6 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
-file: docs/pages/mechanics/achievements.mdx
-meta: {}
-
-# Achievements & Quests
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/mechanics/agents.mdx
-meta: {}
-
-# Agents
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/mechanics/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
-  freely mint a Season Pass.
-* **Settling**: Players must burn a Season Pass to settle their Realm in the game world during the initial 7-day
-  settling period or after
-* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
-* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
-  buildable hexes and defensive army slots.
-* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
-* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
-  tile radius.
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
-  players
-* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
-* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
-  game
-* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
-  troops from any other source
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
-
-## Materials
-
-* **Materials Categories**:
-  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
-  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
-  * **Troops**: Units with unique properties that can be assigned to armies.
-  * **Donkeys**: Required for moving materials around the world, essential for logistics.
-  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
-    resources.
-  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
-* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
-  Realms.
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
-  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  and Villages are upgraded.
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode.
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies.
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Protect Realms and structures in defense slots.
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
-  * Success depends on the raiding army's damage relative to the combined guard armies.
-  * Undefended structures can be raided without casualties.
-
-## Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
-construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
-recognition and rewards for various actions within the Season.
-
-
-
----
-
-file: docs/pages/mechanics/prize-pool.mdx
-meta: {}
-
-# Prize Pool
-
-*WIP, update next week !*
-
-
-
----
-
-file: docs/pages/mechanics/tribes.mdx
-meta: {}
-
-# 👥 Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Formation & Membership
-
-* Any player can create a tribe
-* Set tribe name
-* Set to public or private
-* If private, send invites to player
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-guild.gif" alt="Create Guild" />
-
-  <em>Flow to create tribe</em>
-</div>
-
-
-
----
-
-file: docs/pages/mechanics/victory.mdx
-meta: {}
-
-import { ETERNUM_CONFIG } from "@/utils/config";
-import {
-  HyperstructureInitializationShardsTable,
-  HyperstructureConstructionCostTable,
-  HyperstructurePointsTable,
-  getTotalHyperstructureCompletionPoints,
-  HYPERSTRUCTURE_POINT_MULTIPLIER,
-} from "@/components/HyperstructureTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-
-# 👑 Victory
-
-<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-## Victory Points
-
-Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
-single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
-halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
-Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
-
-## Activating Foundations
-
-Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. After
-accumulating **{ formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)}
-Ancient Fragments** at a Hyperstructure Foundation, Lords can activate the foundation and begin construction. Upon
-activation, the exact quantity required for each resource is randomly determined within predefined minimum and maximum
-ranges shown below:
-
-<HyperstructureInitializationShardsTable />
-
-<HyperstructureConstructionCostTable />
-
-*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
-complete construction.*
-
-## Construction Victory Points
-
-The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
-or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
-requiring donkeys for transport. Upon completion of the Hyperstructure, all Lords who contributed resources and labor
-receive a proportional allocation of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())} victory
-points** based on their individual contributions.
-
-## Accumulation Victory Points
-
-Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
-accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-victory points** for every second the structure remains under their control. These accumulating victory points can be
-shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
-cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
-owner, who may similarly decide on sharing arrangements.
-
-## Total Victory
-
-Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
-to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
-
-<HyperstructurePointsTable />
-
-
-
----
-
-file: docs/pages/mechanics/world-structures.mdx
-meta: {}
-
-# 💠 World Structures
-
-## Hyperstructures
-
-Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
-monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
-Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
-fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
-path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
-
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
-
-## Fragment Mines
-
-Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
-ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
-a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
-mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
-production when depleted.
-
-<img src="/images/buildings/construction/fragment-mine.png" width="800" />
-
-## Quest Tiles
-
-*WIP, update next week !*
-
-
-
----
-
 file: docs/pages/overview/bridging.mdx
 meta: {}
 
@@ -1431,6 +1153,285 @@ Initial scouting reports have revealed some key details about the world:
 
 * Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
   arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
+
+
+
+---
+
+file: docs/pages/mechanics/achievements.mdx
+meta: {}
+
+# Achievements & Quests
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/agents.mdx
+meta: {}
+
+# Agents
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Eternum"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
+
+This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
+
+## Realms
+
+* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
+  freely mint a Season Pass.
+* **Settling**: Players must burn a Season Pass to settle their Realm in the game world during the initial 7-day
+  settling period or after
+* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
+* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
+  buildable hexes and defensive army slots.
+* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
+* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
+  tile radius.
+
+## Villages
+
+* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
+  players
+* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
+* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
+  game
+* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
+  troops from any other source
+* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
+* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
+
+## Materials
+
+* **Materials Categories**:
+  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
+  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
+  * **Troops**: Units with unique properties that can be assigned to armies.
+  * **Donkeys**: Required for moving materials around the world, essential for logistics.
+  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
+    resources.
+  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
+* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
+  Realms.
+
+## Buildings
+
+* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
+  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
+  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  and Villages are upgraded.
+
+## Production
+
+* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
+  labor) mode.
+* **Production Types**:
+  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
+  * **Resources**: Require combinations of other resources (standard) or labor (simple).
+  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
+  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+
+## World Map
+
+* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
+  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
+* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
+  movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
+  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
+  exploring armies may discover resources or encounter world structures and agent armies.
+
+## Military
+
+<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
+
+* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
+* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
+* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Protect Realms and structures in defense slots.
+* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
+  * Success depends on the raiding army's damage relative to the combined guard armies.
+  * Undefended structures can be raided without casualties.
+
+## Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Victory Conditions
+
+Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
+construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
+recognition and rewards for various actions within the Season.
+
+
+
+---
+
+file: docs/pages/mechanics/prize-pool.mdx
+meta: {}
+
+# Prize Pool
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/tribes.mdx
+meta: {}
+
+# 👥 Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Formation & Membership
+
+* Any player can create a tribe
+* Set tribe name
+* Set to public or private
+* If private, send invites to player
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guild.gif" alt="Create Guild" />
+
+  <em>Flow to create tribe</em>
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/victory.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
+import {
+  HyperstructureInitializationShardsTable,
+  HyperstructureConstructionCostTable,
+  HyperstructurePointsTable,
+  getTotalHyperstructureCompletionPoints,
+  HYPERSTRUCTURE_POINT_MULTIPLIER,
+} from "@/components/HyperstructureTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
+
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Victory Points
+
+Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
+single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
+halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
+Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
+
+## Activating Foundations
+
+Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
+a Hyperstructure Foundation, all **{
+  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+Fragments** must be deposited into the mine's balance, and then the owner of the mine must explicitly activate the
+foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
+within predefined minimum and maximum ranges shown below:
+
+<HyperstructureInitializationShardsTable />
+
+<HyperstructureConstructionCostTable />
+
+*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
+complete construction.*
+
+## Construction Victory Points
+
+The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
+or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
+requiring donkeys for transport. Upon completion of the Hyperstructure, all Lords who contributed resources and labor
+receive a proportional allocation of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())} victory
+points** based on their individual contributions.
+
+## Accumulation Victory Points
+
+Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
+accumulate
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+victory points** for every second the structure remains under their control. These accumulating victory points can be
+shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
+cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
+owner, who may similarly decide on sharing arrangements.
+
+## Total Victory
+
+Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
+to reach
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+
+<HyperstructurePointsTable />
+
+
+
+---
+
+file: docs/pages/mechanics/world-structures.mdx
+meta: {}
+
+# 💠 World Structures
+
+## Hyperstructures
+
+Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
+monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
+Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
+fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
+path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+## Fragment Mines
+
+Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
+ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
+a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
+mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
+production when depleted.
+
+<img src="/images/buildings/construction/fragment-mine.png" width="800" />
+
+## Quest Tiles
+
+*WIP, update next week !*
 
 
 
@@ -2331,124 +2332,6 @@ Key Notes:
 
 ---
 
-file: docs/pages/mechanics/worldmap-movement/movement.mdx
-meta: {}
-
-import TroopMovementTable from "@/components/TroopMovementTable";
-import { BiomeStamina } from "@/components/BiomeStamina";
-
-# 🧭 Movement & Exploration
-
-<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-## Stamina
-
-Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
-stamina, a critical resource Lords must carefully manage.
-
-Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
-against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
-
-<TroopMovementTable />
-
-Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
-themselves severely disadvantaged if attacked by enemy forces.
-
-## Movement
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/moving-army.gif" alt="Moving Army" />
-
-  <em>Moving armies in the client</em>
-</div>
-
-Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
-Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
-move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
-destination, and the army has sufficient stamina available for the entire journey.
-
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
-
-<BiomeStamina />
-
-## Exploring
-
-When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
-the known boundaries of the world.
-
-If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
-back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
-an army becomes overloaded, they can return to a structure to offload the materials, or drop them to free up space. Note
-that any materials discarded in the field will be permanently lost (burned).
-
-Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
-armies are well-prepared and capable of defending themselves in unexpected combat situations.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/explore.gif" alt="Explore" />
-
-  <em>Explore in the client</em>
-</div>
-
-## Troop Transfers
-
-Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
-the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
-Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
-Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
-that of the lower stamina army.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
-
-  <em>Transfer troops in the client</em>
-</div>
-
-
-
----
-
-file: docs/pages/mechanics/worldmap-movement/worldmap.mdx
-meta: {}
-
-# 🗺️ The World Map
-
-<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-## An Unexplored World
-
-At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
-exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
-can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
-another.
-
-When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
-been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
-their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
-structure or army) is permanently revealed to all Lords.
-
-## Biomes
-
-Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
-coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
-
-Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
-potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the [Military section](/mechanics/military/stamina-and-biomes). Additionally, biomes have
-the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
-type differently as they move between hexes—this is explained further in the subsection below.
-
-
-
----
-
 file: docs/pages/mechanics/resources/production.mdx
 meta: {}
 
@@ -2808,4 +2691,122 @@ directly. Villages, however, have more limited bridging capabilities—they can 
 in. This is in line with their existing restrictions on receiving troops from external sources. They are also limited to
 utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
 tokens bridged out of the game.
+
+
+
+---
+
+file: docs/pages/mechanics/worldmap-movement/movement.mdx
+meta: {}
+
+import TroopMovementTable from "@/components/TroopMovementTable";
+import { BiomeStamina } from "@/components/BiomeStamina";
+
+# 🧭 Movement & Exploration
+
+<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Stamina
+
+Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
+stamina, a critical resource Lords must carefully manage.
+
+Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
+against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
+troop type possesses different maximum stamina capacities, outlined in the table below:
+
+<TroopMovementTable />
+
+Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
+themselves severely disadvantaged if attacked by enemy forces.
+
+## Movement
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/moving-army.gif" alt="Moving Army" />
+
+  <em>Moving armies in the client</em>
+</div>
+
+Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
+Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
+move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
+destination, and the army has sufficient stamina available for the entire journey.
+
+The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
+within the army. The table below details biome-specific stamina costs for each troop type:
+
+<BiomeStamina />
+
+## Exploring
+
+When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
+the known boundaries of the world.
+
+If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
+back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
+an army becomes overloaded, they can return to a structure to offload the materials, or drop them to free up space. Note
+that any materials discarded in the field will be permanently lost (burned).
+
+Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
+armies are well-prepared and capable of defending themselves in unexpected combat situations.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/explore.gif" alt="Explore" />
+
+  <em>Explore in the client</em>
+</div>
+
+## Troop Transfers
+
+Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
+the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
+Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
+Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
+that of the lower stamina army.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
+
+  <em>Transfer troops in the client</em>
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/worldmap-movement/worldmap.mdx
+meta: {}
+
+# 🗺️ The World Map
+
+<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+
+## An Unexplored World
+
+At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
+exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
+can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
+another.
+
+When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
+been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
+their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
+structure or army) is permanently revealed to all Lords.
+
+## Biomes
+
+Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
+procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
+coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
+
+Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
+potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
+explained in more detail in the [Military section](/mechanics/military/stamina-and-biomes). Additionally, biomes have
+the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
+type differently as they move between hexes—this is explained further in the subsection below.
 
