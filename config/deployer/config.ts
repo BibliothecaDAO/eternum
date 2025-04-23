@@ -771,7 +771,7 @@ export const setupGlobals = async (config: Config) => {
 
   const armiesTickCalldata = {
     signer: config.account,
-    tick_interval_in_seconds: 10,
+    tick_interval_in_seconds: config.config.tick.armiesTickIntervalInSeconds,
   };
 
   console.log(
@@ -880,7 +880,7 @@ export const setVillageControllersConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
     village_pass_nft_address: config.config.village.village_pass_nft_address,
-    village_mint_initial_recipient: "0x40db150844dc372928b3b47e23cb6e240e2c99ddc5381680afd73d777cbd6c8",
+    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
   };
   
   console.log(
