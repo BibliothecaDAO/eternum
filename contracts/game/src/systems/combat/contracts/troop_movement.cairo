@@ -409,7 +409,6 @@ pub mod hyperstructure_discovery_systems {
                 iHyperstructureDiscoveryImpl::create(
                     ref world, tile.into(), caller, map_config, troop_limit_config, troop_stamina_config, vrf_seed,
                 );
-            if found_hyperstructure {
                 return (true, ExploreFind::Hyperstructure);
             }
             return (false, ExploreFind::None);
