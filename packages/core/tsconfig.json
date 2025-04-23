@@ -3,5 +3,5 @@
   "compilerOptions": {
     "outDir": "../../dist/core"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "../torii-client/src/queries/address.ts"]
 }

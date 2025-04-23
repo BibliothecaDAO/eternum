@@ -255,6 +255,14 @@ export class ClientConfigManager {
     this.structureCosts[StructureType.Hyperstructure] = [this.getHyperstructureConstructionCosts()];
   }
 
+  public getRefillPerTick() {
+    const staminaRefillConfig = getComponentValue(
+      this.components.WorldConfig,
+      getEntityIdFromKeys([WORLD_CONFIG_ID]),
+    )?.troop_stamina_config;
+    return staminaRefillConfig?.stamina_gain_per_tick || 0;
+  }
+
   public getMaxLevel(category: StructureType) {
     const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
     if (category === StructureType.Realm) {

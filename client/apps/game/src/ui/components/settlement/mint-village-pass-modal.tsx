@@ -1,11 +1,13 @@
 import Button from "@/ui/elements/button";
+import { getEntityIdFromKeys, getRealmNameById } from "@bibliothecadao/eternum";
+
+import { useDojo } from "@bibliothecadao/react";
 import {
   checkOpenVillageSlotFromToriiClient,
   getRandomRealmWithVillageSlotsFromTorii,
-  getRealmNameById
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+} from "@bibliothecadao/torii-client";
+import { Direction, HexPosition, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
 import { ModalContainer } from "../modal-container";
 import { VillageResourceReveal } from "./village-resource-reveal";
@@ -106,6 +108,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   // Function to select a random realm with village slots
   const selectRandomRealm = async () => {
     setIsLoading(true);
+    const realmCount =
+      getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.realm_count_config.count || 0;
     try {
       const data = await getRandomRealmWithVillageSlotsFromTorii(toriiClient);
       if (data && data) {
