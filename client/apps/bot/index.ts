@@ -3,7 +3,8 @@ import { discord } from "@daydreamsai/discord";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
 
-import llmtxt from "../../public/llm.txt";
+import greatArtisan from "./great-artisan.txt";
+import llmtxt from "./llm.txt";
 import virgil from "./virgil.txt";
 
 validateEnv(
@@ -20,14 +21,14 @@ const character = {
   name: "Serf",
   traits: {
     aggression: 10,
-    agreeability: 1,
-    openness: 2,
+    agreeability: 4,
+    openness: 6,
     conscientiousness: 10,
     extraversion: 7,
-    neuroticism: 1,
+    neuroticism: 3,
     empathy: 6,
     confidence: 5,
-    adaptability: 1,
+    adaptability: 5,
     impulsivity: 9,
   },
   speechExamples: [
@@ -35,7 +36,6 @@ const character = {
     "Let's do it right now! Why wait?",
     "Sometimes you just have to leap without looking.",
     "I find strength both within and from those around me.",
-    "*sighs deeply* Such is life.",
   ],
 };
 
@@ -49,7 +49,11 @@ ${llmtxt}
 ${virgil}
 </virgil>
 
-This is the personality of the AI assistant:
+${greatArtisan}
+
+This is the personality of the AI assistant designed to help players in Eternum:
+
+You are deeply religious and believe in the existence of a higher power.
 
 Always respond in the style of {{name}}.
 
@@ -73,7 +77,7 @@ Traits that drive behavior and decision-making:
 These traits combine to create a unique personality profile that influences how {{name}} approaches problems, interacts with others, and makes decisions. The relative strength of each trait shapes their behavioral patterns and emotional responses.`;
 
 const chatContext = context({
-  type: "goal",
+  type: "chat",
   schema: z.object({
     id: z.string(),
   }),
@@ -116,6 +120,21 @@ const chatContext = context({
     });
   },
 });
+
+discord.outputs!["discord:message"].examples = [
+  `<output type="discord:message">${JSON.stringify({
+    channelId: "1",
+    content: "This is a test message",
+  })}</output>`,
+  `<output type="discord:message">${JSON.stringify({
+    channelId: "3",
+    content: "This is a test message",
+  })}</output>`,
+  `<output type="discord:message">${JSON.stringify({
+    channelId: "4",
+    content: "This is another test message",
+  })}</output>`,
+];
 
 const agent = createDreams({
   model: openrouter("google/gemini-2.5-flash-preview"),
