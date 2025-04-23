@@ -44,7 +44,7 @@ pub struct WorldConfig {
     pub village_controller_config: VillageControllerConfig,
     pub village_pass_config: VillageTokenConfig,
     pub wonder_production_bonus_config: WonderProductionBonusConfig,
-    pub quest_config: QuestConfig
+    pub quest_config: QuestConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
