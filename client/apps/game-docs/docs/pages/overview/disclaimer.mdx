@@ -1,6 +1,7 @@
 import { formatNumberWithSpaces } from "@/utils/formatting";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { Callout } from "vocs/components";
+import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
 
 # Disclaimer and Risk Acknowledgment
 
@@ -22,8 +23,8 @@ compensation. You acknowledge the **risk of loss of funds** and accept that you 
 financial impact incurred.
 
 A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)}** Victory Points and clicks the
-"End Season" button. At this point:
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
+Victory Points and clicks the "End Season" button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
