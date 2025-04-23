@@ -118,11 +118,8 @@ pub impl iStructureImpl of IStructureTrait {
                     IMapImpl::explore(ref world, ref village_tile, village_biome);
                 }
 
-                // ensure village tile is only useable if no structure is on it
-
-                // todo: ensure quest tiles cant be used also
-
-                if !village_tile.occupier_is_structure {
+                // ensure village tile is only useable if no structure is on it and tile is not a quest tile
+                if !village_tile.occupier_is_structure && village_tile.occupier_type != TileOccupier::Quest.into() {
                     // mint village nft
                     IVillagePassDispatcher { contract_address: village_pass_config.token_address }
                         .mint(village_pass_config.mint_recipient_address);
