@@ -4,18 +4,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  multiplyByPrecision,
-} from "@bibliothecadao/eternum";
-import {
-  findResourceById,
-  RealmInfo,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types"
+import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 
@@ -65,7 +55,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
       ...laborConfig.map((config, index) => {
         return Math.ceil(
           (selectedResources[index].amount * (config?.laborProductionPerResource || 0)) /
-          (config?.laborRatePerTick || 0),
+            (config?.laborRatePerTick || 0),
         );
       }),
     );

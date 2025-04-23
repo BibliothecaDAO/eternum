@@ -12,13 +12,7 @@ import {
   getBuildingQuantity,
   TileManager,
 } from "@bibliothecadao/eternum";
-import {
-  getBuildingFromResource,
-  RealmInfo,
-  resources,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { getBuildingFromResource, RealmInfo, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Loader2Icon } from "lucide-react";
 import { useMemo, useState } from "react";

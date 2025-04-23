@@ -1,7 +1,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import TextInput from "@/ui/elements/text-input";
 import { toHexString } from "@bibliothecadao/eternum";
-import { ContractAddress, Player, } from "@bibliothecadao/types";
+import { ContractAddress, Player } from "@bibliothecadao/types";
 import React, { useMemo, useRef, useState } from "react";
 import { displayAddress } from "../utils/utils";
 

@@ -11,10 +11,7 @@ import {
   getTotalResourceWeightKg,
 } from "@bibliothecadao/eternum";
 
-import {
-  Resources,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { Resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Check, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";

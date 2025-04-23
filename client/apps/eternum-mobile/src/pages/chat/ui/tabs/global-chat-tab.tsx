@@ -24,14 +24,14 @@ interface GlobalChatTabProps {
   selectRecipient: (userId: string) => void;
 }
 
-export function GlobalChatTab({ 
-  onMentionClick, 
-  messages, 
+export function GlobalChatTab({
+  onMentionClick,
+  messages,
   messageGroups,
   onSendMessage,
   isLoadingMessages,
   userId,
-  selectRecipient
+  selectRecipient,
 }: GlobalChatTabProps) {
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,8 +39,8 @@ export function GlobalChatTab({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ 
-        behavior: isInitialScrollRef.current ? "auto" : "smooth" 
+      scrollRef.current.scrollIntoView({
+        behavior: isInitialScrollRef.current ? "auto" : "smooth",
       });
       isInitialScrollRef.current = false;
     }
@@ -70,12 +70,7 @@ export function GlobalChatTab({
               // Create a unique key based on the group's first message id and index
               const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
               return (
-                <MessageGroupComponent
-                  key={groupKey}
-                  group={group}
-                  userId={userId}
-                  selectRecipient={selectRecipient}
-                />
+                <MessageGroupComponent key={groupKey} group={group} userId={userId} selectRecipient={selectRecipient} />
               );
             })}
             <div ref={scrollRef} />

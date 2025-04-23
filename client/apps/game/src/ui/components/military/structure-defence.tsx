@@ -1,6 +1,6 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
 import Button from "@/ui/elements/button";
-import { ArmyManager, } from "@bibliothecadao/eternum";
+import { ArmyManager } from "@bibliothecadao/eternum";
 import { DEFENSE_NAMES, ID, Troops } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useCallback, useEffect, useState } from "react";
@@ -108,11 +108,11 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
 
       return defense
         ? {
-          entityId: defense.slot,
-          troops: defense.troops,
-          isHome: true,
-          name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
-        }
+            entityId: defense.slot,
+            troops: defense.troops,
+            isHome: true,
+            name: DEFENSE_NAMES[slot as keyof typeof DEFENSE_NAMES],
+          }
         : undefined;
     },
     [defenseTroops],
@@ -155,12 +155,13 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className={`flex items-center gap-3 p-1.5 rounded-md transition-colors ${snapshot.isDragging
-                            ? "bg-brown-800/90"
-                            : isExpanded
-                              ? "bg-brown-800/70"
-                              : "hover:bg-brown-800/50"
-                            }`}
+                          className={`flex items-center gap-3 p-1.5 rounded-md transition-colors ${
+                            snapshot.isDragging
+                              ? "bg-brown-800/90"
+                              : isExpanded
+                                ? "bg-brown-800/70"
+                                : "hover:bg-brown-800/50"
+                          }`}
                         >
                           <div className="w-28 flex items-center gap-1.5">
                             <div className="w-1 h-1 rounded-full bg-gold/40" />
@@ -183,8 +184,9 @@ export const StructureDefence = ({ maxDefenses, troops, cooldownSlots, structure
                                   className="flex-1 hover:border-gold/40 transition-colors"
                                 />
                                 <button
-                                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${isExpanded ? "bg-gold/40" : "bg-gold/20 hover:bg-gold/40"
-                                    } rounded-full p-1 transition-colors`}
+                                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                                    isExpanded ? "bg-gold/40" : "bg-gold/20 hover:bg-gold/40"
+                                  } rounded-full p-1 transition-colors`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     toggleDefenseExpansion(index);

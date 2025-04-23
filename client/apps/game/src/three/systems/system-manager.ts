@@ -8,20 +8,12 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { getHyperstructureProgress } from "@bibliothecadao/eternum"
+import { getHyperstructureProgress } from "@bibliothecadao/eternum";
 import { type SetupResult } from "@bibliothecadao/dojo";
-import {
-  type Component,
-  defineComponentSystem,
-  getComponentValue,
-  isComponentUpdate,
-} from "@dojoengine/recs";
+import { type Component, defineComponentSystem, getComponentValue, isComponentUpdate } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import {
-  PROGRESS_FINAL_THRESHOLD,
-  PROGRESS_HALF_THRESHOLD,
-} from "../scenes/constants";
+import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../scenes/constants";
 import {
   type ArmySystemUpdate,
   type BuildingSystemUpdate,
@@ -33,7 +25,7 @@ import {
 // The SystemManager class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
 export class SystemManager {
-  constructor(private setup: SetupResult) { }
+  constructor(private setup: SetupResult) {}
 
   private setupSystem<T>(
     component: Component,
@@ -79,14 +71,9 @@ export class SystemManager {
           this.setup.components.ExplorerTroops,
           callback,
           (update: any): ArmySystemUpdate | undefined => {
-            if (
-              isComponentUpdate(update, this.setup.components.ExplorerTroops)
-            ) {
+            if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
               const [currentState, prevState] = update.value;
-              const explorer = getComponentValue(
-                this.setup.components.ExplorerTroops,
-                update.entity,
-              );
+              const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
               if (!explorer && undefined === currentState && prevState) {
                 // when explorer_troop is removed, torii streams an empty object which is removed from components in setEntities.
@@ -118,20 +105,13 @@ export class SystemManager {
 
               const addressName = getComponentValue(
                 this.setup.components.AddressName,
-                getEntityIdFromKeys([
-                  structure?.owner || BigInt(explorer.explorer_id) || 0n,
-                ]),
+                getEntityIdFromKeys([structure?.owner || BigInt(explorer.explorer_id) || 0n]),
               );
 
-              const ownerName = addressName
-                ? shortString.decodeShortString(addressName.name.toString())
-                : "";
+              const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
 
               const guild = owner
-                ? getComponentValue(
-                  this.setup.components.GuildMember,
-                  getEntityIdFromKeys([owner || 0n]),
-                )
+                ? getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([owner || 0n]))
                 : undefined;
 
               let guildName = "";
@@ -140,20 +120,14 @@ export class SystemManager {
                   this.setup.components.AddressName,
                   getEntityIdFromKeys([BigInt(guild.guild_id)]),
                 );
-                guildName = guildEntityName?.name
-                  ? shortString.decodeShortString(
-                    guildEntityName.name.toString(),
-                  )
-                  : "";
+                guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
               }
 
               const order =
                 structure?.metadata.order ||
                 getComponentValue(
                   this.setup.components.Structure,
-                  getEntityIdFromKeys([
-                    BigInt(structure?.metadata.village_realm || 0),
-                  ]),
+                  getEntityIdFromKeys([BigInt(structure?.metadata.village_realm || 0)]),
                 )?.metadata.order ||
                 0;
 
@@ -176,110 +150,81 @@ export class SystemManager {
 
   public get Structure() {
     return {
-      onContribution: (
-        callback: (value: {
-          entityId: ID;
-          structureType: StructureType;
-          stage: number;
-        }) => void,
-      ) => {
-        this.setupSystem(
-          this.setup.components.HyperstructureRequirements,
-          callback,
-          (update: any) => {
-            const structure = getComponentValue(
-              this.setup.components.Structure,
-              getEntityIdFromKeys([
-                BigInt(update.value[0].hyperstructure_entity_id),
-              ]),
-            );
+      onContribution: (callback: (value: { entityId: ID; structureType: StructureType; stage: number }) => void) => {
+        this.setupSystem(this.setup.components.HyperstructureRequirements, callback, (update: any) => {
+          const structure = getComponentValue(
+            this.setup.components.Structure,
+            getEntityIdFromKeys([BigInt(update.value[0].hyperstructure_entity_id)]),
+          );
 
-            if (!structure) return;
+          if (!structure) return;
 
-            const category = structure.base.category as StructureType;
+          const category = structure.base.category as StructureType;
 
-            const stage = this.getStructureStage(category, structure.entity_id);
+          const stage = this.getStructureStage(category, structure.entity_id);
 
-            return {
-              entityId: structure.entity_id,
-              structureType: category,
-              stage,
-            };
-          },
-        );
+          return {
+            entityId: structure.entity_id,
+            structureType: category,
+            stage,
+          };
+        });
       },
       onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.Structure,
-          callback,
-          (update: any) => {
-            const structure = getComponentValue(
-              this.setup.components.Structure,
-              update.entity,
-            );
-            if (!structure) return;
+        this.setupSystem(this.setup.components.Structure, callback, (update: any) => {
+          const structure = getComponentValue(this.setup.components.Structure, update.entity);
+          if (!structure) return;
 
-            const stage = this.getStructureStage(
-              structure.base.category as StructureType,
-              structure.entity_id,
-            );
+          const stage = this.getStructureStage(structure.base.category as StructureType, structure.entity_id);
 
-            let level = 0;
-            let hasWonder = false;
-            if (structure.base.category === StructureType.Realm) {
-              level = structure.base.level || RealmLevels.Settlement;
-              hasWonder = structure.metadata.has_wonder || false;
-            }
+          let level = 0;
+          let hasWonder = false;
+          if (structure.base.category === StructureType.Realm) {
+            level = structure.base.level || RealmLevels.Settlement;
+            hasWonder = structure.metadata.has_wonder || false;
+          }
 
-            const addressName = getComponentValue(
+          const addressName = getComponentValue(
+            this.setup.components.AddressName,
+            getEntityIdFromKeys([BigInt(structure.owner)]),
+          );
+
+          const ownerName = addressName ? shortString.decodeShortString(addressName.name.toString()) : "";
+
+          const guild = structure.owner
+            ? getComponentValue(this.setup.components.GuildMember, getEntityIdFromKeys([BigInt(structure.owner)]))
+            : undefined;
+
+          let guildName = "";
+          if (guild?.guild_id) {
+            const guildEntityName = getComponentValue(
               this.setup.components.AddressName,
-              getEntityIdFromKeys([BigInt(structure.owner)]),
+              getEntityIdFromKeys([BigInt(guild.guild_id)]),
             );
+            guildName = guildEntityName?.name ? shortString.decodeShortString(guildEntityName.name.toString()) : "";
+          }
 
-            const ownerName = addressName
-              ? shortString.decodeShortString(addressName.name.toString())
-              : "";
+          const hyperstructure = getComponentValue(
+            this.setup.components.Hyperstructure,
+            getEntityIdFromKeys([BigInt(structure.entity_id)]),
+          );
 
-            const guild = structure.owner
-              ? getComponentValue(
-                this.setup.components.GuildMember,
-                getEntityIdFromKeys([BigInt(structure.owner)]),
-              )
-              : undefined;
+          const initialized = hyperstructure?.initialized || false;
 
-            let guildName = "";
-            if (guild?.guild_id) {
-              const guildEntityName = getComponentValue(
-                this.setup.components.AddressName,
-                getEntityIdFromKeys([BigInt(guild.guild_id)]),
-              );
-              guildName = guildEntityName?.name
-                ? shortString.decodeShortString(guildEntityName.name.toString())
-                : "";
-            }
-
-            const hyperstructure = getComponentValue(
-              this.setup.components.Hyperstructure,
-              getEntityIdFromKeys([BigInt(structure.entity_id)]),
-            );
-
-            const initialized = hyperstructure?.initialized || false;
-
-            return {
-              entityId: structure.entity_id,
-              hexCoords: {
-                col: structure.base.coord_x,
-                row: structure.base.coord_y,
-              },
-              structureType: structure.base.category as StructureType,
-              initialized,
-              stage,
-              level,
-              owner: { address: structure.owner, ownerName, guildName },
-              hasWonder,
-            };
-          },
-        );
+          return {
+            entityId: structure.entity_id,
+            hexCoords: {
+              col: structure.base.coord_x,
+              row: structure.base.coord_y,
+            },
+            structureType: structure.base.category as StructureType,
+            initialized,
+            stage,
+            level,
+            owner: { address: structure.owner, ownerName, guildName },
+            hasWonder,
+          };
+        });
       },
     };
   }
@@ -287,51 +232,35 @@ export class SystemManager {
   public get Tile() {
     return {
       onUpdate: (callback: (value: TileSystemUpdate) => void) => {
-        this.setupSystem(
-          this.setup.components.Tile,
-          callback,
-          (update: any) => {
-            const newState = update.value[0];
-            const prevState = update.value[1];
+        this.setupSystem(this.setup.components.Tile, callback, (update: any) => {
+          const newState = update.value[0];
+          const prevState = update.value[1];
 
-            const newStateBiomeType = BiomeIdToType[newState?.biome];
-            const { col, row } = prevState || newState;
-            return {
-              hexCoords: { col, row },
-              removeExplored: !newState,
-              biome:
-                newStateBiomeType === BiomeType.None
-                  ? BiomeType.Grassland
-                  : newStateBiomeType || BiomeType.Grassland,
-            };
-          },
-        );
+          const newStateBiomeType = BiomeIdToType[newState?.biome];
+          const { col, row } = prevState || newState;
+          return {
+            hexCoords: { col, row },
+            removeExplored: !newState,
+            biome:
+              newStateBiomeType === BiomeType.None ? BiomeType.Grassland : newStateBiomeType || BiomeType.Grassland,
+          };
+        });
       },
     };
   }
 
   public get Buildings() {
     return {
-      onUpdate: (
-        hexCoords: HexPosition,
-        callback: (value: BuildingSystemUpdate) => void,
-      ) => {
+      onUpdate: (hexCoords: HexPosition, callback: (value: BuildingSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.Building,
           callback,
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.Building)) {
-              const building = getComponentValue(
-                this.setup.components.Building,
-                update.entity,
-              );
+              const building = getComponentValue(this.setup.components.Building, update.entity);
               if (!building) return;
 
-              if (
-                building.outer_col !== hexCoords.col ||
-                building.outer_row !== hexCoords.row
-              )
-                return;
+              if (building.outer_col !== hexCoords.col || building.outer_row !== hexCoords.row) return;
 
               const innerCol = building.inner_col;
               const innerRow = building.inner_row;
@@ -354,10 +283,7 @@ export class SystemManager {
 
   public getStructureStage(structureType: StructureType, entityId: ID): number {
     if (structureType === StructureType.Hyperstructure) {
-      const { initialized, percentage } = getHyperstructureProgress(
-        entityId,
-        this.setup.components,
-      );
+      const { initialized, percentage } = getHyperstructureProgress(entityId, this.setup.components);
 
       if (!initialized) {
         return StructureProgress.STAGE_1;
@@ -366,10 +292,7 @@ export class SystemManager {
       if (percentage < PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_1;
       }
-      if (
-        percentage < PROGRESS_FINAL_THRESHOLD &&
-        percentage >= PROGRESS_HALF_THRESHOLD
-      ) {
+      if (percentage < PROGRESS_FINAL_THRESHOLD && percentage >= PROGRESS_HALF_THRESHOLD) {
         return StructureProgress.STAGE_2;
       }
       return StructureProgress.STAGE_3;

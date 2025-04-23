@@ -1,7 +1,7 @@
 import { DepositResourceArrival } from "@/ui/components/resources/deposit-resources";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { divideByPrecision, formatTime, } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
 import { ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useArrivalsByStructure } from "@bibliothecadao/react";
 import clsx from "clsx";

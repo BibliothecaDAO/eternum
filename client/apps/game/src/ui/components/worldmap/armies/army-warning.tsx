@@ -7,12 +7,7 @@ import {
   configManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import {
-
-  ArmyInfo,
-  getNeighborHexes,
-  TroopType,
-} from "@bibliothecadao/types";
+import { ArmyInfo, getNeighborHexes, TroopType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

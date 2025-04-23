@@ -1,6 +1,6 @@
 import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { configManager, } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 interface LaborResourcesPanelProps {
@@ -49,8 +49,9 @@ export const LaborResourcesPanel = ({
 
   return (
     <div
-      className={`p-4 rounded-lg border-2 cursor-pointer ${isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-50"
-        }`}
+      className={`p-4 rounded-lg border-2 cursor-pointer ${
+        isSelected ? "panel-gold bg-gold/5" : "border-transparent opacity-50"
+      }`}
       onClick={onSelect}
     >
       <h4 className="text-xl mb-2">Labor</h4>
@@ -74,11 +75,12 @@ export const LaborResourcesPanel = ({
                   />
                 </div>
                 <span
-                  className={`text-sm font-medium ${resourceBalances[input.resource] <
-                      Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)
+                  className={`text-sm font-medium ${
+                    resourceBalances[input.resource] <
+                    Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)
                       ? "text-order-giants"
                       : "text-gold/60"
-                    }`}
+                  }`}
                 >
                   {balance}
                 </span>

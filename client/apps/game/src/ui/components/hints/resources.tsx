@@ -2,15 +2,8 @@ import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import {
-  configManager,
-  multiplyByPrecision,
-} from "@bibliothecadao/eternum";
-import {
-  CapacityConfig,
-  findResourceById,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { CapacityConfig, findResourceById, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const Resources = () => {

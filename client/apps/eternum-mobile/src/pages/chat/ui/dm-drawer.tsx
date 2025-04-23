@@ -22,14 +22,12 @@ interface DMDrawerProps {
 export function DMDrawer({ isOpen, onClose, onSelectUser, onlineUsers, offlineUsers }: DMDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredOnlineUsers = onlineUsers.filter(
-    (user) =>
-      (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOnlineUsers = onlineUsers.filter((user) =>
+    (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const filteredOfflineUsers = offlineUsers.filter(
-    (user) =>
-      (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOfflineUsers = offlineUsers.filter((user) =>
+    (user.username || user.id).toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -49,9 +47,7 @@ export function DMDrawer({ isOpen, onClose, onSelectUser, onlineUsers, offlineUs
         </DrawerHeader>
         <ScrollArea className="h-[50vh] px-4">
           {filteredOnlineUsers.length === 0 && filteredOfflineUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No users match your search
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No users match your search</div>
           ) : (
             <div className="space-y-4">
               {/* Online Users */}
@@ -87,7 +83,11 @@ export function DMDrawer({ isOpen, onClose, onSelectUser, onlineUsers, offlineUs
                   <div className="space-y-2">
                     {filteredOfflineUsers.map((user) => (
                       <DrawerClose key={user.id} asChild>
-                        <Button variant="ghost" className="w-full justify-start opacity-60" onClick={() => onSelectUser(user.id)}>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start opacity-60"
+                          onClick={() => onSelectUser(user.id)}
+                        >
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">

@@ -32,7 +32,7 @@ const getDangerLevel = (distance: number) => {
   };
 };
 
-export function MilitaryTab({ }: MilitaryTabProps) {
+export function MilitaryTab({}: MilitaryTabProps) {
   const { selectedRealm } = useStore();
   const { armies, isLoading } = useArmiesInRadius(selectedRealm ? selectedRealm.position : null, 20);
 

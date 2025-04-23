@@ -223,7 +223,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
     const isVillageAndMilitaryResource =
       getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-      StructureType.Village && isMilitaryResource(resourceId);
+        StructureType.Village && isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup

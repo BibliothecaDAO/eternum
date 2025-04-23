@@ -4,20 +4,8 @@ import { isAddressEqualToAccount } from "@/three/helpers/utils";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { Position } from "@/types/position";
-import {
-  Biome,
-  configManager,
-  getTroopName,
-} from "@bibliothecadao/eternum";
-import {
-  BiomeType,
-  ContractAddress,
-  HexEntityInfo,
-  ID,
-  orders,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { Biome, configManager, getTroopName } from "@bibliothecadao/eternum";
+import { BiomeType, ContractAddress, HexEntityInfo, ID, orders, TroopTier, TroopType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { TROOP_TO_MODEL } from "../constants/army.constants";

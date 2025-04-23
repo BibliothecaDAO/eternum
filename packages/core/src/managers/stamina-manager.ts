@@ -7,7 +7,7 @@ export class StaminaManager {
   constructor(
     private components: ClientComponents,
     private armyEntityId: ID,
-  ) { }
+  ) {}
 
   public static getStaminaConfig(troopType: TroopType) {
     return configManager.getTroopStaminaConfig(troopType);

@@ -11,17 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { SecondaryMenuItems } from "@/ui/modules/navigation/secondary-menu-items";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  configManager,
-  formatTime,
-  getEntityInfo,
-} from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  ID,
-  PlayerStructure,
-  TickIds,
-} from "@bibliothecadao/types";
+import { configManager, formatTime, getEntityInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, PlayerStructure, TickIds } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

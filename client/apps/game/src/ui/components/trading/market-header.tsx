@@ -4,9 +4,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import {
-  getGuardsByStructure,
-} from "@bibliothecadao/eternum";
+import { getGuardsByStructure } from "@bibliothecadao/eternum";
 import {
   ADMIN_BANK_ENTITY_ID,
   DEFENSE_NAMES,
@@ -17,7 +15,7 @@ import {
   REGIONAL_BANK_THREE_ID,
   REGIONAL_BANK_TWO_ID,
   ResourcesIds,
-} from "@bibliothecadao/types"
+} from "@bibliothecadao/types";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { NavigateToPositionIcon } from "../military/army-chip";

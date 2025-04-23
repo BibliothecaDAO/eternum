@@ -25,7 +25,7 @@ export class Cube {
     public q: number,
     public r: number,
     public s: number,
-  ) { }
+  ) {}
 
   static zero(): Cube {
     return new Cube(0, 0, 0);
@@ -56,7 +56,7 @@ export class Coord {
   constructor(
     public x: number,
     public y: number,
-  ) { }
+  ) {}
 
   toString(): string {
     return `Coord (x:${this.x}, y:${this.y})`;

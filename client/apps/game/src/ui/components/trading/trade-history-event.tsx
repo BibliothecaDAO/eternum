@@ -61,9 +61,9 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         <ResourceIcon
           resource={
             ResourcesIds[
-            Number(
-              resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
-            )
+              Number(
+                resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
+              )
             ]
           }
           size={"sm"}

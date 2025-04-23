@@ -2,15 +2,8 @@ import { PlayerCustom, PlayerList } from "@/ui/components/worldmap/players/playe
 import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
-import {
-  getEntityName,
-  getGuildFromPlayerAddress,
-  toHexString,
-} from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  PlayerInfo,
-} from "@bibliothecadao/types";
+import { getEntityName, getGuildFromPlayerAddress, toHexString } from "@bibliothecadao/eternum";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { Search } from "lucide-react";

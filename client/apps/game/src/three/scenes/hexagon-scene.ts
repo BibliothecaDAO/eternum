@@ -445,7 +445,7 @@ export abstract class HexagonScene {
     mesh.position.set(x, -0.05, z);
     mesh.receiveShadow = true;
     // disable raycast
-    mesh.raycast = () => { };
+    mesh.raycast = () => {};
 
     this.scene.add(mesh);
     this.groundMesh = mesh;

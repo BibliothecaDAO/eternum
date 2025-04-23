@@ -5,7 +5,7 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
-import { findResourceById, ID } from "@bibliothecadao/types"
+import { findResourceById, ID } from "@bibliothecadao/types";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
@@ -66,8 +66,8 @@ export const HyperstructureResourceChip = ({
           backgroundImage:
             progress.percentage > 0
               ? `linear-gradient(to right, #06D6A03c ${String(progress.percentage)}%, rgba(0,0,0,0) ${String(
-                progress.percentage,
-              )}%)`
+                  progress.percentage,
+                )}%)`
               : "",
         }}
         onMouseEnter={() => {

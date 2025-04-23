@@ -6,9 +6,7 @@ import {
   getEntityIdFromKeys,
   getRealmInfo,
 } from "@bibliothecadao/eternum";
-import {
-  getLevelName,
-} from "@bibliothecadao/types";
+import { getLevelName } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

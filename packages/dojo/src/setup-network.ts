@@ -23,8 +23,6 @@ export async function setupNetwork(
     worldAddress: config.manifest.world.address || "",
   });
 
-
-
   return {
     toriiClient,
     contractComponents: defineContractComponents(world),

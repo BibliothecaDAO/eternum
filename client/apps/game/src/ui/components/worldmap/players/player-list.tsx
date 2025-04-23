@@ -49,10 +49,10 @@ export const PlayerList = ({
     // Then filter by search query if present
     const searchFiltered = searchQuery
       ? filteredPlayers.filter(
-        (player) =>
-          player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          player.guild?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+          (player) =>
+            player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            player.guild?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
       : filteredPlayers;
 
     return sortItems(searchFiltered, activeSort, { sortKey: "rank", sort: "asc" });

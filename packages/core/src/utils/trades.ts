@@ -1,10 +1,7 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
-import {
-  ResourceManager,
-  getRealmNameById,
-} from "..";
+import { ResourceManager, getRealmNameById } from "..";
 import {
   ResourcesIds,
   ClientComponents,
@@ -72,32 +69,32 @@ export const getTradeResourcesFromEntityViewpoint = (
   let resourcesGet =
     trade.maker_id === entityId
       ? [
-        {
-          resourceId: Number(trade.taker_pays_resource_type),
-          amount: Number(trade.taker_pays_min_resource_amount),
-        },
-      ]
+          {
+            resourceId: Number(trade.taker_pays_resource_type),
+            amount: Number(trade.taker_pays_min_resource_amount),
+          },
+        ]
       : [
-        {
-          resourceId: Number(trade.maker_gives_resource_type),
-          amount: Number(trade.maker_gives_min_resource_amount),
-        },
-      ];
+          {
+            resourceId: Number(trade.maker_gives_resource_type),
+            amount: Number(trade.maker_gives_min_resource_amount),
+          },
+        ];
 
   let resourcesGive =
     trade.maker_id === entityId
       ? [
-        {
-          resourceId: Number(trade.maker_gives_resource_type),
-          amount: Number(trade.maker_gives_min_resource_amount),
-        },
-      ]
+          {
+            resourceId: Number(trade.maker_gives_resource_type),
+            amount: Number(trade.maker_gives_min_resource_amount),
+          },
+        ]
       : [
-        {
-          resourceId: Number(trade.taker_pays_resource_type),
-          amount: Number(trade.taker_pays_min_resource_amount),
-        },
-      ];
+          {
+            resourceId: Number(trade.taker_pays_resource_type),
+            amount: Number(trade.taker_pays_min_resource_amount),
+          },
+        ];
 
   return { resourcesGet, resourcesGive };
 };

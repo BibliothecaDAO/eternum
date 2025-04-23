@@ -13,11 +13,7 @@ import {
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, Structure, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 

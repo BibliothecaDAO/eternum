@@ -2,7 +2,7 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { configManager } from "@bibliothecadao/eternum";
-import { BuildingType, BuildingTypeToString } from "@bibliothecadao/types"
+import { BuildingType, BuildingTypeToString } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export const Buildings = () => {

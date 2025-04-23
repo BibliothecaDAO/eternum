@@ -197,8 +197,9 @@ export const BridgeOutStep2 = () => {
                     return (
                       <TableRow
                         key={donkey?.donkeyEntityId}
-                        className={`${selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
-                          } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
+                        className={`${
+                          selectedDonkeys.has(BigInt(donkey?.donkeyEntityId || 0)) ? "bg-gold/10" : ""
+                        } hover:bg-gold/5 ${!isArrived ? "opacity-60" : "cursor-pointer"}`}
                         onClick={(e) => {
                           if (!isArrived) return;
 

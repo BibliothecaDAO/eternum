@@ -15,7 +15,8 @@ import {
   getProducedResource,
   ClientComponents,
   SystemCalls,
-  HexPosition, ID
+  HexPosition,
+  ID,
 } from "@bibliothecadao/types";
 import { configManager } from "./config-manager";
 

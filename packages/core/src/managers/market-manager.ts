@@ -8,7 +8,7 @@ export class MarketManager {
     private readonly components: ClientComponents,
     private readonly _player: ContractAddress,
     private readonly _resourceId: ResourcesIds,
-  ) { }
+  ) {}
 
   get player() {
     return this._player;

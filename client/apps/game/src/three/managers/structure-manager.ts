@@ -416,12 +416,13 @@ export class StructureManager {
 
     // Add structure type and level
     const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${structure.structureType === StructureType.Hyperstructure
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+      structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
           : "Foundation"
         : ""
-      }`;
+    }`;
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);

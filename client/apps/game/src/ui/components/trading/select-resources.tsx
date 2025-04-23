@@ -10,12 +10,7 @@ import {
   getBalance,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import {
-  ID,
-  RESOURCE_TIERS,
-  resources,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { ID, RESOURCE_TIERS, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

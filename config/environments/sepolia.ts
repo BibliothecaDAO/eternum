@@ -20,8 +20,8 @@ export const SepoliaEternumGlobalConfig: Config = {
   village: {
     controller_addresses: [
       "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39",
-      ...CommonEternumGlobalConfig.village.controller_addresses
-    ]
+      ...CommonEternumGlobalConfig.village.controller_addresses,
+    ],
   },
   tick: {
     ...CommonEternumGlobalConfig.tick,

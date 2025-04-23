@@ -11,11 +11,7 @@ import {
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  resources,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { ContractAddress, resources, ResourcesIds } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowDownUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";

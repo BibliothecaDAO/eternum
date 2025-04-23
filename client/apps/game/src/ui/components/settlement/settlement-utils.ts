@@ -1,7 +1,5 @@
 import { Position } from "@/types/position";
-import {
-  Coord,
-} from "@bibliothecadao/eternum";
+import { Coord } from "@bibliothecadao/eternum";
 import {
   ClientComponents,
   ContractAddress,

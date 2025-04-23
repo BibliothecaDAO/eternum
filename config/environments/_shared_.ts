@@ -1,11 +1,5 @@
 import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
-import {
-  CapacityConfig,
-  RESOURCE_PRECISION,
-  RESOURCE_RARITY,
-  ResourcesIds,
-  type Config,
-} from "@bibliothecadao/types";
+import { CapacityConfig, RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
@@ -19,7 +13,7 @@ import {
   HYPERSTRUCTURE_COSTS,
   HYPERSTRUCTURE_POINTS_FOR_WIN,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_SHARDS_COST
+  HYPERSTRUCTURE_SHARDS_COST,
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
@@ -69,7 +63,6 @@ const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 // ----- Buildings ----- //
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
-
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;

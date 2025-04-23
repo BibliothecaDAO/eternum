@@ -5,7 +5,7 @@ import { Card } from "@/shared/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/shared/ui/collapsible";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { divideByPrecision, } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { ID, RESOURCE_TIERS, resources } from "@bibliothecadao/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";

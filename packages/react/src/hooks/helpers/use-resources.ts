@@ -1,5 +1,5 @@
 import { ResourceManager } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types"
+import { ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";

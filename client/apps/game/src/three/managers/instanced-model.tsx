@@ -83,7 +83,7 @@ export default class InstancedModel {
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
-          tmp.raycast = () => { };
+          tmp.raycast = () => {};
         }
 
         this.mixer = new AnimationMixer(gltf.scene);

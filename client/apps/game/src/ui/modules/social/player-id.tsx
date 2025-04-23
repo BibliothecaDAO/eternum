@@ -6,7 +6,7 @@ import { RealmResourcesIO } from "@/ui/components/resources/realm-resources-io";
 import Button from "@/ui/elements/button";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { getAddressName, getEntityName, toHexString } from "@bibliothecadao/eternum";
-import { ContractAddress, StructureType } from "@bibliothecadao/types"
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { Map, MapPin, User } from "lucide-react";

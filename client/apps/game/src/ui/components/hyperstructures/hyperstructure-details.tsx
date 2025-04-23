@@ -1,6 +1,6 @@
 import { Tabs } from "@/ui/elements/tab";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
-import { ID } from "@bibliothecadao/types"
+import { ID } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 import { CoOwners } from "./co-owners";

@@ -47,8 +47,9 @@ export function ProductionWidgetsSection({ selectedRealm, isVertical = false }: 
   return (
     <div className="overflow-x-auto">
       <div
-        className={`grid ${isVertical ? "grid-cols-1 gap-4" : "grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4"
-          }`}
+        className={`grid ${
+          isVertical ? "grid-cols-1 gap-4" : "grid-flow-col auto-cols-[80%] sm:auto-cols-[45%] gap-4 pb-4"
+        }`}
       >
         {buildingsWithProduction.map((building) => (
           <ProductionWidget

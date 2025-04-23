@@ -6,7 +6,7 @@ import { ArmyCreate } from "@/ui/components/military/army-management-card";
 import Button from "@/ui/elements/button";
 import { Headline } from "@/ui/elements/headline";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
-import { ArmyManager, getEntityName, } from "@bibliothecadao/eternum";
+import { ArmyManager, getEntityName } from "@bibliothecadao/eternum";
 import { ClientComponents, StructureType } from "@bibliothecadao/types";
 import { useDojo, useExplorersByStructure, useGuardsByStructure } from "@bibliothecadao/react";
 import { ComponentValue } from "@dojoengine/recs";

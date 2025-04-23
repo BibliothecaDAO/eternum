@@ -1,18 +1,13 @@
 import { ResourceInputs, ResourceOutputs } from "./common";
 
-export const scaleResourceInputs = (
-  resourceInputs: ResourceInputs,
-  multiplier: number,
-) => {
+export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
   const multipliedCosts: ResourceInputs = {};
 
   for (const buildingType in resourceInputs) {
-    multipliedCosts[buildingType] = resourceInputs[buildingType].map(
-      (resourceInput) => ({
-        ...resourceInput,
-        amount: Math.round(resourceInput.amount * multiplier),
-      }),
-    );
+    multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
+      ...resourceInput,
+      amount: Math.round(resourceInput.amount * multiplier),
+    }));
   }
 
   return multipliedCosts;
@@ -25,10 +20,7 @@ export const scaleResources = (resources: any[], multiplier: number): any[] => {
   }));
 };
 
-export const scaleResourceOutputs = (
-  resourceOutputs: ResourceOutputs,
-  multiplier: number,
-) => {
+export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   const multipliedCosts: ResourceOutputs = {};
 
   for (const buildingType in resourceOutputs) {
