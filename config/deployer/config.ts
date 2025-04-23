@@ -1,18 +1,18 @@
 import type { EternumProvider } from "@bibliothecadao/provider";
 import {
-	ADMIN_BANK_ENTITY_ID,
-	BRIDGE_FEE_DENOMINATOR,
-	BuildingType,
-	CapacityConfig,
-	type Config as EternumConfig,
-	HexGrid,
-	type ResourceInputs,
-	type ResourceOutputs,
-	type ResourceWhitelistConfig,
-	ResourcesIds,
-	scaleResourceInputs,
-	scaleResourceOutputs,
-	scaleResources,
+  ADMIN_BANK_ENTITY_ID,
+  BRIDGE_FEE_DENOMINATOR,
+  BuildingType,
+  CapacityConfig,
+  type Config as EternumConfig,
+  HexGrid,
+  type ResourceInputs,
+  type ResourceOutputs,
+  type ResourceWhitelistConfig,
+  ResourcesIds,
+  scaleResourceInputs,
+  scaleResourceOutputs,
+  scaleResources,
 } from "@bibliothecadao/types";
 
 import chalk from "chalk";
@@ -43,6 +43,7 @@ export class GameConfigDeployer {
   async setupNonBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
+    await setWonderBonusConfig(config);
     await setAgentControllerConfig(config);
     await setVillageControllersConfig(config);
     await SetResourceFactoryConfig(config);
@@ -827,6 +828,31 @@ export const setupGlobals = async (config: Config) => {
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
 };
 
+export const setWonderBonusConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    within_tile_distance: config.config.wonderProductionBonus.within_tile_distance,
+    bonus_percent_num: config.config.wonderProductionBonus.bonus_percent_num,
+  };
+
+  console.log(
+    chalk.cyan(`
+  🏰 Wonder Bonus Configuration
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Wonder Bonus")}
+    │  ${chalk.gray("Within Tile Distance:")} ${chalk.white(calldata.within_tile_distance)}
+    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white(calldata.bonus_percent_num / 10_000 * 100)}%
+    └────────────────────────────────`),
+  );
+
+  const tx = await config.provider.set_wonder_bonus_config(calldata);
+  console.log(chalk.green(`    ✔ Wonder Bonus configured `) + chalk.gray(tx.statusReceipt));
+};
+
 export const setAgentControllerConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -853,23 +879,25 @@ export const setAgentControllerConfig = async (config: Config) => {
 export const setVillageControllersConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    village_controllers: config.config.village.controller_addresses,
+    village_pass_nft_address: config.config.village.village_pass_nft_address,
+    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
   };
-
+  
   console.log(
     chalk.cyan(`
-  📦 Village Controllers Configuration
+  📦 Village Token Configuration
   ═══════════════════════════════`),
   );
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Village Controllers")}
-    │  ${chalk.gray("Addresses:")}${calldata.village_controllers.map(addr => `\n    │     ${chalk.white(shortHexAddress(addr))}`).join('')}
+    ┌─ ${chalk.yellow("Village Token Config")}
+    │  ${chalk.gray("Village Pass Nft Address:")}         ${chalk.white(shortHexAddress(calldata.village_pass_nft_address))}
+    │  ${chalk.gray("Village Pass Initial Mint Recipient:")}         ${chalk.white(shortHexAddress(calldata.village_mint_initial_recipient))}
     └────────────────────────────────`),
   );
 
-  const villageTx = await config.provider.set_village_controllers(calldata);
+  const villageTx = await config.provider.set_village_token_config(calldata);
   console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
 };
 

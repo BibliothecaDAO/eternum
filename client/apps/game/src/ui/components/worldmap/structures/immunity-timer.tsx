@@ -1,13 +1,20 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { formatTime, getStructureImmunityTimer, isStructureImmune } from "@bibliothecadao/eternum";
-import { Structure } from "@bibliothecadao/types";
+import { ClientComponents } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
-export const ImmunityTimer = ({ structure, className }: { structure: Structure; className?: string }) => {
+export const ImmunityTimer = ({
+  structure,
+  className,
+}: {
+  structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
+  className?: string;
+}) => {
   const { currentBlockTimestamp } = useBlockTimestamp();
 
   const isImmune = useMemo(
-    () => isStructureImmune(structure.structure.base, currentBlockTimestamp || 0),
+    () => isStructureImmune(structure.base, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],
   );
 

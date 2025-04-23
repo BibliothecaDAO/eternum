@@ -82,6 +82,7 @@ export class ArmyManager {
               1,
               TroopType.Paladin,
               TroopTier.T1,
+              false,
             );
           },
         },
@@ -142,23 +143,14 @@ export class ArmyManager {
     exploredTiles: Map<number, Map<number, BiomeType>>,
   ) {
     await this.armyModel.loadPromise;
-    const { entityId, hexCoords, owner, troopType, troopTier, order, deleted } = update;
-
-    // If the army is marked as deleted, remove it from the map
-    if (deleted) {
-      if (this.armies.has(entityId)) {
-        this.removeArmy(entityId);
-        return true;
-      }
-      return false;
-    }
+    const { entityId, hexCoords, owner, troopType, troopTier, order } = update;
 
     const newPosition = new Position({ x: hexCoords.col, y: hexCoords.row });
 
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, newPosition, armyHexes, structureHexes, exploredTiles);
     } else {
-      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier);
+      this.addArmy(entityId, newPosition, owner, order, troopType, troopTier, update.isDaydreamsAgent);
     }
     return false;
   }
@@ -269,6 +261,7 @@ export class ArmyManager {
         order: army.order,
         category: army.category,
         tier: army.tier,
+        isDaydreamsAgent: army.isDaydreamsAgent,
       }));
 
     return visibleArmies;
@@ -281,6 +274,7 @@ export class ArmyManager {
     order: number,
     category: TroopType,
     tier: TroopTier,
+    isDaydreamsAgent: boolean,
   ) {
     if (this.armies.has(entityId)) return;
 
@@ -300,6 +294,7 @@ export class ArmyManager {
       order: orderData?.orderName || "",
       category,
       tier,
+      isDaydreamsAgent,
     });
     this.renderVisibleArmies(this.currentChunkKey!);
   }
@@ -343,6 +338,7 @@ export class ArmyManager {
   }
 
   public removeArmy(entityId: ID) {
+    if (!this.armies.has(entityId)) return;
     if (!this.armies.delete(entityId)) return;
 
     this.armyModel.removeLabel(entityId);
@@ -397,9 +393,8 @@ export class ArmyManager {
       e.stopPropagation();
     });
 
-    const isDaydreamsAgent = army.order === "gods";
     const img = document.createElement("img");
-    img.src = isDaydreamsAgent
+    img.src = army.isDaydreamsAgent
       ? "/images/logos/daydreams.png"
       : `/images/labels/${army.isMine ? "army" : "enemy_army"}.png`;
     img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
@@ -428,7 +423,7 @@ export class ArmyManager {
 
     const line1 = document.createElement("span");
     line1.textContent = `${army.owner.ownerName} ${army.owner.guildName ? `[${army.owner.guildName}]` : ""}`;
-    line1.style.color = isDaydreamsAgent ? army.color : "inherit";
+    line1.style.color = army.isDaydreamsAgent ? "inherit" : army.color;
     const line2 = document.createElement("strong");
     line2.textContent = `${getTroopName(army.category, army.tier)} ${TIERS_TO_STARS[army.tier]}`;
 

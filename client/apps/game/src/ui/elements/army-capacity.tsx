@@ -1,7 +1,8 @@
 import { ReactComponent as Inventory } from "@/assets/icons/common/bagpack.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ArmyInfo } from "@bibliothecadao/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, getArmyTotalCapacityInKg, getRemainingCapacityInKg } from "@bibliothecadao/eternum";
+import { ClientComponents } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { formatNumber, formatStringNumber } from "../utils/utils";
 
@@ -12,41 +13,36 @@ enum CapacityColor {
 }
 
 type ArmyCapacityProps = {
-  army: ArmyInfo | undefined;
+  resource: ComponentValue<ClientComponents["Resource"]["schema"]> | undefined;
   className?: string;
-  deductedTroops?: bigint;
 };
 
-export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapacityProps) => {
-  if (!army) return null;
-
-  const totalTroops = BigInt(army.troops.count);
-
-  const remainingTroops = totalTroops - deductedTroops;
-
-  const capacityRatio = Number(remainingTroops) / Number(totalTroops);
-
-  const armyTotalCapacity = isFinite(capacityRatio) ? Number(army.totalCapacity) * capacityRatio : 0;
+export const ArmyCapacity = ({ resource, className }: ArmyCapacityProps) => {
+  if (!resource) return null;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const remainingCapacity = useMemo(() => armyTotalCapacity - army.weight, [army]);
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
+  const totalCapacity = useMemo(() => getArmyTotalCapacityInKg(resource), [resource]);
+
+  const currentWeight = useMemo(() => {
+    return totalCapacity - remainingCapacity;
+  }, [remainingCapacity, totalCapacity]);
 
   const capacityColor = useMemo(() => {
     const exploreReward = configManager.getExploreReward();
-    if (army.weight >= armyTotalCapacity) return CapacityColor.HEAVY;
-    if (remainingCapacity < BigInt(Math.floor(exploreReward))) return CapacityColor.MEDIUM;
+    if (remainingCapacity < BigInt(Math.floor(exploreReward))) return CapacityColor.HEAVY;
     return CapacityColor.LIGHT;
   }, [remainingCapacity]);
 
   const weightPercentage = useMemo(() => {
-    const percentage = ((Number(army.weight) / Number(armyTotalCapacity)) * 100).toFixed(0);
+    const percentage = ((Number(currentWeight) / Number(totalCapacity)) * 100).toFixed(0);
     return percentage;
-  }, [army]);
+  }, [currentWeight, totalCapacity]);
 
   return (
     <div className={`flex flex-row text-xxs ${className}`}>
-      <div className="mr-1">{`${formatNumber(Number(army.weight) / 1000, 1)}K/${formatNumber(
-        Number(armyTotalCapacity) / 1000,
+      <div className="mr-1">{`${formatNumber(Number(currentWeight) / 1000, 1)}K/${formatNumber(
+        Number(totalCapacity) / 1000,
         1,
       )}K`}</div>
       <div
@@ -55,8 +51,8 @@ export const ArmyCapacity = ({ army, className, deductedTroops = 0n }: ArmyCapac
             content: (
               <>
                 <div>
-                  Capacity: {formatStringNumber(Number(army.weight), 0)} /{" "}
-                  {formatStringNumber(Number(armyTotalCapacity), 0)} kg
+                  Capacity: {formatStringNumber(Number(remainingCapacity), 0)} /{" "}
+                  {formatStringNumber(Number(totalCapacity), 0)} kg
                 </div>
                 {capacityColor !== CapacityColor.LIGHT && <div className="text-red">Offload to continue exploring</div>}
               </>

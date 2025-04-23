@@ -143,11 +143,12 @@ export default class WorldmapScene extends HexagonScene {
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
       this.updateArmyHexes(update);
-      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles).then((needsUpdate) => {
-        if (needsUpdate) {
-          this.updateVisibleChunks();
-        }
-      });
+      this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
+    });
+    this.systemManager.Army.onDeadArmy((entityId) => {
+      // If the army is marked as deleted, remove it from the map
+      this.deleteArmy(entityId);
+      this.updateVisibleChunks();
     });
 
     // Store the unsubscribe function for Tile updates
@@ -472,24 +473,22 @@ export default class WorldmapScene extends HexagonScene {
     }
   }
 
+  public deleteArmy(entityId: ID) {
+    this.armyManager.removeArmy(entityId);
+    const oldPos = this.armiesPositions.get(entityId);
+    if (oldPos) {
+      this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+      this.armiesPositions.delete(entityId);
+    }
+  }
+
   // used to track the position of the armies on the map
   public updateArmyHexes(update: ArmySystemUpdate) {
     const {
       hexCoords: { col, row },
       owner: { address },
       entityId,
-      deleted,
     } = update;
-
-    // If the army is marked as deleted, remove it from the map
-    if (deleted) {
-      const oldPos = this.armiesPositions.get(entityId);
-      if (oldPos) {
-        this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-        this.armiesPositions.delete(entityId);
-      }
-      return;
-    }
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };

@@ -2,10 +2,13 @@ import { InventoryResources } from "@/ui/components/resources/inventory-resource
 import { ArmyWarning } from "@/ui/components/worldmap/armies/army-warning";
 import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
-import { getArmy, getGuildFromPlayerAddress, ResourceManager } from "@bibliothecadao/eternum";
+import { getBlockTimestamp } from "@/utils/timestamp";
+import { getGuildFromPlayerAddress, StaminaManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, ID } from "@bibliothecadao/types";
-import { memo, useMemo } from "react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
+import { ClientComponents, ContractAddress, ID, TroopType } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
+import { memo, useEffect, useMemo, useState } from "react";
 import { TroopChip } from "../../military/troop-chip";
 
 export interface ArmyEntityDetailProps {
@@ -18,41 +21,76 @@ export interface ArmyEntityDetailProps {
 export const ArmyEntityDetail = memo(
   ({ armyEntityId, className, compact = false, maxInventory = Infinity }: ArmyEntityDetailProps) => {
     const {
+      network: { toriiClient },
       account,
       setup: { components },
     } = useDojo();
 
+    const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
+      undefined,
+    );
+    const [explorerResources, setExplorerResources] = useState<
+      ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
+    >(undefined);
+    const [structureResources, setStructureResources] = useState<
+      ComponentValue<ClientComponents["Resource"]["schema"]> | undefined
+    >(undefined);
+    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | undefined>(
+      undefined,
+    );
     const userAddress = ContractAddress(account.account.address);
 
-    const army = useMemo(() => {
-      return getArmy(armyEntityId, userAddress, components);
-    }, [armyEntityId, userAddress, components]);
+    useEffect(() => {
+      const fetchExplorer = async () => {
+        const { explorer, resources } = await getExplorerFromToriiClient(toriiClient, armyEntityId);
+        setExplorer(explorer);
+        setExplorerResources(resources);
+      };
+      fetchExplorer();
+    }, [armyEntityId]);
+
+    useEffect(() => {
+      const fetchStructure = async () => {
+        if (!explorer) return;
+        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
+        if (result) {
+          setStructure(result.structure);
+          setStructureResources(result.resources);
+        }
+      };
+      fetchStructure();
+    }, [explorer]);
 
     const playerGuild = useMemo(() => {
-      if (!army) return null;
-      return getGuildFromPlayerAddress(ContractAddress(army.owner || 0n), components);
-    }, [army, components]);
+      if (!structure) return null;
+      return getGuildFromPlayerAddress(ContractAddress(structure.owner || 0n), components);
+    }, [structure, components]);
 
-    // Get available resources for the entity - only when needed
-    const availableResources = useMemo(() => {
-      if (!army) return [];
-      const resourceManager = new ResourceManager(components, armyEntityId);
-      return resourceManager.getResourceBalances();
-    }, [components, armyEntityId]);
-    const hasResources = availableResources.length > 0;
+    const isMine = structure?.owner === userAddress;
 
-    if (!army) return null;
+    const stamina = useMemo(() => {
+      if (!explorer) return { amount: 0n, updated_tick: 0n };
+      const { currentArmiesTick } = getBlockTimestamp();
+      return StaminaManager.getStamina(explorer.troops, currentArmiesTick);
+    }, [explorer]);
+
+    const maxStamina = useMemo(() => {
+      if (!explorer) return 0;
+      return StaminaManager.getMaxStamina(explorer.troops.category as TroopType);
+    }, [explorer]);
 
     // Precompute common class strings
     const headerTextClass = compact ? "text-base" : "text-lg";
     const smallTextClass = compact ? "text-xxs" : "text-xs";
+
+    if (!explorer) return null;
 
     return (
       <div className={`flex flex-col ${compact ? "gap-1" : "gap-2"} ${className}`}>
         {/* Header with owner and guild info */}
         <div className={`flex items-center justify-between border-b border-gold/30 ${compact ? "pb-1" : "pb-2"} gap-2`}>
           <div className="flex flex-col">
-            <h4 className={`${headerTextClass} font-bold`}>{army.ownerName || army.name}</h4>
+            <h4 className={`${headerTextClass} font-bold`}>{explorer.explorer_id}</h4>
             {playerGuild && (
               <div className="text-xs text-gold/80">
                 {"< "}
@@ -61,18 +99,18 @@ export const ArmyEntityDetail = memo(
               </div>
             )}
           </div>
-          <div className={`px-2 py-1 rounded text-xs font-bold ${army.isMine ? "bg-green/20" : "bg-red/20"}`}>
-            {army.isMine ? "Ally" : "Enemy"}
+          <div className={`px-2 py-1 rounded text-xs font-bold ${isMine ? "bg-green/20" : "bg-red/20"}`}>
+            {isMine ? "Ally" : "Enemy"}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col w-full gap-2">
             {/* Army name - made more prominent */}
-            {army.name && (
+            {explorer && (
               <div className="flex flex-col gap-0.5">
                 <div className="bg-gold/10 rounded-sm px-2 py-0.5 border-l-4 border-gold">
-                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{army.name}</h6>
+                  <h6 className={`${compact ? "text-base" : "text-lg"} font-bold truncate`}>{explorer.explorer_id}</h6>
                 </div>
                 <div
                   className={`${compact ? "text-xs" : "text-sm"} font-semibold text-gold/90 uppercase tracking-wide`}
@@ -83,39 +121,28 @@ export const ArmyEntityDetail = memo(
             )}
 
             {/* Army warnings */}
-            <ArmyWarning army={army} />
-
-            {/* Army status indicators */}
-            <div className="flex justify-between items-center">
-              {army.isHome && (
-                <div className="text-xs text-green font-semibold px-2 py-0.5 bg-green/10 rounded">At Base</div>
-              )}
-              {army.isMercenary && (
-                <div className="text-xs text-orange font-semibold px-2 py-0.5 bg-orange/10 rounded">Mercenary</div>
-              )}
-              {!army.isHome && !army.isMercenary && <div />}
-            </div>
+            {structureResources && <ArmyWarning army={explorer} resource={structureResources} />}
 
             {/* Stamina and capacity - more prominent */}
             <div className="flex flex-col gap-1 mt-1 bg-gray-800/40 rounded p-2 border border-gold/20">
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>STAMINA</div>
-                <StaminaResource entityId={army.entityId} />
+                <StaminaResource entityId={armyEntityId} stamina={stamina} maxStamina={maxStamina} className="flex-1" />
               </div>
 
               <div className="flex items-center justify-between gap-2">
                 <div className={`${smallTextClass} font-bold text-gold/90 uppercase`}>CAPACITY</div>
-                <ArmyCapacity army={army} />
+                <ArmyCapacity resource={explorerResources} />
               </div>
             </div>
           </div>
 
           {/* Resources section */}
-          {hasResources && (
+          {explorerResources && (
             <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
               <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Resources</div>
               <InventoryResources
-                entityId={army.entityId}
+                resources={explorerResources}
                 max={maxInventory}
                 className="flex flex-wrap gap-1 w-full no-scrollbar"
                 resourcesIconSize={compact ? "xs" : "sm"}
@@ -127,7 +154,7 @@ export const ArmyEntityDetail = memo(
           {/* Troops section */}
           <div className="flex flex-col gap-0.5 w-full mt-1 border-t border-gold/20 pt-1">
             <div className={`${smallTextClass} text-gold/80 uppercase font-semibold`}>Army Composition</div>
-            <TroopChip troops={army.troops} iconSize={compact ? "md" : "lg"} />
+            <TroopChip troops={explorer.troops} iconSize={compact ? "md" : "lg"} />
           </div>
         </div>
       </div>
