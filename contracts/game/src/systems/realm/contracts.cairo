@@ -43,7 +43,7 @@ pub mod realm_systems {
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
-        WorldConfigUtilImpl,
+        WonderProductionBonusConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl, TileOccupier};
@@ -51,6 +51,7 @@ pub mod realm_systems {
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::production::production::{ProductionWonderBonus};
     use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
@@ -179,6 +180,15 @@ pub mod realm_systems {
             if has_wonder {
                 tile_occupier = TileOccupier::RealmWonderLevel1;
                 world.write_model(@Wonder { structure_id: structure_id, coord: coord });
+
+                // grant wonder production bonus
+                let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("wonder_production_bonus_config"),
+                );
+                let production_wonder_bonus = ProductionWonderBonus {
+                    structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
+                };
+                world.write_model(@production_wonder_bonus);
             }
 
             // create structure
