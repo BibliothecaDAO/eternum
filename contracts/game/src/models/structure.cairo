@@ -16,6 +16,7 @@ pub struct Wonder {
     #[key]
     pub structure_id: ID,
     pub coord: Coord,
+    pub realm_id: u16,
 }
 
 

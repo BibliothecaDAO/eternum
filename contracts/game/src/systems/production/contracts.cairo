@@ -60,7 +60,7 @@ mod production_systems {
     use s1_eternum::systems::utils::map::IMapImpl;
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
-
+    use core::num::traits::zero::Zero;
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
         fn create_building(
@@ -289,11 +289,15 @@ mod production_systems {
             }
         }
 
+
+        // Note: this can be called by anyone
         fn claim_wonder_production_bonus(ref self: ContractState, structure_id: ID, wonder_structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             // ensure structure is a realm or village
+
+            //todo: check other system to be sure we dont assume structure category is non zero
             let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(
                 structure_base.category == StructureCategory::Realm.into()
@@ -323,10 +327,10 @@ mod production_systems {
             );
 
             // set wonder production bonus
-            let production_wonder_bonus: ProductionWonderBonus = ProductionWonderBonus {
-                structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
-            };
-            world.write_model(@production_wonder_bonus);
+            let mut structure_wonder_bonus: ProductionWonderBonus = world.read_model(structure_id);
+            assert!(structure_wonder_bonus.bonus_percent_num.is_zero(), "wonder production bonus is already set");
+            structure_wonder_bonus.bonus_percent_num = wonder_production_bonus_config.bonus_percent_num;
+            world.write_model(@structure_wonder_bonus);
 
             // update tile model
             let mut structure_tile: Tile = world.read_model((structure_coord.x, structure_coord.y));

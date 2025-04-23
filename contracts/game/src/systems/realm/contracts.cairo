@@ -179,7 +179,7 @@ pub mod realm_systems {
             let mut tile_occupier = TileOccupier::RealmRegularLevel1;
             if has_wonder {
                 tile_occupier = TileOccupier::RealmWonderLevel1;
-                world.write_model(@Wonder { structure_id: structure_id, coord: coord });
+                world.write_model(@Wonder { structure_id: structure_id, realm_id: realm_id.try_into().unwrap(), coord: coord });
 
                 // grant wonder production bonus
                 let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
