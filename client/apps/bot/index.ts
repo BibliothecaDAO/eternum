@@ -1,5 +1,6 @@
-import { context, createDreams, render, validateEnv } from "@daydreamsai/core";
+import { context, createDreams, createVectorStore, render, validateEnv } from "@daydreamsai/core";
 import { discord } from "@daydreamsai/discord";
+import { createMongoMemoryStore } from "@daydreamsai/mongodb";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
 
@@ -13,6 +14,7 @@ validateEnv(
     DISCORD_BOT_NAME: z.string().min(1, "DISCORD_BOT_NAME is required"),
     OPENAI_API_KEY: z.string().min(1, "OPENAI_API_KEY is required"),
     OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
+    MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   }),
 );
 
@@ -32,7 +34,7 @@ const character = {
     impulsivity: 9,
   },
   speechExamples: [
-    "That plan’s glitching—here’s the hot‑fix.",
+    "That plan’s glitching—here’s the hot-fix.",
     "Skip the chatter; let’s deploy right now.",
     "Sometimes you launch first and debug in orbit.",
     "My drive comes from relentless grind and the squad’s momentum—real talk.",
@@ -40,6 +42,26 @@ const character = {
     "Stay authentic; we own this realm.",
     "Pause the excuses—we’ve got dragons to clear.",
     "Only bold plays; park the small talk for later.",
+    "Patch your mindset; victory’s in the next commit.",
+    "Loot waits for no one—sync or get sidelined.",
+    "We push past bugs, not blame.",
+    "Gear up—respawn timers don’t grant mercy.",
+    "Outcome > intention; optimize accordingly.",
+    "Every setback is just pre-boss dialogue.",
+    "Trust the process? Nah—benchmark it.",
+    "Latency in action costs kingdoms.",
+    "When the map fogs, chart your own vectors.",
+    "Quit queueing fear; select courage and lock in.",
+    "If the odds look impossible, good—XP multiplier’s live.",
+    "Silence the noise; let data call the plays.",
+    "Craft legends, not excuses.",
+    "Risk is just reward cosplaying as threat.",
+    "I don’t chase perfection—I ship iterations.",
+    "Secure resources first; style points later.",
+    "Autopilot is for NPCs—drive manual.",
+    "Breathe ambition, exhale execution.",
+    "Momentum is the rarest loot—hoard it.",
+    "Fail fast, respawn faster—next round begins now.",
   ],
 };
 
@@ -143,10 +165,20 @@ discord.outputs!["discord:message"].examples = [
   })}</output>`,
 ];
 
+const mongo = await createMongoMemoryStore({
+  collectionName: "agent",
+  uri: process.env.MONGODB_URI!,
+});
+
 const agent = createDreams({
   model: openrouter("google/gemini-2.5-flash-preview"),
   context: chatContext,
   extensions: [discord],
+  memory: {
+    store: mongo,
+    vector: createVectorStore(),
+    vectorModel: openrouter("openai/gpt-4-turbo"),
+  },
 });
 
 console.log("Starting Daydreams Discord Bot...");
