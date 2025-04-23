@@ -55,6 +55,10 @@ const tradeRoute = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: ROUTES.TRADE,
   component: TradePage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    buyResourceId: search.buyResourceId as number | undefined,
+    sellResourceId: search.sellResourceId as number | undefined,
+  }),
 });
 
 const chatRoute = createRoute({

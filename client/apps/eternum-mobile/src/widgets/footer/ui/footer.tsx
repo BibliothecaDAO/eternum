@@ -21,6 +21,10 @@ export const Footer = () => {
 
         <Link
           to={ROUTES.TRADE}
+          search={{
+            buyResourceId: undefined,
+            sellResourceId: undefined,
+          }}
           className={`flex flex-col items-center ${
             currentPath === ROUTES.TRADE ? "text-foreground" : "text-muted-foreground"
           } hover:text-foreground`}
