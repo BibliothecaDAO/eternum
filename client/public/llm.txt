@@ -1109,27 +1109,22 @@ Victory Points and clicks the "End Season" button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
-When the season ends, **ALL in-game actions are DISABLED.**
+When the season ends, **ALL in-game actions are DISABLED** except:
 
-#### ⛔️ Disabled Actions
-
-* You **cannot** retrieve LP positions from the AMM
-* You **cannot** cancel market orders to retrieve locked resources
+* transfer materials
+* deposit resource arrivals
+* retrieve LP positions
+* cancel market orders
+* bridge materials out of the game
 
 1. **48-Hour Withdrawal Window (starts immediately when "End Season" is clicked)**
 
    * Starting from the exact moment the season ends, you have **48 hours** to bridge out **ALL $LORDS** tokens and
-     resources from your Realms' balance
-   * **IMPORTANT:** Your Realm's balance withdrawal:
-     * Does NOT include resources that are:
-       * Locked in AMM LP positions
-       * Locked in market orders
-       * In transit to your Realm (not yet deposited)
-     * These locked/in-transit resources CANNOT be recovered after the season ends
+     bridgeable materials from your Realms' balance
 
 2. **After 48 Hours**
 
-   * Any remaining **$LORDS** tokens and **Resources** will be **permanently locked**
+   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
    * These assets **CANNOT** be recovered under any circumstances
 
 3. **Score Registration**
@@ -1444,11 +1439,7 @@ Initial scouting reports have revealed some key details about the world:
 file: docs/pages/mechanics/military/armies.mdx
 meta: {}
 
-import {
-  TotalArmiesTable,
-  RealmDefenseSlotsTable,
-  WorldStructureDefenseSlotsTable,
-} from "@/components/DefendingArmies";
+import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
 # ⚔️ Armies
@@ -2192,7 +2183,7 @@ meta: {}
 
 import { StartingResources, StructureType } from "@/components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
-import { TotalArmiesTable, RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
 import { RealmLeveling } from "@/components/RealmLeveling";
 
@@ -2202,6 +2193,8 @@ The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape 
 limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
 in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
 and its associated Season Pass.
+
+<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
 
 ### Settling
 
@@ -2236,8 +2229,6 @@ your defences. Each progression requires specific materials, outlined in the tab
 <RealmLeveling />
 
 <BuildableHexes />
-
-<TotalArmiesTable />
 
 <RealmDefenseSlotsTable />
 
@@ -2464,7 +2455,7 @@ properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
 
 Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
 ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
-out as ERC20 tokens through the central bank.
+out as ERC20 tokens.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
 
