@@ -29,3 +29,4 @@ pub mod resource {
         pub mod production;
     }
 }
+pub mod quest;

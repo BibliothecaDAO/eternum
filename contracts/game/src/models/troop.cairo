@@ -626,7 +626,6 @@ mod tests {
     const CROSSBOWMAN_MAX_STAMINA: u16 = 120;
     const PALADIN_MAX_STAMINA: u16 = 140;
 
-
     fn TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
         TroopDamageConfig {
             t1_damage_value: 1844674407370955161600, // 100
@@ -638,6 +637,7 @@ mod tests {
             damage_beta_large: 2213609288845146193, // 0.12
             damage_c0: 100_000 * FixedTrait::ONE().mag,
             damage_delta: 50_000 * FixedTrait::ONE().mag,
+            damage_raid_percent_num: 5 // Added default value
         }
     }
 
@@ -666,7 +666,9 @@ mod tests {
             explorer_guard_max_troop_count: 500_000, // hard max of troops per party
             guard_resurrection_delay: 24 * 60 * 60, // delay in seconds before a guard can be resurrected
             mercenaries_troop_lower_bound: 100_000, // min of troops per mercenary
-            mercenaries_troop_upper_bound: 100_000 // max of troops per mercenary
+            mercenaries_troop_upper_bound: 100_000, // max of troops per mercenary
+            agents_troop_lower_bound: 0_u32, // Added default value
+            agents_troop_upper_bound: 100_000 // Added default value
         }
     }
 

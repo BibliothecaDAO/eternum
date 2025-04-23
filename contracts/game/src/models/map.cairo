@@ -87,6 +87,7 @@ pub enum TileOccupier {
     RealmRegularLevel4WonderBonus,
     //
     VillageWonderBonus,
+    Quest,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -130,6 +131,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::RealmRegularLevel3WonderBonus => 35,
             TileOccupier::RealmRegularLevel4WonderBonus => 36,
             TileOccupier::VillageWonderBonus => 37,
+            TileOccupier::Quest => 38,
         }
     }
 }
