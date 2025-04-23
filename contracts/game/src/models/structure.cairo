@@ -10,6 +10,15 @@ use s1_eternum::models::stamina::Stamina;
 use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
 
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Wonder {
+    #[key]
+    pub structure_id: ID,
+    pub coord: Coord,
+    pub realm_id: u16,
+}
+
 
 #[derive(Introspect, Copy, Drop, Serde)]
 #[dojo::model]

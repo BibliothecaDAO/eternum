@@ -1981,6 +1981,17 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+
+  public async set_wonder_bonus_config(props: SystemProps.SetWonderBonusConfigProps) {
+    const { within_tile_distance, bonus_percent_num, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_wonder_bonus_config",
+      calldata: [within_tile_distance, bonus_percent_num],
+    });
+  }
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity, signer } = props;
 

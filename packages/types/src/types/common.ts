@@ -443,6 +443,10 @@ export interface Config {
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsForWin: bigint;
   };
+  wonderProductionBonus: {
+    within_tile_distance: number;
+    bonus_percent_num: number;
+  };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };

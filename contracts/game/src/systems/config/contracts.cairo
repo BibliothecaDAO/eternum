@@ -15,6 +15,11 @@ pub trait IMercenariesConfig<T> {
 }
 
 #[starknet::interface]
+pub trait IWonderBonusConfig<T> {
+    fn set_wonder_bonus_config(ref self: T, within_tile_distance: u8, bonus_percent_num: u128);
+}
+
+#[starknet::interface]
 pub trait IAgentControllerConfig<T> {
     fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
 }
@@ -190,7 +195,7 @@ pub mod config_systems {
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
         StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VillageTokenConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
 
@@ -284,6 +289,22 @@ pub mod config_systems {
             WorldConfigUtilImpl::set_member(ref world, selector!("village_pass_config"), village_token_config);
         }
     }
+
+
+    #[abi(embed_v0)]
+    impl WonderBonusConfigImpl of super::IWonderBonusConfig<ContractState> {
+        fn set_wonder_bonus_config(ref self: ContractState, within_tile_distance: u8, bonus_percent_num: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut wonder_bonus_config = WonderProductionBonusConfig { within_tile_distance, bonus_percent_num };
+
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("wonder_production_bonus_config"), wonder_bonus_config,
+            );
+        }
+    }
+
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {

@@ -80,6 +80,13 @@ pub enum TileOccupier {
     //
     HyperstructureLevel2,
     HyperstructureLevel3,
+    //
+    RealmRegularLevel1WonderBonus,
+    RealmRegularLevel2WonderBonus,
+    RealmRegularLevel3WonderBonus,
+    RealmRegularLevel4WonderBonus,
+    //
+    VillageWonderBonus,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -118,6 +125,11 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::RealmWonderLevel4 => 30,
             TileOccupier::HyperstructureLevel2 => 31,
             TileOccupier::HyperstructureLevel3 => 32,
+            TileOccupier::RealmRegularLevel1WonderBonus => 33,
+            TileOccupier::RealmRegularLevel2WonderBonus => 34,
+            TileOccupier::RealmRegularLevel3WonderBonus => 35,
+            TileOccupier::RealmRegularLevel4WonderBonus => 36,
+            TileOccupier::VillageWonderBonus => 37,
         }
     }
 }

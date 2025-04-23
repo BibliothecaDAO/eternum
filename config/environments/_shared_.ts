@@ -185,6 +185,8 @@ export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
 
+export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
+export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
 
 // catridge address should go here 
 export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39";
@@ -337,6 +339,10 @@ export const EternumGlobalConfig: Config = {
   },
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
+  },
+  wonderProductionBonus: {
+    within_tile_distance: WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE,
+    bonus_percent_num: WONDER_PRODUCTION_BONUS_PERCENT_NUM,
   },
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,

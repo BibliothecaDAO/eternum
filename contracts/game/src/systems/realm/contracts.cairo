@@ -34,7 +34,6 @@ pub trait IRealmSystems<T> {
 
 #[dojo::contract]
 pub mod realm_systems {
-    // use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};
@@ -44,7 +43,7 @@ pub mod realm_systems {
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
-        WorldConfigUtilImpl,
+        WonderProductionBonusConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl, TileOccupier};
@@ -52,13 +51,14 @@ pub mod realm_systems {
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::production::production::{ProductionWonderBonus};
     use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
-        StructureOwnerStoreImpl,
+        StructureOwnerStoreImpl, Wonder,
     };
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
@@ -179,6 +179,16 @@ pub mod realm_systems {
             let mut tile_occupier = TileOccupier::RealmRegularLevel1;
             if has_wonder {
                 tile_occupier = TileOccupier::RealmWonderLevel1;
+                world.write_model(@Wonder { structure_id: structure_id, realm_id: realm_id.try_into().unwrap(), coord: coord });
+
+                // grant wonder production bonus
+                let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("wonder_production_bonus_config"),
+                );
+                let production_wonder_bonus = ProductionWonderBonus {
+                    structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
+                };
+                world.write_model(@production_wonder_bonus);
             }
 
             // create structure
