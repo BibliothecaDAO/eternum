@@ -145,7 +145,9 @@ export class StructureManager {
       Promise.all(loadPromises)
         .then((instancedModels) => {
           this.structureModels.set(structureType, instancedModels);
-          instancedModels.forEach((model) => this.scene.add(model.group));
+          instancedModels.forEach((model) => {
+            this.scene.add(model.group);
+          });
         })
         .catch((error) => {
           console.error(`Failed to load models for ${StructureType[structureType]}:`, error);
@@ -416,12 +418,13 @@ export class StructureManager {
 
     // Add structure type and level
     const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${structure.structureType === StructureType.Hyperstructure
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
+      structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
           : "Foundation"
         : ""
-      }`;
+    }`;
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);
