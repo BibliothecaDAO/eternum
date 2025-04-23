@@ -8,7 +8,7 @@ export type ArmySystemUpdate = {
   troopType: TroopType;
   troopTier: TroopTier;
   owner: { address: bigint; ownerName: string; guildName: string };
-  deleted?: boolean;
+  isDaydreamsAgent: boolean;
 };
 
 export type StructureSystemUpdate = {

@@ -13,12 +13,8 @@ import {
   isStructureImmune,
   toHexString,
 } from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 export const RealmVillageDetails = () => {
@@ -68,7 +64,7 @@ export const RealmVillageDetails = () => {
     [structure, currentBlockTimestamp],
   );
   const timer = useMemo(
-    () => getStructureImmunityTimer(structure as Structure, currentBlockTimestamp || 0),
+    () => getStructureImmunityTimer(structure?.structure, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],
   );
 

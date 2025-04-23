@@ -18,7 +18,7 @@ const NETWORKS = {
   },
   local: {
     name: "local",
-    explorer_url: "http://127.0.0.1:8000",
+    explorer_url: "http://localhost:3001",
     rpc_url: process.env.STARKNET_RPC,
     feeder_gateway_url: process.env.STARKNET_RPC + "/feeder_gateway",
     gateway_url: process.env.STARKNET_RPC + "/gateway",

@@ -55,7 +55,29 @@ const MINIMAP_CONFIG = {
     },
   },
   BORDER_WIDTH_PERCENT: 0.1,
+  // Clustering configuration
+  CLUSTER: {
+    MIN_RADIUS: 1, // Minimum radius when fully zoomed in
+    MAX_RADIUS: 8, // Maximum radius when fully zoomed out
+  },
 };
+
+// Generic cluster interface for any entity type
+interface EntityCluster {
+  centerCol: number;
+  centerRow: number;
+  entities: {
+    col: number;
+    row: number;
+    isMine: boolean;
+    type?: StructureType; // Only for structures
+  }[];
+  isMine: boolean;
+  type?: StructureType; // Only for structures
+}
+
+// Keep ArmyCluster for backward compatibility
+interface ArmyCluster extends EntityCluster {}
 
 class Minimap {
   private worldmapScene: WorldmapScene;
@@ -94,6 +116,13 @@ class Minimap {
   private showHyperstructures: boolean = true;
   private showBanks: boolean = true;
   private showFragmentMines: boolean = true;
+
+  // Clustering properties
+  private armyClusters: EntityCluster[] = [];
+  private structureClusters: Map<StructureType, EntityCluster[]> = new Map();
+  private currentClusterRadius: number = MINIMAP_CONFIG.CLUSTER.MIN_RADIUS;
+  private needsReclustering: boolean = true;
+  private lastZoomRatio: number = 0;
 
   constructor(
     worldmapScene: WorldmapScene,
@@ -212,6 +241,25 @@ class Minimap {
       bottomSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.BOTTOM_SIDE_WIDTH_FACTOR) * this.scaleX,
       height: MINIMAP_CONFIG.SIZES.CAMERA.HEIGHT_FACTOR * this.scaleY,
     };
+
+    // Adjust clustering radius based on zoom level and check if reclustering is needed
+    const newRadius = Math.max(
+      MINIMAP_CONFIG.CLUSTER.MIN_RADIUS,
+      Math.min(
+        MINIMAP_CONFIG.CLUSTER.MAX_RADIUS,
+        Math.round(
+          MINIMAP_CONFIG.CLUSTER.MIN_RADIUS +
+            zoomRatio * (MINIMAP_CONFIG.CLUSTER.MAX_RADIUS - MINIMAP_CONFIG.CLUSTER.MIN_RADIUS),
+        ),
+      ),
+    );
+
+    // Only trigger reclustering if the zoom level changed significantly
+    if (newRadius !== this.currentClusterRadius || Math.abs(zoomRatio - this.lastZoomRatio) > 0.1) {
+      this.currentClusterRadius = newRadius;
+      this.lastZoomRatio = zoomRatio;
+      this.needsReclustering = true;
+    }
   }
 
   private getMousePosition(event: MouseEvent) {
@@ -264,62 +312,234 @@ class Minimap {
   private drawStructures() {
     if (!this.context) return;
 
-    const allStructures = this.structureManager.structures.getStructures();
-    for (const [structureType, structures] of allStructures) {
-      // Skip rendering based on toggle settings
-      if (!this.shouldShowStructureType(structureType)) continue;
-
-      let labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
-      if (!labelImg) continue;
-
-      structures.forEach((structure) => {
-        if (structureType === StructureType.Realm || structureType === StructureType.Village) {
-          if (structure.isMine) {
-            labelImg = structure.hasWonder ? this.labelImages.get("MY_REALM_WONDER") : this.labelImages.get("MY_REALM");
-          } else {
-            labelImg = structure.hasWonder
-              ? this.labelImages.get("REALM_WONDER")
-              : this.labelImages.get(`STRUCTURE_${structureType}`);
-          }
-        }
-        if (!labelImg) return;
-        const { col, row } = structure.hexCoords;
-        const cacheKey = `${col},${row}`;
-        if (this.scaledCoords.has(cacheKey)) {
-          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-          this.context.drawImage(
-            labelImg,
-            scaledCol - this.structureSize.width * (row % 2 !== 0 ? 1 : 0.5),
-            scaledRow - this.structureSize.height / 2,
-            this.structureSize.width,
-            this.structureSize.height,
-          );
-        }
-      });
+    // Recalculate clusters only when needed
+    if (this.needsReclustering) {
+      this.clusterStructures();
     }
+
+    // Draw each structure type's clusters
+    this.structureClusters.forEach((clusters, structureType) => {
+      // Skip rendering based on toggle settings
+      if (!this.shouldShowStructureType(structureType)) return;
+
+      clusters.forEach((cluster) => {
+        const cacheKey = `${cluster.centerCol},${cluster.centerRow}`;
+        if (!this.scaledCoords.has(cacheKey)) return;
+
+        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+
+        // Determine the correct label image to use
+        let labelImg;
+        if (structureType === StructureType.Realm || structureType === StructureType.Village) {
+          if (cluster.isMine) {
+            // For player's structures, we use a different icon
+            // Since clusters don't track hasWonder, we just use MY_REALM for all player realm clusters
+            labelImg = this.labelImages.get("MY_REALM");
+          } else {
+            labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
+          }
+        } else {
+          labelImg = this.labelImages.get(`STRUCTURE_${structureType}`);
+        }
+
+        if (!labelImg) return;
+
+        // Draw the structure icon
+        this.context.drawImage(
+          labelImg,
+          scaledCol - this.structureSize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5),
+          scaledRow - this.structureSize.height / 2,
+          this.structureSize.width,
+          this.structureSize.height,
+        );
+      });
+    });
   }
 
   private drawArmies() {
     if (!this.context || !this.showArmies) return;
 
-    const allArmies = this.armyManager.getArmies();
-    allArmies.forEach((army) => {
-      const { x: col, y: row } = army.hexCoords.getNormalized();
-      const cacheKey = `${col},${row}`;
+    // Recalculate clusters only when needed
+    if (this.needsReclustering) {
+      this.clusterArmies();
+    }
+
+    // Draw each cluster
+    this.armyClusters.forEach((cluster) => {
+      const cacheKey = `${cluster.centerCol},${cluster.centerRow}`;
+
       if (this.scaledCoords.has(cacheKey)) {
         const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        const labelImg = this.labelImages.get(army.isMine ? "MY_ARMY" : "ARMY");
+        const labelImg = this.labelImages.get(cluster.isMine ? "MY_ARMY" : "ARMY");
         if (!labelImg) return;
 
+        // Draw the army icon
         this.context.drawImage(
           labelImg,
-          scaledCol - this.armySize.width * (row % 2 !== 0 ? 1 : 0.5),
+          scaledCol - this.armySize.width * (cluster.centerRow % 2 !== 0 ? 1 : 0.5),
           scaledRow - this.armySize.height / 2,
           this.armySize.width,
           this.armySize.height,
         );
       }
     });
+  }
+
+  private clusterStructures() {
+    // Clear existing structure clusters
+    this.structureClusters.clear();
+
+    const allStructures = this.structureManager.structures.getStructures();
+
+    // Process each structure type separately
+    for (const [structureType, structures] of allStructures) {
+      // Skip clustering if this type is not visible
+      if (!this.shouldShowStructureType(structureType)) continue;
+
+      const clustersForType: EntityCluster[] = [];
+      const processedStructures = new Set<number>();
+
+      structures.forEach((structure, index) => {
+        if (processedStructures.has(index)) return;
+
+        const { col, row } = structure.hexCoords;
+        const isMine = structure.isMine;
+
+        // Create a new cluster with this structure
+        const cluster: EntityCluster = {
+          centerCol: col,
+          centerRow: row,
+          entities: [{ col, row, isMine, type: structureType }],
+          isMine: isMine,
+          type: structureType,
+        };
+
+        processedStructures.add(index);
+
+        // Find nearby structures of the same type to add to this cluster
+        structures.forEach((otherStructure, otherIndex) => {
+          if (processedStructures.has(otherIndex)) return;
+
+          const { col: otherCol, row: otherRow } = otherStructure.hexCoords;
+          const distance = this.hexDistance(col, row, otherCol, otherRow);
+
+          // Check if within clustering radius and of the same ownership
+          if (distance <= this.currentClusterRadius && isMine === otherStructure.isMine) {
+            cluster.entities.push({
+              col: otherCol,
+              row: otherRow,
+              isMine: otherStructure.isMine,
+              type: structureType,
+            });
+            processedStructures.add(otherIndex);
+          }
+        });
+
+        clustersForType.push(cluster);
+      });
+
+      this.structureClusters.set(structureType, clustersForType);
+    }
+  }
+
+  private clusterArmies() {
+    // Reset army clusters
+    this.armyClusters = [];
+
+    const allArmies = this.armyManager.getArmies();
+    if (allArmies.length === 0) return;
+
+    // Use grid-based spatial partitioning for efficient clustering
+    const grid = new Map<string, Array<{ index: number; col: number; row: number; isMine: boolean }>>();
+
+    // Place armies in grid cells
+    allArmies.forEach((army, index) => {
+      const { x: col, y: row } = army.hexCoords.getNormalized();
+
+      // Calculate grid cell coordinates (larger than actual clustering radius for efficiency)
+      const gridCol = Math.floor(col / this.currentClusterRadius);
+      const gridRow = Math.floor(row / this.currentClusterRadius);
+      const gridKey = `${gridCol},${gridRow}`;
+
+      if (!grid.has(gridKey)) {
+        grid.set(gridKey, []);
+      }
+
+      grid.get(gridKey)!.push({
+        index,
+        col,
+        row,
+        isMine: army.isMine,
+      });
+    });
+
+    const processedArmies = new Set<number>();
+
+    // For each grid cell
+    grid.forEach((armies, gridKey) => {
+      // Process each army in the cell
+      for (const army of armies) {
+        if (processedArmies.has(army.index)) continue;
+
+        // Create a new cluster with this army
+        const cluster: EntityCluster = {
+          centerCol: army.col,
+          centerRow: army.row,
+          entities: [{ col: army.col, row: army.row, isMine: army.isMine }],
+          isMine: army.isMine,
+        };
+
+        processedArmies.add(army.index);
+
+        // Check nearby grid cells for armies to include in the cluster
+        const [baseGridCol, baseGridRow] = gridKey.split(",").map(Number);
+
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const neighborGridKey = `${baseGridCol + dx},${baseGridRow + dy}`;
+            const neighborArmies = grid.get(neighborGridKey);
+
+            if (!neighborArmies) continue;
+
+            for (const neighborArmy of neighborArmies) {
+              if (processedArmies.has(neighborArmy.index) || neighborArmy.isMine !== army.isMine) continue;
+
+              // Check actual distance
+              const distance = this.hexDistance(army.col, army.row, neighborArmy.col, neighborArmy.row);
+
+              if (distance <= this.currentClusterRadius) {
+                cluster.entities.push({
+                  col: neighborArmy.col,
+                  row: neighborArmy.row,
+                  isMine: neighborArmy.isMine,
+                });
+                processedArmies.add(neighborArmy.index);
+              }
+            }
+          }
+        }
+
+        this.armyClusters.push(cluster);
+      }
+    });
+
+    // After clustering is complete, mark as done
+    this.needsReclustering = false;
+  }
+
+  // Calculate distance between two hex coordinates
+  private hexDistance(col1: number, row1: number, col2: number, row2: number): number {
+    // Convert axial coordinates to cube coordinates
+    const x1 = col1;
+    const z1 = row1 - (col1 - (col1 & 1)) / 2;
+    const y1 = -x1 - z1;
+
+    const x2 = col2;
+    const z2 = row2 - (col2 - (col2 & 1)) / 2;
+    const y2 = -x2 - z2;
+
+    // Calculate cube coordinate distance
+    return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2), Math.abs(z1 - z2));
   }
 
   drawCamera() {
@@ -360,7 +580,6 @@ class Minimap {
   }
 
   showMinimap() {
-    if (!this.canvas) return;
     this.canvas.style.display = "block";
     useUIStore.getState().setShowMinimap(true);
   }
@@ -394,6 +613,12 @@ class Minimap {
   update() {
     // Only call draw if we have completed initialization
     if (this.context) {
+      // Mark as needing reclustering on scene update, but not on every frame
+      // This ensures armies that move will eventually get reclustered
+      if (Math.random() < 0.1) {
+        // Only check occasionally to avoid performance impact
+        this.needsReclustering = true;
+      }
       this.draw();
     }
   }
@@ -472,6 +697,7 @@ class Minimap {
     }
 
     this.recomputeScales();
+    // The recomputeScales method will set needsReclustering if the zoom level changed enough
   }
 
   private handleWheel = (event: WheelEvent) => {
@@ -489,6 +715,7 @@ class Minimap {
 
   private handleResize = () => {
     this.recomputeScales();
+    this.needsReclustering = true; // Force reclustering on resize
     if (this.context) this.draw();
   };
 

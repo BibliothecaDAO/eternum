@@ -1,6 +1,7 @@
 # React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This template offers a streamlined configuration for React development in Vite, featuring Hot Module Replacement (HMR)
+and essential ESLint rules for code quality.
 
 Currently, two official plugins are available:
 

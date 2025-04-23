@@ -1971,13 +1971,24 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_village_controllers(props: SystemProps.SetVillageControllersProps) {
-    const { village_controllers, signer } = props;
+  public async set_village_token_config(props: SystemProps.SetVillageTokenProps) {
+    const { village_mint_initial_recipient, village_pass_nft_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_village_controllers",
-      calldata: [village_controllers.length, ...village_controllers],
+      entrypoint: "set_village_token_config",
+      calldata: [village_pass_nft_address, village_mint_initial_recipient],
+    });
+  }
+
+
+  public async set_wonder_bonus_config(props: SystemProps.SetWonderBonusConfigProps) {
+    const { within_tile_distance, bonus_percent_num, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_wonder_bonus_config",
+      calldata: [within_tile_distance, bonus_percent_num],
     });
   }
 

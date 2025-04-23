@@ -1,32 +1,27 @@
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  ArmyActionManager,
   Biome,
   computeExploreFoodCosts,
   configManager,
+  getFood,
+  getRemainingCapacityInKg,
   StaminaManager,
 } from "@bibliothecadao/eternum";
-import {
-
-  ArmyInfo,
-  getNeighborHexes,
-  TroopType,
-} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ClientComponents, getNeighborHexes, TroopType } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 interface ArmyWarningProps {
-  army: ArmyInfo;
+  army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
+  resource: ComponentValue<ClientComponents["Resource"]["schema"]>;
 }
 
-export const ArmyWarning = ({ army }: ArmyWarningProps) => {
+export const ArmyWarning = ({ army, resource }: ArmyWarningProps) => {
   const dojo = useDojo();
-  const remainingCapacity = useMemo(() => army.totalCapacity - army.weight, [army]);
-  const armyManager = useMemo(() => {
-    return new ArmyActionManager(dojo.setup.components, dojo.setup.systemCalls, army.entityId);
-  }, [army]);
-  const food = useMemo(() => armyManager.getFood(getBlockTimestamp().currentDefaultTick), [armyManager]);
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resource), [resource]);
+  const food = getFood(resource, getBlockTimestamp().currentDefaultTick);
 
   const exploreFoodCosts = useMemo(
     () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),
@@ -41,12 +36,12 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
   }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
 
   const stamina = useMemo(() => {
-    const staminaManager = new StaminaManager(dojo.setup.components, army.entityId);
+    const staminaManager = new StaminaManager(dojo.setup.components, army.explorer_id);
     return staminaManager.getStamina(getBlockTimestamp().currentArmiesTick);
   }, [army]);
 
   const minStaminaNeeded = useMemo(() => {
-    const neighbors = getNeighborHexes(army.position.x, army.position.y);
+    const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
     return neighbors.reduce((min, neighbor) => {
       const staminaCost = configManager.getTravelStaminaCost(
         Biome.getBiome(neighbor.col, neighbor.row),
@@ -54,7 +49,7 @@ export const ArmyWarning = ({ army }: ArmyWarningProps) => {
       );
       return min === 0 ? staminaCost : Math.min(min, staminaCost);
     }, 0);
-  }, [army.position.x, army.position.y, army.troops.category]);
+  }, [army.coord.x, army.coord.y, army.troops.category]);
 
   const minStaminaNeededExplore = useMemo(() => {
     return configManager.getExploreStaminaCost();

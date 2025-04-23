@@ -35,7 +35,7 @@ function ChatModule() {
   // Use a ref to hold the chat client instance to ensure stability across renders
   const chatClientRef = useRef<ChatClient | null>(null);
 
-  const { connector } = useAccountStore();
+  const { connector } = useAccountStore((state) => state);
 
   // Initialize chat client after username is set
   const chatClient = useMemo(() => {
