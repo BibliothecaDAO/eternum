@@ -2,6 +2,7 @@
   "seasonPass": "0x1e23e40be0c2769a0ab03b1fe22933e7aa1a8f2adc4b7c73c22f0370d939492",
   "realms": "0x59befab291d9ae4ee598e73c8692c13b64c81c5be728f80d46dee7dbe9209c",
   "lords": "0x7f9fe08e078243ba14ead66344d741cef83deffe772f75b42917af93681e370",
+  "villagePass": "0x1e23e40be0c2769a0ab03b1fe22933e7aa1a8f2adc4b7c73c22f0370d939492",
   "resources": {
     "STONE": [1,"0x7929160fc401fd2162a9d1e17feade29de32895ea926afbeb63aa96d2ae4796"],
     "COAL": [2,"0x2a90bcbf340b266041256472c8614d675f93b9ee91f565fcbfdb621b83a3f9a"],

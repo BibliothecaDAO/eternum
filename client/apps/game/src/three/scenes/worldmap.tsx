@@ -52,6 +52,8 @@ export default class WorldmapScene extends HexagonScene {
   private renderChunkSize = {
     width: 60,
     height: 44,
+    // width: 20,
+    // height: 14,
   };
 
   private totalStructures: number = 0;

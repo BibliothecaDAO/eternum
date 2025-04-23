@@ -3,23 +3,39 @@ import ResourceIcon from "@/components/ResourceIcon";
 import TroopsLimitTable from "@/components/TroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-# Resources
+# 🪵 Materials
+
+# Materials Overview
+
+Materials encompass all transportable assets in Eternum, including:
+
+- **Food**: Essential wheat and fish that fuel production and troop movement
+- **Resources**: The 22 distinct resource types that can be produced on Realms based on their metadata
+- **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
+- **Donkeys**: One-time-use transport units required for moving materials across the world
+- **Labor**: A special material that enables "simple mode" construction and production
+- **Ancient Fragments**: Rare materials found in-game that are critical for Hyperstructure construction
+
+While all materials can be transported, only specific resources can be produced by Realms based on their inherent
+properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
+
+## Resources
 
 Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
 ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
-out as ERC20 tokens through the central bank.
+out as ERC20 tokens.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
 
-## Resource Categories
+## Material Categories
 
-#### Resource Tiers
+#### Material Tiers
 
 Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
 
 <RarityResourceTable />
 
-### Basic Resources
+### Basic Materials
 
 #### Food
 
@@ -36,7 +52,7 @@ Food is the cornerstone of your realm's economy:
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
-### Strategic Resources
+### Strategic Materials
 
 #### Military
 
@@ -70,7 +86,7 @@ Essential for logistics:
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
-### Special Resources
+### Special Materials
 
 #### **$LORDS** Currency
 
@@ -90,7 +106,7 @@ Essential for logistics:
   <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
 </div>
 
-Labor is a fundamental production resource:
+Labor is a fundamental production material:
 
 - Required for most building and production activities
 - Regenerates over time based on population
@@ -103,7 +119,7 @@ Labor is a fundamental production resource:
   <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
 </div>
 
-Strategic end-game resource:
+Strategic end-game material:
 
 - Only found in world map Fragment Mines
 - Required for Hyperstructures

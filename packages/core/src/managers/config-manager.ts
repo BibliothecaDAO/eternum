@@ -418,10 +418,11 @@ export class ClientConfigManager {
         [TroopType.Crossbowman]: -biomeBonus,
         [TroopType.Paladin]: biomeBonus,
       },
+      // add 30% damage to all troops
       [BiomeType.Scorched]: {
         [TroopType.Knight]: biomeBonus,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
       },
     };
 

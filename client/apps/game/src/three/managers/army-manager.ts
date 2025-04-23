@@ -342,6 +342,7 @@ export class ArmyManager {
     if (!this.armies.delete(entityId)) return;
 
     this.armyModel.removeLabel(entityId);
+    this.entityIdLabels.delete(entityId);
     this.renderVisibleArmies(this.currentChunkKey!);
   }
 
@@ -447,6 +448,7 @@ export class ArmyManager {
       label.renderOrder = originalRenderOrder;
     });
 
+    this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(army.entityId, label);
   }
 
@@ -460,6 +462,7 @@ export class ArmyManager {
 
   private removeEntityIdLabel(entityId: ID) {
     this.armyModel.removeLabel(entityId);
+    this.entityIdLabels.delete(entityId);
   }
 
   private handleCameraViewChange = (view: CameraView) => {

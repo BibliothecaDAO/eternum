@@ -671,316 +671,21 @@ this logic in any other project that uses Typescript, e.g. new mobile client, da
 
 ---
 
-file: docs/pages/mechanics/achievements.mdx
-meta: {}
-
-# Achievements & Quests
-
-## Cartridge Achievements
-
-Achievements are a lasting testament to your accomplishments across all seasons, awarded for completing specific in-game
-objectives. Players earn achievements through the Cartridge Controller, with requirements accessible by clicking on
-their controller name. Completing achievements earns Victory Points, allowing players to compete for positions on the
-achievement leaderboard.
-
-### Achievement Categories
-
-🏰 **Realm Development**
-
-⚔️ **Military**
-
-🫏 **Trading**
-
-🌟 **Special**
-
-
-
----
-
-file: docs/pages/mechanics/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum
-* **Settling**: Players must burn a Season Pass to settle their Realm during the initial 7-day settling period or after
-* **Starting Resources**: Each newly settled Realm begins with a set of starting materials
-* **Progression Path**: Realms advance from Settlements → Cities → Kingdoms → Empires, unlocking additional buildable
-  hexes and defensive army slots
-* **Resource Production**: Each Realm can produce 1-7 different resources based on its Season Pass and original NFT
-  metadata
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a gateway for new players
-* **Limited Production**: Produce resources at 50% the rate of Realms
-* **Parent Realm**: Each Village is tied to a parent Realm and can only receive troops from it
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Simple Progression**: Villages can upgrade from Settlement to City
-
-## Resources
-
-* **Economy Foundation**: 22 distinct resources drive all gameplay activities
-* **Resource Categories**:
-  * **Basic Resources**: Food (Wheat, Fish) - essential for production, troop maintenance, and construction
-  * **Tiered Resources**: Distributed based on rarity across the 8,000 Realms, creating natural scarcity and trade
-    opportunities
-  * **Strategic Resources**:
-    * **Military Resources**: Units with unique properties that can be assigned to armies
-    * **Transport**: Donkeys required for moving resources and essential for logistics
-  * **Special Resources**: $LORDS currency for all market transactions and Ancient Fragments for Hyperstructures
-* **ERC20 Compatibility**: All resources can be traded freely and bridged out as ERC20 tokens through the central bank
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused)
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct
-  * **Economic Buildings**: Includes farms, fishing villages, worker huts, storehouses, and markets
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  progress
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs
-  * **Resources**: Require combinations of other resources (standard) or labor (simple)
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs
-  * **Donkeys**: One-time-use transport, consumed after a single journey
-* **Production Efficiency**: Realms produce at full capacity, while Villages produce at 50% rate
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only six ancient Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement differently
-* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
-  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins)
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength (two T1 troops combine to make one T2, two T2
-  make one T3)
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects
-* **Army Types**:
-  * **Attacking Armies**: Deploy onto the world map for exploration and conquest, require 30+ stamina to attack
-  * **Defending Armies**: Protect Realms and structures in defense slots, with slots increasing by Realm level
-* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness
-* **Biome Effects**: Each troop type has advantages (+30% damage) or disadvantages (-30% damage) in specific biomes
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders
-  * Success depends on the raiding army's damage relative to defending armies
-  * Undefended structures can be raided without casualties
-
-## Social Structures
-
-* **Tribes**: Player-formed organizations enabling cooperation and coordination
-* **Types**: Public (open to all) or Private (invitation only)
-* **Benefits**: Access to tribe-only features and Hyperstructure contributions
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through various achievement paths, with winners earning recognition
-and rewards that impact future seasons.
-
-
-
----
-
-file: docs/pages/mechanics/tribes.mdx
-meta: {
-  "title": "Tribes",
-  "description": "Social organizations in Eternum"
-}
-
-# 👥 Tribes
-
-<img src="/images/covers/09.png" alt="Eternum Tribes" className="w-full rounded-lg my-6" />
-
-In Eternum, Tribes represent player-formed organizations that enable cooperation and coordination among members.
-
-## Types of Tribes
-
-* **Public Tribes**: Open to all, allowing anyone to join
-* **Private Tribes**: Require an invitation to join
-
-## Benefits of Tribes
-
-* Access to tribe-only features
-* Contribution to Hyperstructures as a collective
-
-## Formation & Membership
-
-🫂 **Tribe System**
-
-* Any player can create a tribe
-* Set tribe name and description
-* Two types of tribes:
-  > * **Public**: Anyone can join directly
-  > * **Private**: Requires an invitation to join
-
-## Functionality
-
-🏗️ **Current Features**
-
-* Social coordination tool
-* Access to tribe-only Hyperstructure contributions
-  > *When Hyperstructure is set to tribe-only mode*
-
-
-
----
-
-file: docs/pages/mechanics/victory.mdx
-meta: {}
-
-# Victory
-
-Prize Pool & Split
-
-
-
----
-
-file: docs/pages/mechanics/worldmap-and-movement.mdx
-meta: {}
-
-import TroopMovementTable from "@/components/TroopMovementTable";
-import { BiomeStamina } from "@/components/BiomeStamina";
-
-# 🗺️ World Map & Movement
-
-<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-## The World Map
-
-### An Unexplored World
-
-At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
-exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
-can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
-another.
-
-When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
-been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
-their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
-structure or army) is permanently revealed to all Lords.
-
-### Biomes
-
-Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
-coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
-
-Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
-potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the Combat section. Additionally, biomes have the potential to enhance or impede army
-maneuvers, as the various biomes impact the stamina consumption of each troop type differently as they move between
-hexes—this is explained further in the subsection below.
-
-## Movement & Exploration
-
-<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-### Stamina
-
-Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
-stamina, a critical resource Lords must carefully manage.
-
-Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
-against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
-troop type possesses different maximum stamina capacities, outlined in the table below:
-
-<TroopMovementTable />
-
-Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
-themselves severely disadvantaged if attacked by enemy forces.
-
-### Movement
-
-![Simple Mode Production](/gifs/moving-army.gif)
-
-Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
-Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
-move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
-destination, and the army has sufficient stamina available for the entire journey.
-
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
-
-<BiomeStamina />
-
-### Exploring
-
-When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
-the known boundaries of the world.
-
-If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
-back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
-an army becomes overloaded, resources can be dropped to free up space, but any discarded materials will be permanently
-lost (burned).
-
-Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
-armies are well-prepared and capable of defending themselves in unexpected combat situations.
-
-
-
----
-
 file: docs/pages/overview/bridging.mdx
 meta: {}
 
 import { Callout } from "vocs/components";
 
-# Bridge Closure
-
-<Callout type="danger">
-  # Critical End-Game Information The Game Bridge **permanently** closes **48 hours** after victory has been claimed.
-
-  [Read the full End Season Disclaimer](/overview/disclaimer) to understand all risks and limitations.
-</Callout>
+# Bridging
 
 ## Bridging in Eternum
 
 Eternum is a fully onchain game with immutable smart contracts, meaning the game rules cannot be altered. Bridging
 tokens in and out of the game is a core mechanic, but you must carefully manage this process.
 
-<Callout type="warning">
-  ### End Game Bridge Closure
+## Bridging in LORDS
 
-  <div />
-
-  The game bridge closes **permanently** 48 hours after "End Season" is triggered - Only resources in your Realm's
-  direct balance can be bridged out - Resources in the following locations are NOT part of your bridgeable balance: -
-  AMM Liquidity Pool positions - Open market orders - Resources in transit - Any resources not bridged out by the
-  deadline are **permanently locked** in the contract
-</Callout>
-
-## Bridging in
-
-This is the only way to bridge in Lords to the game. This converts ERC20 Lords into in-game Lords. Only in-game Lords
+This is the only way to bridge in $LORDS to the game. This converts ERC20 $LORDS into in-game Lords. Only in-game Lords
 can be used to build and trade with.
 
 ### Initial Bridge
@@ -991,60 +696,21 @@ You need to first initialize the transfer.
 
 ### Final Bridge (Within Game Client)
 
-Once you finish the first step, the Lords/resources will appear in your inventory to be used in the game.
+Once you finish the first step, the $LORDS will appear in your inventory to be used in the game.
 
 <img src="/gifs/resource-arrival.gif" alt="Bridge" width="800" className="mx-auto" />
 
+## Briding in Resources
+
+*WIP, update next week !*
+
 ## Bridging out
 
-You can bridge out resources from the game, which will be converted to the ERC20 contracts.
+*WIP, update next week !*
 
-<Callout type="error">
-  ### ⚠️ Critical Security Warning ⚠️
+## Game End
 
-  <div />
-
-  Your Realm remains vulnerable to being claimed by other players until you complete the **final withdrawal step** -
-  Because bridged resources are linked to your realm until the final withdraw, if your Realm is claimed during the
-  bridging process, the bridged resources can be stolen - **Always maintain sufficient troops** to defend your Realm
-  during the bridging process
-</Callout>
-
-### Security Best Practices
-
-To ensure safe bridging:
-
-1. Maintain a defensive force of troops in your Realm during the entire bridging process
-2. Complete the final withdrawal step as soon as possible
-
-### Game End
-
-When "End Season" is triggered:
-
-1. A **48-hour countdown** begins immediately
-2. During this window, you can only:
-   * Bridge out **$LORDS** and resources from your Realm's direct balance
-   * Register your score (within 4 days)
-
-To preserve your assets, you **must**:
-
-> 1. Remove all liquidity from AMM pools **before** the season ends
-> 2. Cancel all open orders on the Order Book **before** the season ends
-> 3. Ensure all resource transfers to your Realm are completed **before** the season ends
-> 4. Bridge out **$LORDS** and **Resources** from your Realm's balance within the 48-hour window
-
-<Callout type="error">
-  ### ⚠️ Permanent Loss Warning ⚠️ - The 48-hour countdown is **final** and **cannot be extended** - Developers
-
-  **cannot** recover any assets after the bridge closes - Any resources not in your Realm's direct balance **cannot** be
-  bridged out - Plan ahead to ensure all your assets are in your Realm's balance before the season ends
-</Callout>
-
-# 🌉 Bridging Guide
-
-<img src="/images/covers/03.png" alt="Eternum Bridging" className="w-full rounded-lg my-6" />
-
-This guide provides step-by-step instructions for bridging assets between Starknet and Eternum.
+*WIP, update next week !*
 
 
 
@@ -1085,6 +751,10 @@ session.
 
 Transfer a season pass to your controller easily [here](https://empire.realms.world/season-passes). Connect your
 controller by selecting the controller icon located at the top of the page and select the passes to transfer.
+
+<div className="flex justify-center">
+  <img src="/images/logos/controller-icon.png" alt="Controller Icon" width="60" />
+</div>
 
 ## Controller Key Features
 
@@ -1134,6 +804,7 @@ meta: {}
 import { formatNumberWithSpaces } from "@/utils/formatting";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { Callout } from "vocs/components";
+import { HYPERSTRUCTURE_POINT_MULTIPLIER } from "@/components/HyperstructureTable";
 
 # Disclaimer and Risk Acknowledgment
 
@@ -1155,45 +826,33 @@ compensation. You acknowledge the **risk of loss of funds** and accept that you 
 financial impact incurred.
 
 A season of Eternum concludes when a single player achieves the required
-**{formatNumberWithSpaces(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)}** Victory Points and clicks the
-"End Season" button. At this point:
+**{formatNumberWithSpaces(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}**
+Victory Points and clicks the "End Season" button. At this point:
 
 ### ⚠️ SEASON END CRITICAL INFORMATION
 
-When the season ends, **ALL in-game actions are DISABLED.**
+When the season ends, **ALL in-game actions are DISABLED** except:
 
-#### ⛔️ Disabled Actions
-
-* You **cannot** retrieve LP positions from the AMM
-* You **cannot** cancel market orders to retrieve locked resources
-* You **cannot** conclude ongoing battles
+* transfer materials
+* deposit resource arrivals
+* retrieve LP positions
+* cancel market orders
+* bridge materials out of the game
 
 1. **48-Hour Withdrawal Window (starts immediately when "End Season" is clicked)**
 
    * Starting from the exact moment the season ends, you have **48 hours** to bridge out **ALL $LORDS** tokens and
-     resources from your Realms' balance
-   * **IMPORTANT:** Your Realm's balance withdrawal:
-     * Can be BLOCKED if your Realm is in an active battle
-     * Does NOT include resources that are:
-       * Locked in AMM LP positions
-       * Locked in market orders
-       * In transit to your Realm (not yet deposited)
-     * These locked/in-transit resources CANNOT be recovered after the season ends
+     bridgeable materials from your Realms' balance
 
 2. **After 48 Hours**
 
-   * Any remaining **$LORDS** tokens and **Resources** will be **permanently locked**
+   * Any remaining **$LORDS** tokens and **Materials** will be **permanently locked**
    * These assets **CANNOT** be recovered under any circumstances
 
 3. **Score Registration**
    * Players have **4 days** to register their scores
    * Registration is **MANDATORY** to be eligible for prizes
    * While registration has a deadline, prize claiming does not
-
-<Callout type="warning">
-  **PRO TIP:** Don't wait for the season to end! You can and should start bridging out tokens during active gameplay to
-  minimize risk.
-</Callout>
 
 Please refer to the documentation for detailed instructions on the bridging process during active gameplay.
 
@@ -1221,10 +880,11 @@ meta: {
 
 ## Season Access
 
-### Realm Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
+### Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
 
-Realm holders enjoy exclusive benefits, including free entry into each new Season. Each Season Pass is unique to a Realm
-and grants access to the game. To use a season pass for game entry, players must transfer it to their Cartridge Wallet.
+Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
+Passes. Each Season Pass is unique to the Realm it was minted from and allows the Season Pass holder to initiate a
+settling transaction to enter the game. To do this, Lords must first transfer the Season Pass to their Cartridge Wallet.
 
 * Mint your pass [here](https://empire.realms.world/)
 
@@ -1232,38 +892,39 @@ and grants access to the game. To use a season pass for game entry, players must
 
 #### Marketplace
 
-Should a Realm holder decide not to play with their Season Pass, they can transfer it or sell it on the
-[Realms Marketplace](https://market.realms.world/) allowing non-Realm holders to participate in the game.
+Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
+[Realms Marketplace](https://market.realms.world/), providing avenues for non-Realm holders to acquire Season Passes to
+participate in the game.
 
 #### Villages
 
 Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
-Eternum. Each Realm can support up to six surrounding Villages, which can produce resources and participate in gameplay
-at 50% the rate of Realms. This system allows for up to 48,000 Villages in Season 1, creating numerous opportunities for
-new players to join the game.
+Eternum. Villages have some restrictions, but offer a low-cost taste of Eternum gameplay to newcomers while also acting
+as an avenue for established players to expand their production. Each Realm can support up to six surrounding Villages,
+allowing for up to 48,000 Villages in Season 1.
 
 For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
 our [Villages guide](/mechanics/realm-and-villages/villages).
 
 ### Continuous Play
 
-As long as you maintain in-game Realm ownership, you can actively participate without additional entry fees. Engage in
-the market using **$LORDS** tokens and enjoy uninterrupted gameplay.
+As long as you maintain in-game Realm or Village ownership, you can actively participate without additional entry fees.
+Engage in the market using **$LORDS** tokens and enjoy uninterrupted gameplay.
 
 ### Realm Control Mechanics
 
 ⚔️ **Takeover System**
 
 In-game Realms can be conquered within a Season, transferring control to the conqueror. Gameplay rights are restored at
-the start of the next Season, ensuring a dynamic and competitive environment.
+the start of the next Season, as the Realm NFT owner will be able to mint a new Season Pass for the new Season.
 
 🛡️ **Village Security**
 
-Unlike Realms, Villages cannot be conquered or taken over by other players, making them an ideal choice for casual
-players seeking a lower-risk gameplay experience. Villages can still participate in most gameplay activities - producing
-resources, training troops, and engaging in trade - but at 50% the rate of Realms. This security, combined with their
-accessibility and straightforward progression path from Settlement to City, makes Villages perfect for new players
-looking to learn the game mechanics without the constant threat of conquest.
+Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
+lower-risk gameplay experience. Villages can still participate in most gameplay activities - producing resources,
+training troops, and engaging in trade - but at 50% the rate of Realms. This security, combined with their accessibility
+and limited progression path from Settlement to City, makes Villages perfect for new players looking to learn the game
+mechanics without the constant threat of conquest.
 
 
 
@@ -1312,9 +973,12 @@ diplomatic excellence, or simply the joy of exploration, every Lord has the free
 
 Eternum is built on three core pillars:
 
-* **Player-Driven Economy**: The economy is shaped by player actions, from resource production to market prices.
-* **Strategic Depth**: Master resource management, territorial control, and military prowess to succeed.
-* **Community Governance**: Form tribes, build alliances, and influence the political landscape.
+* **Player‑Driven Economy** – Every resource harvested and trade executed originates from player choices. Collective
+  actions shape supply, demand, and market prices across Eternum.
+* **Strategic Depth** – Success hinges on efficient production, calculated territorial expansion, and well‑timed
+  military engagements. Foresight and adaptability separate thriving empires from conquered realms.
+* **Community Governance** – Power grows through tribes, alliances, and diplomatic pacts. Coordinated groups can tip
+  regional conflicts and shift the balance of power continent‑wide.
 
 ## Game Features
 
@@ -1332,11 +996,16 @@ decisions.
 
 ### Core Elements
 
-* **Seasons**: Compete through strategic paths with resources from previous seasons.
-* **World Map**: Navigate an infinite hexagonal grid with procedurally generated terrain.
-* **Resources & Economy**: Trade 22 different resource types in player-driven markets.
-* **Military Power**: Build armies, control territories, and engage in strategic warfare.
-* **Social Structure**: Form tribes, manage diplomatic relations, and create alliances.
+* **Seasons** – Freestanding campaigns with fresh rules and victory conditions; in-game assets can be bridged forward,
+  however, allowing committed Lords to carry hard‑won progress between chapters.
+* **World Map** – An infinite, procedurally generated hex grid dotted with Banks, Fragment Mines, and Hyperstructure
+  Foundations, facilitating exploration and conflict.
+* **Resources & Economy** – 22 tokenized resources—plus food, labor, donkeys, and troops—are traded with a player owned
+  and operated economy.
+* **Military Power** – Raise armies and battle strategically—considering stamina, troop tiers and biome effects, to
+  seize territory and capture the Realms of your rivals.
+* **Social Structure** – Forge tribes and alliances to pool resources, coordinate conquests, and shape regional politics
+  through diplomacy or decisive force.
 
 ## Vision
 
@@ -1395,10 +1064,9 @@ import { ResourceAddresses } from "@/components/ResourceAddresses";
 file: docs/pages/overview/world-physics.mdx
 meta: {}
 
-import { WeightTable } from "@/components/WeightTable";
 import { Biomes } from "@/components/Biomes";
 
-# World Physics
+# 🌀 World Physics
 
 <img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
 
@@ -1427,11 +1095,9 @@ trusty donkeys required for transport. These fungible tokens are generated withi
 of the game through Realms or Banks and traded on external marketplaces. All materials have an associated weight, which
 determines the amount that can be stored and the number of donkeys required to move the goods from place to place.
 
-<WeightTable />
-
-Note: This document will use 'materials' to refer to all tangible assets with weight - i.e. food, resources, ancient
-fragments, labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22
-resources ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
+Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, ancient fragments,
+labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22 resources
+ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
 
 ## Cost of Production
 
@@ -1441,9 +1107,9 @@ they can survive the season.
 
 ## Travel
 
-Covering the vast lands of Eternum takes time… and donkeys. Every transfer of materials between locations relies
-exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon completing their
-journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
+Transporting materials across the vast lands of Eternum takes time… and donkeys. Every transfer of materials between
+locations relies exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon
+completing their journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
 
 Moving tokenized troops through the donkey network may be fast, but to dominate your enemies and ensure security of your
 lands, troops must be deployed to an army. Once troops are deployed, they cannot be retokenized, and are doomed to their
@@ -1485,58 +1151,335 @@ Initial scouting reports have revealed some key details about the world:
 * Hundreds of mines are also strewn across the landscape. Prospectors have theorized that these mines are hotspots for
   finding ancient fragments needed to reconstruct key sections of the Hyperstructures.
 
-* Bandits roam throughout the lands and have established lairs in all of these locations. The newly arrived Lords will
-  need to overcome these lawless brigands to bring order and control back to Eternum.
+* Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
+  arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
 
 
 
 ---
 
-file: docs/pages/mechanics/military/combat.mdx
+file: docs/pages/mechanics/achievements.mdx
 meta: {}
 
-import { BiomeCombat } from "@/components/BiomeCombat";
-import { TroopTiers } from "@/components/TroopTiers";
+# Achievements & Quests
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/agents.mdx
+meta: {}
+
+# Agents
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Eternum"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
+
+This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
+
+## Realms
+
+* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
+  freely mint a Season Pass.
+* **Settling**: Players must burn a Season Pass to settle their Realm in the game world during the initial 7-day
+  settling period or after
+* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
+* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
+  buildable hexes and defensive army slots.
+* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
+* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a 12
+  tile radius.
+
+## Villages
+
+* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
+  players
+* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
+* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
+  game
+* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
+  troops from any other source
+* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
+* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
+
+## Materials
+
+* **Materials Categories**:
+  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
+  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
+  * **Troops**: Units with unique properties that can be assigned to armies.
+  * **Donkeys**: Required for moving materials around the world, essential for logistics.
+  * **Labor**: A new material in S1, allows players to build and produce in 'simple mode', acquired through burning
+    resources.
+  * **Ancient Fragments**: Found in game, critical for the construction of Hyperstructures.
+* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
+  Realms.
+
+## Buildings
+
+* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
+  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
+  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  and Villages are upgraded.
+
+## Production
+
+* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
+  labor) mode.
+* **Production Types**:
+  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
+  * **Resources**: Require combinations of other resources (standard) or labor (simple).
+  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
+  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+
+## World Map
+
+* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
+  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
+* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
+  movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Eternum Day), with costs varying by biome
+  and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
+  exploring armies may discover resources or encounter world structures and agent armies.
+
+## Military
+
+<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
+
+* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
+* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
+* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Protect Realms and structures in defense slots.
+* **Stamina System**: Armies recover +20 stamina daily, with 30+ stamina needed for full combat effectiveness.
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
+  * Success depends on the raiding army's damage relative to the combined guard armies.
+  * Undefended structures can be raided without casualties.
+
+## Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Victory Conditions
+
+Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
+construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
+recognition and rewards for various actions within the Season.
+
+
+
+---
+
+file: docs/pages/mechanics/prize-pool.mdx
+meta: {}
+
+# Prize Pool
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/tribes.mdx
+meta: {}
+
+# 👥 Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Formation & Membership
+
+* Any player can create a tribe
+* Set tribe name
+* Set to public or private
+* If private, send invites to player
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guild.gif" alt="Create Guild" />
+
+  <em>Flow to create tribe</em>
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/victory.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
 import {
-  TotalArmiesTable,
-  RealmDefenseSlotsTable,
-  WorldStructureDefenseSlotsTable,
-} from "@/components/DefendingArmies";
+  HyperstructureInitializationShardsTable,
+  HyperstructureConstructionCostTable,
+  HyperstructurePointsTable,
+  getTotalHyperstructureCompletionPoints,
+  HYPERSTRUCTURE_POINT_MULTIPLIER,
+} from "@/components/HyperstructureTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
 
-# ⚔️ Combat
+# 👑 Victory
 
-<img src="/images/covers/06.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
 
-## Armies
+## Victory Points
 
-![Create Army](/gifs/create-explorer.gif)
+Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
+single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
+halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
+Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
 
-In Season 1, armies consist of a single troop type and tier—streamlining combat strategy and simplifying interactions on
-the world map. Each hex can host only one army, so Lords must carefully manage their positioning and engagement
-opportunities.
+## Activating Foundations
 
-Each Realm and Village has a limited number of total armies, from which Lords can choose to deploy either attacking or
-defending armies. The number of total armies can be increased by upgrading the Realm / Village level:
+Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
+a Hyperstructure Foundation, all **{
+  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+Fragments** must be deposited into the mine's balance, and then the owner of the mine must explicitly activate the
+foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
+within predefined minimum and maximum ranges shown below:
 
-<TotalArmiesTable />
+<HyperstructureInitializationShardsTable />
 
-Each military building constructed on a Realm also increases total armies by 1. The maximum size of an army is 100,000
-troops.
+<HyperstructureConstructionCostTable />
 
-### Attacking Armies
+*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
+complete construction.*
 
-Attacking armies are deployed onto one of the six hexes surrounding their parent Realm on the world map. If all hexes
-adjacent to the Realm are occupied, an attacking army cannot be deployed. Once deployed, these armies occupy a hex and
-traverse the world map based on the conditions outlined in the World Map & Movement section.
+## Construction Victory Points
 
-Armies may attack another army or structure on any adjacent hex. When attacking a structure, the attacking army will
-engage in combat against any defending armies present.
+The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
+or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
+requiring donkeys for transport. Upon completion of the Hyperstructure, all Lords who contributed resources and labor
+receive a proportional allocation of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())} victory
+points** based on their individual contributions.
 
-### Defending Armies
+## Accumulation Victory Points
 
-Defending armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the
-Local view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
-opening up the details tab. Realms and Villages have a maximum number of defensive slots based on their current level:
+Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
+accumulate
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+victory points** for every second the structure remains under their control. These accumulating victory points can be
+shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
+cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
+owner, who may similarly decide on sharing arrangements.
+
+## Total Victory
+
+Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
+to reach
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+
+<HyperstructurePointsTable />
+
+
+
+---
+
+file: docs/pages/mechanics/world-structures.mdx
+meta: {}
+
+# 💠 World Structures
+
+## Hyperstructures
+
+Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
+monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
+Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
+fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
+path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+## Fragment Mines
+
+Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
+ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
+a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
+mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
+production when depleted.
+
+<img src="/images/buildings/construction/fragment-mine.png" width="800" />
+
+## Quest Tiles
+
+*WIP, update next week !*
+
+
+
+---
+
+file: docs/pages/mechanics/military/armies.mdx
+meta: {}
+
+import { RealmDefenseSlotsTable, WorldStructureDefenseSlotsTable } from "@/components/DefendingArmies";
+import { ETERNUM_CONFIG } from "@/utils/config";
+
+# ⚔️ Armies
+
+<img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+
+In Season 1, individual armies consist of a single troop type and tier—streamlining combat strategy and simplifying
+interactions on the world map. Each hex can host only one army, so Lords must carefully manage their positioning and
+engagement opportunities. Each Realm and Village has a limited number of total armies, from which Lords can choose to
+deploy either field or guard armies. The number of total armies can be increased by upgrading the Realm / Village level.
+
+Each military building constructed on a Realm or Village also increases total armies by 1. Lords can deploy armies from
+the Military tab in the Local view. The maximum size of an army is
+**{ETERNUM_CONFIG().troop.limit.explorerAndGuardMaxTroopCount}**.
+
+### Field Armies
+
+Field armies are used to project force on the world map, explore unknown territories, patrol borders, defend key areas,
+or march against your enemies. These armies are deployed onto one of the six hexes surrounding their parent Realm on the
+world map. If all hexes adjacent to the Realm are occupied, a field army cannot be deployed. Once deployed, these armies
+occupy a hex and traverse the world map based on the conditions outlined in the World Map & Movement section.
+
+Lords may direct their field armies to attack another army or structure on any adjacent hex by selecting the army with
+left-click, then right-clicking the target hex. When attacking a structure, the field army will engage in combat against
+any guard armies present.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-explorer.gif" alt="Create Army" />
+
+  <em>Flow to create field army in the client</em>
+</div>
+
+### Guard Armies
+
+Guard armies do not appear on the world map; instead, they occupy defense slots visible in the Military tab of the Local
+view. When in the World view, Lords can observe the defensive capabilities of any structure by selecting a hex and
+opening up the Details tab.
+
+Realms and Villages have a maximum number of defense slots based on their current level:
 
 <RealmDefenseSlotsTable />
 
@@ -1544,12 +1487,177 @@ Other world structures have a static number of defence slots:
 
 <WorldStructureDefenseSlotsTable />
 
-When attacked, defending armies are targeted sequentially, starting from the outermost slot (slot 4) and progressing
-inward. The outermost defensive army may also launch counter attacks against adjacent hexes. If a defensive army is
-destroyed, its slot becomes unavailable for reinforcement for 24 hours. Once all defensive armies are defeated, the
-Realm can be claimed by an adjacent attacking army.
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guard.gif" alt="Create Army" />
 
-## Troop Tiers
+  <em>Flow to create guard in the client</em>
+</div>
+
+When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
+destroyed, the slot that it occupied becomes unavailable for reinforcement for
+**{Math.floor(ETERNUM_CONFIG().troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are defeated,
+the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which
+cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their
+structure on the worldmap, then right-clicking the target hex.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
+
+  <em>Attack field army with structure</em>
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/military/damage.mdx
+meta: {}
+
+# 💥 Damage
+
+import { DamageCalculation } from "@/components/DamageCalculation";
+
+## Damage Overview
+
+Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
+is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on
+the number of troops, troop tier, stamina, and biome bonuses. Damage is then simultaneously inflicted by both sides.
+Battles can last multiple rounds (requiring multiple combat instances) depending on the relative strength and number of
+troops involved. Armies with higher-tier troops deal significantly more damage. However, careful management of troop
+numbers, stamina, and biome positioning can enable lower-tier armies to overcome stronger opponents.
+
+<DamageCalculation />
+
+
+
+---
+
+file: docs/pages/mechanics/military/raiding.mdx
+meta: {}
+
+# 💰 Raiding
+
+Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
+first having to battle through enemy guard armies. Lords can direct their armies to complete this action but selecting
+the 'raid' action when attacking an enemy structure.
+
+![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
+
+## Raid Success
+
+The success chance of a raid is determined by the following conditions:
+
+| Condition                                                                  | Raid Success Chance                           |
+| -------------------------------------------------------------------------- | --------------------------------------------- |
+| Raiding army's total damage \< **50%** of combined guard armies' damage    | **0%**                                        |
+| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
+| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
+| No guard armies present                                                    | **100%** (automatic success)                  |
+
+Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
+It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
+only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
+
+## Damage in Raids
+
+At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
+army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
+pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to **20%** of
+that which would be applied in an attack action.
+
+Damage from a raiding action is calculated according to the following rules:
+
+* The raiding army troop total is split evenly across each guard army.
+* A standard combat damage calculation is then applied to each combat instance.
+* Each damage number is multiplied by the raid damage modifier before casualties are applied.
+
+### Example:
+
+Consider **1000** raiders attacking a structure with two occupied guard slots:
+
+* Slot 1: **400** troops
+* Slot 2: **600** troops
+
+The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
+calculations result in the following:
+
+* Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
+* Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
+
+Applying the raid damage modifier, actual losses become:
+
+* Guards: Slot 1 loses **36** troops (**20%** of 180), Slot 2 loses **30** troops (**20%** of 150).
+* Raiders: Lose **64** troops total (**20%** of 320).
+
+
+
+---
+
+file: docs/pages/mechanics/military/stamina-and-biomes.mdx
+meta: {}
+
+import { BiomeCombat } from "@/components/BiomeCombat";
+
+# ⚡ Stamina & Biome Effects
+
+## Stamina
+
+Stamina is a vital resource governing the mobility and effectiveness of armies. Each deployed army possesses a maximum
+stamina value determined by its troop type and tier as explained above. Field armies expend stamina when moving,
+exploring unknown hexes, or engaging in combat against other armies and structures. Guard armies only expend stamina
+when attacking armies in hexes adjacent to their structure. During combat, stamina impacts army combat effectiveness:
+
+### Attacking Army (the army initiating combat)
+
+Attacks require a minimum of **30 stamina**, so armies with less than 30 stamina cannot initiate an attack. Each
+additional stamina point above this threshold grants a **1%** damage bonus, up to a maximum of **+30%** damage at **60
+stamina**. Additional stamina spend is not optional, so attacking armies will use all available stamina up to a maximum
+of **60** for any one attack. If the attacking army destroys the defending army, they gain **+30 stamina**.
+
+### Defending Army (the army being attacked)
+
+Defending armies rely on having stamina available to maintain full combat effectiveness. When attacked, defending armies
+incur a **1%** damage reduction for every stamina point below **30**. For example, if an army is attacked while they
+have **10 stamina**, they would deal **-20%** damage to the attacking army. The maximum penalty is **-30%** damage if
+stamina is completely depleted. Successfully defending an attack does not deplete stamina. Lords should manage their
+armies' stamina carefully, ensuring they retain enough reserves to remain effective against unexpected attacks.
+
+## Biomes (Combat Effects)
+
+The combat effectiveness of different troop types is impacted by the biome on which the defending army is located when
+engaging in battle. Armies can gain either a combat advantage (**+30%** damage), disadvantage (**-30%** damage), or no
+effect, depending on their affinity with a particular biome. To summarise these combat modifiers for each troop type:
+
+⚔️️ ️️️**Knights** excel in forests, leveraging cover and mobility, but suffer reduced effectiveness in deserts,
+beaches, and snow-covered regions where their heavy armour and weapons can make it difficult to move on the soft ground
+cover. Knights are equally advantaged, disadvantaged or not affected across all biome types.
+
+🏹 **Crossbowmen** benefit from open seas and unstable terrains (such as beaches and snow), where they can remain static
+and make the most of their ranged capabilities. However, they will be disadvantaged in flat, open terrain with no cover
+or opportunity for concealment. Crossbowmen are the least advantaged, but also the least disadvantaged by biome
+modifiers of the three troop types.
+
+🛡 ️**Paladins** dominate open, flat terrain where mounted units thrive, but are hindered in dense forests and on open
+water where their mounted capabilities are negated. They are the most advantaged, but also the most disadvantaged troop
+type. In combination with the biome effects on stamina use, Paladins are less versatile than other Knights or
+Crossbowmen, but are devastatingly effective in the right situations.
+
+**Note: The scorched biome applies +30% damage to all troop types, representing the additional casualties sustained from
+battling in an inhospitable environment.**
+
+<BiomeCombat />
+
+
+
+---
+
+file: docs/pages/mechanics/military/troop-tiers.mdx
+meta: {}
+
+import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
+import { MaxStaminaTable } from "@/components/TroopMovementTable";
+
+# 🛡️ Troop Tiers
 
 Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
 troops are more advanced, offering significantly increased combat strength and stamina.
@@ -1564,82 +1672,661 @@ Each troop tier provides escalating advantages in terms of damage output and sta
 
 <TroopTiers />
 
-## Stamina
+<TroopTierDamageStats />
 
-Both attacking and defending armies depend heavily on stamina during combat encounters. Armies recover +20 stamina at
-the start of each Eternum Day. Lords must carefully manage their armies' stamina, as exhausted armies will perform
-poorly if attacked.
-
-### Stamina Effects in Combat
-
-**Attacking Armies:**
-
-* Attacks require a minimum of 30 stamina
-* Each stamina point above 30 grants an additional 1% damage, up to a maximum of 30% extra damage (total of 60 stamina)
-* Armies with less than 30 stamina cannot initiate an attack
-
-**Defending Armies:**
-
-* Defending armies need at least 30 stamina to fight at full effectiveness
-* Defenders with less than 30 stamina suffer a proportional damage penalty—down to a maximum reduction of 30% if their
-  stamina reaches zero
-
-## Biomes (Combat Effects)
-
-Biomes significantly influence combat effectiveness, providing each troop type either a distinct advantage (+30%
-damage), a disadvantage (–30% damage), or no modifier. When resolving combat, only the biome of the defending army's hex
-is considered. Therefore, attacking armies must carefully select their targets to exploit biome conditions to their
-advantage.
-
-### Troop Type Biome Logic
-
-**Knights:**
-
-* Excel in forested biomes, utilizing both mobility and cover
-* Struggle in unstable terrain (beaches, tundra, snow) and hot deserts due to heavy armor
-
-**Crossbowmen:**
-
-* Benefit from open seas and unstable terrain (beaches, snow, scorched ground) due to ranged capabilities
-* Disadvantaged on sparse, flat terrains lacking sufficient cover
-
-**Paladins:**
-
-* Dominate on open terrain, leveraging mounted maneuverability
-* Dense forests, scorched earth, and aquatic environments reduce combat effectiveness significantly
-
-<BiomeCombat />
-
-## Damage
-
-Combat in Eternum is determined by a simplified damage system, relying primarily on army damage statistics, stamina
-modifiers, and biome interactions. Detailed damage calculations consider base damage, stamina bonuses or penalties,
-troop tier multipliers, and biome modifiers, resulting in straightforward yet strategic combat outcomes.
+<MaxStaminaTable />
 
 
 
 ---
 
-file: docs/pages/mechanics/military/raiding.mdx
+file: docs/pages/mechanics/realm-and-villages/buildings.mdx
 meta: {}
 
-## Raiding
+import BuildingCard from "../../../components/BuildingCard";
 
-Raiding allows armies adjacent to a world structure (Realms, Villages, Banks, Hyperstructures, Fragment Mines) to
-attempt theft of valuable resources directly from the target structure, regardless of the presence of defending armies.
+# 🪓 Buildings
 
-### Raid Success Conditions
+## Standard vs. Simple
 
-* If the raiding army's damage is less than half the total damage of the defending armies, the raid will fail
-* If the raiding army's damage is more than double that of the defending armies, the raid succeeds automatically
-* If the raiding army's damage falls between these two extremes, the success probability scales proportionally between
-  0% and 100%
+Season 1 offers two building systems. Lords can switch between standard and simple building modes at any time by
+clicking the toggle at the top of the construction tab.
 
-Successful raids result in resources transferred directly to the raiding army's inventory up to their carrying capacity.
-After the raid, damage is calculated between the raiding army and the outermost defending army, with casualties applied
-accordingly.
+![Simple Mode Production](/gifs/simple-mode.gif)
 
-Raids carried out against undefended structures succeed automatically, incurring no casualties for the raiding force.
+Note: Some buildings only require food to construct. Farms, Fishing Villages and Resource Buildings have the same
+construction cost in both standard and simple building modes.
+
+### Standard Mode
+
+This is the classic Eternum experience. Construction requires a combination of labor and a particular set of resources
+as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
+is far more efficient overall. This building mode is generally designed for those with multiple Realms and/or Villages
+working with economies of scale.
+
+### Simple Mode
+
+This mode allows players to utilize Labor, a new material for Season 1, as the singular input for construction. Simple
+mode greatly improves accessibility and simplifies gameplay overall, but is much less efficient in both time and
+materials. This would be the preferred system for players with smaller holdings and limited access to a variety of
+resources.
+
+## Placement & Population
+
+### Placement
+
+The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm or
+Village, provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the
+upgrade level (i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
+Most buildings can be constructed in either simple or standard mode, which toggled at the top of the construction tab.
+
+![Building Placement](/gifs/construction.gif)
+
+### Population
+
+Population is the total population utilised by the currently constructed production buildings on a Realm or Village,
+while the population capacity is the maximum available population with which to construct production buildings. Worker
+Huts can be built to increase population capacity, while all other buildings require population capacity to be available
+in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
+construct their desired production buildings.
+
+## Building Types
+
+### The Keep
+
+Settling any Realm or Village will automatically construct a structure in the centre of your buildable hexes, known as
+the Keep. This structure represents your seat of power and the central point of governance, and facilitates key
+functions such as Realm/Village upgrades and Labor production. This building cannot be destroyed and provides a baseline
+population capacity of 5.
+
+<BuildingCard
+  title="Labor Camp"
+  image="/images/buildings/construction/castleZero.png"
+  buildingType={25}
+  description={[
+  "Produces Labor resource",
+  "Provides a baseline population capacity of 5",
+  "Available in both simple and standard building modes",
+]}
+/>
+
+### Resource Buildings
+
+There is a specific resource building for each of the 22 resources in the game, so Lords will require separate resource
+buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
+have the same requirements in simple and standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Lumber Camp"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={5}
+    description={[
+  "Produces Wood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes"
+]}
+  />
+
+  <BuildingCard
+    title="Stone Quarry"
+    image="/images/buildings/construction/mine.png"
+    buildingType={3}
+    description={[
+  "Produces Stone resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Coal Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={4}
+    description={[
+  "Produces Coal resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Copper Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={6}
+    description={[
+  "Produces Copper resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Obsidian Flows"
+    image="/images/buildings/construction/mine.png"
+    buildingType={8}
+    description={[
+  "Produces Obsidian resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Silver Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={10}
+    description={[
+  "Produces Silver resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ironwood Grove"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={7}
+    description={[
+  "Produces Ironwood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Cold Iron Foundry"
+    image="/images/buildings/construction/forge.png"
+    buildingType={13}
+    description={[
+  "Produces Cold Iron resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Gold Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={9}
+    description={[
+  "Produces Gold resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Hartwood Sanctuary"
+    image="/images/buildings/construction/lumber_mill.png"
+    buildingType={17}
+    description={[
+  "Produces Hartwood resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Diamond Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={16}
+    description={[
+  "Produces Diamond resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Sapphire Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={22}
+    description={[
+  "Produces Sapphire resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ruby Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={15}
+    description={[
+  "Produces Ruby resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Deep Crystal Cave"
+    image="/images/buildings/construction/mine.png"
+    buildingType={14}
+    description={[
+  "Produces Deep Crystal resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ignium Harvester"
+    image="/images/buildings/construction/forge.png"
+    buildingType={18}
+    description={[
+  "Produces Ignium resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Ethereal Silica Harvester"
+    image="/images/buildings/construction/mine.png"
+    buildingType={23}
+    description={[
+  "Produces Ethereal Silica resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="True Ice Harvester"
+    image="/images/buildings/construction/mine.png"
+    buildingType={20}
+    description={[
+  "Produces True Ice resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Twilight Quartz Mine"
+    image="/images/buildings/construction/mine.png"
+    buildingType={19}
+    description={[
+  "Produces Twilight Quartz resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Alchemical Workshop"
+    image="/images/buildings/construction/forge.png"
+    buildingType={12}
+    description={[
+  "Produces Alchemical Silver resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Adamantine Mine"
+    image="/images/buildings/construction/forge.png"
+    buildingType={21}
+    description={[
+  "Produces Adamantine resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Mithral Forge"
+    image="/images/buildings/construction/forge.png"
+    buildingType={11}
+    description={[
+  "Produces Mithral resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Dragonhide Harvester"
+    image="/images/buildings/construction/dragonhide.png"
+    buildingType={24}
+    description={[
+  "Produces Dragonhide resource",
+  "Requires 2 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+</div>
+
+### Economic Buildings
+
+These buildings define the utility of a Realm or Village, including food production, donkey production, population
+capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
+varying costs and population requirements:
+
+\[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
+increase (Storehouse)]
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Worker's Hut"
+    image="/images/buildings/construction/workers_hut.png"
+    buildingType={1}
+    description={[
+  "Increases population capacity by 5",
+  "Available in both simple and standard building modes"
+]}
+  />
+
+  <BuildingCard
+    title="Storehouse"
+    image="/images/buildings/construction/storehouse.png"
+    buildingType={2}
+    description={[
+  "Increases storage capacity by 300,000 kg for each material",
+  "Requires 2 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Market"
+    image="/images/buildings/construction/market.png"
+    buildingType={27}
+    description={[
+  "Produces Donkeys for transportation",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Farm"
+    image="/images/buildings/construction/farm.png"
+    buildingType={37}
+    description={[
+  "Produces Wheat (food) resource",
+  "Requires 1 population to be constructed",
+  "Same construction cost in both simple and standard modes",
+]}
+  />
+
+  <BuildingCard
+    title="Fishing Village"
+    image="/images/buildings/construction/fishing_village.png"
+    buildingType={38}
+    description={[
+  "Produces Fish (food) resource",
+  "Requires 1 population to be constructed",
+  "Same construction cost in both simple and standard modes"
+]}
+  />
+</div>
+
+### Military Buildings
+
+Your military buildings are essential for training up armies to defend your territories and project your might. There
+are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
+such, there are a total of 9 military buildings in the game.
+
+Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
+available for construction in standard mode.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
+  <BuildingCard
+    title="Footman Barracks (T1)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={28}
+    description={[
+  "Produces T1 Footman units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes"
+]}
+  />
+
+  <BuildingCard
+    title="Knight Quarters (T2)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={29}
+    description={[
+  "Produces T2 Knight units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Guardian Sanctum (T3)"
+    image="/images/buildings/construction/barracks.png"
+    buildingType={30}
+    description={[
+  "Produces T3 Royal Guardian units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Archery Range (T1)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={31}
+    description={[
+  "Produces T1 Archer units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Crossbow Garrison (T2)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={32}
+    description={[
+  "Produces T2 Crossbowman units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Hunting Den (T3)"
+    image="/images/buildings/construction/archery.png"
+    buildingType={33}
+    description={[
+  "Produces T3 Beast Hunter units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Horseman Stables (T1)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={34}
+    description={[
+  "Produces T1 Horseman units",
+  "Requires 3 population to be constructed",
+  "Available in both simple and standard building modes",
+]}
+  />
+
+  <BuildingCard
+    title="Paladin Sanctuary (T2)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={35}
+    description={[
+  "Produces T2 Paladin units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode",
+]}
+  />
+
+  <BuildingCard
+    title="Dragon Pit (T3)"
+    image="/images/buildings/construction/stable.png"
+    buildingType={36}
+    description={[
+  "Produces T3 Dragon Rider units",
+  "Requires 3 population to be constructed",
+  "Only available in standard building mode"
+]}
+  />
+</div>
+
+
+
+---
+
+file: docs/pages/mechanics/realm-and-villages/realm.mdx
+meta: {}
+
+import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+import { RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BuildableHexes } from "@/components/BuildableHexes";
+import { RealmLeveling } from "@/components/RealmLeveling";
+
+# 🏰 Realms
+
+The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
+limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
+in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
+and its associated Season Pass.
+
+<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+
+### Settling
+
+To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
+homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
+the game starts, allowing players to organise and position themselves before a move can be made. Realms can still be
+settled after this period, however the earlier in the season that Lords can establish their holdings, the greater their
+production potential and overall experience.
+
+<img src="/gifs/settle-realm.gif" alt="Settling a Realm" width="800" className="mx-auto" />
+
+![Realm Settling Screen](/screenshots/settling.png)
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Realm} />
+
+### Starting Military
+
+Each Realm begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
+military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary structureType={StructureType.Realm} />
+
+### Realm Progression
+
+Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
+additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
+your defences. Each progression requires specific materials, outlined in the table below:
+
+<RealmLeveling />
+
+<BuildableHexes />
+
+<RealmDefenseSlotsTable />
+
+
+
+---
+
+file: docs/pages/mechanics/realm-and-villages/villages.mdx
+meta: {}
+
+import ResourceProbability from "@/components/ResourceProbability";
+import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+
+# 🛖 Villages
+
+Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
+surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
+settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
+wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
+Villages in Season 1!
+
+<img src="/images/buildings/construction/village.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+
+### Settling
+
+Villages are settled by minting a Village token. Aspiring settlers can choose to place their Village next to a specific
+Realm by entering the asset ID of a settled Realm, or let fate guide them to a random Realm's outskirts - either way,
+the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
+possible hexes they spawn on by selecting a compass direction.
+
+<img src="/screenshots/villages.png" alt="Village Settling Screen" width="600" className="mx-auto" />
+
+<span style={{ fontSize: "0.9rem", display: "block", textAlign: "center" }}>
+  *Three villages settled next to a realm*
+</span>
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Village} />
+
+### Starting Military
+
+Each Village begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
+military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary structureType={StructureType.Village} />
+
+### Resource Roll
+
+When minting a Village, a random number is rolled to determine the single resource that it can produce.
+
+<ResourceProbability />
+
+### Limitations
+
+Villages produce food, resources, troops, donkeys, and labor at 50% the rate of Realms. They can receive and purchase
+food, labor, donkeys and resources without restriction, but can only receive troops from their parent Realm - this
+limitation is in place to prevent players from spawning a Village on their rival's Realm and 'teleporting' troops there
+by using the donkey network.
+
+### Village Progression
+
+Villages have a limited progression path and may only upgrade once from Settlement to City. The cost and benefits of
+this progression is the same as that of a Realm.
+
+
+
+---
+
+file: docs/pages/mechanics/realm-and-villages/wonders.mdx
+meta: {
+  "title": "Wonders",
+  "description": "The Wonders of Realms Eternum"
+}
+
+# ✨ Wonders
+
+Of the 8,000 Realms, 50 are distinguished by the presence of Wonders—unique and magical places of power that confer
+special benefits, making them highly desirable playing pieces that may put a target on their owner's back.
+
+In Season 1, Wonder Realms grant a 20% production bonus not only to themselves but also to all Realms and Villages
+located within 12 tiles. This bonus means the Wonder Realm itself, the surrounding Realms (up to six), and all Villages
+settled around these seven Realms produce food, resources, troops, labor, and donkeys at 120% efficiency compared to
+standard Realms, using the same inputs.
+
+Key Notes:
+
+* Production rates are not increased by this bonus, more is produced overall for the same amount of input.
+* These bonuses do not stack. There is no benefit to settling multiple wonders in a limited range.
+
+<br />
+
+<img src="/images/buildings/construction/wonder.png" width="800" style={{ margin: "0 auto", display: "block", maxWidth: "100%" }} />
+
+<br />
 
 
 
@@ -1657,40 +2344,40 @@ import {
   DonkeyProduction,
 } from "@/components/ResourceProduction";
 
-## Production
+# ⚒️ Production
 
-### Standard vs. Simple
+## Standard vs. Simple
 
-As for building construction, Lords can choose between standard and simple production systems when deciding how they
-wish to produce their materials. This can be done by selecting the appropriate panel when making an order in the
-production screen.
+As is the case for building construction, Lords can choose between standard and simple production systems when deciding
+how they wish to produce their materials. This can be done by selecting the appropriate panel when making an order in
+the production screen.
 
 ![Simple Mode Production](/gifs/simple-mode.gif)
 
-Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
+*Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
 unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
-requirements to the production order upfront. The output is then produced at a given rate per second.
+requirements to the production order upfront. The output is then produced at a given rate per second.*
 
-#### Standard Mode
+### Standard Mode
 
 The classic Eternum system—every resource and troop production order requires food and a combination of other resources
 as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
 
-#### Simple Mode
+### Simple Mode
 
 Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
 both time and resources—but it allows Lords to produce resources on their Realm or Village even if they don't have
 access to the input resources required in standard mode.
 
-### Materials Production
+## Materials Production
 
-#### Food
+### Food
 
 The rich and fertile lands of Eternum produce two staple food sources, Wheat and Fish. These are the only materials that
 can be produced without inputs, so once a Farm or Fishing Village has been constructed, they can produce food
 indefinitely.
 
-#### Resources
+### Resources
 
 The 22 resources found in Eternum are the backbone of the world economy. Producing one resource requires the input of
 two other resources (standard mode), or labor (simple mode). Resources are also the main components in building
@@ -1701,7 +2388,7 @@ security.
 
 <StandardResourceProduction />
 
-#### Labor
+### Labor
 
 Labor is a new mechanic in Season 1 that has been introduced to simplify and supplement gameplay. It is the primary
 input for buildings and production in simple mode, but is also required in standard mode for building construction,
@@ -1713,12 +2400,12 @@ dependent on rarity. The amount of resources burned per second to produce Labor 
 
 <LaborProduction />
 
-#### Troops
+### Troops
 
 Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
-use military buildings to produce troops and ensure they remain a relevant force throughout the game. In Season 1, two
-new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of the previous
-tier as input for production.
+procure troops, either through production or purchase, to ensure they remain a relevant force throughout the game. In
+Season 1, two new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of
+the previous tier as input for production.
 
 Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
 mode.
@@ -1727,7 +2414,7 @@ mode.
 
 <StandardTroopProduction />
 
-#### Donkeys
+### Donkeys
 
 The humble steeds that move all materials around Eternum must themselves be produced in a market building. Donkeys are
 one-time-use and consumed after a single journey, so Lords will need to procure a steady supply of donkeys, either
@@ -1749,23 +2436,39 @@ import ResourceIcon from "@/components/ResourceIcon";
 import TroopsLimitTable from "@/components/TroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-# Resources
+# 🪵 Materials
+
+# Materials Overview
+
+Materials encompass all transportable assets in Eternum, including:
+
+* **Food**: Essential wheat and fish that fuel production and troop movement
+* **Resources**: The 22 distinct resource types that can be produced on Realms based on their metadata
+* **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
+* **Donkeys**: One-time-use transport units required for moving materials across the world
+* **Labor**: A special material that enables "simple mode" construction and production
+* **Ancient Fragments**: Rare materials found in-game that are critical for Hyperstructure construction
+
+While all materials can be transported, only specific resources can be produced by Realms based on their inherent
+properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
+
+## Resources
 
 Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
 ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
-out as ERC20 tokens through the central bank.
+out as ERC20 tokens.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
 
-## Resource Categories
+## Material Categories
 
-#### Resource Tiers
+#### Material Tiers
 
 Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
 
 <RarityResourceTable />
 
-### Basic Resources
+### Basic Materials
 
 #### Food
 
@@ -1783,7 +2486,7 @@ Food is the cornerstone of your realm's economy:
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
 
-### Strategic Resources
+### Strategic Materials
 
 #### Military
 
@@ -1819,7 +2522,7 @@ Essential for logistics:
 
 <div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
 
-### Special Resources
+### Special Materials
 
 #### **$LORDS** Currency
 
@@ -1839,7 +2542,7 @@ Essential for logistics:
   <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
 </div>
 
-Labor is a fundamental production resource:
+Labor is a fundamental production material:
 
 * Required for most building and production activities
 * Regenerates over time based on population
@@ -1852,7 +2555,7 @@ Labor is a fundamental production resource:
   <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
 </div>
 
-Strategic end-game resource:
+Strategic end-game material:
 
 * Only found in world map Fragment Mines
 * Required for Hyperstructures
@@ -1871,32 +2574,31 @@ import { divideByPrecision } from "@/utils/resources";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
-## Storage System
+# 🏺 Storage System
 
 Storage limits how many resources your realm can hold. Managing your storage capacity effectively is key to developing
 your realm.
 
-### Resource Weights
+## Resource Weights
 
 Resources in Eternum have different weights that affect storage:
 
 <WeightTable />
 
-### Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
+## Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
 
 Expand your storage capacity to support your growing realm:
 
 * **Capacity**: Each storehouse adds
   {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage per
-  resource
+  material
 
 * **Expansion**: Build additional storehouses to increase total storage.
 
 * **When storage is full**:
   * New production is wasted
-  * Input resources continue to be consumed
 
-### Storage Management Tips
+## Storage Management Tips
 
 > 💡 **Best Practices**
 >
@@ -1912,7 +2614,9 @@ Expand your storage capacity to support your growing realm:
 file: docs/pages/mechanics/resources/transfers-and-trade.mdx
 meta: {}
 
-# Transfers & Trade
+import { EfficiencyTable } from "@/components/EfficienyTable";
+
+# 📜 Transfers & Trade
 
 ## Transport
 
@@ -1980,7 +2684,7 @@ materials sent through. However, there is evidence that the power of the Hyperst
 Portals throughout Eternum. As Lords manage to reestablish these mighty structures throughout the land, the efficiency
 of bridging in and out of Eternum improves for all.
 
-\[efficiency table]
+<EfficiencyTable />
 
 Each Realm comes equipped with a Portal. Realm Lords are able to bridge materials both into and out of their Realms
 directly. Villages, however, have more limited bridging capabilities—they can bridge materials out of Eternum, but not
@@ -1988,653 +2692,121 @@ in. This is in line with their existing restrictions on receiving troops from ex
 utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
 tokens bridged out of the game.
 
-Banks also have portals to allow Lords to manage liquidity positions. These positions may be bridged in and out
-directly, and are linked with the wallet rather than a particular Realm or Village. Therefore, if a Lord loses their
-Realm to another through conquest, they will still be able to manage any LP that they have with the bank.
-
 
 
 ---
 
-file: docs/pages/mechanics/realm-and-villages/buildings.mdx
+file: docs/pages/mechanics/worldmap-movement/movement.mdx
 meta: {}
 
-import BuildingCard from "../../../components/BuildingCard";
+import TroopMovementTable from "@/components/TroopMovementTable";
+import { BiomeStamina } from "@/components/BiomeStamina";
 
-# Buildings
+# 🧭 Movement & Exploration
 
-## Standard vs. Simple
+<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
 
-Season 1 offers two building systems. Lords can switch between standard and simple building modes at any time by
-clicking the toggle at the top of the construction tab.
+## Stamina
 
-![Simple Mode Production](/gifs/simple-mode.gif)
+Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
+stamina, a critical resource Lords must carefully manage.
 
-Note: Some buildings only require food to construct. Farms, Fishing Villages and Resource Buildings have the same
-construction cost in both standard and simple building modes.
+Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
+against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Eternum Day. Each
+troop type possesses different maximum stamina capacities, outlined in the table below:
 
-### Standard Mode
+<TroopMovementTable />
 
-This is the classic Eternum experience. Construction requires a combination of labor and a particular set of resources
-as building materials. Standard mode is more complex as it involves a greater number of materials in storage, however it
-is far more efficient overall. This building mode is generally designed for those with multiple Realms and/or Villages
-working with economies of scale.
+Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
+themselves severely disadvantaged if attacked by enemy forces.
 
-### Simple Mode
+## Movement
 
-This mode allows players to utilize Labor, a new material for Season 1, as the singular input for construction. Simple
-mode greatly improves accessibility and simplifies gameplay overall, but is much less efficient in both time and
-materials. This would be the preferred system for players with smaller holdings and limited access to a variety of
-resources.
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/moving-army.gif" alt="Moving Army" />
 
-## Placement & Population
-
-### Placement
-
-The construction tab can be accessed in the Local view. Buildings can be constructed on any buildable hex of a Realm or
-Village, provided the owner has the requisite materials and population capacity. Buildable hexes are defined by the
-upgrade level (i.e. Settlement, City, Kingdom, or Empire) and are visible as hexes with patches of bare, prepared earth.
-Most buildings can be constructed in either simple or standard mode, which toggled at the top of the construction tab.
-
-![Building Placement](/gifs/construction.gif)
-
-### Population
-
-Population is the total population utilised by the currently constructed production buildings on a Realm or Village,
-while the population capacity is the maximum available population with which to construct production buildings. Worker
-Huts can be built to increase population capacity, while all other buildings require population capacity to be available
-in order to construct. Lords must balance their construction to ensure there is enough population capacity available to
-construct their desired production buildings.
-
-## Building Types
-
-### The Keep
-
-Settling any Realm or Village will automatically construct a structure in the centre of your buildable hexes, known as
-the Keep. This structure represents your seat of power and the central point of governance, and facilitates key
-functions such as Realm/Village upgrades and Labor production. This building cannot be destroyed and provides a baseline
-population capacity of 5.
-
-<BuildingCard
-  title="Labor Camp"
-  image="/images/buildings/construction/castleZero.png"
-  buildingType={25}
-  description={[
-  "Produces Labor resource",
-  "No population requirement",
-  "Available in both simple and standard building modes",
-]}
-/>
-
-### Resource Buildings
-
-There is a specific resource building for each of the 22 resources in the game, so Lords will require separate resource
-buildings if they wish to produce more than one type of resource. These buildings only require food to construct and
-have the same requirements in simple and standard mode.
-
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Stone Quarry"
-    image="/images/buildings/construction/mine.png"
-    buildingType={3}
-    description={[
-  "Produces Stone resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes"
-]}
-  />
-
-  <BuildingCard
-    title="Coal Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={4}
-    description={[
-  "Produces Coal resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Lumber Camp"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={5}
-    description={[
-  "Produces Wood resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Copper Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={6}
-    description={[
-  "Produces Copper resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ironwood Grove"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={7}
-    description={[
-  "Produces Ironwood resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Obsidian Flows"
-    image="/images/buildings/construction/mine.png"
-    buildingType={8}
-    description={[
-  "Produces Obsidian resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Gold Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={9}
-    description={[
-  "Produces Gold resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Silver Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={10}
-    description={[
-  "Produces Silver resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Mithral Forge"
-    image="/images/buildings/construction/forge.png"
-    buildingType={11}
-    description={[
-  "Produces Mithral resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Alchemical Workshop"
-    image="/images/buildings/construction/forge.png"
-    buildingType={12}
-    description={[
-  "Produces Alchemical Silver resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Cold Iron Foundry"
-    image="/images/buildings/construction/forge.png"
-    buildingType={13}
-    description={[
-  "Produces Cold Iron resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Deep Crystal Cave"
-    image="/images/buildings/construction/mine.png"
-    buildingType={14}
-    description={[
-  "Produces Deep Crystal resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ruby Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={15}
-    description={[
-  "Produces Ruby resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Diamond Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={16}
-    description={[
-  "Produces Diamond resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Hartwood Sanctuary"
-    image="/images/buildings/construction/lumber_mill.png"
-    buildingType={17}
-    description={[
-  "Produces Hartwood resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ignium Harvester"
-    image="/images/buildings/construction/forge.png"
-    buildingType={18}
-    description={[
-  "Produces Ignium resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Twilight Quartz Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={19}
-    description={[
-  "Produces Twilight Quartz resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="True Ice Harvester"
-    image="/images/buildings/construction/mine.png"
-    buildingType={20}
-    description={[
-  "Produces True Ice resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Adamantine Mine"
-    image="/images/buildings/construction/forge.png"
-    buildingType={21}
-    description={[
-  "Produces Adamantine resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Sapphire Mine"
-    image="/images/buildings/construction/mine.png"
-    buildingType={22}
-    description={[
-  "Produces Sapphire resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Ethereal Silica Harvester"
-    image="/images/buildings/construction/mine.png"
-    buildingType={23}
-    description={[
-  "Produces Ethereal Silica resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
-
-  <BuildingCard
-    title="Dragonhide Harvester"
-    image="/images/buildings/construction/dragonhide.png"
-    buildingType={24}
-    description={[
-  "Produces Dragonhide resource",
-  "Requires 2 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
+  <em>Moving armies in the client</em>
 </div>
 
-### Economic Buildings
+Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
+Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
+move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
+destination, and the army has sufficient stamina available for the entire journey.
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
+The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
+within the army. The table below details biome-specific stamina costs for each troop type:
 
-\[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
-increase (Storehouse)]
+<BiomeStamina />
 
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Worker's Hut"
-    image="/images/buildings/construction/workers_hut.png"
-    buildingType={1}
-    description={[
-  "Increases population capacity by 5",
-  "Required to construct and sustain production buildings",
-  "Available in both simple and standard building modes"
-]}
-  />
+## Exploring
 
-  <BuildingCard
-    title="Storehouse"
-    image="/images/buildings/construction/storehouse.png"
-    buildingType={2}
-    description={[
-  "Increases storage capacity for resources",
-  "Requires 2 population to operate",
-  "Available in both simple and standard building modes",
-]}
-  />
+When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
+the known boundaries of the world.
 
-  <BuildingCard
-    title="Donkey Stable"
-    image="/images/buildings/construction/market.png"
-    buildingType={27}
-    description={[
-  "Produces Donkeys for transportation",
-  "Requires 3 population to operate",
-  "Available in both simple and standard building modes",
-]}
-  />
+If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
+back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory. If
+an army becomes overloaded, they can return to a structure to offload the materials, or drop them to free up space. Note
+that any materials discarded in the field will be permanently lost (burned).
 
-  <BuildingCard
-    title="Farm"
-    image="/images/buildings/construction/farm.png"
-    buildingType={37}
-    description={[
-  "Produces Wheat (food) resource",
-  "Requires 1 population to operate",
-  "Same construction cost in both simple and standard modes",
-]}
-  />
+Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
+armies are well-prepared and capable of defending themselves in unexpected combat situations.
 
-  <BuildingCard
-    title="Fishing Village"
-    image="/images/buildings/construction/fishing_village.png"
-    buildingType={38}
-    description={[
-  "Produces Fish (food) resource",
-  "Requires 1 population to operate",
-  "Same construction cost in both simple and standard modes"
-]}
-  />
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/explore.gif" alt="Explore" />
+
+  <em>Explore in the client</em>
 </div>
 
-### Military Buildings
+## Troop Transfers
 
-Your military buildings are essential for training up armies to defend your territories and project your might. There
-are three 'tiers' of each of the three troop types, but a different building is required to produce each troop tier. As
-such, there are a total of 9 military buildings in the game.
+Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
+the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab.
+Transferring troops from one army to another with lower stamina makes no change to the stamina of either army.
+Transferring from an army with lower stamina to an army with higher stamina will reduce the higher-stamina army to equal
+that of the lower stamina army.
 
-Note: Only T1 troop buildings can be constructed in both standard and simple mode. T2 and T3 military buildings are only
-available for construction in standard mode.
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
 
-<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
-  <BuildingCard
-    title="Footman Barracks (T1)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={28}
-    description={[
-  "Produces T1 Footman units",
-  "Requires 3 population to operate",
-  "Available in both simple and standard building modes"
-]}
-  />
-
-  <BuildingCard
-    title="Knight Quarters (T2)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={29}
-    description={[
-  "Produces T2 Knight units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Guardian Sanctum (T3)"
-    image="/images/buildings/construction/barracks.png"
-    buildingType={30}
-    description={[
-  "Produces T3 Royal Guardian units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Archery Range (T1)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={31}
-    description={[
-  "Produces T1 Archer units",
-  "Requires 3 population to operate",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Crossbow Garrison (T2)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={32}
-    description={[
-  "Produces T2 Crossbowman units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Hunting Den (T3)"
-    image="/images/buildings/construction/archery.png"
-    buildingType={33}
-    description={[
-  "Produces T3 Beast Hunter units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Horseman Stables (T1)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={34}
-    description={[
-  "Produces T1 Horseman units",
-  "Requires 3 population to operate",
-  "Available in both simple and standard building modes",
-]}
-  />
-
-  <BuildingCard
-    title="Paladin Sanctuary (T2)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={35}
-    description={[
-  "Produces T2 Paladin units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode",
-]}
-  />
-
-  <BuildingCard
-    title="Dragon Pit (T3)"
-    image="/images/buildings/construction/stable.png"
-    buildingType={36}
-    description={[
-  "Produces T3 Dragon Rider units",
-  "Requires 3 population to operate",
-  "Only available in standard building mode"
-]}
-  />
+  <em>Transfer troops in the client</em>
 </div>
 
 
 
 ---
 
-file: docs/pages/mechanics/realm-and-villages/realm.mdx
+file: docs/pages/mechanics/worldmap-movement/worldmap.mdx
 meta: {}
 
-import { StartingResources, StructureType } from "@/components/StartingResources";
-import { TotalArmiesTable, RealmDefenseSlotsTable } from "@/components/DefendingArmies";
-import { BuildableHexes } from "@/components/BuildableHexes";
-import { RealmLeveling } from "@/components/RealmLeveling";
+# 🗺️ The World Map
 
-## Realms
+<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
 
-The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
-limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
-in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
-and its Season Pass.
+## An Unexplored World
 
-### Settling
+At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
+exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
+can be seen when settling and when observing the world view, each equidistant from the centre of the map and from one
+another.
 
-To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
-homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
-the game starts, allowing players to organise and position themselves before a move can be made. Realms can still be
-settled after this period, however they may be at a disadvantage if spawning near established Realms late in the season.
+When Lords settle a Realm or Village, the six hexes directly adjacent are automatically revealed if they haven't already
+been explored. Beyond these instances, the world remains cloaked by the mist, waiting for ambitious Lords to send forth
+their armies to explore. Once a hex is explored, the state of the hex (i.e. the biome and whether it contains a world
+structure or army) is permanently revealed to all Lords.
 
-![Realm Settling Screen](/screenshots/settling.png)
+## Biomes
 
-### Starting Resources
+Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
+procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
+coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
 
-<StartingResources structureType={StructureType.Realm} />
-
-### Realm Progression
-
-Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
-additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
-your defences. Each progression requires specific materials, outlined in the table below:
-
-<RealmLeveling />
-
-<BuildableHexes />
-
-<TotalArmiesTable />
-
-<RealmDefenseSlotsTable />
-
-
-
----
-
-file: docs/pages/mechanics/realm-and-villages/villages.mdx
-meta: {}
-
-import ResourceProbability from "@/components/ResourceProbability";
-import { StartingResources, StructureType } from "@/components/StartingResources";
-
-## Villages
-
-Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
-surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
-settlers and loyal subjects. Additionally, they can act as supplementary playing pieces for more serious players who
-wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
-Villages in Season 1!
-
-### Settling
-
-Villages are settled by minting a Village token. Aspiring settlers can choose to place their Village next to a specific
-Realm by entering the asset ID of a settled Realm, or let fate guide them to a random Realm's outskirts - either way,
-the Realm that they spawn adjacent to becomes that Village's 'parent' Realm. Players may also choose which of the six
-possible hexes they spawn on by selecting a compass direction.
-
-\[todo: add image of villages surrounding realm]
-
-### Starting Resources
-
-<StartingResources structureType={StructureType.Village} />
-
-### Resource Roll
-
-When minting a Village, a random number is rolled to determine the single resource that it can produce.
-
-<ResourceProbability />
-
-### Limitations
-
-Villages produce food, resources, troops, donkeys, and labor at 50% the rate of Realms. They can receive and purchase
-food, labor, donkeys and resources without restriction, but can only receive troops from their parent Realm - this
-limitation is in place to prevent players from spawning a Village on their rival's Realm and 'teleporting' troops there
-by using the donkey network.
-
-### Village Progression
-
-Villages have a limited progression path and may only upgrade once from Settlement to City. The cost and benefits of
-this progression is the same as that of a Realm.
-
-
-
----
-
-file: docs/pages/mechanics/realm-and-villages/wonders.mdx
-meta: {
-  "title": "Wonders",
-  "description": "The Wonders of Realms Eternum"
-}
-
-# Wonders
-
-> **Work in Progress:** This documentation is currently under development and will be updated with more information
-> soon.
-
-
-
----
-
-file: docs/pages/mechanics/world-structures/hyperstructures.mdx
-meta: {}
-
-import { HyperstructureTable } from "@/components/HyperstructureTable";
-
-# Hyperstructures
-
-<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-<HyperstructureTable />
-
-
-
----
-
-file: docs/pages/mechanics/world-structures/world-structures.mdx
-meta: {}
-
-# World Structures
-
-## Quest Tiles
-
-*Work in Progress*
-
-## Fragment Mines
-
-*Work in Progress*
-
-## Hyperstructures
-
-*Work in Progress*
+Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
+potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
+explained in more detail in the [Military section](/mechanics/military/stamina-and-biomes). Additionally, biomes have
+the potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop
+type differently as they move between hexes—this is explained further in the subsection below.
 

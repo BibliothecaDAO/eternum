@@ -19,10 +19,7 @@ export const getAddressNameFromToriiClient = async (toriiClient: ToriiClient, ad
   };
   const addressName = await toriiClient.getEntities(query, false);
   if (Object.keys(addressName).length > 0) {
-    return "0xSearchForThisLineInTheCodeBase";
-    // return shortString.decodeShortString(
-    //   addressName[Object.keys(addressName)[0]]["s1_eternum-AddressName"]["name"]["value"] as string,
-    // );
+    return addressName[Object.keys(addressName)[0]]["s1_eternum-AddressName"]["name"]["value"] as string;
   } else {
     return null;
   }

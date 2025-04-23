@@ -1,5 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { colors, section } from "./styles";
+import { colors, section, table } from "./styles";
 
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
   switch (troopTier) {
@@ -213,6 +213,62 @@ export const TroopTiers = () => {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+export const TroopTierDamageStats = () => {
+  return (
+    <div style={section.wrapper}>
+      <div style={section.subtitle}>Troop Tier Stats</div>
+
+      <div style={section.commonCard}>
+        <div style={section.commonHeader}>
+          <span>⚔️</span> Damage Comparison by Tier
+        </div>
+
+        <table style={table.compareTable}>
+          <thead style={table.tableHead}>
+            <tr>
+              <th style={{ ...table.tableHeaderCell, ...table.tableFirstColumn }}>Tier</th>
+              <th style={table.tableHeaderCell}>Cum. Damage Inc. over T1</th>
+              <th style={table.tableHeaderCell}>Diff. Between Tiers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={table.tableRow}>
+              <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
+                <div style={table.tableTierCell}>
+                  <span style={table.tierBadge}>T1</span>
+                  Base
+                </div>
+              </td>
+              <td style={table.tableCell}> / </td>
+              <td style={table.tableCell}> / </td>
+            </tr>
+            <tr style={table.tableRow}>
+              <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
+                <div style={table.tableTierCell}>
+                  <span style={table.tierBadge}>T2</span>
+                  2.5 × T1
+                </div>
+              </td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>250%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>250%</td>
+            </tr>
+            <tr style={table.tableRow}>
+              <td style={{ ...table.tableCell, ...table.tableFirstColumn }}>
+                <div style={table.tableTierCell}>
+                  <span style={table.tierBadge}>T3</span>
+                  2.8 × T2 (7 × T1)
+                </div>
+              </td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>700%</td>
+              <td style={{ ...table.tableCell, fontWeight: "bold" }}>450%</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );

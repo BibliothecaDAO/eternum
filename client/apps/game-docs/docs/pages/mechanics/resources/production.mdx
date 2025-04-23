@@ -7,40 +7,40 @@ import {
   DonkeyProduction,
 } from "@/components/ResourceProduction";
 
-## Production
+# ⚒️ Production
 
-### Standard vs. Simple
+## Standard vs. Simple
 
-As for building construction, Lords can choose between standard and simple production systems when deciding how they
-wish to produce their materials. This can be done by selecting the appropriate panel when making an order in the
-production screen.
+As is the case for building construction, Lords can choose between standard and simple production systems when deciding
+how they wish to produce their materials. This can be done by selecting the appropriate panel when making an order in
+the production screen.
 
 ![Simple Mode Production](/gifs/simple-mode.gif)
 
-Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
+_Note: Production works a little differently in Season 1 compared to Season 0. Instead of streaming resources unit by
 unit and producing an output for as long as you have the requisite inputs, Lords must now commit the full material
-requirements to the production order upfront. The output is then produced at a given rate per second.
+requirements to the production order upfront. The output is then produced at a given rate per second._
 
-#### Standard Mode
+### Standard Mode
 
 The classic Eternum system—every resource and troop production order requires food and a combination of other resources
 as inputs. As with buildings, standard mode is the more complex but efficient way to produce materials.
 
-#### Simple Mode
+### Simple Mode
 
 Simple mode reduces the requirements for a production order to food and labor. This is, once again, less efficient in
 both time and resources—but it allows Lords to produce resources on their Realm or Village even if they don't have
 access to the input resources required in standard mode.
 
-### Materials Production
+## Materials Production
 
-#### Food
+### Food
 
 The rich and fertile lands of Eternum produce two staple food sources, Wheat and Fish. These are the only materials that
 can be produced without inputs, so once a Farm or Fishing Village has been constructed, they can produce food
 indefinitely.
 
-#### Resources
+### Resources
 
 The 22 resources found in Eternum are the backbone of the world economy. Producing one resource requires the input of
 two other resources (standard mode), or labor (simple mode). Resources are also the main components in building
@@ -51,7 +51,7 @@ security.
 
 <StandardResourceProduction />
 
-#### Labor
+### Labor
 
 Labor is a new mechanic in Season 1 that has been introduced to simplify and supplement gameplay. It is the primary
 input for buildings and production in simple mode, but is also required in standard mode for building construction,
@@ -63,12 +63,12 @@ dependent on rarity. The amount of resources burned per second to produce Labor 
 
 <LaborProduction />
 
-#### Troops
+### Troops
 
 Troops are essential for exploration, defending your lands and conquering your enemies. Every Lord will be required to
-use military buildings to produce troops and ensure they remain a relevant force throughout the game. In Season 1, two
-new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of the previous
-tier as input for production.
+procure troops, either through production or purchase, to ensure they remain a relevant force throughout the game. In
+Season 1, two new troop tiers have been introduced, each requiring a combination of food, rare resources, and troops of
+the previous tier as input for production.
 
 Note: Only T1 troops can be produced in both standard and simple mode. T2 and T3 troops can only be produced in standard
 mode.
@@ -76,7 +76,7 @@ mode.
 <SimpleTroopProduction />
 <StandardTroopProduction />
 
-#### Donkeys
+### Donkeys
 
 The humble steeds that move all materials around Eternum must themselves be produced in a market building. Donkeys are
 one-time-use and consumed after a single journey, so Lords will need to procure a steady supply of donkeys, either

@@ -284,6 +284,13 @@ export const stats = {
 
 // Resource item styles
 export const resource = {
+  noteStyle: {
+    fontSize: "0.75rem",
+    color: colors.text.light,
+    opacity: 0.85,
+    marginTop: "0.5rem",
+    fontStyle: "italic",
+  },
   gridStyle: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",

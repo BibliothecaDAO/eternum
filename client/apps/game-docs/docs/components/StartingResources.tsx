@@ -18,19 +18,12 @@ const resourceIdToName: Record<number, string> = {
   36: "Fish",
   23: "Labor",
   25: "Donkey",
-  26: "Knight",
-  29: "Crossbowman",
-  32: "Paladin",
 };
 
 // Get resource category label
 const getResourceCategory = (resourceId: number): { label: string; shade: string } => {
-  // Military resources
-  if ([26, 27, 28, 29, 30, 31, 32, 33, 34].includes(resourceId)) {
-    return { label: "Military", shade: colors.resource.military };
-  }
   // Food resources
-  else if ([35, 36].includes(resourceId)) {
+  if ([35, 36].includes(resourceId)) {
     return { label: "Food", shade: colors.resource.food };
   }
   // Labor
@@ -39,7 +32,7 @@ const getResourceCategory = (resourceId: number): { label: string; shade: string
   }
   // Transport (Donkey)
   else if (resourceId === 25) {
-    return { label: "Transport", shade: colors.resource.transport };
+    return { label: "Donkey", shade: colors.resource.transport };
   }
   // Default
   return { label: "Resource", shade: colors.resource.default };
@@ -86,8 +79,13 @@ const ResourceItem = ({ resourceId, amount }: { resourceId: number; amount: numb
 
 export const StartingResources = ({ structureType }: Props) => {
   const config = ETERNUM_CONFIG();
-  const startingResources =
+  const allStartingResources =
     structureType === StructureType.Village ? config.villageStartingResources : config.startingResources;
+
+  // Filter out military resources
+  const startingResources = allStartingResources.filter(
+    ({ resource: resourceId }) => ![26, 27, 28, 29, 30, 31, 32, 33, 34].includes(resourceId),
+  );
 
   // Calculate resource totals by category
   const resourceTotals = startingResources.reduce(
@@ -122,36 +120,6 @@ export const StartingResources = ({ structureType }: Props) => {
       {startingResources.length === 0 && (
         <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af" }}>
           No starting resources defined for {structureType}
-        </div>
-      )}
-
-      {Object.keys(resourceTotals).length > 0 && (
-        <div style={resource.summaryContainerStyle}>
-          <div style={resource.summaryTitleStyle}>Resource Summary</div>
-          <div style={resource.summaryGridStyle}>
-            {Object.entries(resourceTotals).map(([category, data], index) => {
-              // Get the shade for this category (always gold/amber now)
-              const goldShade = colors.primary;
-
-              return (
-                <div key={index} style={resource.summaryCategoryStyle}>
-                  <div style={resource.categoryTitleStyle}>
-                    <div
-                      style={{
-                        width: "0.5rem",
-                        height: "0.5rem",
-                        backgroundColor: goldShade,
-                        borderRadius: "9999px",
-                        marginRight: "0.5rem",
-                      }}
-                    ></div>
-                    {category}
-                  </div>
-                  <div style={resource.totalStyle}>{formatNumber(data.total)}</div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>
