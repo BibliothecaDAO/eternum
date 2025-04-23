@@ -3,8 +3,8 @@ import { discord } from "@daydreamsai/discord";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
 
-import llmtxt from "../../public/llm.txt";
 import greatArtisan from "./great-artisan.txt";
+import llmtxt from "./llm.txt";
 import virgil from "./virgil.txt";
 
 validateEnv(
