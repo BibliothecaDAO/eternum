@@ -838,7 +838,7 @@ within Eternum and rely on player-driven interactions including arrangements of 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/create-guild.gif" alt="Create Guild" />
 
-  <em>Flow to create guild</em>
+  <em>Flow to create tribe</em>
 </div>
 
 

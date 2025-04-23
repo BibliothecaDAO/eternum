@@ -1,5 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { colors, section } from "./styles";
+import { colors, section, table } from "./styles";
 
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
   switch (troopTier) {
@@ -216,100 +216,6 @@ export const TroopTiers = () => {
       </div>
     </div>
   );
-};
-
-// Table styles
-export const table = {
-  container: {
-    overflowX: "auto" as const,
-    borderRadius: "0.75rem",
-    backgroundColor: colors.background.medium,
-    borderBottom: `1px solid ${colors.border}`,
-    borderLeft: `1px solid ${colors.border}`,
-    marginBottom: "1.5rem",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-  },
-  wrapper: {
-    overflowX: "auto" as const,
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
-  },
-  tableHead: {
-    backgroundColor: colors.background.dark,
-  },
-  headerCell: {
-    padding: "0.5rem",
-    backgroundColor: colors.background.header,
-    color: colors.primary,
-    fontWeight: "bold",
-    textAlign: "left" as const,
-    borderBottom: `1px solid ${colors.borderDark}`,
-  },
-  cell: {
-    padding: "0.5rem",
-    borderBottom: `1px solid ${colors.border}`,
-    backgroundColor: colors.background.light,
-    verticalAlign: "middle" as const,
-  },
-  resourceCell: {
-    padding: "0.5rem",
-    borderBottom: `1px solid ${colors.border}`,
-    backgroundColor: colors.background.light,
-    verticalAlign: "middle" as const,
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-  },
-  weightCell: {
-    padding: "0.5rem",
-    borderBottom: `1px solid ${colors.border}`,
-    backgroundColor: colors.background.light,
-    verticalAlign: "middle" as const,
-    color: colors.secondary,
-  },
-  compareTable: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    marginBottom: "1.5rem",
-  },
-  tableHeaderCell: {
-    textAlign: "left" as const,
-    padding: "0.75rem 0.5rem",
-    color: colors.primary,
-    fontSize: "0.9rem",
-    fontWeight: "bold",
-  },
-  tableFirstColumn: {
-    width: "30%",
-    paddingLeft: "0",
-  },
-  tableCell: {
-    padding: "0.75rem 0.5rem",
-    color: colors.secondary,
-    fontSize: "0.95rem",
-    borderBottom: `1px solid rgba(109, 73, 35, 0.3)`,
-  },
-  tableRow: {
-    transition: "background-color 0.2s",
-  },
-  tableTierCell: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.5rem",
-    color: colors.text.light,
-  },
-  tierBadge: {
-    display: "inline-block",
-    padding: "0.25rem 0.5rem",
-    borderRadius: "0.25rem",
-    fontSize: "0.8rem",
-    fontWeight: "bold",
-    backgroundColor: `rgba(240, 176, 96, 0.1)`,
-    color: colors.primary,
-  },
 };
 
 export const TroopTierDamageStats = () => {
