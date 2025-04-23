@@ -26,9 +26,14 @@ export default class InstancedModel {
     let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
+        // hack for models materials, need to be removed after the models are updated
+        if (child?.material?.name?.includes("opacity")) {
+          child.material.roughness = 1;
+          child.material.normalMap = null;
+        }
         if (!child.material.depthWrite) {
           child.material.depthWrite = true;
-          child.material.alphaTest = 0.05;
+          child.material.alphaTest = 0.075;
           renderOrder = 3;
         } else {
           renderOrder = 2;

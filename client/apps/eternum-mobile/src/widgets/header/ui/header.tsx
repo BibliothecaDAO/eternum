@@ -1,4 +1,5 @@
 import { ROUTES } from "@/shared/consts/routes";
+import useStore from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { ModeToggle } from "@/shared/ui/mode-toggle";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/shared/ui/sheet";
 import { useDisconnect } from "@starknet-react/core";
 import { Link, useMatches, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const navigation = [
   { name: "Realm", href: ROUTES.REALM },
@@ -27,6 +28,19 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const matches = useMatches();
   const currentPath = matches.at(-1)?.pathname;
+  const connector = useStore((state) => state.connector);
+  const [userName, setUserName] = useState("adventurer");
+
+  useEffect(() => {
+    if (!connector || !connector!.controller) return;
+
+    try {
+      connector.controller.username()?.then((name) => setUserName(name));
+    } catch (error) {
+      // controller in local
+      setUserName("adventurer");
+    }
+  }, [connector]);
 
   const handleLogout = () => {
     setOpen(false);
@@ -72,7 +86,7 @@ export function Header() {
               ))}
             </nav>
             <SheetFooter>
-              <Button onClick={handleLogout}>Logout</Button>
+              <Button onClick={handleLogout}>Logout ({userName})</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>

@@ -5,13 +5,15 @@ import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
-  findResourceById,
   formatTime,
-  ID,
   multiplyByPrecision,
   ResourceManager,
-  TickIds,
 } from "@bibliothecadao/eternum";
+import {
+  ID,
+  findResourceById,
+  TickIds,
+} from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceChip = ({
@@ -19,11 +21,13 @@ export const ResourceChip = ({
   resourceManager,
   maxCapacityKg,
   size = "default",
+  hideZeroBalance = false,
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
   maxCapacityKg: number;
   size?: "default" | "large";
+  hideZeroBalance?: boolean;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const [showPerHour, setShowPerHour] = useState(true);
@@ -108,11 +112,15 @@ export const ResourceChip = ({
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
+  // Check if we should hide this resource based on the balance and hideZeroBalance prop
+  if (hideZeroBalance && balance <= 0) {
+    return null;
+  }
+
   return (
     <div
-      className={`flex relative group items-center ${
-        size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/20`}
+      className={`flex relative group items-center ${size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
+        } hover:bg-gold/20`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -128,9 +136,8 @@ export const ResourceChip = ({
 
         {isActive && (productionEndsAt > currentTick || resourceManager.isFood(resourceId)) ? (
           <div
-            className={`${
-              productionRate < 0 ? "text-light-red" : "text-green/80"
-            } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-3 text-center mx-auto`}
+            className={`${productionRate < 0 ? "text-light-red" : "text-green/80"
+              } self-center px-2 flex font-bold ${size === "large" ? "text-lg" : "text-xs"} col-span-3 text-center mx-auto`}
           >
             <div className={`self-center`}>
               +

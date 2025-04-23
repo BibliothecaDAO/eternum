@@ -7,12 +7,14 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getBuildingFromResource,
   getBuildingQuantity,
+} from "@bibliothecadao/eternum";
+import {
+  getBuildingFromResource,
   RealmInfo,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types"
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
@@ -73,7 +75,7 @@ export const ResourceProductionControls = ({
 
     if (productionAmount > 0) {
       setIsLoading(true);
-      let productionCycles = Math.floor(productionAmount / laborConfig?.resourceOutputPerInputResources);
+      const productionCycles = Math.floor(productionAmount / laborConfig?.resourceOutputPerInputResources);
       const calldata = {
         from_entity_id: realm.entityId,
         production_cycles: [productionCycles],

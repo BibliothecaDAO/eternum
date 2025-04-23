@@ -1,6 +1,5 @@
-import { ResourceManager, type DojoAccount, type ID, type Resource } from "..";
-import { ClientComponents } from "../dojo/create-client-components";
-import { SystemCalls } from "../dojo/create-system-calls";
+import { ResourceManager } from "..";
+import { ClientComponents, SystemCalls, type DojoAccount, type ID, type Resource } from "@bibliothecadao/types";
 export class ResourceInventoryManager {
   carrierEntityId: ID;
 

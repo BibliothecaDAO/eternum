@@ -10,24 +10,26 @@ import { Tabs } from "@/ui/elements/tab";
 import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  BuildingType,
-  BuildingTypeToString,
-  CapacityConfig,
   configManager,
   divideByPrecision,
-  findResourceById,
   getBalance,
   getBuildingCosts,
-  getBuildingFromResource,
   getConsumedBy,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  ResourceIdToMiningType,
+} from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  CapacityConfig,
+  findResourceById,
+  getBuildingFromResource,
   ID,
   isEconomyBuilding,
-  ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -218,8 +220,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     resourceName={
                       configManager.getResourceBuildingProduced(building)
                         ? (ResourcesIds[
-                            configManager.getResourceBuildingProduced(building)
-                          ] as keyof typeof ResourcesIds)
+                          configManager.getResourceBuildingProduced(building)
+                        ] as keyof typeof ResourcesIds)
                         : undefined
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
@@ -329,7 +331,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               buildingName={`${BuildingTypeToString[building]} (T${info?.tier})`}
                               resourceName={
                                 ResourcesIds[
-                                  configManager.getResourceBuildingProduced(building)
+                                configManager.getResourceBuildingProduced(building)
                                 ] as keyof typeof ResourcesIds
                               }
                               toolTip={
@@ -539,32 +541,31 @@ export const ResourceInfo = ({
       )}
 
       <div className="grid grid-cols-2 gap-4">
+        {resourceById && (
+          <div>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
+            <div className="flex items-center gap-2 mt-1">
+              <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
+              <ResourceIcon className="self-center" resource={resourceById || ""} size="xl" />
+              <h6 className="text-gold/80">{resourceById || ""}</h6>
+            </div>
+          </div>
+        )}
         <div>
           {population !== 0 && (
             <div className="mb-2">
               <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
-              <span className="text-gold text-lg font-semibold">+{population}</span>
+              <h6 className="text-gold text-lg font-semibold">+{population}</h6>
             </div>
           )}
 
           {capacity !== 0 && (
             <div>
               <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Pop. Capacity Grant</h6>
-              <span className="text-gold text-lg font-semibold">+{capacity}</span>
+              <h6 className="text-gold text-lg font-semibold">+{capacity}</h6>
             </div>
           )}
         </div>
-
-        {resourceById && (
-          <div>
-            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces per Second</h6>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</span>
-              <ResourceIcon className="self-center" resource={resourceById || ""} size="sm" />
-              <span className="text-gold/80">{resourceById || ""}</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {Object.keys(cost).length > 0 && (
@@ -584,10 +585,10 @@ export const ResourceInfo = ({
                 <ResourceCost
                   key={resourceId}
                   type="horizontal"
-                  className="!text-xs"
                   resourceId={cost[Number(resourceId)].resource}
                   amount={cost[Number(resourceId)].amount}
                   balance={balance.balance}
+                  size="lg"
                 />
               );
             })}
@@ -612,10 +613,10 @@ export const ResourceInfo = ({
                 <ResourceCost
                   key={index}
                   type="horizontal"
-                  className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
+                  size="lg"
                 />
               );
             })}
@@ -625,7 +626,9 @@ export const ResourceInfo = ({
 
       {consumedBy.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Consumed By</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10 flex items-center gap-2">
+            <ResourceIcon className="self-center" resource={resourceById || ""} size="lg" /> Consumed By
+          </h6>
           <div className="flex flex-row space-x-2 mt-1">
             {React.Children.toArray(
               consumedBy.map((resourceId) => (

@@ -223,8 +223,8 @@ pub impl TroopsImpl of TroopsTrait {
             Biome::Scorched => {
                 match self.category {
                     TroopType::Knight => (ADD, VALUE), // +x
-                    TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (SUBTRACT, VALUE) // -x
+                    TroopType::Crossbowman => (ADD, VALUE), // +x
+                    TroopType::Paladin => (ADD, VALUE) // +x
                 }
             },
             Biome::Bare => {
@@ -238,7 +238,7 @@ pub impl TroopsImpl of TroopsTrait {
                 match self.category {
                     TroopType::Knight => (SUBTRACT, VALUE), // -x
                     TroopType::Crossbowman => (NEUTRAL, ZERO), // 0
-                    TroopType::Paladin => (ADD, VALUE) // +X
+                    TroopType::Paladin => (ADD, VALUE) // +x
                 }
             },
             Biome::Snow => {

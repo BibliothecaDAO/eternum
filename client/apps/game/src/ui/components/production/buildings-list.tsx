@@ -1,7 +1,7 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, getProducedResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useBuildings, useResourceManager } from "@bibliothecadao/react";
 import { useMemo } from "react";
 import { ResourceChip } from "../resources/resource-chip";

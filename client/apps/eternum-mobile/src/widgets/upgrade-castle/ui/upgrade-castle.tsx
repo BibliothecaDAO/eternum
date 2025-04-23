@@ -1,7 +1,7 @@
 import { useStructureUpgrade } from "@/features/upgrade-structure";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { ArrowRight, Castle, Sparkles } from "lucide-react";
 import { useState } from "react";

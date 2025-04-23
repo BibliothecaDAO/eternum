@@ -1,40 +1,33 @@
+import { WeightTable } from "@/components/WeightTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { divideByPrecision } from "@/utils/resources";
-import { CapacityConfigCategory, ResourcesIds } from "@/utils/types";
+import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
-## Storage System
+# 🏺 Storage System
 
 Storage limits how many resources your realm can hold. Managing your storage capacity effectively is key to developing
 your realm.
 
-### Resource Weights
+## Resource Weights
 
 Resources in Eternum have different weights that affect storage:
 
-- **Basic resources** (Wood, Stone, Coal,...):
-  {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wood])}kg per unit
-- **Military units**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Knight])}kg per
-  unit
-- **Food** (Wheat, Fish): {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Wheat])}kg per
-  unit
-- **Lords**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Lords])}kg per unit
-- **Donkey**: {divideByPrecision(ETERNUM_CONFIG().resources.resourceWeightsGrams[ResourcesIds.Donkey])}kg
+<WeightTable />
 
-### Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
+## Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right"/>
 
 Expand your storage capacity to support your growing realm:
 
 - **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(divideByPrecision(ETERNUM_CONFIG().carryCapacityGram[CapacityConfigCategory.Storehouse] ))}kg
-  of storage per resource
+  {formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage per
+  material
 - **Expansion**: Build additional storehouses to increase total storage.
 
 - **When storage is full**:
   - New production is wasted
-  - Input resources continue to be consumed
 
-### Storage Management Tips
+## Storage Management Tips
 
 > 💡 **Best Practices**
 >

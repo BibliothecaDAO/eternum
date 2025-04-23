@@ -18,8 +18,9 @@ import { Headline } from "@/ui/elements/headline";
 import { RangeInput } from "@/ui/elements/range-input";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
-import { ContractAddress, getAddressName } from "@bibliothecadao/eternum";
+import { getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import * as platform from "platform";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -89,6 +90,10 @@ export const SettingsWindow = () => {
 
   // State to hold download links with names and URLs
   const [eternumLoaderDownloadLinks, setEternumLoaderDownloadLinks] = useState<string[]>([]);
+
+  useEffect(() => {
+    setToriiSetting(localStorage.getItem("TORII_SETTING") as ToriiSetting);
+  }, [localStorage.getItem("TORII_SETTING")]);
 
   const clickFullScreen = () => {
     setFullScreen(!fullScreen);

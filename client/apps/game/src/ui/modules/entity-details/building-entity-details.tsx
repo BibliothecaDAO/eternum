@@ -7,19 +7,21 @@ import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
+  ResourceIdToMiningType,
+  TileManager,
+  configManager,
+  getEntityInfo,
+} from "@bibliothecadao/eternum";
+import {
   BUILDINGS_CENTER,
   BuildingType,
   ContractAddress,
   ID,
-  ResourceIdToMiningType,
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
-  TileManager,
-  configManager,
-  getEntityInfo,
   getProducedResource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -187,7 +189,7 @@ export const BuildingEntityDetails = () => {
                   toggleModal(<ProductionModal preSelectedResource={buildingState.resource} />);
                 }}
                 isLoading={isLoading}
-                variant="primary"
+                variant="gold"
                 withoutSound
               >
                 <div className="flex items-center gap-2">
@@ -195,7 +197,7 @@ export const BuildingEntityDetails = () => {
                   Produce
                 </div>
               </Button>
-              <Button
+              {/* <Button
                 className="mb-4"
                 onClick={handlePauseResumeProduction}
                 isLoading={isLoading}
@@ -203,12 +205,12 @@ export const BuildingEntityDetails = () => {
                 withoutSound
               >
                 {isPaused ? "Resume" : "Pause"}
-              </Button>
+              </Button> */}
               <Button
                 disabled={!canDestroyBuilding}
                 className="mb-4"
                 onClick={handleDestroyBuilding}
-                variant="secondary"
+                variant="danger"
                 withoutSound
               >
                 {showDestroyConfirm ? "Confirm Destroy" : "Destroy"}

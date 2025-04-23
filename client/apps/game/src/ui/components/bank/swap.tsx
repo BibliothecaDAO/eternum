@@ -10,22 +10,24 @@ import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   computeTravelTime,
   configManager,
-  ContractAddress,
   divideByPrecision,
   getBalance,
   getClosestBank,
   getEntityIdFromKeys,
-  ID,
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import { setup } from "@bibliothecadao/dojo";
+import {
+  ContractAddress,
+  ID,
   RESOURCE_TIERS,
   Resources,
   resources,
   ResourcesIds,
-  setup,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -221,7 +223,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
     const isVillageAndMilitaryResource =
       getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+      StructureType.Village && isMilitaryResource(resourceId);
 
     return (
       <ConfirmationPopup

@@ -9,20 +9,16 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  BiomeType,
-  ClientComponents,
   CombatSimulator,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
   getBalance,
   getGuardsByStructure,
-  ID,
-  ResourcesIds,
   StaminaManager,
-  TroopType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -222,9 +218,9 @@ const AttackInfo = memo(
     // Get biome advantages for different troop types
     const biomeAdvantages = useMemo(() => {
       return {
-        knight: combatSimulator.getBiomeBonus(TroopType.Knight, targetBiome),
-        paladin: combatSimulator.getBiomeBonus(TroopType.Paladin, targetBiome),
-        crossbowman: combatSimulator.getBiomeBonus(TroopType.Crossbowman, targetBiome),
+        knight: configManager.getBiomeCombatBonus(TroopType.Knight, targetBiome),
+        paladin: configManager.getBiomeCombatBonus(TroopType.Paladin, targetBiome),
+        crossbowman: configManager.getBiomeCombatBonus(TroopType.Crossbowman, targetBiome),
       };
     }, [combatSimulator, targetBiome]);
 

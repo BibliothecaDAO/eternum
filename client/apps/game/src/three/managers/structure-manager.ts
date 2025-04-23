@@ -4,7 +4,7 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { StructureModelPaths } from "@/three/scenes/constants";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { FELT_CENTER } from "@/ui/config";
-import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { getLevelName, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { StructureInfo, StructureSystemUpdate } from "../types";
@@ -40,6 +40,7 @@ export class StructureManager {
   private scene: THREE.Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
+  private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private dummy: THREE.Object3D = new THREE.Object3D();
   modelLoadPromises: Promise<InstancedModel>[] = [];
@@ -123,7 +124,12 @@ export class StructureManager {
             modelPath,
             (gltf) => {
               const model = gltf.scene as THREE.Group;
-              const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, StructureType[structureType]);
+              const instancedModel = new InstancedModel(
+                gltf,
+                MAX_INSTANCES,
+                false,
+                modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
+              );
               resolve(instancedModel);
             },
             undefined,
@@ -222,6 +228,7 @@ export class StructureManager {
         });
 
         this.entityIdMaps.set(structureType, new Map());
+        this.wonderEntityIdMaps.clear();
 
         visibleStructures.forEach((structure) => {
           visibleStructureIds.add(structure.entityId);
@@ -248,15 +255,29 @@ export class StructureManager {
           let modelType = models[structure.stage];
           if (structureType === StructureType.Realm) {
             modelType = models[structure.level];
-            if (structure.hasWonder) {
-              modelType = models[WONDER_MODEL_INDEX];
-            }
-          }
-          const currentCount = modelType.getCount();
-          modelType.setMatrixAt(currentCount, this.dummy.matrix);
-          modelType.setCount(currentCount + 1);
 
-          this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+            // Add the Realm model
+            const currentCount = modelType.getCount();
+            modelType.setMatrixAt(currentCount, this.dummy.matrix);
+            modelType.setCount(currentCount + 1);
+            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+
+            // If the Realm has a wonder, also add the Wonder model at the same location
+            if (structure.hasWonder) {
+              const wonderModel = models[WONDER_MODEL_INDEX];
+              const wonderCount = wonderModel.getCount();
+              wonderModel.setMatrixAt(wonderCount, this.dummy.matrix);
+              wonderModel.setCount(wonderCount + 1);
+
+              // Store the entity ID mapping for the wonder model
+              this.wonderEntityIdMaps.set(wonderCount, structure.entityId);
+            }
+          } else {
+            const currentCount = modelType.getCount();
+            modelType.setMatrixAt(currentCount, this.dummy.matrix);
+            modelType.setCount(currentCount + 1);
+            this.entityIdMaps.get(structureType)!.set(currentCount, structure.entityId);
+          }
         });
 
         models.forEach((model) => model.needsUpdate());
@@ -290,11 +311,25 @@ export class StructureManager {
   }
 
   public getEntityIdFromInstance(structureType: StructureType, instanceId: number): ID | undefined {
+    // Check if this is a wonder model instance
+    if (structureType === StructureType.Realm && this.wonderEntityIdMaps.has(instanceId)) {
+      return this.wonderEntityIdMaps.get(instanceId);
+    }
+
     const map = this.entityIdMaps.get(structureType);
     return map ? map.get(instanceId) : undefined;
   }
 
   public getInstanceIdFromEntityId(structureType: StructureType, entityId: ID): number | undefined {
+    // First check the wonder map
+    if (structureType === StructureType.Realm) {
+      for (const [instanceId, id] of this.wonderEntityIdMaps.entries()) {
+        if (id === entityId) {
+          return instanceId;
+        }
+      }
+    }
+
     const map = this.entityIdMaps.get(structureType);
     if (!map) return undefined;
     for (const [instanceId, id] of map.entries()) {
@@ -381,13 +416,12 @@ export class StructureManager {
 
     // Add structure type and level
     const typeText = document.createElement("strong");
-    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${
-      structure.structureType === StructureType.Hyperstructure
+    typeText.textContent = `${StructureType[structure.structureType]} ${structure.structureType === StructureType.Realm ? `(${getLevelName(structure.level)})` : ""} ${structure.structureType === StructureType.Hyperstructure
         ? structure.initialized
           ? `(Stage ${structure.stage + 1})`
           : "Foundation"
         : ""
-    }`;
+      }`;
 
     contentContainer.appendChild(ownerText);
     contentContainer.appendChild(typeText);

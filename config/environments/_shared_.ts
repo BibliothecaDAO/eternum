@@ -1,12 +1,5 @@
-import {
-  CapacityConfig,
-  getContractByName,
-  NAMESPACE,
-  RESOURCE_PRECISION,
-  RESOURCE_RARITY,
-  ResourcesIds,
-  type Config,
-} from "@bibliothecadao/eternum";
+import { getContractByName, NAMESPACE } from "@bibliothecadao/provider";
+import { CapacityConfig, RESOURCE_PRECISION, RESOURCE_RARITY, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { AMM_STARTING_LIQUIDITY, LORDS_LIQUIDITY_PER_RESOURCE } from "./utils/amm";
 import {
@@ -17,9 +10,10 @@ import {
   SIMPLE_BUILDING_COSTS,
 } from "./utils/building";
 import {
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TOTAL_COSTS,
+  HYPERSTRUCTURE_COSTS,
+  HYPERSTRUCTURE_POINTS_FOR_WIN,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_SHARDS_COST,
 } from "./utils/hyperstructure";
 import { REALM_MAX_LEVEL, REALM_UPGRADE_COSTS, VILLAGE_MAX_LEVEL } from "./utils/levels";
 import {
@@ -69,12 +63,6 @@ const manifest = await getGameManifest(process.env.VITE_PUBLIC_CHAIN! as Chain);
 // ----- Buildings ----- //
 // This scales the costs of the buildings
 export const BUILDING_FIXED_COST_SCALE_PERCENT = 5_000; // 5_000/10_000 = 50%
-
-// ----- Hyperstructures ----- //
-export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 7;
-export const HYPERSTRUCTURE_POINTS_ON_COMPLETION = 500_000;
-export const HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S = 17280; // 2 days
-export const HYPERSTRUCTURE_POINTS_FOR_WIN = 9_620_000;
 
 // ----- Stamina ----- //
 export const STAMINA_REFILL_PER_TICK = 20;
@@ -135,23 +123,6 @@ export const BATTLE_GRACE_TICK_COUNT = 24;
 export const BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES = 1;
 export const BATTLE_DELAY_SECONDS = 8 * 60 * 60;
 
-// ----- Troops ----- //
-export const TROOP_HEALTH = 1;
-export const TROOP_KNIGHT_STRENGTH = 1;
-export const TROOP_PALADIN_STRENGTH = 1;
-export const TROOP_CROSSBOWMAN_STRENGTH = 1;
-export const TROOP_ADVANTAGE_PERCENT = 1000;
-export const TROOP_DISADVANTAGE_PERCENT = 1000;
-export const TROOP_MAX_COUNT = 500_000;
-export const TROOP_BASE_ARMY_NUMBER_FOR_STRUCTURE = 3;
-export const TROOP_ARMY_EXTRA_PER_MILITARY_BUILDING = 1;
-export const TROOP_MAX_ARMIES_PER_STRUCTURE = 7;
-export const TROOP_PILLAGE_HEALTH_DIVISOR = 8;
-export const TROOP_BATTLE_LEAVE_SLASH_NUM = 25;
-export const TROOP_BATTLE_LEAVE_SLASH_DENOM = 100;
-export const TROOP_BATTLE_TIME_REDUCTION_SCALE = 1_000;
-export const TROOP_BATTLE_MAX_TIME_SECONDS = 2 * 86400; // 2 days
-
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
 export const SETTLEMENT_BASE_DISTANCE = 30;
@@ -189,10 +160,18 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const VILLAGE_CONTROLLER_ADDRESSES = [
+  "0x07a0f23c43a291282d093e85f7fb7c0e23a66d02c10fead324ce4c3d56c4bd67",
+  "0x359a81f67140632ec91c7f9af3fc0b5bca0a898ae0be3f7682585b0f40119a7",
+  "0x2d2e564dd4faa14277fefd0d8cb95e83b13c0353170eb6819ec35bf1bee8e2a",
+];
 
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
+  },
+  village: {
+    controller_addresses: VILLAGE_CONTROLLER_ADDRESSES,
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
@@ -309,12 +288,9 @@ export const EternumGlobalConfig: Config = {
     buildingFixedCostScalePercent: BUILDING_FIXED_COST_SCALE_PERCENT,
   },
   hyperstructures: {
-    hyperstructureCreationCosts: HYPERSTRUCTURE_CREATION_COSTS,
-    hyperstructureConstructionCosts: HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-    hyperstructureTotalCosts: HYPERSTRUCTURE_TOTAL_COSTS,
+    hyperstructureInitializationShardsCost: HYPERSTRUCTURE_SHARDS_COST,
+    hyperstructureConstructionCost: HYPERSTRUCTURE_COSTS,
     hyperstructurePointsPerCycle: HYPERSTRUCTURE_POINTS_PER_CYCLE,
-    hyperstructurePointsOnCompletion: HYPERSTRUCTURE_POINTS_ON_COMPLETION,
-    hyperstructureTimeBetweenSharesChangeSeconds: HYPERSTRUCTURE_TIME_BETWEEN_SHARES_CHANGE_S,
     hyperstructurePointsForWin: HYPERSTRUCTURE_POINTS_FOR_WIN,
   },
   season: {

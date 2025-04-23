@@ -8,13 +8,15 @@ import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
 import {
   configManager,
   divideByPrecision,
-  findResourceById,
   formatTime,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  findResourceById,
   RealmInfo,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";

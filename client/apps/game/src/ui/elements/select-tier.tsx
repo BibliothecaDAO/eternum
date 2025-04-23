@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { TroopTier } from "@bibliothecadao/eternum";
+import { TroopTier } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectTierProps {

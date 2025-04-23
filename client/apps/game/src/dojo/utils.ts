@@ -1,4 +1,4 @@
-import { ContractComponents } from "@bibliothecadao/eternum";
+import { ContractComponents } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 
 // TODO: only workaround for now

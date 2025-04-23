@@ -3,9 +3,11 @@ import { HintSection } from "@/ui/components/hints/hint-modal";
 import { rewards } from "@/ui/components/navigation/config";
 import { OSWindow } from "@/ui/components/navigation/os-window";
 import Button from "@/ui/elements/button";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getLordsAddress } from "@/utils/addresses";
-import { ContractAddress, formatTime, getEntityIdFromKeys, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, useGetUnregisteredEpochs, usePrizePool } from "@bibliothecadao/react";
+import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { ContractAddress } from "@bibliothecadao/types";
+import { useDojo, usePrizePool } from "@bibliothecadao/react";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -20,15 +22,15 @@ export const Rewards = () => {
     account: { account },
     setup: {
       components,
-      systemCalls: { register_to_leaderboard, claim_leaderboard_rewards },
+      systemCalls: { claim_construction_points, claim_share_points, end_game, season_prize_claim },
     },
   } = useDojo();
 
   const {
-    LeaderboardEntry,
-    LeaderboardRegistered,
     AddressName,
-    events: { GameEnded },
+    PlayerRegisteredPoints,
+    events: { SeasonEnded },
+    Hyperstructure,
   } = components;
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -38,57 +40,43 @@ export const Rewards = () => {
 
   const [lordsAddress, setLordsAddress] = useState<string | undefined>();
 
+  const hyperstructure_entities = useEntityQuery([Has(Hyperstructure)]);
+
+  const hyperstructure_ids = useMemo(() => {
+    return hyperstructure_entities
+      .map((entity) => getComponentValue(Hyperstructure, entity)?.hyperstructure_id)
+      .filter((id) => id !== undefined);
+  }, [hyperstructure_entities]);
+
   useEffect(() => {
     const init = async () => {
       const address = getLordsAddress();
-      setLordsAddress(address);
+      setLordsAddress(address as string);
     };
     init();
   }, []);
+
+  const gameEndedEntities = useEntityQuery([Has(SeasonEnded)]);
+
+  const gameEnded = useMemo(() => {
+    if (gameEndedEntities.length === 0) return undefined;
+    return getComponentValue(SeasonEnded, gameEndedEntities[0]);
+  }, [gameEndedEntities]);
 
   const prizePool = usePrizePool(lordsAddress);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(rewards));
 
-  const leaderboardManager = useMemo(() => {
-    return LeaderboardManager.instance(components);
-  }, [components]);
-
-  const getUnregisteredEpochs = useGetUnregisteredEpochs();
-
-  const gameEndedEntityId = useEntityQuery([Has(GameEnded)]);
-
-  const leaderboardEntry = useComponentValue(LeaderboardEntry, getEntityIdFromKeys([ContractAddress(account.address)]));
-
-  const gameEnded = useMemo(() => {
-    return getComponentValue(GameEnded, gameEndedEntityId[0]);
-  }, [gameEndedEntityId]);
-
-  const registerToLeaderboard = useCallback(async () => {
-    setIsLoading(true);
-    const epochs = getUnregisteredEpochs();
-    const contributions = leaderboardManager.getPlayerUnregistredContributions(ContractAddress(account.address));
-
-    try {
-      await register_to_leaderboard({
-        signer: account,
-        hyperstructure_contributed_to: contributions,
-        hyperstructure_shareholder_epochs: epochs,
-      });
-    } catch (error) {
-      console.error("Error registering to leaderboard", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [leaderboardManager]);
+  const playerRegistredPoints = useComponentValue(
+    PlayerRegisteredPoints,
+    getEntityIdFromKeys([ContractAddress(account.address)]),
+  );
 
   const claimRewards = useCallback(async () => {
-    const lordsAddress = getLordsAddress();
     setIsLoading(true);
     try {
-      await claim_leaderboard_rewards({
+      await season_prize_claim({
         signer: account,
-        token: lordsAddress,
       });
     } catch (error) {
       console.error("Error claiming rewards", error);
@@ -97,6 +85,35 @@ export const Rewards = () => {
     }
     setIsLoading(false);
   }, [account]);
+
+  const claimConstructionPoints = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await claim_construction_points({
+        hyperstructure_ids,
+        player: account.address,
+        signer: account,
+      });
+    } catch (error) {
+      console.error("Error claiming construction points", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [account, hyperstructure_ids]);
+
+  const claimSharePoints = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await claim_share_points({
+        hyperstructure_ids,
+        signer: account,
+      });
+    } catch (error) {
+      console.error("Error claiming share points", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [account, hyperstructure_ids]);
 
   useEffect(() => {
     if (gameEnded) {
@@ -130,7 +147,7 @@ export const Rewards = () => {
   }, [gameEnded]);
 
   const registeredPlayers = useMemo(() => {
-    const registeredPlayers = runQuery([Has(LeaderboardRegistered)]);
+    const registeredPlayers = runQuery([Has(PlayerRegisteredPoints)]);
     return registeredPlayers.size;
   }, [gameEnded]);
 
@@ -142,7 +159,7 @@ export const Rewards = () => {
 
   const registrationStatus = useMemo(() => {
     const registered = getComponentValue(
-      LeaderboardRegistered,
+      PlayerRegisteredPoints,
       getEntityIdFromKeys([ContractAddress(account.address)]),
     );
     return registered ? "registered" : "unregistered";
@@ -173,7 +190,9 @@ export const Rewards = () => {
               <div className="text-center text-lg font-semibold self-center w-full">
                 <div className="text-sm font-bold uppercase">Your registered points</div>
 
-                <div className="text-lg">{Number(leaderboardEntry?.points ?? 0)}</div>
+                <div className="text-lg">
+                  {currencyIntlFormat(Number(playerRegistredPoints?.registered_points ?? 0))}
+                </div>
               </div>
             </Compartment>
           </div>
@@ -215,18 +234,17 @@ export const Rewards = () => {
             </div>
           </Compartment>
 
-          <div className=" flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Button variant="primary" isLoading={isLoading} disabled={!registrationClosed} onClick={claimRewards}>
               {registrationClosed ? "Claim Rewards" : "Waiting for registration period to end"}
             </Button>
 
-            <Button
-              disabled={registrationClosed}
-              variant="primary"
-              isLoading={isLoading}
-              onClick={registerToLeaderboard}
-            >
-              Register to Leaderboard
+            <Button variant="primary" isLoading={isLoading} onClick={claimConstructionPoints}>
+              Claim Construction Points
+            </Button>
+
+            <Button variant="primary" isLoading={isLoading} onClick={claimSharePoints}>
+              Claim Share Points
             </Button>
           </div>
           {/* Action button */}
@@ -239,9 +257,8 @@ export const Rewards = () => {
 const Compartment = ({ children, isCountdown }: { children: React.ReactNode; isCountdown?: boolean }) => {
   return (
     <div
-      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${
-        isCountdown ? "bg-brown/70" : "bg-brown/50"
-      } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
+      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${isCountdown ? "bg-brown/70" : "bg-brown/50"
+        } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
     >
       {children}
     </div>

@@ -1,5 +1,6 @@
 import Button from "@/ui/elements/button";
-import { getAddressNameFromEntity, ID } from "@bibliothecadao/eternum";
+import { getAddressNameFromEntity } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { memo } from "react";

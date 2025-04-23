@@ -1,15 +1,19 @@
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
+import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  ContractAddress,
-  ID,
   ResourceManager,
-  ResourcesIds,
   configManager,
   divideByPrecision,
   getArmy,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  ID,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 import { TransferDirection } from "./transfer-troops-container";
@@ -51,9 +55,15 @@ export const TransferResourcesContainer = ({
 
   // Get available resources for the selected entity
   const availableResources = (() => {
+    const { currentDefaultTick } = getBlockTimestamp();
     if (!selectedEntityId) return [];
     const resourceManager = new ResourceManager(components, selectedEntityId);
-    return resourceManager.getResourceBalances();
+    return resources
+      .map(({ id }) => ({
+        resourceId: id,
+        amount: resourceManager.balanceWithProduction(currentDefaultTick, id),
+      }))
+      .filter(({ amount }) => amount > 0);
   })();
 
   // Explorer capacity information
@@ -316,9 +326,8 @@ export const TransferResourcesContainer = ({
             return (
               <div
                 key={resource.resourceId}
-                className={`p-3 rounded-md border ${
-                  isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"
-                }`}
+                className={`p-3 rounded-md border ${isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"
+                  }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
@@ -331,11 +340,10 @@ export const TransferResourcesContainer = ({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gold/80">Available: {formatNumber(displayAmount, 0)}</span>
                   <button
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      isSelected
+                    className={`px-3 py-1 rounded-md text-sm ${isSelected
                         ? "bg-red-900/30 hover:bg-red-900/50 text-red-300"
                         : "bg-gold/10 hover:bg-gold/20 text-gold"
-                    }`}
+                      }`}
                     onClick={() => toggleResourceSelection(resource)}
                   >
                     {isSelected ? "Remove" : "Select"}

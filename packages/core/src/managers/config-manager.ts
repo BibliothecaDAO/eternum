@@ -1,20 +1,20 @@
-import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   BiomeType,
   BuildingType,
   CapacityConfig,
-  GET_HYPERSTRUCTURE_RESOURCES_PER_TIER,
+  Config,
+  ContractComponents,
+  EntityType,
   getProducedResource,
-  HYPERSTRUCTURE_CONFIG_ID,
   RESOURCE_PRECISION,
   ResourcesIds,
-  ResourceTier,
   StructureType,
+  TickIds,
+  TroopType,
   WORLD_CONFIG_ID,
-} from "../constants";
-import { ContractComponents } from "../dojo/contract-components";
-import { Config, EntityType, TickIds, TroopType } from "../types";
+} from "@bibliothecadao/types";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { gramToKg } from "../utils";
 
 type LaborConfig = {
@@ -41,7 +41,7 @@ export class ClientConfigManager {
   simpleSystemResourceOutput: Record<number, { resource: ResourcesIds; amount: number }> = {};
   laborOutputPerResource: Record<number, { resource: ResourcesIds; amount: number }> = {};
 
-  hyperstructureTotalCosts: Record<number, { resource: ResourceTier; min_amount: number; max_amount: number }> = {};
+  hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
   realmUpgradeCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   complexBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
   simpleBuildingCosts: Record<number, { resource: ResourcesIds; amount: number }[]> = {};
@@ -149,19 +149,20 @@ export class ClientConfigManager {
   }
 
   private initializeHyperstructureTotalCosts() {
-    const hyperstructureTotalCosts: { resource: ResourceTier; min_amount: number; max_amount: number }[] = [];
+    const hyperstructureTotalCosts: { resource: ResourcesIds; min_amount: number; max_amount: number }[] = [];
 
-    for (const resourceTier of Object.values(ResourceTier).filter(Number.isInteger)) {
+    for (const resourceType of Object.values(ResourcesIds).filter(Number.isInteger)) {
       const hyperstructureResourceConfig = getComponentValue(
-        this.components.HyperstructureResourceConfig,
-        getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(resourceTier)]),
+        this.components.HyperstructureConstructConfig,
+        getEntityIdFromKeys([BigInt(resourceType)]),
       );
+      if (!hyperstructureResourceConfig) continue;
 
-      const min_amount = Number(hyperstructureResourceConfig?.min_amount ?? 0) / RESOURCE_PRECISION;
-
-      const max_amount = Number(hyperstructureResourceConfig?.max_amount ?? 0) / RESOURCE_PRECISION;
-
-      hyperstructureTotalCosts.push({ resource: resourceTier as ResourceTier, min_amount, max_amount });
+      hyperstructureTotalCosts.push({
+        resource: resourceType as ResourcesIds,
+        min_amount: hyperstructureResourceConfig.min_amount,
+        max_amount: hyperstructureResourceConfig.max_amount,
+      });
     }
 
     this.hyperstructureTotalCosts = hyperstructureTotalCosts;
@@ -264,14 +265,15 @@ export class ClientConfigManager {
     return 0;
   }
 
-  private getHyperstructureConstructionCosts() {
-    const hyperstructureResourceConfig = getComponentValue(
-      this.components.HyperstructureResourceConfig,
-      getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID, BigInt(ResourceTier.Lords)]),
-    );
+  public getHyperstructureTotalCosts() {
+    return this.hyperstructureTotalCosts;
+  }
+
+  public getHyperstructureConstructionCosts() {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
 
     return {
-      amount: this.divideByPrecision(Number(hyperstructureResourceConfig?.min_amount) ?? 0),
+      amount: this.divideByPrecision(Number(worldConfig?.hyperstructure_config?.initialize_shards_amount) ?? 0),
       resource: ResourcesIds.AncientFragment,
     };
   }
@@ -280,7 +282,6 @@ export class ClientConfigManager {
   getResourceWeightKg(resourceId: number): number {
     return this.resourceWeightsKg[resourceId] || 0;
   }
-
   getTravelStaminaCost(biome: BiomeType, troopType: TroopType) {
     return this.getValueOrDefault(() => {
       const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
@@ -316,15 +317,108 @@ export class ClientConfigManager {
         case BiomeType.Taiga:
           return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Snow:
-          return baseStaminaCost + (troopType === TroopType.Paladin ? biomeBonus : 0);
+          return baseStaminaCost + (troopType !== TroopType.Paladin ? biomeBonus : 0);
         case BiomeType.Bare:
           return baseStaminaCost + (troopType === TroopType.Paladin ? -biomeBonus : 0);
         case BiomeType.Scorched:
-          return baseStaminaCost + biomeBonus;
+          return baseStaminaCost + biomeBonus; // +10 for all troops
         default:
           return baseStaminaCost;
       }
     }, 0);
+  }
+
+  public getBiomeCombatBonus(troopType: TroopType, biome: BiomeType): number {
+    const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+    const biomeBonusNum = worldConfig?.troop_damage_config?.damage_biome_bonus_num || 0;
+    const biomeBonus = biomeBonusNum / 10_000;
+
+    const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
+      [BiomeType.Ocean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.DeepOcean]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Beach]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Grassland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.Shrubland]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.SubtropicalDesert]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.TemperateDesert]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.TropicalRainForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TropicalSeasonalForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TemperateRainForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.TemperateDeciduousForest]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Tundra]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      [BiomeType.Taiga]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: 0,
+        [TroopType.Paladin]: -biomeBonus,
+      },
+      [BiomeType.Snow]: {
+        [TroopType.Knight]: -biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: 0,
+      },
+      [BiomeType.Bare]: {
+        [TroopType.Knight]: 0,
+        [TroopType.Crossbowman]: -biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+      // add 30% damage to all troops
+      [BiomeType.Scorched]: {
+        [TroopType.Knight]: biomeBonus,
+        [TroopType.Crossbowman]: biomeBonus,
+        [TroopType.Paladin]: biomeBonus,
+      },
+    };
+
+    return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   }
 
   getExploreStaminaCost() {
@@ -635,81 +729,22 @@ export class ClientConfigManager {
       () => {
         const hyperstructureConfig = getComponentValue(
           this.components.WorldConfig,
-          getEntityIdFromKeys([HYPERSTRUCTURE_CONFIG_ID]),
+          getEntityIdFromKeys([WORLD_CONFIG_ID]),
         )?.hyperstructure_config;
 
         return {
-          timeBetweenSharesChange: hyperstructureConfig?.time_between_shares_change ?? 0,
-          pointsPerCycle: Number(hyperstructureConfig?.points_per_cycle) ?? 0,
+          // todo: need to fix this
+          timeBetweenSharesChange: 0,
+          pointsPerCycle: Number(hyperstructureConfig?.points_per_second) ?? 0,
           pointsForWin: Number(hyperstructureConfig?.points_for_win) ?? 0,
-          pointsOnCompletion: Number(hyperstructureConfig?.points_on_completion) ?? 0,
         };
       },
       {
         timeBetweenSharesChange: 0,
         pointsPerCycle: 0,
         pointsForWin: 0,
-        pointsOnCompletion: 0,
       },
     );
-  }
-
-  getHyperstructureTotalContributableAmount(hyperstructureId: number) {
-    const requiredAmounts = this.getHyperstructureRequiredAmounts(hyperstructureId);
-    return requiredAmounts.reduce(
-      (total, { amount, resource }) => total + amount * this.getResourceRarity(resource),
-      0,
-    );
-  }
-
-  getHyperstructureRequiredAmounts(hyperstructureId: number) {
-    const hyperstructure = getComponentValue(
-      this.components.Hyperstructure,
-      getEntityIdFromKeys([BigInt(hyperstructureId)]),
-    );
-
-    const randomness = BigInt(hyperstructure?.randomness ?? 0);
-    const requiredAmounts: { resource: ResourcesIds; amount: number }[] = [];
-
-    // Get amounts for each tier
-    for (const tier in ResourceTier) {
-      if (isNaN(Number(tier))) continue; // Skip non-numeric enum values
-
-      const resourceTierNumber = Number(tier) as ResourceTier;
-      const resourcesInTier = GET_HYPERSTRUCTURE_RESOURCES_PER_TIER(resourceTierNumber, true);
-      const amountForTier = this.getHyperstructureRequiredAmountPerTier(resourceTierNumber, randomness);
-
-      // Add entry for each resource in this tier
-      resourcesInTier.forEach((resourceId) => {
-        requiredAmounts.push({
-          resource: resourceId,
-          amount: amountForTier,
-        });
-      });
-    }
-
-    return requiredAmounts;
-  }
-
-  getHyperstructureRequiredAmountPerTier(resourceTier: ResourceTier, randomness: bigint): number {
-    const hyperstructureResourceConfig = getComponentValue(
-      this.components.HyperstructureResourceConfig,
-      getEntityIdFromKeys([BigInt(resourceTier)]),
-    );
-
-    if (!hyperstructureResourceConfig) {
-      return 0;
-    }
-
-    const minAmount = Number(hyperstructureResourceConfig.min_amount);
-    const maxAmount = Number(hyperstructureResourceConfig.max_amount);
-
-    if (minAmount === maxAmount) {
-      return this.divideByPrecision(minAmount);
-    }
-
-    const additionalAmount = Number(randomness % BigInt(maxAmount - minAmount));
-    return this.divideByPrecision(minAmount + Number(additionalAmount));
   }
 
   getBasePopulationCapacity(): number {
@@ -903,9 +938,9 @@ export class ClientConfigManager {
     ] || { resource: resourceId, amount: 0 };
 
     return {
-      laborProductionPerResource: laborProducedPerResource.amount / RESOURCE_PRECISION,
+      laborProductionPerResource: this.divideByPrecision(laborProducedPerResource.amount),
       laborBurnPerResourceOutput: laborBurnPerResourceOutput.amount,
-      laborRatePerTick: laborResourceOutput.realm_output_per_second / RESOURCE_PRECISION,
+      laborRatePerTick: this.divideByPrecision(laborResourceOutput.realm_output_per_second),
       inputResources: simpleSystemResourceInputs,
       resourceOutputPerInputResources: simpleSystemResourceOutput.amount,
     };

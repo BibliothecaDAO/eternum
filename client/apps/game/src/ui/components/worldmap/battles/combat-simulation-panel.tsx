@@ -4,14 +4,13 @@ import { SelectTier } from "@/ui/elements/select-tier";
 import { SelectTroop } from "@/ui/elements/select-troop";
 import { formatTypeAndBonuses, getStaminaDisplay } from "@/ui/modules/military/combat-utils";
 import {
-  BiomeType,
   CombatParameters,
   CombatSimulator,
+  configManager,
   getTroopResourceId,
-  TroopTier,
-  TroopType,
   type Army,
 } from "@bibliothecadao/eternum";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 interface ArmyInputProps {
@@ -208,7 +207,7 @@ export const CombatSimulationPanel = () => {
                 newStamina: newAttackerStamina,
                 isWinner: defenderTroopsLeft <= 0 && attackerTroopsLeft > 0,
                 staminaModifier: combatSimulator.calculateStaminaModifier(attacker.stamina, true),
-                biomeBonus: combatSimulator.getBiomeBonus(attacker.troopType, biome),
+                biomeBonus: configManager.getBiomeCombatBonus(attacker.troopType, biome),
               },
             },
             {
@@ -220,7 +219,7 @@ export const CombatSimulationPanel = () => {
                 newStamina: newDefenderStamina,
                 isWinner: attackerTroopsLeft <= 0 && defenderTroopsLeft > 0,
                 staminaModifier: combatSimulator.calculateStaminaModifier(defender.stamina, false),
-                biomeBonus: combatSimulator.getBiomeBonus(defender.troopType, biome),
+                biomeBonus: configManager.getBiomeCombatBonus(defender.troopType, biome),
               },
             },
           ].map(({ label, data }) => (

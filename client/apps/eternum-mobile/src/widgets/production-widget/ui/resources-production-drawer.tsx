@@ -9,14 +9,16 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getBuildingFromResource,
   getBuildingQuantity,
+  TileManager,
+} from "@bibliothecadao/eternum";
+import {
+  getBuildingFromResource,
   RealmInfo,
   resources,
   ResourcesIds,
   StructureType,
-  TileManager,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Loader2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -105,7 +107,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
     if (outputAmount > 0) {
       const loadingState = isActive ? setIsExtendLoading : setIsLoading;
       loadingState(true);
-      let productionCycles = Math.floor(outputAmount / laborConfig?.resourceOutputPerInputResources);
+      const productionCycles = Math.floor(outputAmount / laborConfig?.resourceOutputPerInputResources);
       const calldata = {
         from_entity_id: realm.entityId,
         production_cycles: [productionCycles],

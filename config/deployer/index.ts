@@ -1,4 +1,4 @@
-import { EternumProvider } from "@bibliothecadao/eternum";
+import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest } from "@contracts";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";

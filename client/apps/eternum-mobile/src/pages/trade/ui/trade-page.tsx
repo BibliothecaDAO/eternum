@@ -5,27 +5,79 @@ import { Card, CardContent } from "@/shared/ui/card";
 import { SwapInput } from "@/widgets/swap-input";
 import {
   configManager,
-  ContractAddress,
   divideByPrecision,
   getBalance,
   getClosestBank,
   MarketManager,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
   resources,
   ResourcesIds,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { useSearch } from "@tanstack/react-router";
 import { ArrowDownUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SwapConfirmDrawer } from "./swap-confirm-drawer";
 
 export const TradePage = () => {
+  const search = useSearch({ from: "/protected/trade" });
   const [buyAmount, setBuyAmount] = useState(0);
   const [sellAmount, setSellAmount] = useState(0);
   const [buyResourceId, setBuyResourceId] = useState(ResourcesIds.Lords); // Default to Lords
   const [sellResourceId, setSellResourceId] = useState(1); // Default to first non-Lords resource
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const { structureEntityId } = useStore();
+
+  useEffect(() => {
+    // Handle buy resource ID from URL
+    if (search.buyResourceId) {
+      const buyId = search.buyResourceId;
+      if (!isNaN(buyId)) {
+        setBuyResourceId(buyId);
+      }
+    }
+
+    // Handle sell resource ID from URL
+    if (search.sellResourceId) {
+      const sellId = search.sellResourceId;
+      if (!isNaN(sellId)) {
+        setSellResourceId(sellId);
+      }
+    }
+
+    // If both are set to the same resource, adjust one of them
+    if (search.buyResourceId && search.sellResourceId && search.buyResourceId === search.sellResourceId) {
+      // If both are Lords, set sell to another resource
+      if (search.buyResourceId === ResourcesIds.Lords) {
+        setSellResourceId(1); // First non-Lords resource
+      } else {
+        // Otherwise set buy to Lords
+        setBuyResourceId(ResourcesIds.Lords);
+      }
+    }
+
+    // If only one is set, set the other to a complementary value
+    if (search.buyResourceId && !search.sellResourceId) {
+      const buyId = search.buyResourceId;
+      if (buyId === ResourcesIds.Lords) {
+        setSellResourceId(1); // First non-Lords resource
+      } else {
+        setSellResourceId(ResourcesIds.Lords);
+      }
+    }
+
+    if (!search.buyResourceId && search.sellResourceId) {
+      const sellId = search.sellResourceId;
+      if (sellId === ResourcesIds.Lords) {
+        setBuyResourceId(1); // First non-Lords resource
+      } else {
+        setBuyResourceId(ResourcesIds.Lords);
+      }
+    }
+  }, [search.buyResourceId, search.sellResourceId]);
 
   const {
     account: { account },

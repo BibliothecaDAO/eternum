@@ -4,7 +4,7 @@ import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unc
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
-import { useNavigateToHexView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useSpectatorModeClick } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position, Position as PositionInterface } from "@/types/position";
 import {
@@ -17,7 +17,6 @@ import { SettlementMinimapModal } from "@/ui/components/settlement/settlement-mi
 import { SettlementLocation } from "@/ui/components/settlement/settlement-types";
 import Button from "@/ui/elements/button";
 import { getRealmsAddress, getSeasonPassAddress } from "@/utils/addresses";
-import { getRandomRealmEntity } from "@/utils/realms";
 import { getMaxLayer } from "@/utils/settlement";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -208,13 +207,8 @@ export const StepOne = () => {
     return realmEntities.length > 0 || villageEntities.length > 0;
   }, [realmEntities, villageEntities]);
 
-  const navigateToHexView = useNavigateToHexView();
-
-  const onSpectatorModeClick = () => {
-    const randomRealmEntity = getRandomRealmEntity(components);
-    const structure = randomRealmEntity ? getComponentValue(components.Structure, randomRealmEntity) : undefined;
-    structure && navigateToHexView(new Position({ x: structure.base.coord_x, y: structure.base.coord_y }));
-  };
+  const onSpectatorModeClick = useSpectatorModeClick(components);
+  const goToStructure = useGoToStructure();
 
   const onPlayModeClick = () => {
     const randomRealmEntityOrVillageEntity =
@@ -225,9 +219,7 @@ export const StepOne = () => {
       : undefined;
 
     if (!structure) return;
-
-    const realmPosition = new Position({ x: structure?.base.coord_x, y: structure?.base.coord_y });
-    navigateToHexView(realmPosition);
+    goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
   };
 
   return (

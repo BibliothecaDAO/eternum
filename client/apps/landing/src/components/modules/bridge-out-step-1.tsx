@@ -2,18 +2,18 @@ import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
-import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  RESOURCE_PRECISION,
-  ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
   getTotalResourceWeightKg,
-  resources,
 } from "@bibliothecadao/eternum";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/types";
 import { TooltipContent, TooltipTrigger } from "@radix-ui/react-tooltip";
 import { useAccount } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +25,6 @@ import { ResourceIcon } from "../ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { SelectSingleResource } from "../ui/select-resources";
 import { Tooltip, TooltipProvider } from "../ui/tooltip";
-import { getResourceAddresses } from "../ui/utils/addresses";
 import { BridgeFees } from "./bridge-fees";
 
 export const BridgeOutStep1 = () => {
@@ -55,7 +54,6 @@ export const BridgeOutStep1 = () => {
   );
 
   const [isLoading, setIsLoading] = useState(false);
-  const { bridgeStartWithdrawFromRealm } = useBridgeAsset();
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const selectedResourceId = useMemo(() => selectedResourceIds[0] ?? 0, [selectedResourceIds]);
@@ -124,34 +122,7 @@ export const BridgeOutStep1 = () => {
   }, [orderWeightKg]);
 
   const onSendToBank = async () => {
-    if (realmEntityId) {
-      try {
-        setIsLoading(true);
-
-        const resourceAddresses = getResourceAddresses();
-        const validResources = await Promise.all(
-          Object.entries(selectedResourceAmounts)
-            .filter(([id, amount]) => amount > 0)
-            .map(async ([id, amount]) => {
-              const tokenAddress =
-                resourceAddresses[ResourcesIds[Number(id)].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
-              return {
-                tokenAddress: tokenAddress as string,
-                amount: BigInt(amount * RESOURCE_PRECISION),
-              };
-            }),
-        );
-        const tx = await bridgeStartWithdrawFromRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
-        if (tx) {
-          setSelectedResourceIds([]);
-          setSelectedResourceAmounts({});
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      console.error("\n\n\n\n Realm does not exist in game yet. settle the realm!\n\n\n\n");
-    }
+    console.log("implement bridge inside game client");
   };
 
   return (

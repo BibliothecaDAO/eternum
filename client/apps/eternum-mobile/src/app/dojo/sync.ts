@@ -1,15 +1,13 @@
-// @ts-nocheck
 import { LoadingStateKey, WorldSlice } from "@/shared/store/slices/world-loading-slice";
+import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ADMIN_BANK_ENTITY_ID,
   BUILDING_CATEGORY_POPULATION_CONFIG_ID,
   ClientComponents,
   HYPERSTRUCTURE_CONFIG_ID,
   PlayerStructure,
-  SetupResult,
   WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
-import { Schema } from "@dojoengine/recs";
+} from "@bibliothecadao/types";
 import { getEntities, getEvents, setEntities } from "@dojoengine/state";
 import { Clause, EntityKeysClause, ToriiClient } from "@dojoengine/torii-client";
 import { debounce } from "lodash";
@@ -50,12 +48,11 @@ const handleVisualOverrides = (entityBatch: Record<string, any>, components: Cli
   }
 };
 
-const syncEntitiesDebounced = async <S extends Schema>(
+const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
   entityKeyClause: EntityKeysClause[],
   logging: boolean = true,
-  historical: boolean = false,
 ) => {
   if (logging) console.log("Starting syncEntities");
 
@@ -113,20 +110,16 @@ const syncEntitiesDebounced = async <S extends Schema>(
   });
 
   // Handle event message updates
-  const eventSub = await client.onEventMessageUpdated(
-    entityKeyClause,
-    historical,
-    (fetchedEntities: any, data: any) => {
-      if (logging) console.log("Event message updated", fetchedEntities);
+  const eventSub = await client.onEventMessageUpdated(entityKeyClause, (fetchedEntities: any, data: any) => {
+    if (logging) console.log("Event message updated", fetchedEntities);
 
-      // Merge new data with existing data for this entity
-      entityBatch[fetchedEntities] = {
-        ...entityBatch[fetchedEntities],
-        ...data,
-      };
-      debouncedSetEntities();
-    },
-  );
+    // Merge new data with existing data for this entity
+    entityBatch[fetchedEntities] = {
+      ...entityBatch[fetchedEntities],
+      ...data,
+    };
+    debouncedSetEntities();
+  });
 
   // Return combined subscription that can cancel both
   return {
@@ -140,11 +133,11 @@ const syncEntitiesDebounced = async <S extends Schema>(
 export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   const setLoading = state.setLoading;
 
-  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], true);
+  await syncEntitiesDebounced(setup.network.toriiClient, setup, [], false);
 
   setLoading(LoadingStateKey.Config, true);
   try {
-    let start = performance.now();
+    const start = performance.now();
     try {
       await Promise.all([
         await getEntities(
@@ -157,7 +150,7 @@ export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
           false,
         ),
       ]);
-      let end = performance.now();
+      const end = performance.now();
       console.log("[sync] big config query", end - start);
     } catch (error) {
       console.error("[sync] Error fetching config entities:", error);
@@ -172,12 +165,20 @@ export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   setLoading(LoadingStateKey.Hyperstructure, true);
   let start = performance.now();
   try {
+    // todo: only 1 undefined clause variable len
     await getEntities(
       setup.network.toriiClient,
       {
         Composite: {
           operator: "Or",
           clauses: [
+            {
+              Keys: {
+                keys: [undefined],
+                pattern_matching: "FixedLen",
+                models: [],
+              },
+            },
             {
               Keys: {
                 keys: [undefined, undefined],
@@ -288,6 +289,7 @@ export const initialSync = async (setup: SetupResult, state: WorldSlice) => {
   console.log("[sync] tile query", end - start);
 };
 
+// todo: only 1 undefined clause variable len
 const configClauses: Clause[] = [
   {
     Keys: {
@@ -328,44 +330,36 @@ const configClauses: Clause[] = [
 
 const configModels = [
   "s1_eternum-WorldConfig",
-  "s1_eternum-HyperstructureResourceConfig",
+  "s1_eternum-HyperstructureConstructConfig",
   "s1_eternum-WeightConfig",
   "s1_eternum-ResourceFactoryConfig",
   "s1_eternum-BuildingCategoryConfig",
   "s1_eternum-ResourceBridgeWhitelistConfig",
   "s1_eternum-StructureLevelConfig",
   "s1_eternum-ResourceList",
-  "s1_eternum-LeaderboardRegisterContribution",
-  "s1_eternum-LeaderboardRegisterShare",
+  "s1_eternum-SeasonPrize",
+  "s1_eternum-GuildWhitelist",
+  "s1_eternum-HyperstructureRequirements",
 ];
 
 const singleKeyModels = [
   "s1_eternum-AddressName",
-  "s1_eternum-Trade",
   "s1_eternum-Structure",
-  "s1_eternum-Hyperstructure",
+  // Guild
   "s1_eternum-Guild",
   "s1_eternum-GuildMember",
-  "s1_eternum-Leaderboard",
-  "s1_eternum-LeaderboardRegistered",
-  "s1_eternum-LeaderboardRewardClaimed",
-  "s1_eternum-LeaderboardEntry",
-  "s1_eternum-BuildingCategoryConfig",
 ];
 
-const eventModels = [
-  "s1_eternum-GameEnded",
-  "s1_eternum-HyperstructureFinished",
-  "s1_eternum-AcceptOrder",
-  "s1_eternum-SwapEvent",
-  "s1_eternum-LiquidityEvent",
-  "s1_eternum-HyperstructureContribution",
-];
+const eventModels = ["s1_eternum-AcceptOrder", "s1_eternum-SwapEvent", "s1_eternum-LiquidityEvent"];
 
 const hyperstructureModels = [
-  "s1_eternum-HyperstructureResourceConfig",
-  "s1_eternum-WeightConfig",
-  "s1_eternum-ResourceFactoryConfig",
+  // Hyperstructure
+  "s1_eternum-HyperstructureGlobals",
+  "s1_eternum-Hyperstructure",
+  "s1_eternum-HyperstructureShareholders",
+  // Leaderboard
+  "s1_eternum-PlayerRegisteredPoints",
+  "s1_eternum-PlayerConstructionPoints",
 ];
 
 export const syncStructureData = async (
@@ -376,7 +370,7 @@ export const syncStructureData = async (
 ) => {
   setLoading(LoadingStateKey.SelectedStructure, true);
   try {
-    let start = performance.now();
+    const start = performance.now();
     await debouncedGetEntitiesFromTorii(
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
@@ -385,7 +379,7 @@ export const syncStructureData = async (
       position ? [position] : undefined,
       () => setLoading(LoadingStateKey.SelectedStructure, false),
     );
-    let end = performance.now();
+    const end = performance.now();
     console.log("[composite] structure query", end - start);
   } catch (error) {
     console.error("Fetch failed", error);
@@ -422,7 +416,7 @@ export const syncPlayerStructuresData = async (
           setLoading(LoadingStateKey.PlayerStructuresTwoKey, false);
         },
       );
-      let end = performance.now();
+      const end = performance.now();
       console.log("[composite] buildings query", end - start);
     } catch (error) {
       console.error("Failed to fetch structure entities:", error);
@@ -467,7 +461,7 @@ export const syncMarketAndBankData = async (
   setLoading(LoadingStateKey.Bank, true);
 
   try {
-    let start = performance.now();
+    const start = performance.now();
     await debouncedGetEntitiesFromTorii(
       dojo.network.toriiClient,
       dojo.network.contractComponents as any,
@@ -477,7 +471,7 @@ export const syncMarketAndBankData = async (
       () => setLoading(LoadingStateKey.Bank, false),
     );
     let end = performance.now();
-    console.log("[keys] bank query", end - start);
+    console.log("[sync] bank query", end - start);
 
     await debouncedGetMarketFromTorii(dojo.network.toriiClient, dojo.network.contractComponents as any, () =>
       setLoading(LoadingStateKey.Market, false),

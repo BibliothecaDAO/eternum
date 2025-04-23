@@ -1,62 +1,78 @@
 import {
-  ContractAddress,
   formatGuildMembers,
   formatGuilds,
   getGuildMember,
-  GuildMemberInfo,
-  ID,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  type GuildMemberInfo
+} from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue, NotValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context";
 
 export const useGuilds = () => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
+	const {
+		account: { account },
+		setup: { components },
+	} = useDojo();
 
-  const guilds = useEntityQuery([Has(components.Guild), NotValue(components.Guild, { member_count: 0 })]);
+	const guilds = useEntityQuery([
+		Has(components.Guild),
+		NotValue(components.Guild, { member_count: 0 }),
+	]);
 
-  return formatGuilds(guilds, ContractAddress(account.address), components);
+	return formatGuilds(guilds, ContractAddress(account.address), components);
 };
 
-export const useGuildMembers = (guildEntityId: ID) => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
+export const useGuildMembers = (guildEntityId: ContractAddress) => {
+	const {
+		account: { account },
+		setup: { components },
+	} = useDojo();
 
-  const guildMembers = useEntityQuery([HasValue(components.GuildMember, { guild_entity_id: guildEntityId })]);
+	const guildMembers = useEntityQuery([
+		HasValue(components.GuildMember, { guild_id: guildEntityId }),
+	]);
 
-  return formatGuildMembers(guildMembers, ContractAddress(account.address), components);
+	return formatGuildMembers(
+		guildMembers,
+		ContractAddress(account.address),
+		components,
+	);
 };
 
-export const useGuildWhitelist = (guildEntityId: ID) => {
-  const {
-    setup: { components },
-  } = useDojo();
+export const useGuildWhitelist = (guildEntityId: ContractAddress) => {
+	const {
+		setup: { components },
+	} = useDojo();
 
-  const whitelist = useEntityQuery([
-    HasValue(components.GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
-  ]);
+	const whitelist = useEntityQuery([
+		HasValue(components.GuildWhitelist, {
+			guild_id: guildEntityId,
+			whitelisted: true,
+		}),
+	]);
 
-  return whitelist
-    .map((entity) => {
-      const whitelist = getComponentValue(components.GuildWhitelist, entity);
-      if (!whitelist) return;
-      return getGuildMember(whitelist.address, components);
-    })
-    .filter(Boolean) as GuildMemberInfo[];
+	return whitelist
+		.map((entity) => {
+			const whitelist = getComponentValue(components.GuildWhitelist, entity);
+			if (!whitelist) return;
+			return getGuildMember(whitelist.address, components);
+		})
+		.filter(Boolean) as GuildMemberInfo[];
 };
 
 export const usePlayerWhitelist = (playerAddress: ContractAddress) => {
-  const {
-    setup: { components },
-  } = useDojo();
+	const {
+		setup: { components },
+	} = useDojo();
 
-  const whitelist = useEntityQuery([
-    HasValue(components.GuildWhitelist, { address: playerAddress, is_whitelisted: true }),
-  ]);
-  return formatGuilds(whitelist, playerAddress, components);
+	const whitelist = useEntityQuery([
+		HasValue(components.GuildWhitelist, {
+			address: playerAddress,
+			whitelisted: true,
+		}),
+	]);
+	return formatGuilds(whitelist, playerAddress, components);
 };

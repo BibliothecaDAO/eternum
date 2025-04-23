@@ -17,8 +17,13 @@
     "vite-plugin-pwa": "^0.20.5"
   },
   "dependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/dojo": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "@ark-project/core": "3.0.0-beta.1",
     "@ark-project/react": "2.0.0-beta.2",
+    "@dojoengine/core": "catalog:",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@parcel/watcher": "^2.4.1",
@@ -31,6 +36,8 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.3",
+    "@starknet-react/chains": "catalog:",
+    "@starknet-react/core": "catalog:",
     "@tanstack/react-query": "^5.59.15",
     "@tanstack/react-router": "^1.74.0",
     "cmdk": "1.0.0",
@@ -38,6 +45,9 @@
     "graphql-tag": "^2.12.6",
     "jotai": "^2.10.1",
     "nuqs": "^2.0.4",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "starknet": "catalog:",
     "storybook": "^8.3.2",
     "vite-plugin-vercel": "^9.0.3"
   },
@@ -57,7 +67,12 @@
     "@storybook/react": "^8.3.2",
     "@storybook/react-vite": "^8.3.2",
     "@storybook/test": "^8.3.2",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@tanstack/router-devtools": "^1.74.0",
     "@tanstack/router-plugin": "^1.73.1"
+  },
+  "peerDependencies": {
+    "starknet": "6.23.1"
   }
 }

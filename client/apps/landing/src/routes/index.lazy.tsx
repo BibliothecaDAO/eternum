@@ -1,141 +1,105 @@
-import { AnimatedGrid } from "@/components/modules/animated-grid";
-import { BridgedResources } from "@/components/modules/bridged-resources";
-import { DataCard, DataCardProps } from "@/components/modules/data-card";
-import {
-  PRIZE_POOL_ACHIEVEMENTS,
-  PRIZE_POOL_CONTENT_CREATORS,
-  PRIZE_POOL_GUILDS,
-  PRIZE_POOL_INDIVIDUAL_LEADERBOARD,
-} from "@/constants";
-import { execute } from "@/hooks/gql/execute";
-import { GET_ETERNUM_STATISTICS } from "@/hooks/query/eternum-statistics";
-import { useDonkeysBurned } from "@/hooks/use-donkeys-burned";
-import { useLordsBridgeBalance } from "@/hooks/use-lords-bridged";
-import { usePrizePool } from "@/hooks/use-rewards";
-import { currencyFormat, formatNumber } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { createLazyFileRoute } from "@tanstack/react-router";
-import { Castle, Coins, CoinsIcon, Flame, Pickaxe, Sparkles, UsersIcon } from "lucide-react";
-import React, { useMemo } from "react";
-import { formatEther } from "viem";
+import { createLazyFileRoute, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 
 export const Route = createLazyFileRoute("/")({
   component: Index,
 });
 
-interface GridItemType {
-  colSpan: {
-    sm: number;
-    md: number;
-    lg: number;
-  };
-  data: DataCardProps | React.ReactElement;
-}
-
 function Index() {
-  const { data } = useQuery({
-    queryKey: ["eternumStatistics"],
-    queryFn: () => execute(GET_ETERNUM_STATISTICS),
-    refetchInterval: 30_000,
-  });
+  const ctas = [
+    {
+      text: "Play Now",
+      imageUrl: "/images/covers/01.png",
+      linkUrl: "https://next-eternum.realms.world",
+      heightClass: "h-72", // Keep the specific height for the first item
+    },
+    {
+      text: "Claim Season Pass",
+      imageUrl: "/images/covers/02.png",
+      linkUrl: "/mint",
+      heightClass: "h-72",
+    },
+    {
+      text: "Transfer Pass",
+      imageUrl: "/images/covers/03.png",
+      linkUrl: "/transfer",
+      heightClass: "h-72",
+    },
+    {
+      text: "Buy Pass",
+      imageUrl: "/images/covers/04.png",
+      linkUrl:
+        "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+      heightClass: "h-72",
+    },
+  ];
 
-  const donkeysBurned = useDonkeysBurned();
-  const lordsBalance = useLordsBridgeBalance();
+  // Framer Motion variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1, // Stagger animation of children
+      },
+    },
+  };
 
-  const prizePoolPlayers = usePrizePool();
-
-  const dataCards: GridItemType[] = useMemo(
-    () => [
-      {
-        colSpan: { sm: 2, md: 2, lg: 2 },
-        rowSpan: { sm: 1, md: 1, lg: 2 },
-        data: {
-          title: "players",
-          value: formatNumber(data?.s1EternumAddressNameModels?.totalCount ?? 0, 0),
-          icon: <UsersIcon />,
-          backgroundImage: "/images/avatars/12.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 2, lg: 2 },
-        data: {
-          title: "realms settled",
-          value: formatNumber(data?.realms?.totalCount ?? 0, 0),
-          icon: <Castle />,
-          backgroundImage: "/images/avatars/09.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 2, lg: 2 },
-        data: {
-          title: "hyperstructures",
-          value: formatNumber(data?.hyperstructures?.totalCount ?? 0, 0),
-          icon: <Sparkles />,
-          backgroundImage: "/images/avatars/06.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 2, lg: 2 },
-        data: {
-          title: "mines discovered",
-          value: formatNumber(data?.mines?.totalCount ?? 0, 0),
-          icon: <Pickaxe />,
-          backgroundImage: "/images/covers/03.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 4, lg: 4 },
-        data: {
-          title: "lords prize pool",
-          value: formatNumber(
-            PRIZE_POOL_GUILDS +
-              Number(formatEther(prizePoolPlayers)) +
-              PRIZE_POOL_ACHIEVEMENTS +
-              PRIZE_POOL_INDIVIDUAL_LEADERBOARD +
-              PRIZE_POOL_CONTENT_CREATORS,
-            0,
-          ),
-          icon: <Coins />,
-          backgroundImage: "/images/avatars/06.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 6, lg: 6 },
-        data: {
-          title: "donkeys burned",
-          value: currencyFormat(donkeysBurned, 0),
-          icon: <Flame />,
-          backgroundImage: "/images/covers/03.png",
-        },
-      },
-      {
-        colSpan: { sm: 2, md: 4, lg: 4 },
-        data: {
-          title: "Bridge Lords Balance",
-          value: formatNumber(lordsBalance, 0),
-          icon: <CoinsIcon />,
-          backgroundImage: "/images/covers/04.png",
-        },
-      },
-    ],
-    [data?.s1EternumAddressNameModels, prizePoolPlayers, donkeysBurned, lordsBalance],
-  );
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 },
+  };
 
   return (
-    <div className="p-4">
-      <AnimatedGrid
-        items={[
-          ...dataCards,
-          {
-            colSpan: { sm: 2, md: 6, lg: 12 },
-            rowSpan: { sm: 1, md: 1, lg: 2 },
-            data: <BridgedResources />,
-          },
-        ]}
-        renderItem={(item) =>
-          React.isValidElement(item.data) ? item.data : <DataCard {...(item.data as DataCardProps)} />
-        }
-      />
+    <div className="p-4 flex flex-col items-center">
+      {/* Title might also be animated if desired */}
+      {/* <h1 className="text-5xl font-extrabold mb-12">Welcome to the Game!</h1> */}
+
+      <motion.div
+        className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {ctas.map((cta) => {
+          const MotionLink = motion(Link); // Create a motion component for Link
+          const commonAnimProps = {
+            variants: itemVariants,
+            whileHover: { scale: 1.03 }, // Scale up slightly on hover
+          };
+          const commonProps = {
+            className: `relative ${cta.heightClass} bg-cover bg-center rounded-lg shadow-lg overflow-hidden cursor-pointer opacity-75 hover:opacity-100 transition-opacity duration-300 block border border-gold/40`,
+            style: { backgroundImage: `url('${cta.imageUrl}')` },
+          };
+          const content = (
+            <div className="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center">
+              <span className="text-white text-2xl border px-4 py-2 border-gold rounded-md uppercase font-serif">
+                {cta.text}
+              </span>
+            </div>
+          );
+
+          return cta.linkUrl.startsWith("http") ? (
+            <motion.div
+              key={cta.text}
+              {...commonProps}
+              {...commonAnimProps} // Apply animation props
+              onClick={() => (window.location.href = cta.linkUrl)}
+            >
+              {content}
+            </motion.div>
+          ) : (
+            <MotionLink
+              key={cta.text}
+              to={cta.linkUrl}
+              {...commonProps}
+              {...commonAnimProps} // Apply animation props
+            >
+              {content}
+            </MotionLink>
+          );
+        })}
+      </motion.div>
     </div>
   );
 }

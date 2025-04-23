@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { MarketModal } from "@/ui/components/trading/market-modal";
@@ -6,7 +7,8 @@ import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
-import { ContractAddress, getEntityInfo, StructureType } from "@bibliothecadao/eternum";
+import { getEntityInfo } from "@bibliothecadao/eternum";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
@@ -206,13 +208,14 @@ export const LeftNavigationModule = memo(() => {
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
 
+  const { account: ConnectedAccount } = useAccountStore();
+
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
-            isOffscreen(view) ? "-translate-x-[89%]" : ""
-          }`}
+          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${isOffscreen(view) ? "-translate-x-[89%]" : ""
+            }`}
         >
           <BaseContainer
             className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] panel-wood-corners overflow-x-hidden`}
@@ -227,18 +230,20 @@ export const LeftNavigationModule = memo(() => {
               {view === LeftView.ResourceArrivals && <AllResourceArrivals />}
             </Suspense>
           </BaseContainer>
-          <motion.div
-            variants={slideLeft}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col justify-center pointer-events-auto"
-          >
-            <div className="flex flex-col mb-auto">
-              {navigation.map((item, index) => (
-                <div key={index}>{item.button}</div>
-              ))}
-            </div>
-          </motion.div>
+          {ConnectedAccount && (
+            <motion.div
+              variants={slideLeft}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-col justify-center pointer-events-auto"
+            >
+              <div className="flex flex-col mb-auto">
+                {navigation.map((item, index) => (
+                  <div key={index}>{item.button}</div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
       <div className="flex">

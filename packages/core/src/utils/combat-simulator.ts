@@ -1,5 +1,5 @@
-import { BiomeType } from "../constants";
-import { TroopTier, TroopType } from "../types";
+import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
+import { configManager } from "../managers";
 import { divideWithPrecision } from "./utils";
 
 export class Percentage {
@@ -43,7 +43,6 @@ export class CombatSimulator {
   private readonly betaLarge: number;
   private readonly c0: number;
   private readonly delta: number;
-  private readonly biomeBonusNum: number;
 
   static MAX_U64: bigint = BigInt(2) ** BigInt(64);
 
@@ -57,95 +56,6 @@ export class CombatSimulator {
     this.betaLarge = divideWithPrecision(params.damage_beta_large, CombatSimulator.MAX_U64);
     this.c0 = divideWithPrecision(params.damage_c0, CombatSimulator.MAX_U64);
     this.delta = divideWithPrecision(params.damage_delta, CombatSimulator.MAX_U64);
-    this.biomeBonusNum = params.damage_biome_bonus_num / 10_000;
-  }
-
-  public getBiomeBonus(troopType: TroopType, biome: BiomeType): number {
-    const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
-      [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
-      [BiomeType.Ocean]: {
-        [TroopType.Knight]: 0,
-        [TroopType.Crossbowman]: this.biomeBonusNum,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.DeepOcean]: {
-        [TroopType.Knight]: 0,
-        [TroopType.Crossbowman]: this.biomeBonusNum,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.Beach]: {
-        [TroopType.Knight]: -this.biomeBonusNum,
-        [TroopType.Crossbowman]: this.biomeBonusNum,
-        [TroopType.Paladin]: 0,
-      },
-      [BiomeType.Grassland]: {
-        [TroopType.Knight]: 0,
-        [TroopType.Crossbowman]: -this.biomeBonusNum,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.Shrubland]: {
-        [TroopType.Knight]: 0,
-        [TroopType.Crossbowman]: -this.biomeBonusNum,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.SubtropicalDesert]: {
-        [TroopType.Knight]: -this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.TemperateDesert]: {
-        [TroopType.Knight]: -this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.TropicalRainForest]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.TropicalSeasonalForest]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.TemperateRainForest]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.TemperateDeciduousForest]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.Tundra]: {
-        [TroopType.Knight]: -this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.Taiga]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-      [BiomeType.Snow]: {
-        [TroopType.Knight]: -this.biomeBonusNum,
-        [TroopType.Crossbowman]: this.biomeBonusNum,
-        [TroopType.Paladin]: 0,
-      },
-      [BiomeType.Bare]: {
-        [TroopType.Knight]: 0,
-        [TroopType.Crossbowman]: -this.biomeBonusNum,
-        [TroopType.Paladin]: this.biomeBonusNum,
-      },
-      [BiomeType.Scorched]: {
-        [TroopType.Knight]: this.biomeBonusNum,
-        [TroopType.Crossbowman]: 0,
-        [TroopType.Paladin]: -this.biomeBonusNum,
-      },
-    };
-
-    return 1 + (biomeModifiers[biome]?.[troopType] ?? 0);
   }
 
   private getTierValue(tier: TroopTier): number {
@@ -177,6 +87,16 @@ export class CombatSimulator {
     );
   }
 
+  /**
+   * Simulates a battle between two armies in a specific biome
+   *
+   * @param attacker - The attacking army with troopCount, tier, troopType, and stamina
+   * @param defender - The defending army with troopCount, tier, troopType, and stamina
+   * @param biome - The biome type where the battle takes place, affecting troop bonuses
+   * @returns An object containing the damage dealt by each side:
+   *          - attackerDamage: Amount of damage dealt by the attacker
+   *          - defenderDamage: Amount of damage dealt by the defender
+   */
   public simulateBattle(
     attacker: Army,
     defender: Army,
@@ -195,7 +115,7 @@ export class CombatSimulator {
         attacker.troopCount *
         (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
         this.calculateStaminaModifier(attacker.stamina, true) *
-        this.getBiomeBonus(attacker.troopType, biome)) /
+        configManager.getBiomeCombatBonus(attacker.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
 
     // Calculate defender damage
@@ -204,7 +124,7 @@ export class CombatSimulator {
         defender.troopCount *
         (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
         this.calculateStaminaModifier(defender.stamina, false) *
-        this.getBiomeBonus(defender.troopType, biome)) /
+        configManager.getBiomeCombatBonus(defender.troopType, biome)) /
       Math.pow(totalTroops, betaEff);
 
     return {

@@ -6,7 +6,19 @@
     "build": "vocs build -o ../dist",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
-    "dev": "vocs dev"
+    "dev": "vocs dev",
+    "preview": "vocs preview"
   },
-  "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee"
+  "packageManager": "pnpm@9.12.3+sha512.cce0f9de9c5a7c95bef944169cc5dfe8741abfb145078c0d508b868056848a87c81e626246cb60967cbd7fd29a6c062ef73ff840d96b3c86c40ac92cf4a813ee",
+  "dependencies": {
+    "@bibliothecadao/types": "workspace:*",
+    "fast-glob": "^3.3.3",
+    "fumadocs-mdx": "^11.6.0",
+    "gray-matter": "^4.0.3",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx": "^3.1.0",
+    "remark-stringify": "^11.0.0",
+    "vocs": "v1.0.0-alpha.57"
+  }
 }

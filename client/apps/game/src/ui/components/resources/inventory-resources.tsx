@@ -1,6 +1,7 @@
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision, ID } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@bibliothecadao/react";
+import { ID } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 export const InventoryResources = ({

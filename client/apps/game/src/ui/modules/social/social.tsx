@@ -1,4 +1,4 @@
-import { useHyperstructureData, useLeaderBoardStore } from "@/hooks/store/use-leaderboard-store";
+import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { social } from "@/ui/components/navigation/config";
@@ -7,11 +7,13 @@ import { GuildMembers } from "@/ui/components/worldmap/guilds/guild-members";
 import { Guilds } from "@/ui/components/worldmap/guilds/guilds";
 import { PlayersPanel } from "@/ui/components/worldmap/players/players-panel";
 import Button from "@/ui/elements/button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { Tabs } from "@/ui/elements/tab";
-import { ContractAddress, getPlayerInfo, ID, PlayerInfo } from "@bibliothecadao/eternum";
+import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has } from "@dojoengine/recs";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { RefreshCw, Shapes, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { EndSeasonButton } from "./end-season-button";
 import { PlayerId } from "./player-id";
@@ -19,41 +21,84 @@ import { PlayerId } from "./player-id";
 export const Social = () => {
   const {
     account: { account },
-    setup: { components },
+    setup: {
+      components,
+      systemCalls: { claim_construction_points, claim_share_points },
+    },
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<ID>(0);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
+  const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
+  const [isUpdatePointsLoading, setIsUpdatePointsLoading] = useState(false);
+  const [selectedGuild, setSelectedGuild] = useState<ContractAddress>(0n);
   const [selectedPlayer, setSelectedPlayer] = useState<ContractAddress>(0n);
+  const [playersByRank, setPlayersByRank] = useState<[ContractAddress, number][]>([]);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(social));
 
-  const gameEnded = useEntityQuery([Has(components.events.GameEnded)]);
-
   const players = usePlayers();
 
-  const playersByRank = useLeaderBoardStore((state) => state.playersByRank);
+  useEffect(() => {
+    // update first time
+    LeaderboardManager.instance(components).updatePoints();
+    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
+  }, [components]);
 
   const [playerInfo, setPlayerInfo] = useState<PlayerInfo[]>(
     getPlayerInfo(players, ContractAddress(account.address), playersByRank, components),
   );
 
-  const updateLeaderboard = useHyperstructureData();
+  const hyperstructuresEntityIds = useMemo(() => {
+    return Array.from(runQuery([Has(components.Hyperstructure)]))
+      .map((entity) => getComponentValue(components.Hyperstructure, entity))
+      .filter((hyperstructure) => hyperstructure !== undefined)
+      .map((hyperstructure) => hyperstructure.hyperstructure_id);
+  }, [components.Hyperstructure]);
 
-  const handleUpdatePoints = () => {
-    setIsLoading(true);
-    updateLeaderboard();
+  const handleUpdatePoints = async () => {
+    setIsUpdatePointsLoading(true);
+    LeaderboardManager.instance(components).updatePoints();
+    setPlayersByRank(LeaderboardManager.instance(components).playersByRank);
+    setIsUpdatePointsLoading(false);
+  };
+
+  const claimConstructionPoints = async () => {
+    setIsRegisterLoading(true);
+    try {
+      await claim_construction_points({
+        signer: account,
+        hyperstructure_ids: hyperstructuresEntityIds,
+        player: ContractAddress(account.address),
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsRegisterLoading(false);
+    }
+  };
+
+  const claimSharePoints = async () => {
+    setIsSharePointsLoading(true);
+    try {
+      await claim_share_points({
+        signer: account,
+        hyperstructure_ids: hyperstructuresEntityIds,
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSharePointsLoading(false);
+    }
   };
 
   useEffect(() => {
     setPlayerInfo(getPlayerInfo(players, ContractAddress(account.address), playersByRank, components));
-    setIsLoading(false);
   }, [playersByRank]);
 
-  const viewGuildMembers = (guildEntityId: ID) => {
+  const viewGuildMembers = (guildEntityId: ContractAddress) => {
     if (selectedGuild === guildEntityId) {
       setSelectedPlayer(0n);
       setIsExpanded(!isExpanded);
@@ -76,13 +121,23 @@ export const Social = () => {
     () => [
       {
         key: "Players",
-        label: <div>Players</div>,
+        label: (
+          <div className="flex items-center gap-2">
+            <Users size={16} />
+            <span>Players</span>
+          </div>
+        ),
         component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
       {
-        key: "Guild",
-        label: <div>Tribes</div>,
+        key: "Tribes",
+        label: (
+          <div className="flex items-center gap-2">
+            <Shapes size={16} />
+            <span>Tribes</span>
+          </div>
+        ),
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
@@ -99,17 +154,11 @@ export const Social = () => {
     [selectedTab, isExpanded, selectedGuild, selectedPlayer, playerInfo],
   );
 
-  return (
-    <ExpandableOSWindow
-      width="800px"
-      widthExpanded="400px"
-      onClick={() => togglePopup(social)}
-      show={isOpen}
-      title={social}
-      hintSection={HintSection.Tribes}
-      childrenExpanded={tabs[selectedTab].expandedContent}
-      isExpanded={isExpanded}
-    >
+  const SocialContent = () => {
+    const { isSyncing } = useSyncLeaderboard();
+    return isSyncing ? (
+      <LoadingAnimation />
+    ) : (
       <Tabs
         size="medium"
         selectedIndex={selectedTab}
@@ -120,25 +169,65 @@ export const Social = () => {
         }}
         className="h-full"
       >
-        <Tabs.List>
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab.key}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
+        <div className="flex flex-col h-full">
+          <Tabs.List className="mb-2 px-1">
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                {tab.label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
 
-        <div className="flex justify-center gap-8 mt-8">
-          {gameEnded.length === 0 && <EndSeasonButton />}
-          <Button isLoading={isLoading} variant="secondary" onClick={handleUpdatePoints}>
-            Update Points
-          </Button>
+          <div className="flex justify-center gap-4 mt-1 mb-3 px-4">
+            <Button
+              isLoading={isRegisterLoading || isSharePointsLoading}
+              variant="gold"
+              onClick={() => {
+                claimConstructionPoints();
+                claimSharePoints();
+              }}
+              className="flex-1 flex justify-center items-center py-2"
+            >
+              Claim All Points
+            </Button>
+
+            <Button
+              isLoading={isUpdatePointsLoading}
+              variant="secondary"
+              onClick={handleUpdatePoints}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={14} />
+              Update
+            </Button>
+
+            <EndSeasonButton className="flex items-center" />
+          </div>
+
+          <Tabs.Panels className="overflow-hidden flex-1">
+            {tabs.map((tab) => (
+              <Tabs.Panel key={tab.key} className="h-full">
+                {tab.component}
+              </Tabs.Panel>
+            ))}
+          </Tabs.Panels>
         </div>
-
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab) => (
-            <Tabs.Panel key={tab.key}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
       </Tabs>
+    );
+  };
+
+  return (
+    <ExpandableOSWindow
+      width="900px"
+      widthExpanded="400px"
+      onClick={() => togglePopup(social)}
+      show={isOpen}
+      title={social}
+      hintSection={HintSection.Tribes}
+      childrenExpanded={tabs[selectedTab].expandedContent}
+      isExpanded={isExpanded}
+    >
+      {isOpen ? <SocialContent /> : null}
     </ExpandableOSWindow>
   );
 };

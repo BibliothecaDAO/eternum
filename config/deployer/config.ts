@@ -1,26 +1,24 @@
+import type { EternumProvider } from "@bibliothecadao/provider";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  BRIDGE_FEE_DENOMINATOR,
-  BuildingType,
-  CapacityConfig,
-  EternumProvider,
-  HexGrid,
-  ResourcesIds,
-  ResourceTier,
-  scaleResourceCostMinMax,
-  scaleResourceInputs,
-  scaleResourceOutputs,
-  scaleResources,
-  type Config as EternumConfig,
-  type ResourceInputs,
-  type ResourceOutputs,
-  type ResourceWhitelistConfig,
-} from "@bibliothecadao/eternum";
+	ADMIN_BANK_ENTITY_ID,
+	BRIDGE_FEE_DENOMINATOR,
+	BuildingType,
+	CapacityConfig,
+	type Config as EternumConfig,
+	HexGrid,
+	type ResourceInputs,
+	type ResourceOutputs,
+	type ResourceWhitelistConfig,
+	ResourcesIds,
+	scaleResourceInputs,
+	scaleResourceOutputs,
+	scaleResources,
+} from "@bibliothecadao/types";
 
 import chalk from "chalk";
 
 import fs from "fs";
-import { Account } from "starknet";
+import type { Account } from "starknet";
 import type { Chain } from "utils/utils";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
@@ -46,6 +44,7 @@ export class GameConfigDeployer {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
     await setAgentControllerConfig(config);
+    await setVillageControllersConfig(config);
     await SetResourceFactoryConfig(config);
     await setResourceBridgeWhitelistConfig(config);
     await setTradeConfig(config);
@@ -94,25 +93,19 @@ export class GameConfigDeployer {
     );
   }
 
-  getHyperstructureConstructionCostsScaled(): { resource: number; amount: number }[] {
+  getHyperstructureConstructionCostsScaled(): {
+    resource: number;
+    amount: number;
+  }[] {
     return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureConstructionCosts,
-      this.globalConfig.resources.resourcePrecision,
-    );
-  }
-
-  getHyperstructureCreationCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureCreationCosts,
+      this.globalConfig.hyperstructures.hyperstructureConstructionCost,
       this.globalConfig.resources.resourcePrecision,
     );
   }
 
   getHyperstructureTotalCostsScaled(): { resource: number; amount: number }[] {
-    return scaleResources(
-      this.globalConfig.hyperstructures.hyperstructureTotalCosts,
-      this.globalConfig.resources.resourcePrecision,
-    );
+    // Create a utility function if needed or return empty array
+    return [];
   }
 }
 
@@ -296,7 +289,10 @@ export const SetResourceFactoryConfig = async (config: Config) => {
     );
   }
 
-  const tx = await config.provider.set_resource_factory_config({ signer: config.account, calls: calldataArray });
+  const tx = await config.provider.set_resource_factory_config({
+    signer: config.account,
+    calls: calldataArray,
+  });
 
   console.log(
     chalk.cyan(`
@@ -311,7 +307,7 @@ export const setResourceBridgeWhitelistConfig = async (config: Config) => {
   console.log(chalk.cyan("\n⚡ BRIDGE WHITELIST CONFIGURATION"));
   console.log(chalk.gray("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
 
-  let resourceWhitelistConfigs: ResourceWhitelistConfig[] = [];
+  const resourceWhitelistConfigs: ResourceWhitelistConfig[] = [];
   for (const [resourceName, resourceData] of Object.entries(config.config.setup!.addresses.resources)) {
     const [resourceId, tokenAddress] = resourceData as unknown as [string, string];
     const data = {
@@ -512,7 +508,10 @@ export const setRealmUpgradeConfig = async (config: Config) => {
     }
   }
 
-  const tx = await config.provider.set_structure_level_config({ signer: config.account, calls: calldataArray });
+  const tx = await config.provider.set_structure_level_config({
+    signer: config.account,
+    calls: calldataArray,
+  });
   console.log(chalk.green(`\n    ✔ Configuration complete `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
@@ -800,15 +799,15 @@ export const setupGlobals = async (config: Config) => {
     mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
   };
 
-  let shardsMinesFailRate =
+  const shardsMinesFailRate =
     (mapCalldata.shards_mines_fail_probability /
       (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) *
     100;
-  let hyperstructureFailRateAtTheCenter =
+  const hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
-  let hyperstructureFailRateIncreasePerHex =
+  const hyperstructureFailRateIncreasePerHex =
     (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
-  let hyperstructureFailRateIncreasePerHyperstructureFound =
+  const hyperstructureFailRateIncreasePerHyperstructureFound =
     (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
     chalk.cyan(`
@@ -851,6 +850,29 @@ export const setAgentControllerConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
+export const setVillageControllersConfig = async (config: Config) => {
+  const calldata = {
+    signer: config.account,
+    village_controllers: config.config.village.controller_addresses,
+  };
+
+  console.log(
+    chalk.cyan(`
+  📦 Village Controllers Configuration
+  ═══════════════════════════════`),
+  );
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Village Controllers")}
+    │  ${chalk.gray("Addresses:")}${calldata.village_controllers.map(addr => `\n    │     ${chalk.white(shortHexAddress(addr))}`).join('')}
+    └────────────────────────────────`),
+  );
+
+  const villageTx = await config.provider.set_village_controllers(calldata);
+  console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
+};
+
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -870,7 +892,10 @@ export const setCapacityConfig = async (config: Config) => {
     { name: "Structure", value: calldata.structure_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
-    { name: "Storehouse Added Capacity Per Building", value: calldata.storehouse_boost_capacity },
+    {
+      name: "Storehouse Added Capacity Per Building",
+      value: calldata.storehouse_boost_capacity,
+    },
   ];
 
   console.log(
@@ -1091,37 +1116,32 @@ export const setHyperstructureConfig = async (config: Config) => {
 
   const {
     hyperstructurePointsPerCycle,
-    hyperstructurePointsOnCompletion,
-    hyperstructureTimeBetweenSharesChangeSeconds,
+    hyperstructureConstructionCost,
     hyperstructurePointsForWin,
-    hyperstructureTotalCosts,
+    hyperstructureInitializationShardsCost,
   } = config.config.hyperstructures;
 
-  const costs = scaleResourceCostMinMax(hyperstructureTotalCosts, config.config.resources.resourcePrecision);
-
+  const initializationShardsAmount = hyperstructureInitializationShardsCost.amount;
   const hyperstructureCalldata = {
     signer: config.account,
-    resources_for_completion: costs,
-    time_between_shares_change: hyperstructureTimeBetweenSharesChangeSeconds,
-    points_per_cycle: hyperstructurePointsPerCycle,
+    initialize_shards_amount: initializationShardsAmount * config.config.resources.resourcePrecision,
+    construction_resources: hyperstructureConstructionCost,
+    points_per_second: hyperstructurePointsPerCycle,
     points_for_win: hyperstructurePointsForWin,
-    points_on_completion: hyperstructurePointsOnCompletion,
   };
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Points System")}
-    │  ${chalk.gray("Per Cycle:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_cycle))}
-    │  ${chalk.gray("On Completion:")}    ${chalk.white(addCommas(hyperstructureCalldata.points_on_completion))}
+    ┌─ ${chalk.yellow("Hyperstructure Points System")}
+    │  ${chalk.gray("Per Second:")}        ${chalk.white(addCommas(hyperstructureCalldata.points_per_second))}
     │  ${chalk.gray("For Win:")}          ${chalk.white(addCommas(hyperstructureCalldata.points_for_win))}
     │
-    │  ${chalk.yellow("Timing")}
-    │  ${chalk.gray("Minimum Time Between Share Changes:")}     ${chalk.white(hourMinutesSeconds(hyperstructureCalldata.time_between_shares_change))}
+    │  ${chalk.gray("Initialization Shards:")}     ${chalk.white(inGameAmount(hyperstructureCalldata.initialize_shards_amount, config.config))}
     │
-    │  ${chalk.yellow("Resource Tier")}${hyperstructureCalldata.resources_for_completion
+    │  ${chalk.gray("Construction Cost")}${hyperstructureCalldata.construction_resources
       .map(
         (c) => `
-    │  ${chalk.gray(ResourceTier[c.resource_tier].padEnd(12))} ${chalk.white(inGameAmount(c.min_amount, config.config))} ${chalk.gray("to")} ${chalk.white(inGameAmount(c.max_amount, config.config))}`,
+    │  ${chalk.yellow(ResourcesIds[c.resource_type].padEnd(12))} ${chalk.white(c.min_amount)} ${chalk.gray("to")} ${chalk.white(c.max_amount)}`,
       )
       .join("")}
     └────────────────────────────────`),
@@ -1169,8 +1189,8 @@ export const createBanks = async (config: Config) => {
   ═══════════════════════`),
   );
 
-  let banks = [];
-  let bank_coords = [];
+  const banks = [];
+  const bank_coords = [];
   // Find coordinates x steps from center in each direction
   const stepsFromCenter = 80;
   const distantCoordinates = HexGrid.findHexCoordsfromCenter(stepsFromCenter);
@@ -1188,14 +1208,14 @@ export const createBanks = async (config: Config) => {
     });
   }
 
-  let calldata = {
+  const calldata = {
     signer: config.account,
     banks,
   };
 
-  let guard_slot_names = ["Delta", "Charlie", "Bravo", "Alpha"];
-  let troop_tier_names = ["T1", "T2", "T3"];
-  let troop_type_names = ["Knight", "Paladin", "Crossbowman"];
+  const guard_slot_names = ["Delta", "Charlie", "Bravo", "Alpha"];
+  const troop_tier_names = ["T1", "T2", "T3"];
+  const troop_type_names = ["Knight", "Paladin", "Crossbowman"];
 
   for (const bank of calldata.banks) {
     console.log("\n");
@@ -1279,7 +1299,7 @@ export const addLiquidity = async (config: Config) => {
   );
 
   const { ammStartingLiquidity, lordsLiquidityPerResource } = config.config.banks;
-  let calls = [];
+  const calls = [];
 
   for (const [resourceId, amount] of Object.entries(ammStartingLiquidity)) {
     const resourceAmount = amount * config.config.resources.resourcePrecision;

@@ -1,178 +1,181 @@
-use s1_eternum::alias::ID;
-
+/// Interface for interacting with the season functionality within the game.
+/// This trait provides functions to manage the game's seasons, including
+/// closing the current season and claiming season prizes.
 #[starknet::interface]
 pub trait ISeasonSystems<T> {
-    fn register_to_leaderboard(
-        ref self: T, hyperstructures_contributed_to: Span<ID>, hyperstructure_shareholder_epochs: Span<(ID, u16)>,
-    );
-    fn claim_leaderboard_rewards(ref self: T, token: starknet::ContractAddress);
+    /// Closes the current game season and assigns the caller as the winner.
+    ///
+    /// This function can only be called when the following conditions are met:
+    /// - The season has started and is not yet over
+    /// - The calling player has accumulated enough registered points to end the game
+    ///   (based on the 'points_for_win' threshold defined in hyperstructure_config)
+    ///
+    /// # Effects:
+    /// - Marks the season as ended
+    /// - Records the caller as the winner by emitting a SeasonEnded event
+    /// - Grants the 'Warlord' achievement to the winner
+    ///
+    /// # Errors:
+    /// - Fails if the season has not started or is already over
+    /// - Fails if the player does not have enough points to end the game
+    fn season_close(ref self: T);
+
+    /// Allows players to claim their proportion of the prize pool after a season has ended.
+    ///
+    /// This function can only be called when the following conditions are met:
+    /// - The season has ended
+    /// - The claiming period has started (after the registration grace period)
+    /// - The caller has not already claimed their reward
+    /// - The caller has registered points
+    ///
+    /// The reward amount is calculated proportionally based on the player's registered points
+    /// relative to the total registered points across all players.
+    ///
+    /// # Formula:
+    /// player_reward = (player_registered_points / total_registered_points) * total_lords_pool
+    ///
+    /// # Effects:
+    /// - Transfers LORDS tokens to the player from the season pool
+    /// - Marks the player's prize as claimed to prevent double claiming
+    ///
+    /// # Errors:
+    /// - Fails if the season has not ended yet
+    /// - Fails if the claiming period has not started yet
+    /// - Fails if the player has already claimed their reward
+    /// - Fails if the player has no registered points
+    /// - Fails if the token transfer fails
+    fn season_prize_claim(ref self: T);
 }
 
 #[dojo::contract]
 pub mod season_systems {
+    use achievement::store::{StoreTrait};
+    use core::num::traits::Zero;
+    use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-
+    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use s1_eternum::{
-        alias::ID, constants::{DEFAULT_NS, ResourceTypes, WORLD_CONFIG_ID},
+        constants::{DEFAULT_NS, WORLD_CONFIG_ID},
         models::{
             config::{
-                HyperstructureResourceConfigTrait, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig,
+                HyperstructureConfig, ResourceBridgeFeeSplitConfig, SeasonAddressesConfig, SeasonConfigImpl,
                 WorldConfigUtilImpl,
             },
-            season::{
-                Leaderboard, LeaderboardEntry, LeaderboardEntryImpl, LeaderboardRegisterContribution,
-                LeaderboardRegisterShare, LeaderboardRewardClaimed,
-            },
+            hyperstructure::{PlayerRegisteredPoints}, season::{SeasonPrize},
         },
-        systems::{hyperstructure::contracts::hyperstructure_systems::InternalHyperstructureSystemsImpl},
     };
-    use starknet::ContractAddress;
 
-    pub const SCALING_FACTOR: u256 = 1_000_000;
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event(historical: false)]
+    struct SeasonEnded {
+        #[key]
+        winner_address: starknet::ContractAddress,
+        timestamp: u64,
+    }
+
 
     #[abi(embed_v0)]
     pub impl SeasonSystemsImpl of super::ISeasonSystems<ContractState> {
-        fn register_to_leaderboard(
-            ref self: ContractState,
-            hyperstructures_contributed_to: Span<ID>,
-            hyperstructure_shareholder_epochs: Span<(ID, u16)>,
-        ) {
-            let player_address = starknet::get_caller_address();
+        fn season_close(ref self: ContractState) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            // ensure the the caller's points are enough to end the game
+            let player_address = starknet::get_caller_address();
+            let player_points: PlayerRegisteredPoints = world.read_model(player_address);
+            let hyperstructure_config: HyperstructureConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("hyperstructure_config"),
+            );
             assert!(
-                leaderboard.registration_end_timestamp > starknet::get_block_timestamp(), "Registration period is over",
+                player_points.registered_points >= hyperstructure_config.points_for_win,
+                "Not enough points to end the game",
             );
 
-            // ensure contribution is not already registered
-            let hyperstructure_contribution_count: u32 = hyperstructures_contributed_to.len();
-            let mut i = 0;
-            loop {
-                if i >= hyperstructure_contribution_count {
-                    break;
-                }
+            // end the season
+            SeasonConfigImpl::end_season(ref world);
 
-                // ensure contribution is not already registered
-                let hyperstructure_entity_id = *hyperstructures_contributed_to.at(i);
-                let mut leaderboard_register_contribution: LeaderboardRegisterContribution = world
-                    .read_model((player_address, hyperstructure_entity_id));
-                if leaderboard_register_contribution.registered {
-                    panic!("contribution already registered for hyperstructure {}", hyperstructure_entity_id);
-                }
+            // emit season end event
+            let now = starknet::get_block_timestamp();
+            world.emit_event(@SeasonEnded { winner_address: player_address, timestamp: now });
 
-                // register contribution
-                leaderboard_register_contribution.registered = true;
-                world.write_model(@leaderboard_register_contribution);
-
-                i += 1;
-            };
-
-            // ensure share is not already registered
-            let hyperstructure_shareholder_epochs_count: u32 = hyperstructure_shareholder_epochs.len();
-            let mut i = 0;
-            loop {
-                if i >= hyperstructure_shareholder_epochs_count {
-                    break;
-                }
-
-                let (hyperstructure_entity_id, epoch) = *hyperstructure_shareholder_epochs.at(i);
-                let mut leaderboard_register_share: LeaderboardRegisterShare = world
-                    .read_model((player_address, hyperstructure_entity_id, epoch));
-                if leaderboard_register_share.registered {
-                    panic!("share already registered for hyperstructure {}", hyperstructure_entity_id);
-                }
-
-                // register share
-                leaderboard_register_share.registered = true;
-                world.write_model(@leaderboard_register_share);
-                i += 1;
-            };
-
-            let mut total_points: u128 = 0;
-            let hyperstructure_tier_configs = HyperstructureResourceConfigTrait::get_all(world);
-            total_points +=
-                InternalHyperstructureSystemsImpl::compute_total_contribution_points(
-                    ref world, hyperstructures_contributed_to, hyperstructure_tier_configs, player_address,
-                );
-
-            total_points +=
-                InternalHyperstructureSystemsImpl::compute_total_share_points(
-                    world, hyperstructure_shareholder_epochs, player_address,
-                );
-
-            leaderboard.register(ref world, starknet::get_caller_address(), total_points);
+            // [Achievement] Win the game
+            let player_id: felt252 = player_address.into();
+            let task_id: felt252 = Task::Warlord.identifier();
+            let store = StoreTrait::new(world);
+            store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
         }
 
-        fn claim_leaderboard_rewards(ref self: ContractState, token: ContractAddress) {
+        fn season_prize_claim(ref self: ContractState) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
-            // ensure token is whitelisted and it is the lords token
-            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            // ensure the season has ended
+            // note: season.end_at must to set to avoid fatal bug
+            let season_config = SeasonConfigImpl::get(world);
+            assert!(season_config.has_ended(), "Season has not ended");
+
+            // ensure claiming period has started
+            let season_config = SeasonConfigImpl::get(world);
+            let season_prize_registration_end_at = season_config.end_at
+                + season_config.registration_grace_seconds.into();
             assert!(
-                resource_bridge_token_whitelist.resource_type == ResourceTypes::LORDS, "Token is not the reward token",
+                season_prize_registration_end_at < starknet::get_block_timestamp(),
+                "claiming period hasn't started yet",
             );
 
             // ensure caller has not already claimed their reward
-            let caller_address = starknet::get_caller_address();
-            let mut leaderboard_reward_claimed: LeaderboardRewardClaimed = world.read_model(caller_address);
-            assert!(leaderboard_reward_claimed.claimed == false, "Reward already claimed by caller");
+            let player_address = starknet::get_caller_address();
+            let mut player_points: PlayerRegisteredPoints = world.read_model(player_address);
+            assert!(player_points.prize_claimed == false, "Reward already claimed by caller");
 
-            // ensure claiming period has started
-            let mut leaderboard: Leaderboard = world.read_model(WORLD_CONFIG_ID);
-            assert!(
-                leaderboard.registration_end_timestamp < starknet::get_block_timestamp(),
-                "Claiming period hasn't started yet",
+            let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("season_addresses_config"),
             );
+
+            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
 
             // set total price pool if it hasn't been set yet
-            if !leaderboard.distribution_started {
-                let res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
-                    world, selector!("res_bridge_fee_split_config"),
-                );
-                let total_price_pool: u256 = ERC20ABIDispatcher { contract_address: token }
-                    .balance_of(res_bridge_fee_split_config.season_pool_fee_recipient);
-                leaderboard.total_price_pool = Option::Some(total_price_pool);
-                leaderboard.distribution_started = true;
-                world.write_model(@leaderboard);
-            }
-
-            assert!(
-                leaderboard.total_price_pool.unwrap() > 0,
-                "distribution finished or no one registered to the leaderboard",
-            );
-
-            let entry: LeaderboardEntry = LeaderboardEntryImpl::get(ref world, caller_address);
-
-            assert!(entry.points > 0, "No points to claim");
-
-            let player_reward: u256 = (leaderboard.total_price_pool.unwrap() * entry.points.into())
-                / leaderboard.total_points.into();
             let res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig = WorldConfigUtilImpl::get_member(
                 world, selector!("res_bridge_fee_split_config"),
             );
+            let lords_address = season_addresses_config.lords_address;
+            if season_prize.total_lords_pool.is_zero() {
+                let total_prize_pool: u256 = ERC20ABIDispatcher { contract_address: lords_address }
+                    .balance_of(res_bridge_fee_split_config.season_pool_fee_recipient);
+                season_prize.total_lords_pool = total_prize_pool;
+                world.write_model(@season_prize);
+            }
 
+            assert!(
+                season_prize.total_lords_pool.is_non_zero(),
+                "distribution finished or no one registered to the leaderboard",
+            );
+            assert!(player_points.registered_points.is_non_zero(), "Player has no points to claim");
+
+            let player_reward: u256 = (season_prize.total_lords_pool * player_points.registered_points.into())
+                / season_prize.total_registered_points.into();
             let sender = res_bridge_fee_split_config.season_pool_fee_recipient;
             let self = starknet::get_contract_address();
             if sender == self {
                 assert!(
-                    ERC20ABIDispatcher { contract_address: token }.transfer(caller_address, player_reward),
+                    ERC20ABIDispatcher { contract_address: lords_address }.transfer(player_address, player_reward),
                     "Failed to transfer reward",
                 );
             } else {
                 assert!(
-                    ERC20ABIDispatcher { contract_address: token }
+                    ERC20ABIDispatcher { contract_address: lords_address }
                         .transfer_from(
-                            res_bridge_fee_split_config.season_pool_fee_recipient, caller_address, player_reward,
+                            res_bridge_fee_split_config.season_pool_fee_recipient, player_address, player_reward,
                         ),
                     "Failed to transfer reward",
                 );
             }
 
             // set claimed to true
-            leaderboard_reward_claimed.claimed = true;
-            world.write_model(@leaderboard_reward_claimed);
+            player_points.prize_claimed = true;
+            world.write_model(@player_points);
         }
     }
 }

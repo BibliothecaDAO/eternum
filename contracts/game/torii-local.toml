@@ -19,9 +19,9 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-      "erc721:0x52aea4ccdabb8921f13ba504a6965d4a32488a4e8e03dc57ded9f171a6e4747",
-      "erc721:0x19f7e8887742735e2ec35a098c453a491a46a0ecdfbb64ed27a4e7d2ea32263",
-      "erc20:0x75516853728329b7da7bd7ad4235a68a604ef2ba14a15828cb7c39b5538c096",
+      "erc721:0x487f7da8d1294fa37d303e724ffd1b7fd10a192ca70725124c4a47648f7b060",
+      "erc721:0x73bcc6ff3f51c7ba91794a72777563784f32563175ddfe223252790ac26a67d",
+      "erc20:0x7288cca8acb39e8e5486d7bff85170cb371f0c84d5c5c849184ec36b02bc729",
 ]
 
 namespaces = ["s1_eternum"]
@@ -30,7 +30,12 @@ world_block = 0
 
 [sql]
 all_model_indices = false
-model_indices = [] # TODO(tedison): add model indices, for now there's NO indices in the database
+model_indices = [
+	{ model_tag = "s1_eternum-ResourceList", fields = ["amount"]},
+	{ model_tag = "s1_eternum-ExplorerTroops", fields = ["owner", "coord.x", "coord.y"]},
+	{ model_tag = "s1_eternum-Structure", fields = ["category", "base.coord_x", "base.coord_y", "metadata.villages_count", "metadata.realm_id", "owner"]},
+	{ model_tag = "s1_eternum-Tile", fields = ["col", "row"] },
+]
 historical = ["s1_eternum-TrophyCreation", "s1_eternum-TrophyProgression"]
 cache_size = -500_000 # 512MB of cache size, we can tune this up if needed. This should account for between 30%-80% of the RAM of the slot instance.
 page_size = 32_768

@@ -1,4 +1,4 @@
-import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/eternum";
+import { ResourcesIds, type TroopFoodConsumption } from "@bibliothecadao/types";
 
 // Food consumption rates (wheat/fish) per troop unit, scaled by resource precision
 // Example: explore_wheat_burn_amount of 10 means 10 * RESOURCE_PRECISION wheat consumed per troop during exploration
@@ -61,8 +61,8 @@ export const TROOP_EXPLORE_STAMINA_COST = 30;
 
 // Troop limit config
 export const TROOP_EXPLORER_MAX_PARTY_COUNT = 10;
-export const TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT = 500_000;
-export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 60 * 24; // 1 day
+export const TROOP_EXPLORER_GUARD_MAX_TROOP_COUNT = 100_000;
+export const TROOP_GUARD_RESURRECTION_DELAY = 60 * 60 * 12; // 12 hours
 export const TROOP_MERCENARIES_TROOP_LOWER_BOUND = 3_000;
 export const TROOP_MERCENARIES_TROOP_UPPER_BOUND = 6_000;
 export const TROOP_AGENTS_TROOP_LOWER_BOUND = 1_000;

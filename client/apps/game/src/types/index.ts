@@ -1,9 +1,10 @@
-import { ID } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
 
 export enum RightView {
   None,
   ResourceTable,
   Production,
+  Bridge,
 }
 
 export enum LeftView {

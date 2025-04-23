@@ -10,7 +10,8 @@ import { ArmyCapacity } from "@/ui/elements/army-capacity";
 import Button from "@/ui/elements/button";
 import { StaminaResource } from "@/ui/elements/stamina-resource";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
-import { armyHasTroops, ArmyInfo } from "@bibliothecadao/eternum";
+import { armyHasTroops } from "@bibliothecadao/eternum";
+import { ArmyInfo } from "@bibliothecadao/types"
 import { LucideArrowRight } from "lucide-react";
 import React, { Dispatch, SetStateAction, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -77,9 +78,8 @@ export const ArmyChip = ({
 
   return (
     <div
-      className={`items-center text-xs p-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/5" : "bg-red/5"} ${
-        army ? "defensive-army-selector" : "attacking-army-selector"
-      } rounded-md border-gold/20 ${className}`}
+      className={`items-center text-xs p-2 hover:bg-gold/20 ${army.isMine ? "bg-blueish/5" : "bg-red/5"} ${army ? "defensive-army-selector" : "attacking-army-selector"
+        } rounded-md border-gold/20 ${className}`}
     >
       {editMode ? (
         <>
@@ -102,9 +102,8 @@ export const ArmyChip = ({
                 {showButtons && army.isMine && (
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Plus
-                      className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
-                        army.troops.count === 0n ? "animate-pulse" : ""
-                      } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
+                      className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${army.troops.count === 0n ? "animate-pulse" : ""
+                        } ${army ? "defensive-army-edit-selector" : "attacking-army-edit-selector"}`}
                       onClick={() => {
                         setTooltip(null);
                         setEditMode(!editMode);
@@ -120,9 +119,8 @@ export const ArmyChip = ({
                         />
                         {isOnMap && <NavigateToPositionIcon position={new Position(army.position)} />}
                         <Swap
-                          className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
-                            army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
-                          }`}
+                          className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
+                            }`}
                           onClick={() => {
                             setTooltip(null);
                             setShowTroopSwap(!showTroopSwap);
@@ -231,9 +229,8 @@ const ArmySelector = ({ armies, onSelect }: { armies: ArmyInfo[]; onSelect: (arm
       {armies.map((army) => (
         <div
           key={army.entityId}
-          className={`rounded cursor-pointer transition-all duration-300 ${
-            selectedArmy?.entityId === army.entityId ? "bg-gray-300" : "bg-brown"
-          }`}
+          className={`rounded cursor-pointer transition-all duration-300 ${selectedArmy?.entityId === army.entityId ? "bg-gray-300" : "bg-brown"
+            }`}
           onClick={() => handleArmyClick(army)}
         >
           <ArmyChip army={army} className="bg-green/20" />

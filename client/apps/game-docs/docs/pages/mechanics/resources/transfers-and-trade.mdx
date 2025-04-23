@@ -1,0 +1,81 @@
+import { EfficiencyTable } from "@/components/EfficienyTable";
+
+# 📜 Transfers & Trade
+
+## Transport
+
+### Transfers
+
+Throughout the season, Lords will face the need to transfer materials from place to place around the world map, whether
+it be to their own Realms and Villages, or other structures like Banks, Hyperstructures, and Fragment Mines. Lords have
+two primary options for initiating transfers:
+
+- **Detailed Transfer**: Players can use the comprehensive transfer menu accessible from the Trade tab. This allows
+  transfers of multiple types of materials simultaneously, to any structure on the map—including those belonging to
+  other players.
+
+![Detailed Transfer](/gifs/transfer-all.gif)
+
+- **Quick Transfer**: Alternatively, Lords can swiftly transfer resources between their own structures using the
+  resources sidebar, ideal for managing internal logistics and maintaining supply chains.
+
+![Quick Transfer](/gifs/transfer-own.gif)
+
+### The Donkey Network
+
+When a transfer is initiated, donkeys travel through the invisible and immutable donkey network. This is the key
+infrastructure upon which all material transport takes place, facilitating trade between players and Banks. One donkey
+is capable of carrying up to 500 kg of materials, so the number of donkeys required for a transfer depends on the total
+weight of the materials being moved. Once a transfer is initiated, it cannot be cancelled, and the journey will take
+some time depending on the distance to the destination structure. Upon arrival, transferred materials and donkeys must
+be manually claimed via the 'Resource Arrivals' tab before they become available for use.
+
+## Banks & Marketplaces
+
+### Banks
+
+<div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
+  <img
+    src="/images/buildings/construction/bank.png"
+    alt="Bank Building"
+    style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }}
+  />
+</div>
+
+Six ancient Banks stand evenly distributed around, and equidistant from, the centre of the map.
+
+At the start of the game, each Bank is occupied by powerful groups of bandits. Lords who conquer a Bank become the
+beneficiary of any fees from the Automated Market Maker (AMM) trades that they facilitate. Although Banks collect fees
+independently, they collectively share liquidity, ensuring consistent and stable trading conditions throughout Eternum.
+Realms and Villages automatically utilize their nearest Bank when trading through the AMM.
+
+### AMM (Automated Market Maker)
+
+The Automated Market Maker (AMM) is a decentralized trading protocol facilitated by the six Banks, allowing for
+instantaneous and trustless trades 24/7—the DeFi of Eternum. Trades executed via the AMM automatically utilize the
+closest Bank, directing trade fees specifically to that Bank's owner. Lords can further benefit from the AMM by
+contributing materials and $LORDS to liquidity pools, earning a share of the fees generated from subsequent swaps. Lords
+should be aware of the relatively high fees for using the AMM and consider the Orderbook for other trading options
+first.
+
+### Orderbook
+
+Complementing the AMM, the Orderbook is a peer-to-peer marketplace, allowing Lords to place precise buy or sell orders
+at chosen quantities and prices. This traditional method of trading incurs lower fees and offers Lords strategic
+control, enabling them to manage market conditions to their advantage and set OTC orders for friends and allies.
+
+## Bridging (Portals)
+
+Portals provide Lords with the ability to bridge materials into and out of Eternum, connecting the in-game economy with
+the Starknet infrastructure layer. Portals are mysterious and unstable devices, so they tend to burn up most of the
+materials sent through. However, there is evidence that the power of the Hyperstructures can increase the stability of
+Portals throughout Eternum. As Lords manage to reestablish these mighty structures throughout the land, the efficiency
+of bridging in and out of Eternum improves for all.
+
+<EfficiencyTable />
+
+Each Realm comes equipped with a Portal. Realm Lords are able to bridge materials both into and out of their Realms
+directly. Villages, however, have more limited bridging capabilities—they can bridge materials out of Eternum, but not
+in. This is in line with their existing restrictions on receiving troops from external sources. They are also limited to
+utilizing the Portal belonging to their parent Realm, for which the Realm owner collects a 5% fee on all materials and
+tokens bridged out of the game.

@@ -1,6 +1,4 @@
-import { useHyperstructureData } from "@/hooks/store/use-leaderboard-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ContributionSummary } from "@/ui/components/hyperstructures/contribution-summary";
 import { HyperstructureDetails } from "@/ui/components/hyperstructures/hyperstructure-details";
 import { HyperstructureResourceChip } from "@/ui/components/hyperstructures/hyperstructure-resource-chip";
 import Button from "@/ui/elements/button";
@@ -9,26 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/elements/text-input";
 import { currencyIntlFormat, formatStringNumber, getEntityIdFromKeys, separateCamelCase } from "@/ui/utils/utils";
 import {
-  Access,
-  calculateCompletionPoints,
   configManager,
-  ContractAddress,
   divideByPrecision,
   getAddressNameFromEntity,
   getGuildFromPlayerAddress,
+  getHyperstructureTotalContributableAmounts,
   LeaderboardManager,
-  MAX_NAME_LENGTH,
   multiplyByPrecision,
   ResourceManager,
-  ResourcesIds,
 } from "@bibliothecadao/eternum";
 import {
-  ProgressWithPercentage,
-  useDojo,
-  useHyperstructureProgress,
-  useHyperstructureUpdates,
-  usePlayerContributions,
-} from "@bibliothecadao/react";
+  Access,
+  ContractAddress,
+  MAX_NAME_LENGTH,
+  ResourcesIds,
+} from "@bibliothecadao/types";
+import { useCurrentAmounts, useDojo, useHyperstructureProgress, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo, useState } from "react";
 
@@ -65,8 +59,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
   // Add initialize function manually since it's not in the type definition
   const { contribute_to_construction, set_access, initialize_hyperstructure } = systemCalls;
 
-  const updateLeaderboard = useHyperstructureData();
-
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -76,8 +68,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   const progresses = useHyperstructureProgress(entity.entity_id);
-
-  const myContributions = usePlayerContributions(BigInt(account.address), entity.entity_id);
+  const currentAmounts = useCurrentAmounts(entity.entity_id);
 
   const updates = useHyperstructureUpdates(entity.entity_id);
 
@@ -106,9 +97,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   // Calculate the progress percentage for AncientFragment
   const { ancientFragmentProgress, costNeeded } = useMemo(() => {
-    const costNeeded = progresses.progresses.find(
-      (progress) => progress.resource_type === ResourcesIds.AncientFragment,
-    )?.costNeeded;
+    const costNeeded = configManager.getHyperstructureConstructionCosts().amount;
 
     return {
       ancientFragmentProgress: Math.min(100, costNeeded ? (ancientFragmentBalance / costNeeded) * 100 : 0),
@@ -161,25 +150,32 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
 
-    return Object.values(configManager.getHyperstructureRequiredAmounts(entity.entity_id))
-      .filter(({ resource }) => resource !== ResourcesIds.AncientFragment)
-      .map(({ resource }) => {
-        const progress = progresses.progresses.find(
-          (progress: ProgressWithPercentage) => progress.resource_type === resource,
-        );
-        return (
-          <HyperstructureResourceChip
-            structureEntityId={structureEntityId}
-            setContributions={setNewContributions}
-            contributions={newContributions}
-            progress={progress!}
-            key={resource}
-            resourceId={resource}
-            resetContributions={resetContributions}
-          />
-        );
-      });
-  }, [progresses, myContributions]);
+    const requiredAmounts = getHyperstructureTotalContributableAmounts(entity.entity_id, components);
+
+    return Object.values(requiredAmounts).map(({ resource }) => {
+      const currentAmount = currentAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const requiredAmount = requiredAmounts.find((progress) => progress.resource === resource)?.amount || 0;
+      const progress = {
+        percentage: currentAmount ? (currentAmount / requiredAmount) * 100 : 0,
+        costNeeded: requiredAmount,
+        hyperstructure_entity_id: entity.entity_id,
+        resource_type: resource,
+        amount: currentAmount,
+      };
+
+      return (
+        <HyperstructureResourceChip
+          structureEntityId={structureEntityId}
+          setContributions={setNewContributions}
+          contributions={newContributions}
+          progress={progress}
+          key={resource}
+          resourceId={resource}
+          resetContributions={resetContributions}
+        />
+      );
+    });
+  }, [progresses, currentAmounts, newContributions]);
 
   const canContribute = useMemo(() => {
     const hyperstructureOwnerGuild = getGuildFromPlayerAddress(BigInt(entity?.owner || 0), components);
@@ -187,24 +183,27 @@ export const HyperstructurePanel = ({ entity }: any) => {
       entity.isOwner ||
       (hyperstructure?.access === Access[Access.GuildOnly] &&
         playerGuild?.entityId !== undefined &&
-        playerGuild.entityId !== 0 &&
+        playerGuild.entityId !== 0n &&
         hyperstructureOwnerGuild?.entityId !== undefined &&
-        hyperstructureOwnerGuild.entityId !== 0 &&
+        hyperstructureOwnerGuild.entityId !== 0n &&
         hyperstructureOwnerGuild.entityId === playerGuild.entityId) ||
       hyperstructure?.access === Access[Access.Public]
     );
   }, [newContributions]);
 
   const initialPoints = useMemo(() => {
-    return calculateCompletionPoints(myContributions);
-  }, [myContributions, updates]);
-
-  const myShares = useMemo(() => {
-    return LeaderboardManager.instance(dojo.setup.components).getAddressShares(
+    return LeaderboardManager.instance(dojo.setup.components).getCompletionPoints(
       ContractAddress(account.address),
       entity.entity_id,
     );
-  }, [myContributions, updates]);
+  }, [updates]);
+
+  const myShares = useMemo(() => {
+    return LeaderboardManager.instance(dojo.setup.components).getPlayerShares(
+      ContractAddress(account.address),
+      entity.entity_id,
+    );
+  }, [updates]);
 
   const setAccess = async (access: bigint) => {
     setIsLoading(Loading.SetPrivate);
@@ -272,7 +271,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col items-center gap-1">
                     <h4 className="truncate">{entity.name}</h4>
-                    <Button size="xs" onClick={updateLeaderboard}>
+                    <Button size="xs" onClick={() => { }}>
                       Reload
                     </Button>
                   </div>
@@ -298,7 +297,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                               if (!isNaN(Number(access))) return false;
 
                               if (access === Access[Access.GuildOnly]) {
-                                return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0;
+                                return playerGuild?.entityId !== undefined && playerGuild.entityId !== 0n;
                               }
 
                               return access !== hyperstructure!.access;
@@ -346,8 +345,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
               backgroundImage:
                 ancientFragmentProgress > 0
                   ? `linear-gradient(to right, #06D6A03c ${String(ancientFragmentProgress)}%, rgba(0,0,0,0) ${String(
-                      ancientFragmentProgress,
-                    )}%)`
+                    ancientFragmentProgress,
+                  )}%)`
                   : "",
             }}
           >
@@ -390,7 +389,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
       <div className="overflow-y-auto no-scrollbar h-[40vh] bg-gold/10  p-2">
-        <ContributionSummary hyperstructureEntityId={entity.entity_id} className="mb-1" />
         {progresses.percentage === 100 ? (
           <HyperstructureDetails hyperstructureEntityId={entity.entity_id} />
         ) : (
@@ -404,6 +402,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
                       content: <>Not the correct access</>,
                       position: "right",
                     });
+                  } else if (!progresses.initialized) {
+                    setTooltip({
+                      content: <>Hyperstructure must be initialized first</>,
+                      position: "right",
+                    });
                   }
                 }}
                 onMouseLeave={() => {
@@ -413,7 +416,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
                 <Button
                   isLoading={isLoading === Loading.Contribute}
                   variant="primary"
-                  disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None || !canContribute}
+                  disabled={
+                    Object.keys(newContributions).length === 0 ||
+                    isLoading !== Loading.None ||
+                    !canContribute ||
+                    !progresses.initialized
+                  }
                   onClick={contributeToConstruction}
                 >
                   Contribute To Construction

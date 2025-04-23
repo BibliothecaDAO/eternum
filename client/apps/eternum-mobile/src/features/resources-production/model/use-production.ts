@@ -1,6 +1,7 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import useStore from "@/shared/store";
-import { configManager, getProducedResource, ResourcesIds } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
+import { getProducedResource, ResourcesIds } from "@bibliothecadao/types";
 import {
   useBuildings,
   useDojo,

@@ -1,5 +1,5 @@
 import { BattleViewInfo, LeftView, RightView } from "@/types";
-import { ContractAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, ID } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { tracks } from "../helpers/use-music";
@@ -19,6 +19,8 @@ type TooltipType = {
 } | null;
 
 interface UIStore {
+  spectatorRealmEntityId: ID | null;
+  setSpectatorRealmEntityId: (entityId: ID | null) => void;
   theme: string;
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
@@ -76,6 +78,8 @@ const initialTrackIndex = Math.floor(Math.random() * tracks.length);
 
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
+    spectatorRealmEntityId: null,
+    setSpectatorRealmEntityId: (entityId: ID | null) => set({ spectatorRealmEntityId: entityId }),
     theme: "light",
     setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,

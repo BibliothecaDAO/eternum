@@ -1,31 +1,33 @@
 {
-  "name": "@bibliothecadao/react",
-  "version": "0.1.0",
-  "type": "module",
-  "main": "./dist/index.js",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
-  },
-  "peerDependencies": {
-    "@bibliothecadao/eternum": "workspace:*",
-    "@dojoengine/react": "*",
-    "@starknet-react/core": "*",
-    "react": "^18",
-    "starknet": "^6.23.1",
-    "wouter": "^2.12.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18",
-    "tsup": "^8",
-    "typescript": "^5",
-    "vite-plugin-wasm": "^3.3.0",
-    "vite-plugin-top-level-await": "^1.4.1"
-  }
+	"name": "@bibliothecadao/react",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch"
+	},
+	"peerDependencies": {
+		"@bibliothecadao/eternum": "workspace:*",
+		"@bibliothecadao/types": "workspace:*",
+		"@bibliothecadao/dojo": "workspace:*",
+		"@dojoengine/react": "catalog:",
+		"@starknet-react/core": "catalog:",
+		"react": "catalog:",
+		"starknet": "catalog:",
+		"wouter": "^2.12.1"
+	},
+	"devDependencies": {
+		"@types/react": "^18",
+		"tsup": "^8",
+		"typescript": "^5",
+		"vite-plugin-wasm": "^3.3.0",
+		"vite-plugin-top-level-await": "^1.4.1"
+	}
 }

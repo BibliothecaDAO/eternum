@@ -1,14 +1,12 @@
-import { syncMarketAndBankData, syncPlayerStructuresData, syncStructureData } from "@/dojo/sync";
-import { useStructureEntityId } from "@/hooks/helpers/use-structure-entity-id";
+import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
 import { LoadingScreen } from "@/ui/modules/loading-screen";
-import { ADMIN_BANK_ENTITY_ID, PlayerStructure } from "@bibliothecadao/eternum";
+import { getAllStructuresFromToriiClient } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Leva } from "leva";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
 
@@ -100,63 +98,133 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 };
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
-  const [subscriptions, setSubscriptions] = useState<{ [entity: string]: boolean }>({});
+  const syncedStructures = useRef<Set<string>>(new Set());
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  // Setup hooks
-  useStructureEntityId();
-
-  // We could optimise this deeper....
+  const { setup, account } = useDojo();
+  const playerStructures = usePlayerStructures();
   const setLoading = useUIStore((state) => state.setLoading);
 
-  const dojo = useDojo();
+  // Consolidated subscription logic into a single function
+  const syncStructures = useCallback(
+    async ({ structures }: { structures: { entityId: number; position: { col: number; row: number } }[] }) => {
+      if (!structures.length) return;
 
-  const playerStructures = usePlayerStructures();
-
-  const filteredStructures = useMemo(
-    () =>
-      playerStructures.filter((structure: PlayerStructure) => !subscriptions[structure.structure.entity_id.toString()]),
-    [playerStructures, subscriptions],
+      try {
+        const start = performance.now();
+        setLoading(LoadingStateKey.AllPlayerStructures, true);
+        await getStructuresDataFromTorii(
+          setup.network.toriiClient,
+          setup.network.contractComponents as any,
+          structures,
+        );
+        const end = performance.now();
+        console.log(
+          `[sync] structures query structures ${structures.map((s) => `${s.entityId}(${s.position.col},${s.position.row})`)}`,
+          end - start,
+        );
+      } catch (error) {
+        console.error("Failed to sync structures:", error);
+      } finally {
+        setLoading(LoadingStateKey.AllPlayerStructures, false);
+      }
+    },
+    [setup.network.toriiClient, setup.network.contractComponents],
   );
 
-  useEffect(() => {
-    if (
-      !structureEntityId ||
-      subscriptions[structureEntityId.toString()] ||
-      subscriptions[ADMIN_BANK_ENTITY_ID.toString()] ||
-      structureEntityId === 999999999
-    ) {
-      return;
-    }
-
-    const structureBase = getComponentValue(
-      dojo.setup.components.Structure,
-      getEntityIdFromKeys([BigInt(structureEntityId)]),
-    )?.base;
-
-    setSubscriptions((prev) => ({
-      ...prev,
-      [structureEntityId.toString()]: true,
-      [ADMIN_BANK_ENTITY_ID.toString()]: true,
-      ...Object.fromEntries(filteredStructures.map((structure) => [structure.structure.entity_id.toString(), true])),
-    }));
-
-    syncStructureData(
-      dojo.setup,
-      structureEntityId.toString(),
-      setLoading,
-      structureBase ? { x: structureBase.coord_x, y: structureBase.coord_y } : undefined,
-    );
-  }, [structureEntityId, subscriptions]);
-
-  useEffect(() => {
-    syncPlayerStructuresData(dojo.setup, filteredStructures, setLoading);
-  }, [playerStructures.length]);
-
-  useEffect(() => {
-    syncMarketAndBankData(dojo.setup, setLoading);
+  // Function to update the synced structures ref
+  const setSyncedStructures = useCallback((updater: (prev: Set<string>) => Set<string>) => {
+    syncedStructures.current = updater(syncedStructures.current);
   }, []);
+
+  const [fetchedStructures, setFetchedStructures] = useState<
+    { entityId: number; position: { col: number; row: number } }[]
+  >([]);
+
+  // Fetch all structures from Torii client
+  useEffect(() => {
+    const fetchAllStructures = async () => {
+      if (!account.account) return;
+
+      try {
+        const structures = await getAllStructuresFromToriiClient(setup.network.toriiClient, account.account.address);
+        setFetchedStructures(structures);
+      } catch (error) {
+        console.error("Failed to fetch structures:", error);
+      }
+    };
+
+    fetchAllStructures();
+  }, [account.account, setup]);
+
+  // Handle structure synchronization
+  useEffect(() => {
+    if (!account.account) return;
+
+    const syncUnsyncedStructures = async () => {
+      try {
+        // Combine structures from both sources
+        const allStructureIds = new Set([
+          ...fetchedStructures.map((structure) => structure.entityId.toString()),
+          ...playerStructures.map((structure) => structure.structure.entity_id.toString()),
+        ]);
+
+        // Find structures that haven't been synced yet
+        const unsyncedIds = Array.from(allStructureIds)
+          .filter((id) => !syncedStructures.current.has(id))
+          .map(Number);
+
+        if (unsyncedIds.length === 0) return;
+
+        // Prepare structures with positions for syncing
+        const structuresToSync = unsyncedIds.reduce(
+          (acc, entityId) => {
+            // Try to find position from fetched structures
+            const fetchedStructure = fetchedStructures.find((s) => s.entityId === entityId);
+
+            if (fetchedStructure) {
+              acc.push({
+                entityId,
+                position: fetchedStructure.position,
+              });
+              return acc;
+            }
+
+            // Otherwise try to find in player structures
+            const playerStructure = playerStructures.find((s) => Number(s.structure.entity_id) === entityId);
+
+            if (playerStructure?.structure.base) {
+              acc.push({
+                entityId,
+                position: {
+                  col: playerStructure.structure.base.coord_x,
+                  row: playerStructure.structure.base.coord_y,
+                },
+              });
+            }
+
+            return acc;
+          },
+          [] as { entityId: number; position: { col: number; row: number } }[],
+        );
+
+        // Mark all these structures as synced
+        if (structuresToSync.length > 0) {
+          setSyncedStructures((prev) => {
+            const newSet = new Set(prev);
+            structuresToSync.forEach((s) => newSet.add(s.entityId.toString()));
+            return newSet;
+          });
+
+          // Sync the structures with the network
+          await syncStructures({ structures: structuresToSync });
+        }
+      } catch (error) {
+        console.error("Failed to sync structures:", error);
+      }
+    };
+
+    syncUnsyncedStructures();
+  }, [account.account, playerStructures, fetchedStructures, syncStructures, setSyncedStructures]);
 
   return (
     <>
@@ -205,8 +273,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
             <BottomRightContainer>
               <MiniMapNavigation />
             </BottomRightContainer>
+
             <RightMiddleContainer>
-              <RightNavigationModule />
+              <RightNavigationModule structures={playerStructures} />
             </RightMiddleContainer>
 
             <TopLeftContainer>

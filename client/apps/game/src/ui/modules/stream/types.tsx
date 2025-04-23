@@ -1,11 +1,9 @@
-import { ContractAddress, Position } from "@bibliothecadao/eternum";
+import { ContractAddress, Position } from "@bibliothecadao/types";
 
 export enum EventType {
   BurnDonkey = "BurnDonkey",
   SettleRealm = "SettleRealmData",
   Swap = "SwapEvent",
-  HyperstructureFinished = "HyperstructureFinished",
-  HyperstructureContribution = "HyperstructureContribution",
   AcceptOrder = "AcceptOrder",
 }
 

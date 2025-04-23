@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ID, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { ID } from "@bibliothecadao/types";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
@@ -92,11 +93,10 @@ export const HelpContainer = ({
           {availableTransferDirections.map((direction) => (
             <button
               key={direction}
-              className={`px-4 py-2 rounded-md border ${
-                transferDirection === direction
+              className={`px-4 py-2 rounded-md border ${transferDirection === direction
                   ? "bg-gold/20 border-gold"
                   : "bg-dark-brown border-gold/30 hover:border-gold/50"
-              }`}
+                }`}
               onClick={() => setTransferDirection(direction)}
             >
               {direction === TransferDirection.ExplorerToStructure && "Explorer → Structure"}
@@ -113,32 +113,45 @@ export const HelpContainer = ({
   const formattedSelectedHex = selectedHex ? { x: selectedHex.col, y: selectedHex.row } : null;
 
   return (
-    <div className="flex h-full flex-col items-center justify-center p-6 max-w-4xl mx-auto">
-      <div className="p-6 border h-full border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm w-full flex flex-col">
+    <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto">
+      <div className="px-6 h-full border-gold/20 rounded-lg bg-dark-brown/90 backdrop-blur-sm w-full flex flex-col">
         {/* Transfer Type Selection */}
-        <div className="flex justify-center mb-6">
-          <div className="flex rounded-md overflow-hidden border border-gold/30">
+        <div className="flex justify-center mb-6 mx-auto mt-4">
+          <div className="flex rounded-md overflow-hidden border border-gold/30 shadow-lg">
             <button
-              className={`px-4 py-2 ${
-                transferType === TransferType.Resources
-                  ? "bg-gold/20 text-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold"
-              }`}
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${transferType === TransferType.Resources
+                  ? "bg-gold/20 text-gold border-b-2 border-gold"
+                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
+                }`}
               onClick={() => setTransferType(TransferType.Resources)}
             >
-              Transfer Resources
+              <div className="flex items-center">
+                <span className="mr-2">💰</span>
+                Transfer Resources
+              </div>
             </button>
             <button
-              className={`px-4 py-2 ${
-                transferType === TransferType.Troops
-                  ? "bg-gold/20 text-gold"
-                  : "bg-dark-brown text-gold/70 hover:text-gold"
-              }`}
+              className={`px-8 py-3 text-lg font-semibold transition-all duration-200 ${transferType === TransferType.Troops
+                  ? "bg-gold/20 text-gold border-b-2 border-gold"
+                  : "bg-dark-brown text-gold/70 hover:text-gold hover:bg-brown-900/50"
+                }`}
               onClick={() => setTransferType(TransferType.Troops)}
             >
-              Transfer Troops
+              <div className="flex items-center">
+                <span className="mr-2">⚔️</span>
+                Transfer Troops
+              </div>
             </button>
           </div>
+        </div>
+
+        {/* Transfer Type Description */}
+        <div className="text-center mb-4 px-6">
+          <p className="text-gold/70 text-sm">
+            {transferType === TransferType.Resources
+              ? "Transfer resources between your explorers and structures."
+              : "Transfer troops between your explorers and structures."}
+          </p>
         </div>
 
         {/* Transfer Direction Selection */}

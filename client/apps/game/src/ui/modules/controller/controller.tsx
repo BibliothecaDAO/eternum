@@ -1,4 +1,3 @@
-import { ReactComponent as CartridgeSmall } from "@/assets/icons/cartridge-small.svg";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { BuildingThumbs } from "@/ui/config";
@@ -10,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 export const Controller = ({ className, iconClassName }: { className?: string; iconClassName?: string }) => {
   const [userName, setUserName] = useState<string>();
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const { connect, connectors } = useConnect();
   const { connector, account, setAccount } = useAccountStore();
@@ -31,15 +31,20 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
     }
   }, [connector, account, connectWallet]);
 
-  const handleConnected = useCallback(() => {
-    connector?.controller?.openProfile("inventory");
-  }, [connector]);
-
   const handleDisconnect = useCallback(() => {
     disconnect();
     setAccount(null);
     setBlankOverlay(true);
-  }, [disconnect]);
+    setShowDisconnectConfirm(false);
+  }, [disconnect, setAccount, setBlankOverlay]);
+
+  const handleShowDisconnect = useCallback(() => {
+    setShowDisconnectConfirm(true);
+  }, []);
+
+  const handleCancelDisconnect = useCallback(() => {
+    setShowDisconnectConfirm(false);
+  }, []);
 
   useEffect(() => {
     if (!connector || !connector!.controller) return;
@@ -52,15 +57,31 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
     }
   }, [connector]);
 
+  useEffect(() => {
+    if (!account) {
+      setShowDisconnectConfirm(false);
+    }
+  }, [account]);
+
   return account ? (
     <>
-      <Button onClick={handleConnected}>
-        <CartridgeSmall className={`w-5 md:w-5 mr-1 md:mr-1 !fill-current self-center ${iconClassName}`} />
-        <div className="align-center">{userName}</div>
-      </Button>
-      <CircleButton image={BuildingThumbs.leave} size="md" onClick={handleDisconnect}></CircleButton>
+      {showDisconnectConfirm ? (
+        <>
+          <Button className="bg-dark-wood !pb-0" variant="danger" onClick={handleCancelDisconnect}>
+            Close
+          </Button>
+          <CircleButton label="Logout" image={BuildingThumbs.leave} size="md" onClick={handleDisconnect}></CircleButton>
+        </>
+      ) : (
+        <Button variant="default" className="!pb-0 bg-dark-wood" onClick={handleShowDisconnect}>
+          {/* <CartridgeSmall className={`w-5 md:w-4 mr-1 md:mr-1 !fill-current self-center ${iconClassName}`} /> */}
+          <div className="self-center">{userName}</div>
+        </Button>
+      )}
     </>
   ) : (
-    <CircleButton image={BuildingThumbs.leave} size="md" onClick={handleConnect}></CircleButton>
+    <Button className="bg-dark-wood !pb-0" variant="default" onClick={handleConnect}>
+      Login
+    </Button>
   );
 };

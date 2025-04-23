@@ -1,6 +1,7 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, MapConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-    ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
+    TroopStaminaConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -18,6 +19,10 @@ pub trait IAgentControllerConfig<T> {
     fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
 }
 
+#[starknet::interface]
+pub trait IVillageControllerConfig<T> {
+    fn set_village_controllers(ref self: T, village_controller_addresses: Span<starknet::ContractAddress>);
+}
 
 #[starknet::interface]
 pub trait ISeasonConfig<T> {
@@ -88,11 +93,10 @@ pub trait ITransportConfig<T> {
 pub trait IHyperstructureConfig<T> {
     fn set_hyperstructure_config(
         ref self: T,
-        resources_for_completion: Span<(u8, u128, u128)>,
-        time_between_shares_change: u64,
-        points_per_cycle: u128,
+        initialize_shards_amount: u128,
+        construction_resources: Span<HyperstructureConstructConfig>,
+        points_per_second: u128,
         points_for_win: u128,
-        points_on_completion: u128,
     );
 }
 
@@ -182,11 +186,11 @@ pub mod config_systems {
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureResourceConfig, MapConfig, ResourceBridgeConfig,
+        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, ResourceBridgeConfig,
         ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
         SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
         StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        WeightConfig, WorldConfig, WorldConfigUtilImpl,
+        VillageControllerConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
 
@@ -271,6 +275,22 @@ pub mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
+    impl VillageControllerConfigImpl of super::IVillageControllerConfig<ContractState> {
+        fn set_village_controllers(
+            ref self: ContractState, village_controller_addresses: Span<starknet::ContractAddress>,
+        ) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            let mut village_controller_config: VillageControllerConfig = VillageControllerConfig {
+                addresses: village_controller_addresses,
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("village_controller_config"), village_controller_config,
+            );
+        }
+    }
 
     #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {
@@ -525,26 +545,37 @@ pub mod config_systems {
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref self: ContractState,
-            mut resources_for_completion: Span<(u8, u128, u128)>,
-            time_between_shares_change: u64,
-            points_per_cycle: u128,
+            initialize_shards_amount: u128,
+            mut construction_resources: Span<HyperstructureConstructConfig>,
+            points_per_second: u128,
             points_for_win: u128,
-            points_on_completion: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
+            // save resources needed for construction
+            let mut construction_resources_ids = array![];
+            for construction_resource in construction_resources {
+                assert!(construction_resource.min_amount.is_non_zero(), "zero min amount");
+                assert!(construction_resource.max_amount.is_non_zero(), "zero max amount");
+                assert!(construction_resource.max_amount >= construction_resource.min_amount, "max less than min");
+                construction_resources_ids.append(*construction_resource.resource_type);
+                world.write_model(@(*construction_resource));
+            };
+
             // save general hyperstructure config
             let hyperstructure_config = HyperstructureConfig {
-                time_between_shares_change, points_per_cycle, points_for_win, points_on_completion,
+                initialize_shards_amount, points_per_second, points_for_win,
             };
             WorldConfigUtilImpl::set_member(ref world, selector!("hyperstructure_config"), hyperstructure_config);
 
-            // save resources needed for completion
-            for resource in resources_for_completion {
-                let (resource_tier, min_amount, max_amount) = (*resource);
-                world.write_model(@HyperstructureResourceConfig { resource_tier, min_amount, max_amount });
-            }
+            // save hyperstructure construction cost resource types
+            let hyperstructure_cost_config = HyperstructureCostConfig {
+                construction_resources_ids: construction_resources_ids.span(),
+            };
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("hyperstructure_cost_config"), hyperstructure_cost_config,
+            );
         }
     }
 

@@ -1,7 +1,6 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { ClientComponents, configManager, getBuildingCount, getEntityIdFromKeys, ResourcesIds } from "..";
-import { BuildingType } from "../constants/structures";
-import { ID, ResourceCost } from "../types/common";
+import { configManager, getBuildingCount, getEntityIdFromKeys } from "..";
+import { BuildingType, ClientComponents, ID, ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 
 export const getBuildingQuantity = (entityId: ID, buildingType: BuildingType, components: ClientComponents) => {
   const structureBuildings = getComponentValue(components.StructureBuildings, getEntityIdFromKeys([BigInt(entityId)]));

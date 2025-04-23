@@ -1,7 +1,5 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
-import { ReactComponent as Lock } from "@/assets/icons/lock.svg";
-import { ReactComponent as LordsIcon } from "@/assets/icons/resources/LordsSimple.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SeasonPassRealm, getUnusedSeasonPasses } from "@/ui/components/cityview/realm/settle-realm-component";
@@ -115,9 +113,8 @@ export const StepContainer = ({
               <div className="mt-auto pt-4 flex-shrink-0">
                 <div className="relative w-full">{!isSettleRealm && bottomChildren}</div>
                 <div className="w-full flex justify-center rounded-lg p-2">
-                  <Lock className="w-6 h-6 fill-current relative bottom-0.45 mr-3" />
-                  <p className="text-xs text-center align-bottom my-auto" onClick={() => setShowToS(true)}>
-                    By continuing you are agreeing to Eternum's <br />{" "}
+                  <p className="text-xxs align-bottom my-auto ml-2 text-center" onClick={() => setShowToS(true)}>
+                    By continuing you are agreeing to Eternum's{" "}
                     <span className="inline underline">Terms of Service</span>
                   </p>
                 </div>
@@ -230,7 +227,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
           <div className="flex gap-3 w-full flex-wrap">
             <a
               className="text-brown cursor-pointer w-full"
-              href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+              href={`https://empire.realms.world/mint`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -242,7 +239,25 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               >
                 <div className="flex items-center justify-center">
                   <TreasureChest className="!w-5 !h-5 mr-2 fill-brown text-brown" />
-                  <span className="font-medium">Get Season Pass</span>
+                  <span className="font-medium">Mint Season Pass</span>
+                </div>
+              </Button>
+            </a>
+            <a
+              className="text-brown cursor-pointer w-full"
+              href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button
+                size="lg"
+                className={`w-full !normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
+                  !hasRealmsOrVillages ? "animate-pulse" : ""
+                }`}
+              >
+                <div className="flex items-center justify-center">
+                  <TreasureChest className="!w-5 !h-5 mr-2 fill-gold" />
+                  <span className="font-medium">Buy Season Pass</span>
                 </div>
               </Button>
             </a>
@@ -261,24 +276,6 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
               </Button>
             </a>
           </div>
-          <a
-            className="cursor-pointer text-lg w-full"
-            href={`https://empire.realms.world/trade`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button
-              size="lg"
-              className={`w-full  normal-case rounded-md hover:scale-105 hover:-translate-y-1 transition-all duration-300 shadow-md ${
-                !hasRealmsOrVillages ? "animate-pulse" : ""
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <LordsIcon className="!w-5 !h-5 fill-gold " />
-                <span className="font-medium">Bridge in Lords</span>
-              </div>
-            </Button>
-          </a>
         </div>
       </div>
     )

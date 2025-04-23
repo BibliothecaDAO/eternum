@@ -9,7 +9,7 @@ import { Controller } from "@/ui/modules/controller/controller";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import { useAccount } from "@starknet-react/core";
+
 import { useCallback, useMemo } from "react";
 import { social } from "../../components/navigation/config";
 
@@ -17,7 +17,7 @@ export const SecondaryMenuItems = () => {
   const {
     setup: {
       components: {
-        events: { GameEnded },
+        events: { SeasonEnded },
       },
     },
   } = useDojo();
@@ -25,8 +25,7 @@ export const SecondaryMenuItems = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { connector } = useAccountStore();
 
-  const gameEnded = useEntityQuery([Has(GameEnded)]);
-  const { isConnected } = useAccount();
+  const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -56,7 +55,7 @@ export const SecondaryMenuItems = () => {
         ),
       },
     ];
-    if (gameEnded.length !== 0) {
+    if (hasSeasonEnded) {
       buttons.push({
         button: (
           <CircleButton
@@ -72,11 +71,12 @@ export const SecondaryMenuItems = () => {
       });
     }
     return buttons;
-  }, [structureEntityId, gameEnded]);
+  }, [structureEntityId, hasSeasonEnded]);
 
   return (
-    <div className="flex ">
+    <div className="flex panel-wood ">
       <div className="top-right-navigation-selector self-center flex ">
+        <HomeButton />
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
@@ -111,23 +111,8 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={() => togglePopup(settings)}
         />
-        <Controller className="!bg-black !border-none !text-gold" iconClassName="!fill-current !text-gold" />
-        <HomeButton />
+        <Controller />
       </div>
-      {/* {isConnected && (
-        <div className="absolute top-16 right-0 bg-brown/90 mx-2">
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => window.open("https://empire.realms.world/trade", "_blank", "noopener,noreferrer")}
-          >
-            <div className="flex items-center gap-2">
-              <ResourceIcon resource="Lords" size="xs" />
-              Bridge Lords & Resources
-            </div>
-          </Button>
-        </div>
-      )} */}
     </div>
   );
 };

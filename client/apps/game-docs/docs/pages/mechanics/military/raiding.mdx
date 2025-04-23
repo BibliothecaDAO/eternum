@@ -1,0 +1,53 @@
+# 💰 Raiding
+
+Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
+first having to battle through enemy guard armies. Lords can direct their armies to complete this action but selecting
+the 'raid' action when attacking an enemy structure.
+
+![Raiding interface showing an army preparing to raid a structure](/screenshots/raiding.png)
+
+## Raid Success
+
+The success chance of a raid is determined by the following conditions:
+
+| Condition                                                                  | Raid Success Chance                           |
+| -------------------------------------------------------------------------- | --------------------------------------------- |
+| Raiding army's total damage < **50%** of combined guard armies' damage     | **0%**                                        |
+| Raiding army's total damage > **200%** of combined guard armies' damage    | **100%**                                      |
+| Raiding army's damage between **50%** and **200%** of guard armies' damage | Scales proportionally from **0%** to **100%** |
+| No guard armies present                                                    | **100%** (automatic success)                  |
+
+Upon a successful raid, resources are transferred directly to the raiding army's inventory up to its carrying capacity.
+It is only possible to steal food, resources, and ancient fragments from a raid, tokens such as $LORDS and $STRK can
+only be stolen from another player by claiming a Realm into which tokens have been bridged or transferred.
+
+## Damage in Raids
+
+At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
+army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
+pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to **20%** of
+that which would be applied in an attack action.
+
+Damage from a raiding action is calculated according to the following rules:
+
+- The raiding army troop total is split evenly across each guard army.
+- A standard combat damage calculation is then applied to each combat instance.
+- Each damage number is multiplied by the raid damage modifier before casualties are applied.
+
+### Example:
+
+Consider **1000** raiders attacking a structure with two occupied guard slots:
+
+- Slot 1: **400** troops
+- Slot 2: **600** troops
+
+The raiding army is split into two groups of **500** troops, each attacking one guard slot. Assume that the damage
+calculations result in the following:
+
+- Raiding army deals **180** damage to Slot 1 and **150** damage to Slot 2 = **330** total damage
+- Guard armies deal **120** damage from Slot 1 and **200** damage from Slot 2 = **320** total damage.
+
+Applying the raid damage modifier, actual losses become:
+
+- Guards: Slot 1 loses **36** troops (**20%** of 180), Slot 2 loses **30** troops (**20%** of 150).
+- Raiders: Lose **64** troops total (**20%** of 320).

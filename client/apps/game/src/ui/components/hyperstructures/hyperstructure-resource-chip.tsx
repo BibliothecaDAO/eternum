@@ -4,7 +4,8 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { divideByPrecision, findResourceById, getBalance, ID } from "@bibliothecadao/eternum";
+import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
+import { findResourceById, ID } from "@bibliothecadao/types"
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { useEffect, useState } from "react";
 
@@ -38,12 +39,16 @@ export const HyperstructureResourceChip = ({
   maxContributableAmount = Math.ceil(maxContributableAmount);
 
   useEffect(() => {
-    let contributionsCopy = Object.assign({}, contributions);
+    console.log({ contributions });
+    const contributionsCopy = Object.assign({}, contributions);
     if (inputValue === 0 || isNaN(inputValue)) {
+      console.log("deleting");
       delete contributionsCopy[resourceId];
     } else {
+      console.log("adding");
       contributionsCopy[resourceId] = inputValue;
     }
+    console.log({ contributionsCopy });
     setContributions(contributionsCopy);
   }, [inputValue]);
 
@@ -61,8 +66,8 @@ export const HyperstructureResourceChip = ({
           backgroundImage:
             progress.percentage > 0
               ? `linear-gradient(to right, #06D6A03c ${String(progress.percentage)}%, rgba(0,0,0,0) ${String(
-                  progress.percentage,
-                )}%)`
+                progress.percentage,
+              )}%)`
               : "",
         }}
         onMouseEnter={() => {

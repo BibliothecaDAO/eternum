@@ -1,7 +1,8 @@
 import { soundSelector, useUiSounds } from "@/hooks/helpers/use-ui-sound";
 import Button from "@/ui/elements/button";
 import { getBlockTimestamp } from "@/utils/timestamp";
-import { ResourceArrivalInfo, ResourceArrivalManager } from "@bibliothecadao/eternum";
+import { ResourceArrivalManager } from "@bibliothecadao/eternum";
+import { ResourceArrivalInfo } from "@bibliothecadao/types"
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
 

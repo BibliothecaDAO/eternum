@@ -1,5 +1,4 @@
-import { FELT_CENTER } from "../constants";
-import { HexPosition, HexTileInfo } from "../types";
+import { FELT_CENTER, HexPosition, HexTileInfo } from "@bibliothecadao/types";
 
 export class TravelPaths {
   private readonly paths: Map<string, { path: HexTileInfo[]; isExplored: boolean }>;

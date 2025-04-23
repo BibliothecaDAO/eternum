@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { BiomeInfoPanel } from "@/ui/components/biome/biome-info-panel";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -7,25 +8,71 @@ import {
   Biome,
   CombatSimulator,
   configManager,
-  ContractAddress,
   divideByPrecision,
   getArmy,
-  getDirectionBetweenAdjacentHexes,
   getEntityIdFromKeys,
   getGuardsByStructure,
+  getRemainingCapacityInKg,
   getTroopResourceId,
+  ResourceManager,
+  StaminaManager,
+} from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import {
+  CapacityConfig,
+  ContractAddress,
+  getDirectionBetweenAdjacentHexes,
   ID,
   RESOURCE_PRECISION,
   resources,
-  StaminaManager,
+  ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+import { formatTypeAndBonuses, getStaminaDisplay } from "./combat-utils";
+
+const STEALABLE_RESOURCES = [
+  ResourcesIds.Wheat,
+  ResourcesIds.Fish,
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Wood,
+  ResourcesIds.Copper,
+  ResourcesIds.Ironwood,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Gold,
+  ResourcesIds.Silver,
+  ResourcesIds.Mithral,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.ColdIron,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ruby,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Ignium,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.TrueIce,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Sapphire,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.Dragonhide,
+  ResourcesIds.Labor,
+  ResourcesIds.AncientFragment,
+  ResourcesIds.Donkey,
+  ResourcesIds.Knight,
+  ResourcesIds.Crossbowman,
+  ResourcesIds.Paladin,
+  ResourcesIds.KnightT2,
+  ResourcesIds.CrossbowmanT2,
+  ResourcesIds.PaladinT2,
+  ResourcesIds.KnightT3,
+  ResourcesIds.CrossbowmanT3,
+  ResourcesIds.PaladinT3,
+  ResourcesIds.Lords,
+];
 
 enum TargetType {
   Village,
@@ -239,9 +286,9 @@ export const CombatContainer = ({
     const defenderTroopsLeft = defenderArmy.troopCount - defenderTroopsLost;
 
     let winner = null;
-    if (attackerTroopsLeft === 0 && defenderTroopsLeft > 0) {
+    if (attackerTroopsLeft <= 0 && defenderTroopsLeft > 0) {
       winner = defenderArmy.entity_id;
-    } else if (defenderTroopsLeft === 0 && attackerTroopsLeft > 0) {
+    } else if (defenderTroopsLeft <= 0 && attackerTroopsLeft > 0) {
       winner = attackerArmy.entity_id;
     }
 
@@ -320,6 +367,72 @@ export const CombatContainer = ({
     }
   };
 
+  // Get the available resources in the target structure
+  const targetArmyResourcesByRarity = useMemo(() => {
+    if (target?.targetType !== TargetType.Army || !target?.id) return [];
+
+    const availableResources: Array<{ resourceId: number; amount: number }> = [];
+
+    const resourceManager = new ResourceManager(components, target.id);
+    const resources = resourceManager.getResourceBalances();
+
+    STEALABLE_RESOURCES.sort((a, b) => b - a).forEach((resourceId) => {
+      const resource = resources.find((r) => r.resourceId === resourceId);
+      if (resource) {
+        availableResources.push({ resourceId, amount: resource.amount });
+      }
+    });
+
+    return availableResources;
+  }, [target, components]);
+
+  const remainingCapacity = useMemo(() => {
+    const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
+    const remainingCapacityAfterRaid =
+      remainingCapacity -
+      (battleSimulation?.defenderDamage || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
+    return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
+  }, [battleSimulation]);
+
+  const stealableResourcesUI = useMemo(() => {
+    let capacityAfterRaid = remainingCapacity.afterRaid;
+    const stealableResources: Array<{ resourceId: number; amount: number }> = [];
+
+    // If no capacity, return empty array immediately
+    if (capacityAfterRaid <= 0) {
+      return stealableResources;
+    }
+
+    targetArmyResourcesByRarity
+      .sort((a, b) => b.amount - a.amount)
+      .forEach((resource) => {
+        const availableAmount = divideByPrecision(resource.amount);
+        const resourceWeight = configManager.getResourceWeightKg(resource.resourceId);
+        if (capacityAfterRaid > 0) {
+          let maxStealableAmount;
+          if (resourceWeight === 0) {
+            // If resource has no weight, can take all of it
+            maxStealableAmount = availableAmount;
+          } else {
+            maxStealableAmount = Math.min(
+              Math.floor(Number(capacityAfterRaid) / Number(resourceWeight)),
+              availableAmount,
+            );
+          }
+          if (maxStealableAmount > 0) {
+            stealableResources.push({
+              ...resource,
+              amount: maxStealableAmount,
+            });
+          }
+          capacityAfterRaid -= maxStealableAmount * Number(resourceWeight);
+        } else {
+          return; // Exit the forEach loop if no more capacity
+        }
+      });
+    return stealableResources;
+  }, [targetArmyResourcesByRarity]);
+
   const onExplorerVsExplorerAttack = async () => {
     if (!selectedHex) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: targetHex.x, row: targetHex.y });
@@ -332,6 +445,7 @@ export const CombatContainer = ({
         aggressor_id: attackerEntityId,
         defender_id: target?.id || 0,
         defender_direction: direction,
+        steal_resources: targetArmyResourcesByRarity,
       });
     } catch (error) {
       console.error(error);
@@ -414,18 +528,7 @@ export const CombatContainer = ({
   return (
     <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
       {/* Add Biome Info Panel */}
-      <div className="p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2>Terrain: {biome}</h2>
-            <div className="flex gap-4 mt-4 text-xl">
-              <div>Melee: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Knight, biome))}</div>
-              <div>Ranged: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Crossbowman, biome))}</div>
-              <div>Paladins: {formatBiomeBonus(combatSimulator.getBiomeBonus(TroopType.Paladin, biome))}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BiomeInfoPanel biome={biome} />
 
       {/* Troop Selector for Structure */}
       {TroopSelector()}
@@ -441,12 +544,15 @@ export const CombatContainer = ({
                 {formatTypeAndBonuses(
                   attackerArmyData.troops.category as TroopType,
                   attackerArmyData.troops.tier as TroopTier,
-                  combatSimulator.getBiomeBonus(attackerArmyData.troops.category as TroopType, biome),
+                  configManager.getBiomeCombatBonus(attackerArmyData.troops.category as TroopType, biome),
                   combatSimulator.calculateStaminaModifier(Number(attackerStamina), true),
                   true,
                 )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(attackerArmyData.troops.count)} troops
+                </div>
+                <div className="text-lg text-gold/80 mt-1">
+                  Stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
                 </div>
               </div>
 
@@ -476,13 +582,14 @@ export const CombatContainer = ({
                 {formatTypeAndBonuses(
                   targetArmyData.troops.category as TroopType,
                   targetArmyData.troops.tier as TroopTier,
-                  combatSimulator.getBiomeBonus(targetArmyData.troops.category as TroopType, biome),
+                  configManager.getBiomeCombatBonus(targetArmyData.troops.category as TroopType, biome),
                   combatSimulator.calculateStaminaModifier(Number(defenderStamina), false),
                   false,
                 )}
                 <div className="text-2xl font-bold text-gold">
                   {divideByPrecision(targetArmyData.troops.count)} troops
                 </div>
+                <div className="text-lg text-gold/80 mt-1"> Current Stamina: {Number(defenderStamina)}</div>
               </div>
 
               {/* Battle Simulation Results */}
@@ -511,8 +618,8 @@ export const CombatContainer = ({
       {/* Battle Results */}
       {targetArmyData && remainingTroops && attackerArmyData && (
         <div className="mt-2 p-4 sm:p-6 border border-gold/20 rounded-lg backdrop-blur-sm panel-wood shadow-lg overflow-hidden">
-          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4">
-            Battle Prediction
+          <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gold border-b border-gold/20 pb-4 flex items-center">
+            <span className="mr-2">📜</span> Battle Prediction
           </h3>
 
           {/* Battle Outcome Bar */}
@@ -667,6 +774,36 @@ export const CombatContainer = ({
             </div>
           </div>
 
+          {/* Resources to be stolen section - only show when winner is attacker and target is Army */}
+          {winner === attackerEntityId && target?.targetType === TargetType.Army && stealableResourcesUI.length > 0 && (
+            <div className="mb-6 p-4 border border-gold/10 rounded bg-brown-900/30">
+              <h4 className="text-lg font-medium text-gold/90 mb-4 flex items-center">
+                <span className="mr-2">💰</span> Resources You Will Steal
+              </h4>
+              <div className="max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/40 scrollbar-track-brown-900/30">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {stealableResourcesUI.map((resource) => (
+                    <div
+                      key={resource.resourceId}
+                      className="flex justify-between items-center p-2 border border-gold/10 rounded-md bg-brown-900/20"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ResourceIcon
+                          resource={resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                          size="md"
+                        />
+                        <span className="text-gold/80">
+                          {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
+                        </span>
+                      </div>
+                      <span className="text-lg font-bold text-gold">{resource.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
             {[
               {
@@ -723,7 +860,7 @@ export const CombatContainer = ({
                     {formatTypeAndBonuses(
                       originalTroops.category as TroopType,
                       originalTroops.tier as TroopTier,
-                      combatSimulator.getBiomeBonus(originalTroops.category as TroopType, biome),
+                      configManager.getBiomeCombatBonus(originalTroops.category as TroopType, biome),
                       combatSimulator.calculateStaminaModifier(currentStamina, isAttacker),
                       isAttacker,
                     )}

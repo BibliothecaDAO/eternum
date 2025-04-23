@@ -7,7 +7,7 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import * as THREE from "three";
 import { HyperstructureTypesNames, StructureProgress } from "../types";
 
@@ -60,7 +60,7 @@ enum BuildingFilenames {
   Mine = "mine.glb",
   LumberMill = "lumber_mill.glb",
   Dragonhide = "dragonhide.glb",
-  Wonder = "wonder.glb",
+  Wonder = "wonder2.glb",
   HyperstructureInit = "hyperstructure_init.glb",
   HyperstructureHalf = "hyperstructure_half.glb",
   Hyperstructure = "hyperstructure.glb",
@@ -288,6 +288,6 @@ export const MinesMaterialsParams: Record<
   [ResourcesIds.AncientFragment]: {
     color: new THREE.Color(0.43, 0.85, 0.16),
     emissive: new THREE.Color(0.0, 3.25, 0.03),
-    emissiveIntensity: 5.7,
+    emissiveIntensity: 1.2,
   },
 };

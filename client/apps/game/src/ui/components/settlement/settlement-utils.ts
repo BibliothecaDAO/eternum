@@ -1,12 +1,14 @@
 import { Position } from "@/types/position";
 import {
+  Coord,
+} from "@bibliothecadao/eternum";
+import {
   ClientComponents,
   ContractAddress,
-  Coord,
   Direction,
   FELT_CENTER as SETTLEMENT_CENTER,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { SETTLEMENT_BASE_DISTANCE, SETTLEMENT_SUBSEQUENT_DISTANCE } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
@@ -20,7 +22,7 @@ const maxPointsInLayer = (layer: number): number => {
 
 const sideLayerXFirstCoord = (side: number, layer: number): Coord => {
   const start_direction = sideDirections(side)[0];
-  let side_first_coord_layer_0 = sideLayerOneFirstCoord(side);
+  const side_first_coord_layer_0 = sideLayerOneFirstCoord(side);
   let side_first_coord_layer_x = side_first_coord_layer_0;
   for (let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * (layer - 1); i++) {
     side_first_coord_layer_x = side_first_coord_layer_x.neighbor(start_direction);
@@ -83,7 +85,7 @@ export function generateSettlementLocations(
       const maxPoints = maxPointsInLayer(layer);
       const triangle_direction = sideDirections(side)[1];
       for (let point = 0; point < maxPoints; point++) {
-        let side_first_coord_layer_x = sideLayerXFirstCoord(side, layer);
+        const side_first_coord_layer_x = sideLayerXFirstCoord(side, layer);
         let destination_coord = side_first_coord_layer_x;
         for (let i = 0; i < SETTLEMENT_SUBSEQUENT_DISTANCE * point; i++) {
           destination_coord = destination_coord.neighbor(triangle_direction);

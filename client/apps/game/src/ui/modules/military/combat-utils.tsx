@@ -1,4 +1,4 @@
-import { TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { Map, Zap } from "lucide-react";
 
 export const getStaminaDisplay = (
@@ -39,13 +39,49 @@ export const formatBiomeBonus = (bonus: number) => {
   );
 };
 
-export const formatTypeAndBonuses = (
+// Compact version of formatTypeAndBonuses for tight layouts (multi-guard view)
+export const formatTypeAndBonusesCompact = (
   category: TroopType,
   tier: TroopTier,
   biomeBonus: number,
   staminaModifier: number,
   isAttacker: boolean,
 ) => {
+  return (
+    <div className="text-sm text-gold/90">
+      <div className="flex items-center justify-between mb-1">
+        <span className="font-semibold text-gold">
+          {TroopType[category]} {tier}
+        </span>
+      </div>
+      <div className="flex justify-between items-center text-xs gap-1">
+        <div className="flex items-center gap-1 bg-gold/10 px-1.5 py-0.5 rounded">
+          <Map className="w-3 h-3 text-gold/80" />
+          <span>{formatBiomeBonus(biomeBonus)}</span>
+        </div>
+        <div className="flex items-center gap-1 bg-gold/10 px-1.5 py-0.5 rounded">
+          <Zap className="w-3 h-3 text-gold/80" />
+          <span>{formatStaminaModifier(staminaModifier, isAttacker)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const formatTypeAndBonuses = (
+  category: TroopType,
+  tier: TroopTier,
+  biomeBonus: number,
+  staminaModifier: number,
+  isAttacker: boolean,
+  isCompact = false,
+) => {
+  // Use compact version for cramped layouts
+  if (isCompact) {
+    return formatTypeAndBonusesCompact(category, tier, biomeBonus, staminaModifier, isAttacker);
+  }
+
+  // Original version for normal layouts
   return (
     <div className="text-sm font-medium text-gold/90 mb-2">
       <h4 className="flex items-center mb-2">

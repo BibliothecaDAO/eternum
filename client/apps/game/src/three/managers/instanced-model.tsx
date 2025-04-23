@@ -1,6 +1,6 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/scenes/constants";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
-import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 
@@ -8,6 +8,10 @@ const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
 export const LAND_NAME = "land";
 export const SMALL_DETAILS_NAME = "small_details";
+
+// Reusable matrices for instance transformations
+const instanceMatrix = new THREE.Matrix4();
+const rotationMatrix = new THREE.Matrix4();
 
 interface AnimatedInstancedMesh extends THREE.InstancedMesh {
   animated: boolean;
@@ -21,9 +25,11 @@ export default class InstancedModel {
   private mixer: AnimationMixer | null = null;
   private animation: AnimationClip | null = null;
   private animationActions: Map<number, THREE.AnimationAction> = new Map();
+  private name: string;
   timeOffsets: Float32Array;
 
   constructor(gltf: any, count: number, enableRaycast: boolean = false, name: string = "") {
+    this.name = name;
     this.group = new THREE.Group();
     this.count = count;
 
@@ -38,16 +44,19 @@ export default class InstancedModel {
           return;
         }
         let material = child.material;
-        if (name === StructureType[StructureType.FragmentMine] && child.name.includes("crystal")) {
+        if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
         const tmp = new THREE.InstancedMesh(child.geometry, material, count) as AnimatedInstancedMesh;
+        tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
             gltf.animations[0].tracks.find((track: any) => track.name.split(".")[0] === child.name) &&
-            name !== StructureType[StructureType.FragmentMine]
+            name !== StructureType[StructureType.FragmentMine] &&
+            name !== "wonder"
           ) {
+            console.log("animated", gltf.animations[0]);
             tmp.animated = true;
             for (let i = 0; i < count; i++) {
               tmp.setMorphAt(i, biomeMesh as any);
@@ -74,7 +83,7 @@ export default class InstancedModel {
         tmp.userData.isInstanceModel = true;
 
         if (!enableRaycast) {
-          tmp.raycast = () => {};
+          tmp.raycast = () => { };
         }
 
         this.mixer = new AnimationMixer(gltf.scene);
@@ -190,6 +199,30 @@ export default class InstancedModel {
           mesh.setMorphAt(i, this.biomeMeshes[meshIndex]);
         }
         mesh.morphTexture!.needsUpdate = true;
+      });
+    }
+
+    if (this.name === "wonder") {
+      // Add rotation.y animation for individual instances of wonder model
+      const rotationSpeed = 1; // Adjust speed as needed
+
+      this.instancedMeshes.forEach((mesh) => {
+        for (let i = 0; i < mesh.count; i++) {
+          // Get the current instance matrix
+          mesh.getMatrixAt(i, instanceMatrix);
+
+          // Create a rotation matrix around Y axis
+          rotationMatrix.makeRotationY(rotationSpeed * deltaTime);
+
+          // Apply rotation to the instance matrix
+          instanceMatrix.multiply(rotationMatrix);
+
+          // Set the updated matrix back to the instance
+          mesh.setMatrixAt(i, instanceMatrix);
+        }
+
+        // Update the instance matrix
+        mesh.instanceMatrix.needsUpdate = true;
       });
     }
   }

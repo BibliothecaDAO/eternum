@@ -1,7 +1,6 @@
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientConfigManager } from "..";
-import { RESOURCE_PRECISION, ResourcesIds } from "../constants";
-import { Position, ResourceMiningTypes, TickIds } from "../types";
+import { RESOURCE_PRECISION, ResourcesIds, Position, ResourceMiningTypes, TickIds } from "@bibliothecadao/types";
 
 export { getEntityIdFromKeys };
 

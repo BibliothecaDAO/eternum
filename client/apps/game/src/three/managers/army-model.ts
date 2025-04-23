@@ -1,6 +1,7 @@
 import { gltfLoader } from "@/three/helpers/utils";
 import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
-import { Biome, BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/eternum";
+import { BiomeType, FELT_CENTER, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Biome } from "@bibliothecadao/eternum";
 import * as THREE from "three";
 import { AnimationMixer } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
@@ -79,6 +80,9 @@ export class ArmyModel {
       gltfLoader.load(
         `models/units/${fileName}.glb`,
         (gltf) => {
+          // if (modelType === ModelType.Paladin2) {
+          //   console.log("Paladin", gltf.scene);
+          // }
           const modelData = this.createModelData(gltf);
           this.models.set(modelType, modelData);
           resolve();
@@ -137,13 +141,19 @@ export class ArmyModel {
   private createInstancedMesh(mesh: THREE.Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry.clone();
     const material = mesh.material;
+    // @ts-ignore
+    if (mesh.material.name.includes("stand")) {
+      // @ts-ignore
+      material.opacity = 0.9;
+    }
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_INSTANCES) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
     instancedMesh.castShadow = true;
     instancedMesh.instanceMatrix.needsUpdate = true;
-
-    if (meshIndex > 0) {
+    instancedMesh.renderOrder = 10 + meshIndex;
+    // @ts-ignore
+    if (mesh.material.name.includes("stand")) {
       instancedMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_INSTANCES * 3), 3);
     }
 

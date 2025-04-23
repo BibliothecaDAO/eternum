@@ -1,11 +1,22 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { GuildInfo, ResourcesIds } from "@bibliothecadao/eternum";
+import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
-import { LockOpen } from "lucide-react";
-import { useMemo } from "react";
+import { Globe, Lock, MessageCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+
+export interface GuildCustom extends GuildInfo {
+  lords: number;
+  realms: number;
+  mines: number;
+  hyperstructures: number;
+  rank: number;
+  points: number;
+  isPublic?: boolean;
+}
 
 export const GuildListHeader = ({
   activeSort,
@@ -16,13 +27,11 @@ export const GuildListHeader = ({
 }) => {
   const sortingParams = useMemo(() => {
     return [
-      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center px-1" },
-      { label: "Name", sortKey: "name", className: "col-span-2 px-1" },
-      { label: "Realms", sortKey: "realms", className: "col-span-1 text-center px-1" },
-      { label: "Mines", sortKey: "mines", className: "col-span-1 text-center px-1" },
-      { label: "Hypers", sortKey: "hyperstructures", className: "col-span-1 text-center px-1" },
-      { label: "Members", sortKey: "memberCount", className: "col-span-1 text-center px-1" },
-      { label: "Points", sortKey: "points", className: "col-span-2 text-center px-1" },
+      { label: "Rank", sortKey: "rank", className: "col-span-1 text-center" },
+      { label: "Name", sortKey: "name", className: "col-span-2" },
+      { label: "Members", sortKey: "memberCount", className: "col-span-2 text-center" },
+      { label: "Structures", sortKey: "structures", className: "col-span-3 text-center" },
+      { label: "Points", sortKey: "points", className: "col-span-2 text-center" },
       {
         label: (
           <div className="flex flex-row w-full gap-1 items-center justify-center">
@@ -31,24 +40,23 @@ export const GuildListHeader = ({
           </div>
         ),
         sortKey: "lords",
-        className: "col-span-2 text-center px-1",
+        className: "col-span-2 text-center",
       },
-      { label: "Status", sortKey: "isPublic", className: "col-span-1 text-center px-1" },
     ];
   }, []);
 
   const textStyle = "text-sm font-semibold tracking-wide text-gold/90 uppercase w-full";
 
   return (
-    <SortPanel className="grid grid-cols-12 w-full p-2 border-b border-gold/20">
+    <SortPanel className="grid grid-cols-12 pb-3 border-b panel-wood-bottom sticky top-0 bg-brown/80 backdrop-blur-sm z-10">
       {sortingParams.map(({ label, sortKey, className }) => (
         <SortButton
-          className={className + " " + textStyle}
-          classNameCaret="w-2"
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
+          className={`${className} ${textStyle}`}
+          classNameCaret="w-2.5 h-2.5 ml-1"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -61,42 +69,53 @@ export const GuildListHeader = ({
   );
 };
 
-export const GuildRow = ({
-  guild,
-  onClick,
-}: {
-  guild: GuildInfo & {
-    lords: number;
-    realms: number;
-    mines: number;
-    hyperstructures: number;
-    rank: number;
-  };
-  onClick: () => void;
-}) => {
+export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () => void }) => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div
-      className={clsx(
-        "grid grid-cols-12 w-full py-2 px-2 cursor-pointer items-center hover:bg-gold/10 rounded-lg transition-colors duration-200 mb-1",
-        {
-          "bg-blueish/20 hover:bg-blueish/30": guild.isMember,
-        },
-      )}
-      onClick={onClick}
+      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
+        "bg-blueish/20 hover:bg-blueish/30 border border-gold/40": guild.isMember,
+        "hover:bg-gold/10 border border-transparent hover:border-gold/20": !guild.isMember,
+      })}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <p className="col-span-1 text-center font-medium italic px-1">#{guild.rank}</p>
-      <p className="col-span-2 truncate font-semibold text-gold/90 px-1">{guild.name}</p>
-      <p className="col-span-1 text-center font-medium px-1">{guild.realms}</p>
-      <p className="col-span-1 text-center font-medium px-1">{guild.mines}</p>
-      <p className="col-span-1 text-center font-medium px-1">{guild.hyperstructures}</p>
-      <p className="col-span-1 text-center font-medium px-1">{guild.memberCount}</p>
-      <p className="col-span-2 font-medium text-amber-200/90 px-1 text-center">{0}</p>
-      <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1 justify-center">
-        {currencyIntlFormat(guild.lords)}
-        <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" />
+      <div className="grid grid-cols-12 w-full py-2 cursor-pointer items-center" onClick={onClick}>
+        <p className="col-span-1 text-center font-medium italic px-1">#{guild.rank}</p>
+        <div className="col-span-2 flex items-center px-1">
+          {guild.isPublic ? (
+            <Globe className="w-4 h-4 text-emerald-300/90 mr-2 flex-shrink-0" />
+          ) : (
+            <Lock className="w-4 h-4 text-amber-300/90 mr-2 flex-shrink-0" />
+          )}
+          <p className="truncate font-semibold text-gold/90">{guild.name}</p>
+        </div>
+        <p className="col-span-2 text-center font-medium px-1">{guild.memberCount}</p>
+        <p className="col-span-3 text-center font-medium px-1">
+          {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
+        </p>
+        <p className="col-span-2 font-medium text-amber-200/90 px-1 text-center">{currencyIntlFormat(guild.points)}</p>
+        <div className="col-span-2 font-medium text-gold/90 px-1 flex items-center gap-1 justify-center">
+          {currencyIntlFormat(guild.lords)}
+          <ResourceIcon size="md" resource={ResourcesIds[ResourcesIds.Lords]} className="w-5 h-5" withTooltip={false} />
+        </div>
       </div>
-      <div className="col-span-1 flex justify-center">
-        {guild.isPublic ? <LockOpen className="w-4 h-4 text-gold" /> : <LockOpen className="w-4 h-4 text-gold/50" />}
+
+      <div className="flex items-center pr-2 min-w-[28px] justify-center">
+        {isHovered && !guild.isMember && (
+          <MessageCircle
+            className="w-4 h-4 text-gold/70 hover:text-gold cursor-pointer transition-colors"
+            onMouseEnter={() =>
+              setTooltip({
+                content: <div className="text-gold">Message tribe</div>,
+                position: "top",
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+          />
+        )}
       </div>
     </div>
   );

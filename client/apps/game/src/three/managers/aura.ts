@@ -3,7 +3,7 @@ import * as THREE from "three";
 const AURA_SIZE = 1.8;
 const AURA_OPACITY = 0.8;
 const AURA_ROTATION_SPEED = 0.01;
-const AURA_RENDER_ORDER = 5;
+const AURA_RENDER_ORDER = 20;
 
 export class Aura {
   private mesh: THREE.Mesh;

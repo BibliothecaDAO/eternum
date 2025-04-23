@@ -1,11 +1,9 @@
 import { ReactComponent as Check } from "@/assets/icons/check.svg";
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Burn } from "@/assets/icons/fire.svg";
-import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
-import { ReactComponent as Wrench } from "@/assets/icons/wrench.svg";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ClientComponents, ContractAddress, findResourceById, ID } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, ID, findResourceById } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
 import { hexToAscii } from "@dojoengine/utils";
 import { EventType } from "./types";
@@ -50,30 +48,6 @@ export const eventDetails: {
     },
     emoji: <Swap className="w-6 self-center fill-current" />,
     color: "#80DEEA",
-  },
-  [EventType.HyperstructureFinished]: {
-    to: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>,
-      getAddressFromStructureEntity,
-    ) => getAddressFromStructureEntity(componentValue.hyperstructure_entity_id),
-    getAction: (
-      _: ComponentValue<ClientComponents["events"][EventType.HyperstructureFinished]["schema"]>,
-      isPersonal,
-    ) => `finished${isPersonal ? " your" : " a"} hyperstructure`,
-    emoji: <Sparkles className="w-6 self-center fill-current" />,
-    color: "#FFF59D",
-  },
-  [EventType.HyperstructureContribution]: {
-    to: (
-      componentValue: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>,
-      getAddressFromStructureEntity,
-    ) => getAddressFromStructureEntity(componentValue.hyperstructure_entity_id),
-    getAction: (
-      _: ComponentValue<ClientComponents["events"][EventType.HyperstructureContribution]["schema"]>,
-      isPersonal,
-    ) => `contributed to${isPersonal ? " your" : " a"} hyperstructure`,
-    emoji: <Wrench className="w-6 self-center fill-current" />,
-    color: "#FFD54F",
   },
   [EventType.AcceptOrder]: {
     to: (

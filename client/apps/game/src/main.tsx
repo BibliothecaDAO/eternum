@@ -1,7 +1,8 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/eternum-words-logo.svg";
-import { configManager, setup } from "@bibliothecadao/eternum";
+import { setup } from "@bibliothecadao/dojo";
+import { configManager } from "@bibliothecadao/eternum";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import React from "react";
@@ -15,6 +16,7 @@ import App from "./app";
 import { initialSync } from "./dojo/sync";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { StarknetProvider } from "./hooks/context/starknet-provider";
+import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
@@ -38,7 +40,7 @@ async function init() {
   if (!rootElement) throw new Error("React root not found");
   const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-  // Redirect mobile users to the mobile version
+  // Redirect mobile users to the mobile version of the game
   if (IS_MOBILE) {
     root.render(
       <div className="flex h-screen w-screen flex-col items-center justify-center bg-brown p-4 text-center text-gold">
@@ -127,27 +129,28 @@ async function init() {
   root.render(<LoadingScreen backgroundImage={backgroundImage} />);
 
   const state = useUIStore.getState();
+  const syncingStore = useSyncStore.getState();
 
   console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },
     {
       vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-      useBurner: env.VITE_PUBLIC_CHAIN === "local",
+      useBurner: false,
     },
     {
       onNoAccount: () => {
         state.setModal(null, false);
         state.setModal(<NoAccountModal />, true);
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.error("System call error:", error);
         // Handle other types of errors if needed
       },
     },
   );
 
-  await initialSync(setupResult, state);
+  await initialSync(setupResult, state, syncingStore.setInitialSyncProgress);
 
   const eternumConfig = ETERNUM_CONFIG();
   configManager.setDojo(setupResult.components, eternumConfig);

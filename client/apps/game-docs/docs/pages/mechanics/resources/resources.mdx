@@ -1,23 +1,31 @@
 import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
-import TroopsTable from "@/components/TroopsTable";
-import { ResourcesIds } from "@/utils/types";
+import TroopsLimitTable from "@/components/TroopsLimitTable";
+import { ResourcesIds } from "@bibliothecadao/types";
 
-# Resources
+# 🪵 Materials
+
+## Resources
 
 Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
 ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
 out as ERC20 tokens through the central bank.
 
-## Resource Categories
+![Produce from building](/gifs/produce-from-building-click.gif)
 
----
+## Material Categories
 
-### Basic Resources
+#### Material Tiers
+
+Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
+
+<RarityResourceTable />
+
+### Basic Materials
 
 #### Food
 
-<div className="flex items-baseline gap-1">
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
   <ResourceIcon name="Wheat" id={ResourcesIds.Wheat} />
   <ResourceIcon name="Fish" id={ResourcesIds.Fish} />
 </div>
@@ -28,21 +36,19 @@ Food is the cornerstone of your realm's economy:
 - Required for most production chains
 - Essential for maintaining troops and construction
 
----
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
-#### Resource Tiers
-
-Resources are distributed across the 8,000 Realms based on rarity, creating natural scarcity and trade opportunities.
-
-<RarityResourceTable />
-
----
-
-### Strategic Resources
+### Strategic Materials
 
 #### Military
 
-<TroopsTable />
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Knight" id={ResourcesIds.Knight} />
+  <ResourceIcon name="Crossbowman" id={ResourcesIds.Crossbowman} />
+  <ResourceIcon name="Paladin" id={ResourcesIds.Paladin} />
+</div>
+
+<TroopsLimitTable />
 
 Military units have unique properties:
 
@@ -50,9 +56,11 @@ Military units have unique properties:
 - Cannot be converted back to tradeable form once assigned to an army
 - Become permanent once assigned to armies but are transferable to other armies on the same hex
 
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
+
 #### Transport
 
-<div className="flex items-baseline gap-1">
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
   <ResourceIcon name="Donkey" id={ResourcesIds.Donkey} />
 </div>
 
@@ -62,14 +70,14 @@ Essential for logistics:
 - Consumed during transport
 - Critical for trade and supply chains
 
----
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }}></div>
 
-### Special Resources
+### Special Materials
 
 #### **$LORDS** Currency
 
-<div className="flex items-baseline gap-1">
-  <ResourceIcon name="Lords" id={ResourcesIds.Lords} />
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Lords" id={ResourcesIds.Lords} size="xl" />
 </div>
 
 **$LORDS** is Eternum's economic backbone:
@@ -78,13 +86,26 @@ Essential for logistics:
 - Bridgeable to external networks
 - Required for game fees and operations
 
+#### Labor
+
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
+  <ResourceIcon name="Labor" id={ResourcesIds.Labor} />
+</div>
+
+Labor is a fundamental production material:
+
+- Required for most building and production activities
+- Regenerates over time based on population
+- Cannot be directly traded but can be allocated to various tasks
+- Essential for realm development and resource gathering
+
 #### Ancient Fragments
 
-<div className="flex items-baseline gap-1">
+<div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.75rem" }}>
   <ResourceIcon name="Ancient Fragments" id={ResourcesIds.AncientFragment} />
 </div>
 
-Strategic end-game resource:
+Strategic end-game material:
 
 - Only found in world map Fragment Mines
 - Required for Hyperstructures

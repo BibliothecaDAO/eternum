@@ -1,4 +1,4 @@
-import { ADMIN_BANK_ENTITY_ID, ID, Resource } from "@bibliothecadao/eternum";
+import { ADMIN_BANK_ENTITY_ID, ID, Resource } from "@bibliothecadao/types";
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";

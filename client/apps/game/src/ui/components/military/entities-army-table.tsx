@@ -8,8 +8,8 @@ import { HintModalButton } from "@/ui/elements/hint-modal-button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { CombatSimulation } from "@/ui/modules/simulation/combat-simulation";
 import { divideByPrecisionFormatted } from "@/ui/utils/utils";
-import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
 import { useExplorersByStructure, usePlayerStructures } from "@bibliothecadao/react";
+import { ArmyInfo, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
 
 export const EntitiesArmyTable = () => {
   const playerStructures = usePlayerStructures();
@@ -24,21 +24,32 @@ export const EntitiesArmyTable = () => {
       </div>
       <CombatSimulation />
       {playerStructures.map((entity: any, index: number) => {
-        return (
-          <div key={entity.entityId} className="p-2">
-            <Headline>
-              <div className="flex gap-2">
-                <div className="self-center">{entity.name} </div>
-                {index === 0 && <HintModalButton section={HintSection.Buildings} />}
-              </div>
-            </Headline>
-            <div className="grid grid-cols-1 gap-4">
-              <EntityArmyTable structureEntityId={entity.entityId} />
-            </div>
-          </div>
-        );
+        return <StructureWithArmy key={entity.entityId} entity={entity} showHint={index === 0} />;
       })}
     </>
+  );
+};
+
+const StructureWithArmy = ({ entity, showHint }: { entity: any; showHint: boolean }) => {
+  const explorers = useExplorersByStructure({ structureEntityId: entity.entityId });
+
+  // Skip rendering if there are no armies
+  if (explorers.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="p-2">
+      <Headline>
+        <div className="flex gap-2">
+          <div className="self-center">{entity.name} </div>
+          {showHint && <HintModalButton section={HintSection.Buildings} />}
+        </div>
+      </Headline>
+      <div className="grid grid-cols-1 gap-4">
+        <EntityArmyTable structureEntityId={entity.entityId} />
+      </div>
+    </div>
   );
 };
 
@@ -47,10 +58,6 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
     return <div>Entity not found</div>;
   }
   const explorers = useExplorersByStructure({ structureEntityId });
-
-  if (explorers.length === 0) {
-    return <div className="m-auto">No armies</div>;
-  }
 
   const totalTroops = explorers.reduce(
     (acc, army: ArmyInfo) => {
@@ -68,6 +75,10 @@ const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefi
       return <ArmyChip key={army.entityId} army={army} showButtons />;
     });
   };
+
+  if (explorers.length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col gap-4">

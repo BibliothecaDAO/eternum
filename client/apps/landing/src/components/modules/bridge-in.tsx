@@ -2,24 +2,24 @@ import { execute } from "@/hooks/gql/execute";
 import { useEntities } from "@/hooks/helpers/use-entities";
 import { useResourceBalance } from "@/hooks/helpers/use-resources";
 import { GET_CAPACITY_SPEED_CONFIG } from "@/hooks/query/capacity-config";
-import { useBridgeAsset } from "@/hooks/use-bridge";
 import { useLords } from "@/hooks/use-lords";
 import { useTravel } from "@/hooks/use-travel";
 import { displayAddress } from "@/lib/utils";
 import {
-  ADMIN_BANK_ENTITY_ID,
-  Resources,
-  ResourcesIds,
   calculateDonkeysNeeded,
   divideByPrecision,
   getTotalResourceWeightKg,
-  resources,
 } from "@bibliothecadao/eternum";
+import {
+  ADMIN_BANK_ENTITY_ID,
+  Resources,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/types";
 import { useAccount, useBalance } from "@starknet-react/core";
 import { useQuery } from "@tanstack/react-query";
 import { InfoIcon, Loader, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { formatEther } from "viem";
 import { TypeP } from "../typography/type-p";
 import { Button } from "../ui/button";
@@ -123,7 +123,6 @@ export const BridgeIn = () => {
   }, [orderWeightKg, donkeyConfig.capacity]);
 
   const donkeyBalance = getBalance(ResourcesIds.Donkey);
-  const { bridgeIntoRealm } = useBridgeAsset();
 
   useEffect(() => {
     const fetchAddresses = async () => {
@@ -140,39 +139,7 @@ export const BridgeIn = () => {
   }, [selectedResourceIds]);
 
   const onBridgeIntoRealm = async () => {
-    try {
-      setIsLoading(true);
-
-      const validResources = await Promise.all(
-        Object.entries(selectedResourceAmounts)
-          .filter(([id, amount]) => amount > 0)
-          .map(async ([id, amount]) => {
-            const tokenAddress =
-              resourceAddresses[ResourcesIds[Number(id)].toLocaleUpperCase() as keyof typeof resourceAddresses][1];
-            return {
-              tokenAddress: tokenAddress as string,
-              amount: BigInt(amount * 10 ** 18),
-            };
-          }),
-      );
-
-      if (validResources.length === 0) {
-        throw new Error("No valid resources selected");
-      }
-
-      const resp = await bridgeIntoRealm(validResources, ADMIN_BANK_ENTITY_ID, BigInt(realmEntityId!));
-      if (resp) {
-        setSelectedResourceIds([ResourcesIds.Lords]);
-        setSelectedResourceAmounts({
-          [ResourcesIds.Lords]: 0,
-        });
-      }
-    } catch (error) {
-      console.error("Bridge into realm error:", error);
-      toast.error("Failed to transfer resources");
-    } finally {
-      setIsLoading(false);
-    }
+    console.log("implement bridge inside game client");
   };
 
   const [isFeesOpen, setIsFeesOpen] = useState(false);
@@ -252,12 +219,12 @@ export const BridgeIn = () => {
               <SelectContent>
                 {playerStructures?.length
                   ? playerStructures.map((structure) => {
-                      return (
-                        <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
-                          #{structure.realmId} - {structure.name}
-                        </SelectItem>
-                      );
-                    })
+                    return (
+                      <SelectItem key={structure.realmId} value={structure.entityId.toString()}>
+                        #{structure.realmId} - {structure.name}
+                      </SelectItem>
+                    );
+                  })
                   : "No Structure settled in Eternum"}
               </SelectContent>
             </Select>

@@ -14,24 +14,26 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import {
   ActionType,
-  BUILDINGS_CENTER,
   Biome,
+  ResourceIdToMiningType,
+  ResourceManager,
+  TileManager,
+  getEntityIdFromKeys,
+} from "@bibliothecadao/eternum";
+import {
+  BUILDINGS_CENTER,
   BiomeType,
   BuildingType,
   HexPosition,
   RealmLevels,
-  ResourceIdToMiningType,
-  ResourceManager,
   ResourceMiningTypes,
   ResourcesIds,
-  SetupResult,
   StructureType,
-  TileManager,
   findResourceById,
-  getEntityIdFromKeys,
   getNeighborHexes,
   getProducedResource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
+import { SetupResult } from "@bibliothecadao/dojo";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -241,7 +243,7 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
 
-    Promise.all(this.modelLoadPromises).then(() => {});
+    Promise.all(this.modelLoadPromises).then(() => { });
   }
 
   setup() {
@@ -428,8 +430,8 @@ export default class HexceptionScene extends HexagonScene {
       });
     }
   }
-  protected onHexagonRightClick(): void {}
-  protected onHexagonDoubleClick(): void {}
+  protected onHexagonRightClick(): void { }
+  protected onHexagonDoubleClick(): void { }
 
   public moveCameraToURLLocation() {
     this.moveCameraToColRow(10, 10, 0);
@@ -472,7 +474,7 @@ export default class HexceptionScene extends HexagonScene {
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
-      let centers = [
+      const centers = [
         [0, 0], //0, 0 (Main hex)
         [-6, 5], //-1, 1
         [7, 4], //1, 0
@@ -516,18 +518,65 @@ export default class HexceptionScene extends HexagonScene {
             buildingGroup = BUILDINGS_GROUPS.REALMS;
           }
 
-          if (this.tileManager.getWonder(this.state.structureEntityId)) {
-            buildingGroup = BUILDINGS_GROUPS.WONDER;
-            buildingType = WONDER_REALM;
-          }
+          // Store original building group and type for potential wonder addition
+          const originalBuildingGroup = buildingGroup;
+          const originalBuildingType = buildingType;
 
+          // Check if the realm has a wonder
+          const hasWonder = this.tileManager.getWonder(this.state.structureEntityId);
+
+          // Handle hyperstructure type
           if (building.structureType === StructureType.Hyperstructure) {
             buildingGroup = BUILDINGS_GROUPS.HYPERSTRUCTURE;
             buildingType = hyperstructureStageToModel[this.structureStage as StructureProgress];
           }
+
+          // If the realm has a wonder and it's not a hyperstructure, we'll add both models
+          if (hasWonder && building.structureType !== StructureType.Hyperstructure) {
+            // First, create the wonder model
+            const wonderGroup = BUILDINGS_GROUPS.WONDER;
+            const wonderType = WONDER_REALM;
+
+            const wonderData = this.buildingModels
+              .get(wonderGroup)
+              ?.get(wonderType.toString() as BUILDINGS_CATEGORIES_TYPES);
+
+            if (wonderData) {
+              const wonderInstance = wonderData.model.clone();
+              wonderInstance.applyMatrix4(building.matrix);
+
+              // Set initial scale for animation
+              wonderInstance.scale.set(0.01, 0.01, 0.01);
+
+              // Add wonder instance to scene
+              this.scene.add(wonderInstance);
+
+              // Animate scale using gsap
+              gsap.to(wonderInstance.scale, {
+                duration: 0.5,
+                x: 1,
+                y: 1,
+                z: 1,
+                ease: "power2.out",
+              });
+
+              // Check if the model has animations and start them
+              const wonderAnimations = wonderData.animations;
+              if (wonderAnimations && wonderAnimations.length > 0) {
+                const wonderMixer = new THREE.AnimationMixer(wonderInstance);
+                wonderAnimations.forEach((clip: THREE.AnimationClip) => {
+                  wonderMixer.clipAction(clip).play();
+                });
+                // Store the mixer for later use
+                this.buildingMixers.set(`${key}_wonder`, wonderMixer);
+              }
+            }
+          }
+
+          // Now create the original building model (Realm or other)
           const buildingData = this.buildingModels
-            .get(buildingGroup)
-            ?.get(buildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
+            .get(originalBuildingGroup)
+            ?.get(originalBuildingType.toString() as BUILDINGS_CATEGORIES_TYPES);
 
           if (buildingData) {
             const instance = buildingData.model.clone();
@@ -553,22 +602,12 @@ export default class HexceptionScene extends HexagonScene {
                 // @ts-ignore
                 if (child?.material?.name === "crystal" && child instanceof THREE.Mesh) {
                   if (!this.minesMaterials.has(building.resource)) {
-                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.EtherealSilica]);
+                    const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
                     this.minesMaterials.set(building.resource, material);
                   }
                   child.material = this.minesMaterials.get(building.resource);
                 }
               });
-              // const crystalMesh1 = instance.children[1] as THREE.Mesh;
-              // const crystalMesh2 = instance.children[2] as THREE.Mesh;
-              // if (!this.minesMaterials.has(building.resource)) {
-              //   const material = new THREE.MeshStandardMaterial(MinesMaterialsParams[building.resource]);
-              //   this.minesMaterials.set(building.resource, material);
-              // }
-              // // @ts-ignoreq
-              // crystalMesh1.material = this.minesMaterials.get(building.resource);
-              // // @ts-ignore
-              // crystalMesh2.material = this.minesMaterials.get(building.resource);
             }
 
             // Add instance to scene BEFORE starting animation

@@ -1,4 +1,4 @@
-import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../";

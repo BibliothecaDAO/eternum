@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/dojo-context";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
 import { useAccount } from "@starknet-react/core";
 import { ArrowDownUp, Pickaxe } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";

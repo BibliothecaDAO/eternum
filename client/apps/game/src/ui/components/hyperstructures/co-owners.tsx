@@ -7,14 +7,8 @@ import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
-import {
-  ContractAddress,
-  formatTime,
-  getAddressName,
-  getStructure,
-  ID,
-  WORLD_CONFIG_ID,
-} from "@bibliothecadao/eternum";
+import { getAddressName, getStructure } from "@bibliothecadao/eternum"
+import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -72,18 +66,6 @@ const CoOwnersRows = ({
 
   const hyperstructure = useComponentValue(Hyperstructure, getEntityIdFromKeys([BigInt(hyperstructureEntityId)]));
 
-  const canUpdate = useMemo(() => {
-    if (!hyperstructureConfig || !currentBlockTimestamp) return false;
-    if (!hyperstructure) return true;
-    if (ContractAddress(hyperstructure.last_updated_by) === ContractAddress(account.address)) {
-      return (
-        currentBlockTimestamp > hyperstructure.last_updated_timestamp + hyperstructureConfig.time_between_shares_change
-      );
-    } else {
-      return true;
-    }
-  }, [hyperstructure, hyperstructureConfig, currentBlockTimestamp]);
-
   const structure = useMemo(
     () => getStructure(hyperstructureEntityId, ContractAddress(account.address), components),
     [hyperstructureEntityId, account.address, components],
@@ -140,25 +122,12 @@ const CoOwnersRows = ({
         );
       })}
       {structure?.isMine && (
-        <div
-          onMouseEnter={() => {
-            if (!canUpdate)
-              setTooltip({
-                content: `Wait ${formatTime(
-                  Number(hyperstructureConfig?.time_between_shares_change) -
-                    Number((currentBlockTimestamp || 0) - (hyperstructure?.last_updated_timestamp ?? 0)),
-                )} to change`,
-                position: "top",
-              });
-          }}
-          onMouseLeave={() => setTooltip(null)}
-        >
+        <div>
           <Button
             onClick={() => {
               setIsChangingCoOwners(true);
             }}
             variant="primary"
-            disabled={!canUpdate}
             className="w-full mt-4 bg-gold/20"
           >
             Change Co-Owners
@@ -179,7 +148,7 @@ const ChangeCoOwners = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { set_co_owners },
+      systemCalls: { allocate_shares },
     },
   } = useDojo();
 
@@ -210,7 +179,7 @@ const ChangeCoOwners = ({
   const setCoOwners = async () => {
     setIsLoading(true);
     // percentage is in precision 10_000
-    await set_co_owners({
+    await allocate_shares({
       signer: account,
       hyperstructure_entity_id: hyperstructureEntityId,
       co_owners: newCoOwners
@@ -245,10 +214,6 @@ const ChangeCoOwners = ({
   return (
     <div className="h-full flex flex-col justify-between">
       <div>
-        <div className="text-red text-center p-4 bg-red/10 mb-4">
-          ⚠️ Important: You must set co-owners to start earning points. No points will be earned until co-owners are
-          set!
-        </div>
         {newCoOwners.map((coOwner) => {
           const coOwnersExceptForThis = newCoOwners.filter((co) => co.id !== coOwner.id);
           const maxValue = 100 - coOwnersExceptForThis.reduce((acc, curr) => acc + curr.percentage, 0);
@@ -278,7 +243,7 @@ const ChangeCoOwners = ({
                 }}
               />
               <Trash
-                className="col-span-1 m-auto self-center w-6 h-6 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                className="col-span-1 m-auto self-center w-5 h-5 fill-red/70 hover:scale-125 hover:animate-pulse duration-300 transition-all"
                 onClick={() => removeCoOwner(coOwner.id)}
               />
             </div>
@@ -287,11 +252,10 @@ const ChangeCoOwners = ({
         <div className="flex justify-between">
           <div onClick={addCoOwner} className="flex items-center justify-center">
             <Plus
-              className={`w-6 h-6 fill-gold/70 ${
-                newCoOwners.length >= 10
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
-              }`}
+              className={`w-6 h-6 fill-gold/70 ${newCoOwners.length >= 10
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
+                }`}
             />
           </div>
           <div className={`text-sm ${totalPercentage === 100 ? "text-red" : ""}`}>{totalPercentage}%</div>

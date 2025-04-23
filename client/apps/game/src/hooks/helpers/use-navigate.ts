@@ -1,5 +1,8 @@
 import { Position } from "@/types/position";
 import { useQuery } from "@bibliothecadao/react";
+import { ClientComponents, ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useUIStore } from "../store/use-ui-store";
 
 export const useNavigateToHexView = () => {
@@ -31,5 +34,30 @@ export const useNavigateToMapView = () => {
     showBlankOverlay(false);
     setPreviewBuilding(null);
     handleUrlChange(position.toMapLocationUrl());
+  };
+};
+
+export const useSpectatorModeClick = (components: ClientComponents) => {
+  const spectatorRealmEntityId = useUIStore((state) => state.spectatorRealmEntityId);
+  const goToStructure = useGoToStructure();
+
+  return () => {
+    const structure =
+      spectatorRealmEntityId &&
+      getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(spectatorRealmEntityId)]));
+    if (structure) {
+      goToStructure(structure.entity_id, new Position({ x: structure.base.coord_x, y: structure.base.coord_y }), false);
+    }
+  };
+};
+
+export const useGoToStructure = () => {
+  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
+  const navigateToHexView = useNavigateToHexView();
+  const navigateToMapView = useNavigateToMapView();
+
+  return (structureEntityId: ID, position: Position, isMapView: boolean) => {
+    setStructureEntityId(structureEntityId);
+    isMapView ? navigateToMapView(position) : navigateToHexView(position);
   };
 };

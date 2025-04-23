@@ -1,67 +1,154 @@
-import { BuildingType } from "@/utils/types";
+import { ETERNUM_CONFIG } from "@/utils/config";
+import { BuildingType, resources } from "@bibliothecadao/types";
+import ResourceIcon from "./ResourceIcon";
+import { colors, formatAmount } from "./styles";
 
 type Props = {
   buildingType: BuildingType;
 };
 
 export default function BuildingCosts({ buildingType }: Props) {
-  // const costs = ETERNUM_CONFIG().buildings.complexBuildingCosts[buildingType] || [];
-  // const resourceCostsWheat = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Wood] || [];
-  // const resourceCostsFish = ETERNUM_CONFIG().buildings.resourceBuildingCosts[ResourcesIds.Stone] || [];
+  const config = ETERNUM_CONFIG();
 
-  if (buildingType === BuildingType.Resource) {
+  // Get costs directly from the config files
+  const complexCosts = config.buildings.complexBuildingCosts[buildingType] || [];
+  const simpleCosts = config.buildings.simpleBuildingCost[buildingType] || [];
+
+  // Check if this is a resource building (Wood, Stone, etc)
+  const isResourceBuilding =
+    (buildingType >= BuildingType.ResourceStone && buildingType <= BuildingType.ResourceDragonhide) ||
+    buildingType === BuildingType.ResourceWheat ||
+    buildingType === BuildingType.ResourceFish;
+
+  // For T2 and T3 military buildings (complex mode only)
+  const isComplexOnly =
+    buildingType === BuildingType.ResourceKnightT2 ||
+    buildingType === BuildingType.ResourceCrossbowmanT2 ||
+    buildingType === BuildingType.ResourcePaladinT2 ||
+    buildingType === BuildingType.ResourceKnightT3 ||
+    buildingType === BuildingType.ResourceCrossbowmanT3 ||
+    buildingType === BuildingType.ResourcePaladinT3;
+
+  // Compact styles
+  const styles = {
+    container: {
+      marginTop: "0.5rem",
+      borderTop: `1px solid ${colors.borderDark}`,
+      paddingTop: "0.5rem",
+    },
+    title: {
+      fontWeight: "bold",
+      fontSize: "0.875rem",
+      color: "#f6c297",
+      marginBottom: "0.375rem",
+    },
+    modeHeader: {
+      fontSize: "0.75rem",
+      color: colors.primary,
+      backgroundColor: "rgba(60, 40, 20, 0.3)",
+      padding: "0.125rem 0.375rem",
+      borderRadius: "0.25rem",
+      marginBottom: "0.25rem",
+      display: "inline-block",
+    },
+    costsContainer: {
+      display: "flex",
+      flexWrap: "wrap" as const,
+      gap: "0.25rem",
+      marginBottom: "0.5rem",
+    },
+    costItem: {
+      display: "flex",
+      alignItems: "center",
+      gap: "0.25rem",
+      padding: "0.25rem 0.375rem",
+      backgroundColor: "rgba(40, 30, 25, 0.6)",
+      borderRadius: "0.25rem",
+      fontSize: "0.75rem",
+    },
+  };
+
+  if (simpleCosts.length === 0 && complexCosts.length === 0) return null;
+
+  // Resource buildings have the same cost in both modes
+  if (isResourceBuilding) {
+    const costs = complexCosts;
     return (
-      <div className="my-4 p-3">
-        <div className="font-bold mb-2">Building costs:</div>
-        <div className="flex flex-row items-center gap-4">
-          {/* {resourceCostsWheat.map((cost) => {
-            const resource = findResourceById(cost.resource);
-            return (
-              <div key={cost.resource} className="flex items-center px-2 py-2 rounded-md">
-                <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
-                <div className="flex flex-col">
-                  <span>{resource?.trait}</span>
-                  <span>{formatAmount(cost.amount)}</span>
-                </div>
-              </div>
-            );
-          })}
-          <span>or</span>
-          {resourceCostsFish.map((cost) => {
-            const resource = findResourceById(cost.resource);
-            return (
-              <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-                <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
-                <div className="flex flex-col">
-                  <span>{resource?.trait}</span>
-                  <span>{formatAmount(cost.amount)}</span>
-                </div>
-              </div>
-            );
-          })} */}
+      <div style={styles.container}>
+        <div style={styles.title}>Building Costs</div>
+        <div style={styles.costsContainer}>
+          {costs.map((cost) => (
+            <div key={cost.resource} style={styles.costItem}>
+              <ResourceIcon
+                id={cost.resource}
+                name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                size="md"
+              />
+              {formatAmount(cost.amount)}
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
-  // if (!costs || costs.length === 0) return null;
-
-  return (
-    <div className="my-4 p-3">
-      <div className="font-bold mb-2">Building costs:</div>
-      <div className="grid grid-cols-2 gap-2">
-        {/* {costs.map((cost) => {
-          const resource = findResourceById(cost.resource);
-          return (
-            <div key={cost.resource} className="flex items-center gap-1 px-2 py-1.5 rounded-md">
-              <ResourceIcon size="lg" id={cost.resource} name={resource?.trait || ""} />
-              <div className="flex flex-col">
-                <span className="font-medium">{resource?.trait}</span>
-                <span className="font-medium">{formatAmount(cost.amount)}</span>
-              </div>
+  // Military T2/T3 buildings are complex mode only
+  if (isComplexOnly) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.title}>Building Costs</div>
+        <div style={styles.modeHeader}>Standard Only</div>
+        <div style={styles.costsContainer}>
+          {complexCosts.map((cost) => (
+            <div key={cost.resource} style={styles.costItem}>
+              <ResourceIcon
+                id={cost.resource}
+                name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                size="md"
+              />
+              {formatAmount(cost.amount)}
             </div>
-          );
-        })} */}
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // For regular buildings that have both simple and complex modes
+  return (
+    <div style={styles.container}>
+      <div style={styles.title}>Building Costs</div>
+
+      <div>
+        <div style={styles.modeHeader}>Simple</div>
+        <div style={styles.costsContainer}>
+          {simpleCosts.map((cost) => (
+            <div key={cost.resource} style={styles.costItem}>
+              <ResourceIcon
+                id={cost.resource}
+                name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                size="md"
+              />
+              {formatAmount(cost.amount)}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={styles.modeHeader}>Standard</div>
+        <div style={styles.costsContainer}>
+          {complexCosts.map((cost) => (
+            <div key={cost.resource} style={styles.costItem}>
+              <ResourceIcon
+                id={cost.resource}
+                name={resources.find((r) => r.id === cost.resource)?.trait || ""}
+                size="md"
+              />
+              {formatAmount(cost.amount)}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

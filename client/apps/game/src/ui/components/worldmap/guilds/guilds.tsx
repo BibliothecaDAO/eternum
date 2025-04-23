@@ -7,11 +7,12 @@ import TextInput from "@/ui/elements/text-input";
 import { sortItems } from "@/ui/utils/utils";
 import {
   calculateGuildLordsPrize,
-  ContractAddress,
   getGuildFromPlayerAddress,
-  ID,
-  PlayerInfo,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  PlayerInfo,
+} from "@bibliothecadao/types";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -20,7 +21,7 @@ export const Guilds = ({
   viewGuildMembers,
   players,
 }: {
-  viewGuildMembers: (guildEntityId: ID) => void;
+  viewGuildMembers: (guildEntityId: ContractAddress) => void;
   players: PlayerInfo[];
 }) => {
   const {

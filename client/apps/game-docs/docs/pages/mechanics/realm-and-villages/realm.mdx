@@ -1,0 +1,47 @@
+import { StartingResources, StructureType } from "@/components/StartingResources";
+import { StartingMilitary } from "@/components/StartingMilitary";
+import { TotalArmiesTable, RealmDefenseSlotsTable } from "@/components/DefendingArmies";
+import { BuildableHexes } from "@/components/BuildableHexes";
+import { RealmLeveling } from "@/components/RealmLeveling";
+
+# 🏰 Realms
+
+The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
+limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
+in Eternum can produce between one and seven different resources, depending on the metadata of the original Realm NFT
+and its associated Season Pass.
+
+### Settling
+
+To settle a Realm, Lords must first burn a Season Pass, which gives them the ability to select the location of their
+homeland from an array of locations scattered across the map. For Season 1, there is a seven-day settling period before
+the game starts, allowing players to organise and position themselves before a move can be made. Realms can still be
+settled after this period, however the earlier in the season that Lords can establish their holdings, the greater their
+production potential and overall experience.
+
+<img src="/gifs/settle-realm.gif" alt="Settling a Realm" width="800" className="mx-auto" />
+
+![Realm Settling Screen](/screenshots/settling.png)
+
+### Starting Resources
+
+<StartingResources structureType={StructureType.Realm} />
+
+### Starting Military
+
+Each Realm begins with a defensive army stationed as guard and an attacking army on the field. The specific type of
+military unit is determined by your Realm's biome, and is strategically chosen to have a combat advantage in that
+particular environment.
+
+<StartingMilitary structureType={StructureType.Realm} />
+
+### Realm Progression
+
+Realms can grow from a Settlement into a City, then to a Kingdom, and finally an Empire. Each upgrade level unlocks
+additional buildable hexes and defensive army slots, allowing for the expansion of your economy and strengthening of
+your defences. Each progression requires specific materials, outlined in the table below:
+
+<RealmLeveling />
+<BuildableHexes />
+<TotalArmiesTable />
+<RealmDefenseSlotsTable />

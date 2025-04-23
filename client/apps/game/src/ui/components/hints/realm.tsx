@@ -1,6 +1,7 @@
 import { Headline } from "@/ui/elements/headline";
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { configManager, LEVEL_DESCRIPTIONS, RealmLevelNames, RealmLevels } from "@bibliothecadao/eternum";
+import { configManager, } from "@bibliothecadao/eternum";
+import { LEVEL_DESCRIPTIONS, RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 const CASTLE_IMAGES: Partial<Record<RealmLevelNames, string>> = {
@@ -92,9 +93,9 @@ const LevelTable = () => {
                     <span className="text-gray-300 block leading-relaxed">
                       {
                         LEVEL_DESCRIPTIONS[
-                          RealmLevels[
-                            resource.level as unknown as keyof typeof RealmLevels
-                          ] as keyof typeof LEVEL_DESCRIPTIONS
+                        RealmLevels[
+                        resource.level as unknown as keyof typeof RealmLevels
+                        ] as keyof typeof LEVEL_DESCRIPTIONS
                         ]
                       }
                     </span>

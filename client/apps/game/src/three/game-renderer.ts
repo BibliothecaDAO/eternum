@@ -5,7 +5,7 @@ import HexceptionScene from "@/three/scenes/hexception";
 import HUDScene from "@/three/scenes/hud-scene";
 import WorldmapScene from "@/three/scenes/worldmap";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { SetupResult } from "@bibliothecadao/eternum";
+import { SetupResult } from "@bibliothecadao/dojo";
 import throttle from "lodash/throttle";
 import {
   BloomEffect,

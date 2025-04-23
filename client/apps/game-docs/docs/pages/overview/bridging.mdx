@@ -1,27 +1,15 @@
 import { Callout } from "vocs/components";
 
-# Bridge Closure
-
-<Callout type="danger">
-  # Critical End-Game Information The Game Bridge **permanently** closes **48 hours** after victory has been claimed.
-  [Read the full End Season Disclaimer](/overview/disclaimer) to understand all risks and limitations.
-</Callout>
+# Bridging
 
 ## Bridging in Eternum
 
 Eternum is a fully onchain game with immutable smart contracts, meaning the game rules cannot be altered. Bridging
 tokens in and out of the game is a core mechanic, but you must carefully manage this process.
 
-<Callout type="warning">
-  ### End Game Bridge Closure - The game bridge closes **permanently** 48 hours after "End Season" is triggered - Only
-  resources in your Realm's direct balance can be bridged out - Resources in the following locations are NOT part of
-  your bridgeable balance: - AMM Liquidity Pool positions - Open market orders - Resources in transit - Any resources
-  not bridged out by the deadline are **permanently locked** in the contract
-</Callout>
+## Bridging in LORDS
 
-## Bridging in
-
-This is the only way to bridge in Lords to the game. This converts ERC20 Lords into in-game Lords. Only in-game Lords
+This is the only way to bridge in $LORDS to the game. This converts ERC20 $LORDS into in-game Lords. Only in-game Lords
 can be used to build and trade with.
 
 ### Initial Bridge
@@ -32,54 +20,18 @@ You need to first initialize the transfer.
 
 ### Final Bridge (Within Game Client)
 
-Once you finish the first step, the Lords/resources will appear in your inventory to be used in the game.
+Once you finish the first step, the $LORDS will appear in your inventory to be used in the game.
 
-<img src="/gifs/final-bridge-in.gif" alt="Bridge" width="800" className="mx-auto" />
+<img src="/gifs/resource-arrival.gif" alt="Bridge" width="800" className="mx-auto" />
+
+## Briding in Resources
+
+_WIP, update next week !_
 
 ## Bridging out
 
-You can bridge out resources from the game, which will be converted to the ERC20 contracts.
+_WIP, update next week !_
 
-<Callout type="error">
-  ### ⚠️ Critical Security Warning ⚠️ - Your Realm remains vulnerable to being claimed by other players until you
-  complete the **final withdrawal step** - Because bridged resources are linked to your realm until the final withdraw,
-  if your Realm is claimed during the bridging process, the bridged resources can be stolen - **Always maintain
-  sufficient troops** to defend your Realm during the bridging process
-</Callout>
+## Game End
 
-### Step 1: Start the bridge
-
-<img src="/gifs/bridge-out-start.gif" alt="Bridge" width="800" className="mx-auto" />
-
-### Step 2: Finalize the bridge
-
-<img src="/gifs/bridge-out-final.gif" alt="Bridge" width="800" className="mx-auto" />
-
-### Security Best Practices
-
-To ensure safe bridging:
-
-1. Maintain a defensive force of troops in your Realm during the entire bridging process
-2. Complete the final withdrawal step as soon as possible
-
-### Game End
-
-When "End Season" is triggered:
-
-1. A **48-hour countdown** begins immediately
-2. During this window, you can only:
-   - Bridge out **$LORDS** and resources from your Realm's direct balance
-   - Register your score (within 4 days)
-
-To preserve your assets, you **must**:
-
-> 1. Remove all liquidity from AMM pools **before** the season ends
-> 2. Cancel all open orders on the Order Book **before** the season ends
-> 3. Ensure all resource transfers to your Realm are completed **before** the season ends
-> 4. Bridge out **$LORDS** and **Resources** from your Realm's balance within the 48-hour window
-
-<Callout type="error">
-  ### ⚠️ Permanent Loss Warning ⚠️ - The 48-hour countdown is **final** and **cannot be extended** - Developers
-  **cannot** recover any assets after the bridge closes - Any resources not in your Realm's direct balance **cannot** be
-  bridged out - Plan ahead to ensure all your assets are in your Realm's balance before the season ends
-</Callout>
+_WIP, update next week !_

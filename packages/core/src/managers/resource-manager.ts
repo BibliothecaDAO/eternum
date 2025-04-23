@@ -2,9 +2,7 @@
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { BuildingType, CapacityConfig, ResourcesIds } from "../constants";
-import { ClientComponents } from "../dojo/create-client-components";
-import { ID, Resource } from "../types";
+import { ClientComponents, ID, Resource, BuildingType, CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { getBuildingCount, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 

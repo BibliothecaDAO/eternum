@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@/types/position";
-import { HexPosition } from "@bibliothecadao/eternum";
+import { HexPosition } from "@bibliothecadao/types";
 import { usePlayerArmyAtPosition, useQuery } from "@bibliothecadao/react";
 import { SelectedArmyContent } from "../armies/selected-army-content";
 

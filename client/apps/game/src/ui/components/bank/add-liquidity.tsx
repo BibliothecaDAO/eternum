@@ -6,19 +6,21 @@ import Button from "@/ui/elements/button";
 import { ResourceCost } from "@/ui/elements/resource-cost";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  ContractAddress,
   divideByPrecision,
   getBalance,
   getClosestBank,
   getEntityIdFromKeys,
-  ID,
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
+} from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  ID,
   resources,
   ResourcesIds,
   StructureType,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -101,7 +103,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
   const renderConfirmationPopup = useCallback(() => {
     const isVillageAndMilitaryResource =
       getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
+      StructureType.Village && isMilitaryResource(resourceId);
 
     const resourcesToConfirm = [
       { amount: resourceAmount, resourceId: Number(resourceId) },

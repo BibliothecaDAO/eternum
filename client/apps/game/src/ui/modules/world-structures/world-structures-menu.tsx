@@ -1,25 +1,30 @@
+import { useSyncHyperstructure } from "@/hooks/helpers/use-sync";
 import { Position } from "@/types/position";
 import { HintSection } from "@/ui/components/hints/hint-modal";
 import { DisplayedAccess, HyperstructurePanel } from "@/ui/components/hyperstructures/hyperstructure-panel";
-import { EntityList } from "@/ui/components/list/entity-list";
 import { NavigateToPositionIcon } from "@/ui/components/military/army-chip";
-import { Checkbox } from "@/ui/elements/checkbox";
+import Button from "@/ui/elements/button";
 import { HintModalButton } from "@/ui/elements/hint-modal-button";
+import { LoadingAnimation } from "@/ui/elements/loading-animation";
 import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
-  ContractAddress,
-  getAddressFromStructureEntity,
-  getAddressNameFromEntity,
   getGuildFromPlayerAddress,
-  ID,
+  getHyperstructureProgress,
   LeaderboardManager,
-  MERCENARIES,
 } from "@bibliothecadao/eternum";
-import { useDojo, useHyperstructureProgress, useHyperstructures } from "@bibliothecadao/react";
-import { ArrowRight } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { Tabs } from "../../elements/tab";
+import {
+  ContractAddress,
+  HyperstructureInfo,
+  MERCENARIES,
+} from "@bibliothecadao/types";
+import { useDojo, useHyperstructures } from "@bibliothecadao/react";
+import clsx from "clsx";
+import { ArrowLeft, ArrowRight, Filter, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+
+// Define filter options
+type FilterOption = "all" | "mine" | "completed" | "in-progress";
 
 export const WorldStructuresMenu = ({ className }: { className?: string }) => {
   const {
@@ -27,212 +32,281 @@ export const WorldStructuresMenu = ({ className }: { className?: string }) => {
     account: { account },
   } = useDojo();
 
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [showOnlyMine, setShowOnlyMine] = useState(false);
+  const { isSyncing } = useSyncHyperstructure();
+
+  const [selectedEntity, setSelectedEntity] = useState<HyperstructureInfo | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<FilterOption>("all");
 
   const hyperstructures = useHyperstructures();
 
-  const myHyperstructures = useMemo(
-    () =>
-      LeaderboardManager.instance(components).getHyperstructuresWithContributionsFromPlayer(
-        ContractAddress(account.address),
-      ),
-    [components, account.address],
-  );
+  // Get list of hyperstructures with player contributions
+  const myHyperstructureIds = useMemo(() => {
+    const myStructures = LeaderboardManager.instance(components).getHyperstructuresWithContributionsFromPlayer(
+      ContractAddress(account.address),
+    );
+    return Array.isArray(myStructures) ? myStructures.map((h) => Number(h.entity_id)) : [];
+  }, [components, account.address]);
 
-  const renderExtraContent = useCallback(
-    (entityId: ID, type: "hyperstructure") => {
-      const entity = hyperstructures.find((e) => e?.entity_id === entityId);
-      if (!entity) return null;
-
-      return (
-        <HyperStructureExtraContent
-          hyperstructureEntityId={entity.entity_id!}
-          x={entity.position.x}
-          y={entity.position.y}
-        />
-      );
-    },
+  // Process hyperstructures data
+  const hyperstructuresList = useMemo(
+    () => hyperstructures.sort((a, b) => Number(a.entity_id) - Number(b.entity_id)),
     [hyperstructures],
   );
 
-  const renderEntityHeader = useCallback(
-    (entityId: ID, type: "hyperstructure") => {
-      const entity = hyperstructures.find((e) => e?.entity_id === entityId);
-      return entity ? <EntityHeader entity={entity} /> : null;
-    },
-    [hyperstructures],
-  );
+  // Calculate counts for each filter category
+  const filterCounts = useMemo(() => {
+    const completedStructures = hyperstructuresList.filter(
+      (entity) => getHyperstructureProgress(entity.entity_id, components).percentage === 100,
+    );
 
-  const tabs = useMemo(
-    () => [
-      {
-        key: "Hyperstructures",
-        label: "Hyperstructures",
-        component: (
-          <>
-            <FilterCheckbox showOnlyMine={showOnlyMine} setShowOnlyMine={setShowOnlyMine} />
-            <EntityList
-              title="Hyperstructures"
-              panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-              entityHeader={(id: any) => renderEntityHeader(id, "hyperstructure")}
-              entityContent={(id: any) => renderExtraContent(id, "hyperstructure")}
-              chunkSize={10}
-              list={hyperstructures
-                .filter((h) => h?.base?.created_at)
-                .sort((a, b) => Number(a?.entity_id) - Number(b?.entity_id))
-                .map((h) => ({
-                  ...h,
-                  id: h?.entity_id,
-                  position: { x: h?.position.x, y: h?.position.y },
-                }))}
-              filterEntityIds={showOnlyMine ? Array.from(myHyperstructures) : undefined}
-            />
-          </>
-        ),
-      },
-    ],
-    [selectedTab, hyperstructures, showOnlyMine, account.address, myHyperstructures],
+    return {
+      all: hyperstructuresList.length,
+      mine: myHyperstructureIds.length,
+      completed: completedStructures.length,
+      "in-progress": hyperstructuresList.length - completedStructures.length,
+    };
+  }, [hyperstructuresList, myHyperstructureIds, components]);
+
+  // Filter and search the hyperstructures list
+  const filteredHyperstructures = useMemo(() => {
+    let filtered = hyperstructuresList;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter((entity) => entity.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    // Apply category filter
+    switch (activeFilter) {
+      case "mine":
+        filtered = filtered.filter((entity) => myHyperstructureIds.includes(Number(entity.entity_id)));
+        break;
+      case "completed":
+        // We'll check progress in the component so we don't need hook in filter
+        filtered = filtered.filter(
+          (entity) => getHyperstructureProgress(entity.entity_id, components).percentage === 100,
+        );
+        break;
+      case "in-progress":
+        // We'll check progress in the component so we don't need hook in filter
+        filtered = filtered.filter(
+          (entity) => getHyperstructureProgress(entity.entity_id, components).percentage !== 100,
+        );
+        break;
+      default:
+        // "all" - no additional filtering
+        break;
+    }
+
+    return filtered;
+  }, [hyperstructuresList, searchTerm, activeFilter, myHyperstructureIds]);
+
+  // Filter button component
+  const FilterButton = ({ label, value }: { label: string; value: FilterOption }) => (
+    <button
+      className={clsx("px-3 py-1 text-xxs rounded-md transition-colors flex items-center gap-1.5", {
+        "bg-gold/20 text-gold": activeFilter === value,
+        "hover:bg-gray-700/30": activeFilter !== value,
+      })}
+      onClick={() => setActiveFilter(value)}
+    >
+      <span>{label}</span>
+      <span className={clsx("rounded-full px-1 py-0.5 text-[10px] font-medium bg-gold/30 text-gold", {})}>
+        {filterCounts[value]}
+      </span>
+    </button>
   );
 
   return (
-    <>
-      <HintModalButton className="absolute top-1 right-1" section={HintSection.WorldStructures} />
-      <Tabs selectedIndex={selectedTab} onChange={setSelectedTab} variant="default">
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>
-              <div className="flex group relative flex-col items-center">
-                <div>{tab.label}</div>
+    <div className={clsx("relative flex flex-col h-full", className)}>
+      {isSyncing ? (
+        <LoadingAnimation />
+      ) : (
+        <>
+          <HintModalButton className="absolute top-2 right-2 z-10" section={HintSection.WorldStructures} />
+          {selectedEntity ? (
+            <div className="flex flex-col h-full p-3">
+              <Button
+                className="mb-4 self-start flex items-center gap-1"
+                variant="default"
+                size="xs"
+                onClick={() => setSelectedEntity(null)}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Hyperstructures</span>
+              </Button>
+              <HyperstructurePanel
+                entity={hyperstructuresList.find((entity) => entity.entity_id === selectedEntity?.entity_id)}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col h-full p-3">
+              <h2 className="text-xl font-bold text-gold mb-4">World Hyperstructures</h2>
+
+              {/* Search and filter bar */}
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search hyperstructures..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-2 pl-10 pr-3 bg-black/30 border border-gray-700 rounded-md text-gold text-sm focus:outline-none focus:ring-1 focus:ring-gold text-gold"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  <Filter className="h-4 w-4 text-gold/80 mr-1" />
+                  <FilterButton label="All" value="all" />
+                  <FilterButton label="My Contributions" value="mine" />
+                  <FilterButton label="Completed" value="completed" />
+                  <FilterButton label="In Progress" value="in-progress" />
+                </div>
               </div>
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
-    </>
-  );
-};
 
-const FilterCheckbox = ({
-  showOnlyMine,
-  setShowOnlyMine,
-}: {
-  showOnlyMine: boolean;
-  setShowOnlyMine: (show: boolean) => void;
-}) => (
-  <div className="px-2 pb-2">
-    <label className="flex items-center space-x-1 text-xs">
-      <Checkbox enabled={showOnlyMine} onClick={() => setShowOnlyMine(!showOnlyMine)} />
-      <span>Show only mine</span>
-    </label>
-  </div>
-);
+              {/* Hyperstructures list */}
+              <div className="overflow-y-auto flex-grow">
+                {filteredHyperstructures.length > 0 ? (
+                  <ul className="space-y-3">
+                    {filteredHyperstructures.map((hyperstructure) => {
+                      // Get progress for display and filtering
+                      const progress = getHyperstructureProgress(hyperstructure.entity_id, components);
 
-const BaseStructureExtraContent = ({
-  x,
-  y,
-  entityId,
-  children,
-}: {
-  x: number;
-  y: number;
-  entityId: ID;
-  children: React.ReactNode;
-}) => {
-  const {
-    setup: { components },
-  } = useDojo();
+                      // Filter out based on progress if needed
+                      if (
+                        (activeFilter === "completed" && progress.percentage !== 100) ||
+                        (activeFilter === "in-progress" && progress.percentage === 100)
+                      ) {
+                        return null;
+                      }
 
-  const structureOwner = useMemo(() => {
-    const ownerName = getAddressNameFromEntity(entityId, components);
-    const address = getAddressFromStructureEntity(entityId, components);
-    const guildName = getGuildFromPlayerAddress(address || 0n, components)?.name;
-    return { name: ownerName, guildName };
-  }, [entityId]);
+                      return (
+                        <li
+                          className={clsx(
+                            "p-3 hover:bg-crimson/10 rounded border panel-wood transition-all cursor-pointer",
+                            "hover:translate-y-[-2px] hover:shadow-md",
+                          )}
+                          key={hyperstructure.entity_id}
+                          onClick={() => setSelectedEntity(hyperstructure)}
+                        >
+                          <div className="flex flex-col space-y-3">
+                            <div className="flex flex-row justify-between items-center">
+                              <div className="flex flex-row items-center gap-2 flex-wrap">
+                                <h5 className="font-semibold text-gold">{hyperstructure.name}</h5>
+                                {hyperstructure?.access && <AccessBadge access={hyperstructure.access} />}
+                                <div className="flex flex-row gap-1 ml-auto sm:ml-0">
+                                  <ViewOnMapIcon
+                                    className="my-auto hover:scale-110 transition-transform"
+                                    position={
+                                      new Position({
+                                        x: hyperstructure.position.x || 0,
+                                        y: hyperstructure.position.y || 0,
+                                      })
+                                    }
+                                  />
+                                  <NavigateToPositionIcon
+                                    className="h-6 w-6 hover:scale-110 transition-transform"
+                                    position={
+                                      new Position({
+                                        x: hyperstructure.position.x || 0,
+                                        y: hyperstructure.position.y || 0,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </div>
+                              <ArrowRight className="w-4 h-4 fill-current text-gold/60" />
+                            </div>
 
-  return (
-    <div className="grid grid-cols-2 gap-4 text-xs">
-      <div className="flex items-center gap-2">
-        <span className="text-gold/80">Owner:</span>
-        <span className="font-medium">{structureOwner?.guildName || structureOwner?.name || MERCENARIES}</span>
-      </div>
-      {children}
+                            <HyperstructureContentRow hyperstructure={hyperstructure} progress={progress} />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+                    <div className="text-sm mb-2">No hyperstructures found</div>
+                    <div className="text-xs">Try adjusting your filters or search</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
 
-const HyperStructureExtraContent = ({
-  hyperstructureEntityId,
-  x,
-  y,
+const AccessBadge = ({ access }: { access: string }) => {
+  const displayAccess = DisplayedAccess[access as keyof typeof DisplayedAccess];
+  const accessStyles = {
+    Public: "text-green border border-green bg-green/10",
+    Private: "text-red border border-red bg-red/10",
+    "Tribe Only": "text-gold border border-gold bg-gold/10",
+  };
+
+  const accessStyle = accessStyles[displayAccess as keyof typeof accessStyles] || "";
+
+  return <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${accessStyle}`}>{displayAccess}</span>;
+};
+
+const HyperstructureContentRow = ({
+  hyperstructure,
+  progress,
 }: {
-  hyperstructureEntityId: ID;
-  x: number;
-  y: number;
+  hyperstructure: HyperstructureInfo;
+  progress: { percentage: number };
 }) => {
   const {
     setup: { components },
     account: { account },
   } = useDojo();
 
-  const progress = useHyperstructureProgress(hyperstructureEntityId);
-  const latestChangeEvent = LeaderboardManager.instance(components).getCurrentCoOwners(hyperstructureEntityId);
+  const idNumber = Number(hyperstructure.entity_id);
+  const latestChangeEvent = LeaderboardManager.instance(components).getCurrentCoOwners(idNumber);
   const needTosetCoOwners = !latestChangeEvent && progress.percentage === 100;
   const shares =
-    LeaderboardManager.instance(components).getAddressShares(
-      ContractAddress(account.address),
-      hyperstructureEntityId,
-    ) || 0;
+    LeaderboardManager.instance(components).getPlayerShares(ContractAddress(account.address), idNumber) || 0;
+
+  // Get owner information
+  const ownerName = hyperstructure.ownerName;
+  const address = hyperstructure.owner;
+  const guildName = getGuildFromPlayerAddress(address || 0n, components)?.name;
+
+  // Calculate progress bar color
+  const progressBarColor =
+    progress.percentage < 50 ? "bg-red-500" : progress.percentage < 100 ? "bg-yellow-500" : "bg-green-500";
 
   return (
-    <BaseStructureExtraContent x={x} y={y} entityId={hyperstructureEntityId}>
-      <div className="flex items-center gap-2">
-        <span className="text-gold/80">Progress:</span>
-        <span className="font-medium">{`${progress.percentage}%`}</span>
-        {needTosetCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
+    <div className="space-y-3">
+      {/* Progress bar */}
+      <div className="relative w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className={`absolute left-0 top-0 h-full ${progressBarColor} transition-all duration-500`}
+          style={{ width: `${progress.percentage}%` }}
+        />
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-gold/80">Shares:</span>
-        <span className="font-medium">{currencyIntlFormat(shares * 100, 0)}%</span>
-      </div>
-    </BaseStructureExtraContent>
-  );
-};
 
-const EntityHeader = ({ entity }: { entity: any }) => {
-  const position = { x: entity.x, y: entity.y };
-  const access = entity?.access ? DisplayedAccess[entity.access as keyof typeof DisplayedAccess] : undefined;
-
-  const getAccessStyle = (access?: string) => {
-    if (!access) return "";
-    const styles = {
-      Public: "text-green border border-green",
-      Private: "text-red border border-red",
-      "Tribe Only": "text-gold border border-gold",
-    };
-    return styles[access as keyof typeof styles] || "";
-  };
-
-  return (
-    <div className="flex flex-row justify-between items-center">
-      <div className="flex flex-row space-x-5 items-center">
-        <div className="flex flex-row items-center gap-2">
-          <h5 className="font-semibold text-gold">{entity.name}</h5>
-          {access && (
-            <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${getAccessStyle(access)}`}>{access}</span>
-          )}
-          <div className="flex flex-row">
-            <ViewOnMapIcon className="my-auto" position={new Position(position)} />
-            <NavigateToPositionIcon className="h-6 w-6" position={new Position(position)} />
-          </div>
+      <div className="grid grid-cols-2 gap-4 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-gold/80">Owner:</span>
+          <span className="font-medium">{guildName || ownerName || MERCENARIES}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gold/80">Progress:</span>
+          <span className="font-medium">{progress.percentage}%</span>
+          {needTosetCoOwners && <div className="text-xs text-red animate-pulse">Co-owners not set</div>}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-gold/80">Shares:</span>
+          <span className="font-medium">{currencyIntlFormat(shares * 100, 0)}%</span>
+          {shares > 0 && <span className="text-xs text-green bg-green/10 px-1.5 py-0.5 rounded-sm">Contributing</span>}
         </div>
       </div>
-      <ArrowRight className="w-2 fill-current" />
     </div>
   );
 };

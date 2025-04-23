@@ -1,4 +1,4 @@
-import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/eternum";
+import { BuildingType, FELT_CENTER, ResourceMiningTypes } from "@bibliothecadao/types";
 
 export { FELT_CENTER };
 
@@ -123,6 +123,7 @@ export const BuildingThumbs = {
   home: `${prefix}home.png`,
   time: `${prefix}time.png`,
   leave: `${prefix}leave.png`,
+  bridge: `${prefix}portal.png`,
 };
 
 export enum MenuEnum {
@@ -134,4 +135,5 @@ export enum MenuEnum {
   trade = "trade",
   resourceTable = "resourceTable",
   production = "production",
+  bridge = "bridge",
 }

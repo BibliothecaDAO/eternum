@@ -2,14 +2,17 @@ import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
   ArmyActionManager,
-  ArmyInfo,
   Biome,
   computeExploreFoodCosts,
   configManager,
-  getNeighborHexes,
   StaminaManager,
-  TroopType,
 } from "@bibliothecadao/eternum";
+import {
+
+  ArmyInfo,
+  getNeighborHexes,
+  TroopType,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

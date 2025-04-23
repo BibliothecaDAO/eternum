@@ -3,14 +3,17 @@ import Button from "@/ui/elements/button";
 import TextInput from "@/ui/elements/text-input";
 import { getEntityIdFromKeys, normalizeDiacriticalMarks } from "@/ui/utils/utils";
 import {
-  ContractAddress,
   getEntityName,
   getGuildFromPlayerAddress,
-  PlayerInfo,
   toHexString,
 } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  PlayerInfo,
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
+import { Search } from "lucide-react";
 import { KeyboardEvent, useMemo, useState } from "react";
 
 export const PlayersPanel = ({
@@ -23,7 +26,7 @@ export const PlayersPanel = ({
   const {
     setup: {
       components,
-      systemCalls: { whitelist_player, remove_player_from_whitelist },
+      systemCalls: { update_whitelist },
     },
     account: { account },
   } = useDojo();
@@ -58,7 +61,7 @@ export const PlayersPanel = ({
       if (userGuild) {
         isInvited =
           getComponentValue(GuildWhitelist, getEntityIdFromKeys([player.address, BigInt(userGuild?.entityId)]))
-            ?.is_whitelisted ?? false;
+            ?.whitelisted ?? false;
       }
       return {
         ...player,
@@ -76,35 +79,40 @@ export const PlayersPanel = ({
   const filteredPlayers = useMemo(() => {
     const normalizedTerm = normalizeDiacriticalMarks(searchTerm.toLowerCase());
 
-    return searchTerm === ""
-      ? playersWithStructures
-      : playersWithStructures.filter((player) => {
-          const nameMatch = normalizeDiacriticalMarks(player.name.toLowerCase()).includes(normalizedTerm);
-          if (nameMatch) return true;
+    let filteredList = playersWithStructures;
 
-          const addressMatch = toHexString(player.address).toLowerCase().includes(normalizedTerm);
-          if (addressMatch) return true;
+    // Apply search term filter
+    if (searchTerm !== "") {
+      filteredList = filteredList.filter((player) => {
+        const nameMatch = normalizeDiacriticalMarks(player.name.toLowerCase()).includes(normalizedTerm);
+        if (nameMatch) return true;
 
-          return player.structures.some(
-            (structure) => structure && normalizeDiacriticalMarks(structure.toLowerCase()).includes(normalizedTerm),
-          );
-        });
+        const addressMatch = toHexString(player.address).toLowerCase().includes(normalizedTerm);
+        if (addressMatch) return true;
+
+        return player.structures.some(
+          (structure) => structure && normalizeDiacriticalMarks(structure.toLowerCase()).includes(normalizedTerm),
+        );
+      });
+    }
+
+    return filteredList;
   }, [playersWithStructures, searchTerm]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     setIsLoading(true);
-    whitelist_player({
-      player_address_to_whitelist: address,
-      guild_entity_id: userGuild?.entityId!,
+    update_whitelist({
+      address,
+      whitelist: true,
       signer: account,
     }).finally(() => setIsLoading(false));
   };
 
   const removePlayerFromWhitelist = (address: ContractAddress) => {
     setIsLoading(true);
-    remove_player_from_whitelist({
-      player_address_to_remove: address,
-      guild_entity_id: userGuild?.entityId!,
+    update_whitelist({
+      address,
+      whitelist: false,
       signer: account,
     }).finally(() => setIsLoading(false));
   };
@@ -121,19 +129,30 @@ export const PlayersPanel = ({
 
   return (
     <div className="flex flex-col min-h-72 p-2 h-full w-full overflow-hidden">
-      <div className="flex mb-4">
-        <TextInput
-          placeholder="Search players/realms/structures..."
-          onChange={(value) => setInputValue(value)}
-          onKeyDown={handleKeyDown}
-          className="flex-1 button-wood"
-        />
-        <Button onClick={handleSearch} variant="primary">
-          Search
-        </Button>
+      <div className="flex flex-col gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <TextInput
+            placeholder="Search players/realms/structures..."
+            onChange={(value) => setInputValue(value)}
+            onKeyDown={handleKeyDown}
+            className="flex-1 button-wood"
+          />
+          <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
+            <Search size={14} />
+            <span>Search</span>
+          </Button>
+        </div>
+
+        {userGuild?.isOwner && (
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gold/80">
+              {filteredPlayers.length} player{filteredPlayers.length !== 1 ? "s" : ""} found
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 border border-gold/20 rounded-md bg-brown/10">
         <PlayerList
           players={filteredPlayers}
           viewPlayerInfo={viewPlayerInfo}

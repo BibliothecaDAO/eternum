@@ -1,8 +1,6 @@
 import { Entity, getComponentValue, getComponentValueStrict, HasValue, runQuery } from "@dojoengine/recs";
-import { StructureType } from "../constants";
-import { ClientComponents } from "../dojo";
 import { configManager } from "../managers";
-import { EntityType, ID } from "../types";
+import { StructureType, ClientComponents, EntityType, ID } from "@bibliothecadao/types";
 import { calculateDistance, getEntityIdFromKeys } from "./utils";
 
 export type ClosestBank = {

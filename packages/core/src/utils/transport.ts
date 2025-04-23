@@ -1,6 +1,5 @@
 import { configManager } from "..";
-import { CapacityConfig } from "../constants";
-import { Resource } from "../types";
+import { CapacityConfig, Resource } from "@bibliothecadao/types";
 
 export const calculateDonkeysNeeded = (orderWeightKg: number): number => {
   const donkeyCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Donkey);

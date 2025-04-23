@@ -1,7 +1,7 @@
 import { displayAddress } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { Loading } from "@/shared/ui/loading";
-import { SetupResult } from "@bibliothecadao/eternum";
+import { SetupResult } from "@bibliothecadao/dojo";
 import { DojoContext } from "@bibliothecadao/react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount } from "@starknet-react/core";

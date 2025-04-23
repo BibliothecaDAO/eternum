@@ -7,10 +7,13 @@ import {
   divideByPrecision,
   getBalance,
   getTotalResourceWeightKg,
+} from "@bibliothecadao/eternum";
+import {
+
   ResourcesIds,
   type ID,
   type Resource,
-} from "@bibliothecadao/eternum";
+} from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -77,9 +80,8 @@ export const TravelInfo = ({
           <tr className="hover:bg-gold/5 transition-colors">
             <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Donkeys Burnt for Transfer</td>
             <td
-              className={`px-4 py-1 whitespace-nowrap text-left ${
-                neededDonkeys > donkeyBalance ? "text-red" : "text-green"
-              }`}
+              className={`px-4 py-1 whitespace-nowrap text-left ${neededDonkeys > donkeyBalance ? "text-red" : "text-green"
+                }`}
             >
               {neededDonkeys.toLocaleString()} 🔥🫏 [{donkeyBalance.toLocaleString()}]
             </td>

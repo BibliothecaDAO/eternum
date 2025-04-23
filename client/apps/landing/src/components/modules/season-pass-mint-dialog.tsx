@@ -76,7 +76,7 @@ export default function SeasonPassMintDialog({
               <div className="text-center">
                 <div className="w-full grid grid-cols-4 gap-0.5 p-4 max-h-[40vH] overflow-y-auto">
                   {realm_ids.map((realm, index) => (
-                    <div className="text-sm p-2 border rounded-md" key={realm}>
+                    <div className=" p-2 border rounded-md" key={realm}>
                       #{Number(realm)}
                     </div>
                   ))}
@@ -88,8 +88,8 @@ export default function SeasonPassMintDialog({
                       Connect wallet to mint
                     </div>
                   ) : (
-                    <div className="text-sm mb-2 flex items-center justify-center gap-2 mt-8">
-                      Passes will be minted to:
+                    <div className="text-xl mb-2 flex items-center justify-center gap-2 mt-8">
+                      Passes will be sent to:
                       <Badge variant="secondary" className="flex items-center gap-2 py-1">
                         {connector?.icon && typeof connector.icon === "string" ? (
                           <img className="h-4 w-4" src={connector.icon} alt="Wallet Icon" />

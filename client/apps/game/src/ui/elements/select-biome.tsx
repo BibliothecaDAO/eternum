@@ -1,6 +1,7 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
-import { BiomeType, CombatSimulator, resources, ResourcesIds, TroopType } from "@bibliothecadao/eternum";
+import { CombatSimulator, configManager } from "@bibliothecadao/eternum";
+import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
@@ -60,7 +61,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
               <div className="flex gap-8">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = combatSimulator.getBiomeBonus(type, selectedBiome as BiomeType);
+                  const bonus = configManager.getBiomeCombatBonus(type, selectedBiome as BiomeType);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />
@@ -90,7 +91,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
               <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>
               <div className="flex gap-8 ml-10">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
-                  const bonus = combatSimulator.getBiomeBonus(type, biome);
+                  const bonus = configManager.getBiomeCombatBonus(type, biome);
                   return (
                     <div key={type} className="flex items-center gap-2 w-16 justify-end">
                       <ResourceIcon resource={resources.find((r) => r.id === resourceId)?.trait || ""} size="sm" />

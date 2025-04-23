@@ -1,8 +1,11 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RightView } from "@/types";
+import { Bridge } from "@/ui/components/bridge/bridge";
 import { ProductionModal } from "@/ui/components/production/production-modal";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/elements/circle-button";
+import { PlayerStructure } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { Suspense, lazy, useMemo } from "react";
 import { BaseContainer } from "../../containers/base-container";
@@ -11,11 +14,13 @@ const EntityResourceTable = lazy(() =>
   import("@/ui/components/resources/entity-resource-table").then((module) => ({ default: module.EntityResourceTable })),
 );
 
-export const RightNavigationModule = () => {
+export const RightNavigationModule = ({ structures }: { structures: PlayerStructure[] }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
+
+  const { account: ConnectedAccount } = useAccountStore();
 
   const navigation = useMemo(
     () => [
@@ -49,6 +54,20 @@ export const RightNavigationModule = () => {
           />
         ),
       },
+      {
+        name: MenuEnum.bridge,
+        button: (
+          <CircleButton
+            className="bridge-selector"
+            image={BuildingThumbs.bridge}
+            size="xl"
+            tooltipLocation="top"
+            label="Bridge"
+            active={view === RightView.Bridge}
+            onClick={() => setView(view === RightView.Bridge ? RightView.None : RightView.Bridge)}
+          />
+        ),
+      },
     ],
     [view, structureEntityId],
   );
@@ -57,37 +76,45 @@ export const RightNavigationModule = () => {
 
   return (
     <div
-      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${
-        isOffscreen ? "translate-x-[83%]" : ""
-      }`}
+      className={`max-h-full transition-all z-0 duration-200 space-x-1 flex w-[400px] right-4 pointer-events-none pt-16 ${isOffscreen ? "translate-x-[83%]" : ""
+        }`}
     >
-      <motion.div
-        variants={{
-          hidden: { x: "100%" },
-          visible: { x: "0%", transition: { duration: 0.5 } },
-        }}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col justify-start pointer-events-auto h-[60vh]"
-      >
-        <div className="flex flex-col mb-auto">
-          {navigation.map((item, index) => (
-            <div key={index}>{item.button}</div>
-          ))}
-        </div>
-      </motion.div>
-
-      <BaseContainer
-        className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
-      >
-        <Suspense fallback={<div className="p-8">Loading...</div>}>
-          {view === RightView.ResourceTable && !!structureEntityId && (
-            <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
-              <EntityResourceTable entityId={structureEntityId} />
+      {ConnectedAccount && (
+        <>
+          <motion.div
+            variants={{
+              hidden: { x: "100%" },
+              visible: { x: "0%", transition: { duration: 0.5 } },
+            }}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-col justify-start pointer-events-auto h-[60vh]"
+          >
+            <div className="flex flex-col mb-auto">
+              {navigation.map((item, index) => (
+                <div key={index}>{item.button}</div>
+              ))}
             </div>
-          )}
-        </Suspense>
-      </BaseContainer>
+          </motion.div>
+
+          <BaseContainer
+            className={`w-full panel-wood pointer-events-auto overflow-y-auto h-[60vh] rounded-l-2xl border-l-2 border-y-2 panel-wood-corners border-gold/20 overflow-x-hidden`}
+          >
+            <Suspense fallback={<div className="p-8">Loading...</div>}>
+              {view === RightView.ResourceTable && !!structureEntityId && (
+                <div className="entity-resource-table-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <EntityResourceTable entityId={structureEntityId} />
+                </div>
+              )}
+              {view === RightView.Bridge && (
+                <div className="bridge-selector p-2 flex flex-col space-y-1 overflow-y-auto">
+                  <Bridge structures={structures} />
+                </div>
+              )}
+            </Suspense>
+          </BaseContainer>
+        </>
+      )}
     </div>
   );
 };

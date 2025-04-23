@@ -1,5 +1,5 @@
 import { Position } from "@/types/position";
-import { BiomeType, getNeighborOffsets, HexEntityInfo, HexPosition } from "@bibliothecadao/eternum";
+import { BiomeType, getNeighborOffsets, HexEntityInfo, HexPosition } from "@bibliothecadao/types";
 
 interface Node {
   col: number;
@@ -38,7 +38,7 @@ export function findShortestPath(
 
   while (openSet.length > 0) {
     // Find node with lowest f score
-    let current = openSet.reduce((min, node) => (node.f < min.f ? node : min), openSet[0]);
+    const current = openSet.reduce((min, node) => (node.f < min.f ? node : min), openSet[0]);
 
     // Reached end
     if (current.col === newPos.x && current.row === newPos.y) {

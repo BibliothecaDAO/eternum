@@ -11,7 +11,8 @@ import { HEX_SIZE, biomeModelPaths } from "@/three/scenes/constants";
 import { SystemManager } from "@/three/systems/system-manager";
 import { LeftView, RightView } from "@/types";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { BiomeType, type HexPosition, type SetupResult } from "@bibliothecadao/eternum";
+import { BiomeType, type HexPosition } from "@bibliothecadao/types";
+import { type SetupResult } from "@bibliothecadao/dojo";
 import gsap from "gsap";
 import throttle from "lodash/throttle";
 import * as THREE from "three";
@@ -444,7 +445,7 @@ export abstract class HexagonScene {
     mesh.position.set(x, -0.05, z);
     mesh.receiveShadow = true;
     // disable raycast
-    mesh.raycast = () => {};
+    mesh.raycast = () => { };
 
     this.scene.add(mesh);
     this.groundMesh = mesh;
