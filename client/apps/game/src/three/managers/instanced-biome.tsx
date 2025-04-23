@@ -26,6 +26,9 @@ export default class InstancedModel {
     let renderOrder = 0;
     gltf.scene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
+        if (name.toLowerCase().includes("deepocean") && child.material) {
+          child.material.transparent = false;
+        }
         // hack for models materials, need to be removed after the models are updated
         if (child?.material?.name?.includes("opacity")) {
           child.material.roughness = 1;
