@@ -72,6 +72,35 @@ enum BuildingFilenames {
   WonderAnimated = "wonder2.glb",
 }
 
+// enum BuildingFilenames {
+//   Bank = "test_village.glb",
+//   ArcheryRange = "test_village.glb",
+//   Barracks = "test_village.glb",
+//   Castle = "test_village.glb",
+//   Farm = "test_village.glb",
+//   FishingVillage = "test_village.glb",
+//   FragmentMine = "test_village.glb",
+//   Market = "test_village.glb",
+//   Resource = "test_village.glb",
+//   Stable = "test_village.glb",
+//   Storehouse = "test_village.glb",
+//   WorkersHut = "test_village.glb",
+//   Forge = "test_village.glb",
+//   Mine = "test_village.glb",
+//   LumberMill = "test_village.glb",
+//   Dragonhide = "test_village.glb",
+//   Wonder = "test_village.glb",
+//   HyperstructureInit = "test_village.glb",
+//   HyperstructureHalf = "test_village.glb",
+//   Hyperstructure = "test_village.glb",
+//   Realm0 = "test_village.glb",
+//   Realm1 = "test_village.glb",
+//   Realm2 = "test_village.glb",
+//   Realm3 = "test_village.glb",
+//   Village = "test_village.glb",
+//   WonderAnimated = "test_village.glb",
+// }
+
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
