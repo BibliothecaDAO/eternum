@@ -74,28 +74,31 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         shards_resource_production.increase_output_amout_left(shards_reward_amount);
         shards_resource.production = shards_resource_production;
         shards_resource.store(ref world);
-        // grant wheat to structure
-        let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
-        let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
-        );
-        wheat_resource
-            .add(
-                map_config.mine_wheat_grant_amount.into() * RESOURCE_PRECISION,
-                ref structure_weight,
-                wheat_weight_grams,
-            );
-        wheat_resource.store(ref world);
-        // grant fish to structure
-        let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
-        let mut fish_resource = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
-        );
-        fish_resource
-            .add(
-                map_config.mine_fish_grant_amount.into() * RESOURCE_PRECISION, ref structure_weight, fish_weight_grams,
-            );
-        fish_resource.store(ref world);
+
+        // // grant wheat to structure
+        // let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        // let mut wheat_resource = SingleResourceStoreImpl::retrieve(
+        //     ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
+        // );
+        // wheat_resource
+        //     .add(
+        //         map_config.mine_wheat_grant_amount.into() * RESOURCE_PRECISION,
+        //         ref structure_weight,
+        //         wheat_weight_grams,
+        //     );
+        // wheat_resource.store(ref world);
+        // // grant fish to structure
+        // let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
+        // let mut fish_resource = SingleResourceStoreImpl::retrieve(
+        //     ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
+        // );
+        // fish_resource
+        //     .add(
+        //         map_config.mine_fish_grant_amount.into() * RESOURCE_PRECISION, ref structure_weight,
+        //         fish_weight_grams,
+        //     );
+        // fish_resource.store(ref world);
+
         // update structure weight
         structure_weight.store(ref world, structure_id);
         // create shards production building

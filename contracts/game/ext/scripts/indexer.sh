@@ -71,7 +71,7 @@ DEFAULT_NETWORK="local" # just a name when saving log and pid files
 NETWORK=${NETWORK:-$DEFAULT_NETWORK}
 LOG_FILE="$LOG_DIR/indexer.$NETWORK.log"
 PID_FILE="$PID_DIR/indexer.$NETWORK.pid"
-DB_DIR="torii.$NETWORK.db"
+DB_DIR="torii-$NETWORK"
 TORII_CONFIG="torii-$NETWORK.toml"
 
 # Torii settings

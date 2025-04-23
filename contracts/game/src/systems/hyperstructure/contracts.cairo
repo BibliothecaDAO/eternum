@@ -164,11 +164,13 @@ pub mod hyperstructure_systems {
 
     use dojo::world::WorldStorage;
     use s1_eternum::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
+    use s1_eternum::models::map::Tile;
     use s1_eternum::models::owner::OwnerAddressImpl;
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::weight::{Weight, WeightImpl};
+    use s1_eternum::systems::utils::map::IMapImpl;
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use s1_eternum::utils::random::VRFImpl;
     use s1_eternum::utils::tasks::index::{Task, TaskTrait};
@@ -248,6 +250,11 @@ pub mod hyperstructure_systems {
             // set hyperstructure as initialized
             hyperstructure.initialized = true;
             world.write_model(@hyperstructure);
+
+            // update structure tile
+            let mut hyperstructure_tile: Tile = world.read_model((structure.coord_x, structure.coord_y));
+            let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(1);
+            IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
 
             // [Achievement] Hyperstructure Creation
             let player_id: felt252 = structure_owner.into();
@@ -364,6 +371,11 @@ pub mod hyperstructure_systems {
                                 .span(),
                         },
                     );
+
+                // update structure tile
+                let mut hyperstructure_tile: Tile = world.read_model((structure_base.coord_x, structure_base.coord_y));
+                let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
+                IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
 
             // [Achievement] Hyperstructure Contribution
@@ -407,6 +419,8 @@ pub mod hyperstructure_systems {
                 "total allocated percentage must be {}",
                 PercentageValueImpl::_100(),
             );
+
+            // todo check no adverse effect of duplicated shareholder address
 
             // claim points for current shareholders
             self.claim_share_points(array![hyperstructure_id].span());

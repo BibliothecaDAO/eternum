@@ -15,7 +15,7 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { cairoShortStringToFelt } from "@dojoengine/torii-client";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { Account, AccountInterface, RpcProvider } from "starknet";
+import { Account, AccountInterface, RpcProvider, shortString } from "starknet";
 import { Env, env } from "../../../env";
 import { useSpectatorModeClick } from "../helpers/use-navigate";
 
@@ -170,7 +170,7 @@ const DojoContextProvider = ({
         if (!addressName) {
           await setUserName();
         } else {
-          setAddressName(addressName);
+          setAddressName(shortString.decodeShortString(addressName));
         }
 
         setAccountsInitialized(true);

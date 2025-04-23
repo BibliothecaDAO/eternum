@@ -13,14 +13,44 @@ import {
 import { ClientComponents } from "../dojo/create-client-components";
 
 export enum TileOccupier {
-  None,
-  RealmRegular,
-  RealmWonder,
-  Hyperstructure,
-  FragmentMine,
-  Village,
-  Bank,
-  Explorer,
+  None = 0,
+  RealmRegularLevel1 = 1,
+  RealmWonderLevel1 = 2,
+  HyperstructureLevel1 = 3,
+  FragmentMine = 4,
+  Village = 5,
+  Bank = 6,
+  ExplorerKnightT1Regular = 7,
+  ExplorerKnightT2Regular = 8,
+  ExplorerKnightT3Regular = 9,
+  ExplorerPaladinT1Regular = 10,
+  ExplorerPaladinT2Regular = 11,
+  ExplorerPaladinT3Regular = 12,
+  ExplorerCrossbowmanT1Regular = 13,
+  ExplorerCrossbowmanT2Regular = 14,
+  ExplorerCrossbowmanT3Regular = 15,
+  ExplorerKnightT1Daydreams = 16,
+  ExplorerKnightT2Daydreams = 17,
+  ExplorerKnightT3Daydreams = 18,
+  ExplorerPaladinT1Daydreams = 19,
+  ExplorerPaladinT2Daydreams = 20,
+  ExplorerPaladinT3Daydreams = 21,
+  ExplorerCrossbowmanT1Daydreams = 22,
+  ExplorerCrossbowmanT2Daydreams = 23,
+  ExplorerCrossbowmanT3Daydreams = 24,
+  RealmRegularLevel2 = 25,
+  RealmRegularLevel3 = 26,
+  RealmRegularLevel4 = 27,
+  RealmWonderLevel2 = 28,
+  RealmWonderLevel3 = 29,
+  RealmWonderLevel4 = 30,
+  HyperstructureLevel2 = 31,
+  HyperstructureLevel3 = 32,
+  RealmRegularLevel1WonderBonus = 33,
+  RealmRegularLevel2WonderBonus = 34,
+  RealmRegularLevel3WonderBonus = 35,
+  RealmRegularLevel4WonderBonus = 36,
+  VillageWonderBonus = 37,
 }
 
 /**
@@ -78,6 +108,7 @@ export type ArmyInfo = {
   totalCapacity: number;
   // without precision and in kg
   weight: number;
+  explorer: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined;
 };
 
@@ -305,7 +336,8 @@ export interface Config {
     controller_address: string;
   };
   village: {
-    controller_addresses: string[];
+    village_pass_nft_address: string,
+    village_mint_initial_recipient: string,
   };
   resources: {
     resourcePrecision: number;
@@ -441,6 +473,10 @@ export interface Config {
     hyperstructureConstructionCost: HyperstructureResourceCostMinMax[];
     hyperstructurePointsPerCycle: number;
     hyperstructurePointsForWin: bigint;
+  };
+  wonderProductionBonus: {
+    within_tile_distance: number;
+    bonus_percent_num: number;
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];

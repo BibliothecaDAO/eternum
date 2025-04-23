@@ -8,8 +8,8 @@ import { BaseContainer } from "@/ui/containers/base-container";
 import CircleButton from "@/ui/elements/circle-button";
 import { KeyBoardKey } from "@/ui/elements/keyboard-key";
 import { getEntityInfo } from "@bibliothecadao/eternum";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useDojo, useQuery } from "@bibliothecadao/react";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { motion } from "framer-motion";
 import { lazy, memo, Suspense, useEffect, useMemo } from "react";
 import { construction, military, trade, worldStructures } from "../../components/navigation/config";
@@ -208,14 +208,15 @@ export const LeftNavigationModule = memo(() => {
     visible: { x: "0%", transition: { duration: 0.5 } },
   };
 
-  const { account: ConnectedAccount } = useAccountStore();
+  const ConnectedAccount = useAccountStore((state) => state.account);
 
   return (
     <div className="flex flex-col">
       <div className="flex-grow overflow-hidden">
         <div
-          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${isOffscreen(view) ? "-translate-x-[89%]" : ""
-            }`}
+          className={`max-h-full transition-all duration-200 space-x-1 flex z-0 w-screen pr-2 md:pr-0 md:w-[600px] text-gold md:pt-16 pointer-events-none ${
+            isOffscreen(view) ? "-translate-x-[89%]" : ""
+          }`}
         >
           <BaseContainer
             className={`w-full panel-wood pointer-events-auto overflow-y-auto max-h-[60vh] md:max-h-[60vh] sm:max-h-[80vh] xs:max-h-[90vh] panel-wood-corners overflow-x-hidden`}
