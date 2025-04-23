@@ -88,6 +88,15 @@ export const getStructureInfoFromTileOccupier = (
     case TileOccupier.RealmRegularLevel4:
       return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 4, hasWonder: false };
 
+    case TileOccupier.RealmRegularLevel1WonderBonus:
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
+    case TileOccupier.RealmRegularLevel2WonderBonus:
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 2, hasWonder: true };
+    case TileOccupier.RealmRegularLevel3WonderBonus:
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 3, hasWonder: true };
+    case TileOccupier.RealmRegularLevel4WonderBonus:
+      return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 4, hasWonder: true };
+
     case TileOccupier.RealmWonderLevel1:
       return { type: StructureType.Realm, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
     case TileOccupier.RealmWonderLevel2:
@@ -109,6 +118,9 @@ export const getStructureInfoFromTileOccupier = (
 
     case TileOccupier.Village:
       return { type: StructureType.Village, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+
+    case TileOccupier.VillageWonderBonus:
+      return { type: StructureType.Village, stage: StructureProgress.STAGE_1, level: 1, hasWonder: true };
 
     case TileOccupier.Bank:
       return { type: StructureType.Bank, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };

@@ -46,6 +46,11 @@ export enum TileOccupier {
   RealmWonderLevel4 = 30,
   HyperstructureLevel2 = 31,
   HyperstructureLevel3 = 32,
+  RealmRegularLevel1WonderBonus = 33,
+  RealmRegularLevel2WonderBonus = 34,
+  RealmRegularLevel3WonderBonus = 35,
+  RealmRegularLevel4WonderBonus = 36,
+  VillageWonderBonus = 37,
 }
 
 /**
