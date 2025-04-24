@@ -6,9 +6,9 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
 import { useBridgeAsset, useDojo } from "@bibliothecadao/react";
-import { ID, PlayerStructure, resources } from "@bibliothecadao/types";
+import { ID, PlayerStructure, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import { useSendTransaction } from "@starknet-react/core";
-import { Star, X } from "lucide-react";
+import { ArrowLeftRight, Star, X } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
 
@@ -23,6 +23,8 @@ interface ResourceToBridge {
   tokenAddress: string | null;
 }
 
+type BridgeDirection = "in" | "out";
+
 export const Bridge = ({ structures }: BridgeProps) => {
   const {
     account: { account },
@@ -30,6 +32,8 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
   const { lordsBalance } = useLords();
   const resourceAddresses = getResourceAddresses();
+
+  const [bridgeDirection, setBridgeDirection] = useState<BridgeDirection>("in");
 
   const bridgeableResources = Object.entries(resourceAddresses)
     .map(([key, value]) => ({
@@ -58,7 +62,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
     sendMintTx();
   };
 
-  const { bridgeDepositIntoRealm } = useBridgeAsset();
+  const { bridgeDepositIntoRealm, bridgeWithdrawFromRealm } = useBridgeAsset();
   const [isBridgePending, setIsBridgePending] = useState(false);
   const [bridgeError, setBridgeError] = useState<Error | null>(null);
 
@@ -119,16 +123,29 @@ export const Bridge = ({ structures }: BridgeProps) => {
     setResourcesToBridge((prev) => prev.filter((r) => r.key !== key));
   };
 
+  const toggleBridgeDirection = () => {
+    setBridgeDirection((prev) => (prev === "in" ? "out" : "in"));
+    setSelectedStructureId(null);
+    setResourcesToBridge([{ key: Date.now(), resourceId: null, amount: "", tokenAddress: null }]);
+    setBridgeError(null);
+  };
+
   const handleBridge = async () => {
     setBridgeError(null);
     setIsBridgePending(true);
-    if (!account || !selectedStructureId || resourcesToBridge.length === 0 || isBridgePending) return;
+    if (!account?.address || !selectedStructureId || resourcesToBridge.length === 0 || isBridgePending) {
+      setIsBridgePending(false);
+      return;
+    }
 
     const transfers = resourcesToBridge
       .filter((r) => r.tokenAddress && r.amount && parseFloat(r.amount) > 0)
       .map((r) => ({
         tokenAddress: r.tokenAddress!,
-        amount: BigInt(parseEther(r.amount)),
+        amount:
+          bridgeDirection === "in"
+            ? BigInt(parseEther(r.amount))
+            : BigInt(parseEther(r.amount)) / BigInt(RESOURCE_PRECISION),
       }));
 
     if (transfers.length === 0) {
@@ -138,12 +155,35 @@ export const Bridge = ({ structures }: BridgeProps) => {
     }
 
     try {
-      console.log("Attempting to bridge:", transfers, "to structure ID:", selectedStructureId);
-      await bridgeDepositIntoRealm(transfers, BigInt(selectedStructureId), BigInt(getClientFeeRecipient()));
+      console.log(
+        `Attempting to bridge ${bridgeDirection}:`,
+        transfers,
+        `${bridgeDirection === "in" ? "to" : "from"} structure ID:`,
+        selectedStructureId,
+      );
+      if (bridgeDirection === "in") {
+        if (!bridgeDepositIntoRealm) {
+          throw new Error("Deposit function is not available.");
+        }
+        await bridgeDepositIntoRealm(transfers, BigInt(selectedStructureId), BigInt(getClientFeeRecipient()));
+      } else {
+        if (!bridgeWithdrawFromRealm) {
+          throw new Error("Withdrawal function is not available.");
+        }
+        const recipientAddress = BigInt(account.address);
+        await bridgeWithdrawFromRealm(
+          transfers,
+          BigInt(selectedStructureId),
+          recipientAddress,
+          BigInt(getClientFeeRecipient()),
+        );
+      }
       setResourcesToBridge([{ key: Date.now(), resourceId: null, amount: "", tokenAddress: null }]);
     } catch (error) {
-      console.error("Bridging failed:", error);
-      setBridgeError(error instanceof Error ? error : new Error("An unknown bridging error occurred"));
+      console.error(`Bridging ${bridgeDirection} failed:`, error);
+      setBridgeError(
+        error instanceof Error ? error : new Error(`An unknown bridging ${bridgeDirection} error occurred`),
+      );
     } finally {
       setIsBridgePending(false);
     }
@@ -152,29 +192,45 @@ export const Bridge = ({ structures }: BridgeProps) => {
   const isBridgeButtonDisabled = useMemo(() => {
     if (!selectedStructureId || isBridgePending) return true;
     return !resourcesToBridge.some((r) => r.resourceId && r.tokenAddress && r.amount && parseFloat(r.amount) > 0);
-  }, [selectedStructureId, resourcesToBridge, isBridgePending]);
+  }, [selectedStructureId, resourcesToBridge, isBridgePending, bridgeDirection]);
+
+  const bridgeTitle = bridgeDirection === "in" ? "Bridge In" : "Bridge Out";
+  const bridgeDescription =
+    bridgeDirection === "in"
+      ? "Select resources and amounts to bridge from Mainnet into the chosen Realm/Village Structure."
+      : "Select resources and amounts to bridge out from the chosen Realm/Village Structure to Mainnet.";
+  const structureSelectLabel = bridgeDirection === "in" ? "Bridge To" : "Bridge From";
+  const bridgeButtonText = bridgeDirection === "in" ? "Bridge In" : "Bridge Out";
+  const pendingButtonText = bridgeDirection === "in" ? "Bridging In..." : "Bridging Out...";
 
   return (
     <div className="p-2 bg-gray-800 rounded shadow-lg flex flex-col gap-4 w-full max-w-md mx-auto">
-      <h2 className="text-xl font-bold">Bridge Resources</h2>
-      <p className="text-gray-400">
-        Select resources and amounts to bridge from Mainnet into the chosen Realm/Village Structure.
-      </p>
-
-      <h5 className="flex flex-row items-center gap-2">
-        <ResourceIcon resource="Lords" size="sm" /> {formatEther(lordsBalance)}
-      </h5>
-
-      {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" && (
-        <Button onClick={handleMintTestLords} disabled={isMintPending}>
-          {isMintPending ? "Minting..." : "Mint Test Lords"}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">{bridgeTitle}</h2>
+        <br />
+        <Button onClick={toggleBridgeDirection} variant="outline" className="flex items-center gap-1">
+          <ArrowLeftRight className="h-4 w-4" />
+          {bridgeDirection === "in" ? "Out" : "In"}
         </Button>
+      </div>
+
+      <p className="text-gray-400">{bridgeDescription}</p>
+
+      {bridgeDirection === "in" && (
+        <>
+          <h5 className="flex flex-row items-center gap-2">
+            <ResourceIcon resource="Lords" size="md" /> {formatEther(lordsBalance)}
+          </h5>
+          {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" && (
+            <Button onClick={handleMintTestLords} disabled={isMintPending}>
+              {isMintPending ? "Minting..." : "Mint Test Lords"}
+            </Button>
+          )}
+          <hr className="border-gold/50" />
+        </>
       )}
 
-      <hr className="border-gold/50" />
-
-      <h6>Bridge To</h6>
-
+      <h6>{structureSelectLabel}</h6>
       <div>
         <Select
           value={selectedStructureId?.toString() ?? ""}
@@ -263,7 +319,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         variant="gold"
         isLoading={isBridgePending}
       >
-        {isBridgePending ? "Bridging..." : "Bridge Selected Resources"}
+        {isBridgePending ? pendingButtonText : bridgeButtonText}
       </Button>
 
       {bridgeError && <p className="text-red-500 text-sm mt-2">Bridge Error: {bridgeError.message}</p>}
