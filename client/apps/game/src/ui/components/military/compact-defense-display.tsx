@@ -1,6 +1,6 @@
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getTroopResourceId, } from "@bibliothecadao/eternum";
+import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, TroopTier, TroopType } from "@bibliothecadao/types";
 import { DefenseTroop } from "./structure-defence";
 

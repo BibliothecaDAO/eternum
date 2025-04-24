@@ -11,13 +11,7 @@ import {
   getRealmInfo,
   getStructure,
 } from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  LEVEL_DESCRIPTIONS,
-  RealmLevels,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo, useState } from "react";
 // todo: fix this

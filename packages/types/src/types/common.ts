@@ -336,8 +336,8 @@ export interface Config {
     controller_address: string;
   };
   village: {
-    village_pass_nft_address: string,
-    village_mint_initial_recipient: string,
+    village_pass_nft_address: string;
+    village_mint_initial_recipient: string;
   };
   resources: {
     resourcePrecision: number;

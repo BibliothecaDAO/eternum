@@ -220,8 +220,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     resourceName={
                       configManager.getResourceBuildingProduced(building)
                         ? (ResourcesIds[
-                          configManager.getResourceBuildingProduced(building)
-                        ] as keyof typeof ResourcesIds)
+                            configManager.getResourceBuildingProduced(building)
+                          ] as keyof typeof ResourcesIds)
                         : undefined
                     }
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
@@ -331,7 +331,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               buildingName={`${BuildingTypeToString[building]} (T${info?.tier})`}
                               resourceName={
                                 ResourcesIds[
-                                configManager.getResourceBuildingProduced(building)
+                                  configManager.getResourceBuildingProduced(building)
                                 ] as keyof typeof ResourcesIds
                               }
                               toolTip={

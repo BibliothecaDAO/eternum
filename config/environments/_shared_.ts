@@ -164,9 +164,10 @@ export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469f
 export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
 
-// catridge address should go here 
+// catridge address should go here
 export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39";
-export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!.villagePass!
+export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
+  .villagePass!;
 
 export const EternumGlobalConfig: Config = {
   agent: {

@@ -5,14 +5,8 @@ import Button from "@/ui/elements/button";
 import { SortInterface } from "@/ui/elements/sort-button";
 import TextInput from "@/ui/elements/text-input";
 import { sortItems } from "@/ui/utils/utils";
-import {
-  calculateGuildLordsPrize,
-  getGuildFromPlayerAddress,
-} from "@bibliothecadao/eternum";
-import {
-  ContractAddress,
-  PlayerInfo,
-} from "@bibliothecadao/types";
+import { calculateGuildLordsPrize, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";

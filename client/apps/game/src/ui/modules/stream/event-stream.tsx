@@ -103,8 +103,9 @@ export const EventStream = ({ hideChat }: { hideChat: boolean }) => {
             All
           </div>
           <div
-            className={`px-3 py-1 cursor-pointer relative ${activeTab === "personal" ? "bg-brown/40 text-gold" : "bg-brown/20"
-              }`}
+            className={`px-3 py-1 cursor-pointer relative ${
+              activeTab === "personal" ? "bg-brown/40 text-gold" : "bg-brown/20"
+            }`}
             onClick={() => setActiveTab("personal")}
           >
             Personal

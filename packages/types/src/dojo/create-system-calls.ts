@@ -8,13 +8,7 @@ export type SystemCallAuthHandler = {
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
-export function createSystemCalls({
-  provider,
-  authHandler,
-}: {
-  provider: any;
-  authHandler?: SystemCallAuthHandler;
-}) {
+export function createSystemCalls({ provider, authHandler }: { provider: any; authHandler?: SystemCallAuthHandler }) {
   const withAuth = <T extends (...args: any[]) => Promise<any>>(fn: T): T => {
     return (async (...args: Parameters<T>) => {
       try {

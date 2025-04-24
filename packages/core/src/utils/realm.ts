@@ -1,7 +1,16 @@
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { configManager, getAddressNameFromEntity, getEntityName, ResourceManager } from "..";
 import realmsJson from "../data/realms.json";
-import { findResourceIdByTrait, orders, StructureType, ClientComponents, ID, RealmInfo, RealmInterface, RealmWithPosition } from "@bibliothecadao/types";
+import {
+  findResourceIdByTrait,
+  orders,
+  StructureType,
+  ClientComponents,
+  ID,
+  RealmInfo,
+  RealmInterface,
+  RealmWithPosition,
+} from "@bibliothecadao/types";
 import { packValues, unpackValue } from "./packed-data";
 
 export const getRealmWithPosition = (entity: Entity, components: ClientComponents) => {
@@ -73,7 +82,7 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       hasCapacity:
         !structureBuildings?.population ||
         structureBuildings.population.max + configManager.getBasePopulationCapacity() >
-        structureBuildings.population.current,
+          structureBuildings.population.current,
       owner: structure?.owner,
       ownerName: getAddressNameFromEntity(entity_id, components) || "",
       hasWonder: structure.metadata.has_wonder,

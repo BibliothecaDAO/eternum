@@ -366,15 +366,14 @@ export interface SetAgentControllerProps extends SystemSigner {
 }
 
 export interface SetVillageTokenProps extends SystemSigner {
-    village_pass_nft_address: num.BigNumberish;
-    village_mint_initial_recipient: num.BigNumberish;
+  village_pass_nft_address: num.BigNumberish;
+  village_mint_initial_recipient: num.BigNumberish;
 }
 
 export interface SetWonderBonusConfigProps extends SystemSigner {
   within_tile_distance: num.BigNumberish;
   bonus_percent_num: num.BigNumberish;
 }
-
 
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: num.BigNumberish;
