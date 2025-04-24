@@ -1,7 +1,7 @@
 import { useStore } from "@/shared/store";
 import { ProductionWidgetsSection } from "../components/production-widgets-section";
 
-export function ManageTab() {
+export function ProductionTab() {
   const selectedRealm = useStore((state) => state.selectedRealm);
 
   return (
