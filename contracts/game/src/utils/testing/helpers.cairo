@@ -2,12 +2,13 @@ use cubit::f128::types::fixed::{FixedTrait};
 use dojo::model::{ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
+use dojo_cairo_test::deploy_contract;
 use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_test_world};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     CapacityConfig, MapConfig, QuestConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    WeightConfig, WorldConfigUtilImpl, VillageTokenConfig
+    VillageTokenConfig, WeightConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
 use s1_eternum::models::config::{ResourceFactoryConfig};
@@ -23,19 +24,18 @@ use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER};
 use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
 use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};
-use starknet::ContractAddress;
-use dojo_cairo_test::deploy_contract;
 use s1_eternum::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
+use starknet::ContractAddress;
 
 
 fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
     let mock_calldata: Array<felt252> = array![
-        admin.into(), 
-        admin.into(), 
-        starknet::get_contract_address().into(), 
+        admin.into(),
+        admin.into(),
+        starknet::get_contract_address().into(),
         2,
-        starknet::get_contract_address().into(), 
-        admin.into(), 
+        starknet::get_contract_address().into(),
+        admin.into(),
     ];
     let mock_village_pass_address = deploy_contract(EternumVillagePassMock::TEST_CLASS_HASH, mock_calldata.span());
     mock_village_pass_address
@@ -43,10 +43,7 @@ fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAd
 
 
 pub fn MOCK_VILLAGE_TOKEN_CONFIG(ref world: WorldStorage, admin: starknet::ContractAddress) -> VillageTokenConfig {
-    VillageTokenConfig {
-        mint_recipient_address: admin,
-        token_address: deploy_mock_village_pass(ref world, admin),
-    }
+    VillageTokenConfig { mint_recipient_address: admin, token_address: deploy_mock_village_pass(ref world, admin) }
 }
 
 pub fn MOCK_MAP_CONFIG() -> MapConfig {
@@ -318,8 +315,9 @@ pub fn init_config(ref world: WorldStorage) {
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
     tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
-    tstore_village_token_config(ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()));
-
+    tstore_village_token_config(
+        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
+    );
 }
 
 pub fn tspawn_quest_tile(

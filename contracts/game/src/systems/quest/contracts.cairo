@@ -458,7 +458,7 @@ mod tests {
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl,
-        m_StructureVillageSlots
+        m_StructureVillageSlots,
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
     use s1_eternum::models::{
@@ -474,8 +474,8 @@ mod tests {
         ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait, troop_management_systems,
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
-        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, troop_movement_systems,
-        troop_movement_util_systems, agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems,
+        ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
+        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
     };
     use s1_eternum::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
@@ -623,8 +623,7 @@ mod tests {
 
         let mut troop_movement_directions = array![Direction::East].span();
         // Move to the edge of the explored tiles
-        troop_movement_systems
-            .explorer_move(explorer_id, troop_movement_directions, false);
+        troop_movement_systems.explorer_move(explorer_id, troop_movement_directions, false);
 
         let mut explore = true;
 
