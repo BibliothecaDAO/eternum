@@ -1,3 +1,4 @@
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useLords } from "@/hooks/use-lords";
 import Button from "@/ui/elements/button";
 import { cn } from "@/ui/elements/lib/utils";
@@ -5,7 +6,8 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { useBridgeAsset, useDojo } from "@bibliothecadao/react";
+import { divideByPrecision } from "@bibliothecadao/eternum";
+import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ID, PlayerStructure, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import { useSendTransaction } from "@starknet-react/core";
 import { ArrowLeftRight, Star, X } from "lucide-react";
@@ -189,10 +191,30 @@ export const Bridge = ({ structures }: BridgeProps) => {
     }
   };
 
+  const resourceManager = useResourceManager(selectedStructureId || 0);
+  const { currentDefaultTick: currentTick } = useBlockTimestamp();
+
   const isBridgeButtonDisabled = useMemo(() => {
     if (!selectedStructureId || isBridgePending) return true;
-    return !resourcesToBridge.some((r) => r.resourceId && r.tokenAddress && r.amount && parseFloat(r.amount) > 0);
-  }, [selectedStructureId, resourcesToBridge, isBridgePending, bridgeDirection]);
+
+    const hasValidInput = resourcesToBridge.some(
+      (r) => r.resourceId && r.tokenAddress && r.amount && parseFloat(r.amount) > 0,
+    );
+    if (!hasValidInput) return true;
+
+    if (bridgeDirection === "out") {
+      return resourcesToBridge.some((r) => {
+        if (r.resourceId && r.amount && parseFloat(r.amount) > 0) {
+          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId);
+          const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
+          return parseFloat(r.amount) > displayBalance;
+        }
+        return false;
+      });
+    }
+
+    return false;
+  }, [selectedStructureId, resourcesToBridge, isBridgePending, bridgeDirection, resourceManager, currentTick]);
 
   const bridgeTitle = bridgeDirection === "in" ? "Bridge In" : "Bridge Out";
   const bridgeDescription =
@@ -265,48 +287,62 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
       <div className="flex flex-col gap-3">
         <label className="h6">Resources</label>
-        {resourcesToBridge.map((resource) => (
-          <div key={resource.key} className="flex flex-col items-center gap-2 rounded">
-            <div className="flex flex-row items-center gap-2 w-full">
-              <Select
-                value={resource.resourceId?.toString() ?? ""}
-                onValueChange={(value) => handleResourceChange(resource.key, value)}
-              >
-                <SelectTrigger className="flex-grow-0 panel-wood">
-                  <SelectValue placeholder="Select Resource..." />
-                </SelectTrigger>
-                <SelectContent className="panel-wood bg-dark-wood">
-                  {bridgeableResources.map((br) => (
-                    <SelectItem key={br.id} value={br.id.toString()}>
-                      <div className="flex items-center gap-2">
-                        <ResourceIcon resource={resources.find((r) => r.id === br.id)?.trait || ""} size="sm" />
-                        <span>{br.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {resourcesToBridge.map((resource) => {
+          const balance =
+            bridgeDirection === "out" && resource.resourceId && selectedStructureId
+              ? resourceManager.balanceWithProduction(currentTick, resource.resourceId)
+              : null;
 
-              {resourcesToBridge.length > 1 && (
-                <Button variant="danger" onClick={() => removeResourceEntry(resource.key)} className="flex-shrink-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
+          const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
+
+          return (
+            <div key={resource.key} className="flex flex-col items-center gap-2 rounded">
+              <div className="flex flex-row items-center gap-2 w-full">
+                <Select
+                  value={resource.resourceId?.toString() ?? ""}
+                  onValueChange={(value) => handleResourceChange(resource.key, value)}
+                >
+                  <SelectTrigger className="flex-grow-0 panel-wood">
+                    <SelectValue placeholder="Select Resource..." />
+                  </SelectTrigger>
+                  <SelectContent className="panel-wood bg-dark-wood">
+                    {bridgeableResources.map((br) => (
+                      <SelectItem key={br.id} value={br.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <ResourceIcon resource={resources.find((r) => r.id === br.id)?.trait || ""} size="sm" />
+                          <span>{br.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {resourcesToBridge.length > 1 && (
+                  <Button variant="danger" onClick={() => removeResourceEntry(resource.key)} className="flex-shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex flex-row items-center gap-2 w-full">
+                <NumberInput
+                  min={0}
+                  max={bridgeDirection === "out" && balance !== null ? displayBalance : undefined}
+                  value={parseInt(resource.amount) || 0}
+                  onChange={(value) => handleAmountChange(resource.key, value.toString())}
+                  disabled={!resource.resourceId}
+                />
+                {bridgeDirection === "out" && resource.resourceId && selectedStructureId && (
+                  <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">
+                    Balance: {displayBalance.toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {resourcesToBridge.length <= 1 && <div className="w-10 h-10 flex-shrink-0"></div>}
             </div>
-
-            <div className="flex flex-row items-center gap-2 w-full">
-              <NumberInput
-                min={0}
-                max={1000000000000000000}
-                value={parseInt(resource.amount) || 0}
-                onChange={(value) => handleAmountChange(resource.key, value.toString())}
-                disabled={!resource.resourceId}
-              />
-            </div>
-
-            {resourcesToBridge.length <= 1 && <div className="w-10 h-10 flex-shrink-0"></div>}
-          </div>
-        ))}
+          );
+        })}
         <Button onClick={addResourceEntry} variant="default" className="mt-2 self-start">
           + Add Resource
         </Button>
