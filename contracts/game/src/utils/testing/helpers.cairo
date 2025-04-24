@@ -7,7 +7,7 @@ use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     CapacityConfig, MapConfig, QuestConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    WeightConfig, WorldConfigUtilImpl,
+    WeightConfig, WorldConfigUtilImpl, VillageTokenConfig
 };
 use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
 use s1_eternum::models::config::{ResourceFactoryConfig};
@@ -24,6 +24,30 @@ use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER};
 use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
 use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};
 use starknet::ContractAddress;
+use dojo_cairo_test::deploy_contract;
+use s1_eternum::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
+
+
+fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
+    let mock_calldata: Array<felt252> = array![
+        admin.into(), 
+        admin.into(), 
+        starknet::get_contract_address().into(), 
+        2,
+        starknet::get_contract_address().into(), 
+        admin.into(), 
+    ];
+    let mock_village_pass_address = deploy_contract(EternumVillagePassMock::TEST_CLASS_HASH, mock_calldata.span());
+    mock_village_pass_address
+}
+
+
+pub fn MOCK_VILLAGE_TOKEN_CONFIG(ref world: WorldStorage, admin: starknet::ContractAddress) -> VillageTokenConfig {
+    VillageTokenConfig {
+        mint_recipient_address: admin,
+        token_address: deploy_mock_village_pass(ref world, admin),
+    }
+}
 
 pub fn MOCK_MAP_CONFIG() -> MapConfig {
     MapConfig {
@@ -40,6 +64,7 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         agent_discovery_fail_prob: 5000,
     }
 }
+
 
 pub fn MOCK_TROOP_DAMAGE_CONFIG() -> TroopDamageConfig {
     TroopDamageConfig {
@@ -102,6 +127,10 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
     TickConfig { armies_tick_in_seconds: 1 }
+}
+
+pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
+    WorldConfigUtilImpl::set_member(ref world, selector!("village_pass_config"), config);
 }
 
 pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
@@ -289,6 +318,8 @@ pub fn init_config(ref world: WorldStorage) {
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
     tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
+    tstore_village_token_config(ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()));
+
 }
 
 pub fn tspawn_quest_tile(

@@ -458,6 +458,7 @@ mod tests {
     use s1_eternum::models::stamina::{StaminaImpl};
     use s1_eternum::models::structure::{
         StructureBaseImpl, StructureBaseStoreImpl, StructureImpl, StructureTroopExplorerStoreImpl,
+        m_StructureVillageSlots
     };
     use s1_eternum::models::troop::{ExplorerTroops, GuardImpl, TroopTier, TroopType};
     use s1_eternum::models::{
@@ -474,7 +475,7 @@ mod tests {
     };
     use s1_eternum::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, troop_movement_systems,
-        troop_movement_util_systems,
+        troop_movement_util_systems, agent_discovery_systems, hyperstructure_discovery_systems, mine_discovery_systems,
     };
     use s1_eternum::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
@@ -524,10 +525,14 @@ mod tests {
                 TestResource::Model(m_Settings::TEST_CLASS_HASH),
                 TestResource::Model(m_SettingsCounter::TEST_CLASS_HASH),
                 TestResource::Model(m_SettingsDetails::TEST_CLASS_HASH),
+                TestResource::Model(m_StructureVillageSlots::TEST_CLASS_HASH),
                 // contracts
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_util_systems::TEST_CLASS_HASH),
+                TestResource::Contract(agent_discovery_systems::TEST_CLASS_HASH),
+                TestResource::Contract(hyperstructure_discovery_systems::TEST_CLASS_HASH),
+                TestResource::Contract(mine_discovery_systems::TEST_CLASS_HASH),
                 TestResource::Contract(resource_systems::TEST_CLASS_HASH),
                 TestResource::Contract(quest_systems::TEST_CLASS_HASH),
                 TestResource::Contract(game_mock::TEST_CLASS_HASH),
@@ -548,6 +553,12 @@ mod tests {
             ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_util_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"agent_discovery_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_discovery_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"mine_discovery_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"resource_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
@@ -611,6 +622,10 @@ mod tests {
         let mut tiles_explored = 0;
 
         let mut troop_movement_directions = array![Direction::East].span();
+        // Move to the edge of the explored tiles
+        troop_movement_systems
+            .explorer_move(explorer_id, troop_movement_directions, false);
+
         let mut explore = true;
 
         // wander around the map looking for a quest tile
