@@ -55,7 +55,7 @@ export class BuildingPreview {
       }
     }
 
-    Promise.all(this.modelLoadPromises).then(() => { });
+    Promise.all(this.modelLoadPromises).then(() => {});
   }
 
   public getBuildingModel(

@@ -1,5 +1,5 @@
+export * from "../../../torii-client/src/queries/address";
 export * from "./action-paths";
-export * from "./address";
 export * from "./army";
 export * from "./banks";
 export * from "./biome";
@@ -20,4 +20,3 @@ export * from "./transport";
 export * from "./travel";
 export * from "./travel-path";
 export * from "./utils";
-export * from "./village";

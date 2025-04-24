@@ -7,4 +7,5 @@ pub mod tasks;
 #[cfg(test)]
 pub mod testing;
 pub mod trophies;
+pub mod village;
 pub mod vrgda;

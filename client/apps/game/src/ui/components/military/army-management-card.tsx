@@ -14,15 +14,7 @@ import {
   getTroopName,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
-import {
-
-  ArmyInfo,
-  getDirectionBetweenAdjacentHexes,
-  ID,
-  resources,
-  TroopTier,
-  TroopType,
-} from "@bibliothecadao/types";
+import { ArmyInfo, getDirectionBetweenAdjacentHexes, ID, resources, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import clsx from "clsx";
 import { LockIcon, Pen } from "lucide-react";
@@ -82,9 +74,9 @@ export const ArmyCreate = ({ owner_entity, army, armyManager, isExplorer, guardS
     const homeDirection =
       army?.position && army?.structure
         ? getDirectionBetweenAdjacentHexes(
-          { col: army.position.x, row: army.position.y },
-          { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
-        )
+            { col: army.position.x, row: army.position.y },
+            { col: army.structure.base.coord_x, row: army.structure.base.coord_y },
+          )
         : null;
 
     if (isExplorer) {

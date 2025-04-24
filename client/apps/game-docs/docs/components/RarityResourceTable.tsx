@@ -19,18 +19,18 @@ const RESOURCE_RARITIES = [
     ],
   },
   {
-    rarity: "Common (Widely Available)",
+    rarity: "Common",
     resources: [
       { name: "Wood", id: ResourcesIds.Wood },
       { name: "Stone", id: ResourcesIds.Stone },
       { name: "Coal", id: ResourcesIds.Coal },
-      { name: "Copper", id: ResourcesIds.Copper },
-      { name: "Obsidian", id: ResourcesIds.Obsidian },
     ],
   },
   {
-    rarity: "Uncommon (Limited Availability)",
+    rarity: "Uncommon",
     resources: [
+      { name: "Copper", id: ResourcesIds.Copper },
+      { name: "Obsidian", id: ResourcesIds.Obsidian },
       { name: "Silver", id: ResourcesIds.Silver },
       { name: "Ironwood", id: ResourcesIds.Ironwood },
       { name: "Cold Iron", id: ResourcesIds.ColdIron },
@@ -38,7 +38,7 @@ const RESOURCE_RARITIES = [
     ],
   },
   {
-    rarity: "Rare (Scarce)",
+    rarity: "Rare",
     resources: [
       { name: "Hartwood", id: ResourcesIds.Hartwood },
       { name: "Diamonds", id: ResourcesIds.Diamonds },
@@ -47,18 +47,23 @@ const RESOURCE_RARITIES = [
     ],
   },
   {
-    rarity: "Unique (Very Scarce)",
+    rarity: "Epic",
     resources: [
       { name: "Deep Crystal", id: ResourcesIds.DeepCrystal },
       { name: "Ignium", id: ResourcesIds.Ignium },
       { name: "Ethereal Silica", id: ResourcesIds.EtherealSilica },
+    ],
+  },
+  {
+    rarity: "Legendary",
+    resources: [
       { name: "True Ice", id: ResourcesIds.TrueIce },
       { name: "Twilight Quartz", id: ResourcesIds.TwilightQuartz },
       { name: "Alchemical Silver", id: ResourcesIds.AlchemicalSilver },
     ],
   },
   {
-    rarity: "Mythic (Extremely Rare)",
+    rarity: "Mythic",
     resources: [
       { name: "Adamantine", id: ResourcesIds.Adamantine },
       { name: "Mithral", id: ResourcesIds.Mithral },
@@ -113,16 +118,18 @@ const getRarityColor = (rarity: string): string => {
       return "#e5c687"; // pale gold
     case "Special":
       return "#c0c0c0"; // silver
-    case "Common (Widely Available)":
+    case "Common":
       return "#aa6c39"; // copper
-    case "Uncommon (Limited Availability)":
+    case "Uncommon":
       return "#b78d4b"; // tan gold
-    case "Rare (Scarce)":
+    case "Rare":
       return "#c19a49"; // bronze gold
-    case "Unique (Very Scarce)":
+    case "Epic":
       return "#d4af37"; // darker gold
-    case "Mythic (Extremely Rare)":
-      return "#e6be8a"; // light gold
+    case "Legendary":
+      return "#e5c687"; // pale gold
+    case "Mythic":
+      return "#dfc296"; // light gold
     case "Units & Transport":
       return "#8c7853"; // bronze
     default:

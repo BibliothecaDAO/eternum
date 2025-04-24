@@ -13,7 +13,7 @@ const resourceAddresses = getResourceAddresses();
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
-const KATANA_RPC_URL = 'http://localhost:5050';
+const KATANA_RPC_URL = "http://localhost:5050";
 
 const LORDS = resourceAddresses["LORDS"][1].toString();
 const otherResources = Object.entries(resourceAddresses)
@@ -25,13 +25,23 @@ const preset: string = "eternum";
 const slot: string = env.VITE_PUBLIC_SLOT;
 const namespace: string = "s1_eternum";
 
-const isLocal = env.VITE_PUBLIC_CHAIN === 'local';
+const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 const nonLocalController = new ControllerConnector({
   chains: [
-    { rpcUrl: isLocal ? KATANA_RPC_URL : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050" ? env.VITE_PUBLIC_NODE_URL : "https://api.cartridge.gg/x/starknet/sepolia" },
+    {
+      rpcUrl: isLocal
+        ? KATANA_RPC_URL
+        : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
+          ? env.VITE_PUBLIC_NODE_URL
+          : "https://api.cartridge.gg/x/starknet/sepolia",
+    },
   ],
-  defaultChainId: isLocal ? KATANA_CHAIN_ID : env.VITE_PUBLIC_CHAIN === "mainnet" ? constants.StarknetChainId.SN_MAIN : constants.StarknetChainId.SN_SEPOLIA,
+  defaultChainId: isLocal
+    ? KATANA_CHAIN_ID
+    : env.VITE_PUBLIC_CHAIN === "mainnet"
+      ? constants.StarknetChainId.SN_MAIN
+      : constants.StarknetChainId.SN_SEPOLIA,
   preset,
   policies,
   slot,
@@ -46,8 +56,7 @@ const katanaLocalChain = {
   network: KATANA_CHAIN_NETWORK,
   name: KATANA_CHAIN_NAME,
   nativeCurrency: {
-    address:
-      "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+    address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
     name: "Ether",
     symbol: "ETH",
     decimals: 18,

@@ -2,7 +2,7 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 import { useState } from "react";
 import ResourceIcon from "./ResourceIcon";
 import { StructureType } from "./StartingResources";
-import { colors, formatNumber, resource, section } from "./styles";
+import { colors, resource, section } from "./styles";
 
 type Props = {
   structureType: StructureType;
@@ -46,9 +46,11 @@ const MilitaryResourceItem = ({ amount }: { amount: number }) => {
 
       <div style={{ flexGrow: 1, paddingTop: "0.5rem" }}>
         <div style={resource.nameStyle}>{resourceName}</div>
-        <div style={resource.amountStyle}>{formatNumber(roundedAmount * 2)}</div>
-        <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as guards</div>
-        <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as field troops</div>
+        {/* <div style={resource.amountStyle}>{formatNumber(roundedAmount * 2)}</div> */}
+        {/* <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as guards</div> */}
+        {/* <div style={resource.noteStyle}>• {formatNumber(roundedAmount)} units as field troops</div> */}
+        <div style={resource.amountStyle}>[REDACTED]</div>
+
         <div style={resource.noteStyle}>Note: Troop type depends on realm biome</div>
       </div>
     </div>

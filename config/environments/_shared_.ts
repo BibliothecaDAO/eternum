@@ -160,18 +160,22 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
-export const VILLAGE_CONTROLLER_ADDRESSES = [
-  "0x07a0f23c43a291282d093e85f7fb7c0e23a66d02c10fead324ce4c3d56c4bd67",
-  "0x359a81f67140632ec91c7f9af3fc0b5bca0a898ae0be3f7682585b0f40119a7",
-  "0x2d2e564dd4faa14277fefd0d8cb95e83b13c0353170eb6819ec35bf1bee8e2a",
-];
+
+export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
+export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
+
+// catridge address should go here
+export const VILLAGE_TOKEN_MINT_RECIPIENT = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39";
+export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.VITE_PUBLIC_CHAIN! as Chain)!
+  .villagePass!;
 
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
   },
   village: {
-    controller_addresses: VILLAGE_CONTROLLER_ADDRESSES,
+    village_pass_nft_address: VILLAGE_TOKEN_NFT_CONTRACT,
+    village_mint_initial_recipient: VILLAGE_TOKEN_MINT_RECIPIENT,
   },
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
@@ -312,6 +316,10 @@ export const EternumGlobalConfig: Config = {
   },
   vrf: {
     vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS!,
+  },
+  wonderProductionBonus: {
+    within_tile_distance: WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE,
+    bonus_percent_num: WONDER_PRODUCTION_BONUS_PERCENT_NUM,
   },
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,

@@ -139,8 +139,9 @@ export const MiniMapNavigation = () => {
 
   return (
     <div
-      className={` z-[1001] text-xxs pointer-events-auto flex flex-col self-end panel-wood panel-wood-corners relative ${isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
-        }`}
+      className={` z-[1001] text-xxs pointer-events-auto flex flex-col self-end panel-wood panel-wood-corners relative ${
+        isExpanded ? "fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !bottom-[unset]" : ""
+      }`}
     >
       {/* <EventStream hideChat={false} /> */}
       {showMinimap && (

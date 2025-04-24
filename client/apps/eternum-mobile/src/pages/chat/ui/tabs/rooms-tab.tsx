@@ -45,7 +45,7 @@ export function RoomsTab({
   onSendMessage,
   isLoadingMessages,
   userId,
-  selectRecipient
+  selectRecipient,
 }: RoomsTabProps) {
   const [inputValue, setInputValue] = useState("");
   const [newRoomId, setNewRoomId] = useState("");
@@ -55,8 +55,8 @@ export function RoomsTab({
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ 
-        behavior: isInitialScrollRef.current ? "auto" : "smooth" 
+      scrollRef.current.scrollIntoView({
+        behavior: isInitialScrollRef.current ? "auto" : "smooth",
       });
       isInitialScrollRef.current = false;
     }
@@ -141,9 +141,7 @@ export function RoomsTab({
         <Button variant="ghost" size="sm" onClick={() => onRoomSelect("")}>
           Back
         </Button>
-        <h2 className="font-medium">
-          {rooms.find(r => r.id === activeRoom)?.name || activeRoom}
-        </h2>
+        <h2 className="font-medium">{rooms.find((r) => r.id === activeRoom)?.name || activeRoom}</h2>
       </div>
 
       <ScrollArea className="flex-1 p-4 pb-16">
@@ -162,12 +160,7 @@ export function RoomsTab({
               // Create a unique key based on the group's first message id and index
               const groupKey = `${group.messages[0]?.id || "empty"}-${groupIndex}`;
               return (
-                <MessageGroupComponent
-                  key={groupKey}
-                  group={group}
-                  userId={userId}
-                  selectRecipient={selectRecipient}
-                />
+                <MessageGroupComponent key={groupKey} group={group} userId={userId} selectRecipient={selectRecipient} />
               );
             })}
             <div ref={scrollRef} />
@@ -175,12 +168,7 @@ export function RoomsTab({
         )}
       </ScrollArea>
 
-      <ChatInput 
-        value={inputValue} 
-        onChange={setInputValue} 
-        onSend={handleSend} 
-        onMentionClick={onMentionClick} 
-      />
+      <ChatInput value={inputValue} onChange={setInputValue} onSend={handleSend} onMentionClick={onMentionClick} />
     </div>
   );
 }

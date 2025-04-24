@@ -5,11 +5,25 @@ import { ResourcesIds } from "@bibliothecadao/types";
 
 # 🪵 Materials
 
+# Materials Overview
+
+Materials encompass all transportable assets in Eternum, including:
+
+- **Food**: Essential wheat and fish that fuel production and troop movement
+- **Resources**: The 22 distinct resource types that can be produced on Realms based on their metadata
+- **Troops**: Military units (Knights, Crossbowmen, Paladins) that can be assigned to armies
+- **Donkeys**: One-time-use transport units required for moving materials across the world
+- **Labor**: A special material that enables "simple mode" construction and production
+- **Ancient Fragments**: Rare materials found in-game that are critical for Hyperstructure construction
+
+While all materials can be transported, only specific resources can be produced by Realms based on their inherent
+properties. Most materials (except Labor) can be bridged out as ERC20 tokens.
+
 ## Resources
 
 Resources are the foundation of **Eternum**'s economy. Each of the 22 resources plays a vital role in the game's
 ecosystem, from basic production to advanced military operations. All in-game resources can be traded freely and bridged
-out as ERC20 tokens through the central bank.
+out as ERC20 tokens.
 
 ![Produce from building](/gifs/produce-from-building-click.gif)
 
@@ -94,10 +108,11 @@ Essential for logistics:
 
 Labor is a fundamental production material:
 
-- Required for most building and production activities
-- Regenerates over time based on population
-- Cannot be directly traded but can be allocated to various tasks
-- Essential for realm development and resource gathering
+- New Season 1 mechanic
+- Can be produced by any Realm or Village
+- Introduces ‘simple mode’ which reduces the complexity of resource and troop production
+- Required to construct most buildings
+- Produced by burning resources, with rarer resources yielding more labor
 
 #### Ancient Fragments
 

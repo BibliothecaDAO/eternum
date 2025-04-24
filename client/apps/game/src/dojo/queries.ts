@@ -383,7 +383,7 @@ export const getMapFromTorii = async <S extends Schema>(
   startRow: number,
   range: number,
 ) => {
-  const promiseTiles = getEntities(
+  return getEntities(
     client,
     AndComposeClause([
       MemberClause("s1_eternum-Tile", "col", "Gte", startCol - range),
@@ -397,35 +397,4 @@ export const getMapFromTorii = async <S extends Schema>(
     EVENT_QUERY_LIMIT,
     false,
   );
-  const promiseExplorers = getEntities(
-    client,
-    AndComposeClause([
-      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", startCol - range),
-      MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", startCol + range),
-      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", startRow - range),
-      MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Lte", startRow + range),
-    ]).build(),
-    components as any,
-    [],
-    ["s1_eternum-ExplorerTroops", "s1_eternum-Resource"],
-    EVENT_QUERY_LIMIT,
-    false,
-  );
-
-  const promiseStructures = getEntities(
-    client,
-    AndComposeClause([
-      MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", startCol - range),
-      MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", startCol + range),
-      MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", startRow - range),
-      MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", startRow + range),
-    ]).build(),
-    components as any,
-    [],
-    ["s1_eternum-Structure", "s1_eternum-Resource"],
-    EVENT_QUERY_LIMIT,
-    false,
-  );
-
-  return Promise.all([promiseTiles, promiseExplorers, promiseStructures]);
 };

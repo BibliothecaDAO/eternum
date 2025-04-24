@@ -42,11 +42,25 @@ pub struct WorldConfig {
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_controller_config: VillageControllerConfig,
+    pub village_pass_config: VillageTokenConfig,
+    pub wonder_production_bonus_config: WonderProductionBonusConfig,
+    pub quest_config: QuestConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct WonderProductionBonusConfig {
+    pub within_tile_distance: u8,
+    pub bonus_percent_num: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct AgentControllerConfig {
     pub address: ContractAddress,
+}
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct VillageTokenConfig {
+    pub token_address: ContractAddress,
+    pub mint_recipient_address: ContractAddress,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -235,6 +249,12 @@ pub struct MapConfig {
     // Mine discovery rewards
     pub mine_wheat_grant_amount: u32,
     pub mine_fish_grant_amount: u32,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct QuestConfig {
+    pub quest_discovery_prob: u16,
+    pub quest_discovery_fail_prob: u16,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

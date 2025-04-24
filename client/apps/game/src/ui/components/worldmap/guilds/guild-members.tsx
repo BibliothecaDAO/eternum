@@ -117,10 +117,10 @@ export const GuildMembers = ({ players, selectedGuildEntityId, viewPlayerInfo, s
   const socialsText =
     userGuild?.entityId === selectedGuildEntityId
       ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
-        tribeName: selectedGuild?.name,
-        addressName: playerName,
-        url: env.VITE_SOCIAL_LINK,
-      })
+          tribeName: selectedGuild?.name,
+          addressName: playerName,
+          url: env.VITE_SOCIAL_LINK,
+        })
       : undefined;
 
   const handleChangeName = async () => {

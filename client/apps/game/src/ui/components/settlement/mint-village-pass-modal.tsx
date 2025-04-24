@@ -1,12 +1,13 @@
 import Button from "@/ui/elements/button";
+import { getEntityIdFromKeys, getRealmNameById } from "@bibliothecadao/eternum";
+
+import { useDojo } from "@bibliothecadao/react";
 import {
   checkOpenVillageSlotFromToriiClient,
-  getFreeVillagePositionsFromToriiClient,
   getRandomRealmWithVillageSlotsFromTorii,
-  getRealmNameById,
-} from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+} from "@bibliothecadao/torii-client";
+import { Direction, HexPosition, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useState } from "react";
 import { ModalContainer } from "../modal-container";
 import { VillageResourceReveal } from "./village-resource-reveal";
@@ -25,7 +26,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     },
   } = useDojo();
 
-  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID; position: HexPosition } | null>(null);
+  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID } | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<HexPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,9 +37,12 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   const [realmCheckResult, setRealmCheckResult] = useState<{
     realmId: ID;
     entityId: ID;
-    villagesCount: number;
     hasSlots: boolean;
-    availableSlots: number;
+    availableSlots: Array<{
+      value: Direction;
+      label: string;
+      coord: { col: number; row: number };
+    }>;
     position: HexPosition;
   } | null>(null);
   const [isCheckingRealm, setIsCheckingRealm] = useState(false);
@@ -82,13 +86,15 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
       const result = await checkOpenVillageSlotFromToriiClient(toriiClient, realmId);
 
       if (!result) {
-        setRealmCheckError("Realm not found or");
+        setRealmCheckError("Realm has no available village slots");
         setRealmCheckResult(null);
-      } else if (!result.hasSlots) {
-        setRealmCheckError(`Realm #${realmId} has no available village slots`);
-        setRealmCheckResult(result);
+        setSelectedRealm(null);
       } else {
         setRealmCheckResult(result);
+        setSelectedRealm({
+          realmId: result.realmId,
+          entityId: result.entityId,
+        });
         setRealmCheckError(null);
       }
     } catch (error) {
@@ -102,33 +108,29 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   // Function to select a random realm with village slots
   const selectRandomRealm = async () => {
     setIsLoading(true);
+    const realmCount =
+      getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.realm_count_config.count || 0;
     try {
-      const randomRealm = await getRandomRealmWithVillageSlotsFromTorii(toriiClient, components);
-
-      if (randomRealm && randomRealm) {
+      const data = await getRandomRealmWithVillageSlotsFromTorii(toriiClient);
+      if (data && data) {
         // Extract values safely with type assertions
-        const realmIdValue = Number(randomRealm.metadata?.realm_id || 0);
-        const entityIdValue = Number(randomRealm.entity_id || 0);
-        const villagesCountValue = Number(randomRealm.metadata?.villages_count || 0);
-
         const result = {
-          realmId: realmIdValue,
-          entityId: entityIdValue,
-          villagesCount: villagesCountValue,
-          hasSlots: villagesCountValue < 6,
-          availableSlots: 6 - villagesCountValue,
-          position: { col: randomRealm.base.coord_x, row: randomRealm.base.coord_y },
+          realmId: data.realmId,
+          entityId: data.entityId,
+          hasSlots: true,
+          availableSlots: data.availableSlots,
+          position: { col: data.position.col, row: data.position.row },
         };
 
+        console.log({ result });
         setRealmCheckResult(result);
 
         setSelectedRealm({
           realmId: result.realmId,
           entityId: result.entityId,
-          position: { col: result.position.col, row: result.position.row },
         });
 
-        setRealmIdInput(realmIdValue.toString());
+        setRealmIdInput(data.realmId.toString());
         setRealmCheckError(null);
       } else {
         setRealmCheckError("No realms with available village slots found");
@@ -142,45 +144,24 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   };
 
   // Function to select the checked realm
-  const selectCheckedRealm = () => {
-    if (realmCheckResult && realmCheckResult.hasSlots) {
-      setSelectedRealm({
-        realmId: realmCheckResult.realmId,
-        entityId: realmCheckResult.entityId,
-        position: { col: realmCheckResult.position.col, row: realmCheckResult.position.row },
-      });
-    }
-  };
+  // const selectCheckedRealm = () => {
+  //   if (realmCheckResult && realmCheckResult.hasSlots) {
+  //     setSelectedRealm({
+  //       realmId: realmCheckResult.realmId,
+  //       entityId: realmCheckResult.entityId,
+  //     });
+  //   }
+  // };
 
   useEffect(() => {
     const loadDirectionOptions = async () => {
-      if (!selectedRealm) {
+      if (!selectedRealm || !realmCheckResult) {
         setDirectionOptions([]);
         return;
       }
 
       try {
-        const freePositions = await getFreeVillagePositionsFromToriiClient(toriiClient, selectedRealm.position);
-
-        const options = Object.keys(Direction)
-          .filter((key) => isNaN(Number(key)))
-          .filter((dir) => {
-            const direction = Direction[dir as keyof typeof Direction];
-            return freePositions.some((pos) => pos.direction === direction);
-          })
-          .map((dir) => {
-            const direction = Direction[dir as keyof typeof Direction];
-            const position = freePositions.find((pos) => pos.direction === direction);
-            return {
-              value: direction,
-              label: dir.replace(/_/g, " "),
-              coord: {
-                col: position?.col ?? 0,
-                row: position?.row ?? 0,
-              },
-            };
-          });
-
+        const options = realmCheckResult?.availableSlots;
         setDirectionOptions(options);
 
         // Auto-select the first direction if available
@@ -253,25 +234,21 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
                   {/* Realm Check Result */}
                   {realmCheckResult && (
-                    <div
-                      className={`p-3 rounded-md ${realmCheckResult.hasSlots ? "bg-green-900/30 border border-green-500/30" : "bg-red-900/30 border border-red-500/30"}`}
-                    >
+                    <div className={`p-3 rounded-md "bg-green-900/30 border border-green-500/30"`}>
                       <p className="text-gold">
                         Realm #{realmCheckResult.realmId} - {getRealmNameById(realmCheckResult.realmId) || "Unnamed"}
                       </p>
                       <p className="text-sm text-gold/80">
-                        {realmCheckResult.hasSlots
-                          ? `${realmCheckResult.availableSlots} village slot${realmCheckResult.availableSlots !== 1 ? "s" : ""} available`
-                          : "No village slots available"}
+                        {`${realmCheckResult.availableSlots.length} village slot${realmCheckResult.availableSlots.length !== 1 ? "s" : ""} available`}
                       </p>
-                      {realmCheckResult.hasSlots && (
+                      {/* {realmCheckResult.hasSlots && (
                         <Button
                           onClick={selectCheckedRealm}
                           className="mt-2 text-xs bg-dark-brown border border-gold/30 text-gold px-2 py-1 rounded-md hover:bg-gold/20"
                         >
                           Select This Realm
                         </Button>
-                      )}
+                      )} */}
                     </div>
                   )}
 
@@ -279,7 +256,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   {realmCheckError && <div className="text-xs text-red-400 mt-1">{realmCheckError}</div>}
                 </div>
 
-                <div className="w-full space-y-2">
+                {/* <div className="w-full space-y-2">
                   <label className="text-gold h6">Select Direction</label>
                   <select
                     onChange={(e) => setSelectedDirection(Number(e.target.value) as Direction)}
@@ -303,7 +280,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       the village spots.
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 {/* Action Buttons */}
                 <div className="flex space-x-3 justify-center pt-4">
@@ -333,14 +310,14 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                         : "Not Selected"}
                     </p>
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="text-xs text-gold/70 block">Direction</label>
                     <p className="text-gold">
                       {selectedDirection !== null
                         ? (directionOptions.find((o) => o.value === selectedDirection)?.label ?? "Unknown")
                         : "Not Selected"}
                     </p>
-                  </div>
+                  </div> */}
                   {/* Add more preview details if needed */}
                 </div>
               </div>

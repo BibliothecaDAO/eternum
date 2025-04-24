@@ -3,8 +3,8 @@
  * Based on https://www.redblobgames.com/grids/hexagons/
  */
 
-import { TileOccupier } from "./common";
 import { Direction } from "../constants";
+import { TileOccupier } from "./common";
 
 // Helper function to get all directions
 export function getAllHexDirections(): Direction[] {
@@ -26,7 +26,7 @@ export class Cube {
     public q: number,
     public r: number,
     public s: number,
-  ) { }
+  ) {}
 
   static zero(): Cube {
     return new Cube(0, 0, 0);
@@ -57,7 +57,7 @@ export class Coord {
   constructor(
     public x: number,
     public y: number,
-  ) { }
+  ) {}
 
   toString(): string {
     return `Coord (x:${this.x}, y:${this.y})`;
@@ -175,11 +175,24 @@ export class HexGrid {
 
 export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
   return (
-    tileOccupier === TileOccupier.RealmRegular ||
-    tileOccupier === TileOccupier.Hyperstructure ||
-    tileOccupier === TileOccupier.RealmWonder ||
+    tileOccupier === TileOccupier.RealmRegularLevel1 ||
+    tileOccupier === TileOccupier.RealmWonderLevel1 ||
+    tileOccupier === TileOccupier.RealmRegularLevel1WonderBonus ||
+    tileOccupier === TileOccupier.HyperstructureLevel1 ||
+    tileOccupier === TileOccupier.RealmRegularLevel2 ||
+    tileOccupier === TileOccupier.RealmWonderLevel2 ||
+    tileOccupier === TileOccupier.RealmRegularLevel2WonderBonus ||
+    tileOccupier === TileOccupier.HyperstructureLevel2 ||
+    tileOccupier === TileOccupier.RealmRegularLevel3 ||
+    tileOccupier === TileOccupier.RealmWonderLevel3 ||
+    tileOccupier === TileOccupier.RealmRegularLevel3WonderBonus ||
+    tileOccupier === TileOccupier.HyperstructureLevel3 ||
+    tileOccupier === TileOccupier.RealmRegularLevel4 ||
+    tileOccupier === TileOccupier.RealmWonderLevel4 ||
+    tileOccupier === TileOccupier.RealmRegularLevel4WonderBonus ||
     tileOccupier === TileOccupier.FragmentMine ||
     tileOccupier === TileOccupier.Village ||
+    tileOccupier === TileOccupier.VillageWonderBonus ||
     tileOccupier === TileOccupier.Bank
   );
 };

@@ -34,17 +34,16 @@ pub trait IRealmSystems<T> {
 
 #[dojo::contract]
 pub mod realm_systems {
-    use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};
-    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::{WorldStorage};
 
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DEFAULT_NS};
     use s1_eternum::models::config::{
         RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
-        WorldConfigUtilImpl,
+        WonderProductionBonusConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::event::{EventType, SettleRealmData};
     use s1_eternum::models::map::{TileImpl, TileOccupier};
@@ -52,21 +51,19 @@ pub mod realm_systems {
     use s1_eternum::models::position::{Coord};
     use s1_eternum::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
     use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
+    use s1_eternum::models::resource::production::production::{ProductionWonderBonus};
     use s1_eternum::models::resource::resource::{ResourceImpl};
     use s1_eternum::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{
         StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata, StructureMetadataStoreImpl,
-        StructureOwnerStoreImpl,
-    };
-    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
-        IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
+        StructureOwnerStoreImpl, Wonder,
     };
     use s1_eternum::systems::utils::structure::iStructureImpl;
     use starknet::ContractAddress;
     use super::RealmSettlement;
-    use super::{IERC20Dispatcher, IERC20DispatcherTrait, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
+    use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
 
     #[abi(embed_v0)]
@@ -124,16 +121,16 @@ pub mod realm_systems {
             );
 
             // collect lords attached to season pass and bridge into the realm
-            let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
-                season_addresses_config.season_pass_address, realm_id,
-            );
+            // let lords_amount_attached: u256 = InternalRealmLogicImpl::collect_lords_from_season_pass(
+            //     season_addresses_config.season_pass_address, realm_id,
+            // );
 
-            // bridge attached lords into the realm
-            if lords_amount_attached.is_non_zero() {
-                InternalRealmLogicImpl::bridge_lords_into_realm(
-                    ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
-                );
-            }
+            // // bridge attached lords into the realm
+            // if lords_amount_attached.is_non_zero() {
+            //     InternalRealmLogicImpl::bridge_lords_into_realm(
+            //         ref world, season_addresses_config.lords_address, structure_id, lords_amount_attached, frontend,
+            //     );
+            // }
 
             // emit realm settle event
             let address_name: AddressName = world.read_model(owner);
@@ -179,9 +176,22 @@ pub mod realm_systems {
             // create structure
             let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
             let structure_id = world.dispatcher.uuid();
-            let mut tile_occupier = TileOccupier::RealmRegular;
+            let mut tile_occupier = TileOccupier::RealmRegularLevel1;
             if has_wonder {
-                tile_occupier = TileOccupier::RealmWonder;
+                tile_occupier = TileOccupier::RealmWonderLevel1;
+                world
+                    .write_model(
+                        @Wonder { structure_id: structure_id, realm_id: realm_id.try_into().unwrap(), coord: coord },
+                    );
+
+                // grant wonder production bonus
+                let wonder_production_bonus_config: WonderProductionBonusConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("wonder_production_bonus_config"),
+                );
+                let production_wonder_bonus = ProductionWonderBonus {
+                    structure_id: structure_id, bonus_percent_num: wonder_production_bonus_config.bonus_percent_num,
+                };
+                world.write_model(@production_wonder_bonus);
             }
 
             // create structure
@@ -223,36 +233,35 @@ pub mod realm_systems {
             season_pass.transfer_from(caller, this, realm_id.into());
         }
 
-        fn collect_lords_from_season_pass(season_pass_address: ContractAddress, realm_id: ID) -> u256 {
-            // detach lords from season pass
-            let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
-            let token_lords_balance: u256 = season_pass.lords_balance(realm_id.into());
-            season_pass.detach_lords(realm_id.into(), token_lords_balance);
-            assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be 0");
+        // fn collect_lords_from_season_pass(season_pass_address: ContractAddress, realm_id: ID) -> u256 {
+        //     // detach lords from season pass
+        //     let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
+        //     let token_lords_balance: u256 = season_pass.lords_balance(realm_id.into());
+        //     season_pass.detach_lords(realm_id.into(), token_lords_balance);
+        //     assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be
+        //     0");
 
-            // at this point, this contract's lords balance must have increased by
-            // `token_lords_balance`
-            token_lords_balance
-        }
+        //     // at this point, this contract's lords balance must have increased by
+        //     // `token_lords_balance`
+        //     token_lords_balance
+        // }
 
+        // fn bridge_lords_into_realm(
+        //     ref world: WorldStorage,
+        //     lords_address: ContractAddress,
+        //     realm_structure_id: ID,
+        //     amount: u256,
+        //     frontend: ContractAddress,
+        // ) {
+        //     // get bridge systems address
+        //     let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
+        //     // approve bridge to spend lords
+        //     IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
 
-        fn bridge_lords_into_realm(
-            ref world: WorldStorage,
-            lords_address: ContractAddress,
-            realm_structure_id: ID,
-            amount: u256,
-            frontend: ContractAddress,
-        ) {
-            // get bridge systems address
-            let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
-            // approve bridge to spend lords
-            IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
-
-            // deposit lords
-            IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-                .deposit(lords_address, realm_structure_id, amount, frontend);
-        }
-
+        //     // deposit lords
+        //     IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
+        //         .deposit(lords_address, realm_structure_id, amount, frontend);
+        // }
 
         fn retrieve_metadata_from_season_pass(
             season_pass_address: ContractAddress, realm_id: ID,

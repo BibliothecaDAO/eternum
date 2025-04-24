@@ -8,9 +8,10 @@ use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceType
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
-use s1_eternum::models::map::{Tile, TileOccupier};
+use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::name::AddressName;
 use s1_eternum::models::owner::OwnerAddressTrait;
+use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 
 use s1_eternum::models::resource::resource::{
     Resource, ResourceImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
@@ -26,7 +27,7 @@ use s1_eternum::models::troop::{
 };
 use s1_eternum::models::weight::{Weight, WeightImpl};
 use s1_eternum::systems::utils::map::IMapImpl;
-use s1_eternum::utils::map::biomes::Biome;
+use s1_eternum::utils::map::biomes::{Biome, get_biome};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::VRFImpl;
 
@@ -122,6 +123,44 @@ pub impl iGuardImpl of iGuardTrait {
 
 #[generate_trait]
 pub impl iExplorerImpl of iExplorerTrait {
+    fn attempt_move_to_adjacent_tile(ref world: WorldStorage, ref explorer: ExplorerTroops, ref current_tile: Tile) {
+        let adjacent_directions = array![
+            Direction::East,
+            Direction::NorthEast,
+            Direction::NorthWest,
+            Direction::West,
+            Direction::SouthWest,
+            Direction::SouthEast,
+        ];
+        let current_coord: Coord = current_tile.into();
+        for direction in adjacent_directions {
+            let adjacent_coord = current_coord.neighbor(direction);
+            let mut adjacent_tile: Tile = world.read_model((adjacent_coord.x, adjacent_coord.y));
+            if adjacent_tile.not_occupied() {
+                if !adjacent_tile.discovered() {
+                    let adjacent_coord_biome: Biome = get_biome(adjacent_coord.x.into(), adjacent_coord.y.into());
+                    IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
+                }
+
+                // occupy the new tile
+                let new_tile_occupier = IMapImpl::get_troop_occupier(
+                    explorer.owner, explorer.troops.category, explorer.troops.tier,
+                );
+                IMapImpl::occupy(ref world, ref adjacent_tile, new_tile_occupier, explorer.explorer_id);
+
+                // update explorer coordinate
+                explorer.coord = adjacent_coord;
+                world.write_model(@explorer);
+
+                // unoccupy the old tile
+                IMapImpl::occupy(ref world, ref current_tile, TileOccupier::None, 0);
+
+                break;
+            }
+        };
+    }
+
+
     fn create(
         ref world: WorldStorage,
         ref tile: Tile,
@@ -135,7 +174,8 @@ pub impl iExplorerImpl of iExplorerTrait {
         current_tick: u64,
     ) -> ExplorerTroops {
         // set explorer as occupier of tile
-        IMapImpl::occupy(ref world, ref tile, TileOccupier::Explorer, explorer_id);
+        let tile_occupier = IMapImpl::get_troop_occupier(owner, troop_type, troop_tier);
+        IMapImpl::occupy(ref world, ref tile, tile_occupier, explorer_id);
 
         // ensure explorer amount does not exceed max
         assert!(

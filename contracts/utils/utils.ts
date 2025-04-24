@@ -12,6 +12,8 @@ import slotGameManifest from "../../contracts/game/manifest_slot.json";
  * @interface SeasonAddresses
  */
 export interface SeasonAddresses {
+  /** Address of the village pass contract */
+  villagePass: string;
   /** Address of the season pass contract */
   seasonPass: string;
   /** Address of the realms contract */

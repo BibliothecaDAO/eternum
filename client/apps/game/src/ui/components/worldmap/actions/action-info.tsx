@@ -9,7 +9,6 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  CombatSimulator,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
@@ -18,11 +17,12 @@ import {
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 const TooltipContent = memo(
   ({
@@ -85,7 +85,6 @@ const TooltipContent = memo(
             selectedEntityId={Number(selectedEntityId)}
             targetEntityId={Number(selectedEntityId)}
             path={actionPath}
-            components={components}
           />
         )}
         {!isExplored && (
@@ -160,49 +159,51 @@ export const ActionInfo = memo(() => {
 });
 
 const AttackInfo = memo(
-  ({
-    selectedEntityId,
-    path,
-    components,
-  }: {
-    selectedEntityId: ID;
-    targetEntityId: ID;
-    path: ActionPath[];
-    components: ClientComponents;
-  }) => {
+  ({ selectedEntityId, path }: { selectedEntityId: ID; targetEntityId: ID; path: ActionPath[] }) => {
+    const {
+      network: { toriiClient },
+    } = useDojo();
     const { currentArmiesTick } = getBlockTimestamp();
 
-    const troops = useMemo(() => {
-      const explorerTroops = getComponentValue(
-        components.ExplorerTroops,
-        getEntityIdFromKeys([BigInt(selectedEntityId)]),
-      )?.troops;
+    const [explorer, setExplorer] = useState<ComponentValue<ClientComponents["ExplorerTroops"]["schema"]> | undefined>(
+      undefined,
+    );
+    const [structure, setStructure] = useState<ComponentValue<ClientComponents["Structure"]["schema"]> | undefined>(
+      undefined,
+    );
 
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+    useEffect(() => {
+      const fetchExplorer = async () => {
+        const { explorer } = await getExplorerFromToriiClient(toriiClient, selectedEntityId);
+        setExplorer(explorer);
+      };
+      fetchExplorer();
+    }, [selectedEntityId, toriiClient]);
+
+    useEffect(() => {
+      const fetchStructure = async () => {
+        if (!explorer) return;
+        const result = await getStructureFromToriiClient(toriiClient, explorer.owner);
+        if (result) {
+          setStructure(result.structure);
+        }
+      };
+      fetchStructure();
+    }, [explorer, toriiClient]);
+
+    const targetTroops = useMemo(() => {
+      if (explorer) return explorer.troops;
 
       const guardTroops = structure ? getGuardsByStructure(structure)[0]?.troops : undefined;
-
-      if (explorerTroops) return explorerTroops;
-      if (guardTroops) return guardTroops;
-      return undefined;
-    }, [components, selectedEntityId]);
+      return guardTroops;
+    }, [explorer, structure]);
 
     const stamina = useMemo(() => {
-      const maxStamina = StaminaManager.getMaxStamina(troops);
-      return StaminaManager.getStamina(
-        troops?.stamina || { amount: 0n, updated_tick: 0n },
-        maxStamina,
-        currentArmiesTick,
-        components,
-      );
-    }, [troops, currentArmiesTick, components]);
+      if (!targetTroops) return { amount: 0n, updated_tick: 0n };
+      return StaminaManager.getStamina(targetTroops, currentArmiesTick);
+    }, [targetTroops, currentArmiesTick]);
 
     const combatParams = useMemo(() => configManager.getCombatConfig(), []);
-
-    // Get the combat simulator with default parameters
-    const combatSimulator = useMemo(() => {
-      return new CombatSimulator(combatParams);
-    }, [combatParams]);
 
     // Get the target biome from the path
     const targetBiome = useMemo(() => {
@@ -222,7 +223,7 @@ const AttackInfo = memo(
         paladin: configManager.getBiomeCombatBonus(TroopType.Paladin, targetBiome),
         crossbowman: configManager.getBiomeCombatBonus(TroopType.Crossbowman, targetBiome),
       };
-    }, [combatSimulator, targetBiome]);
+    }, [targetBiome]);
 
     // Format the biome bonus as a percentage string with + or - sign
     const formatBiomeBonus = (bonus: number) => {
@@ -250,7 +251,7 @@ const AttackInfo = memo(
               <span className="ml-2">
                 {hasEnoughStamina
                   ? "Enough stamina to attack"
-                  : `Need ${CombatSimulator.getDefaultParameters().stamina_attack_req} stamina to attack`}
+                  : `Need ${combatParams.stamina_attack_req} stamina to attack`}
               </span>
             </div>
           </div>
@@ -266,41 +267,47 @@ const AttackInfo = memo(
             <div className="font-medium">Biome Bonus</div>
 
             {/* Highlight current army's troop type */}
-            {troops?.category === TroopType.Knight && <div className="font-bold text-gold">Knight (Your Army)</div>}
-            {troops?.category !== TroopType.Knight && <div>Knight</div>}
+            {targetTroops?.category === TroopType.Knight && (
+              <div className="font-bold text-gold">Knight (Your Army)</div>
+            )}
+            {targetTroops?.category !== TroopType.Knight && <div>Knight</div>}
             <div className={getBonusColorClass(biomeAdvantages.knight)}>{formatBiomeBonus(biomeAdvantages.knight)}</div>
 
-            {troops?.category === TroopType.Paladin && <div className="font-bold text-gold">Paladin (Your Army)</div>}
-            {troops?.category !== TroopType.Paladin && <div>Paladin</div>}
+            {targetTroops?.category === TroopType.Paladin && (
+              <div className="font-bold text-gold">Paladin (Your Army)</div>
+            )}
+            {targetTroops?.category !== TroopType.Paladin && <div>Paladin</div>}
             <div className={getBonusColorClass(biomeAdvantages.paladin)}>
               {formatBiomeBonus(biomeAdvantages.paladin)}
             </div>
 
-            {troops?.category === TroopType.Crossbowman && (
+            {targetTroops?.category === TroopType.Crossbowman && (
               <div className="font-bold text-gold">Crossbowman (Your Army)</div>
             )}
-            {troops?.category !== TroopType.Crossbowman && <div>Crossbowman</div>}
+            {targetTroops?.category !== TroopType.Crossbowman && <div>Crossbowman</div>}
             <div className={getBonusColorClass(biomeAdvantages.crossbowman)}>
               {formatBiomeBonus(biomeAdvantages.crossbowman)}
             </div>
           </div>
 
           {/* Your Army's Biome Bonus Summary */}
-          {troops?.category && (
+          {targetTroops?.category && (
             <div className="mt-3 p-2 bg-dark-brown/50 rounded border border-gold/20">
               <div className="font-semibold text-gold">Your Army's Biome Effect</div>
               <div className="flex items-center mt-1">
                 <span
                   className={getBonusColorClass(
-                    biomeAdvantages[troops.category.toLowerCase() as keyof typeof biomeAdvantages],
+                    biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
                   )}
                 >
-                  {formatBiomeBonus(biomeAdvantages[troops.category.toLowerCase() as keyof typeof biomeAdvantages])}
+                  {formatBiomeBonus(
+                    biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages],
+                  )}
                 </span>
                 <span className="ml-2">
-                  {biomeAdvantages[troops.category.toLowerCase() as keyof typeof biomeAdvantages] > 1
+                  {biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] > 1
                     ? "Advantage in this biome"
-                    : biomeAdvantages[troops.category.toLowerCase() as keyof typeof biomeAdvantages] < 1
+                    : biomeAdvantages[targetTroops.category.toLowerCase() as keyof typeof biomeAdvantages] < 1
                       ? "Disadvantage in this biome"
                       : "Neutral in this biome"}
                 </span>

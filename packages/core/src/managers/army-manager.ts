@@ -2,7 +2,15 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { Account, AccountInterface } from "starknet";
-import { ClientComponents, SystemCalls, ID, TroopTier, TroopType, Direction, ResourcesIds } from "@bibliothecadao/types";
+import {
+  ClientComponents,
+  SystemCalls,
+  ID,
+  TroopTier,
+  TroopType,
+  Direction,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import { multiplyByPrecision } from "../utils";
 import { ResourceManager } from "./resource-manager";
 
@@ -11,7 +19,7 @@ export class ArmyManager {
     private readonly systemCalls: SystemCalls,
     private readonly components: ClientComponents,
     private readonly realmEntityId: ID,
-  ) { }
+  ) {}
 
   private _updateResourceBalances(resourceId: ResourcesIds, amount: number): () => void {
     const resourceManager = new ResourceManager(this.components, this.realmEntityId);

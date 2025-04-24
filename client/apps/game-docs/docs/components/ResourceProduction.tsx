@@ -18,7 +18,7 @@ const isMilitary = (id: number): boolean => {
 
 // Helper function to format numbers with commas
 const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat().format(Math.round(amount * 100) / 100);
+  return new Intl.NumberFormat().format(Math.round(amount * 1000) / 1000);
 };
 
 // Common styles shared between components

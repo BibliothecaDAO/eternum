@@ -1,7 +1,50 @@
 import { getResourceAddresses } from "@/utils/addresses";
-import { resources, ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds } from "@bibliothecadao/types";
 import ResourceIcon from "./ResourceIcon";
 import { colors, section, table } from "./styles";
+
+const RESOURCE_ORDER = [
+  ResourcesIds.Wood,
+  ResourcesIds.Stone,
+  ResourcesIds.Coal,
+  ResourcesIds.Copper,
+  ResourcesIds.Obsidian,
+  ResourcesIds.Silver,
+  ResourcesIds.Ironwood,
+  ResourcesIds.ColdIron,
+  ResourcesIds.Gold,
+  ResourcesIds.Hartwood,
+  ResourcesIds.Diamonds,
+  ResourcesIds.Sapphire,
+  ResourcesIds.Ruby,
+  ResourcesIds.DeepCrystal,
+  ResourcesIds.Ignium,
+  ResourcesIds.EtherealSilica,
+  ResourcesIds.TrueIce,
+  ResourcesIds.TwilightQuartz,
+  ResourcesIds.AlchemicalSilver,
+  ResourcesIds.Adamantine,
+  ResourcesIds.Mithral,
+  ResourcesIds.Dragonhide,
+  ResourcesIds.AncientFragment,
+  ResourcesIds.Donkey,
+  ResourcesIds.Knight,
+  ResourcesIds.Crossbowman,
+  ResourcesIds.Paladin,
+  ResourcesIds.Wheat,
+  ResourcesIds.Fish,
+  ResourcesIds.Lords,
+];
+
+const resourceIdChangeBetweenSeason0and1 = (id: ResourcesIds) => {
+  if (id === 29) return ResourcesIds.Wheat;
+  if (id === 30) return ResourcesIds.Fish;
+  if (id === 31) return ResourcesIds.Lords;
+  if (id === 28) return ResourcesIds.Paladin;
+  if (id === 27) return ResourcesIds.Crossbowman;
+  if (id === 26) return ResourcesIds.Knight;
+  return id;
+};
 
 // Additional component-specific styles
 const componentStyles = {
@@ -22,19 +65,15 @@ const componentStyles = {
   },
 };
 
-// Helper function to get resource name
-const getResourceName = (id: number): string => {
-  return resources.find((r) => r.id === Number(id))?.trait || `Resource ${id}`;
-};
-
 export const ResourceAddresses = () => {
+  // get addresses from the config
   const addresses = getResourceAddresses();
 
   // Transform the address data for display
   const addressesArray = Object.entries(addresses)
     .map(([resourceName, data]) => {
       // data is an array where first element is the ID and second is the address
-      const id = data[0] as number;
+      const id = resourceIdChangeBetweenSeason0and1(data[0] as number);
       const address = data[1] as string;
 
       // remove the ancient fragment from the list because it's not bridgeable
@@ -47,7 +86,12 @@ export const ResourceAddresses = () => {
       };
     })
     .filter((item) => item !== null)
-    .sort((a, b) => a.id - b.id);
+    .sort((a, b) => {
+      // Sort by the order defined in RESOURCE_ORDER
+      const indexA = RESOURCE_ORDER.indexOf(a.id);
+      const indexB = RESOURCE_ORDER.indexOf(b.id);
+      return indexA - indexB;
+    });
 
   return (
     <div style={section.wrapper}>

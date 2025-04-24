@@ -156,12 +156,7 @@ export const RaidContainer = ({
     return getGuardsByStructure(target.structure)
       .filter((guard) => guard.troops.count > 0n)
       .map((guard) => {
-        const stamina = StaminaManager.getStamina(
-          guard.troops.stamina,
-          StaminaManager.getMaxStamina(guard.troops),
-          currentArmiesTick,
-          components,
-        );
+        const stamina = StaminaManager.getStamina(guard.troops, currentArmiesTick);
         return {
           count: Number(guard.troops.count),
           category: guard.troops.category as TroopType,
@@ -181,12 +176,7 @@ export const RaidContainer = ({
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
-        stamina: StaminaManager.getStamina(
-          army?.troops.stamina || { amount: 0n, updated_tick: 0n },
-          StaminaManager.getMaxStamina(army?.troops),
-          currentArmiesTick,
-          components,
-        ),
+        stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
       },
     };
   }, [attackerEntityId]);
@@ -244,7 +234,9 @@ export const RaidContainer = ({
   ]);
 
   const remainingCapacity = useMemo(() => {
-    const remainingCapacity = getRemainingCapacityInKg(attackerEntityId, components);
+    // you can use getcomponentvalue because it's your own entity so synced
+    const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+    const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);

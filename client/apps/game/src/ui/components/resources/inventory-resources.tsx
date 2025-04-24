@@ -1,17 +1,17 @@
 import { ResourceCost } from "@/ui/elements/resource-cost";
-import { divideByPrecision } from "@bibliothecadao/eternum";
-import { useResourceManager } from "@bibliothecadao/react";
-import { ID } from "@bibliothecadao/types";
+import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { ClientComponents } from "@bibliothecadao/types";
+import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
-  entityId,
+  resources,
   max = Infinity,
   className = "flex flex-wrap gap-1",
   resourcesIconSize = "sm",
   textSize,
 }: {
-  entityId: ID;
+  resources: ComponentValue<ClientComponents["Resource"]["schema"]>;
   max?: number;
   className?: string;
   resourcesIconSize?: "xs" | "sm" | "md" | "lg";
@@ -19,11 +19,9 @@ export const InventoryResources = ({
 }) => {
   const [showAll, setShowAll] = useState(false);
 
-  const resourceManager = useResourceManager(entityId);
-
   const sortedResources = useMemo(() => {
-    return resourceManager.getResourceBalances().sort((a, b) => b.amount - a.amount);
-  }, [resourceManager]);
+    return ResourceManager.getResourceBalances(resources).sort((a, b) => b.amount - a.amount);
+  }, [resources]);
 
   const updatedMax = useMemo(() => {
     if (showAll) return Infinity;

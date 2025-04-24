@@ -5,11 +5,30 @@ use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
 use s1_eternum::models::config::{BattleConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
 use s1_eternum::models::config::{TickTrait};
-use s1_eternum::models::position::Coord;
+use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::stamina::Stamina;
 use s1_eternum::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
 use starknet::ContractAddress;
 
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct Wonder {
+    #[key]
+    pub structure_id: ID,
+    pub coord: Coord,
+    pub realm_id: u16,
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureVillageSlots {
+    #[key]
+    pub connected_realm_entity_id: ID,
+    pub connected_realm_id: u16,
+    pub connected_realm_coord: Coord,
+    pub directions_left: Span<Direction>,
+}
 
 // todo: obtain each value as needed not all at once
 

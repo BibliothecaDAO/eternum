@@ -12,9 +12,9 @@ export const getHyperstructureProgress = (hyperstructureId: number, components: 
   );
   const percentage = hyperstructureRequiredAmounts?.current_resource_total
     ? Number(
-      (hyperstructureRequiredAmounts.current_resource_total * 100n) /
-      hyperstructureRequiredAmounts.needed_resource_total,
-    )
+        (hyperstructureRequiredAmounts.current_resource_total * 100n) /
+          hyperstructureRequiredAmounts.needed_resource_total,
+      )
     : 0;
 
   return {

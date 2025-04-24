@@ -6,12 +6,7 @@ import { ProductionModal } from "@/ui/components/production/production-modal";
 import Button from "@/ui/elements/button";
 import { RealmVillageDetails } from "@/ui/modules/entity-details/realm/realm-details";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  ResourceIdToMiningType,
-  TileManager,
-  configManager,
-  getEntityInfo,
-} from "@bibliothecadao/eternum";
+import { ResourceIdToMiningType, TileManager, configManager, getEntityInfo } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
   BuildingType,
