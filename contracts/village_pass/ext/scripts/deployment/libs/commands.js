@@ -25,8 +25,8 @@ export const deployVillagePassContract = async () => {
   let VILLAGE_PASS_MINTER = await getContractByNameFromManifest("realm_systems");
   let VILLAGE_PASS_DISTRIBUTORS = [
     await getContractByNameFromManifest("village_systems"),
-    BigInt(process.env.VILLAGE_PASS_DISTRIBUTOR)
-  ]
+    BigInt(process.env.VILLAGE_PASS_DISTRIBUTOR),
+  ];
 
   let constructorCalldata = [
     VILLAGE_PASS_ADMIN,
@@ -39,7 +39,6 @@ export const deployVillagePassContract = async () => {
   let address = await deploy(casualName, class_hash, constructorCalldata);
   return address;
 };
-
 
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
@@ -84,9 +83,8 @@ export const saveVillagePassAddressToCommonFolder = async (villagePassAddress) =
   }
 };
 
-
 export const getContractByNameFromManifest = async (systemName) => {
-  const network = process.env.STARKNET_NETWORK
+  const network = process.env.STARKNET_NETWORK;
   const folderPath = path.join("..", "..", "..", "..", "game");
   const fileName = path.join(folderPath, `manifest_${network}.json`);
 
@@ -94,7 +92,7 @@ export const getContractByNameFromManifest = async (systemName) => {
   const fileContent = await fs.promises.readFile(fileName, "utf8");
   const manifest = JSON.parse(fileContent);
 
-  const contractSystemName = `${process.env.ETERNUM_CONTRACTS_NAMESPACE}-${systemName}`
+  const contractSystemName = `${process.env.ETERNUM_CONTRACTS_NAMESPACE}-${systemName}`;
   const contract = manifest.contracts.find((contract) => contract.tag === contractSystemName);
   if (!contract) {
     throw new Error(`Contract ${contractSystemName} not found in manifest`);

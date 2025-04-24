@@ -12,14 +12,7 @@ import {
   getClosestBank,
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
-import {
-
-  ContractAddress,
-  ID,
-  ResourcesIds,
-  StructureType,
-  resources,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -131,7 +124,7 @@ export const LiquidityResourceRow = ({
 
     const isVillageAndMilitaryResource =
       getComponentValue(dojoContext.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]))?.category ===
-      StructureType.Village && isMilitaryResource(resourceId);
+        StructureType.Village && isMilitaryResource(resourceId);
 
     const travelResources = [
       { amount: divideByPrecision(lords), resourceId: ResourcesIds.Lords },
@@ -304,7 +297,7 @@ const MyLiquidity = ({
     return [
       ((lordsAmount - Number(playerLiquidityInfo.lords_amount)) / Number(playerLiquidityInfo.lords_amount)) * 100,
       ((resourceAmount - Number(playerLiquidityInfo.resource_amount)) / Number(playerLiquidityInfo.resource_amount)) *
-      100,
+        100,
     ];
   }, [playerLiquidityInfo, lordsAmount, resourceAmount]);
 

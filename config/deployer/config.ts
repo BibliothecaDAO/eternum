@@ -845,7 +845,7 @@ export const setWonderBonusConfig = async (config: Config) => {
     chalk.cyan(`
     ┌─ ${chalk.yellow("Wonder Bonus")}
     │  ${chalk.gray("Within Tile Distance:")} ${chalk.white(calldata.within_tile_distance)}
-    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white(calldata.bonus_percent_num / 10_000 * 100)}%
+    │  ${chalk.gray("Bonus Percent Num:")} ${chalk.white((calldata.bonus_percent_num / 10_000) * 100)}%
     └────────────────────────────────`),
   );
 
@@ -882,7 +882,7 @@ export const setVillageControllersConfig = async (config: Config) => {
     village_pass_nft_address: config.config.village.village_pass_nft_address,
     village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
   };
-  
+
   console.log(
     chalk.cyan(`
   📦 Village Token Configuration

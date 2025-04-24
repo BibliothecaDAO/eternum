@@ -1,4 +1,4 @@
-import { configManager, } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 

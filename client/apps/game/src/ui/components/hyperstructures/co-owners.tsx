@@ -7,7 +7,7 @@ import { SelectAddress } from "@/ui/elements/select-address";
 import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
-import { getAddressName, getStructure } from "@bibliothecadao/eternum"
+import { getAddressName, getStructure } from "@bibliothecadao/eternum";
 import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -252,10 +252,11 @@ const ChangeCoOwners = ({
         <div className="flex justify-between">
           <div onClick={addCoOwner} className="flex items-center justify-center">
             <Plus
-              className={`w-6 h-6 fill-gold/70 ${newCoOwners.length >= 10
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
-                }`}
+              className={`w-6 h-6 fill-gold/70 ${
+                newCoOwners.length >= 10
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:scale-125 hover:animate-pulse duration-300 transition-all"
+              }`}
             />
           </div>
           <div className={`text-sm ${totalPercentage === 100 ? "text-red" : ""}`}>{totalPercentage}%</div>

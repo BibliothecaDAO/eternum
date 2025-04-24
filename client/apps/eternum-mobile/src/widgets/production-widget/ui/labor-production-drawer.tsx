@@ -5,18 +5,8 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/dr
 import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
-import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  multiplyByPrecision,
-} from "@bibliothecadao/eternum";
-import {
-  findResourceById,
-  RealmInfo,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
+import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";

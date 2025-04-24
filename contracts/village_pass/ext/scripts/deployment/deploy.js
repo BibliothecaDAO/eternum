@@ -1,7 +1,4 @@
-import {
-  deployVillagePassContract,
-  saveVillagePassAddressToCommonFolder
-} from "./libs/commands.js";
+import { deployVillagePassContract, saveVillagePassAddressToCommonFolder } from "./libs/commands.js";
 
 // Pretty console header
 console.log("\n\n");
@@ -13,7 +10,6 @@ console.log("\n");
 const toHex = (address) => {
   return address.toString(16);
 };
-
 
 // Deploy Village Pass contract
 const villagePassAddress = await deployVillagePassContract();

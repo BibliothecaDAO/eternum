@@ -1,14 +1,7 @@
 import Button from "@/ui/elements/button";
 import { formatNumber } from "@/ui/utils/utils";
-import {
-  getEntityIdFromKeys,
-  getGuardsByStructure,
-} from "@bibliothecadao/eternum";
-import {
-  DEFENSE_NAMES,
-  ID,
-  getDirectionBetweenAdjacentHexes,
-} from "@bibliothecadao/types";
+import { getEntityIdFromKeys, getGuardsByStructure } from "@bibliothecadao/eternum";
+import { DEFENSE_NAMES, ID, getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
@@ -280,47 +273,47 @@ export const TransferTroopsContainer = ({
 
       {(transferDirection === TransferDirection.ExplorerToStructure ||
         transferDirection === TransferDirection.StructureToExplorer) && (
-          <div className="flex flex-col space-y-2">
-            <label className="text-gold font-semibold">Guard Slot:</label>
-            <select
-              value={guardSlot}
-              onChange={handleGuardSlotChange}
-              className="px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
-            >
-              {transferDirection === TransferDirection.ExplorerToStructure ? (
-                <>
-                  <option
-                    value={0}
-                  >{`${DEFENSE_NAMES[0]} - Tier ${targetGuards[0].troops.tier} ${targetGuards[0].troops.category} (available: ${targetGuards[0].troops.count})`}</option>
-                  <option
-                    value={1}
-                  >{`${DEFENSE_NAMES[1]} - Tier ${targetGuards[1].troops.tier} ${targetGuards[1].troops.category} (available: ${targetGuards[1].troops.count})`}</option>
-                  <option
-                    value={2}
-                  >{`${DEFENSE_NAMES[2]} - Tier ${targetGuards[2].troops.tier} ${targetGuards[2].troops.category} (available: ${targetGuards[2].troops.count})`}</option>
-                  <option
-                    value={3}
-                  >{`${DEFENSE_NAMES[3]} - Tier ${targetGuards[3].troops.tier} ${targetGuards[3].troops.category} (available: ${targetGuards[3].troops.count})`}</option>
-                </>
-              ) : (
-                <>
-                  <option
-                    value={0}
-                  >{`${DEFENSE_NAMES[0]} - Tier ${selectedGuards[0].troops.tier} ${selectedGuards[0].troops.category} (available: ${selectedGuards[0].troops.count})`}</option>
-                  <option
-                    value={1}
-                  >{`${DEFENSE_NAMES[1]} - Tier ${selectedGuards[1].troops.tier} ${selectedGuards[1].troops.category} (available: ${selectedGuards[1].troops.count})`}</option>
-                  <option
-                    value={2}
-                  >{`${DEFENSE_NAMES[2]} - Tier ${selectedGuards[2].troops.tier} ${selectedGuards[2].troops.category} (available: ${selectedGuards[2].troops.count})`}</option>
-                  <option
-                    value={3}
-                  >{`${DEFENSE_NAMES[3]} - Tier ${selectedGuards[3].troops.tier} ${selectedGuards[3].troops.category} (available: ${selectedGuards[3].troops.count})`}</option>
-                </>
-              )}
-            </select>
-          </div>
-        )}
+        <div className="flex flex-col space-y-2">
+          <label className="text-gold font-semibold">Guard Slot:</label>
+          <select
+            value={guardSlot}
+            onChange={handleGuardSlotChange}
+            className="px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold"
+          >
+            {transferDirection === TransferDirection.ExplorerToStructure ? (
+              <>
+                <option
+                  value={0}
+                >{`${DEFENSE_NAMES[0]} - Tier ${targetGuards[0].troops.tier} ${targetGuards[0].troops.category} (available: ${targetGuards[0].troops.count})`}</option>
+                <option
+                  value={1}
+                >{`${DEFENSE_NAMES[1]} - Tier ${targetGuards[1].troops.tier} ${targetGuards[1].troops.category} (available: ${targetGuards[1].troops.count})`}</option>
+                <option
+                  value={2}
+                >{`${DEFENSE_NAMES[2]} - Tier ${targetGuards[2].troops.tier} ${targetGuards[2].troops.category} (available: ${targetGuards[2].troops.count})`}</option>
+                <option
+                  value={3}
+                >{`${DEFENSE_NAMES[3]} - Tier ${targetGuards[3].troops.tier} ${targetGuards[3].troops.category} (available: ${targetGuards[3].troops.count})`}</option>
+              </>
+            ) : (
+              <>
+                <option
+                  value={0}
+                >{`${DEFENSE_NAMES[0]} - Tier ${selectedGuards[0].troops.tier} ${selectedGuards[0].troops.category} (available: ${selectedGuards[0].troops.count})`}</option>
+                <option
+                  value={1}
+                >{`${DEFENSE_NAMES[1]} - Tier ${selectedGuards[1].troops.tier} ${selectedGuards[1].troops.category} (available: ${selectedGuards[1].troops.count})`}</option>
+                <option
+                  value={2}
+                >{`${DEFENSE_NAMES[2]} - Tier ${selectedGuards[2].troops.tier} ${selectedGuards[2].troops.category} (available: ${selectedGuards[2].troops.count})`}</option>
+                <option
+                  value={3}
+                >{`${DEFENSE_NAMES[3]} - Tier ${selectedGuards[3].troops.tier} ${selectedGuards[3].troops.category} (available: ${selectedGuards[3].troops.count})`}</option>
+              </>
+            )}
+          </select>
+        </div>
+      )}
 
       {getTroopMismatchMessage() && <div className="text-red-500 text-sm">{getTroopMismatchMessage()}</div>}
 

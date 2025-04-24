@@ -1,9 +1,8 @@
-import { Direction, getNeighborHexes, ID, Steps, } from "@bibliothecadao/types";
+import { Direction, getNeighborHexes, ID, Steps } from "@bibliothecadao/types";
 import { Entity } from "@dojoengine/recs";
 import { Clause, PatternMatching, Query, ToriiClient } from "@dojoengine/torii-wasm";
 import { getStructureFromToriiEntity } from "../parser";
 import { getResourcesFromToriiEntity } from "../parser/resources";
-
 
 export const getFirstStructureFromToriiClient = async (toriiClient: ToriiClient, ownedBy?: string) => {
   const clause: Clause = !ownedBy
@@ -131,14 +130,12 @@ export const getAllStructuresFromToriiClient = async (toriiClient: ToriiClient, 
   return result;
 };
 
-
-
 // Types For Getting Village Slots
 interface VillageSlot {
   value: Direction;
   label: string;
   coord: {
-    col: number; 
+    col: number;
     row: number;
   };
 }
@@ -156,37 +153,31 @@ interface VillageSlotCheckResult {
 
 // Constants
 const DIRECTION_MAP: Record<string, Direction> = {
-  "East": Direction.EAST,
-  "NorthEast": Direction.NORTH_EAST,
-  "NorthWest": Direction.NORTH_WEST,
-  "West": Direction.WEST,
-  "SouthWest": Direction.SOUTH_WEST,
-  "SouthEast": Direction.SOUTH_EAST
+  East: Direction.EAST,
+  NorthEast: Direction.NORTH_EAST,
+  NorthWest: Direction.NORTH_WEST,
+  West: Direction.WEST,
+  SouthWest: Direction.SOUTH_WEST,
+  SouthEast: Direction.SOUTH_EAST,
 };
 
 // Helper functions
-const convertDirectionsToEnum = (directions: string[]): Direction[] => 
-  directions
-    .map(direction => DIRECTION_MAP[direction])
-    .filter((dir): dir is Direction => dir !== undefined);
+const convertDirectionsToEnum = (directions: string[]): Direction[] =>
+  directions.map((direction) => DIRECTION_MAP[direction]).filter((dir): dir is Direction => dir !== undefined);
 
-const formatVillageSlots = (
-  availableSlotStrings: string[], 
-  col: number,  
-  row: number
-): VillageSlot[] => {
+const formatVillageSlots = (availableSlotStrings: string[], col: number, row: number): VillageSlot[] => {
   const availableSlots = convertDirectionsToEnum(availableSlotStrings);
   const neighborHexes = getNeighborHexes(col, row, Steps.Two);
-  
+
   return neighborHexes
-    .filter(neighbor => availableSlots.includes(neighbor.direction))
-    .map(neighbor => ({
+    .filter((neighbor) => availableSlots.includes(neighbor.direction))
+    .map((neighbor) => ({
       value: neighbor.direction,
       label: Direction[neighbor.direction].replace(/_/g, " "),
       coord: {
         col: neighbor?.col ?? 0,
         row: neighbor?.row ?? 0,
-      }
+      },
     }));
 };
 
@@ -198,19 +189,19 @@ const createStructureVillageSlotsQuery = (clause?: Clause): Query => ({
   dont_include_hashed_keys: false,
   order_by: [],
   entity_models: ["s1_eternum-StructureVillageSlots"],
-  entity_updated_after: 0
+  entity_updated_after: 0,
 });
 
 // Main functions
 export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: ToriiClient) => {
   const villageSlots = await toriiClient.getEntities(createStructureVillageSlotsQuery(), false);
   const entityId = Object.keys(villageSlots)[0];
-  
+
   if (!entityId) return null;
 
   const villageSlotsData = villageSlots[entityId]["s1_eternum-StructureVillageSlots"] as any;
   const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
-  
+
   return {
     realmId: villageSlotsData.connected_realm_id?.value,
     entityId: Number(villageSlotsData.connected_realm_entity_id?.value),
@@ -218,37 +209,35 @@ export const getRandomRealmWithVillageSlotsFromTorii = async (toriiClient: Torii
     availableSlots: formatVillageSlots(
       availableSlots,
       villageSlotsData.connected_realm_coord?.value.x.value,
-      villageSlotsData.connected_realm_coord?.value.y.value
+      villageSlotsData.connected_realm_coord?.value.y.value,
     ),
     position: {
       col: villageSlotsData.connected_realm_coord?.value.x.value,
-      row: villageSlotsData.connected_realm_coord?.value.y.value
-    }
+      row: villageSlotsData.connected_realm_coord?.value.y.value,
+    },
   };
 };
 
 export const checkOpenVillageSlotFromToriiClient = async (
   toriiClient: ToriiClient,
-  realmId: ID
+  realmId: ID,
 ): Promise<VillageSlotCheckResult | null> => {
   const villageSlotQuery = createStructureVillageSlotsQuery({
     Member: {
       model: "s1_eternum-StructureVillageSlots",
       member: "connected_realm_id",
       operator: "Eq",
-      value: { Primitive: { U16: realmId } }
-    }
+      value: { Primitive: { U16: realmId } },
+    },
   });
 
   const villageSlots = await toriiClient.getEntities(villageSlotQuery, false);
   const entity = Object.keys(villageSlots)[0];
-  
+
   if (!entity) return null;
 
   const villageSlotsData = villageSlots[entity]["s1_eternum-StructureVillageSlots"] as any;
-  const availableSlots = villageSlotsData.directions_left.value.map(
-    (v: any) => v.value.option
-  );
+  const availableSlots = villageSlotsData.directions_left.value.map((v: any) => v.value.option);
 
   return {
     realmId: villageSlotsData.connected_realm_id?.value,
@@ -257,11 +246,11 @@ export const checkOpenVillageSlotFromToriiClient = async (
     availableSlots: formatVillageSlots(
       availableSlots,
       villageSlotsData.connected_realm_coord?.value.x.value,
-      villageSlotsData.connected_realm_coord?.value.y.value
+      villageSlotsData.connected_realm_coord?.value.y.value,
     ),
     position: {
       col: villageSlotsData.connected_realm_coord?.value.x.value,
-      row: villageSlotsData.connected_realm_coord?.value.y.value
-    }
+      row: villageSlotsData.connected_realm_coord?.value.y.value,
+    },
   };
 };

@@ -193,6 +193,6 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.FragmentMine ||
     tileOccupier === TileOccupier.Village ||
     tileOccupier === TileOccupier.VillageWonderBonus ||
-    tileOccupier === TileOccupier.Bank 
+    tileOccupier === TileOccupier.Bank
   );
 };

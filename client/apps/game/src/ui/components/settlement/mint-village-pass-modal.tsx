@@ -26,7 +26,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     },
   } = useDojo();
 
-  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID;} | null>(null);
+  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID } | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [selectedCoords, setSelectedCoords] = useState<HexPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,7 +122,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
           position: { col: data.position.col, row: data.position.row },
         };
 
-        console.log({result})
+        console.log({ result });
         setRealmCheckResult(result);
 
         setSelectedRealm({
@@ -161,7 +161,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
       }
 
       try {
-        const options = realmCheckResult?.availableSlots
+        const options = realmCheckResult?.availableSlots;
         setDirectionOptions(options);
 
         // Auto-select the first direction if available
@@ -234,9 +234,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
                   {/* Realm Check Result */}
                   {realmCheckResult && (
-                    <div
-                      className={`p-3 rounded-md "bg-green-900/30 border border-green-500/30"`}
-                    >
+                    <div className={`p-3 rounded-md "bg-green-900/30 border border-green-500/30"`}>
                       <p className="text-gold">
                         Realm #{realmCheckResult.realmId} - {getRealmNameById(realmCheckResult.realmId) || "Unnamed"}
                       </p>

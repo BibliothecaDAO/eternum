@@ -296,8 +296,9 @@ const RealmTransferBalance = memo(
         <div className="self-end gap-2">
           <div className="hover:bg-gold/5 transition-colors">
             <div
-              className={`px-4 py-1 whitespace-nowrap text-left ${neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
-                }`}
+              className={`px-4 py-1 whitespace-nowrap text-left ${
+                neededDonkeys > getDonkeyBalance() || getDonkeyBalance() === 0 ? "text-red" : "text-green"
+              }`}
             >
               {neededDonkeys.toLocaleString()} 🔥🫏 [{currencyFormat(getDonkeyBalance(), 0).toLocaleString()}]
             </div>

@@ -1981,7 +1981,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-
   public async set_wonder_bonus_config(props: SystemProps.SetWonderBonusConfigProps) {
     const { within_tile_distance, bonus_percent_num, signer } = props;
 

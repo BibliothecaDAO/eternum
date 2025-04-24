@@ -1,6 +1,6 @@
 import { MarketResource } from "@/ui/components/trading/market-order-panel";
 import { ID, MarketInterface, RESOURCE_TIERS, ResourcesIds } from "@bibliothecadao/types";
-import { MarketManager } from "@bibliothecadao/eternum"
+import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { useMemo } from "react";
 

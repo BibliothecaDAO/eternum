@@ -257,8 +257,9 @@ export const Rewards = () => {
 const Compartment = ({ children, isCountdown }: { children: React.ReactNode; isCountdown?: boolean }) => {
   return (
     <div
-      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${isCountdown ? "bg-brown/70" : "bg-brown/50"
-        } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
+      className={`flex flex-col w-full justify-center border-b border-brown/50 p-4 rounded-md ${
+        isCountdown ? "bg-brown/70" : "bg-brown/50"
+      } bg-hex m-auto h-28 ${isCountdown ? "border-2 border-danger/50" : ""}`}
     >
       {children}
     </div>

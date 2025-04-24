@@ -7,8 +7,9 @@ export const GettingStarted = () => {
   const chapters = [
     {
       title: "The Time Cycle",
-      content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${configManager.getTick(TickIds.Armies) / 60
-        } minutes.`,
+      content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${
+        configManager.getTick(TickIds.Armies) / 60
+      } minutes.`,
     },
     {
       title: "Resources",

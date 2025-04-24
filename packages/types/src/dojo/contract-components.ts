@@ -407,7 +407,7 @@ export function defineContractComponents(world: World) {
             x: RecsType.Number,
             y: RecsType.Number,
           },
-          directions_left: RecsType.NumberArray
+          directions_left: RecsType.NumberArray,
         },
         {
           metadata: {
