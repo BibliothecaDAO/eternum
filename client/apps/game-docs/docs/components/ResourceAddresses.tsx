@@ -66,6 +66,7 @@ const componentStyles = {
 };
 
 export const ResourceAddresses = () => {
+  // get addresses from the config
   const addresses = getResourceAddresses();
 
   // Transform the address data for display
