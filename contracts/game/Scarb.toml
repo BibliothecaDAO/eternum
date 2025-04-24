@@ -19,6 +19,7 @@ tournaments = { git = "https://github.com/Provable-Games/tournaments.git", tag =
 [dev-dependencies]
 dojo_cairo_test = { git = "https://github.com/dojoengine/dojo.git", tag = "v1.4.0" }
 openzeppelin_token = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0"}
+openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v1.0.0"}
 
 [[target.starknet-contract]]
 casm = true
