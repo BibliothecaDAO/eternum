@@ -42,6 +42,7 @@ trait IProductionContract<TContractState> {
 
 #[dojo::contract]
 mod production_systems {
+    use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
@@ -60,7 +61,6 @@ mod production_systems {
     use s1_eternum::systems::utils::map::IMapImpl;
     use starknet::ContractAddress;
     use super::super::super::super::models::resource::production::building::BuildingProductionTrait;
-    use core::num::traits::zero::Zero;
     #[abi(embed_v0)]
     impl ProductionContractImpl of super::IProductionContract<ContractState> {
         fn create_building(

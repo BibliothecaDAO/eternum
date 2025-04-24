@@ -3,7 +3,9 @@ use s1_eternum::models::position::Direction;
 
 #[starknet::interface]
 pub trait ITroopMovementSystems<TContractState> {
-    fn explorer_move(ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool);
+    fn explorer_move(
+        ref self: TContractState, explorer_id: ID, directions: Span<Direction>, explore: bool,
+    ) -> Span<Tile>;
 }
 
 #[dojo::contract]
@@ -43,6 +45,7 @@ pub mod troop_movement_systems {
         Hyperstructure,
         Mine,
         Agent,
+        Quest,
     }
 
     #[derive(Copy, Drop, Serde)]
@@ -60,13 +63,15 @@ pub mod troop_movement_systems {
 
     #[abi(embed_v0)]
     impl TroopMovementSystemsImpl of ITroopMovementSystems<ContractState> {
-        fn explorer_move(ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool) {
+        fn explorer_move(
+            ref self: ContractState, explorer_id: ID, mut directions: Span<Direction>, explore: bool,
+        ) -> Span<Tile> {
+            let mut tiles_to_return: Array<Tile> = array![];
+
             // ensure directions are not empty
             assert!(directions.len().is_non_zero(), "directions must be more than 0");
-
             let mut world = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
-
             // ensure caller owns explorer
             let mut explorer: ExplorerTroops = world.read_model(explorer_id);
             explorer.assert_caller_structure_or_agent_owner(ref world);
@@ -86,6 +91,7 @@ pub mod troop_movement_systems {
             let mut explore_reward_amount = 0;
 
             let caller = starknet::get_caller_address();
+
             let current_tick: u64 = TickImpl::get_tick_config(ref world).current();
             let troop_limit_config: TroopLimitConfig = CombatConfigImpl::troop_limit_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
@@ -134,6 +140,7 @@ pub mod troop_movement_systems {
                             troop_stamina_config,
                             current_tick,
                         );
+
                     explore_find = _explore_find;
                     if found_treasure {
                         // ensure explorer does not occupy destination tile
@@ -182,7 +189,10 @@ pub mod troop_movement_systems {
                         IMapImpl::occupy(ref world, ref from_tile, tile_occupier, explorer_id);
                         world.write_model(@from_tile);
                     }
+                    tiles_to_return.append(tile);
                     break;
+                } else {
+                    tiles_to_return.append(tile);
                 }
             };
 
@@ -211,6 +221,8 @@ pub mod troop_movement_systems {
 
             // update explorer
             world.write_model(@explorer);
+
+            tiles_to_return.span()
         }
     }
 }
@@ -235,11 +247,19 @@ pub trait ITroopMovementUtilSystems<T> {
 
 #[dojo::contract]
 pub mod troop_movement_util_systems {
+    use dojo::model::{ModelStorage};
     use dojo::world::{WorldStorageTrait};
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
-    use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
+    use s1_eternum::models::quest::{QuestFeatureFlag, QuestGameRegistry};
+    use s1_eternum::models::{
+        config::{CombatConfigImpl, MapConfig, QuestConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl},
+    };
+    use s1_eternum::systems::quest::constants::VERSION;
+    use s1_eternum::systems::quest::contracts::{
+        IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl,
+    };
     use s1_eternum::systems::utils::{
         hyperstructure::iHyperstructureDiscoveryImpl, mine::iMineDiscoveryImpl,
         troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl},
@@ -323,6 +343,21 @@ pub mod troop_movement_util_systems {
                     if found_agent {
                         return (true, ExploreFind::Agent);
                     } else {
+                        let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
+                            world, selector!("quest_config"),
+                        );
+                        let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
+                        let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
+                        let quest_game_count = quest_game_registry.games.len();
+                        if quest_game_count > 0 && feature_toggle.enabled {
+                            let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(quest_config, vrf_seed);
+                            if quest_lottery_won {
+                                let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
+                                let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_address };
+                                quest_system.create_quest(tile, vrf_seed);
+                                return (true, ExploreFind::Quest);
+                            }
+                        }
                         return (false, ExploreFind::None);
                     }
                 }
