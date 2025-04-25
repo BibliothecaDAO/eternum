@@ -3,8 +3,9 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::split_resources_and_probs;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use s1_eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+use s1_eternum::models::agent::{AgentConfig, AgentLordsMintedImpl};
 use s1_eternum::models::agent::{AgentCountImpl, AgentOwner};
 use s1_eternum::models::config::{AgentControllerConfig, CombatConfigImpl, WorldConfigUtilImpl};
 use s1_eternum::models::config::{CapacityConfig, MapConfig, TickConfig, TickImpl, TroopLimitConfig, TroopStaminaConfig};
@@ -598,8 +599,6 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         let name: AddressName = AddressName { address: explorer_id.try_into().unwrap(), name: name };
         world.write_model(@name);
 
-        // todo: limit agent count during increase. check max
-
         // increase agent count
         AgentCountImpl::increase(ref world);
 
@@ -609,16 +608,20 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
         );
         world.write_model(@AgentOwner { explorer_id, address: agent_controller_config.address });
 
-        // todo: give agent resources
+        // get random lords amount to give to the agent
+        let mut agent_config: AgentConfig = world.read_model(WORLD_CONFIG_ID);
+        let lords_difference = agent_config.max_spawn_lords_amount - agent_config.min_spawn_lords_amount;
+        let lords_amount = random::random(seed, salt, lords_difference.into() + 1)
+            + agent_config.min_spawn_lords_amount.into();
+        AgentLordsMintedImpl::increase(ref world, lords_amount.try_into().unwrap());
 
-        // hack to grant agents lords
-        // todo: remove
+        // grant random lords amount to the agent
         let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer.explorer_id);
         let lords_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LORDS);
         let mut lords_resource = SingleResourceStoreImpl::retrieve(
             ref world, explorer.explorer_id, ResourceTypes::LORDS, ref explorer_weight, lords_weight_grams, false,
         );
-        lords_resource.add(5000 * RESOURCE_PRECISION, ref explorer_weight, lords_weight_grams);
+        lords_resource.add(lords_amount * RESOURCE_PRECISION, ref explorer_weight, lords_weight_grams);
         lords_resource.store(ref world);
 
         // emit event
@@ -639,15 +642,15 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             'Daydreams Agent Giggles',
             'Daydreams Agent Noodle',
             'Daydreams Agent Pickle',
-            'Daydreams Agent Wobble',
+            'Daydreams Agent PuffPuff',
             'Daydreams Agent Sprinkles',
-            'Daydreams Agent Kazoo',
+            'Daydreams Agent Unstable',
             'Daydreams Agent Waffle',
             'Daydreams Agent Mischief',
             'Daydreams Agent Whiskers',
             'Daydreams Agent Poptart',
             'Daydreams Agent Bubbles',
-            'Daydreams Agent Snooze',
+            'Daydreams Agent Jojo',
             'Daydreams Agent Pink',
             'Daydreams Agent Biscuit',
             'Daydreams Agent Sparkle',
@@ -656,12 +659,12 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             'Daydreams Agent Mario',
             'Daydreams Agent Scramble',
             'Daydreams Agent Jitters',
-            'Daydreams Agent Fizzle',
+            'Daydreams Agent Funny',
             'Daydreams Agent Waffles',
             'Daydreams Agent Doodle',
-            'Daydreams Agent Floof',
+            'Daydreams Agent Katy',
             'Daydreams Agent Bumblebee',
-            'Daydreams Agent Quibble',
+            'Daydreams Agent Happy',
             'Daydreams Agent Marshmallow',
             'Daydreams Agent Zigzag',
             'Daydreams Agent Pebble',
@@ -669,16 +672,16 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             'Daydreams Agent Cinnamon',
             'Daydreams Agent Noodles',
             'Daydreams Agent Popsicle',
-            'Daydreams Agent Twizzle',
+            'Daydreams Agent Loot',
             'Daydreams Agent Mumble',
-            'Daydreams Agent Squiggle',
-            'Daydreams Agent Blinky',
-            'Daydreams Agent Razzle',
+            'Daydreams Agent French',
+            'Daydreams Agent Angry',
+            'Daydreams Agent Dazzle',
             'Daydreams Agent Pretzel',
             'Daydreams Agent Bubblegum',
-            'Daydreams Agent Sizzle',
+            'Daydreams Agent Banana',
             'Daydreams Agent Pickle',
-            'Daydreams Agent Frizzle',
+            'Daydreams Agent Blobert',
         ]
     }
 }

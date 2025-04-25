@@ -160,6 +160,10 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const AGENT_MAX_LIFETIME_COUNT = 10_000;
+export const AGENT_MAX_CURRENT_COUNT = 1_000;
+export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 5;
+export const AGENT_MAX_SPAWN_LORDS_AMOUNT = 10;
 
 export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
@@ -172,6 +176,10 @@ export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.V
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
+    max_lifetime_count: AGENT_MAX_LIFETIME_COUNT,
+    max_current_count: AGENT_MAX_CURRENT_COUNT,
+    min_spawn_lords_amount: AGENT_MIN_SPAWN_LORDS_AMOUNT,
+    max_spawn_lords_amount: AGENT_MAX_SPAWN_LORDS_AMOUNT,
   },
   village: {
     village_pass_nft_address: VILLAGE_TOKEN_NFT_CONTRACT,

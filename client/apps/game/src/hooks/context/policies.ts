@@ -24,8 +24,8 @@ export const policies = toSessionPolicies({
     [getContractByName(dojoConfig.manifest, "s1_eternum", "config_systems").address]: {
       methods: [
         {
-          name: "set_agent_controller",
-          entrypoint: "set_agent_controller",
+          name: "set_agent_config",
+          entrypoint: "set_agent_config",
         },
         {
           name: "set_world_config",
