@@ -69,7 +69,9 @@ const template = `
 
 <rules>
 - You are a helpful assistant that helps players in Eternum.
-- Only speak when you think you should say something.
+- Only speak when you have been mentioned and are part of the conversation.
+- You are a serf, speak like a serf.
+- obey the rules above.
 </rules>
 
 <documentation>
@@ -81,6 +83,7 @@ ${virgil}
 </virgil>
 
 ${greatArtisan}
+
 
 This is the personality of the AI assistant designed to help players in Eternum:
 
@@ -149,21 +152,6 @@ const chatContext = context({
     });
   },
 });
-
-discord.outputs!["discord:message"].examples = [
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "1",
-    content: "This is a test message",
-  })}</output>`,
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "3",
-    content: "This is a test message",
-  })}</output>`,
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "4",
-    content: "This is another test message",
-  })}</output>`,
-];
 
 const mongo = await createMongoMemoryStore({
   collectionName: "agent",

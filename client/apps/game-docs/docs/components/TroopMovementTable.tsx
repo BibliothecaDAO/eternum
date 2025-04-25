@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { icon, section, stats, table } from "./styles";
 
@@ -163,9 +164,12 @@ export default function TroopMovementTable() {
               </div>
               <StatItem
                 label="Total Wheat"
-                value={`${config.troop.stamina.staminaTravelWheatCost * 1000 * 10} wheat`}
+                value={`${formatNumberWithCommas(config.troop.stamina.staminaTravelWheatCost * 1000 * 10)} wheat`}
               />
-              <StatItem label="Total Fish" value={`${config.troop.stamina.staminaTravelFishCost * 1000 * 10} fish`} />
+              <StatItem
+                label="Total Fish"
+                value={`${formatNumberWithCommas(config.troop.stamina.staminaTravelFishCost * 1000 * 10)} fish`}
+              />
             </div>
           </div>
         </div>

@@ -6,12 +6,14 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 
 # 🏺 Storage System
 
-Storage limits how many resources your realm can hold. Managing your storage capacity effectively is key to developing
-your realm.
+Storage limits the amount of resources your Realm or Village can hold. Effective management of your storage capacity is
+essential for successful development. Each Realm and Village begins with a base capacity of
+**{formatNumberWithCommas(ETERNUM_CONFIG().carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg per material type**.
+When you reach this maximum capacity, you'll need to construct storehouses to expand your storage capabilities.
 
-## Resource Weights
+## Material Weights
 
-Resources in Eternum have different weights that affect storage:
+Materials in Eternum have different weights that affect storage:
 
 <WeightTable />
 
@@ -24,8 +26,7 @@ Expand your storage capacity to support your growing realm:
   material
 - **Expansion**: Build additional storehouses to increase total storage.
 
-- **When storage is full**:
-  - New production is wasted
+- **Danger**: When storage is full new production is wasted
 
 ## Storage Management Tips
 
@@ -34,4 +35,4 @@ Expand your storage capacity to support your growing realm:
 > - Check storage levels regularly
 > - Build new storehouses before reaching capacity
 > - Pause production when storage is nearly full
-> - Plan resource usage to maximize storage efficiency
+> - Plan material usage to maximize storage efficiency

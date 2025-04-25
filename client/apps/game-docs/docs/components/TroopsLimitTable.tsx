@@ -1,4 +1,5 @@
 import { ETERNUM_CONFIG } from "@/utils/config";
+import { formatNumberWithCommas } from "@/utils/formatting";
 import { icon, stats, troop } from "./styles";
 
 export default function TroopsLimitTable() {
@@ -15,8 +16,8 @@ export default function TroopsLimitTable() {
           <div style={stats.value}>{config.troop.limit.explorerMaxPartyCount}</div>
         </div>
         <div>
-          <div style={stats.label}>Max Troop Count:</div>
-          <div style={stats.value}>{config.troop.limit.explorerAndGuardMaxTroopCount}</div>
+          <div style={stats.label}>Max Troop Count Per Army:</div>
+          <div style={stats.value}>{formatNumberWithCommas(config.troop.limit.explorerAndGuardMaxTroopCount)}</div>
         </div>
         <div>
           <div style={stats.label}>Guard Resurrection:</div>

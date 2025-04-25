@@ -74,16 +74,8 @@ const getGroupColor = (groupName: string): string => {
     case "Special":
     case "Tokens":
       return "#c0c0c0"; // silver
-    case "Common Resources":
-      return "#aa6c39"; // copper
-    case "Uncommon Resources":
-      return "#b78d4b"; // tan gold
-    case "Rare Resources":
-      return "#c19a49"; // bronze gold
-    case "Unique Resources":
-      return "#d4af37"; // darker gold
-    case "Mythic Resources":
-      return "#e6be8a"; // light gold
+    case "Resources":
+      return "#dfc296"; // default gold
     case "Transport":
     case "Military Units":
       return "#8c7853"; // bronze
@@ -135,7 +127,7 @@ export const WeightTable = () => {
 
   return (
     <div style={section.wrapper}>
-      <div style={section.subtitle}>Resource Weights (kg)</div>
+      <div style={section.subtitle}>Material Weights (kg)</div>
       <table style={table.table}>
         <thead>
           <tr>

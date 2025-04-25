@@ -1961,13 +1961,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_agent_controller(props: SystemProps.SetAgentControllerProps) {
-    const { agent_controller, signer } = props;
+  public async set_agent_config(props: SystemProps.SetAgentConfigProps) {
+    const { agent_controller, max_lifetime_count, max_current_count, min_spawn_lords_amount, max_spawn_lords_amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
-      entrypoint: "set_agent_controller",
-      calldata: [agent_controller],
+      entrypoint: "set_agent_config",
+      calldata: [agent_controller, max_lifetime_count, max_current_count, min_spawn_lords_amount, max_spawn_lords_amount],
     });
   }
 
