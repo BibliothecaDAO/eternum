@@ -44,7 +44,7 @@ pub struct QuestRegistrations {
     #[key]
     pub quest_tile_id: u32,
     #[key]
-    pub realm_id: u16,
+    pub realm_or_village_id: u32,
     pub game_token_id: u64,
 }
 
