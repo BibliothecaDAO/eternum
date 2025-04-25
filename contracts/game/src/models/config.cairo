@@ -601,6 +601,14 @@ pub struct ResourceBridgeWhitelistConfig {
     pub resource_type: u8,
 }
 
+#[dojo::model]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct ResourceRevBridgeWhtelistConfig {
+    #[key]
+    pub resource_type: u8,
+    pub token: ContractAddress,
+}
+
 // speed
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct StructureMaxLevelConfig {
