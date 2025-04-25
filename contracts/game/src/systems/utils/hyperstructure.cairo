@@ -1,5 +1,6 @@
 use achievement::store::{StoreTrait};
 use core::num::traits::zero::Zero;
+use cubit::f128::types::fixed::{FixedTrait};
 use dojo::model::{ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use s1_eternum::constants::{WORLD_CONFIG_ID};
@@ -13,6 +14,7 @@ use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
+use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
 use s1_eternum::utils::tasks::index::{Task, TaskTrait};
@@ -23,19 +25,30 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
     fn lottery(world: WorldStorage, coord: Coord, map_config: MapConfig, vrf_seed: u256) -> bool {
         // get hyperstructure foundation find probabilities
         let tile_distance_count: u128 = coord.tile_distance(CoordImpl::center());
-        let hyps_fail_prob_increase_p_hex: u128 = tile_distance_count * map_config.hyps_fail_prob_increase_p_hex.into();
+        let hyps_fail_prob_increase_p_hex: u128 = map_config.hyps_fail_prob_increase_p_hex.into();
         let mut hyps_win_prob: u128 = map_config.hyps_win_prob.into();
         let hyps_probs_original_sum: u128 = map_config.hyps_win_prob.into() + map_config.hyps_fail_prob.into();
 
-        // reduce find probabilities based on distance from center
-        hyps_win_prob =
-            if hyps_fail_prob_increase_p_hex < hyps_win_prob {
-                hyps_win_prob - hyps_fail_prob_increase_p_hex
-            } else {
-                0
-            };
+        // Calculate hyperstructure discovery probability adjustment based on distance from center
+        // Formula: P_final = P_initial * (failure_increase_rate ^ distance)
+        // Example: If initial probability is 10_000, failure rate is 0.95, and distance is 3:
+        //   - P_initial = 10_000
+        //   - Multiplier = 0.95
+        //   - P_final = 10_000 * (0.95)^3 = 10_000 * 0.857375 = 8_573.75
+        let win_prob_fixed = FixedTrait::new(hyps_win_prob, false);
+        let radius_multiplier_num_fixed = FixedTrait::new(hyps_fail_prob_increase_p_hex, false);
+        let radius_multiplier_denom_fixed = FixedTrait::new(PercentageValueImpl::_100().into(), false);
+        let tile_distance_count_fixed = FixedTrait::new_unscaled(tile_distance_count, false);
+        let radius_multiplier = radius_multiplier_num_fixed / radius_multiplier_denom_fixed;
+        let win_prob_after_radius_multiplier = win_prob_fixed * radius_multiplier.pow(tile_distance_count_fixed);
+        hyps_win_prob = win_prob_after_radius_multiplier.mag;
 
-        // reduce find probabilities based on global hyperstructure found count
+        // Calculate hyperstructure discovery probability adjustment based on global count
+        // Formula: P_final = max(0, P_initial - (count * failure_rate_per_found))
+        // Example: If initial probability is 8_000, failure rate per found is 500, and 10 hyperstructures exist:
+        //   - P_initial = 8_000
+        //   - Penalty = 10 * 500 = 5_000
+        //   - P_final = max(0, 8_000 - 5_000) = 3_000
         let hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         let hyperstructure_count = hyperstructure_globals.created_count;
         let hyps_fail_prob_increase_p_fnd: u128 = hyperstructure_count.into()
