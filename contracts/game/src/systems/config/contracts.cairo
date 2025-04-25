@@ -200,10 +200,11 @@ pub mod config_systems {
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
         HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
-        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
+        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -761,6 +762,13 @@ pub mod config_systems {
             );
 
             world.write_model(@resource_bridge_whitelist_config);
+
+            // reverse whitelist config
+            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWhtelistConfig {
+                resource_type: resource_bridge_whitelist_config.resource_type,
+                token: resource_bridge_whitelist_config.token,
+            };
+            world.write_model(@resource_bridge_whitelist_reverse_config);
         }
     }
 
