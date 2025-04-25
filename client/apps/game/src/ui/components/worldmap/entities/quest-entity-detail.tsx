@@ -41,7 +41,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
         <div className="flex flex-col">
           <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>{game?.name}</h4>
-          <span className="text-sm">Level {quest.level}</span>
+          <span className="text-sm">Level {quest.level + 1}</span>
         </div>
         <div className={`px-2 py-1 rounded text-xs font-bold ${hasSlotsRemaining ? "bg-green/20" : "bg-red/20"}`}>
           {hasSlotsRemaining ? "Active" : "Ended"}

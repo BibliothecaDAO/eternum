@@ -1,6 +1,7 @@
 import { ClientComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { Query, ToriiClient } from "@dojoengine/torii-wasm";
+
 export const formatQuests = (quests: any[]) => {
   return quests.map((quest) => {
     return {
@@ -124,6 +125,8 @@ export const getQuestForExplorer = async (
     entity_models: ["s1_eternum-Quest"],
     entity_updated_after: 0,
   } as Query;
+
+  // return getEntities(toriiClient, queryQuests.clause, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT);
 
   console.log(queryQuests);
 
