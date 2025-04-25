@@ -83,7 +83,14 @@ export const Bridge = ({ structures }: BridgeProps) => {
       id: value[0],
       name: key,
       tokenAddress: value[1] as string,
-    }));
+    }))
+    .sort((a, b) => {
+      // Make LORDS appear first
+      if (a.name.toLowerCase() === "lords") return -1;
+      if (b.name.toLowerCase() === "lords") return 1;
+      // Keep original order for other resources
+      return 0;
+    });
 
   const {
     send: sendMintTx,
