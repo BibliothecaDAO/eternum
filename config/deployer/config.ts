@@ -1,4 +1,3 @@
-import type { EternumProvider } from "@bibliothecadao/provider";
 import {
   ADMIN_BANK_ENTITY_ID,
   BRIDGE_FEE_DENOMINATOR,
@@ -44,7 +43,7 @@ export class GameConfigDeployer {
     const config = { account, provider, config: this.globalConfig };
     await setWorldConfig(config);
     await setWonderBonusConfig(config);
-    await setAgentControllerConfig(config);
+    await setAgentConfig(config);
     await setVillageControllersConfig(config);
     await SetResourceFactoryConfig(config);
     await setResourceBridgeWhitelistConfig(config);
@@ -853,10 +852,14 @@ export const setWonderBonusConfig = async (config: Config) => {
   console.log(chalk.green(`    ✔ Wonder Bonus configured `) + chalk.gray(tx.statusReceipt));
 };
 
-export const setAgentControllerConfig = async (config: Config) => {
+export const setAgentConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
     agent_controller: config.config.agent.controller_address,
+    max_lifetime_count: config.config.agent.max_lifetime_count,
+    max_current_count: config.config.agent.max_current_count,
+    min_spawn_lords_amount: config.config.agent.min_spawn_lords_amount,
+    max_spawn_lords_amount: config.config.agent.max_spawn_lords_amount,
   };
 
   console.log(
@@ -867,13 +870,17 @@ export const setAgentControllerConfig = async (config: Config) => {
 
   console.log(
     chalk.cyan(`
-    ┌─ ${chalk.yellow("Agent Controller")}
-    │  ${chalk.gray("Address:")} ${chalk.white(calldata.agent_controller)}
+    ┌─ ${chalk.yellow("Agent Config")}
+    │  ${chalk.gray("Controller Address:")} ${chalk.white(calldata.agent_controller)}
+    │  ${chalk.gray("Max Lifetime Count:")} ${chalk.white(calldata.max_lifetime_count)}
+    │  ${chalk.gray("Max Current Count:")} ${chalk.white(calldata.max_current_count)}
+    │  ${chalk.gray("Min Spawn Lords Amount:")} ${chalk.white(calldata.min_spawn_lords_amount)}
+    │  ${chalk.gray("Max Spawn Lords Amount:")} ${chalk.white(calldata.max_spawn_lords_amount)}
     └────────────────────────────────`),
   );
 
-  const tx = await config.provider.set_agent_controller(calldata);
-  console.log(chalk.green(`\n    ✔ Agent Controller configured `) + chalk.gray(tx.statusReceipt) + "\n");
+  const tx = await config.provider.set_agent_config(calldata);
+  console.log(chalk.green(`\n    ✔ Agent Configurations set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setVillageControllersConfig = async (config: Config) => {

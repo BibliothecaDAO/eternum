@@ -14,16 +14,20 @@ pub trait IResourceBridgeSystems<T> {
         amount: u128,
         client_fee_recipient: ContractAddress,
     );
+    fn lp_withdraw(ref self: T, to_address: ContractAddress, resource_type: u8, amount: u128);
 }
 
 
 #[dojo::contract]
 pub mod resource_bridge_systems {
+    use core::num::traits::Zero;
     use dojo::model::{ModelStorage};
     use dojo::world::WorldStorage;
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
-    use s1_eternum::models::config::{ResourceBridgeWhitelistConfig, WorldConfigUtilImpl};
+    use s1_eternum::models::config::{
+        ResourceBridgeWhitelistConfig, ResourceRevBridgeWhtelistConfig, WorldConfigUtilImpl,
+    };
     use s1_eternum::models::config::{SeasonConfigImpl};
     use s1_eternum::models::resource::arrivals::{ResourceArrivalImpl};
     use s1_eternum::models::resource::resource::{
@@ -206,6 +210,47 @@ pub mod resource_bridge_systems {
             let realm_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, realm_resource_fee_amount);
 
             // transfer withdrawm erc20 amount to recipient
+            let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
+            iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
+        }
+
+
+        fn lp_withdraw(ref self: ContractState, to_address: ContractAddress, resource_type: u8, amount: u128) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+
+            //todo ensure only liquidity systems can call this
+            iBridgeImpl::assert_only_liquidity_systems(world, get_caller_address());
+
+            // ensure the bridge is open
+            SeasonConfigImpl::get(world).assert_main_game_started_and_grace_period_not_elapsed();
+
+            // ensure bridge withdrawal is not paused
+            iBridgeImpl::assert_withdraw_not_paused(world);
+
+            // obtain token address from reverse whitelist config
+            let resource_bridge_token_whitelist_reverse: ResourceRevBridgeWhtelistConfig = world
+                .read_model(resource_type);
+            let token = resource_bridge_token_whitelist_reverse.token;
+
+            // ensure token is still whitelisted (incase we want to disable specific resource withdrawals)
+            let resource_bridge_token_whitelist: ResourceBridgeWhitelistConfig = world.read_model(token);
+            iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
+
+            // apply inefficiency percentage to the withdrawal amount
+            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
+                ref world, resource_bridge_token_whitelist.resource_type,
+            );
+            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
+                / inefficiency_percentage_denom.into();
+            let amount = amount - amount_lost_to_inefficiency;
+
+            // send platform fees
+            let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
+            let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
+                ref world, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
+            );
+            // transfer withdrawm erc20 amount to recipient
+            let realm_token_fee_amount = 0;
             let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
             iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
         }

@@ -10,10 +10,11 @@ trait ILiquiditySystems<T> {
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
+    use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-
     use dojo::world::WorldStorage;
+    use dojo::world::{WorldStorageTrait};
     // Eternum imports
     use s1_eternum::alias::ID;
     use s1_eternum::constants::ResourceTypes;
@@ -30,6 +31,9 @@ mod liquidity_systems {
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::config::contracts::config_systems::{check_caller_is_admin};
+    use s1_eternum::systems::resources::contracts::resource_bridge_systems::{
+        IResourceBridgeSystemsDispatcher, IResourceBridgeSystemsDispatcherTrait,
+    };
     use s1_eternum::systems::utils::resource::{iResourceTransferImpl};
     use starknet::ContractAddress;
 
@@ -134,17 +138,9 @@ mod liquidity_systems {
             // ensure resource type is not lords
             assert!(resource_type != ResourceTypes::LORDS, "resource type cannot be lords");
 
-            // ensure caller owns structure removing liquidity
-            let player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
-            player_structure_owner.assert_caller_owner();
-
             // ensure bank_entity_id is a bank
             let bank_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, bank_entity_id);
             assert!(bank_structure_base.category == StructureCategory::Bank.into(), "structure is not a bank");
-
-            // ensure player has enough liquidity
-            let player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
-            assert(player_liquidity.shares >= shares, 'not enough shares');
 
             // get market for resource type
             let mut market: Market = world.read_model(resource_type);
@@ -157,37 +153,10 @@ mod liquidity_systems {
             // update market
             world.write_model(@market);
 
-            // burn the resource the player is exchanging for lords
-            let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
-                .span();
-            let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
-                ref world, bank_entity_id,
-            );
-
-            let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
-            let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
-            let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
-            iResourceTransferImpl::structure_to_structure_delayed(
-                ref world,
-                bank_entity_id,
-                bank_structure_owner,
-                bank_structure_base,
-                ref bank_structure_weight,
-                entity_id,
-                player_structure_owner,
-                player_structure_base,
-                ref player_structure_weight,
-                resources,
-                true,
-                true,
-            );
-
-            // store structure weights
-            player_structure_weight.store(ref world, entity_id);
-            bank_structure_weight.store(ref world, bank_entity_id);
-
             // reduce player liquidity
-            let mut player_liquidity: Liquidity = world.read_model((player_structure_owner, resource_type));
+            let caller = starknet::get_caller_address();
+            let mut player_liquidity: Liquidity = world.read_model((caller, resource_type));
+            assert!(player_liquidity.shares >= shares, "share amount is greater than player liquidity");
             player_liquidity.shares -= shares;
 
             // if player has no liquidity, erase model
@@ -195,6 +164,59 @@ mod liquidity_systems {
                 world.erase_model(@player_liquidity);
             } else {
                 world.write_model(@player_liquidity);
+            }
+
+            // send liquidity to caller
+            if entity_id.is_non_zero() {
+                ////////////////////////////////////////
+                // RECEIVE LIQUIDITY INTO A STRUCTURE //
+                ////////////////////////////////////////
+
+                // ensure caller owns structure that receives liquidity
+                let player_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, entity_id);
+                player_structure_owner.assert_caller_owner();
+
+                let mut player_structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, entity_id);
+                let mut bank_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, bank_entity_id);
+                let mut player_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, entity_id);
+                let mut bank_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(
+                    ref world, bank_entity_id,
+                );
+
+                let resources = array![(ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)]
+                    .span();
+                iResourceTransferImpl::structure_to_structure_delayed(
+                    ref world,
+                    bank_entity_id,
+                    bank_structure_owner,
+                    bank_structure_base,
+                    ref bank_structure_weight,
+                    entity_id,
+                    player_structure_owner,
+                    player_structure_base,
+                    ref player_structure_weight,
+                    resources,
+                    true,
+                    true,
+                );
+
+                // store structure weights
+                player_structure_weight.store(ref world, entity_id);
+                bank_structure_weight.store(ref world, bank_entity_id);
+            } else {
+                ////////////////////////////////////////////
+                // RECEIVE LIQUIDITY INTO WALLET DIRECTLY //
+                ////////////////////////////////////////////
+
+                // get bridge systems address
+                let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
+                let bridge_systems: IResourceBridgeSystemsDispatcher = IResourceBridgeSystemsDispatcher {
+                    contract_address: bridge_systems_address,
+                };
+
+                // payout resource and lords
+                bridge_systems.lp_withdraw(caller, resource_type, payout_resource_amount);
+                bridge_systems.lp_withdraw(caller, ResourceTypes::LORDS, payout_lords);
             }
 
             InternalLiquiditySystemsImpl::emit_event(

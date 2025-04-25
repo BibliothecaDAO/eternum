@@ -7,6 +7,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 trait IVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
+    fn batch_transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, amount: u16) -> Span<u256>;
 }
 
 
@@ -180,6 +181,19 @@ mod EternumVillagePass {
             self.erc721.mint(recipient, token_id.into());
 
             token_id.into()
+        }
+
+        // todo: ensure only authorized callers
+        fn batch_transfer_from(
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u16,
+        ) -> Span<u256> {
+            let mut token_ids = array![];
+            for _ in 0..amount {
+                let token_id = self.erc721_enumerable.token_of_owner_by_index(from, 0);
+                self.erc721.transfer_from(from, to, token_id);
+                token_ids.append(token_id);
+            };
+            token_ids.span()
         }
     }
 

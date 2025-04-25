@@ -36,16 +36,6 @@ const RESOURCE_ORDER = [
   ResourcesIds.Lords,
 ];
 
-const resourceIdChangeBetweenSeason0and1 = (id: ResourcesIds) => {
-  if (id === 29) return ResourcesIds.Wheat;
-  if (id === 30) return ResourcesIds.Fish;
-  if (id === 31) return ResourcesIds.Lords;
-  if (id === 28) return ResourcesIds.Paladin;
-  if (id === 27) return ResourcesIds.Crossbowman;
-  if (id === 26) return ResourcesIds.Knight;
-  return id;
-};
-
 // Additional component-specific styles
 const componentStyles = {
   resourceNameWithId: {
@@ -73,11 +63,8 @@ export const ResourceAddresses = () => {
   const addressesArray = Object.entries(addresses)
     .map(([resourceName, data]) => {
       // data is an array where first element is the ID and second is the address
-      const id = resourceIdChangeBetweenSeason0and1(data[0] as number);
+      const id = data[0];
       const address = data[1] as string;
-
-      // remove the ancient fragment from the list because it's not bridgeable
-      if (id === ResourcesIds.AncientFragment) return null;
 
       return {
         resourceName,
@@ -107,10 +94,14 @@ export const ResourceAddresses = () => {
           {addressesArray.map((item) => (
             <tr key={`address-${item.id}`}>
               <td style={table.resourceCell}>
-                <ResourceIcon id={item.id} name={item.resourceName} size="md" />
-                <div style={componentStyles.resourceNameWithId}>
-                  {item.resourceName.charAt(0) + item.resourceName.slice(1).toLowerCase()}
-                  <span style={componentStyles.resourceId}>ID: {item.id}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div style={{ minWidth: "2rem", display: "flex", justifyContent: "center" }}>
+                    <ResourceIcon id={item.id} name={item.resourceName} size="md" />
+                  </div>
+                  <div style={componentStyles.resourceNameWithId}>
+                    {item.resourceName.charAt(0) + item.resourceName.slice(1).toLowerCase()}
+                    <span style={componentStyles.resourceId}>ID: {item.id}</span>
+                  </div>
                 </div>
               </td>
               <td style={componentStyles.addressCell}>{item.address}</td>
