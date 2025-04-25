@@ -22,8 +22,8 @@ export const policies = toSessionPolicies({
     "0x10da13d48ab6a2408139ef53b09b2b7a19292b20ecd487f748001842ed18946": {
       methods: [
         {
-          name: "set_agent_controller",
-          entrypoint: "set_agent_controller",
+          name: "set_agent_config",
+          entrypoint: "set_agent_config",
         },
         {
           name: "set_world_config",
