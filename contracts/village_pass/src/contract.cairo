@@ -183,6 +183,7 @@ mod EternumVillagePass {
             token_id.into()
         }
 
+        // todo: ensure only authorized callers
         fn batch_transfer_from(
             ref self: ContractState, from: ContractAddress, to: ContractAddress, amount: u16,
         ) -> Span<u256> {
