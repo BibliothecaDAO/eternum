@@ -8,10 +8,10 @@
         "@ai-sdk/groq": "^1.1.12",
         "@ai-sdk/openai": "^1.1.17",
         "@daydreamsai/chromadb": "0.3.1",
-        "@daydreamsai/cli": "0.3.2",
-        "@daydreamsai/core": "0.3.2",
-        "@daydreamsai/discord": "0.3.2",
-        "@daydreamsai/mongodb": "0.3.2",
+        "@daydreamsai/cli": "0.3.5",
+        "@daydreamsai/core": "0.3.5",
+        "@daydreamsai/discord": "0.3.5",
+        "@daydreamsai/mongodb": "0.3.5",
         "@openrouter/ai-sdk-provider": "^0.4.5",
         "@tavily/core": "^0.3.1",
         "ai": "^4.3.9",
@@ -42,13 +42,13 @@
 
     "@daydreamsai/chromadb": ["@daydreamsai/chromadb@0.3.1", "", { "dependencies": { "@daydreamsai/core": "0.3.1", "chromadb": "^1.10.5", "zod": "^3.24.2" } }, "sha512-weNi1C53hCGmmOmAEdBivdlODsT6WNQogR9YUxUuv4IdSyI9BxpOwdzIUQ6cHhBeTZgd3lm4shnzRJ96lBWwGg=="],
 
-    "@daydreamsai/cli": ["@daydreamsai/cli@0.3.2", "", { "dependencies": { "@daydreamsai/core": "0.3.2", "zod": "^3.24.2" }, "peerDependencies": { "typescript": "^5.6.3" } }, "sha512-yRDTdpuf0BDviVdZOK1W5KJFMNRU+qreWovJc3A/uBfGxtdChiVhNWCbPaqLqE6TqaA5MC29TkZRsXxQQw/tIQ=="],
+    "@daydreamsai/cli": ["@daydreamsai/cli@0.3.5", "", { "dependencies": { "@daydreamsai/core": "0.3.5", "zod": "^3.24.2" }, "peerDependencies": { "typescript": "^5.6.3" } }, "sha512-zA4PU4eErOkR7W/MtCACF/C8poWGRBS6uAOhmv9g2ZUcodToWs6QBmvKl/wUEkHBpzoH/HwKHu+8jXTd2X5EWA=="],
 
-    "@daydreamsai/core": ["@daydreamsai/core@0.3.2", "", { "dependencies": { "@ai-sdk/provider": "^1.1.0", "@ai-sdk/ui-utils": "^1.2.3", "ai": "^4.2.9", "dotenv": "^16.4.7", "p-defer": "^4.0.1", "uuid": "^11.1.0", "zod": "^3.24.2", "zod-to-json-schema": "^3.24.1" }, "peerDependencies": { "typescript": "^5.8.2" } }, "sha512-lN/tReEPodtQHfE1BreZbE97qLJtjqXRUvTGUN/bmiBxgBePMSE23rZoV1WWjVNPipIWIgZ/ldJ0m0TfmdwNkg=="],
+    "@daydreamsai/core": ["@daydreamsai/core@0.3.5", "", { "dependencies": { "@ai-sdk/provider": "^1.1.0", "@ai-sdk/ui-utils": "^1.2.3", "ai": "^4.2.9", "dotenv": "^16.4.7", "p-defer": "^4.0.1", "uuid": "^11.1.0", "zod": "^3.24.2", "zod-to-json-schema": "^3.24.1" }, "peerDependencies": { "typescript": "^5.8.2" } }, "sha512-Ipyw/MhSribg8uKD31Ce9nkReLDeYUiP8p/TkORMoCpGHx6tm7JShfbWIdLyhwE9V1ECGkAWQWdhiinvSTqxBQ=="],
 
-    "@daydreamsai/discord": ["@daydreamsai/discord@0.3.2", "", { "dependencies": { "@daydreamsai/core": "0.3.2", "discord.js": "^14.18.0", "zod": "^3.24.2" }, "peerDependencies": { "typescript": "^5.6.3" } }, "sha512-tSv8oUFH7xiNKBEboSOkWkUH9f5l/K+9YvNQ20UBMe/GSCYwh7f3igha5kOAX+UiKTHMcGj+tKjH+NM6vylnAQ=="],
+    "@daydreamsai/discord": ["@daydreamsai/discord@0.3.5", "", { "dependencies": { "@daydreamsai/core": "0.3.5", "discord.js": "^14.18.0", "zod": "^3.24.2" }, "peerDependencies": { "typescript": "^5.6.3" } }, "sha512-toJakknqtv+cFWEkx9iuQVUvV/mLVAavct+73e1Cuq6iD+jmRC/YhBvxD6mmovcP/PW4ABoff2vgi0H12frdzw=="],
 
-    "@daydreamsai/mongodb": ["@daydreamsai/mongodb@0.3.2", "", { "dependencies": { "@daydreamsai/core": "0.3.2", "crypto": "^1.0.1", "mongodb": "^6.14.2", "zod": "^3.24.2" } }, "sha512-LbbkDIM8QAqwGXJVsOgDu9XXHx0pVouXsQMn66s5Ymr0MHbrkjP/DesLOtjI6V5uuZVaQx1MgQZwsYVx1fYrkQ=="],
+    "@daydreamsai/mongodb": ["@daydreamsai/mongodb@0.3.5", "", { "dependencies": { "@daydreamsai/core": "0.3.5", "crypto": "^1.0.1", "mongodb": "^6.14.2", "zod": "^3.24.2" } }, "sha512-lHSMVWCKHoliXeiK/KscBlXzmwjIfd1wmeuX1skgu5ESs6DrhUBQzm2ygisDRoInrgFk0GrgG8H6S7gBdzJMCg=="],
 
     "@discordjs/builders": ["@discordjs/builders@1.10.1", "", { "dependencies": { "@discordjs/formatters": "^0.6.0", "@discordjs/util": "^1.1.1", "@sapphire/shapeshift": "^4.0.0", "discord-api-types": "^0.37.119", "fast-deep-equal": "^3.1.3", "ts-mixer": "^6.0.4", "tslib": "^2.6.3" } }, "sha512-OWo1fY4ztL1/M/DUyRPShB4d/EzVfuUvPTRRHRIt/YxBrUYSz0a+JicD5F5zHFoNs2oTuWavxCOVFV1UljHTng=="],
 
