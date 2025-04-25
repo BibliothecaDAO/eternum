@@ -1,7 +1,8 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { BuildingType } from "@bibliothecadao/types";
-import { AlertTriangle, Home, Plus, Warehouse, Wheat } from "lucide-react";
+import { ResourceIcon } from "@/shared/ui/resource-icon";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { AlertTriangle, Home, Plus, Warehouse } from "lucide-react";
 import { useState } from "react";
 import { BuildingDetailsDrawer } from "./building-details-drawer";
 
@@ -34,10 +35,20 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
   const [isOpen, setIsOpen] = useState(false);
 
   const getBuildingIcon = () => {
+    if (building.resourceId) {
+      return <ResourceIcon resourceId={building.resourceId} />;
+    }
     switch (building.category) {
-      case BuildingCategory.RESOURCE:
-        return <Wheat className="h-4 w-4 text-amber-400" />;
       case BuildingCategory.ECONOMIC:
+        if (building.buildingId === BuildingType.ResourceWheat) {
+          return <ResourceIcon resourceId={ResourcesIds.Wheat} />;
+        }
+        if (building.buildingId === BuildingType.ResourceFish) {
+          return <ResourceIcon resourceId={ResourcesIds.Fish} />;
+        }
+        if (building.buildingId === BuildingType.ResourceDonkey) {
+          return <ResourceIcon resourceId={ResourcesIds.Donkey} />;
+        }
         return building.buildingId === BuildingType.WorkersHut ? (
           <Home className="h-4 w-4 text-green-400" />
         ) : (
@@ -53,7 +64,7 @@ export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: Build
       <Card className={`w-full transition-all duration-200 hover:bg-white/5 ${!building.canBuild ? "opacity-60" : ""}`}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-md overflow-hidden bg-white/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-md overflow-hidden flex items-center justify-center">
               {building.hasBalance && building.hasEnoughPopulation ? (
                 <img src={building.image} alt={building.name} className="w-full h-full object-cover" />
               ) : (
