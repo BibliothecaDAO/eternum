@@ -92,20 +92,17 @@ export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 export const AGENT_FIND_PROBABILITY = 100; // 100/600 = 16.66%
 export const AGENT_FIND_FAIL_PROBABILITY = 500; // 500/600 = 83.33%
 
-export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
-export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
+export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 10_000; // 10_000 / 50_000 = 20%
+export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 40_000; // 40_000 / 50_000 = 80%
 
-// by increasing this value, fail probability increases faster.
-// i.e the farther away from the center, the less likely to find a hyperstructure
-//
-// Using the values above and below, if a troop is more than 25 hexes away from the center,
-// the probability of finding a hyperstructure is essentially 0% i.e FLOOR(16.66/1.66) = 10
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 200; // 200 / 120_000 = 0.166%
+// This means that for every x hexes away from the center, the win probability gets 
+// multiplied by 0.95. so the formula is 20% * (0.95 ^ x)
+export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_500; // 9_500 / 10_000 = 95%
 
-// using the above and below values (without considering the hex distance),
-// if there have been 2 hyperstructures found, the probability
-// of finding a hyperstructure is 16.66 - (1.25 * 2) = 14.16%
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 1500; // 1500 / 120_000 = 1.25%
+// Without considering the hex distance, this is a linear multiplier for every 
+// hyperstructure found. e.g if there have been y hyperstructures found, the probability
+// of finding a hyperstructure is max(20% - (1% * y), 0%)
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 500; // 500 / 50_000 = 1%
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
@@ -221,7 +218,7 @@ export const EternumGlobalConfig: Config = {
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
-    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
+    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
