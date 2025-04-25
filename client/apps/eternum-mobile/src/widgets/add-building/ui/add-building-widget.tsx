@@ -8,6 +8,7 @@ import {
   getEntityIdFromKeys,
   getRealmInfo,
   hasEnoughPopulationForBuilding,
+  ResourceIdToMiningType,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
@@ -16,6 +17,7 @@ import {
   findResourceById,
   getBuildingFromResource,
   isEconomyBuilding,
+  ResourceMiningTypes,
 } from "@bibliothecadao/types";
 import { Warehouse, Wheat } from "lucide-react";
 import { useState } from "react";
@@ -26,6 +28,30 @@ enum BuildingCategory {
   RESOURCE = "resource",
   ECONOMIC = "economic",
 }
+
+// Building interface
+interface Building {
+  id: string;
+  buildingId: BuildingType;
+  resourceId?: number;
+  name: string;
+  image: string;
+  category: BuildingCategory;
+  canBuild: boolean;
+  hasBalance: boolean;
+  hasEnoughPopulation: boolean;
+}
+
+const BUILDING_IMAGES_PATH: Record<string, string> = {
+  [BuildingType.WorkersHut]: `/images/buildings/workers_hut.png`,
+  [BuildingType.Storehouse]: `/images/buildings/storehouse.png`,
+  [BuildingType.ResourceWheat]: `/images/buildings/farm.png`,
+  [BuildingType.ResourceFish]: `/images/buildings/fishing_village.png`,
+  [ResourceMiningTypes.Forge]: `/images/buildings/forge.png`,
+  [ResourceMiningTypes.Mine]: `/images/buildings/mine.png`,
+  [ResourceMiningTypes.LumberMill]: `/images/buildings/lumber_mill.png`,
+  [ResourceMiningTypes.Dragonhide]: `/images/buildings/dragonhide.png`,
+};
 
 export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
   const dojo = useDojo();
@@ -56,7 +82,7 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
 
   // Filter buildings based on the selected category
   const getFilteredBuildings = () => {
-    const buildings = [];
+    const buildings: Building[] = [];
 
     // Add resource buildings
     if (activeCategory === "all" || activeCategory === BuildingCategory.RESOURCE) {
@@ -75,14 +101,20 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
           configManager.getBuildingCategoryConfig(building).population_cost,
         );
 
-        const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+        // Make sure we have a boolean value
+        const hasCapacity = realm?.hasCapacity || false;
+        const canBuild = hasBalance && hasCapacity && hasEnoughPopulation;
+
+        // Get image path from BUILDING_IMAGES_PATH using ResourceIdToMiningType
+        const miningType = ResourceIdToMiningType[resourceId] || ResourceMiningTypes.Mine;
+        const imagePath = BUILDING_IMAGES_PATH[miningType] || `/images/buildings/${resource.trait.toLowerCase()}.png`;
 
         buildings.push({
           id: resource.id.toString(),
           buildingId: building,
           resourceId: resourceId,
           name: resource.trait,
-          image: `/images/resources/${resource.trait.toLowerCase()}.png`,
+          image: imagePath,
           category: BuildingCategory.RESOURCE,
           canBuild,
           hasBalance,
@@ -113,14 +145,20 @@ export const AddBuildingWidget = ({ entityId }: { entityId: number }) => {
 
           const hasBalance = checkBalance(buildingCosts);
           const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
+
+          // Make sure we have a boolean value
+          const hasCapacity = realm?.hasCapacity || false;
           const canBuild =
-            building === BuildingType.WorkersHut ? hasBalance : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
+            building === BuildingType.WorkersHut ? hasBalance : hasBalance && hasCapacity && hasEnoughPopulation;
+
+          // Get image path from BUILDING_IMAGES_PATH
+          const imagePath = BUILDING_IMAGES_PATH[building] || `/images/buildings/${buildingType.toLowerCase()}.png`;
 
           buildings.push({
             id: buildingType,
             buildingId: building,
             name: BuildingTypeToString[building],
-            image: `/images/buildings/${buildingType.toLowerCase()}.png`,
+            image: imagePath,
             category: BuildingCategory.ECONOMIC,
             canBuild,
             hasBalance,

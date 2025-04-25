@@ -1,8 +1,8 @@
+import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
 import { currencyIntlFormat } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, getBalance, getBuildingCosts, getConsumedBy } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { BuildingType, CapacityConfig, findResourceById } from "@bibliothecadao/types";
@@ -111,7 +111,7 @@ export const BuildingDetailsDrawer = ({
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-white/80">Production</h4>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                <ResourceIcon resourceId={resourceProduced || 0} size={32} />
+                {resourceProduced !== undefined && <ResourceIcon resourceId={resourceProduced} size={32} />}
                 <div className="flex-1">
                   <div className="flex items-baseline gap-1">
                     <span className="font-medium">Produces</span>
@@ -197,12 +197,15 @@ export const BuildingDetailsDrawer = ({
               <h4 className="text-sm font-semibold text-white/80">Consumed By</h4>
               <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-white/5">
                 {React.Children.toArray(
-                  usedIn.map((resourceId) => (
-                    <div className="flex items-center gap-1">
-                      <ResourceIcon resourceId={resourceId} size={20} />
-                      <span className="text-xs">{findResourceById(resourceId)?.trait}</span>
-                    </div>
-                  )),
+                  usedIn.map(
+                    (resourceId) =>
+                      resourceId !== undefined && (
+                        <div className="flex items-center gap-1">
+                          <ResourceIcon resourceId={resourceId} size={20} />
+                          <span className="text-xs">{findResourceById(resourceId)?.trait}</span>
+                        </div>
+                      ),
+                  ),
                 )}
               </div>
             </div>
