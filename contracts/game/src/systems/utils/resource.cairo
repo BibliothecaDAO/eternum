@@ -123,7 +123,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         ref to_troop_weight: Weight,
         mut resources: Span<(u8, u128)>,
     ) {
-        Self::ensure_no_troop_or_lords_resource(resources);
+        Self::ensure_no_troop_or_lords_or_donkey_resource(resources);
         Self::_instant_transfer_storable(
             ref world, from_structure_id, ref from_structure_weight, to_troop_id, ref to_troop_weight, resources,
         );
@@ -483,7 +483,7 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         }
     }
 
-    fn ensure_no_troop_or_lords_resource(mut resources: Span<(u8, u128)>) {
+    fn ensure_no_troop_or_lords_or_donkey_resource(mut resources: Span<(u8, u128)>) {
         for i in 0..resources.len() {
             let (resource_type, _) = resources.at(i);
             if TroopResourceImpl::is_troop(*resource_type) {
@@ -491,6 +491,9 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
             }
             if *resource_type == ResourceTypes::LORDS {
                 panic!("lords resource can't be received");
+            }
+            if *resource_type == ResourceTypes::DONKEY {
+                panic!("donkey resource can't be received");
             }
         }
     }
