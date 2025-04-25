@@ -18,13 +18,12 @@ const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS!, VITE
 
 const quest_games = [
   {
-    address: "0x4d8b4518b1d36d12ef6489cf5e7444050517cd527fd2a622e8c4a4c2a555adc",
+    address: "0x5af07053c097793e43c4dffbc26990c5d8b08ee59381163037720dff1f8aa60",
     levels: [
-      { target_score: 30, settings_id: 5, time_limit: 14400 },
-      { target_score: 60, settings_id: 5, time_limit: 14400 },
-      { target_score: 90, settings_id: 5, time_limit: 14400 },
-      { target_score: 120, settings_id: 5, time_limit: 14400 },
-      { target_score: 150, settings_id: 5, time_limit: 14400 },
+      { target_score: 25, settings_id: 2, time_limit: 14400 },
+      { target_score: 50, settings_id: 3, time_limit: 14400 },
+      { target_score: 50, settings_id: 5, time_limit: 14400 },
+      { target_score: 50, settings_id: 7, time_limit: 14400 },
     ],
     overwrite: true,
   },

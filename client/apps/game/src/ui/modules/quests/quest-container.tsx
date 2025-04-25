@@ -1,12 +1,17 @@
 import { useAddressStore } from "@/hooks/store/use-address-store";
+import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getQuestLocation } from "@/ui/components/quest/quest-utils";
+import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
+import { getQuestForExplorer, getQuests } from "@/ui/components/quest/quest-utils";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { useDojo } from "@bibliothecadao/react";
-import { type ID, ResourcesIds } from "@bibliothecadao/types";
-import { useMiniGames, useOwnedGames } from "metagame-sdk";
-import { useMemo, useState } from "react";
+import { divideByPrecision, formatTime, getArmy, toHexString } from "@bibliothecadao/eternum";
+import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
+import { ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useOwnedGamesWithScores } from "metagame-sdk";
+import { useEffect, useMemo, useState } from "react";
 import gameImage from "../../../assets/games/dark-shuffle.png";
 
 export const QuestContainer = ({
@@ -19,61 +24,112 @@ export const QuestContainer = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { start_quest },
+      systemCalls: { start_quest, claim_reward },
       components,
-      components: { QuestDetails, Quest },
+      components: { QuestTile, Quest, Tile, QuestLevels },
+      network: { toriiClient },
     },
   } = useDojo();
+  const playerStructures = usePlayerStructures();
+  const [questEntities, setQuestEntities] = useState<any[]>([]);
+
   const addressName = useAddressStore((state) => state.addressName) ?? "test";
 
   const [loading, setLoading] = useState(false);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
-  // Determine if the attacker is a structure or an explorer
-  const questDetails = useMemo(() => {
-    const quest = getQuestLocation(components, { x: targetHex.x, y: targetHex.y });
-    return quest;
-  }, [targetHex, QuestDetails]);
+  const targetEntity = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
+  const questTileEntity = getComponentValue(QuestTile, getEntityIdFromKeys([BigInt(targetEntity?.occupier_id || 0)]));
+  const questLevelsEntity = getComponentValue(
+    QuestLevels,
+    getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
+  );
+  const questLevel = questLevelsEntity?.levels[questTileEntity?.level ?? 0] as any;
+  const timeLimit = questLevel?.value?.time_limit?.value;
 
-  console.log(targetHex, questDetails);
-
-  const { data: miniGames } = useMiniGames({});
-
-  console.log(miniGames);
+  const minigames = useMinigameStore((state) => state.minigames);
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
+  const queryGameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
 
-  console.log(queryAddress);
+  const attributeFilters = useMemo(() => {
+    return [questTileEntity?.id];
+  }, [questTileEntity]);
 
-  const { data: ownedGames } = useOwnedGames({
+  console.log(queryAddress, queryGameAddress, attributeFilters);
+
+  const { data: questGames, refetch: refetchQuestGames } = useOwnedGamesWithScores({
     address: queryAddress,
-    gameAddresses: ["0x04359aee29873cd9603207d29b4140468bac3e042aa10daab2e1a8b2dd60ef7b"],
+    gameAddress: toHexString(BigInt(queryGameAddress)),
+    metagame: {
+      namespace: "s1_eternum",
+      model: "Quest",
+      attribute: "quest_tile_id",
+      key: "game_token_id",
+      attributeFilters,
+    },
   });
 
-  // const { data: ownedGames } = useOwnedGames({
-  //   address: queryAddress,
-  //   gameAddresses: ["0x04359aee29873cd9603207d29b4140468bac3e042aa10daab2e1a8b2dd60ef7b"],
-  //   metagameName: "Eternum",
-  //   metagameModel: "Quest",
-  //   metagameAtrribute: "details_id"
-  //   metagameKey: "game_token_id"
-  // });
+  const questGamesKey = useMemo(() => {
+    return questGames.join(",");
+  }, [questGames]);
 
-  console.log(ownedGames);
+  console.log(questGames);
+  console.log(questGames.map((game) => Number(game.token_id)));
+  console.log(questTileEntity?.id);
+
+  useEffect(() => {
+    const fetchQuests = async () => {
+      try {
+        const questsEntities = await getQuests(
+          toriiClient,
+          components as any,
+          questTileEntity?.game_address as string,
+          questGames,
+        );
+        setQuestEntities(questsEntities);
+      } catch (error) {
+        console.log(error);
+      }
+      // try {
+      //   console.log(await getQuestsFromTorii(toriiClient, components as any, questTileEntity?.id!));
+      //   await getQuestsFromTorii(toriiClient, components as any, questTileEntity?.id!);
+      // } catch (error) {
+      //   console.error(error);
+      // }
+      // const quest = getQuestForExplorer(components, explorerEntityId);
+      // console.log(quest);
+    };
+    fetchQuests();
+  }, [questGamesKey, questTileEntity?.game_address]);
+
+  console.log(questEntities);
 
   const handleStartQuest = async () => {
     if (!selectedHex) return;
 
     try {
       setLoading(true);
+
+      // Start the quest transaction
       await start_quest({
         signer: account,
-        details_id: 1,
-        explorer_id: 1,
-        player_name: addressName,
+        quest_tile_id: questTileEntity?.id ?? 0,
+        explorer_id: explorerEntityId,
+        player_name: "test",
         to_address: account?.address,
       });
+
+      // Poll for the quest with a retry mechanism
+      const quest = await pollForQuest(explorerEntityId, 10, 1000); // 10 retries, 1000ms interval
+
+      if (quest) {
+        window.open(`https://darkshuffle.dev/play/${Number(quest.game_token_id)}`, "_blank");
+      } else {
+        console.error("Failed to retrieve quest after multiple retries");
+        // Optionally show user feedback
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -81,40 +137,146 @@ export const QuestContainer = ({
     }
   };
 
-  const buttonMessage = useMemo(() => {
-    return "Start Quest!";
-  }, []);
+  // Helper function to poll for the quest with retries
+  const pollForQuest = async (explorerEntityId: number, maxRetries = 10, interval = 5000) => {
+    let retries = 0;
+
+    // Create a promise that resolves when the quest is found
+    return new Promise<any>((resolve, reject) => {
+      const attemptFetch = async () => {
+        try {
+          // Try to get the quest
+          const quest = await getQuestForExplorer(toriiClient, components, explorerEntityId);
+
+          // If quest exists and has a game_token_id, we're good
+          if (quest && quest.game_token_id) {
+            console.log(`Quest found after ${retries + 1} attempts`);
+            return resolve(quest);
+          }
+
+          // If we've reached max retries, resolve with null
+          if (++retries >= maxRetries) {
+            console.log(`Max retries (${maxRetries}) reached without finding quest`);
+            return resolve(null);
+          }
+
+          // Schedule another attempt
+          console.log(`Quest not found yet, retrying in ${interval}ms... (${retries}/${maxRetries})`);
+          setTimeout(attemptFetch, interval);
+        } catch (error) {
+          // If there's an error fetching the quest, log it but continue retrying
+          console.error(`Error fetching quest (attempt ${retries}/${maxRetries}):`, error);
+
+          // If we've reached max retries, reject
+          if (++retries >= maxRetries) {
+            return reject(new Error(`Failed to fetch quest after ${maxRetries} retries`));
+          }
+
+          // Schedule another attempt
+          setTimeout(attemptFetch, interval);
+        }
+      };
+
+      // Start the first attempt
+      attemptFetch();
+    });
+  };
+
+  const armyInfo = getArmy(explorerEntityId, ContractAddress(account?.address), components);
+
+  console.log(armyInfo);
+
+  const realmsOrVillages = useMemo(() => {
+    const matchingRealmId = armyInfo?.structure?.metadata?.realm_id;
+
+    return playerStructures
+      .filter((structure) => structure.category === StructureType.Realm || structure.category === StructureType.Village)
+      .map((structure) => ({
+        ...structure,
+        // Add a flag to identify if this structure matches the armyInfo
+        isMatchingRealm: structure?.structure?.metadata?.realm_id === matchingRealmId,
+      }))
+      .sort((a, b) => {
+        // First sort by matching flag (true comes before false)
+        if (a.isMatchingRealm && !b.isMatchingRealm) return -1;
+        if (!a.isMatchingRealm && b.isMatchingRealm) return 1;
+
+        // If both match or both don't match, sort by realmId
+        const aRealmId = a?.structure?.metadata?.realm_id || 0;
+        const bRealmId = b?.structure?.metadata?.realm_id || 0;
+        return aRealmId - bRealmId;
+      });
+  }, [playerStructures, armyInfo?.structure?.metadata?.realm_id]);
+
+  console.log(realmsOrVillages);
+
+  useEffect(() => {
+    const fetchQuest = async () => {
+      const quest = await getQuestForExplorer(toriiClient, components, explorerEntityId);
+      console.log(quest);
+    };
+    fetchQuest();
+  }, [toriiClient, components, explorerEntityId]);
+
+  // const explorerGame = questEntities.find((quest) => quest.explorer_id === explorerEntityId);
 
   return (
-    <div className="flex flex-col gap-6 p-6 mx-auto max-w-full overflow-hidden">
-      {" "}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-4 mt-4 text-xl p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
-          <div className="flex flex-row gap-2">
+    <div className="flex flex-col gap-6 px-6 mx-auto max-w-full overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[600px]">
+        <div className="flex flex-col gap-4 mt-4 text-xl p-4 border panel-wood rounded-lg backdrop-blur-sm">
+          <div className="flex flex-row items-center gap-4">
             <h2>Quest</h2>
-            <span>#100</span>
+            <div className="flex flex-row gap-2">Level: {(questTileEntity?.level ?? 0) + 1}</div>
           </div>
-          <div className="flex flex-col gap-2">
-            Reward
-            <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
-              1000
-              <ResourceIcon resource={ResourcesIds[1]} size={"sm"} />
-            </span>
-          </div>
-          <div>Target: 1000 XP</div>
-          <div>Participants: 100</div>
-          <div>Time Limit: 30 mins</div>
-          {/* Start Quest Button */}
-          <div className="mt-2 flex justify-center">
-            <Button
-              variant="primary"
-              className={`px-6 py-3 rounded-lg font-bold text-lg transition-colors`}
-              isLoading={loading}
-              disabled={false}
-              onClick={handleStartQuest}
-            >
-              {buttonMessage}
-            </Button>
+          <div className="flex flex-col h-full">
+            <div className="flex flex-row justify-between items-center px-5 h-1/4 border-t border-gold/20">
+              <div className="flex flex-col items-center gap-2">
+                <span>Reward</span>
+                <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
+                  {divideByPrecision(Number(questTileEntity?.amount || 0))}
+                  <ResourceIcon resource={ResourcesIds[1]} size={"sm"} />
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span>Target</span>
+                <span className="text-2xl font-bold text-gold">{questLevel?.value?.target_score?.value} XP</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span>Participants</span>
+                <span className="text-2xl font-bold text-gold">
+                  {questTileEntity?.participant_count} / {questTileEntity?.capacity}
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span>Time Limit</span>
+                <span className="text-2xl font-bold text-gold">{formatTime(timeLimit)}</span>
+              </div>
+              {/* Start Quest Button */}
+            </div>
+            <div className="flex flex-col gap-5 border-t border-gold/20 pt-5 h-3/4">
+              <div className="flex flex-row items-center gap-2 text-lg font-bold">
+                Available Quests
+                <Button variant="secondary" className="rounded-lg" onClick={() => refetchQuestGames()}>
+                  Refresh
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 overflow-y-auto h-full">
+                {realmsOrVillages.map((structure) => {
+                  return (
+                    <QuestRealm
+                      handleStartQuest={handleStartQuest}
+                      loading={loading}
+                      setLoading={setLoading}
+                      questLevelInfo={questLevel}
+                      structureInfo={structure}
+                      armyInfo={armyInfo!}
+                      questEntities={questEntities}
+                      questGames={questGames}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -125,54 +287,24 @@ export const QuestContainer = ({
           <div className="flex flex-col gap-4 mt-4 text-xl">
             <img src={gameImage} alt="Dark Shuffle" className="w-full h-auto rounded" />
             <div className="flex flex-row justify-between">
-              <div className="flex flex-row gap-2">
-                Game: <span>Dark Shuffle</span>
+              <div className="flex flex-col items-center">
+                <span className="font-bold">Game</span> <span>Dark Shuffle</span>
               </div>
-              <div className="flex flex-row gap-2">
-                Publisher: <span>Provable Games</span>
+              <div className="flex flex-col items-center">
+                <span className="font-bold">Publisher</span> <span>Provable Games</span>
               </div>
-              <div className="flex flex-row gap-2">
-                Url:{" "}
+              <div className="flex flex-col items-center">
+                <span className="font-bold">Url</span>
                 <a href="https://darkshuffle.io" target="_blank" rel="noopener noreferrer">
                   darkshuffle.io
                 </a>
               </div>
             </div>
-            <div>
-              Description: <span>{miniGames[0]?.description}</span>
+            <div className="flex flex-col">
+              <span className="font-bold">Description</span>{" "}
+              <span className="text-sm">{minigames?.[0]?.description}</span>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
-        <div>
-          <h2>My Games</h2>
-          {ownedGames.length > 0 ? (
-            <div className="flex flex-row mt-4 gap-4">
-              {ownedGames.map((game: any) => (
-                <div
-                  className="flex flex-col w-60"
-                  key={game.token_id}
-                  onClick={() => {
-                    window.open(`https://darkshuffle.dev/play/${Number(game.token_id)}`, "_blank");
-                  }}
-                >
-                  <div className="flex flex-row justify-between">
-                    <span>Active</span>
-                    <span>Below Target</span>
-                  </div>
-                  <img
-                    src={JSON.parse(game.metadata)?.image}
-                    alt={`Game #${Number(game.token_id)}`}
-                    className="w-full h-auto rounded"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-row">No games found</div>
-          )}
         </div>
       </div>
     </div>

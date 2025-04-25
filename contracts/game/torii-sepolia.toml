@@ -19,16 +19,16 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-    "erc721:0x28af974535d9053240a901edb4214c1894499eb7dabf635a38be971c2e31da2",
-    "erc721:0x467bdef6853bc5273bf4fceaac580a333e243d81469d9896e2fdaf279a026db",
-    "erc721:0x4d8b4518b1d36d12ef6489cf5e7444050517cd527fd2a622e8c4a4c2a555adc", # DARK SHUFFLE
-    "erc20:0x21509c60d5e8cc41b3df5a130002392f8b7e02318b8e52a5540f84288848b37",
+    "erc721:0x13cd04f9beca6daa358ef55d6ed43184ede8de17bca33bc4897a2d043ce843c",
+    "erc721:0x4c1a923102821a98a868aa5cd883528cc3185a9b1e5e6f24a258731990598f6",
+    "erc721:0x5af07053c097793e43c4dffbc26990c5d8b08ee59381163037720dff1f8aa60", # DARK SHUFFLE
+    "erc20:0x2ed086285c8b36cebd32f86b92e3888ae05681bfcb8fccdf5722325f4560605",
 ]
 
 [erc]
 max_metadata_tasks = 2
 
-namespaces = ["s1_eternum"]
+# namespaces = ["s1_eternum"]
 
 world_block = 0
 

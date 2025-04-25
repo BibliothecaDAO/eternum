@@ -7,17 +7,15 @@ export const useQuests = () => {
     setup: { components },
   } = useDojo();
 
-  const questDetailEntities = useEntityQuery([HasValue(components.QuestDetails, {})]);
+  const questTileEntities = useEntityQuery([HasValue(components.QuestTile, {})]);
 
-  console.log(questDetailEntities);
-
-  // Map the entities to their quest details
-  const quests = questDetailEntities
+  // Map the entities to their quest tiles
+  const quests = questTileEntities
     .map((entity) => {
-      const questDetails = getComponentValue(components.QuestDetails, entity);
+      const questTile = getComponentValue(components.QuestTile, entity);
       return {
         entityId: entity,
-        ...questDetails,
+        ...questTile,
       };
     })
     .filter((quest) => quest !== undefined);

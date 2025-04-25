@@ -170,6 +170,8 @@ export class ArmyActionManager {
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
+      } else if (hasQuest) {
+        actionType = ActionType.Quest;
       } else if (biome) {
         actionType = ActionType.Move;
         // Skip if no movement range available

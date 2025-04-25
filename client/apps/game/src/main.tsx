@@ -27,6 +27,7 @@ import { NoAccountModal } from "./ui/layouts/no-account-modal";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
 import { ETERNUM_CONFIG } from "./utils/config";
+
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -126,7 +127,6 @@ async function init() {
 
   const state = useUIStore.getState();
   const syncingStore = useSyncStore.getState();
-
   console.log("starting setupResult");
   const setupResult = await setup(
     { ...dojoConfig },

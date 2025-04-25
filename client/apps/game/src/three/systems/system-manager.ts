@@ -214,6 +214,7 @@ export class SystemManager {
           callback,
           (update: any): ID | undefined => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
+              console.log("army update", update);
               const [currentState, prevState] = update.value;
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
@@ -356,18 +357,19 @@ export class SystemManager {
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.QuestTile)) {
               const questTile = getComponentValue(this.setup.components.QuestTile, update.entity);
+              console.log("questTile", questTile);
               if (!questTile) return;
 
               return {
                 entityId: update.entity,
-                id: questDetails.id,
-                hexCoords: { col: questDetails.coord.x, row: questDetails.coord.y },
-                reward: questDetails.reward,
-                capacity: questDetails.capacity,
-                participantCount: questDetails.participant_count,
-                targetScore: questDetails.target_score,
-                expiresAt: questDetails.expires_at,
-                gameAddress: questDetails.game_address,
+                id: questTile.id,
+                gameAddress: questTile.game_address,
+                hexCoords: { col: questTile.coord.x, row: questTile.coord.y },
+                capacity: questTile.capacity,
+                level: questTile.level,
+                resourceType: questTile.resource_type,
+                amount: questTile.amount,
+                participantCount: questTile.participant_count,
               };
             }
           },

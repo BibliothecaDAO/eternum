@@ -477,8 +477,8 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          game_token_id: RecsType.Number,
-          game_address: RecsType.String,
+          game_token_id: RecsType.BigInt,
+          game_address: RecsType.BigInt,
           quest_tile_id: RecsType.Number,
           explorer_id: RecsType.Number,
           completed: RecsType.Boolean,
@@ -489,6 +489,23 @@ export function defineContractComponents(world: World) {
             name: "Quest",
             types: ["u64", "ContractAddress", "u32", "u32", "bool"],
             customTypes: [],
+          },
+        },
+      );
+    })(),
+    QuestLevels: (() => {
+      return defineComponent(
+        world,
+        {
+          game_address: RecsType.String,
+          levels: RecsType.EntityArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "QuestLevels",
+            types: ["ContractAddress", "Span<Level>"],
+            customTypes: ["Level"],
           },
         },
       );
@@ -512,9 +529,9 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             namespace: "s1_eternum",
-            name: "QuestDetails",
+            name: "QuestTile",
             types: ["u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
-            customTypes: ["Coord", "Reward"],
+            customTypes: ["Coord"],
           },
         },
       );

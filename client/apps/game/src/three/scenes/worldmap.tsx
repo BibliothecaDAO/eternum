@@ -348,8 +348,10 @@ export default class WorldmapScene extends HexagonScene {
     const account = useAccountStore.getState().account;
 
     const { selectedEntityId, actionPaths } = this.state.entityActions;
+    console.log("actionPaths", actionPaths);
     if (selectedEntityId && actionPaths.size > 0 && hexCoords) {
       const actionPath = actionPaths.get(ActionPaths.posKey(hexCoords, true));
+      console.log("actionPath", actionPath);
       if (actionPath && account) {
         const actionType = ActionPaths.getActionType(actionPath);
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
@@ -449,6 +451,8 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
+    console.log("quest hexes", this.questHexes);
+
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
@@ -458,6 +462,7 @@ export default class WorldmapScene extends HexagonScene {
       currentArmiesTick,
       playerAddress,
     );
+    console.log("actionPaths", actionPaths);
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
   }
@@ -491,6 +496,7 @@ export default class WorldmapScene extends HexagonScene {
     this.state.updateEntityActionSelectedEntityId(null);
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
+    this.questManager.addLabelsToScene();
   }
 
   setup() {

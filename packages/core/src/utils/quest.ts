@@ -1,4 +1,4 @@
-import { ClientComponents, ID, QuestDetails } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ID, QuestTile } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
@@ -7,10 +7,10 @@ export const getQuest = (questEntityId: ID | Entity, components: ClientComponent
   return formatQuests([entityId], components)[0];
 };
 
-export const formatQuests = (quests: Entity[], components: ClientComponents): QuestDetails[] => {
+export const formatQuests = (quests: Entity[], components: ClientComponents): QuestTile[] => {
   return quests
     .map((questEntity) => {
-      const quest = getComponentValue(components.QuestDetails, questEntity);
+      const quest = getComponentValue(components.QuestTile, questEntity);
       if (!quest) return undefined;
 
       // const position = explorerTroops.coord;
@@ -32,21 +32,18 @@ export const formatQuests = (quests: Entity[], components: ClientComponents): Qu
       // const isHome = structure && isArmyAdjacentToStructure(position, structure.base.coord_x, structure.base.coord_y);
 
       return {
+        id: quest.id,
+        game_address: ContractAddress(quest.game_address),
         coord: {
           x: quest.coord.x,
           y: quest.coord.y,
         },
-        reward: {
-          resource_type: quest.reward.resource_type,
-          amount: quest.reward.amount,
-        },
+        level: quest.level,
+        resource_type: quest.resource_type,
+        amount: quest.amount,
         capacity: quest.capacity,
         participant_count: quest.participant_count,
-        settings_id: quest.settings_id,
-        target_score: quest.target_score,
-        expires_at: quest.expires_at,
-        game_address: quest.game_address,
       };
     })
-    .filter((quest): quest is QuestDetails => quest !== undefined);
+    .filter((quest): quest is QuestTile => quest !== undefined);
 };

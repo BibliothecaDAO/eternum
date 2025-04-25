@@ -1,4 +1,5 @@
 import { getStructuresDataFromTorii } from "@/dojo/queries";
+import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
@@ -6,6 +7,7 @@ import { LoadingScreen } from "@/ui/modules/loading-screen";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
 import { Leva } from "leva";
+import { useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
@@ -100,6 +102,7 @@ const OnboardingOverlay = ({ backgroundImage }: { backgroundImage: string }) => 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   const syncedStructures = useRef<Set<string>>(new Set());
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const minigameStore = useMinigameStore.getState();
   const { setup, account } = useDojo();
   const playerStructures = usePlayerStructures();
   const setLoading = useUIStore((state) => state.setLoading);
@@ -225,6 +228,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
     syncUnsyncedStructures();
   }, [account.account, playerStructures, fetchedStructures, syncStructures, setSyncedStructures]);
+
+  const { data: minigames } = useMiniGames({});
+  minigameStore.setMinigames(minigames);
 
   return (
     <>

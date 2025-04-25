@@ -15,5 +15,6 @@ export function createClientComponents({ contractComponents }: { contractCompone
     ResourceArrival: overridableComponent(contractComponents.ResourceArrival),
     Quest: overridableComponent(contractComponents.Quest),
     QuestTile: overridableComponent(contractComponents.QuestTile),
+    QuestLevels: overridableComponent(contractComponents.QuestLevels),
   };
 }

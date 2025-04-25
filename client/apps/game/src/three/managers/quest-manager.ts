@@ -1,44 +1,88 @@
+import InstancedModel from "@/three/managers/instanced-model";
 import { Position } from "@/types/position";
-import { ID } from "@bibliothecadao/types";
+import { ContractAddress, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
+import { gltfLoader } from "../helpers/utils";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { QuestData, QuestSystemUpdate } from "../types";
 import { RenderChunkSize } from "../types/common";
-import { getWorldPositionForHex } from "../utils";
-import { QuestModel } from "./quest-model";
+import { getWorldPositionForHex, hashCoordinates } from "../utils";
+
+const MAX_INSTANCES = 1000;
+
+const ICONS = {
+  [QuestType.DarkShuffle]: "/images/labels/quest.png",
+};
 
 export class QuestManager {
   private scene: THREE.Scene;
-  private questMarkers: Map<string, THREE.Object3D> = new Map();
-  private questLabelsGroup: THREE.Group;
+  private questModels: Map<QuestType, InstancedModel[]> = new Map();
   private lastUpdateTime: number = 0;
   private updateInterval: number = 5000; // 5 seconds between updates
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
-  private quests: Map<ID, QuestData> = new Map();
+  private dummy: THREE.Object3D = new THREE.Object3D();
+  quests: Quests = new Quests();
   private visibleQuests: QuestData[] = [];
   private currentChunkKey: string | null = "190,170";
-  private questModel: QuestModel;
-  private entityIdLabels: Map<number, CSS2DObject> = new Map();
+  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
+  private labelsGroup: THREE.Group;
+  private entityIdMaps: Map<QuestType, Map<number, ID>> = new Map();
   private scale: number = 1;
   private currentCameraView: CameraView;
-  private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
-  private readonly labelsGroup: THREE.Group;
 
   constructor(
     scene: THREE.Scene,
     renderChunkSize: RenderChunkSize,
-    questLabelsGroup: THREE.Group,
-    hexagonScene: HexagonScene,
+    labelsGroup?: THREE.Group,
+    hexagonScene?: HexagonScene,
   ) {
     this.scene = scene;
     this.hexagonScene = hexagonScene;
-    this.questLabelsGroup = questLabelsGroup;
+    this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
-    this.questModel = new QuestModel(scene);
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.labelsGroup = new THREE.Group();
+    this.loadModel();
+
+    if (hexagonScene) {
+      hexagonScene.addCameraViewListener(this.handleCameraViewChange);
+    }
+  }
+
+  private handleCameraViewChange = (view: CameraView) => {
+    if (this.currentCameraView === view) return;
+    this.currentCameraView = view;
+
+    // Update all existing labels to reflect the new view
+    this.visibleQuests.forEach((quest) => {
+      this.updateLabelVisibility(quest.entityId, view === CameraView.Far);
+    });
+  };
+
+  public destroy() {
+    // Clean up camera view listener
+    if (this.hexagonScene) {
+      this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
+    }
+  }
+
+  private async loadModel(): Promise<void> {
+    const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
+      gltfLoader.load(
+        `models/buildings/wonder.glb`,
+        (gltf) => {
+          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "wonder");
+          this.questModels.set(QuestType.DarkShuffle, [instancedModel]);
+          this.scene.add(instancedModel.group);
+          resolve(instancedModel);
+        },
+        undefined,
+        reject,
+      );
+    });
+
+    await loadPromise;
   }
 
   async onUpdate(update: QuestSystemUpdate) {
@@ -49,14 +93,24 @@ export class QuestManager {
     }
     this.lastUpdateTime = now;
 
-    console.log("QuestManager.onUpdate called at", new Date().toISOString());
-
-    const { entityId, hexCoords, id, reward, capacity, participantCount, targetScore, expiresAt, gameAddress } = update;
+    const { entityId, id, game_address, hexCoords, level, resource_type, amount, capacity, participant_count } = update;
 
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
-    console.log("adding quest", update);
-    this.addQuest(entityId, position, id, reward, capacity, participantCount, targetScore, expiresAt, gameAddress);
+    const structureType = QuestType.DarkShuffle;
+
+    this.quests.addQuest(
+      entityId,
+      structureType,
+      id,
+      game_address,
+      position,
+      level,
+      resource_type,
+      amount,
+      capacity,
+      participant_count,
+    );
   }
 
   async updateChunk(chunkKey: string) {
@@ -76,7 +130,7 @@ export class QuestManager {
   };
 
   public getQuests() {
-    return Array.from(this.quests.values());
+    return Array.from(this.quests.getQuests().values());
   }
 
   private isQuestVisible(quest: { entityId: ID; hexCoords: Position }, startRow: number, startCol: number) {
@@ -89,64 +143,74 @@ export class QuestManager {
     return isVisible;
   }
 
-  private getVisibleQuestsForChunk(startRow: number, startCol: number): Array<QuestData> {
-    const visibleQuests = Array.from(this.quests.entries())
-      .filter(([_, quest]) => {
+  private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
+    const visibleQuests = Array.from(quests.values())
+      .filter((quest) => {
         return this.isQuestVisible(quest, startRow, startCol);
       })
-      .map(([entityId, quest]) => ({
-        entityId,
-        hexCoords: quest.hexCoords,
+      .map((quest) => ({
+        entityId: quest.entityId,
         id: quest.id,
-        reward: quest.reward,
+        game_address: quest.game_address,
+        hexCoords: quest.hexCoords,
+        level: quest.level,
+        resource_type: quest.resource_type,
+        amount: quest.amount,
         capacity: quest.capacity,
-        participantCount: quest.participantCount,
-        targetScore: quest.targetScore,
-        expiresAt: quest.expiresAt,
-        gameAddress: quest.gameAddress,
+        participant_count: quest.participant_count,
       }));
 
     return visibleQuests;
   }
 
   private renderVisibleQuests(chunkKey: string) {
-    const [startRow, startCol] = chunkKey.split(",").map(Number);
-    this.visibleQuests = this.getVisibleQuestsForChunk(startRow, startCol);
+    const _quests = this.quests.getQuests();
+    const visibleQuestIds = new Set<ID>();
 
-    // Reset all model instances
-    this.questModel.resetInstanceCounts();
+    for (const [questType, quests] of _quests) {
+      const [startRow, startCol] = chunkKey.split(",").map(Number);
+      this.visibleQuests = this.getVisibleQuestsForChunk(quests, startRow, startCol);
+      const models = this.questModels.get(questType);
 
-    let currentCount = 0;
-    this.visibleQuests.forEach((quest) => {
-      const position = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
-      const { x, y } = quest.hexCoords.getContract();
+      if (models && models.length > 0) {
+        models.forEach((model) => {
+          model.setCount(0);
+        });
 
-      // Update the specific model instance for this entity
-      this.questModel.updateInstance(
-        quest.entityId,
-        currentCount,
-        position,
-        this.scale,
-        new THREE.Euler(0, Math.random() * Math.PI * 2, 0), // Random rotation
-        new THREE.Color(0xffcc00), // Gold color for quests
-      );
+        console.log("models", models);
 
-      this.quests.set(quest.entityId, { ...quest });
+        this.entityIdMaps.set(questType, new Map());
 
-      // Increment count and update all meshes
-      currentCount++;
-      this.questModel.setVisibleCount(currentCount);
+        this.visibleQuests.forEach((quest) => {
+          visibleQuestIds.add(quest.entityId);
+          const position = this.getQuestWorldPosition(quest.entityId, quest.hexCoords);
+          position.y += 0.05;
+          const { x, y } = quest.hexCoords.getContract();
 
-      // Add or update entity ID label
-      if (this.entityIdLabels.has(quest.entityId)) {
-        const label = this.entityIdLabels.get(quest.entityId)!;
-        label.position.copy(position);
-        label.position.y += 2.5; // Position above the quest marker
-      } else {
-        this.addEntityIdLabel(quest, position);
+          // Always recreate the label to ensure it matches current camera view
+          if (this.entityIdLabels.has(quest.entityId)) {
+            this.removeEntityIdLabel(quest.entityId);
+          }
+          this.addEntityIdLabel(quest, position);
+
+          this.dummy.position.copy(position);
+
+          const rotationSeed = hashCoordinates(x, y);
+          const rotationIndex = Math.floor(rotationSeed * 6);
+          const randomRotation = (rotationIndex * Math.PI) / 3;
+          this.dummy.rotation.y = randomRotation;
+          this.dummy.updateMatrix();
+
+          const model = models[0]; // Assuming you're using the first model
+          const currentCount = model.getCount();
+          model.setMatrixAt(currentCount, this.dummy.matrix);
+          model.setCount(currentCount + 1);
+          this.entityIdMaps.get(questType)!.set(currentCount, quest.entityId);
+        });
+
+        models.forEach((model) => model.needsUpdate());
       }
-    });
-
+    }
     // Remove labels for quests that are no longer visible
     this.entityIdLabels.forEach((label, entityId) => {
       if (!this.visibleQuests.find((quest) => quest.entityId === entityId)) {
@@ -154,49 +218,15 @@ export class QuestManager {
       }
     });
 
-    // Update all model instances
-    this.questModel.updateAllInstances();
-    this.questModel.computeBoundingSphere();
-  }
-
-  private addQuestLabel(quest: QuestData, position: THREE.Vector3) {
-    console.log("adding quest label", quest);
-    // Create a div element for the CSS2D label
-    const labelDiv = document.createElement("div");
-    labelDiv.className = "quest-label";
-    labelDiv.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    labelDiv.style.color = "white";
-    labelDiv.style.padding = "10px";
-    labelDiv.style.borderRadius = "5px";
-    labelDiv.style.textAlign = "center";
-    labelDiv.style.width = "120px";
-    labelDiv.style.pointerEvents = "none"; // Make it non-interactive
-
-    // Add quest info
-    const titleElement = document.createElement("div");
-    titleElement.textContent = "Quest";
-    titleElement.style.fontWeight = "bold";
-    titleElement.style.fontSize = "16px";
-    labelDiv.appendChild(titleElement);
-
-    const idElement = document.createElement("div");
-    idElement.textContent = `ID: ${quest.id}`;
-    idElement.style.fontSize = "12px";
-    labelDiv.appendChild(idElement);
-
-    // Create the CSS2D object
-    const label = new CSS2DObject(labelDiv);
-    label.position.copy(position);
-    label.position.y += 2.5; // Position above the quest marker
-
-    this.questLabelsGroup.add(label);
-    this.entityIdLabels.set(quest.entityId, label);
+    // // Update all model instances
+    // this.questModel.updateAllInstances();
+    // this.questModel.computeBoundingSphere();
   }
 
   private removeEntityIdLabel(entityId: number) {
     const label = this.entityIdLabels.get(entityId);
     if (label) {
-      this.questLabelsGroup.remove(label);
+      this.labelsGroup.remove(label);
       this.entityIdLabels.delete(entityId);
     }
   }
@@ -209,11 +239,13 @@ export class QuestManager {
       "hover:bg-brown/90",
       "pointer-events-auto",
       "text-gold",
-      "p-1",
+      "p-0.5",
       "-translate-x-1/2",
-      "text-xs",
+      "text-xxs",
+      "h-10",
       "flex",
       "items-center",
+      "group",
     );
     // Prevent right click
     labelDiv.addEventListener("contextmenu", (e) => {
@@ -222,8 +254,8 @@ export class QuestManager {
     });
 
     const img = document.createElement("img");
-    img.src = `/images/labels/quest.png`;
-    img.classList.add("w-[24px]", "h-[24px]", "inline-block", "object-contain");
+    img.src = ICONS[QuestType.DarkShuffle];
+    img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
     labelDiv.appendChild(img);
 
     // Create text container with transition
@@ -231,12 +263,14 @@ export class QuestManager {
     textContainer.classList.add(
       "flex",
       "flex-col",
-      "transition-all",
+      "transition-width",
       "duration-700",
       "ease-in-out",
       "overflow-hidden",
       "whitespace-nowrap",
-      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[200px]",
+      "group-hover:max-w-[250px]",
+      "group-hover:ml-2",
+      this.currentCameraView === CameraView.Far ? "max-w-0" : "max-w-[250px]",
       this.currentCameraView === CameraView.Far ? "ml-0" : "ml-2",
     );
 
@@ -244,7 +278,7 @@ export class QuestManager {
     line1.textContent = `Quest`;
     line1.style.color = "inherit";
     const line2 = document.createElement("strong");
-    line2.textContent = `ID: ${quest.id}`;
+    line2.textContent = `Level: ${quest.level}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);
@@ -267,46 +301,98 @@ export class QuestManager {
       label.renderOrder = originalRenderOrder;
     });
 
-    this.questLabelsGroup.add(label);
+    this.labelsGroup.add(label);
     this.entityIdLabels.set(quest.entityId, label);
   }
 
   public removeLabelsFromScene(): void {
-    this.labels.forEach((labelData) => {
-      this.labelsGroup.remove(labelData.label);
+    this.entityIdLabels.forEach((labelData) => {
+      this.labelsGroup.remove(labelData);
     });
   }
 
   public addLabelsToScene(): void {
-    this.labels.forEach((labelData) => {
-      if (!this.labelsGroup.children.includes(labelData.label)) {
-        this.labelsGroup.add(labelData.label);
+    this.entityIdLabels.forEach((labelData) => {
+      if (!this.labelsGroup.children.includes(labelData)) {
+        this.labelsGroup.add(labelData);
       }
     });
   }
 
-  public addQuest(
+  public updateLabelVisibility(entityId: number, isCompact: boolean): void {
+    const labelData = this.entityIdLabels.get(entityId);
+    if (labelData?.element) {
+      const textContainer = labelData.element.querySelector(".flex.flex-col");
+      if (textContainer) {
+        if (isCompact) {
+          textContainer.classList.add("max-w-0", "ml-0");
+          textContainer.classList.remove("max-w-[250px]", "ml-2");
+        } else {
+          textContainer.classList.remove("max-w-0", "ml-0");
+          textContainer.classList.add("max-w-[250px]", "ml-2");
+        }
+      }
+    }
+  }
+}
+
+class Quests {
+  private quests: Map<QuestType, Map<ID, QuestData>> = new Map();
+
+  addQuest(
     entityId: ID,
+    questType: QuestType,
+    id: ID,
+    game_address: ContractAddress,
     hexCoords: Position,
-    id: number,
-    reward: number,
+    level: number,
+    resource_type: number,
+    amount: bigint,
     capacity: number,
-    participantCount: number,
-    targetScore: number,
-    expiresAt: number,
-    gameAddress: string,
+    participant_count: number,
   ) {
-    if (this.quests.has(entityId)) return;
-    this.quests.set(entityId, {
+    if (!this.quests.has(questType)) {
+      this.quests.set(questType, new Map());
+    }
+    this.quests.get(questType)!.set(entityId, {
       entityId,
-      hexCoords,
       id,
-      reward,
+      game_address,
+      hexCoords,
+      level,
+      resource_type,
+      amount,
       capacity,
-      participantCount,
-      targetScore,
-      expiresAt,
-      gameAddress,
+      participant_count,
     });
+  }
+
+  removeQuestFromPosition(hexCoords: { x: number; y: number }) {
+    this.quests.forEach((quests) => {
+      quests.forEach((quest) => {
+        const { x, y } = quest.hexCoords.getNormalized();
+        if (x === hexCoords.x && y === hexCoords.y) {
+          quests.delete(quest.entityId);
+        }
+      });
+    });
+  }
+
+  removeQuest(entityId: ID): QuestData | null {
+    let removedQuest: QuestData | null = null;
+
+    this.quests.forEach((quests) => {
+      const quest = quests.get(entityId);
+      if (quest) {
+        quests.delete(entityId);
+        removedQuest = quest;
+      }
+    });
+
+    return removedQuest;
+  }
+
+  getQuests(): Map<QuestType, Map<ID, QuestData>> {
+    return this.quests;
   }
 }

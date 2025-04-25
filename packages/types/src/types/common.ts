@@ -125,29 +125,36 @@ export type Structure = {
 };
 
 export type Quest = {
-  id: number;
-  details_id: number;
-  explorer_id: number;
   game_token_id: number;
+  game_address: ContractAddress;
+  quest_tile_id: number;
+  explorer_id: number;
   completed: boolean;
 };
 
-export type QuestDetails = {
+export type QuestTile = {
   id: number;
+  game_address: ContractAddress;
   coord: {
     x: number;
     y: number;
   };
-  reward: {
-    resource_type: number;
-    amount: bigint;
-  };
+  level: number;
+  resource_type: number;
+  amount: bigint;
   capacity: number;
   participant_count: number;
-  settings_id: number;
+};
+
+export type QuestLevel = {
+  game_address: ContractAddress;
+  levels: Level[];
+};
+
+export type Level = {
   target_score: number;
-  expires_at: bigint;
-  game_address: string;
+  settings_id: number;
+  time_limit: number;
 };
 
 export type TroopFoodConsumption = {
@@ -355,12 +362,6 @@ export interface ResourceInputs {
 
 export interface ResourceOutputs {
   [key: number]: number;
-}
-
-export interface QuestLevel {
-  target_score: number;
-  settings_id: number;
-  time_limit: number;
 }
 
 export interface Config {

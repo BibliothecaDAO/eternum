@@ -54,7 +54,6 @@ pub mod quest_systems {
     use s1_eternum::models::troop::ExplorerTroops;
     use s1_eternum::models::weight::Weight;
     use s1_eternum::systems::quest::constants::{VERSION};
-    use s1_eternum::models::map::Tile;
     use starknet::ContractAddress;
     use super::iQuestDiscoveryImpl;
     use tournaments::components::interfaces::{

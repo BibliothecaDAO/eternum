@@ -45,8 +45,8 @@ const MINIMAP_CONFIG = {
       [StructureType.Hyperstructure]: "#FFFFFF",
       [StructureType.Bank]: "#FFFF00",
       [StructureType.FragmentMine]: "#00FFFF",
-      [StructureType.Quest]: "#0000FF",
     },
+    QUEST: "#0000FF",
   },
   SIZES: {
     STRUCTURE: 14,
@@ -561,25 +561,26 @@ class Minimap {
   private drawQuests() {
     if (!this.context || !this.showQuests) return;
 
-    const allQuests = this.questManager.getQuests();
-    console.log("allQuests", allQuests);
-    allQuests.forEach((quest) => {
-      const { x: col, y: row } = quest.hexCoords.getNormalized();
-      const cacheKey = `${col},${row}`;
-      if (this.scaledCoords.has(cacheKey)) {
-        const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
-        const labelImg = this.labelImages.get("QUEST");
-        if (!labelImg) return;
+    const allQuests = this.questManager.quests.getQuests();
+    for (const [questType, quests] of allQuests) {
+      quests.forEach((quest) => {
+        const { x: col, y: row } = quest.hexCoords.getNormalized();
+        const cacheKey = `${col},${row}`;
+        if (this.scaledCoords.has(cacheKey)) {
+          const { scaledCol, scaledRow } = this.scaledCoords.get(cacheKey)!;
+          const labelImg = this.labelImages.get("QUEST");
+          if (!labelImg) return;
 
-        this.context.drawImage(
-          labelImg,
-          scaledCol - this.questSize.width * (row % 2 !== 0 ? 1 : 0.5),
-          scaledRow - this.questSize.height / 2,
-          this.questSize.width,
-          this.questSize.height,
-        );
-      }
-    });
+          this.context.drawImage(
+            labelImg,
+            scaledCol - this.questSize.width * (row % 2 !== 0 ? 1 : 0.5),
+            scaledRow - this.questSize.height / 2,
+            this.questSize.width,
+            this.questSize.height,
+          );
+        }
+      });
+    }
   }
 
   drawCamera() {

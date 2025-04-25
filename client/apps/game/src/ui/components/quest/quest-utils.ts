@@ -1,80 +1,168 @@
-import { getBlockTimestamp } from "@/utils/timestamp";
-import { ClientComponents } from "@bibliothecadao/eternum";
-import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ClientComponents } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { Query, ToriiClient } from "@dojoengine/torii-wasm";
+export const formatQuests = (quests: any[]) => {
+  return quests.map((quest) => {
+    return {
+      ...quest,
+    };
+  });
+};
 
-export const getQuestLocation = (components: ClientComponents, coord: { x: number; y: number }) => {
-  console.log(components);
-  const questEntities1 = runQuery([HasValue(components.QuestDetails, { id: 2 })]);
-  const questEntities2 = runQuery([HasValue(components.QuestDetails, { expires_at: 0n })]);
-  console.log(questEntities1, 1);
-  console.log(questEntities2, { expires_at: 0n });
-  const entitiesArray = Array.from(questEntities1);
-  const questEntities1Values = getComponentValue(components.QuestDetails, entitiesArray[0]);
-  console.log(questEntities1Values);
-  return questEntities2;
+export const getQuests = async (
+  toriiClient: ToriiClient,
+  components: ClientComponents,
+  gameAddress: string,
+  questGames: any,
+) => {
+  const queryQuests = {
+    clause: {
+      Composite: {
+        operator: "And",
+        clauses: [
+          {
+            Member: {
+              model: "s1_eternum-Quest",
+              member: "game_address",
+              operator: "Eq",
+              value: {
+                String: gameAddress,
+              },
+            },
+          },
+          {
+            Member: {
+              model: "s1_eternum-Quest",
+              member: "game_token_id",
+              operator: "In",
+              value: {
+                List: questGames.map((game: any) => {
+                  return {
+                    Primitive: {
+                      U64: Number(game.token_id),
+                    },
+                  };
+                }),
+              },
+            },
+          },
+        ],
+      },
+    },
+    limit: 100,
+    offset: 0,
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["s1_eternum-Quest"],
+    entity_updated_after: 0,
+  } as Query;
+
+  // return getEntities(
+  //   toriiClient,
+  //   queryQuests.clause,
+  //   components as any,
+  //   [],
+  //   ["s1_eternum-Quest"],
+  //   EVENT_QUERY_LIMIT,
+  //   false,
+  // );
+
+  const result = await toriiClient.getEntities(queryQuests, false);
+
+  const resultArray = Array.isArray(result) ? result : result ? [result] : [];
+
+  // Processed quests array
+  const processedQuests = [];
+
+  // Process the nested structure
+  for (const entity of resultArray) {
+    for (const entityId in entity) {
+      // Skip non-entity ID properties
+      if (!entityId.startsWith("0x")) continue;
+
+      const questData = entity[entityId];
+      if (!questData || !questData["s1_eternum-Quest"]) continue;
+
+      const quest = questData["s1_eternum-Quest"];
+
+      processedQuests.push({
+        entityId,
+        completed: quest.completed?.value === true,
+        explorer_id: Number(quest.explorer_id?.value),
+        game_address: quest.game_address?.value,
+        game_token_id: quest.game_token_id?.value, // Keep hex string or convert as needed
+        quest_tile_id: Number(quest.quest_tile_id?.value),
+        // Add any other fields you need
+      });
+    }
+  }
+
+  return processedQuests;
 };
 
 /**
  * Gets all quest locations from the game state
  */
-export const getQuestLocations = (components: ClientComponents) => {
-  // Get current timestamp for expiration check
-  const currentTimestamp = getBlockTimestamp();
-  console.log("Current timestamp:", currentTimestamp);
+export const getQuestForExplorer = async (
+  toriiClient: ToriiClient,
+  components: ClientComponents,
+  explorerId: number,
+) => {
+  const queryQuests = {
+    clause: {
+      Member: {
+        model: "s1_eternum-Quest",
+        member: "explorer_id",
+        operator: "Eq",
+        value: { Primitive: { U32: explorerId } },
+      },
+    },
+    limit: 1,
+    offset: 0,
+    dont_include_hashed_keys: false,
+    order_by: [],
+    entity_models: ["s1_eternum-Quest"],
+    entity_updated_after: 0,
+  } as Query;
 
-  // Query for all QuestDetails
-  const questEntities = runQuery([HasValue(components.QuestDetails, { expires_at: 0n })]);
-  console.log(components.QuestDetails.values);
-  console.log("Quest entities found:", Array.from(questEntities).length);
+  console.log(queryQuests);
 
-  // Process and filter quests
-  const questPositions = Array.from(questEntities)
-    .map((entity) => {
-      const questDetails = getComponentValue(components.QuestDetails, entity);
-      console.log(`Quest entity ${entity} details:`, questDetails);
+  const result = await toriiClient.getEntities(queryQuests, false);
 
-      if (questDetails) {
-        // Check if quest is valid (not expired or has no expiration)
-        const isValid =
-          questDetails.expires_at === 0n || questDetails.expires_at > currentTimestamp.currentBlockTimestamp;
+  for (const entityId in result) {
+    // Skip non-entity ID properties
+    if (!entityId.startsWith("0x")) continue;
 
-        if (isValid) {
-          return {
-            entityId: entity,
-            position: {
-              x: questDetails.coord.x,
-              y: questDetails.coord.y,
-            },
-            reward: questDetails.reward,
-            capacity: questDetails.capacity,
-            participantCount: questDetails.participant_count,
-            targetScore: questDetails.target_score,
-            expiresAt: questDetails.expires_at,
-            gameAddress: questDetails.game_address,
-          };
-        }
-        console.log(`Quest ${entity} is expired or invalid`);
-      }
-      return null;
-    })
-    .filter(Boolean);
+    const questData = result[entityId];
+    if (!questData || !questData["s1_eternum-Quest"]) continue;
 
-  console.log("Valid quest positions:", questPositions);
-  return questPositions;
+    const quest = questData["s1_eternum-Quest"];
+
+    return {
+      entityId,
+      completed: quest.completed?.value === true,
+      explorer_id: Number(quest.explorer_id?.value),
+      game_address: quest.game_address?.value,
+      game_token_id: quest.game_token_id?.value, // Keep hex string or convert as needed
+      quest_tile_id: Number(quest.quest_tile_id?.value),
+      // Add any other fields you need
+    };
+  }
 };
 
 /**
  * Gets quest details for a specific quest
  */
-export const getQuestDetails = (components: ClientComponents, questId: number) => {
-  const questEntity = getComponentValue(components.Quest, questId);
+export const getQuestDetails = (components: ClientComponents, coord: { x: number; y: number }) => {
+  const questEntity = getComponentValue(components.QuestTile, coord);
   if (!questEntity) return null;
 
-  const questDetails = getComponentValue(components.QuestDetails, questEntity.details_id);
+  const questDetails = getComponentValue(components.QuestTile, questEntity.details_id);
   if (!questDetails) return null;
 
   return {
     id: questEntity.id,
+    gameAddress: questDetails.game_address,
     detailsId: questEntity.details_id,
     explorerId: questEntity.explorer_id,
     gameTokenId: questEntity.game_token_id,
@@ -88,6 +176,5 @@ export const getQuestDetails = (components: ClientComponents, questId: number) =
     participantCount: questDetails.participant_count,
     targetScore: questDetails.target_score,
     expiresAt: questDetails.expires_at,
-    gameAddress: questDetails.game_address,
   };
 };

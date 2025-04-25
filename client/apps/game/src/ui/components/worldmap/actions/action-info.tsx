@@ -80,6 +80,8 @@ const TooltipContent = memo(
             isExplored={isExplored}
             path={actionPath.slice(1)}
           />
+        ) : actionType === ActionType.Quest ? (
+          <QuestInfo selectedEntityId={Number(selectedEntityId)} path={actionPath} components={components} />
         ) : (
           <AttackInfo
             selectedEntityId={Number(selectedEntityId)}
@@ -315,6 +317,106 @@ const AttackInfo = memo(
             </div>
           )}
         </div>
+      </div>
+    );
+  },
+);
+
+const QuestInfo = memo(
+  ({
+    selectedEntityId,
+    path,
+    components,
+  }: {
+    selectedEntityId: ID;
+    path: ActionPath[];
+    components: ClientComponents;
+  }) => {
+    const { currentArmiesTick } = getBlockTimestamp();
+
+    const troops = useMemo(() => {
+      const explorerTroops = getComponentValue(
+        components.ExplorerTroops,
+        getEntityIdFromKeys([BigInt(selectedEntityId)]),
+      )?.troops;
+
+      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+
+      const guardTroops = structure ? getGuardsByStructure(structure)[0]?.troops : undefined;
+
+      if (explorerTroops) return explorerTroops;
+      if (guardTroops) return guardTroops;
+      return undefined;
+    }, [components, selectedEntityId]);
+
+    const stamina = useMemo(() => {
+      const maxStamina = StaminaManager.getMaxStamina(troops);
+      return StaminaManager.getStamina(
+        troops?.stamina || { amount: 0n, updated_tick: 0n },
+        maxStamina,
+        currentArmiesTick,
+        components,
+      );
+    }, [troops, currentArmiesTick, components]);
+
+    const exploreStaminaCost = useMemo(() => configManager.getExploreStaminaCost(), []);
+
+    // Determine if attacker has enough stamina to attack
+    const hasEnoughStamina = useMemo(() => {
+      return Number(stamina.amount) >= exploreStaminaCost;
+    }, [stamina, exploreStaminaCost]);
+
+    const questCoords = path[path.length - 1].hex;
+
+    const tileEntity = getComponentValue(
+      components.Tile,
+      getEntityIdFromKeys([BigInt(questCoords.col), BigInt(questCoords.row)]),
+    );
+
+    const questTileEntity = getComponentValue(
+      components.QuestTile,
+      getEntityIdFromKeys([BigInt(tileEntity?.occupier_id || 0)]),
+    );
+
+    const questLevelsEntity = getComponentValue(
+      components.QuestLevels,
+      getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
+    );
+
+    const questLevel = questLevelsEntity?.levels[(questTileEntity?.level ?? 0) - 1] as any;
+
+    console.log(questTileEntity, questLevel);
+
+    return (
+      <div className="flex flex-col p-1 text-xs">
+        {/* Stamina Status */}
+        <div className="flex flex-row items-center mb-2">
+          <div className="text-lg p-1 pr-3">⚡️</div>
+          <div className="flex flex-col">
+            <div className="flex items-center">
+              <span className={clsx(hasEnoughStamina ? "text-green-500" : "text-red-500", "font-normal")}>
+                ({Number(stamina.amount)})
+              </span>
+              <span className="ml-2">
+                {hasEnoughStamina
+                  ? "Enough stamina to start quest"
+                  : `Need ${exploreStaminaCost} stamina to start quest`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quest Info
+        <div className="flex flex-col mt-2">
+          <div className="font-semibold mb-1">Quest: {questLevel?.value?.name}</div>
+
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+            <div className="font-medium">Target: {questLevel?.value?.target_score?.value}XP</div>
+            <div className="font-medium">
+              Participants: {questTileEntity?.participant_count} / {questTileEntity?.capacity}
+            </div>
+          </div>
+        </div> */}
       </div>
     );
   },

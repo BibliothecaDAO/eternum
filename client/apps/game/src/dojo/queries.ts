@@ -65,6 +65,7 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-ResourceBridgeWhitelistConfig",
     "s1_eternum-StructureLevelConfig",
     "s1_eternum-SeasonPrize",
+    "s1_eternum-QuestLevels",
   ];
 
   const twoKeyConfigModels = ["s1_eternum-ResourceList"];
@@ -394,6 +395,22 @@ export const getMapFromTorii = async <S extends Schema>(
     components as any,
     [],
     ["s1_eternum-Tile"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+};
+
+export const getQuestsFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  questTileId: ID,
+) => {
+  return getEntities(
+    client,
+    AndComposeClause([MemberClause("s1_eternum-Quest", "quest_tile_id", "Eq", questTileId)]).build(),
+    components as any,
+    [],
+    ["s1_eternum-Quest"],
     EVENT_QUERY_LIMIT,
     false,
   );
