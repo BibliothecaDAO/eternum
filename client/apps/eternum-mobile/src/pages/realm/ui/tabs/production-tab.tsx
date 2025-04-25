@@ -7,6 +7,7 @@ import { ProductionWidgetsSection } from "../components/production-widgets-secti
 export function ProductionTab() {
   const selectedRealm = useStore((state) => state.selectedRealm);
   const [activeTab, setActiveTab] = useState("manage");
+  const structureEntityId = useStore((state) => state.structureEntityId);
 
   return (
     <div className="space-y-4">
@@ -21,7 +22,7 @@ export function ProductionTab() {
         </TabsContent>
 
         <TabsContent value="build" className="mt-4">
-          <AddBuildingWidget />
+          <AddBuildingWidget entityId={structureEntityId} />
         </TabsContent>
       </Tabs>
     </div>

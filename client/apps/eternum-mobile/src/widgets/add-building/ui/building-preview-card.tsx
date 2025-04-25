@@ -1,58 +1,48 @@
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { Home, Plus, Warehouse, Wheat } from "lucide-react";
+import { BuildingType } from "@bibliothecadao/types";
+import { AlertTriangle, Home, Plus, Warehouse, Wheat } from "lucide-react";
 import { useState } from "react";
 import { BuildingDetailsDrawer } from "./building-details-drawer";
 
-// Using the building category enum from add-building-widget.tsx
+// Building category enum
 enum BuildingCategory {
   RESOURCE = "resource",
-  POPULATION = "population",
-  STORAGE = "storage",
+  ECONOMIC = "economic",
 }
 
-// Resource production interface
-interface ResourceProduction {
-  resourceId: string;
-  rate: number; // per second
-}
-
-// Resource cost interface
-interface ResourceCost {
-  resourceId: string;
-  amount: number;
-}
-
-// Building interface
+// Building interface with new structure
 interface Building {
   id: string;
+  buildingId: BuildingType;
+  resourceId?: number;
   name: string;
   image: string;
   category: BuildingCategory;
-  description: string;
-  produces?: ResourceProduction;
-  populationGrant?: number;
-  storageCapacity?: number;
-  populationCost: number;
-  consumesResources?: ResourceProduction[];
-  buildCosts: ResourceCost[];
+  canBuild: boolean;
+  hasBalance: boolean;
+  hasEnoughPopulation: boolean;
 }
 
 interface BuildingPreviewCardProps {
   building: Building;
+  entityId: number;
+  useSimpleCost: boolean;
 }
 
-export const BuildingPreviewCard = ({ building }: BuildingPreviewCardProps) => {
+export const BuildingPreviewCard = ({ building, entityId, useSimpleCost }: BuildingPreviewCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const getBuildingIcon = () => {
     switch (building.category) {
       case BuildingCategory.RESOURCE:
         return <Wheat className="h-4 w-4 text-amber-400" />;
-      case BuildingCategory.STORAGE:
-        return <Warehouse className="h-4 w-4 text-blue-400" />;
-      case BuildingCategory.POPULATION:
-        return <Home className="h-4 w-4 text-green-400" />;
+      case BuildingCategory.ECONOMIC:
+        return building.buildingId === BuildingType.WorkersHut ? (
+          <Home className="h-4 w-4 text-green-400" />
+        ) : (
+          <Warehouse className="h-4 w-4 text-blue-400" />
+        );
       default:
         return null;
     }
@@ -60,20 +50,46 @@ export const BuildingPreviewCard = ({ building }: BuildingPreviewCardProps) => {
 
   return (
     <>
-      <Card className="w-full transition-all duration-200 hover:bg-white/5 cursor-pointer">
+      <Card className={`w-full transition-all duration-200 hover:bg-white/5 ${!building.canBuild ? "opacity-60" : ""}`}>
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-md overflow-hidden">
-              <img src={building.image} alt={building.name} className="w-full h-full object-cover" />
+            <div className="w-12 h-12 rounded-md overflow-hidden bg-white/10 flex items-center justify-center">
+              {building.hasBalance && building.hasEnoughPopulation ? (
+                <img src={building.image} alt={building.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="relative w-full h-full">
+                  <img src={building.image} alt={building.name} className="w-full h-full object-cover opacity-40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {!building.hasBalance && <AlertTriangle className="h-6 w-6 text-amber-500" />}
+                    {!building.hasEnoughPopulation && building.hasBalance && <Home className="h-6 w-6 text-red-500" />}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5">
                 {getBuildingIcon()}
                 <h3 className="font-semibold text-white">{building.name}</h3>
               </div>
-              <p className="text-xs text-white/70 mt-0.5 line-clamp-1">{building.description}</p>
+              <p className="text-xs text-white/70 mt-0.5 line-clamp-1">
+                {!building.hasBalance
+                  ? "Not enough resources"
+                  : !building.hasEnoughPopulation
+                    ? "Not enough population"
+                    : building.category === BuildingCategory.RESOURCE
+                      ? "Resource production"
+                      : building.buildingId === BuildingType.WorkersHut
+                        ? "Provides housing"
+                        : "Economic building"}
+              </p>
             </div>
-            <Button variant="outline" size="sm" className="ml-auto" onClick={() => setIsOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              disabled={!building.canBuild}
+              onClick={() => setIsOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
@@ -81,7 +97,13 @@ export const BuildingPreviewCard = ({ building }: BuildingPreviewCardProps) => {
         </CardContent>
       </Card>
 
-      <BuildingDetailsDrawer building={building} open={isOpen} onOpenChange={setIsOpen} />
+      <BuildingDetailsDrawer
+        building={building}
+        entityId={entityId}
+        useSimpleCost={useSimpleCost}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      />
     </>
   );
 };
