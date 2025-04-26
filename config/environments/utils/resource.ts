@@ -275,10 +275,10 @@ export const STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Fish, amount: 3_000_000 },
   { resource: ResourcesIds.Labor, amount: 300_000 },
   { resource: ResourcesIds.Donkey, amount: 2_000 },
-  // 2500 / 3
-  { resource: ResourcesIds.Knight, amount: 833 },
-  { resource: ResourcesIds.Crossbowman, amount: 833 },
-  { resource: ResourcesIds.Paladin, amount: 833 },
+  // 5000, + 10 tokenized. only one troop type will be selected
+  { resource: ResourcesIds.Knight, amount: 5_010 },
+  { resource: ResourcesIds.Crossbowman, amount: 5_010 },
+  { resource: ResourcesIds.Paladin, amount: 5_010 },
 ];
 
 export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
@@ -286,10 +286,10 @@ export const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Fish, amount: 2_000_000 },
   { resource: ResourcesIds.Labor, amount: 200_000 },
   { resource: ResourcesIds.Donkey, amount: 500 },
-  // 400 / 3
-  { resource: ResourcesIds.Knight, amount: 133 },
-  { resource: ResourcesIds.Crossbowman, amount: 133 },
-  { resource: ResourcesIds.Paladin, amount: 133 },
+  // 1000, + 10 tokenized. only one troop type will be selected
+  { resource: ResourcesIds.Knight, amount: 1_010 },
+  { resource: ResourcesIds.Crossbowman, amount: 1_010 },
+  { resource: ResourcesIds.Paladin, amount: 1_010 },
 ];
 
 export const LABOR_PRODUCTION_OUTPUT_AMOUNTS_THROUGH_RESOURCES: ResourceOutputs = {

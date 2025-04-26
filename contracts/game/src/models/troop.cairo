@@ -1,7 +1,7 @@
 use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::RESOURCE_PRECISION;
+use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{TroopDamageConfig, TroopStaminaConfig};
 use s1_eternum::models::position::Coord;
 use s1_eternum::models::stamina::{Stamina, StaminaImpl, StaminaTrait};
@@ -446,6 +446,32 @@ pub impl TroopsImpl of TroopsTrait {
                     TroopType::Paladin => (ADD, VALUE) // +1
                 }
             },
+        }
+    }
+
+    fn start_resource_amount() -> u128 {
+        10 * RESOURCE_PRECISION
+    }
+
+    fn start_troop_type(biome: Biome) -> (u8, (TroopType, TroopTier)) {
+        match biome {
+            Biome::None => panic!("biome is not set"),
+            Biome::DeepOcean => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::Ocean => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::Beach => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::Scorched => (ResourceTypes::KNIGHT_T1, (TroopType::Knight, TroopTier::T1)),
+            Biome::Bare => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::Tundra => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::Snow => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::TemperateDesert => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::Shrubland => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::Taiga => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::Grassland => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::TemperateDeciduousForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::TemperateRainForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::SubtropicalDesert => (ResourceTypes::PALADIN_T1, (TroopType::Paladin, TroopTier::T1)),
+            Biome::TropicalSeasonalForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
+            Biome::TropicalRainForest => (ResourceTypes::CROSSBOWMAN_T1, (TroopType::Crossbowman, TroopTier::T1)),
         }
     }
 

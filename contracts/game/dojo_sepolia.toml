@@ -26,6 +26,7 @@ website = "https://eternum.realms.world/"
     "s1_eternum-name_systems",
     "s1_eternum-ownership_systems",
     "s1_eternum-realm_systems",
+	"s1_eternum-realm_internal_systems",
     "s1_eternum-resource_bridge_systems",
     "s1_eternum-resource_systems",
     "s1_eternum-swap_systems",

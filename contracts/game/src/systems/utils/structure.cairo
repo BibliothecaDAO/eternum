@@ -1,13 +1,14 @@
 use core::num::traits::Zero;
 use dojo::model::ModelStorage;
-use dojo::world::{WorldStorage};
+use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST};
 use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, VillageTokenConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{
-    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
+    WeightStoreImpl,
 };
 use s1_eternum::models::structure::{
     Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
@@ -15,7 +16,11 @@ use s1_eternum::models::structure::{
     StructureVillageSlots,
 };
 use s1_eternum::models::troop::{ExplorerTroops};
+use s1_eternum::models::troop::{GuardSlot, TroopsImpl};
 use s1_eternum::models::weight::{Weight};
+use s1_eternum::systems::combat::contracts::troop_management::{
+    ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
+};
 use s1_eternum::systems::utils::map::IMapImpl;
 use s1_eternum::systems::utils::troop::iExplorerImpl;
 use s1_eternum::systems::utils::village::{iVillageImpl};
@@ -130,7 +135,6 @@ pub impl iStructureImpl of IStructureTrait {
         };
 
         if possible_village_slots.len().is_non_zero() {
-            assert!(category == StructureCategory::Realm, "category should be realm");
             let structure_village_slots = StructureVillageSlots {
                 connected_realm_entity_id: structure_id,
                 connected_realm_id: metadata.realm_id,
@@ -173,7 +177,9 @@ pub impl iStructureImpl of IStructureTrait {
     }
 
 
-    fn grant_starting_resources(ref world: WorldStorage, structure_id: ID) {
+    fn grant_starting_resources(ref world: WorldStorage, structure_id: ID, structure_coord: Coord) {
+
+        let biome: Biome = get_biome(structure_coord.x.into(), structure_coord.y.into());
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);
         let starting_resources: StartingResourcesConfig = if structure_metadata.village_realm.is_non_zero() {
@@ -182,6 +188,7 @@ pub impl iStructureImpl of IStructureTrait {
             WorldConfigUtilImpl::get_member(world, selector!("realm_start_resources_config"))
         };
 
+        let (start_troop_resource_type, (start_troop_type, start_troop_tier)) = TroopsImpl::start_troop_type(biome);
         for i in 0..starting_resources.resources_list_count {
             let resource: ResourceList = world.read_model((starting_resources.resources_list_id, i));
             assert!(resource.resource_type != ResourceTypes::LORDS, "invalid start resource");
@@ -195,8 +202,31 @@ pub impl iStructureImpl of IStructureTrait {
             let mut realm_resource = SingleResourceStoreImpl::retrieve(
                 ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
             );
-            realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
-            realm_resource.store(ref world);
+
+            if TroopResourceImpl::is_troop(resource_type) {
+                if resource_type != start_troop_resource_type {
+                    continue;
+                } else {
+                    // store the resource
+                    realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+                    realm_resource.store(ref world);
+
+                    // create starting guard
+                    let start_guard_troop_amount = resource_amount - TroopsImpl::start_resource_amount();
+                    let (troop_management_systems_address, _) = world.dns(@"troop_management_systems").unwrap();
+                    ITroopManagementSystemsDispatcher { contract_address: troop_management_systems_address }
+                        .guard_add(
+                            structure_id,
+                            GuardSlot::Delta,
+                            start_troop_type,
+                            start_troop_tier,
+                            start_guard_troop_amount,
+                        );
+                }
+            } else {
+                realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
+                realm_resource.store(ref world);
+            }
         };
         structure_weight.store(ref world, structure_id);
     }

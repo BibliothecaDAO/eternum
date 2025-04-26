@@ -116,7 +116,7 @@ pub mod village_systems {
             );
 
             // grant starting resources
-            iStructureImpl::grant_starting_resources(ref world, village_id);
+            iStructureImpl::grant_starting_resources(ref world, village_id, village_coord);
 
             // place castle building
             BuildingImpl::create(
