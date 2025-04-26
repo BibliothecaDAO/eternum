@@ -178,7 +178,6 @@ pub impl iStructureImpl of IStructureTrait {
 
 
     fn grant_starting_resources(ref world: WorldStorage, structure_id: ID, structure_coord: Coord) {
-
         let biome: Biome = get_biome(structure_coord.x.into(), structure_coord.y.into());
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
         let structure_metadata: StructureMetadata = StructureMetadataStoreImpl::retrieve(ref world, structure_id);

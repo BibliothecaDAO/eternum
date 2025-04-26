@@ -44,7 +44,6 @@ pub impl iRealmImpl of iRealmTrait {
         wonder: u8,
         coord: Coord,
     ) -> ID {
-        
         // create structure
         let has_wonder = RealmReferenceImpl::wonder_mapping(wonder.into()) != "None";
         let structure_id = world.dispatcher.uuid();
@@ -113,35 +112,34 @@ pub impl iRealmImpl of iRealmTrait {
         let (name_and_attrs, _urla, _urlb) = season_pass.get_encoded_metadata(realm_id.try_into().unwrap());
         RealmNameAndAttrsDecodingImpl::decode(name_and_attrs)
     }
-
     // fn collect_lords_from_season_pass(season_pass_address: ContractAddress, realm_id: ID) -> u256 {
-    //     // detach lords from season pass
-    //     let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
-    //     let token_lords_balance: u256 = season_pass.lords_balance(realm_id.into());
-    //     season_pass.detach_lords(realm_id.into(), token_lords_balance);
-    //     assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be
-    //     0");
+//     // detach lords from season pass
+//     let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
+//     let token_lords_balance: u256 = season_pass.lords_balance(realm_id.into());
+//     season_pass.detach_lords(realm_id.into(), token_lords_balance);
+//     assert!(season_pass.lords_balance(realm_id.into()).is_zero(), "lords amount attached to realm should be
+//     0");
 
     //     // at this point, this contract's lords balance must have increased by
-    //     // `token_lords_balance`
-    //     token_lords_balance
-    // }
+//     // `token_lords_balance`
+//     token_lords_balance
+// }
 
     // fn bridge_lords_into_realm(
-    //     ref world: WorldStorage,
-    //     lords_address: ContractAddress,
-    //     realm_structure_id: ID,
-    //     amount: u256,
-    //     frontend: ContractAddress,
-    // ) {
-    //     // get bridge systems address
-    //     let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
-    //     // approve bridge to spend lords
-    //     IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
+//     ref world: WorldStorage,
+//     lords_address: ContractAddress,
+//     realm_structure_id: ID,
+//     amount: u256,
+//     frontend: ContractAddress,
+// ) {
+//     // get bridge systems address
+//     let (bridge_systems_address, _) = world.dns(@"resource_bridge_systems").unwrap();
+//     // approve bridge to spend lords
+//     IERC20Dispatcher { contract_address: lords_address }.approve(bridge_systems_address, amount);
 
     //     // deposit lords
-    //     IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
-    //         .deposit(lords_address, realm_structure_id, amount, frontend);
-    // }
+//     IResourceBridgeSystemsDispatcher { contract_address: bridge_systems_address }
+//         .deposit(lords_address, realm_structure_id, amount, frontend);
+// }
 }
 

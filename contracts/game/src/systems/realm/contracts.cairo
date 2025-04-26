@@ -101,11 +101,7 @@ pub mod realm_systems {
                 world, selector!("season_addresses_config"),
             );
 
-            iRealmImpl::collect_season_pass(
-                ref world,
-                season_addresses_config.season_pass_address,
-                realm_id,
-            );
+            iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
 
             // retrieve realm metadata
             let (realm_name, regions, cities, harbors, rivers, wonder, order, resources) =
@@ -194,16 +190,13 @@ pub mod realm_internal_systems {
             wonder: u8,
             coord: Coord,
         ) -> ID {
-
-            
             // ensure caller is the realm systems
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
             assert!(starknet::get_caller_address() == realm_systems, "caller must be the realm_systems");
 
             // create realm
-            let structure_id = iRealmImpl::create_realm(
-                ref world, owner, realm_id, resources, order, 0, wonder, coord);
+            let structure_id = iRealmImpl::create_realm(ref world, owner, realm_id, resources, order, 0, wonder, coord);
             structure_id.into()
         }
     }
