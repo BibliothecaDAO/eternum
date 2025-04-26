@@ -157,7 +157,7 @@ const chatContext = context({
 });
 
 const mongo = await createMongoMemoryStore({
-  collectionName: "agent",
+  collectionName: "agent-2",
   uri: process.env.MONGODB_URI!,
 });
 
