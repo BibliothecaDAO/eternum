@@ -161,6 +161,19 @@ const mongo = await createMongoMemoryStore({
   uri: process.env.MONGODB_URI!,
 });
 
+discord.outputs!["discord:message"].examples = [
+  `<output type="discord:message">Hi there, traveler of Eternum! How's your realm evolving today?</output>`,
+  `<output type="discord:message">Hello! I hope your forges are burning bright and your economy is booming 🔥💰</output>`,
+  `<output type="discord:message">Hey! Ready to chart some new territories or just here for a friendly chat?</output>`,
+  `<output type="discord:message">Howdy, partner! If you need strategy tips or a joke, I'm your bot.</output>`,
+  `<output type="discord:message">Greetings, noble artisan! May your resources be plentiful and your enemies scarce.</output>`,
+  `<output type="discord:message">Salutations! What epic plans do you have for your realm this cycle?</output>`,
+  `<output type="discord:message">What's up, commander? Let me know if you'd like a quick status report or some lore.</output>`,
+  `<output type="discord:message">Yo! I'm all ears—tell me about your latest conquest or quest.</output>`,
+  `<output type="discord:message">Ahoy there, strategist! Need a hand balancing production and defense?</output>`,
+  `<output type="discord:message">Hello again! Remember, greatness favors the bold—what bold move will you make today?</output>`,
+];
+
 const agent = createDreams({
   model: openrouter("google/gemini-2.5-flash-preview"),
   context: chatContext,
