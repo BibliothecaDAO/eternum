@@ -1,7 +1,7 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
+    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-    TroopStaminaConfig, VillageTokenConfig, QuestConfig
+    TroopStaminaConfig, VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -204,12 +204,12 @@ pub mod config_systems {
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
+        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
         ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
         StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
-        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl, QuestConfig
+        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
