@@ -64,14 +64,12 @@ const getStructureInfo = (
 };
 
 export const isStructureImmune = (
-  structure: { category: number; created_at: number } | undefined,
   currentTimestamp: number,
 ): boolean => {
-  const structureType = structure?.category as StructureType;
-
   const tickCount = currentTickCount(currentTimestamp);
+  const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
   const allowAttackTick =
-    currentTickCount(Number(structure?.created_at || 0)) + configManager.getBattleGraceTickCount(structureType);
+    currentTickCount(Number(seasonMainGameStartAt)) + configManager.getBattleGraceTickCount();
 
   if (tickCount < allowAttackTick) {
     return true;
@@ -83,11 +81,10 @@ export const getStructureImmunityTimer = (
   structure: ComponentValue<ClientComponents["Structure"]["schema"]> | undefined,
   currentBlockTimestamp: number,
 ) => {
-  const structureType = structure?.base.category as StructureType;
-
+  const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
   const immunityEndTimestamp =
-    Number(structure?.base.created_at || 0) +
-    (structure ? configManager.getBattleGraceTickCount(structureType) * configManager.getTick(TickIds.Armies) : 0);
+    Number(seasonMainGameStartAt) +
+    (structure ? configManager.getBattleGraceTickCount() * configManager.getTick(TickIds.Armies) : 0);
 
   if (!currentBlockTimestamp) return 0;
   return immunityEndTimestamp - currentBlockTimestamp!;

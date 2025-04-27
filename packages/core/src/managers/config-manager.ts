@@ -439,6 +439,17 @@ export class ClientConfigManager {
     }, 1);
   }
 
+  getSeasonMainGameStartAt() {
+    return this.getValueOrDefault(() => {
+      const startMainAt = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.season_config.start_main_at;
+
+      return startMainAt;
+    }, 0);
+  }
+
   getExploreReward() {
     return this.getValueOrDefault(() => {
       const exploreConfig = getComponentValue(
@@ -558,7 +569,7 @@ export class ClientConfigManager {
     );
   }
 
-  getBattleGraceTickCount(category: StructureType) {
+  getBattleGraceTickCount() {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(
         this.components.WorldConfig,
