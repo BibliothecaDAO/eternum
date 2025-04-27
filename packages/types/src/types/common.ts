@@ -384,6 +384,8 @@ export interface Config {
     hyperstructureFailProbIncreasePerHyperstructureFound: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
+    questFindProbability: number;
+    questFindFailProbability: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;

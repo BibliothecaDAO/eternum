@@ -32,14 +32,14 @@ export const SepoliaEternumGlobalConfig: Config = {
     },
     stamina: {
       ...CommonEternumGlobalConfig.troop.stamina,
-      staminaTravelFishCost: 0, 
+      staminaTravelFishCost: 0,
       staminaTravelWheatCost: 0,
       staminaExploreFishCost: 0,
       staminaExploreWheatCost: 0,
       staminaTravelStaminaCost: 0,
       staminaExploreStaminaCost: 0,
       staminaBonusValue: 0,
-      staminaInitial: 120
+      staminaInitial: 120,
     },
   },
   exploration: {
@@ -48,6 +48,8 @@ export const SepoliaEternumGlobalConfig: Config = {
     shardsMinesFailProbability: 11,
     agentFindProbability: 1,
     agentFindFailProbability: 10,
+    questFindProbability: 1,
+    questFindFailProbability: 10,
   },
   // cheap hyperstructures
   hyperstructures: {
@@ -77,7 +79,10 @@ export const SepoliaEternumGlobalConfig: Config = {
       resource.resource === ResourcesIds.Paladin ||
       resource.resource === ResourcesIds.Crossbowman
     ) {
-      return { ...resource, amount: Math.floor(CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount / 4) };
+      return {
+        ...resource,
+        amount: Math.floor(CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount / 4),
+      };
     }
     return resource;
   }),

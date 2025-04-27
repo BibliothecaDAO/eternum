@@ -1,7 +1,7 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-    TroopStaminaConfig, VillageTokenConfig,
+    TroopStaminaConfig, VillageTokenConfig, QuestConfig
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -183,6 +183,11 @@ pub trait IBattleConfig<T> {
     fn set_battle_config(ref self: T, battle_config: BattleConfig);
 }
 
+#[starknet::interface]
+pub trait IQuestConfig<T> {
+    fn set_quest_config(ref self: T, quest_config: QuestConfig);
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use achievement::components::achievable::AchievableComponent;
@@ -204,7 +209,7 @@ pub mod config_systems {
         ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
         StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
-        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl, QuestConfig
     };
     use s1_eternum::models::name::AddressName;
     use s1_eternum::models::resource::production::building::{BuildingCategory};
@@ -834,6 +839,16 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("trade_config"), trade_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IQuestConfig of super::IQuestConfig<ContractState> {
+        fn set_quest_config(ref self: ContractState, quest_config: QuestConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), quest_config);
         }
     }
 }

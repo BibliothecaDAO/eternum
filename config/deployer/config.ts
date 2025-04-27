@@ -16,6 +16,7 @@ import {
 
 import chalk from "chalk";
 
+import type { EternumProvider } from "@bibliothecadao/provider";
 import fs from "fs";
 import type { Account } from "starknet";
 import type { Chain } from "utils/utils";
@@ -824,6 +825,23 @@ export const setupGlobals = async (config: Config) => {
 
   const txMap = await config.provider.set_map_config(mapCalldata);
   console.log(chalk.green(`    ✔ Map configured `) + chalk.gray(txMap.statusReceipt));
+
+  const questCalldata = {
+    signer: config.account,
+    quest_find_probability: config.config.exploration.questFindProbability,
+    quest_find_fail_probability: config.config.exploration.questFindFailProbability,
+  };
+
+  console.log(
+    chalk.cyan(`
+    ┌─ ${chalk.yellow("Quest Parameters")}
+    │  ${chalk.gray("Quest Find Probability:")} ${chalk.white(questCalldata.quest_find_probability)}
+    │  ${chalk.gray("Quest Find Fail Probability:")} ${chalk.white(questCalldata.quest_find_fail_probability)}
+    └────────────────────────────────`),
+  );
+
+  const txQuest = await config.provider.set_quest_config(questCalldata);
+  console.log(chalk.green(`    ✔ Quest configured `) + chalk.gray(txQuest.statusReceipt));
 };
 
 export const setWonderBonusConfig = async (config: Config) => {
