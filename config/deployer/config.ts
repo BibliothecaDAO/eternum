@@ -797,8 +797,6 @@ export const setupGlobals = async (config: Config) => {
     hyps_fail_prob_increase_p_fnd: config.config.exploration.hyperstructureFailProbIncreasePerHyperstructureFound,
     mine_wheat_grant_amount: config.config.exploration.shardsMineInitialWheatBalance,
     mine_fish_grant_amount: config.config.exploration.shardsMineInitialFishBalance,
-    quest_discovery_probability: config.config.exploration.questDiscoveryProbability,
-    quest_discovery_fail_probability: config.config.exploration.questDiscoveryFailProbability,
   };
 
   const shardsMinesFailRate =
@@ -821,8 +819,6 @@ export const setupGlobals = async (config: Config) => {
     │  ${chalk.gray("Shards Mines Reward Fail Rate:")}     ${chalk.white(((mapCalldata.shards_mines_fail_probability / (mapCalldata.shards_mines_fail_probability + mapCalldata.shards_mines_win_probability)) * 100).toFixed(2) + "%")}
     │  ${chalk.gray("Shards Mine Initial Wheat Balance:")} ${chalk.white(mapCalldata.mine_wheat_grant_amount)}
     │  ${chalk.gray("Shards Mine Initial Fish Balance:")} ${chalk.white(mapCalldata.mine_fish_grant_amount)}
-    │  ${chalk.gray("Quest Discovery Probability:")} ${chalk.white(mapCalldata.quest_discovery_probability)}
-    │  ${chalk.gray("Quest Discovery Fail Probability:")} ${chalk.white(mapCalldata.quest_discovery_fail_probability)}
     └────────────────────────────────`),
   );
 

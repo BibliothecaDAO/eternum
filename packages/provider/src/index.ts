@@ -1867,8 +1867,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       hyps_fail_prob_increase_p_fnd,
       mine_wheat_grant_amount,
       mine_fish_grant_amount,
-      quest_discovery_probability,
-      quest_discovery_fail_probability,
       signer,
     } = props;
 
@@ -1887,8 +1885,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         hyps_fail_prob_increase_p_fnd,
         mine_wheat_grant_amount,
         mine_fish_grant_amount,
-        quest_discovery_probability,
-        quest_discovery_fail_probability,
       ],
     });
   }

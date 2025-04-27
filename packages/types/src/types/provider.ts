@@ -344,8 +344,6 @@ export interface SetMapConfigProps extends SystemSigner {
   hyps_fail_prob_increase_p_fnd: num.BigNumberish;
   mine_wheat_grant_amount: num.BigNumberish;
   mine_fish_grant_amount: num.BigNumberish;
-  quest_discovery_probability: num.BigNumberish;
-  quest_discovery_fail_probability: num.BigNumberish;
 }
 
 export interface SetTravelFoodCostConfigProps extends SystemSigner {
