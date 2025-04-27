@@ -556,7 +556,8 @@ pub impl iAgentDiscoveryImpl of iAgentDiscoveryTrait {
             array![].span(),
             1,
             true,
-            vrf_seed,
+            // make sure seed is different for each lottery system to prevent same outcome for same probability
+            vrf_seed - 3,
         )[0];
         return success;
     }
