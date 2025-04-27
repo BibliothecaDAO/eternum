@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test: [models, test_troop_management, test_troop_movement, test_troop_battle, quest]
+        test: [models, troop_management, test_troop_movement, test_troop_battle, quest]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
@@ -42,7 +42,7 @@ jobs:
           sudo mv sozo /usr/local/bin/
       - name: Run Dojo Test for ${{ matrix.test }}
         run: |
-          cd contracts/game && sozo test -f ${{ matrix.test }} --print-resource-usage
+          cd contracts/game && sozo test -f ${{ matrix.test }}
 
   test-scarb-fmt:
     needs: [setup-environment]
