@@ -26,7 +26,7 @@ pub mod troop_battle_systems {
     use s1_eternum::alias::ID;
     use s1_eternum::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use s1_eternum::models::config::{
-        BattleConfig, CombatConfigImpl, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
+        BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
     };
     use s1_eternum::models::owner::{OwnerAddressTrait};
@@ -59,7 +59,8 @@ pub mod troop_battle_systems {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(aggressor_id);
@@ -68,6 +69,24 @@ pub mod troop_battle_systems {
             // ensure caller does not own defender
             let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
             explorer_defender.assert_caller_not_structure_or_agent_owner(ref world);
+
+            // ensure attacker is not cloaked
+            let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
+            let tick = TickImpl::get_tick_config(ref world);
+            if !explorer_aggressor.is_daydreams_agent() {
+                let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_aggressor.owner,
+                );
+                explorer_aggressor_structure.assert_not_cloaked(battle_config, tick, season_config);
+            }
+
+            // ensure defender is not cloaked
+            if !explorer_defender.is_daydreams_agent() {
+                let mut explorer_defender_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_defender.owner,
+                );
+                explorer_defender_structure.assert_not_cloaked(battle_config, tick, season_config);
+            }
 
             // ensure aggressor has troops
             assert!(explorer_aggressor.troops.count.is_non_zero(), "aggressor has no troops");
@@ -85,7 +104,6 @@ pub mod troop_battle_systems {
             // aggressor attacks defender
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
-            let tick = TickImpl::get_tick_config(ref world);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
             let defender_biome: Biome = get_biome(explorer_defender.coord.x.into(), explorer_defender.coord.y.into());
@@ -192,7 +210,8 @@ pub mod troop_battle_systems {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
 
             // ensure caller owns aggressor
             let mut explorer_aggressor: ExplorerTroops = world.read_model(explorer_id);
@@ -211,10 +230,18 @@ pub mod troop_battle_systems {
             let mut guarded_structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
             assert!(guarded_structure.category != StructureCategory::None.into(), "defender is not a structure");
 
-            // ensure structure is not cloaked
-            let tick = TickImpl::get_tick_config(ref world);
+            // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            assert!(StructureBaseImpl::is_not_cloaked(guarded_structure, battle_config, tick), "structure is cloaked");
+            let tick = TickImpl::get_tick_config(ref world);
+            if !explorer_aggressor.is_daydreams_agent() {
+                let mut explorer_aggressor_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_aggressor.owner,
+                );
+                explorer_aggressor_structure.assert_not_cloaked(battle_config, tick, season_config);
+            }
+
+            // ensure defender is not cloaked
+            guarded_structure.assert_not_cloaked(battle_config, tick, season_config);
 
             // get guard troops
             let mut guard_defender: GuardTroops = StructureTroopGuardStoreImpl::retrieve(ref world, structure_id);
@@ -325,7 +352,8 @@ pub mod troop_battle_systems {
         ) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            let season_config: SeasonConfig = SeasonConfigImpl::get(world);
+            season_config.assert_started_and_not_over();
 
             // ensure caller structure owns aggressor
             let structure_aggressor_owner: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
@@ -357,13 +385,18 @@ pub mod troop_battle_systems {
                 .from_slot(structure_guard_slot);
             assert!(structure_guard_aggressor_troops.count.is_non_zero(), "guard slot is dead");
 
-            // ensure structure is not cloaked
-            let tick = TickImpl::get_tick_config(ref world);
+            // ensure attacker is not cloaked
             let battle_config: BattleConfig = WorldConfigUtilImpl::get_member(world, selector!("battle_config"));
-            assert!(
-                StructureBaseImpl::is_not_cloaked(structure_aggressor_base, battle_config, tick),
-                "your structure is cloaked from attacks, so you cannot attack as well",
-            );
+            let tick = TickImpl::get_tick_config(ref world);
+            structure_aggressor_base.assert_not_cloaked(battle_config, tick, season_config);
+
+            // ensure defender is not cloaked
+            if !explorer_defender.is_daydreams_agent() {
+                let mut explorer_defender_structure: StructureBase = StructureBaseStoreImpl::retrieve(
+                    ref world, explorer_defender.owner,
+                );
+                explorer_defender_structure.assert_not_cloaked(battle_config, tick, season_config);
+            }
 
             // ensure structure is adjacent to explorer
             assert!(

@@ -3,7 +3,7 @@ use core::num::traits::zero::Zero;
 use core::traits::Into;
 use dojo::{model::{Model, ModelStorage}, world::WorldStorage};
 use s1_eternum::alias::ID;
-use s1_eternum::models::config::{BattleConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{BattleConfig, SeasonConfig, StructureMaxLevelConfig, TickConfig, WorldConfigUtilImpl};
 use s1_eternum::models::config::{TickTrait};
 use s1_eternum::models::position::{Coord, Direction};
 use s1_eternum::models::stamina::Stamina;
@@ -92,8 +92,10 @@ pub impl StructureBaseImpl of StructureBaseTrait {
         assert!(self.exists(), "entity is not a structure")
     }
 
-    fn assert_not_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) {
-        let (is_cloaked, reason) = self.is_cloaked(battle_config, tick_config);
+    fn assert_not_cloaked(
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+    ) {
+        let (is_cloaked, reason) = self.is_cloaked(battle_config, tick_config, season_config);
         assert!(!is_cloaked, "{}", reason);
     }
 
@@ -105,31 +107,28 @@ pub impl StructureBaseImpl of StructureBaseTrait {
         self.category != StructureCategory::None.into()
     }
 
-    fn is_not_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) -> bool {
-        let (is_cloaked, _) = self.is_cloaked(battle_config, tick_config);
+    fn is_not_cloaked(
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+    ) -> bool {
+        let (is_cloaked, _) = self.is_cloaked(battle_config, tick_config, season_config);
         return !is_cloaked;
     }
 
-    fn is_cloaked(self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig) -> (bool, ByteArray) {
-        // Fragment mines have no immunity
-        if self.category == StructureCategory::FragmentMine.into() {
-            return (false, "");
-        }
-
+    fn is_cloaked(
+        self: StructureBase, battle_config: BattleConfig, tick_config: TickConfig, season_config: SeasonConfig,
+    ) -> (bool, ByteArray) {
         let current_tick = tick_config.current();
-        let mut allow_attack_tick: u64 = 0;
-        if self.category == StructureCategory::Hyperstructure.into() {
-            allow_attack_tick = tick_config.at(self.created_at.into())
-                + battle_config.hyperstructure_immunity_ticks.into();
-        } else {
-            allow_attack_tick = tick_config.at(self.created_at.into()) + battle_config.regular_immunity_ticks.into();
-        }
+        let mut allow_attack_tick: u64 = tick_config.at(season_config.start_main_at)
+            + battle_config.regular_immunity_ticks.into();
 
         if current_tick < allow_attack_tick {
             let remaining_ticks = allow_attack_tick - current_tick;
             return (
                 true,
-                format!("structure and related entities cannot be attacked for another {} ticks", remaining_ticks),
+                format!(
+                    "structures and armies cannot be attacked for another {} seconds",
+                    remaining_ticks * tick_config.interval(),
+                ),
             );
         }
 
