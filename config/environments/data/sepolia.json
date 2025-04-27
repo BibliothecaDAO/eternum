@@ -2543,7 +2543,8 @@
           37,
           "0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c"
         ]
-      }
+      },
+      "villagePass": "0x5b0ed5ccf1d46c26c7adc35c330f3ebb3750f80b76fee847e1d1cd04bab6e32"
     },
     "manifest": {
       "world": {

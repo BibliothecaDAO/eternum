@@ -51,6 +51,7 @@ export enum TileOccupier {
   RealmRegularLevel3WonderBonus = 35,
   RealmRegularLevel4WonderBonus = 36,
   VillageWonderBonus = 37,
+  Quest = 38,
 }
 
 /**

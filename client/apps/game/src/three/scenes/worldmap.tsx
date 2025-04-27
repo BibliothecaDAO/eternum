@@ -456,8 +456,8 @@ export default class WorldmapScene extends HexagonScene {
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
-      this.questHexes,
       this.exploredTiles,
+      this.questHexes,
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,

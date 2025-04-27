@@ -124,6 +124,7 @@ export class ArmyActionManager {
     structureHexes: Map<number, Map<number, HexEntityInfo>>,
     armyHexes: Map<number, Map<number, HexEntityInfo>>,
     exploredHexes: Map<number, Map<number, BiomeType>>,
+    questHexes: Map<number, Map<number, HexEntityInfo>>,
     currentDefaultTick: number,
     currentArmiesTick: number,
     playerAddress: ContractAddress,
@@ -152,6 +153,7 @@ export class ArmyActionManager {
       const hasArmy = armyHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const isArmyMine = armyHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const hasStructure = structureHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
+      const hasQuest = questHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
       const isStructureMine =
         structureHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER)?.owner === playerAddress || false;
       const biome = exploredHexes.get(col - FELT_CENTER)?.get(row - FELT_CENTER);
