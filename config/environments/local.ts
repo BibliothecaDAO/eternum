@@ -45,6 +45,8 @@ export const LocalEternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHexDistance: 20,
     agentFindProbability: 3_000,
     agentFindFailProbability: 10_000,
+    questFindProbability: 1_000,
+    questFindFailProbability: 10_000,
   },
   // cheap hyperstructures
   hyperstructures: {

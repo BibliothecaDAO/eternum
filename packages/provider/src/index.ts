@@ -1962,12 +1962,25 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_agent_config(props: SystemProps.SetAgentConfigProps) {
-    const { agent_controller, max_lifetime_count, max_current_count, min_spawn_lords_amount, max_spawn_lords_amount, signer } = props;
+    const {
+      agent_controller,
+      max_lifetime_count,
+      max_current_count,
+      min_spawn_lords_amount,
+      max_spawn_lords_amount,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_agent_config",
-      calldata: [agent_controller, max_lifetime_count, max_current_count, min_spawn_lords_amount, max_spawn_lords_amount],
+      calldata: [
+        agent_controller,
+        max_lifetime_count,
+        max_current_count,
+        min_spawn_lords_amount,
+        max_spawn_lords_amount,
+      ],
     });
   }
 
@@ -2363,6 +2376,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_settlement_config",
       calldata: [center, base_distance, subsequent_distance],
+    });
+  }
+
+  public async set_quest_config(props: SystemProps.SetQuestConfigProps) {
+    const { quest_find_probability, quest_find_fail_probability, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_quest_config",
+      calldata: [quest_find_probability, quest_find_fail_probability],
     });
   }
 
