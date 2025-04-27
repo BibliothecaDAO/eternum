@@ -596,8 +596,7 @@ export const setBattleConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Battle Parameters")}
-    │  ${chalk.gray("Regular Immunity:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
-    │  ${chalk.gray("Structure Immunity:")}    ${chalk.white(calldata.hyperstructure_immunity_ticks + " ticks")}
+    │  ${chalk.gray(" Immunity Period:")}      ${chalk.white(calldata.regular_immunity_ticks + " ticks")}
     └────────────────────────────────`),
   );
 

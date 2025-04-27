@@ -564,14 +564,7 @@ export class ClientConfigManager {
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.battle_config;
-      switch (category) {
-        case StructureType.Hyperstructure:
-          return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
-        case StructureType.FragmentMine:
-          return 0;
-        default:
-          return Number(battleConfig?.regular_immunity_ticks ?? 0);
-      }
+      return Number(battleConfig?.regular_immunity_ticks ?? 0);
     }, 0);
   }
 

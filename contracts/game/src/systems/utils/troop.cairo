@@ -202,6 +202,10 @@ pub impl iExplorerImpl of iExplorerTrait {
         return explorer;
     }
 
+    fn is_daydreams_agent(ref self: ExplorerTroops) -> bool {
+        self.owner == DAYDREAMS_AGENT_ID
+    }
+
     fn assert_caller_structure_or_agent_owner(ref self: ExplorerTroops, ref world: WorldStorage) {
         if self.owner == DAYDREAMS_AGENT_ID {
             let agent_owner: AgentOwner = world.read_model(self.explorer_id);
