@@ -166,16 +166,14 @@ function Mint() {
           Select your Realm NFTs below to mint their corresponding Season Pass NFTs.
         </p>
 
-        {/* Information Note - Conditionally render if not all realms are minted */} 
-        {!allMinted && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info h-5 w-5 text-blue-600 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            <span>Please note: It may take up to a minute for newly minted Season Passes to show up.</span>
-          </div>
-        )}
-
         <div className="flex-grow overflow-y-auto">
           <div className="flex flex-col gap-4">
+            {!allMinted && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info h-5 w-5 text-blue-600 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Please note: It may take up to a minute for newly minted Season Passes to show up.</span>
+              </div>
+            )}
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
               {allMinted && (
                 <div className="mb-4 flex items-center gap-3 rounded-lg border border-lime-300 bg-lime-50 p-4 text-lime-800 shadow-sm">
@@ -243,7 +241,7 @@ function Mint() {
         </div>
         
         {/* Sticky Bottom Action Bar (Mobile Only) */}
-        {totalRealms > 0 && !allMinted && ( // Only show actions if there are realms and not all are minted
+        {totalRealms > 0 && !allMinted && totalSelectedNfts > 0 && ( // Only show actions if there are realms, not all are minted, AND at least one is selected
           <div className="sm:hidden sticky bottom-0 z-20 bg-background border-t border-gold/15 p-4 mt-auto"> {/* MODIFIED: Added sm:hidden */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4"> {/* Inner container */}
               <div className="flex items-center gap-4 w-full sm:w-auto"> {/* Selection actions */}

@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
+import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getChecksumAddress, validateChecksumAddress } from "starknet";
 import { Button } from "../ui/button";
@@ -14,7 +15,7 @@ import { useCartridgeAddress } from "@/hooks/use-cartridge-address";
 import useDebounce from "@/hooks/use-debounce";
 import { displayAddress } from "@/lib/utils";
 import { RealmMetadata, SeasonPassMint } from "@/types";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 import { TypeH3 } from "../typography/type-h3";
 
 interface TransferSeasonPassProps {
@@ -29,6 +30,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
 
   const [transferTo, setTransferTo] = useState<string | null>(null);
   const [selectedRealms, setSelectedRealms] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
 
   const toggleRealmSelection = (tokenId: string) => {
     setSelectedRealms((prev) => {
@@ -167,33 +169,61 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
           </Table>
         </div>
         <div className="bottom-0 pt-4 mt-auto flex flex-col">
+          <div className="mb-4 space-y-2">
+            {cartridgeLoading && (
+              <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 p-2 text-base text-gray-800">
+                <span>Loading address...</span>
+              </div>
+            )}
+            {cartridgeAddress && debouncedInput && (
+               <div className="border p-2 rounded-md border-green-300 bg-green-50 text-base text-green/90 flex items-center justify-between gap-2">
+                 <span>Controller Address Found! {displayAddress(cartridgeAddress)}</span>
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className="h-6 w-6 text-green/90 hover:bg-green-100"
+                   onClick={() => {
+                     if (cartridgeAddress) {
+                       navigator.clipboard.writeText(cartridgeAddress);
+                       setIsCopied(true);
+                       setTimeout(() => setIsCopied(false), 1500); // Reset after 1.5 seconds
+                     }
+                   }}
+                 >
+                   {isCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                 </Button>
+               </div>
+            )}
+            {!cartridgeLoading && !cartridgeAddress && debouncedInput && (
+              <div className="flex items-center gap-2 rounded-md border border-green-400 bg-green-100 p-2 text-base text-red/90">
+                <span>No controller address found for "{debouncedInput}".</span>
+              </div>
+            )}
+            {!transferTo && !cartridgeLoading && !debouncedInput && (
+                <div className="text-gold text-base flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Please enter a valid Controller ID or address
+                </div>
+            )}
+          </div>
+
           <div className="flex gap-4 text-xl">
             <Input
               placeholder="Enter Controller ID or address for transfer"
               value={input}
-              className="text-gold text-xl"
-              onChange={(e) => setInput(e.target.value)}
+              className="text-gold text-2xl p-4"
+              onChange={(e) => setInput(e.target.value.toLowerCase())}
             />
             <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
               Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
             </Button>
           </div>
-          {!transferTo && !cartridgeLoading && (
-            <div className="text-gold text-sm mt-3 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Please enter a valid Controller ID or address
-            </div>
-          )}
-          <div className=" mt-4 border p-2 rounded-md border-green ring-green text-green">
-            {cartridgeLoading ? (
-              "loading"
-            ) : cartridgeAddress ? (
-              <>Controller Address Found! {displayAddress(cartridgeAddress)}</>
-            ) : (
-              "Nothing found"
-            )}
+          
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-red-400 bg-red-100 p-3 text-sm shadow-sm text-red/80">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-md ">Transferring to a wrong address will result in loss of assets. 
+  Double-check the address.</span>
           </div>
-          <div className="text-sm mt-2 text-red/80">Transfering to a wrong address may result in loss.</div>
         </div>
       </DialogContent>
     </Dialog>
