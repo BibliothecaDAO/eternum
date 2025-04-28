@@ -211,7 +211,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
             <Input
               placeholder="Enter Controller ID or address for transfer"
               value={input}
-              className="text-gold text-2xl p-4"
+              className="text-gold text-xl p-4"
               onChange={(e) => setInput(e.target.value.toLowerCase())}
             />
             <Button variant="cta" onClick={handleTransfer} disabled={!transferTo || selectedRealms.length === 0}>
