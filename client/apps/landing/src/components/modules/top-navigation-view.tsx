@@ -3,10 +3,7 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
 import { PlayIcon } from "lucide-react";
-import { formatEther } from "viem";
-import { env } from "../../../env";
 import { Button } from "../ui/button";
-import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
 import { SeasonStartTimer } from "./season-start-timer";
@@ -35,29 +32,16 @@ export const TopNavigationView = ({
         <SidebarTrigger />
         <ModeToggle />
 
-        {lordsBalance ? (
-          <div className="text-sm px-2 rounded border font-number flex items-center gap-2">
-            <ResourceIcon withTooltip={false} resource="Lords" size="lg" />{" "}
-            {Number(formatEther(lordsBalance)).toFixed(2)}
-          </div>
-        ) : null}
-
-        {env.VITE_PUBLIC_CHAIN !== "mainnet" ? (
-          <Button disabled={!address} onClick={onMintTestLords}>
-            Mint Test Lords
-          </Button>
-        ) : null}
-
         <Button
           disabled={!address}
           variant="cta"
           onClick={() => {
-            window.open("https://eternum.realms.world", "_blank");
+            window.open("https://next-eternum.realms.world", "_blank");
           }}
           className="gap-2 hidden sm:flex"
         >
           <PlayIcon className="!w-4 h-2" />
-          Play Eternum
+          Play Eternum (Sepolia)
         </Button>
 
         <Button

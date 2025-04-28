@@ -3,10 +3,10 @@ import { seasonPassAddress } from "@/config";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
 import { useReadContract } from "@starknet-react/core";
-import { Loader } from "lucide-react";
+import { CheckCircle2, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Checkbox } from "../ui/checkbox";
 import { ResourceIcon } from "../ui/elements/resource-icon";
+
 interface RealmCardProps {
   realm: NonNullable<NonNullable<NonNullable<GetAccountTokensQuery>["tokenBalances"]>["edges"]>[0] & {
     seasonPassMinted?: boolean;
@@ -40,7 +40,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   });
 
   const handleCardClick = () => {
-    if (toggleNftSelection && !data) {
+    if (toggleNftSelection && !isSuccess) {
       toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
     }
   };
@@ -63,45 +63,88 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   return (
     <Card
       onClick={handleCardClick}
-      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
+      className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
+        ${isSuccess ? "cursor-not-allowed" : "cursor-pointer hover:ring-1 hover:ring-gold"} 
+        ${isSelected ? "ring-2 ring-offset-2 ring-gold scale-[1.02]" : ""} 
+        ${!isSuccess && !isFetching && !isSelected 
+          ? "ring-1 ring-gold shadow-lg shadow-gold/40"
+          : ""
+        } 
+      `}
     >
-      <img src={image} alt={name} className="w-full object-cover h-32 opacity-75 rounded-t-xl" />
-      <CardHeader className="p-4">
-        <CardTitle className=" items-center gap-2">
-          <div className="uppercase text-sm mb-2 flex justify-between">
-            Realm
-            <div className="flex items-center gap-2 text-sm">
-              {isFetching && <Loader className="animate-spin" />}
-              {error ? (
-                <div className="flex items-center gap-2">
-                  Claim <Checkbox checked={isSelected} disabled={isSuccess} />
-                </div>
-              ) : (
-                isSuccess && <div className="text-green">Pass Minted!</div>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-between gap-2">
-            <div className=" text-2xl">{name}</div>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div className="flex flex-wrap gap-2">
-          {attributes
-            ?.filter((attribute) => attribute.trait_type === "Resource")
-            .map((attribute, index) => (
-              <ResourceIcon resource={attribute.value as string} size="xl" key={`${attribute.trait_type}-${index}`} />
-            ))}
+      <div className={`absolute inset-0 opacity-5 
+        ${isFetching ? 'bg-gray-500' : isSuccess ? 'bg-dark-green' : 'bg-enemy'} 
+        pointer-events-none`}
+      />
+      
+      {/* Status Indicator Icon (Top Right) - Remains absolutely positioned */}
+      {!isSelected && ( 
+        <div 
+          className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`} 
+          title={isFetching ? "Checking Status..." : isSuccess ? "Season Pass Minted" : "Season Pass Not Minted"}
+        >
+          {isFetching ? (
+            <Loader className="w-5 h-5 text-gray-400 animate-spin" />
+          ) : isSuccess ? (
+            <CheckCircle2 className="w-5 h-5 text-lime-500" /> 
+          ) :""}
         </div>
-
-        {/* {Number(tokenId)} */}
-      </CardContent>
-      {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
-        <CardFooter className="border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center p-4">
-          {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
-        </CardFooter>
       )}
+
+      {/* Prompt to Mint Section (Top of Card) */}
+      {!isSuccess && !isSelected && !isFetching && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 text-xs font-semibold p-2 text-center border-b border-blue-200/50">
+            Click card to select
+          </div>
+      )}
+
+      {/* Main card content starts below the mint prompt */}
+      <div className="relative z-10 bg-card/95">
+        <div className="relative">
+          <img
+            src={image}
+            alt={name}
+            className={`w-full object-cover h-40 sm:h-48 transition-all duration-200 
+              ${isSuccess 
+                ? 'opacity-50 filter grayscale brightness-75' 
+                : 'opacity-90 hover:opacity-100'
+              }
+            `}
+          />
+          {isSelected && (
+            <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
+              Selected
+            </div>
+          )}
+        </div>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="items-center gap-2">
+            <div className="uppercase text-xs tracking-wider mb-1 flex justify-between items-center text-gray-400">
+              Realm
+            </div>
+            <div className="flex justify-between gap-2">
+              <div className="text-xl font-bold">{name}</div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {attributes
+              ?.filter((attribute) => attribute.trait_type === "Resource")
+              .map((attribute, index) => (
+                <ResourceIcon resource={attribute.value as string} size="sm" key={`${attribute.trait_type}-${index}`} />
+              ))}
+          </div>
+        </CardContent>
+        {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+          <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-center text-center p-3 text-sm">
+            <span className="text-gold font-bold tracking-wide">
+              {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+            </span>
+          </CardFooter>
+        )}
+      </div> 
     </Card>
   );
 };
+

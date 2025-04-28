@@ -26,12 +26,12 @@ const items = [
     icon: Castle,
   },
   {
-    title: "Transfer Passes",
+    title: "Manage Passes",
     url: "/season-passes",
     icon: Gamepad2,
   },
   {
-    title: "Buy Passes",
+    title: "Buy A Pass",
     url: "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
     icon: Scale,
   },
