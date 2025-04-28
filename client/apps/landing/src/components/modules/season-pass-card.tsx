@@ -44,7 +44,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         <img 
           src={image} 
           alt={name} 
-          className="w-full object-cover h-56 sm:h-64 opacity-90 hover:opacity-100 transition-all duration-200"
+          className="w-full object-contain opacity-90 hover:opacity-100 transition-all duration-200"
         />
         {isSelected && (
           <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
