@@ -12,9 +12,9 @@ trait IRealmMetadataEncoded<TState> {
 #[starknet::interface]
 trait ISeasonPass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
-    fn attach_lords(ref self: TState, token_id: u256, amount: u256);
-    fn detach_lords(ref self: TState, token_id: u256, amount: u256);
-    fn lords_balance(self: @TState, token_id: u256) -> u256;
+    // fn attach_lords(ref self: TState, token_id: u256, amount: u256);
+// fn detach_lords(ref self: TState, token_id: u256, amount: u256);
+// fn lords_balance(self: @TState, token_id: u256) -> u256;
 }
 
 
@@ -53,8 +53,8 @@ mod EternumSeasonPass {
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
-    fn IMAGE_URL() -> ByteArray {
-        "QmXbhQRZMxod2USTMgargWt3sxPGBo4sQNiQEMkLq36qfC"
+    fn TOKEN_IMAGE_IPFS_CID() -> ByteArray {
+        "bafybeigf3hnqeu52erejskxicys5q5oqnfvbkj2o6w7jer5xpna4gpgk2i"
     }
 
     #[storage]
@@ -92,7 +92,7 @@ mod EternumSeasonPass {
         realms_contract_address: ContractAddress,
         lords_contract_address: ContractAddress
     ) {
-        self.erc721.initializer("Eternum Season 0 Pass", "ESP0", "");
+        self.erc721.initializer("Eternum Season 1 Pass", "ESP1", "");
         self.ownable.initializer(owner);
         self.realms.write(IERC721Dispatcher { contract_address: realms_contract_address });
         self.lords.write(IERC20Dispatcher { contract_address: lords_contract_address });
@@ -131,7 +131,7 @@ mod EternumSeasonPass {
             }
                 .get_encoded_metadata(token_id.try_into().unwrap());
 
-            make_json_and_base64_encode_metadata(name_and_attrs, IMAGE_URL())
+            make_json_and_base64_encode_metadata(name_and_attrs, TOKEN_IMAGE_IPFS_CID())
         }
     }
 
@@ -162,40 +162,39 @@ mod EternumSeasonPass {
             // mint season pass
             self.erc721.mint(recipient, token_id);
         }
+        // fn attach_lords(ref self: ContractState, token_id: u256, amount: u256) {
+    //     // ensure season pass exists
+    //     assert!(self.erc721.owner_of(token_id) != Zeroable::zero(), "ESP: Season pass does not exist");
 
-        fn attach_lords(ref self: ContractState, token_id: u256, amount: u256) {
-            // ensure season pass exists
-            assert!(self.erc721.owner_of(token_id) != Zeroable::zero(), "ESP: Season pass does not exist");
+        //     // receive lords from caller
+    //     let caller = starknet::get_caller_address();
+    //     let this = starknet::get_contract_address();
 
-            // receive lords from caller
-            let caller = starknet::get_caller_address();
-            let this = starknet::get_contract_address();
+        //     assert!(self.lords.read().transfer_from(caller, this, amount), "ESP: Failed to transfer lords");
 
-            assert!(self.lords.read().transfer_from(caller, this, amount), "ESP: Failed to transfer lords");
+        //     // update lords balance
+    //     let lords_balance = self.lords_balance.entry(token_id).read();
+    //     self.lords_balance.entry(token_id).write(lords_balance + amount);
+    // }
 
-            // update lords balance
-            let lords_balance = self.lords_balance.entry(token_id).read();
-            self.lords_balance.entry(token_id).write(lords_balance + amount);
-        }
+        // fn detach_lords(ref self: ContractState, token_id: u256, amount: u256) {
+    //     // ensure caller is season pass owner
+    //     let caller = starknet::get_caller_address();
+    //     assert!(self.erc721.owner_of(token_id) == caller, "ESP: Only season pass owner can detach lords");
 
-        fn detach_lords(ref self: ContractState, token_id: u256, amount: u256) {
-            // ensure caller is season pass owner
-            let caller = starknet::get_caller_address();
-            assert!(self.erc721.owner_of(token_id) == caller, "ESP: Only season pass owner can detach lords");
+        //     // ensure caller has enough lords
+    //     let lords_balance = self.lords_balance.entry(token_id).read();
+    //     assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
 
-            // ensure caller has enough lords
-            let lords_balance = self.lords_balance.entry(token_id).read();
-            assert!(lords_balance >= amount, "ESP: Insufficient lords balance");
+        //     // transfer lords to caller
+    //     assert!(self.lords.read().transfer(caller, amount), "ESP: Failed to transfer lords");
 
-            // transfer lords to caller
-            assert!(self.lords.read().transfer(caller, amount), "ESP: Failed to transfer lords");
+        //     // update lords balance
+    //     self.lords_balance.entry(token_id).write(lords_balance - amount);
+    // }
 
-            // update lords balance
-            self.lords_balance.entry(token_id).write(lords_balance - amount);
-        }
-
-        fn lords_balance(self: @ContractState, token_id: u256) -> u256 {
-            self.lords_balance.entry(token_id).read()
-        }
+        // fn lords_balance(self: @ContractState, token_id: u256) -> u256 {
+    //     self.lords_balance.entry(token_id).read()
+    // }
     }
 }
