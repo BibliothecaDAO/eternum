@@ -55,7 +55,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
       <CardHeader className="p-4 pb-2">
         <CardTitle className=" items-center gap-2">
           <div className="uppercase text-xs tracking-wider mb-1 flex justify-between items-center text-gray-400">
-            Season 0 Pass
+            Season 1 Pass
           </div>
           <div className="flex justify-between gap-2">
             <div className="text-2xl font-bold">{name}</div>
