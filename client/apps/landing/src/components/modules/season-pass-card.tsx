@@ -28,40 +28,57 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   return (
     <Card
       onClick={handleCardClick}
-      className={`cursor-pointer transition-all duration-200 hover:border-gold ${isSelected ? "border-gold" : ""}`}
+      className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
+        ${isSelected ? "ring-2 ring-offset-2 ring-gold scale-[1.02]" : "hover:ring-1 hover:ring-gold"} 
+        cursor-pointer
+      `}
     >
-      <img src={image} alt={name} className="w-full object-cover h-auto p-2 rounded-2xl" />
-      <CardHeader>
+      {/* Prompt to Manage Section (Top of Card) - REMOVED */}
+      {/* <div className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 text-xs font-semibold p-2 text-center border-b border-blue-200/50">
+        Click card to manage
+      </div> */}
+
+      {/* Main card content starts below the manage prompt */}
+      {/* <div className="relative z-10 bg-card/95"> */}
+      <div className="relative">
+        <img 
+          src={image} 
+          alt={name} 
+          className="w-full object-cover h-56 sm:h-64 opacity-90 hover:opacity-100 transition-all duration-200"
+        />
+        {isSelected && (
+          <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
+            Selected
+          </div>
+        )}
+      </div>
+      <CardHeader className="p-4 pb-2">
         <CardTitle className=" items-center gap-2">
-          <div className="uppercase text-xs mb-2 flex justify-between text-gold/70">
+          <div className="uppercase text-xs tracking-wider mb-1 flex justify-between items-center text-gray-400">
             Season 0 Pass
-            {/* {realmSettled ? (
-              <div className="text-green">Realm Settled!</div>
-            ) : (
-              <Button variant={"link"} disabled={true}>
-                Start
-              </Button>
-            )} */}
           </div>
           <div className="flex justify-between gap-2">
-            <div className=" text-2xl">{name}</div>
+            <div className="text-2xl font-bold">{name}</div>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-2">
+      <CardContent className="p-4 pt-2">
+        <div className="flex flex-wrap gap-2 mb-2">
           {attributes
             ?.filter((attribute) => attribute.trait_type === "Resource")
             .map((attribute, index) => (
-              <ResourceIcon resource={attribute.value as string} size="md" key={`${attribute.trait_type}-${index}`} />
+              <ResourceIcon resource={attribute.value as string} size="sm" key={`${attribute.trait_type}-${index}`} />
             ))}
         </div>
       </CardContent>
       {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
-        <CardFooter className="!p-2 border-t items-center rounded-b-xl bg-card flex uppercase flex-wrap w-full h-full justify-center text-center">
-          {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+        <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-center text-center p-3 text-sm">
+          <span className="text-gold font-bold tracking-wide">
+             {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+          </span>
         </CardFooter>
       )}
+      {/* </div> */}
     </Card>
   );
 };

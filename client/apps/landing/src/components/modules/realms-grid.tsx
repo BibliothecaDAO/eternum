@@ -61,6 +61,8 @@ export const RealmsGrid = ({
       </div>
     );
   }
+  
+  // Use the received realms array directly
   const gridItems: RealmGridItem[] = realms.map((realm) => ({
     colSpan: isCompactGrid ? { sm: 3, md: 2, lg: 2 } : { sm: 5, md: 3, lg: 3 },
     data: realm!,
