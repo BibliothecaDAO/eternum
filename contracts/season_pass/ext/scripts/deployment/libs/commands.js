@@ -10,6 +10,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TARGET_PATH = path.join(__dirname, "..", "..", "..", "..", "target", "release");
 
+export const declareOnlySeasonPassContract = async () => {
+  ///////////////////////////////////////////
+  ////////   Season Pass Contract  //////////
+  ///////////////////////////////////////////
+
+  // declare contract
+  let casualName = "season_pass";
+  let projectName = "esp"; // eternum season pass
+  let contractName = "EternumSeasonPass";
+  const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
+  return class_hash;
+};
+
 export const deploySeasonPassContract = async (realmsContractAddress, lordsContractAddress) => {
   ///////////////////////////////////////////
   ////////   Season Pass Contract  //////////
