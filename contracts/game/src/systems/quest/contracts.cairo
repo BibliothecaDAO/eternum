@@ -629,7 +629,6 @@ mod tests {
 
         // wander around the map looking for a quest tile
         while !found_quest {
-
             // set a transaction hash so the vrf seed is not empty
             starknet::testing::set_transaction_hash(6 * (1 + tiles_explored));
 
