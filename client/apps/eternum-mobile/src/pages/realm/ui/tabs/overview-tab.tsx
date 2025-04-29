@@ -36,22 +36,6 @@ export function OverviewTab() {
   const [selectedHexLocation, setSelectedHexLocation] = useState<HexLocation | null>(null);
   const [isHexSelectorOpen, setIsHexSelectorOpen] = useState(false);
 
-  // Generate a larger grid of hexagons for the example
-  const generateHexGrid = (radius: number): HexLocation[] => {
-    const result: HexLocation[] = [];
-
-    for (let q = -radius; q <= radius; q++) {
-      const r1 = Math.max(-radius, -q - radius);
-      const r2 = Math.min(radius, -q + radius);
-
-      for (let r = r1; r <= r2; r++) {
-        result.push({ col: q, row: r });
-      }
-    }
-
-    return result;
-  };
-
   // Get available locations based on realm position
   const dummyAvailableLocations = selectedRealm
     ? generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, 1)
