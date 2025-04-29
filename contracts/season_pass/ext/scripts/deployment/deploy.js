@@ -14,7 +14,7 @@ console.log(`╚═════════════════════�
 console.log("\n");
 
 const toHex = (address) => {
-  return "0x" + address.toString(16);
+  return address.toString(16);
 };
 
 // Contract address initialization

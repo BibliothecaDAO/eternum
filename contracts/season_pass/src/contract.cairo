@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Compatible with OpenZeppelin Contracts for Cairo 0.16.0
+// Compatible with OpenZeppelin Contracts for Cairo 0.20.0
 
 // Eternum Season Pass
 use starknet::ContractAddress;
@@ -7,6 +7,11 @@ use starknet::ContractAddress;
 #[starknet::interface]
 trait IRealmMetadataEncoded<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
+}
+
+#[starknet::interface]
+trait IERC2981Initializer<TState> {
+    fn initialize_erc2981(ref self: TState, default_royalty_receiver: ContractAddress, fee_numerator: u128);
 }
 
 #[starknet::interface]
@@ -23,24 +28,29 @@ mod EternumSeasonPass {
     use esp::utils::make_json_and_base64_encode_metadata;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::common::erc2981::{DefaultConfig, ERC2981Component};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::ERC721Component;
     use openzeppelin::token::erc721::ERC721HooksEmptyImpl;
     use openzeppelin::token::erc721::interface::{
-        IERC721Metadata, IERC721MetadataDispatcher, IERC721MetadataDispatcherTrait, IERC721Dispatcher,
-        IERC721DispatcherTrait, IERC721MetadataCamelOnly,
+        IERC721Dispatcher, IERC721DispatcherTrait, IERC721Metadata, IERC721MetadataCamelOnly, IERC721MetadataDispatcher,
+        IERC721MetadataDispatcherTrait,
     };
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
 
+
     use starknet::ClassHash;
     use starknet::ContractAddress;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
+    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use super::{IERC2981Initializer};
     use super::{IRealmMetadataEncoded, IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
+
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
+    component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
 
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
@@ -48,10 +58,17 @@ mod EternumSeasonPass {
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC2981Impl = ERC2981Component::ERC2981Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC2981InfoImpl = ERC2981Component::ERC2981InfoImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl ERC2981AdminOwnableImpl = ERC2981Component::ERC2981AdminOwnableImpl<ContractState>;
 
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
+    impl ERC2981InternalImpl = ERC2981Component::InternalImpl<ContractState>;
 
     fn TOKEN_IMAGE_IPFS_CID() -> ByteArray {
         "bafybeigf3hnqeu52erejskxicys5q5oqnfvbkj2o6w7jer5xpna4gpgk2i"
@@ -62,6 +79,7 @@ mod EternumSeasonPass {
         realms: IERC721Dispatcher,
         lords: IERC20Dispatcher,
         lords_balance: Map<u256, u256>,
+        erc2981_initialized: bool,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -70,6 +88,8 @@ mod EternumSeasonPass {
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
+        #[substorage(v0)]
+        erc2981: ERC2981Component::Storage,
     }
 
     #[event]
@@ -83,6 +103,8 @@ mod EternumSeasonPass {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
+        #[flat]
+        ERC2981Event: ERC2981Component::Event,
     }
 
     #[constructor]
@@ -90,7 +112,7 @@ mod EternumSeasonPass {
         ref self: ContractState,
         owner: ContractAddress,
         realms_contract_address: ContractAddress,
-        lords_contract_address: ContractAddress
+        lords_contract_address: ContractAddress,
     ) {
         self.erc721.initializer("Eternum Season 1 Pass", "ESP1", "");
         self.ownable.initializer(owner);
@@ -103,6 +125,17 @@ mod EternumSeasonPass {
         fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
             self.ownable.assert_only_owner();
             self.upgradeable.upgrade(new_class_hash);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ERC2981InitializerImpl of IERC2981Initializer<ContractState> {
+        fn initialize_erc2981(ref self: ContractState, default_royalty_receiver: ContractAddress, fee_numerator: u128) {
+            self.ownable.assert_only_owner();
+            assert!(!self.erc2981_initialized.read(), "ESP: ERC2981 already initialized");
+
+            self.erc2981.initializer(default_royalty_receiver, fee_numerator);
+            self.erc2981_initialized.write(true);
         }
     }
 
@@ -127,7 +160,7 @@ mod EternumSeasonPass {
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
             self.erc721._require_owned(token_id);
             let (name_and_attrs, _url_a, _url_b) = IRealmMetadataEncodedDispatcher {
-                contract_address: self.realms.read().contract_address
+                contract_address: self.realms.read().contract_address,
             }
                 .get_encoded_metadata(token_id.try_into().unwrap());
 
