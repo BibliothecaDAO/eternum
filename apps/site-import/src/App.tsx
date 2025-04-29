@@ -339,7 +339,7 @@ function FooterSection() {
             transition={{ duration: 0.8 }}
           >
             {/* Top Section */}
-            <div className="grid grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
               {/* Brand Column */}
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold">LORDS</h3>
@@ -388,7 +388,7 @@ function FooterSection() {
 
               {/* Resources */}
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Resources</h3>
+                <h3 className="text-2xl font-bold">Resources</h3>
                 <ul className="space-y-3">
                   <li>
                     <a
@@ -514,15 +514,15 @@ function TokenomicsSection() {
         </motion.div>
 
         {/* Large Tokenomics Chart */}
-        <div className="grid grid-cols-2 gap-8 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <motion.div
-            className="aspect-square w-full"
+            className="md:aspect-square w-full"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
             <Card className="w-full h-full backdrop-blur-md bg-background/30 border-border">
-              <CardContent className="p-8 h-full">
+              <CardContent className="sm:p-8 h-full">
                 <TokenomicsChart />
               </CardContent>
             </Card>
@@ -599,17 +599,17 @@ function TreasurySection() {
     }
   };
   return (
-    <section className="min-h-screen flex items-center container mx-auto px-4 py-32">
+    <section className="min-h-screen flex items-center container mx-auto px-2 sm:px-4 py-16 sm:py-32">
       <motion.div
-        className="grid grid-cols-2 gap-16 w-full"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-16 w-full"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
         {/* Left Column - Governance */}
-        <div className="space-y-6">
-          <h2 className="text-4xl font-bold">DAO Treasury</h2>
-          <p className="text-xl text-muted-foreground">
+        <div className="space-y-4 sm:space-y-6">
+          <h2 className="text-3xl sm:text-4xl font-bold">DAO Treasury</h2>
+          <p className="text-lg sm:text-xl text-muted-foreground">
             Decentralized governance powered by Realms. Each Realm represents
             one vote in the DAO.
           </p>
@@ -617,7 +617,7 @@ function TreasurySection() {
           <Card className="backdrop-blur-md bg-black/20 border-white/10">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardDescription className="text-lg font-medium text-muted-foreground">
+                <CardDescription className="text-base sm:text-lg font-medium text-muted-foreground">
                   Governance Model
                 </CardDescription>
                 <svg
@@ -626,7 +626,7 @@ function TreasurySection() {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-6 h-6 text-muted-foreground"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground"
                 >
                   <path
                     strokeLinecap="round"
@@ -638,15 +638,15 @@ function TreasurySection() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <h4 className="text-lg font-semibold">1 Realm = 1 Vote</h4>
-                <p className="text-muted-foreground">
+                <h4 className="text-base sm:text-lg font-semibold">1 Realm = 1 Vote</h4>
+                <p className="text-sm sm:text-base text-muted-foreground">
                   Each Realm holder gets one vote in governance decisions,
                   ensuring fair representation in the DAO.
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="text-lg font-semibold">Treasury Control</h4>
-                <p className="text-muted-foreground">
+                <h4 className="text-base sm:text-lg font-semibold">Treasury Control</h4>
+                <p className="text-sm sm:text-base text-muted-foreground">
                   Vote on treasury allocations, protocol upgrades, and ecosystem
                   development.
                 </p>
@@ -656,11 +656,11 @@ function TreasurySection() {
         </div>
 
         {/* Right Column - Treasury Balance */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <Card className="backdrop-blur-md bg-black/20 border-white/10">
             <CardHeader>
-              <CardTitle>Treasury Balance</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">Treasury Balance</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
                 Current allocation of treasury assets
               </CardDescription>
             </CardHeader>
@@ -668,7 +668,7 @@ function TreasurySection() {
               <div className="space-y-4">
                 {/* LORDS Balance */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">LORDS</span>
                     <span>
                       {treasuryBalance?.LORDS.amount.toLocaleString()}
@@ -690,7 +690,7 @@ function TreasurySection() {
 
                 {/* ETH Balance */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">ETH + WETH</span>
                     <span>
                       {(
@@ -716,7 +716,7 @@ function TreasurySection() {
 
                 {/* USDC Balance */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-muted-foreground">USDC</span>
                     <span>{treasuryBalance?.USDC.amount.toLocaleString()}</span>
                   </div>
@@ -736,10 +736,10 @@ function TreasurySection() {
               </div>
 
               {/* Total Value */}
-              <div className="mt-6 pt-6 border-t border-white/10">
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total Value</span>
-                  <span className="text-2xl font-bold">
+                  <span className="text-base sm:text-lg font-semibold">Total Value</span>
+                  <span className="text-xl sm:text-2xl font-bold">
                     ${totalTreasuryBalance.toLocaleString()}
                   </span>
                 </div>
@@ -752,8 +752,8 @@ function TreasurySection() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Recent Proposals</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-xl sm:text-2xl">Recent Proposals</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
                     Latest governance activities
                   </CardDescription>
                 </div>
@@ -776,10 +776,10 @@ function TreasurySection() {
                     className="flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-medium">
+                      <div className="text-sm sm:text-base font-medium">
                         {proposal?.metadata?.title}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs sm:text-sm text-muted-foreground">
                         {proposal
                           ? isActive(proposal)
                             ? "Active"
@@ -788,10 +788,10 @@ function TreasurySection() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">
+                      <div className="text-sm sm:text-base font-medium">
                         {proposal?.scores_total}
                       </div>
-                      <div className="text-sm text-muted-foreground">Votes</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">Votes</div>
                     </div>
                   </div>
                 ))}
@@ -817,17 +817,17 @@ function IntroSection({
   );
   return (
     <motion.div
-      className="min-h-[70vh] container mx-auto px-4 py-20 grid grid-cols-2 gap-16 items-start"
+      className="min-h-[70vh] container mx-auto px-2 sm:px-4 py-12 sm:py-20 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-16 items-start"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
       {/* Left Column - Heading and Players */}
-      <div className="space-y-12">
+      <div className="space-y-8 sm:space-y-12">
         {/* Title Section */}
         <div className="space-y-4">
           <motion.div
-            className="text-6xl font-bold"
+            className="text-4xl sm:text-6xl font-bold"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
           >
@@ -843,7 +843,7 @@ function IntroSection({
           </motion.div>
 
           <motion.p
-            className="text-xl text-muted-foreground"
+            className="text-lg sm:text-xl text-muted-foreground"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -855,7 +855,7 @@ function IntroSection({
 
       {/* Right Column - Stats */}
       <motion.div
-        className="grid grid-cols-3 gap-4"
+        className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4"
         variants={{
           hidden: { opacity: 0 },
           show: {
@@ -968,7 +968,7 @@ function App() {
 
       {/* Border Frame */}
       <div className="fixed inset-0 z-40 pointer-events-none">
-        <div className="mx-4 mt-4 h-full flex flex-col">
+        <div className="mx-2 sm:mx-4 mt-4 h-full flex flex-col">
           {/* Top spacer for header */}
           {/* <div className="h-[72px]" /> */}
           {/* Border frame with bottom border */}
@@ -993,18 +993,18 @@ function App() {
           onTitleClick={handleTitleClick}
         />
 
-        <div className="min-h-screen pt-24 mx-4">
+        <div className="min-h-screen pt-16 sm:pt-24 mx-2 sm:mx-4">
           {/* Intro Section */}
           {!selectedGame && <IntroSection lordsInfo={lordsInfo} />}
           {/* Games Section */}
           <section
             className={`relative z-10 transition-all duration-500 ${
-              selectedGame ? "mt-0" : "mt-20"
+              selectedGame ? "mt-0" : "mt-8 sm:mt-20"
             }`}
           >
-            <div className="container mx-auto px-4 mb-8">
+            <div className="container mx-auto px-2 sm:px-4 mb-4 sm:mb-8">
               <motion.h2
-                className="text-2xl font-bold mb-4"
+                className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -1020,7 +1020,7 @@ function App() {
             >
               <div className="relative">
                 <div
-                  className="flex space-x-6 overflow-x-auto scrollbar-hide py-4 px-4 scroll-smooth"
+                  className="flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-hide py-4 px-2 sm:px-4 scroll-smooth"
                   ref={scrollContainerRef}
                   style={{ scrollBehavior: "smooth" }}
                 >
@@ -1028,7 +1028,7 @@ function App() {
                     <motion.div
                       key={game.id}
                       layoutId={`game-${game.id}`}
-                      className={`game-tile flex-shrink-0 w-[400px] relative aspect-video bg-card overflow-hidden 
+                      className={`game-tile flex-shrink-0 w-[280px] sm:w-[400px] relative aspect-video bg-card overflow-hidden 
                         hover:ring-2 hover:ring-primary transition-all cursor-pointer rounded-lg
                         ${
                           selectedGame?.id === game.id
@@ -1058,19 +1058,19 @@ function App() {
                       />
                       {/* Status and Player Count Overlay - Top */}
                       {game.isLive && (
-                        <div className="absolute top-4 left-4 flex items-center space-x-2">
+                        <div className="absolute top-2 sm:top-4 left-2 sm:left-4 flex items-center space-x-2">
                           <motion.div
-                            className="flex items-center bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full"
+                            className="flex items-center bg-background/80 backdrop-blur-sm px-2 sm:px-3 py-1 rounded-full"
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 + 0.3 }}
                           >
                             <motion.div
-                              className="w-2 h-2 rounded-full bg-emerald-500 mr-2"
+                              className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 mr-1 sm:mr-2"
                               animate={{ opacity: [1, 0.5, 1] }}
                               transition={{ duration: 2, repeat: Infinity }}
                             />
-                            <span className="text-sm font-medium text-foreground">
+                            <span className="text-xs sm:text-sm font-medium text-foreground">
                               Live
                             </span>
                           </motion.div>
@@ -1078,23 +1078,23 @@ function App() {
                       )}
 
                       {/* Title and Player Count Overlay - Bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background/90 to-transparent">
+                      <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 bg-gradient-to-t from-background/90 to-transparent">
                         <motion.div
-                          className="space-y-2"
+                          className="space-y-1 sm:space-y-2"
                           initial={{ y: 20, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           transition={{ delay: index * 0.1 + 0.3 }}
                         >
-                          <h2 className="text-lg font-semibold text-foreground">
+                          <h2 className="text-base sm:text-lg font-semibold text-foreground">
                             {game.title}
                           </h2>
                           {game.players && (
-                            <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
-                                className="w-4 h-4 mr-1"
+                                className="w-3 h-3 sm:w-4 sm:h-4 mr-1"
                               >
                                 <path d="M10 9a3 3 0 100-6 3 3 0 000 6zM6 8a2 2 0 11-4 0 2 2 0 014 0zM1.49 15.326a.78.78 0 01-.358-.442 3 3 0 014.308-3.516 6.484 6.484 0 00-1.905 3.959c-.023.222-.014.442.025.654a4.97 4.97 0 01-2.07-.655zM16.44 15.98a4.97 4.97 0 002.07-.654.78.78 0 00.357-.442 3 3 0 00-4.308-3.517 6.484 6.484 0 011.907 3.96 2.32 2.32 0 01-.026.654zM18 8a2 2 0 11-4 0 2 2 0 014 0zM5.304 16.19a.844.844 0 01-.277-.71 5 5 0 019.947 0 .843.843 0 01-.277.71A6.975 6.975 0 0110 18a6.974 6.974 0 01-4.696-1.81z" />
                               </svg>
@@ -1108,7 +1108,7 @@ function App() {
                 </div>
                 <button
                   onClick={scrollLeft}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-1.5 sm:p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1116,7 +1116,7 @@ function App() {
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-6 h-6"
+                    className="w-4 h-4 sm:w-6 sm:h-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -1127,7 +1127,7 @@ function App() {
                 </button>
                 <button
                   onClick={scrollRight}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm p-1.5 sm:p-2 rounded-full text-white transition-all duration-300 z-10 cursor-pointer"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -1135,7 +1135,7 @@ function App() {
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-6 h-6"
+                    className="w-4 h-4 sm:w-6 sm:h-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -1158,22 +1158,22 @@ function App() {
             {selectedGame && (
               <motion.div
                 key={`details-${selectedGame.id}`}
-                className="fixed bottom-0 left-0 right-0 z-20 pb-8"
+                className="fixed bottom-0 left-0 right-0 z-20 pb-4 sm:pb-8"
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: 100, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
               >
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto px-2 sm:px-4">
                   <Card className="backdrop-blur-md bg-background/30 border-border">
-                    <CardContent className="py-6">
-                      <div className="grid grid-cols-2 gap-8">
+                    <CardContent className="py-4 sm:py-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                         {/* Left Column - Basic Info */}
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                           <div className="space-y-2">
-                            <div className="flex items-center space-x-4 text-foreground">
+                            <div className="flex items-center space-x-2 sm:space-x-4 text-foreground">
                               <motion.h2
-                                className="text-5xl font-bold"
+                                className="text-3xl sm:text-5xl font-bold"
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ delay: 0.2 }}
@@ -1183,7 +1183,7 @@ function App() {
                               {selectedGame.isLive && <LiveIndicator />}
                             </div>
                             <motion.p
-                              className="text-lg text-muted-foreground"
+                              className="text-base sm:text-lg text-muted-foreground"
                               initial={{ y: 20, opacity: 0 }}
                               animate={{ y: 0, opacity: 1 }}
                               transition={{ delay: 0.3 }}
@@ -1193,7 +1193,7 @@ function App() {
                           </div>
 
                           <motion.div
-                            className="flex space-x-4"
+                            className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4"
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.4 }}
@@ -1232,15 +1232,15 @@ function App() {
                         </div>
 
                         {/* Right Column - Stats & Details */}
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                           <motion.div
-                            className="grid grid-cols-2 gap-4"
+                            className="grid grid-cols-2 gap-2 sm:gap-4"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                           >
-                            <div className="space-y-2">
-                              <div className="text-sm text-gray-400">
+                            <div className="space-y-1 sm:space-y-2">
+                              <div className="text-xs sm:text-sm text-gray-400">
                                 Status
                               </div>
                               <Badge
@@ -1264,8 +1264,8 @@ function App() {
                               </Badge>
                             </div>
 
-                            <div className="space-y-2">
-                              <div className="text-sm text-gray-400">
+                            <div className="space-y-1 sm:space-y-2">
+                              <div className="text-xs sm:text-sm text-gray-400">
                                 Studio
                               </div>
                               <Badge variant="default" className="text-white">
@@ -1274,20 +1274,20 @@ function App() {
                             </div>
 
                             {selectedGame.players && (
-                              <div className="space-y-2 text-foreground">
-                                <div className="text-sm text-gray-400">
+                              <div className="space-y-1 sm:space-y-2 text-foreground">
+                                <div className="text-xs sm:text-sm text-gray-400">
                                   Active Players
                                 </div>
-                                <div className="text-2xl font-bold">
+                                <div className="text-xl sm:text-2xl font-bold">
                                   {selectedGame.players.toLocaleString()}
                                 </div>
                               </div>
                             )}
 
                             {selectedGame.tvl && (
-                              <div className="space-y-2 text-foreground">
-                                <div className="text-sm text-gray-400">TVL</div>
-                                <div className="text-2xl font-bold">
+                              <div className="space-y-1 sm:space-y-2 text-foreground">
+                                <div className="text-xs sm:text-sm text-gray-400">TVL</div>
+                                <div className="text-xl sm:text-2xl font-bold">
                                   ${selectedGame.tvl.toLocaleString()}
                                 </div>
                               </div>
