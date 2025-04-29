@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useStarknetWallet } from "@/hooks/use-starknet-wallet";
 import { getL1RealmsQueryOptions } from "@/lib/getL1Realms";
-import { getRealmsQueryOptions } from "@/lib/getRealms";
+import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";

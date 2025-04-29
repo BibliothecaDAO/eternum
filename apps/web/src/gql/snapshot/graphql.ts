@@ -19,8 +19,49 @@ export type Scalars = {
   Text: { input: any; output: any; }
 };
 
+export type ExecutionHash = {
+  __typename?: 'ExecutionHash';
+  _indexer: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  proposal_id: Scalars['String']['output'];
+};
+
+export type ExecutionHash_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  id_contains?: InputMaybe<Scalars['String']['input']>;
+  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id_not?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  proposal_id?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_contains?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  proposal_id_not?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  proposal_id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
+export enum ExecutionHash_OrderBy {
+  Indexer = '_indexer',
+  Id = 'id',
+  ProposalId = 'proposal_id'
+}
+
 export type ExecutionStrategy = {
   __typename?: 'ExecutionStrategy';
+  _indexer: Scalars['String']['output'];
   address: Scalars['String']['output'];
   axiom_snapshot_address?: Maybe<Scalars['String']['output']>;
   axiom_snapshot_slot?: Maybe<Scalars['BigInt']['output']>;
@@ -35,6 +76,14 @@ export type ExecutionStrategy = {
 };
 
 export type ExecutionStrategy_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   address?: InputMaybe<Scalars['String']['input']>;
   address_contains?: InputMaybe<Scalars['String']['input']>;
   address_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -126,6 +175,7 @@ export type ExecutionStrategy_Filter = {
 };
 
 export enum ExecutionStrategy_OrderBy {
+  Indexer = '_indexer',
   Address = 'address',
   AxiomSnapshotAddress = 'axiom_snapshot_address',
   AxiomSnapshotSlot = 'axiom_snapshot_slot',
@@ -141,6 +191,7 @@ export enum ExecutionStrategy_OrderBy {
 
 export type Leaderboard = {
   __typename?: 'Leaderboard';
+  _indexer: Scalars['String']['output'];
   id: Scalars['String']['output'];
   proposal_count: Scalars['Int']['output'];
   space: Space;
@@ -149,10 +200,14 @@ export type Leaderboard = {
 };
 
 export type Leaderboard_Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -233,22 +288,6 @@ export type Leaderboard_Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -309,17 +348,17 @@ export type Leaderboard_Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type Leaderboard_User_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   address_type?: InputMaybe<Scalars['Int']['input']>;
   address_type_gt?: InputMaybe<Scalars['Int']['input']>;
   address_type_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -363,6 +402,14 @@ export type Leaderboard_User_Filter = {
 };
 
 export type Leaderboard_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   id?: InputMaybe<Scalars['String']['input']>;
   id_contains?: InputMaybe<Scalars['String']['input']>;
   id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -408,10 +455,71 @@ export type Leaderboard_Filter = {
 };
 
 export enum Leaderboard_OrderBy {
+  Indexer = '_indexer',
   Id = 'id',
   ProposalCount = 'proposal_count',
   Space = 'space',
   User = 'user',
+  VoteCount = 'vote_count'
+}
+
+export type Network = {
+  __typename?: 'Network';
+  _indexer: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  proposal_count: Scalars['Int']['output'];
+  space_count: Scalars['Int']['output'];
+  vote_count: Scalars['Int']['output'];
+};
+
+export type Network_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  id_contains?: InputMaybe<Scalars['String']['input']>;
+  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id_not?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  proposal_count?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_gt?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_gte?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  proposal_count_lt?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_lte?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_not?: InputMaybe<Scalars['Int']['input']>;
+  proposal_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  space_count?: InputMaybe<Scalars['Int']['input']>;
+  space_count_gt?: InputMaybe<Scalars['Int']['input']>;
+  space_count_gte?: InputMaybe<Scalars['Int']['input']>;
+  space_count_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  space_count_lt?: InputMaybe<Scalars['Int']['input']>;
+  space_count_lte?: InputMaybe<Scalars['Int']['input']>;
+  space_count_not?: InputMaybe<Scalars['Int']['input']>;
+  space_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  vote_count?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_gt?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_gte?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  vote_count_lt?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_lte?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_not?: InputMaybe<Scalars['Int']['input']>;
+  vote_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+};
+
+export enum Network_OrderBy {
+  Indexer = '_indexer',
+  Id = 'id',
+  ProposalCount = 'proposal_count',
+  SpaceCount = 'space_count',
   VoteCount = 'vote_count'
 }
 
@@ -422,6 +530,7 @@ export enum OrderDirection {
 
 export type Proposal = {
   __typename?: 'Proposal';
+  _indexer: Scalars['String']['output'];
   author: User;
   axiom_snapshot_address?: Maybe<Scalars['String']['output']>;
   axiom_snapshot_slot?: Maybe<Scalars['BigInt']['output']>;
@@ -434,6 +543,7 @@ export type Proposal = {
   execution_hash: Scalars['String']['output'];
   execution_ready: Scalars['Boolean']['output'];
   execution_strategy: Scalars['String']['output'];
+  execution_strategy_details?: Maybe<ExecutionStrategy>;
   execution_strategy_type: Scalars['String']['output'];
   execution_time: Scalars['Int']['output'];
   execution_tx?: Maybe<Scalars['String']['output']>;
@@ -450,12 +560,13 @@ export type Proposal = {
   snapshot: Scalars['Int']['output'];
   space: Space;
   start: Scalars['Int']['output'];
-  strategies: Array<Maybe<Scalars['String']['output']>>;
-  strategies_indices: Array<Maybe<Scalars['Int']['output']>>;
-  strategies_indicies: Array<Maybe<Scalars['Int']['output']>>;
-  strategies_params: Array<Maybe<Scalars['String']['output']>>;
-  timelock_delay?: Maybe<Scalars['Int']['output']>;
+  strategies: Array<Scalars['String']['output']>;
+  strategies_indices: Array<Scalars['Int']['output']>;
+  strategies_indicies: Array<Scalars['Int']['output']>;
+  strategies_params: Array<Scalars['String']['output']>;
+  timelock_delay?: Maybe<Scalars['BigInt']['output']>;
   timelock_veto_guardian?: Maybe<Scalars['String']['output']>;
+  treasuries: Array<Scalars['String']['output']>;
   tx: Scalars['String']['output'];
   type: Scalars['String']['output'];
   veto_tx?: Maybe<Scalars['String']['output']>;
@@ -465,24 +576,29 @@ export type Proposal = {
 
 export type ProposalMetadataItem = {
   __typename?: 'ProposalMetadataItem';
+  _indexer: Scalars['String']['output'];
   body?: Maybe<Scalars['Text']['output']>;
-  choices: Array<Maybe<Scalars['String']['output']>>;
+  choices: Array<Scalars['String']['output']>;
   discussion?: Maybe<Scalars['Text']['output']>;
   execution?: Maybe<Scalars['Text']['output']>;
   id: Scalars['String']['output'];
-  labels: Array<Maybe<Scalars['String']['output']>>;
+  labels: Array<Scalars['String']['output']>;
   title?: Maybe<Scalars['Text']['output']>;
 };
 
 export type ProposalMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   body_contains?: InputMaybe<Scalars['String']['input']>;
   body_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   body_not_contains?: InputMaybe<Scalars['String']['input']>;
   body_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  choices?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   discussion_contains?: InputMaybe<Scalars['String']['input']>;
   discussion_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   discussion_not_contains?: InputMaybe<Scalars['String']['input']>;
@@ -499,10 +615,6 @@ export type ProposalMetadataItem_Filter = {
   id_not_contains?: InputMaybe<Scalars['String']['input']>;
   id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   title_contains?: InputMaybe<Scalars['String']['input']>;
   title_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   title_not_contains?: InputMaybe<Scalars['String']['input']>;
@@ -510,6 +622,7 @@ export type ProposalMetadataItem_Filter = {
 };
 
 export enum ProposalMetadataItem_OrderBy {
+  Indexer = '_indexer',
   Body = 'body',
   Discussion = 'discussion',
   Execution = 'execution',
@@ -517,15 +630,118 @@ export enum ProposalMetadataItem_OrderBy {
   Title = 'title'
 }
 
+export type Proposal_ExecutionStrategy_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  address?: InputMaybe<Scalars['String']['input']>;
+  address_contains?: InputMaybe<Scalars['String']['input']>;
+  address_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  address_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  address_not?: InputMaybe<Scalars['String']['input']>;
+  address_not_contains?: InputMaybe<Scalars['String']['input']>;
+  address_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  address_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  axiom_snapshot_address?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_contains?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  axiom_snapshot_address_not?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_not_contains?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  axiom_snapshot_address_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  axiom_snapshot_slot?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
+  axiom_snapshot_slot_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_not?: InputMaybe<Scalars['BigInt']['input']>;
+  axiom_snapshot_slot_not_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
+  destination_address?: InputMaybe<Scalars['String']['input']>;
+  destination_address_contains?: InputMaybe<Scalars['String']['input']>;
+  destination_address_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  destination_address_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  destination_address_not?: InputMaybe<Scalars['String']['input']>;
+  destination_address_not_contains?: InputMaybe<Scalars['String']['input']>;
+  destination_address_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  destination_address_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  id_contains?: InputMaybe<Scalars['String']['input']>;
+  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id_not?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  quorum?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_gt?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_gte?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_in?: InputMaybe<Array<InputMaybe<Scalars['BigDecimalVP']['input']>>>;
+  quorum_lt?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_lte?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_not?: InputMaybe<Scalars['BigDecimalVP']['input']>;
+  quorum_not_in?: InputMaybe<Array<InputMaybe<Scalars['BigDecimalVP']['input']>>>;
+  timelock_delay?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
+  timelock_delay_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_not?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_not_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
+  timelock_veto_guardian?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_contains?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  timelock_veto_guardian_not?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_not_contains?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  timelock_veto_guardian_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  treasury?: InputMaybe<Scalars['String']['input']>;
+  treasury_chain?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_gt?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_gte?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  treasury_chain_lt?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_lte?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_not?: InputMaybe<Scalars['Int']['input']>;
+  treasury_chain_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  treasury_contains?: InputMaybe<Scalars['String']['input']>;
+  treasury_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  treasury_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  treasury_not?: InputMaybe<Scalars['String']['input']>;
+  treasury_not_contains?: InputMaybe<Scalars['String']['input']>;
+  treasury_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  treasury_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  type?: InputMaybe<Scalars['String']['input']>;
+  type_contains?: InputMaybe<Scalars['String']['input']>;
+  type_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  type_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  type_not?: InputMaybe<Scalars['String']['input']>;
+  type_not_contains?: InputMaybe<Scalars['String']['input']>;
+  type_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  type_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
 export type Proposal_ProposalMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   body_contains?: InputMaybe<Scalars['String']['input']>;
   body_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   body_not_contains?: InputMaybe<Scalars['String']['input']>;
   body_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  choices?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  choices_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   discussion_contains?: InputMaybe<Scalars['String']['input']>;
   discussion_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   discussion_not_contains?: InputMaybe<Scalars['String']['input']>;
@@ -542,10 +758,6 @@ export type Proposal_ProposalMetadataItem_Filter = {
   id_not_contains?: InputMaybe<Scalars['String']['input']>;
   id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   title_contains?: InputMaybe<Scalars['String']['input']>;
   title_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   title_not_contains?: InputMaybe<Scalars['String']['input']>;
@@ -553,10 +765,14 @@ export type Proposal_ProposalMetadataItem_Filter = {
 };
 
 export type Proposal_Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -637,22 +853,6 @@ export type Proposal_Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -713,17 +913,17 @@ export type Proposal_Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type Proposal_User_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   address_type?: InputMaybe<Scalars['Int']['input']>;
   address_type_gt?: InputMaybe<Scalars['Int']['input']>;
   address_type_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -767,6 +967,14 @@ export type Proposal_User_Filter = {
 };
 
 export type Proposal_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   author?: InputMaybe<Scalars['String']['input']>;
   author_?: InputMaybe<Proposal_User_Filter>;
   author_contains?: InputMaybe<Scalars['String']['input']>;
@@ -843,6 +1051,15 @@ export type Proposal_Filter = {
   execution_strategy?: InputMaybe<Scalars['String']['input']>;
   execution_strategy_contains?: InputMaybe<Scalars['String']['input']>;
   execution_strategy_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_?: InputMaybe<Proposal_ExecutionStrategy_Filter>;
+  execution_strategy_details_contains?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  execution_strategy_details_not?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_not_contains?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  execution_strategy_details_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   execution_strategy_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   execution_strategy_not?: InputMaybe<Scalars['String']['input']>;
   execution_strategy_not_contains?: InputMaybe<Scalars['String']['input']>;
@@ -978,26 +1195,14 @@ export type Proposal_Filter = {
   start_lte?: InputMaybe<Scalars['Int']['input']>;
   start_not?: InputMaybe<Scalars['Int']['input']>;
   start_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  timelock_delay?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_gt?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_gte?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  timelock_delay_lt?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_lte?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_not?: InputMaybe<Scalars['Int']['input']>;
-  timelock_delay_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  timelock_delay?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
+  timelock_delay_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_not?: InputMaybe<Scalars['BigInt']['input']>;
+  timelock_delay_not_in?: InputMaybe<Array<InputMaybe<Scalars['BigInt']['input']>>>;
   timelock_veto_guardian?: InputMaybe<Scalars['String']['input']>;
   timelock_veto_guardian_contains?: InputMaybe<Scalars['String']['input']>;
   timelock_veto_guardian_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1045,6 +1250,7 @@ export type Proposal_Filter = {
 };
 
 export enum Proposal_OrderBy {
+  Indexer = '_indexer',
   Author = 'author',
   AxiomSnapshotAddress = 'axiom_snapshot_address',
   AxiomSnapshotSlot = 'axiom_snapshot_slot',
@@ -1057,6 +1263,7 @@ export enum Proposal_OrderBy {
   ExecutionHash = 'execution_hash',
   ExecutionReady = 'execution_ready',
   ExecutionStrategy = 'execution_strategy',
+  ExecutionStrategyDetails = 'execution_strategy_details',
   ExecutionStrategyType = 'execution_strategy_type',
   ExecutionTime = 'execution_time',
   ExecutionTx = 'execution_tx',
@@ -1085,45 +1292,53 @@ export enum Proposal_OrderBy {
 export type Query = {
   __typename?: 'Query';
   _checkpoint?: Maybe<_Checkpoint>;
-  _checkpoints?: Maybe<Array<Maybe<_Checkpoint>>>;
+  _checkpoints: Array<_Checkpoint>;
   _metadata?: Maybe<_Metadata>;
-  _metadatas?: Maybe<Array<Maybe<_Metadata>>>;
-  executionstrategies?: Maybe<Array<Maybe<ExecutionStrategy>>>;
+  _metadatas: Array<_Metadata>;
+  executionhash?: Maybe<ExecutionHash>;
+  executionhashes: Array<ExecutionHash>;
+  executionstrategies: Array<ExecutionStrategy>;
   executionstrategy?: Maybe<ExecutionStrategy>;
   leaderboard?: Maybe<Leaderboard>;
-  leaderboards?: Maybe<Array<Maybe<Leaderboard>>>;
+  leaderboards: Array<Leaderboard>;
+  network?: Maybe<Network>;
+  networks: Array<Network>;
   proposal?: Maybe<Proposal>;
   proposalmetadataitem?: Maybe<ProposalMetadataItem>;
-  proposalmetadataitems?: Maybe<Array<Maybe<ProposalMetadataItem>>>;
-  proposals?: Maybe<Array<Maybe<Proposal>>>;
+  proposalmetadataitems: Array<ProposalMetadataItem>;
+  proposals: Array<Proposal>;
   space?: Maybe<Space>;
   spacemetadataitem?: Maybe<SpaceMetadataItem>;
-  spacemetadataitems?: Maybe<Array<Maybe<SpaceMetadataItem>>>;
-  spaces?: Maybe<Array<Maybe<Space>>>;
+  spacemetadataitems: Array<SpaceMetadataItem>;
+  spaces: Array<Space>;
+  starknetl1execution?: Maybe<StarknetL1Execution>;
+  starknetl1executions: Array<StarknetL1Execution>;
   strategiesparsedmetadatadataitem?: Maybe<StrategiesParsedMetadataDataItem>;
-  strategiesparsedmetadatadataitems?: Maybe<Array<Maybe<StrategiesParsedMetadataDataItem>>>;
+  strategiesparsedmetadatadataitems: Array<StrategiesParsedMetadataDataItem>;
   strategiesparsedmetadataitem?: Maybe<StrategiesParsedMetadataItem>;
-  strategiesparsedmetadataitems?: Maybe<Array<Maybe<StrategiesParsedMetadataItem>>>;
+  strategiesparsedmetadataitems: Array<StrategiesParsedMetadataItem>;
   user?: Maybe<User>;
-  users?: Maybe<Array<Maybe<User>>>;
+  users: Array<User>;
   vote?: Maybe<Vote>;
   votemetadataitem?: Maybe<VoteMetadataItem>;
-  votemetadataitems?: Maybe<Array<Maybe<VoteMetadataItem>>>;
-  votes?: Maybe<Array<Maybe<Vote>>>;
+  votemetadataitems: Array<VoteMetadataItem>;
+  votes: Array<Vote>;
   votingpowervalidationstrategiesparsedmetadataitem?: Maybe<VotingPowerValidationStrategiesParsedMetadataItem>;
-  votingpowervalidationstrategiesparsedmetadataitems?: Maybe<Array<Maybe<VotingPowerValidationStrategiesParsedMetadataItem>>>;
+  votingpowervalidationstrategiesparsedmetadataitems: Array<VotingPowerValidationStrategiesParsedMetadataItem>;
 };
 
 
 export type Query_CheckpointArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['ID']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type Query_CheckpointsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<_Checkpoint_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1134,12 +1349,14 @@ export type Query_CheckpointsArgs = {
 export type Query_MetadataArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['ID']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type Query_MetadatasArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<_Metadata_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1147,9 +1364,28 @@ export type Query_MetadatasArgs = {
 };
 
 
+export type QueryExecutionhashArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryExecutionhashesArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<ExecutionHash_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<ExecutionHash_Filter>;
+};
+
+
 export type QueryExecutionstrategiesArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<ExecutionStrategy_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1160,18 +1396,21 @@ export type QueryExecutionstrategiesArgs = {
 export type QueryExecutionstrategyArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryLeaderboardArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryLeaderboardsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<Leaderboard_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1179,21 +1418,42 @@ export type QueryLeaderboardsArgs = {
 };
 
 
+export type QueryNetworkArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryNetworksArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<Network_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<Network_Filter>;
+};
+
+
 export type QueryProposalArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryProposalmetadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryProposalmetadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<ProposalMetadataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1204,6 +1464,7 @@ export type QueryProposalmetadataitemsArgs = {
 export type QueryProposalsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<Proposal_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1214,18 +1475,21 @@ export type QueryProposalsArgs = {
 export type QuerySpaceArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QuerySpacemetadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QuerySpacemetadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<SpaceMetadataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1236,6 +1500,7 @@ export type QuerySpacemetadataitemsArgs = {
 export type QuerySpacesArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<Space_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1243,15 +1508,35 @@ export type QuerySpacesArgs = {
 };
 
 
+export type QueryStarknetl1executionArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryStarknetl1executionsArgs = {
+  block?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
+  orderBy?: InputMaybe<StarknetL1Execution_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  where?: InputMaybe<StarknetL1Execution_Filter>;
+};
+
+
 export type QueryStrategiesparsedmetadatadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryStrategiesparsedmetadatadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<StrategiesParsedMetadataDataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1262,12 +1547,14 @@ export type QueryStrategiesparsedmetadatadataitemsArgs = {
 export type QueryStrategiesparsedmetadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryStrategiesparsedmetadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<StrategiesParsedMetadataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1278,12 +1565,14 @@ export type QueryStrategiesparsedmetadataitemsArgs = {
 export type QueryUserArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryUsersArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<User_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1294,18 +1583,21 @@ export type QueryUsersArgs = {
 export type QueryVoteArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryVotemetadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryVotemetadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<VoteMetadataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1316,6 +1608,7 @@ export type QueryVotemetadataitemsArgs = {
 export type QueryVotesArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<Vote_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1326,12 +1619,14 @@ export type QueryVotesArgs = {
 export type QueryVotingpowervalidationstrategiesparsedmetadataitemArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['String']['input'];
+  indexer?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryVotingpowervalidationstrategiesparsedmetadataitemsArgs = {
   block?: InputMaybe<Scalars['Int']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
   orderBy?: InputMaybe<VotingPowerValidationStrategiesParsedMetadataItem_OrderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -1340,7 +1635,8 @@ export type QueryVotingpowervalidationstrategiesparsedmetadataitemsArgs = {
 
 export type Space = {
   __typename?: 'Space';
-  authenticators: Array<Maybe<Scalars['String']['output']>>;
+  _indexer: Scalars['String']['output'];
+  authenticators: Array<Scalars['String']['output']>;
   controller: Scalars['String']['output'];
   created: Scalars['Int']['output'];
   id: Scalars['String']['output'];
@@ -1350,14 +1646,14 @@ export type Space = {
   next_strategy_index: Scalars['Int']['output'];
   proposal_count: Scalars['Int']['output'];
   proposal_threshold: Scalars['BigDecimalVP']['output'];
-  proposals: Array<Maybe<Proposal>>;
+  proposals: Array<Proposal>;
   proposer_count: Scalars['Int']['output'];
-  strategies: Array<Maybe<Scalars['String']['output']>>;
-  strategies_indices: Array<Maybe<Scalars['Int']['output']>>;
-  strategies_indicies: Array<Maybe<Scalars['Int']['output']>>;
-  strategies_metadata: Array<Maybe<Scalars['String']['output']>>;
-  strategies_params: Array<Maybe<Scalars['String']['output']>>;
-  strategies_parsed_metadata: Array<Maybe<StrategiesParsedMetadataItem>>;
+  strategies: Array<Scalars['String']['output']>;
+  strategies_indices: Array<Scalars['Int']['output']>;
+  strategies_indicies: Array<Scalars['Int']['output']>;
+  strategies_metadata: Array<Scalars['String']['output']>;
+  strategies_params: Array<Scalars['String']['output']>;
+  strategies_parsed_metadata: Array<StrategiesParsedMetadataItem>;
   turbo: Scalars['Boolean']['output'];
   tx: Scalars['String']['output'];
   validation_strategy: Scalars['String']['output'];
@@ -1366,35 +1662,44 @@ export type Space = {
   vote_count: Scalars['Int']['output'];
   voter_count: Scalars['Int']['output'];
   voting_delay: Scalars['Int']['output'];
-  voting_power_validation_strategies_parsed_metadata: Array<Maybe<VotingPowerValidationStrategiesParsedMetadataItem>>;
+  voting_power_validation_strategies_parsed_metadata: Array<VotingPowerValidationStrategiesParsedMetadataItem>;
   voting_power_validation_strategy_metadata: Scalars['String']['output'];
-  voting_power_validation_strategy_strategies: Array<Maybe<Scalars['String']['output']>>;
-  voting_power_validation_strategy_strategies_params: Array<Maybe<Scalars['String']['output']>>;
+  voting_power_validation_strategy_strategies: Array<Scalars['String']['output']>;
+  voting_power_validation_strategy_strategies_params: Array<Scalars['String']['output']>;
 };
 
 export type SpaceMetadataItem = {
   __typename?: 'SpaceMetadataItem';
+  _indexer: Scalars['String']['output'];
   about: Scalars['String']['output'];
   avatar: Scalars['String']['output'];
   cover: Scalars['String']['output'];
-  delegations: Array<Maybe<Scalars['String']['output']>>;
+  delegations: Array<Scalars['String']['output']>;
   discord: Scalars['String']['output'];
-  executors: Array<Maybe<Scalars['String']['output']>>;
-  executors_destinations: Array<Maybe<Scalars['String']['output']>>;
-  executors_strategies: Array<Maybe<ExecutionStrategy>>;
-  executors_types: Array<Maybe<Scalars['String']['output']>>;
+  executors: Array<Scalars['String']['output']>;
+  executors_destinations: Array<Scalars['String']['output']>;
+  executors_strategies: Array<ExecutionStrategy>;
+  executors_types: Array<Scalars['String']['output']>;
   external_url: Scalars['String']['output'];
   github: Scalars['String']['output'];
   id: Scalars['String']['output'];
-  labels: Array<Maybe<Scalars['String']['output']>>;
+  labels: Array<Scalars['String']['output']>;
   name: Scalars['String']['output'];
-  treasuries: Array<Maybe<Scalars['String']['output']>>;
+  treasuries: Array<Scalars['String']['output']>;
   twitter: Scalars['String']['output'];
   voting_power_symbol: Scalars['String']['output'];
   wallet: Scalars['String']['output'];
 };
 
 export type SpaceMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   about?: InputMaybe<Scalars['String']['input']>;
   about_contains?: InputMaybe<Scalars['String']['input']>;
   about_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1419,10 +1724,6 @@ export type SpaceMetadataItem_Filter = {
   cover_not_contains?: InputMaybe<Scalars['String']['input']>;
   cover_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   cover_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   discord?: InputMaybe<Scalars['String']['input']>;
   discord_contains?: InputMaybe<Scalars['String']['input']>;
   discord_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1431,18 +1732,6 @@ export type SpaceMetadataItem_Filter = {
   discord_not_contains?: InputMaybe<Scalars['String']['input']>;
   discord_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   discord_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   external_url?: InputMaybe<Scalars['String']['input']>;
   external_url_contains?: InputMaybe<Scalars['String']['input']>;
   external_url_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1467,10 +1756,6 @@ export type SpaceMetadataItem_Filter = {
   id_not_contains?: InputMaybe<Scalars['String']['input']>;
   id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   name?: InputMaybe<Scalars['String']['input']>;
   name_contains?: InputMaybe<Scalars['String']['input']>;
   name_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1479,10 +1764,6 @@ export type SpaceMetadataItem_Filter = {
   name_not_contains?: InputMaybe<Scalars['String']['input']>;
   name_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   name_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   twitter?: InputMaybe<Scalars['String']['input']>;
   twitter_contains?: InputMaybe<Scalars['String']['input']>;
   twitter_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1510,6 +1791,7 @@ export type SpaceMetadataItem_Filter = {
 };
 
 export enum SpaceMetadataItem_OrderBy {
+  Indexer = '_indexer',
   About = 'about',
   Avatar = 'avatar',
   Cover = 'cover',
@@ -1524,6 +1806,14 @@ export enum SpaceMetadataItem_OrderBy {
 }
 
 export type Space_SpaceMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   about?: InputMaybe<Scalars['String']['input']>;
   about_contains?: InputMaybe<Scalars['String']['input']>;
   about_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1548,10 +1838,6 @@ export type Space_SpaceMetadataItem_Filter = {
   cover_not_contains?: InputMaybe<Scalars['String']['input']>;
   cover_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   cover_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  delegations_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   discord?: InputMaybe<Scalars['String']['input']>;
   discord_contains?: InputMaybe<Scalars['String']['input']>;
   discord_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1560,18 +1846,6 @@ export type Space_SpaceMetadataItem_Filter = {
   discord_not_contains?: InputMaybe<Scalars['String']['input']>;
   discord_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   discord_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_destinations_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  executors_types_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   external_url?: InputMaybe<Scalars['String']['input']>;
   external_url_contains?: InputMaybe<Scalars['String']['input']>;
   external_url_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1596,10 +1870,6 @@ export type Space_SpaceMetadataItem_Filter = {
   id_not_contains?: InputMaybe<Scalars['String']['input']>;
   id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  labels_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   name?: InputMaybe<Scalars['String']['input']>;
   name_contains?: InputMaybe<Scalars['String']['input']>;
   name_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1608,10 +1878,6 @@ export type Space_SpaceMetadataItem_Filter = {
   name_not_contains?: InputMaybe<Scalars['String']['input']>;
   name_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   name_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  treasuries_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   twitter?: InputMaybe<Scalars['String']['input']>;
   twitter_contains?: InputMaybe<Scalars['String']['input']>;
   twitter_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1639,10 +1905,14 @@ export type Space_SpaceMetadataItem_Filter = {
 };
 
 export type Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -1724,22 +1994,6 @@ export type Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1800,17 +2054,10 @@ export type Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export enum Space_OrderBy {
+  Indexer = '_indexer',
   Controller = 'controller',
   Created = 'created',
   Id = 'id',
@@ -1832,8 +2079,79 @@ export enum Space_OrderBy {
   VotingPowerValidationStrategyMetadata = 'voting_power_validation_strategy_metadata'
 }
 
+export type StarknetL1Execution = {
+  __typename?: 'StarknetL1Execution';
+  _indexer: Scalars['String']['output'];
+  created: Scalars['Int']['output'];
+  id: Scalars['String']['output'];
+  proposalId: Scalars['Int']['output'];
+  space: Scalars['String']['output'];
+  tx: Scalars['String']['output'];
+};
+
+export type StarknetL1Execution_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  created?: InputMaybe<Scalars['Int']['input']>;
+  created_gt?: InputMaybe<Scalars['Int']['input']>;
+  created_gte?: InputMaybe<Scalars['Int']['input']>;
+  created_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  created_lt?: InputMaybe<Scalars['Int']['input']>;
+  created_lte?: InputMaybe<Scalars['Int']['input']>;
+  created_not?: InputMaybe<Scalars['Int']['input']>;
+  created_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  id_contains?: InputMaybe<Scalars['String']['input']>;
+  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  id_not?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  proposalId?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_gt?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_gte?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  proposalId_lt?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_lte?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_not?: InputMaybe<Scalars['Int']['input']>;
+  proposalId_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
+  space?: InputMaybe<Scalars['String']['input']>;
+  space_contains?: InputMaybe<Scalars['String']['input']>;
+  space_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  space_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  space_not?: InputMaybe<Scalars['String']['input']>;
+  space_not_contains?: InputMaybe<Scalars['String']['input']>;
+  space_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  space_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  tx?: InputMaybe<Scalars['String']['input']>;
+  tx_contains?: InputMaybe<Scalars['String']['input']>;
+  tx_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  tx_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  tx_not?: InputMaybe<Scalars['String']['input']>;
+  tx_not_contains?: InputMaybe<Scalars['String']['input']>;
+  tx_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  tx_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
+export enum StarknetL1Execution_OrderBy {
+  Indexer = '_indexer',
+  Created = 'created',
+  Id = 'id',
+  ProposalId = 'proposalId',
+  Space = 'space',
+  Tx = 'tx'
+}
+
 export type StrategiesParsedMetadataDataItem = {
   __typename?: 'StrategiesParsedMetadataDataItem';
+  _indexer: Scalars['String']['output'];
   decimals: Scalars['Int']['output'];
   description: Scalars['String']['output'];
   id: Scalars['String']['output'];
@@ -1844,6 +2162,14 @@ export type StrategiesParsedMetadataDataItem = {
 };
 
 export type StrategiesParsedMetadataDataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   decimals?: InputMaybe<Scalars['Int']['input']>;
   decimals_gt?: InputMaybe<Scalars['Int']['input']>;
   decimals_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -1903,6 +2229,7 @@ export type StrategiesParsedMetadataDataItem_Filter = {
 };
 
 export enum StrategiesParsedMetadataDataItem_OrderBy {
+  Indexer = '_indexer',
   Decimals = 'decimals',
   Description = 'description',
   Id = 'id',
@@ -1914,6 +2241,7 @@ export enum StrategiesParsedMetadataDataItem_OrderBy {
 
 export type StrategiesParsedMetadataItem = {
   __typename?: 'StrategiesParsedMetadataItem';
+  _indexer: Scalars['String']['output'];
   data?: Maybe<StrategiesParsedMetadataDataItem>;
   id: Scalars['String']['output'];
   index: Scalars['Int']['output'];
@@ -1921,10 +2249,14 @@ export type StrategiesParsedMetadataItem = {
 };
 
 export type StrategiesParsedMetadataItem_Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2005,22 +2337,6 @@ export type StrategiesParsedMetadataItem_Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2081,17 +2397,17 @@ export type StrategiesParsedMetadataItem_Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type StrategiesParsedMetadataItem_StrategiesParsedMetadataDataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   decimals?: InputMaybe<Scalars['Int']['input']>;
   decimals_gt?: InputMaybe<Scalars['Int']['input']>;
   decimals_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -2151,6 +2467,14 @@ export type StrategiesParsedMetadataItem_StrategiesParsedMetadataDataItem_Filter
 };
 
 export type StrategiesParsedMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   data?: InputMaybe<Scalars['String']['input']>;
   data_?: InputMaybe<StrategiesParsedMetadataItem_StrategiesParsedMetadataDataItem_Filter>;
   data_contains?: InputMaybe<Scalars['String']['input']>;
@@ -2188,6 +2512,7 @@ export type StrategiesParsedMetadataItem_Filter = {
 };
 
 export enum StrategiesParsedMetadataItem_OrderBy {
+  Indexer = '_indexer',
   Data = 'data',
   Id = 'id',
   Index = 'index',
@@ -2196,16 +2521,25 @@ export enum StrategiesParsedMetadataItem_OrderBy {
 
 export type User = {
   __typename?: 'User';
+  _indexer: Scalars['String']['output'];
   address_type: Scalars['Int']['output'];
   created: Scalars['Int']['output'];
   id: Scalars['String']['output'];
   proposal_count: Scalars['Int']['output'];
-  proposals: Array<Maybe<Proposal>>;
+  proposals: Array<Proposal>;
   vote_count: Scalars['Int']['output'];
-  votes: Array<Maybe<Vote>>;
+  votes: Array<Vote>;
 };
 
 export type User_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   address_type?: InputMaybe<Scalars['Int']['input']>;
   address_type_gt?: InputMaybe<Scalars['Int']['input']>;
   address_type_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -2249,6 +2583,7 @@ export type User_Filter = {
 };
 
 export enum User_OrderBy {
+  Indexer = '_indexer',
   AddressType = 'address_type',
   Created = 'created',
   Id = 'id',
@@ -2258,6 +2593,7 @@ export enum User_OrderBy {
 
 export type Vote = {
   __typename?: 'Vote';
+  _indexer: Scalars['String']['output'];
   choice: Scalars['Int']['output'];
   created: Scalars['Int']['output'];
   id: Scalars['String']['output'];
@@ -2271,11 +2607,20 @@ export type Vote = {
 
 export type VoteMetadataItem = {
   __typename?: 'VoteMetadataItem';
+  _indexer: Scalars['String']['output'];
   id: Scalars['String']['output'];
   reason: Scalars['Text']['output'];
 };
 
 export type VoteMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   id?: InputMaybe<Scalars['String']['input']>;
   id_contains?: InputMaybe<Scalars['String']['input']>;
   id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2291,15 +2636,20 @@ export type VoteMetadataItem_Filter = {
 };
 
 export enum VoteMetadataItem_OrderBy {
+  Indexer = '_indexer',
   Id = 'id',
   Reason = 'reason'
 }
 
 export type Vote_Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2380,22 +2730,6 @@ export type Vote_Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2456,17 +2790,17 @@ export type Vote_Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type Vote_User_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   address_type?: InputMaybe<Scalars['Int']['input']>;
   address_type_gt?: InputMaybe<Scalars['Int']['input']>;
   address_type_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -2510,6 +2844,14 @@ export type Vote_User_Filter = {
 };
 
 export type Vote_VoteMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   id?: InputMaybe<Scalars['String']['input']>;
   id_contains?: InputMaybe<Scalars['String']['input']>;
   id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2525,6 +2867,14 @@ export type Vote_VoteMetadataItem_Filter = {
 };
 
 export type Vote_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   choice?: InputMaybe<Scalars['Int']['input']>;
   choice_gt?: InputMaybe<Scalars['Int']['input']>;
   choice_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -2603,6 +2953,7 @@ export type Vote_Filter = {
 };
 
 export enum Vote_OrderBy {
+  Indexer = '_indexer',
   Choice = 'choice',
   Created = 'created',
   Id = 'id',
@@ -2616,6 +2967,7 @@ export enum Vote_OrderBy {
 
 export type VotingPowerValidationStrategiesParsedMetadataItem = {
   __typename?: 'VotingPowerValidationStrategiesParsedMetadataItem';
+  _indexer: Scalars['String']['output'];
   data?: Maybe<StrategiesParsedMetadataDataItem>;
   id: Scalars['String']['output'];
   index: Scalars['Int']['output'];
@@ -2623,10 +2975,14 @@ export type VotingPowerValidationStrategiesParsedMetadataItem = {
 };
 
 export type VotingPowerValidationStrategiesParsedMetadataItem_Space_Filter = {
-  authenticators?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  authenticators_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   controller?: InputMaybe<Scalars['String']['input']>;
   controller_contains?: InputMaybe<Scalars['String']['input']>;
   controller_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2707,22 +3063,6 @@ export type VotingPowerValidationStrategiesParsedMetadataItem_Space_Filter = {
   proposer_count_lte?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not?: InputMaybe<Scalars['Int']['input']>;
   proposer_count_not_in?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_indices?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indices_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_indicies_not?: InputMaybe<Array<InputMaybe<Scalars['Int']['input']>>>;
-  strategies_metadata?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_metadata_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   turbo?: InputMaybe<Scalars['Boolean']['input']>;
   turbo_in?: InputMaybe<Array<InputMaybe<Scalars['Boolean']['input']>>>;
   turbo_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2783,17 +3123,17 @@ export type VotingPowerValidationStrategiesParsedMetadataItem_Space_Filter = {
   voting_power_validation_strategy_metadata_not_contains?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
   voting_power_validation_strategy_metadata_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-  voting_power_validation_strategy_strategies_params_not_contains?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type VotingPowerValidationStrategiesParsedMetadataItem_StrategiesParsedMetadataDataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   decimals?: InputMaybe<Scalars['Int']['input']>;
   decimals_gt?: InputMaybe<Scalars['Int']['input']>;
   decimals_gte?: InputMaybe<Scalars['Int']['input']>;
@@ -2853,6 +3193,14 @@ export type VotingPowerValidationStrategiesParsedMetadataItem_StrategiesParsedMe
 };
 
 export type VotingPowerValidationStrategiesParsedMetadataItem_Filter = {
+  _indexer?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  _indexer_not?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  _indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   data?: InputMaybe<Scalars['String']['input']>;
   data_?: InputMaybe<VotingPowerValidationStrategiesParsedMetadataItem_StrategiesParsedMetadataDataItem_Filter>;
   data_contains?: InputMaybe<Scalars['String']['input']>;
@@ -2890,6 +3238,7 @@ export type VotingPowerValidationStrategiesParsedMetadataItem_Filter = {
 };
 
 export enum VotingPowerValidationStrategiesParsedMetadataItem_OrderBy {
+  Indexer = '_indexer',
   Data = 'data',
   Id = 'id',
   Index = 'index',
@@ -2903,6 +3252,7 @@ export type _Checkpoint = {
   contract_address: Scalars['String']['output'];
   /** id computed as last 5 bytes of sha256(contract+block) */
   id: Scalars['ID']['output'];
+  indexer: Scalars['String']['output'];
 };
 
 export type _Checkpoint_Filter = {
@@ -2926,12 +3276,21 @@ export type _Checkpoint_Filter = {
   id_in?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
+  indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  indexer_not?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export enum _Checkpoint_OrderBy {
   BlockNumber = 'block_number',
   ContractAddress = 'contract_address',
-  Id = 'id'
+  Id = 'id',
+  Indexer = 'indexer'
 }
 
 /** Core metadata values used internally by Checkpoint */
@@ -2939,6 +3298,7 @@ export type _Metadata = {
   __typename?: '_Metadata';
   /** example: last_indexed_block */
   id: Scalars['ID']['output'];
+  indexer: Scalars['String']['output'];
   value?: Maybe<Scalars['String']['output']>;
 };
 
@@ -2947,6 +3307,14 @@ export type _Metadata_Filter = {
   id_in?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<InputMaybe<Scalars['ID']['input']>>>;
+  indexer?: InputMaybe<Scalars['String']['input']>;
+  indexer_contains?: InputMaybe<Scalars['String']['input']>;
+  indexer_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  indexer_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+  indexer_not?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_contains?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  indexer_not_in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
   value?: InputMaybe<Scalars['String']['input']>;
   value_contains?: InputMaybe<Scalars['String']['input']>;
   value_contains_nocase?: InputMaybe<Scalars['String']['input']>;
@@ -2959,17 +3327,18 @@ export type _Metadata_Filter = {
 
 export enum _Metadata_OrderBy {
   Id = 'id',
+  Indexer = 'indexer',
   Value = 'value'
 }
 
-export type ProposalFieldsFragment = { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number | null>, strategies: Array<string | null>, strategies_params: Array<string | null>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string | null>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string | null>, executors: Array<string | null>, executors_types: Array<string | null>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null } | null> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null } | null> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string | null>, labels: Array<string | null> } | null };
+export type ProposalFieldsFragment = { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number>, strategies: Array<string>, strategies_params: Array<string>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string>, executors: Array<string>, executors_types: Array<string>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null }> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null }> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string>, labels: Array<string> } | null };
 
 export type ProposalQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type ProposalQuery = { __typename?: 'Query', proposal?: { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number | null>, strategies: Array<string | null>, strategies_params: Array<string | null>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string | null>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string | null>, executors: Array<string | null>, executors_types: Array<string | null>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null } | null> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null } | null> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string | null>, labels: Array<string | null> } | null } | null };
+export type ProposalQuery = { __typename?: 'Query', proposal?: { __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number>, strategies: Array<string>, strategies_params: Array<string>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string>, executors: Array<string>, executors_types: Array<string>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null }> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null }> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string>, labels: Array<string> } | null } | null };
 
 export type ProposalsQueryVariables = Exact<{
   first: Scalars['Int']['input'];
@@ -2978,7 +3347,7 @@ export type ProposalsQueryVariables = Exact<{
 }>;
 
 
-export type ProposalsQuery = { __typename?: 'Query', proposals?: Array<{ __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number | null>, strategies: Array<string | null>, strategies_params: Array<string | null>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string | null>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string | null>, executors: Array<string | null>, executors_types: Array<string | null>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null } | null> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null } | null> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string | null>, labels: Array<string | null> } | null } | null> | null };
+export type ProposalsQuery = { __typename?: 'Query', proposals: Array<{ __typename?: 'Proposal', id: string, proposal_id: number, quorum: any, execution_hash: string, start: number, min_end: number, max_end: number, snapshot: number, scores_1: any, scores_2: any, scores_3: any, scores_total: any, execution_time: number, execution_strategy: string, execution_strategy_type: string, execution_destination?: string | null, timelock_veto_guardian?: string | null, strategies_indices: Array<number>, strategies: Array<string>, strategies_params: Array<string>, created: number, edited?: number | null, tx: string, execution_tx?: string | null, veto_tx?: string | null, vote_count: number, execution_ready: boolean, executed: boolean, vetoed: boolean, completed: boolean, cancelled: boolean, space: { __typename?: 'Space', id: string, controller: string, authenticators: Array<string>, metadata?: { __typename?: 'SpaceMetadataItem', id: string, name: string, avatar: string, voting_power_symbol: string, treasuries: Array<string>, executors: Array<string>, executors_types: Array<string>, executors_strategies: Array<{ __typename?: 'ExecutionStrategy', id: string, address: string, destination_address?: string | null, type: string, treasury_chain?: number | null, treasury?: string | null }> } | null, strategies_parsed_metadata: Array<{ __typename?: 'StrategiesParsedMetadataItem', index: number, data?: { __typename?: 'StrategiesParsedMetadataDataItem', id: string, name: string, description: string, decimals: number, symbol: string, token?: string | null, payload?: string | null } | null }> }, author: { __typename?: 'User', id: string, address_type: number }, metadata?: { __typename?: 'ProposalMetadataItem', id: string, title?: any | null, body?: any | null, discussion?: any | null, execution?: any | null, choices: Array<string>, labels: Array<string> } | null }> };
 
 export type VoteFieldsFragment = { __typename?: 'Vote', id: string, proposal: number, choice: number, vp: any, created: number, tx: string, voter: { __typename?: 'User', id: string }, space: { __typename?: 'Space', id: string }, metadata?: { __typename?: 'VoteMetadataItem', reason: any } | null };
 
@@ -2990,7 +3359,7 @@ export type UserVotesQueryVariables = Exact<{
 }>;
 
 
-export type UserVotesQuery = { __typename?: 'Query', votes?: Array<{ __typename?: 'Vote', id: string, proposal: number, choice: number, vp: any, created: number, tx: string, voter: { __typename?: 'User', id: string }, space: { __typename?: 'Space', id: string }, metadata?: { __typename?: 'VoteMetadataItem', reason: any } | null } | null> | null };
+export type UserVotesQuery = { __typename?: 'Query', votes: Array<{ __typename?: 'Vote', id: string, proposal: number, choice: number, vp: any, created: number, tx: string, voter: { __typename?: 'User', id: string }, space: { __typename?: 'Space', id: string }, metadata?: { __typename?: 'VoteMetadataItem', reason: any } | null }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String

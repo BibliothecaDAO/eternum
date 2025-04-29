@@ -3,8 +3,7 @@ import { useEffect } from "react";
 import BridgeIcon from "@/components/icons/bridge.svg?react";
 import { RealmCard } from "@/components/modules/realms/realm-card";
 import { Button } from "@/components/ui/button";
-import { getRealmsQueryOptions } from "@/lib/getRealms";
-import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
+import { formatAddress, SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useAccount } from "@starknet-react/core";
 import {
   useQueryErrorResetBoundary,
@@ -19,6 +18,7 @@ import {
 import { HandCoins } from "lucide-react";
 
 import { CollectionAddresses } from "@realms-world/constants";
+import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 
 export class RealmsNotFoundError extends Error {}
 
@@ -55,14 +55,17 @@ function RealmsComponent() {
   const { address } = useAccount();
 
   const l2RealmsQuery = useSuspenseQuery(
-    getRealmsQueryOptions({
+    getAccountTokensQueryOptions({
       address: address,
       collectionAddress: CollectionAddresses.realms[
         SUPPORTED_L2_CHAIN_ID
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery.data;
+  const l2Realms = l2RealmsQuery?.data?.tokenBalances.edges.filter((edge) =>{
+    return edge.node.tokenMetadata.__typename === "ERC721__Token" && formatAddress(edge.node.tokenMetadata.contractAddress) === CollectionAddresses.realms[
+    SUPPORTED_L2_CHAIN_ID
+  ] as string});
 
   if (!address) {
     return <div>Connect Starknet Wallet to view your Realms</div>;
@@ -83,10 +86,10 @@ function RealmsComponent() {
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-5">
-        {l2Realms?.data.length
-          ? l2Realms.data.map((realm) => {
+        {l2Realms?.length
+          ? l2Realms.map((realm) => {
               return (
-                <RealmCard key={realm.token_id} token={realm} isGrid={true} />
+                <RealmCard key={realm.tokenId} token={realm} isGrid={true} />
               );
             })
           : "No Realms Found in wallet"}

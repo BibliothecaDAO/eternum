@@ -22,8 +22,8 @@ import { useL2RealmsClaims } from "@/hooks/use-l2-realms-claims";
 import useVeLordsClaims from "@/hooks/use-velords-claims";
 import { getDelegateByIDQueryOptions } from "@/lib/getDelegates";
 import { getL1UsersRealmsQueryOptions } from "@/lib/getL1Realms";
-import { getPortfolioCollectionsQueryOptions } from "@/lib/getPortfolioCollections";
-import { getRealmsQueryOptions } from "@/lib/getRealms";
+import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
+import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
 import {
   formatAddress,
   formatNumber,
@@ -54,7 +54,7 @@ import { ProposalList } from "../governance/proposal-list";
 export function Homepage({ address }: { address: `0x${string}` }) {
   //const { address } = useAccount();
   const { address: l1Address } = useL1Account();
-  const l2RealmsQuery = useSuspenseQuery(
+  /*const l2RealmsQuery = useSuspenseQuery(
     getRealmsQueryOptions({
       address,
       collectionAddress: CollectionAddresses.realms[
@@ -62,7 +62,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery.data;
+  const l2Realms = l2RealmsQuery.data;*/
 
   const l1UsersRealmsQuery = useSuspenseQuery(
     getL1UsersRealmsQueryOptions({
@@ -71,16 +71,14 @@ export function Homepage({ address }: { address: `0x${string}` }) {
   );
   const l1UsersRealms = l1UsersRealmsQuery.data;
 
-  const usersCollectionsQuery = useSuspenseQuery(
-    getPortfolioCollectionsQueryOptions({
+  const accountTokensQuery = useSuspenseQuery(
+    getAccountTokensQueryOptions({
       address: address,
     }),
   );
-  const usersCollections = usersCollectionsQuery.data;
-  const numberL2Realms = l2Realms?.data.length ?? 0;
+  const accountTokens = accountTokensQuery.data;
 
   const { data } = useCurrentDelegate();
-  console.log("data", data);
   const currentDelegateQuery = useSuspenseQuery(
     getDelegateByIDQueryOptions({
       address:
@@ -90,7 +88,6 @@ export function Homepage({ address }: { address: `0x${string}` }) {
     }),
   );
   const currentDelegate = currentDelegateQuery.data;
-  console.log(currentDelegate);
 
   const { data: starknetBalance } = useBalance({
     address,
@@ -146,13 +143,7 @@ export function Homepage({ address }: { address: `0x${string}` }) {
                 </p>
                 <p className="flex justify-between gap-2">
                   <span className="text-3xl">
-                    {(usersCollections.data &&
-                      usersCollections.data.find(
-                        (collection) =>
-                          collection.address ==
-                          CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID],
-                      )?.user_token_count) ??
-                      0}
+                    {accountTokens.length}
                   </span>
                   <span className="flex items-center gap-2">
                     on <StarknetIcon className="h-6 w-6" /> Starknet
@@ -304,10 +295,9 @@ export function Homepage({ address }: { address: `0x${string}` }) {
       {/* Realms Grid */}
       <div className="my-12">
         <h2 className="mb-2 text-xl font-semibold">Your Realms</h2>
-        {numberL2Realms > 0 ? (
+        {accountTokens?.length > 0 ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {l2Realms?.data
-              .slice(0, 5)
+            {accountTokens?.slice(0, 5)
               .map((realm) => (
                 <RealmCard key={realm.token_id} token={realm} isGrid={true} />
               ))}

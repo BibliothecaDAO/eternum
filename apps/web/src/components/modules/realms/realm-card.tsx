@@ -7,6 +7,15 @@ import { CollectionAddresses } from "@realms-world/constants";
 
 import Media from "./media";
 import RealmResources from "./realm-resources";
+export type RealmMetadata = {
+  name: string;
+  description: string;
+  image: string;
+  attributes: {
+    trait_type: string;
+    value: string | number;
+  }[];
+};
 
 export const RealmCard = ({
   token,
@@ -15,14 +24,18 @@ export const RealmCard = ({
   token: PortfolioToken;
   isGrid?: boolean;
 }) => {
+  const {tokenMetadata} = token.node
+  const parsedMetadata: RealmMetadata | null = tokenMetadata ? JSON.parse(tokenMetadata.metadata) : null;
+  const { attributes, name, image } = parsedMetadata ?? {};
+
   return (
     <Card className="relative overflow-hidden">
       <div className="relative">
-        {token.metadata?.image ? (
+        {image ? (
           <Media
-            src={token.metadata.image}
-            alt={token.metadata.name}
-            mediaKey={token.metadata.image_key}
+            src={image}
+            alt={name}
+            mediaKey={""}
             /*className={isGrid ? "mx-auto" : ""}
   width={imageSize}
   height={imageSize}*/
@@ -34,12 +47,12 @@ export const RealmCard = ({
         )}
         {isGrid && (
           <span className="absolute bottom-1 right-1 bg-black px-1 py-1 text-xs">
-            #{token.token_id}
+            #{Number(tokenMetadata.tokenId)}
           </span>
         )}
       </div>
       <CardContent className="p-4">
-        <GridDetails token={token} />
+        <GridDetails token={parsedMetadata} />
       </CardContent>
     </Card>
   );
@@ -53,7 +66,7 @@ const GridDetails = ({
 }) => (
   <div className="flex h-full w-full flex-col justify-between">
     <div className="flex justify-between pb-2">
-      <span className="truncate">{token.metadata?.name ?? ""}</span>
+      <span className="truncate">{token.name ?? ""}</span>
       <div className="flex justify-between font-sans">
         {/*<Price token={token} />*/}
         {/*token.last_price && (
@@ -65,10 +78,8 @@ const GridDetails = ({
       </div>
     </div>
     <div className="h-[48px]">
-      {token.metadata?.attributes &&
-        [CollectionAddresses.realms[SUPPORTED_L2_CHAIN_ID]].includes(
-          token.collection_address as `0x${string}`,
-        ) && <RealmResources traits={token.metadata.attributes} />}
+      {token.attributes &&
+         <RealmResources traits={token.attributes} />}
     </div>
   </div>
 );

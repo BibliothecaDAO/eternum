@@ -5,7 +5,7 @@ import {
   isProposalWithMetadata,
   joinHighlightProposal,
 } from "@/utils/helpers";*/
-import { graphql } from "@/gql";
+import { graphql } from "@/gql/snapshot";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
@@ -13,7 +13,7 @@ import { z } from "zod";
 
 import { SnapshotSpaceAddresses } from "@realms-world/constants";
 
-import { execute } from "./queries/execute";
+import { execute } from "../queries/execute";
 
 graphql(`
   fragment proposalFields on Proposal {

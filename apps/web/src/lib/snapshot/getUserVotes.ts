@@ -5,12 +5,12 @@ import {
   isProposalWithMetadata,
   joinHighlightProposal,
 } from "@/utils/helpers";*/
-import { graphql } from "@/gql";
+import { graphql } from "@/gql/snapshot";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { execute } from "./queries/execute";
+import { execute } from "../queries/execute";
 
 export const VoteFieldsFragment = graphql(`
   fragment voteFields on Vote {

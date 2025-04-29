@@ -1,5 +1,5 @@
-import { getProposalsQueryOptions } from "@/lib/getProposals";
-import { getUserVotesQueryOptions } from "@/lib/getUserVotes";
+import { getProposalsQueryOptions } from "@/lib/snapshot/getProposals";
+import { getUserVotesQueryOptions } from "@/lib/snapshot/getUserVotes";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
