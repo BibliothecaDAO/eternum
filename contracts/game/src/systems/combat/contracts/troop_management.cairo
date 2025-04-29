@@ -328,12 +328,11 @@ pub mod troop_management_systems {
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
 
-            assert!(
-                from_explorer.owner == to_explorer.owner,
-                "from explorer and to explorer are not owned by the same structure",
-            );
-
-            StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
+            // ensure caller owns both structure explorers
+            let from_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner);
+            let to_structure_owner = StructureOwnerStoreImpl::retrieve(ref world, to_explorer.owner);
+            from_structure_owner.assert_caller_owner();
+            to_structure_owner.assert_caller_owner();
 
             // ensure explorers are adjacent to one another
             assert!(
