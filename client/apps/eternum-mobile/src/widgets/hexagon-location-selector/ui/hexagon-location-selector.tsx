@@ -84,8 +84,10 @@ export function HexagonLocationSelector({
         <DrawerHeader>
           <DrawerTitle>Select Hexagon Location</DrawerTitle>
           <DrawerDescription className="flex flex-col gap-1">
-            <p>Click on an available (grey) hexagon to select it. Occupied locations are shown in red.</p>
-            <p className="text-xs text-muted-foreground italic">Drag the canvas to explore more locations if needed.</p>
+            <div>Click on an available (grey) hexagon to select it. Occupied locations are shown in red.</div>
+            <div className="text-xs text-muted-foreground italic">
+              Drag the canvas to explore more locations if needed.
+            </div>
           </DrawerDescription>
         </DrawerHeader>
 

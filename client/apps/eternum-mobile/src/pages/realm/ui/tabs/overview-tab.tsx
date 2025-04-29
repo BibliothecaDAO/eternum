@@ -7,7 +7,10 @@ import { HexagonLocationSelector, HexLocation } from "@/widgets/hexagon-location
 import { NearbyEnemies } from "@/widgets/nearby-enemies";
 import { ResourcesCard } from "@/widgets/resources-card";
 import { UpgradeCastle } from "@/widgets/upgrade-castle";
-import { useCallback, useState } from "react";
+import { TileManager } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { BUILDINGS_CENTER } from "@bibliothecadao/types";
+import { useCallback, useMemo, useState } from "react";
 import { ProductionWidgetsSection } from "../components/production-widgets-section";
 import { useRealmTabs } from "../realm-page";
 
@@ -16,6 +19,18 @@ export function OverviewTab() {
   const structureEntityId = useStore((state) => state.structureEntityId);
   const selectedRealm = useStore((state) => state.selectedRealm);
   const { summary } = useResourceArrivals(structureEntityId);
+  const {
+    setup: { components, systemCalls },
+  } = useDojo();
+
+  // Create and manage tile manager instance
+  const tileManager = useMemo(() => {
+    if (!selectedRealm) return null;
+    return new TileManager(components, systemCalls, {
+      col: selectedRealm.position.x,
+      row: selectedRealm.position.y,
+    });
+  }, [selectedRealm, components, systemCalls]);
 
   // Hexagon selector example state
   const [selectedHexLocation, setSelectedHexLocation] = useState<HexLocation | null>(null);
@@ -37,13 +52,22 @@ export function OverviewTab() {
     return result;
   };
 
-  // Dummy data for the hexagon grid
-  const dummyAvailableLocations = generateHexPositions({ col: 0, row: 0 }, 1);
+  // Get available locations based on realm position
+  const dummyAvailableLocations = selectedRealm
+    ? generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, 1)
+    : [];
 
-  const dummyOccupiedLocations: HexLocation[] = [
-    { col: 1, row: -1 },
-    { col: 0, row: 0 },
-  ];
+  // Get occupied locations from existing buildings
+  const occupiedLocations: HexLocation[] = useMemo(() => {
+    if (!tileManager) return [];
+    return tileManager.existingBuildings().map((building) => {
+      console.log("Mapping building:", building);
+      return {
+        col: building.col,
+        row: building.row,
+      };
+    });
+  }, [tileManager]);
 
   const handleHexSelect = useCallback((col: number, row: number) => {
     console.log(`Selected hex at column: ${col}, row: ${row}`);
@@ -59,8 +83,10 @@ export function OverviewTab() {
   }, [switchTab, summary.readyArrivals]);
 
   const openHexSelector = useCallback(() => {
+    console.log("Opening hex selector with occupied locations:", occupiedLocations);
+    console.log("Current buildings:", tileManager?.existingBuildings());
     setIsHexSelectorOpen(true);
-  }, []);
+  }, [occupiedLocations, tileManager]);
 
   const closeHexSelector = useCallback(() => {
     setIsHexSelectorOpen(false);
@@ -99,7 +125,7 @@ export function OverviewTab() {
 
           <HexagonLocationSelector
             availableLocations={dummyAvailableLocations}
-            occupiedLocations={dummyOccupiedLocations}
+            occupiedLocations={occupiedLocations}
             onSelect={handleHexSelect}
             initialSelectedLocation={selectedHexLocation}
             open={isHexSelectorOpen}
