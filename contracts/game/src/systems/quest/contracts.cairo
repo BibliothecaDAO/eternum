@@ -629,6 +629,10 @@ mod tests {
 
         // wander around the map looking for a quest tile
         while !found_quest {
+
+            // set a transaction hash so the vrf seed is not empty
+            starknet::testing::set_transaction_hash(6 * (1 + tiles_explored));
+
             // Move east
             let discovered_tiles = troop_movement_systems
                 .explorer_move(explorer_id, troop_movement_directions, explore);
