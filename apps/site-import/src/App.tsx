@@ -77,7 +77,7 @@ function AnimatedStat({
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      <Card className="backdrop-blur-md bg-black/20 border-white/5 hover:bg-black/30 transition-all duration-300 text-white group">
+      <Card className="backdrop-blur-md bg-black/20 border-white/5 hover:bg-black/30 transition-all duration-300 group">
         <CardHeader className="pb-2 uppercase">
           <div className="flex items-center justify-between mb-8">
             <CardDescription className="text-lg font-medium">
@@ -220,6 +220,7 @@ function AnimatedBackground({ selectedGame }: { selectedGame: Game | null }) {
             />
           )
         ) : (
+          // <Background />
           <WaveformBackground />
         )}
       </AnimatePresence>
@@ -492,7 +493,7 @@ function FooterSection() {
 
 function TokenomicsSection() {
   return (
-    <section className="min-h-[50vh] flex items-center container mx-auto px-4 py-16">
+    <section className=" flex items-center container mx-auto px-4 py-16">
       <motion.div
         className="w-full space-y-8"
         initial={{ opacity: 0 }}
@@ -514,47 +515,15 @@ function TokenomicsSection() {
         </motion.div>
 
         {/* Large Tokenomics Chart */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="grid gap-8 items-center">
           <motion.div
-            className="md:aspect-square w-full"
+            className="w-full"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.8 }}
           >
-            <Card className="w-full h-full backdrop-blur-md bg-background/30 border-border">
-              <CardContent className="sm:p-8 h-full">
-                <TokenomicsChart />
-              </CardContent>
-            </Card>
+            <TokenomicsChart />
           </motion.div>
-
-          {/* Token Distribution Summary 
-          <motion.div
-            className="flex flex-col gap-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-          >
-            {[
-              { label: "Staking Rewards", value: "40%" },
-              { label: "Game Rewards", value: "35%" },
-              { label: "Development", value: "15%" },
-              { label: "Community", value: "10%" },
-            ].map((item, index) => (
-              <motion.div
-                key={item.label}
-                className="flex items-center justify-between"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.8 + index * 0.1 }}
-              >
-                <div className="text-lg text-muted-foreground">
-                  {item.label}total
-                  {item.value}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>*/}
         </div>
       </motion.div>
     </section>
@@ -848,7 +817,7 @@ function IntroSection({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            Onchain gaming, powered by LORDS.
+            Onchain gaming, powered by $LORDS.
           </motion.p>
         </div>
       </div>
