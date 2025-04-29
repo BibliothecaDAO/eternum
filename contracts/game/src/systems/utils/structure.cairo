@@ -2,7 +2,7 @@ use core::num::traits::Zero;
 use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
-use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, WONDER_STARTING_RESOURCES_BOOST};
+use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, VillageTokenConfig, WorldConfigUtilImpl};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
@@ -194,9 +194,6 @@ pub impl iStructureImpl of IStructureTrait {
 
             let mut resource_type = resource.resource_type;
             let mut resource_amount = resource.amount;
-            if structure_metadata.has_wonder {
-                resource_amount *= WONDER_STARTING_RESOURCES_BOOST.into();
-            }
             let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
             let mut realm_resource = SingleResourceStoreImpl::retrieve(
                 ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
