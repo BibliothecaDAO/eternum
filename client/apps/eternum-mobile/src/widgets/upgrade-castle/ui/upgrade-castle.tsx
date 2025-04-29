@@ -1,8 +1,8 @@
 import { useStructureUpgrade } from "@/features/upgrade-structure";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/ui/card";
-import { ContractAddress } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import { ArrowRight, Castle, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { UpgradeDrawer } from "./upgrade-drawer";
@@ -100,9 +100,9 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
           <div className="relative h-28 w-28 shrink-0">
             {canUpgrade && <div className="absolute inset-0 animate-pulse rounded-full bg-success/20 blur-xl" />}
             <img
-              src={`/images/castles/castle-${currentLevel}.png`}
+              src={`/images/castles/castle-${nextLevel}.png`}
               alt="Castle"
-              className="relative h-full w-full object-contain drop-shadow-xl"
+              className="relative h-full w-full object-cover drop-shadow-xl"
             />
           </div>
         </CardContent>

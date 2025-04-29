@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { RealmInfoHeader } from "@/widgets/realm-info-header";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { ClaimTab, ManageTab, MilitaryTab, OverviewTab } from "./tabs";
+import { ClaimTab, MilitaryTab, OverviewTab, ProductionTab } from "./tabs";
 
 interface RealmTabsContextType {
   switchTab: (tab: string) => void;
@@ -48,7 +48,7 @@ export const RealmPage = () => {
         <Tabs value={activeTab} onValueChange={switchTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="manage">Manage</TabsTrigger>
+            <TabsTrigger value="production">Production</TabsTrigger>
             <TabsTrigger value="military">Military</TabsTrigger>
             <TabsTrigger value="claim">Claim</TabsTrigger>
           </TabsList>
@@ -57,8 +57,8 @@ export const RealmPage = () => {
             <OverviewTab />
           </TabsContent>
 
-          <TabsContent value="manage" className="mt-4">
-            <ManageTab />
+          <TabsContent value="production" className="mt-4">
+            <ProductionTab />
           </TabsContent>
 
           <TabsContent value="military" className="mt-4">
