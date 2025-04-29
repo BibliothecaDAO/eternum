@@ -8001,6 +8001,6 @@ fn compressed_name_and_attrs(token_id: felt252) -> felt252 {
         7998 => 0x4e616f6c6c6f706d696f6c01080401150b0f070b08,
         7999 => 0x4c75746f6c746c75010e070802240215070809,
         8000 => 0x4b696c766b69706b696c76010b020d040308281208070b0b,
-        _ => panic!("max token id exceeded")
+        _ => panic!("max token id exceeded"),
     }
 }

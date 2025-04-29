@@ -63,10 +63,10 @@ pub fn make_json_and_base64_encode_metadata(name_and_attrs: felt252, url: ByteAr
                         JsonImpl::new()
                             .add("trait_type", "Resource")
                             .add("value", format!("{}", resource_mapping((*resource).into())))
-                            .build()
+                            .build(),
                     );
             },
-            Option::None => { break; }
+            Option::None => { break; },
         }
     };
 
@@ -76,7 +76,7 @@ pub fn make_json_and_base64_encode_metadata(name_and_attrs: felt252, url: ByteAr
                 JsonImpl::new()
                     .add("trait_type", "Wonder")
                     .add("value", format!("{}", wonder_mapping((*wonder).into())))
-                    .build()
+                    .build(),
             );
     }
 
@@ -85,7 +85,7 @@ pub fn make_json_and_base64_encode_metadata(name_and_attrs: felt252, url: ByteAr
             JsonImpl::new()
                 .add("trait_type", "Order")
                 .add("value", format!("{}", order_mapping((*order).into())))
-                .build()
+                .build(),
         );
 
     // create name
@@ -122,7 +122,7 @@ fn order_mapping(num: felt252) -> ByteArray {
         14 => "The Order of Vitriol",
         15 => "The Order of Anger",
         16 => "The Order of Enlightenment",
-        _ => panic!("max order num exceeded")
+        _ => panic!("max order num exceeded"),
     }
 }
 
@@ -181,7 +181,7 @@ fn wonder_mapping(num: felt252) -> ByteArray {
         49 => "The Solemn Catacombs",
         50 => "The Devout Summit",
         51 => "Sky Mast",
-        _ => panic!("max wonder num exceeded")
+        _ => panic!("max wonder num exceeded"),
     }
 }
 
@@ -211,7 +211,7 @@ fn resource_mapping(num: felt252) -> ByteArray {
         20 => "Sapphire",
         21 => "Ethereal Silica",
         22 => "Dragonhide",
-        _ => panic!("max resource num exceeded")
+        _ => panic!("max resource num exceeded"),
     }
 }
 
@@ -359,7 +359,7 @@ fn get_base64_char_set() -> Array<u8> {
         '6',
         '7',
         '8',
-        '9'
+        '9',
     ];
     result
 }

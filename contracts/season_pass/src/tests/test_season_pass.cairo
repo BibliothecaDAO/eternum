@@ -3,7 +3,7 @@ mod tests {
     use esp::contract::{EternumSeasonPass as season_pass_contract, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
     use esp::mock::lords::{ITestLords, ITestLordsDispatcher, ITestLordsDispatcherTrait};
     use esp::mock::realms::realms::{
-        TestRealm as realms_contract, IERC721MinterDispatcher, IERC721MinterDispatcherTrait
+        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, TestRealm as realms_contract,
     };
     use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
 
@@ -12,11 +12,11 @@ mod tests {
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
     use snforge_std::{
-        cheatcodes::{l1_handler::L1HandlerTrait}, declare, ContractClass, ContractClassTrait,
-        start_cheat_caller_address, stop_cheat_caller_address, get_class_hash, spy_events, DeclareResultTrait
+        ContractClass, ContractClassTrait, DeclareResultTrait, cheatcodes::{l1_handler::L1HandlerTrait}, declare,
+        get_class_hash, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
-    use starknet::{ContractAddress, ClassHash, EthAddress};
+    use starknet::{ClassHash, ContractAddress, EthAddress};
 
     fn ADMIN() -> ContractAddress {
         starknet::contract_address_const::<'ADMIN'>()
@@ -101,7 +101,7 @@ mod tests {
         let (season_pass_metadata, _a, _b) = IRealmMetadataEncodedDispatcher { contract_address: season_pass }
             .get_encoded_metadata(ALICE_REALMS_ID().try_into().unwrap());
         assert!(
-            realms_metadata == season_pass_metadata, "expected realms metadata to be equal to season pass metadata"
+            realms_metadata == season_pass_metadata, "expected realms metadata to be equal to season pass metadata",
         );
     }
 
