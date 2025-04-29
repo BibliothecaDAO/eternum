@@ -6,11 +6,8 @@
     "controller_address": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
   },
   "village": {
-    "controller_addresses": [
-      "0x07a0f23c43a291282d093e85f7fb7c0e23a66d02c10fead324ce4c3d56c4bd67",
-      "0x359a81f67140632ec91c7f9af3fc0b5bca0a898ae0be3f7682585b0f40119a7",
-      "0x2d2e564dd4faa14277fefd0d8cb95e83b13c0353170eb6819ec35bf1bee8e2a"
-    ]
+    "village_pass_nft_address": "0x4045e739fce9d338f76ff5b2fbab5462e2281b757fea7aa52eeec943c9bc1a9",
+    "village_mint_initial_recipient": "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -1096,7 +1093,7 @@
     },
     "limit": {
       "explorerMaxPartyCount": 10,
-      "explorerAndGuardMaxTroopCount": 500000,
+      "explorerAndGuardMaxTroopCount": 100000,
       "guardResurrectionDelay": 43200,
       "mercenariesTroopLowerBound": 100,
       "mercenariesTroopUpperBound": 200,
@@ -2032,12 +2029,16 @@
     "client_fee_on_dpt_percent": 200,
     "client_fee_on_wtdr_percent": 200,
     "velords_fee_recipient": "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
-    "season_pool_fee_recipient": "0x12a60ab4258333619e421e32aac866ca3dc9f4f6cbc665f133206649c8a7034",
+    "season_pool_fee_recipient": "0xa2f1df2ba441dccb6c5dd6f22b1474ced0f7aafe0e428d94c2e1a1bd1f6c38",
     "realm_fee_dpt_percent": 5,
     "realm_fee_wtdr_percent": 5
   },
   "vrf": {
     "vrfProviderAddress": "0x0"
+  },
+  "wonderProductionBonus": {
+    "within_tile_distance": 12,
+    "bonus_percent_num": 2000
   },
   "startingResources": [
     {
@@ -2405,129 +2406,130 @@
   "setup": {
     "chain": "local",
     "addresses": {
-      "seasonPass": "0x1e23e40be0c2769a0ab03b1fe22933e7aa1a8f2adc4b7c73c22f0370d939492",
-      "realms": "0x59befab291d9ae4ee598e73c8692c13b64c81c5be728f80d46dee7dbe9209c",
-      "lords": "0x7f9fe08e078243ba14ead66344d741cef83deffe772f75b42917af93681e370",
+      "seasonPass": "0x2db23e8ae64215ef4f2d4358255ecd531d4f01d912273b3e469b4124304a22f",
+      "realms": "0x7274e6b255c4951ef345e88d5b4a047100c6593157ce1d994e279bb9361371a",
+      "lords": "0x3263681c59dd5ca9d837039e3c954386da445acd4fb7525f7f97b7b0392d7a2",
+      "villagePass": "0x4045e739fce9d338f76ff5b2fbab5462e2281b757fea7aa52eeec943c9bc1a9",
       "resources": {
         "STONE": [
           1,
-          "0x7929160fc401fd2162a9d1e17feade29de32895ea926afbeb63aa96d2ae4796"
+          "0x1ffc0d3dbfb40b1ade64858c4d67a23fff9c62c17b97868472b814a4665f941"
         ],
         "COAL": [
           2,
-          "0x2a90bcbf340b266041256472c8614d675f93b9ee91f565fcbfdb621b83a3f9a"
+          "0x7006dbc9f3a9e04f2dff6d80329620310b8797a736a3de15690086913c13aa1"
         ],
         "WOOD": [
           3,
-          "0x3135ebfe84cf6a1a9a2addf9838b28911fee0449d7d5c11315e15ebc6c84026"
+          "0x25d6a316858463abd0b674841e5060fb84dd4bffd65ab5fa4b4814c57857c51"
         ],
         "COPPER": [
           4,
-          "0x2287a23152ba0095219cc720ec9a29655763f49445731f055762b0324981561"
+          "0x400b5799a20ad2be724116d20f4b7f6a8e6fc712cc540efb97ea19fc48c67a7"
         ],
         "IRONWOOD": [
           5,
-          "0x4cccd5c1bac9c4c9e5ed4525897285ed0517d974127a642f04d8ca0e79ac5ef"
+          "0x9e40cadc905f1dac337464cbc0ad7141889dc66320d2156d69de9003c68720"
         ],
         "OBSIDIAN": [
           6,
-          "0x14ce10e41c2670e92864b93f65f36efe7cca57654753e20ed4056b809b62577"
+          "0x23dac1875ea19d117a65af16b63acc527ecf971661cd16767ac1075816c0d5"
         ],
         "GOLD": [
           7,
-          "0x7262b1ff018bd6c65fc4985b50478a2f374d921275252c731851993db071c2f"
+          "0x2323d428a2d44164c5750ec0b8907f5b0435f2843959da41e9589da37470b2f"
         ],
         "SILVER": [
           8,
-          "0x6b21df0acb1df221b8c54cbcf2631e09b26ccc0e5d518577e46f1d138787160"
+          "0x63784a693a4bd411e2ab13eb2d507627a3add4a91e18b70215f7508be06d839"
         ],
         "MITHRAL": [
           9,
-          "0x528925f72f4d3415fdbc386140743d619f9218e436a24436b47ab6b1df42fe4"
+          "0x7a313d35a4229cc228c1a22aea6dad17ff6f5419861b9a99df3a7b7d009fac3"
         ],
         "ALCHEMICALSILVER": [
           10,
-          "0x2d1a2d213398c51adb977df954658612873dcf8b8e9c564ed3a8d5a562777"
+          "0x3e181d6609b2377795fe6db0bd27916d6fe5c326ec24889ea0ab13d6de1df63"
         ],
         "COLDIRON": [
           11,
-          "0x327dba844c89adc3f9b4a250583927dd6309daafd1473b6371b120c9f9116f"
+          "0x239f100b2b5d8463df9bfbe2673663c353884c6d9f4ce6c3b361aea67b2c71e"
         ],
         "DEEPCRYSTAL": [
           12,
-          "0x1ffc603eeddc684fc30565424e1cb127fed345f1db2caad5ed2ae2199df8b57"
+          "0x34aa53020b4344e114bf8aef485fae8d3a82f7e5f701eb614d9f37edb9731f9"
         ],
         "RUBY": [
           13,
-          "0x239e3471af5910b36592b62754d1d41a2e67c1161b8237016457179da4a2e79"
+          "0x685c4778310542a278f44a3b1033da7738b5a24768bd960c0367ccf1ae0fd1d"
         ],
         "DIAMONDS": [
           14,
-          "0x11e655ba4dcd111cc1dfe81ddd6c9dd521c86c81cd01f52952160d9c59074f"
+          "0x1f820e08af845d9d9e00381be430933342f083a6fc0e44c6dc4d438b5703f96"
         ],
         "HARTWOOD": [
           15,
-          "0x1a5d273361780cc573021cf0d5a0d00de7e3a2e1fcb483b7ea15ae8eb2bbe10"
+          "0x398fea0112c12d1464ab09077df488522cb252061620ecd508e8dbe255c3061"
         ],
         "IGNIUM": [
           16,
-          "0x1964589d68434e0d82a57d80f8c9152be5ee7f707cd0382d440a92a7f18ef16"
+          "0x43eec70f3d742ba09129d1becec54e4407af205213d6218a6fab3735d931ab8"
         ],
         "TWILIGHTQUARTZ": [
           17,
-          "0x42500842dc787b47d4badfda364283ae1477bf04c7e7d9fa5062f7580cc6700"
+          "0x7648df324d7069da6b1f6f42051fd6b21a3339c179b3b90702b988e1f888034"
         ],
         "TRUEICE": [
           18,
-          "0x52b26f893dcea9af1737ae2c8d34d2fba05926ed2ac4df14fdc770d359887dd"
+          "0x13d2f7d490d6d70ca96b9d8a9753295cc745d4e236c2291055978945366d4e0"
         ],
         "ADAMANTINE": [
           19,
-          "0x4fb9071322308805f63c2cb68cb42b3a192e41611a921d64d7b78a22757e017"
+          "0x2cd8cafeafd6e061f85036ccca52df26eed770ae9e709f43e0a59fe745cf601"
         ],
         "SAPPHIRE": [
           20,
-          "0x7a0df7af6a1cfc241eec14494a35521b981ba187382e7b0043023a749be0dcd"
+          "0x122413c65a1b4c78ddf08b835783b573752fd47649d020362981f5adb3ac115"
         ],
         "ETHEREALSILICA": [
           21,
-          "0x25c94d21425d45b6466b4d0d96cdaf366d8732c9f95f0fe9c809c2725aa38d4"
+          "0x2af7ec68ba381add55a600bf7108909e723f122d722ef16173ae7c645537cd8"
         ],
         "DRAGONHIDE": [
           22,
-          "0x2f9c384f197f8853d0b7b7fb6ee39769f685a50357b16dc3075f8c226651b21"
+          "0x6045848df42c86d86dfe3e7b70208319e57c9cd39a653e11f277370633a3152"
         ],
         "ANCIENTFRAGMENT": [
           24,
-          "0x71dc05487699c3a968f7ef09d16fd556211731b36749275995c9b355509c3dc"
+          "0x6c690dcefe24750dd4ca44048a2b2f3387136d1ce509f03f793b1303ef3e56f"
         ],
         "DONKEY": [
           25,
-          "0x13a3acd7c73ab2093c7afa9195ee6e5b1c129cdcadaca7c3bc969fcd2e09597"
+          "0xefc9d2f13195de8cb17b438a43288799b2ac7a9a6e16528dddf389880da189"
         ],
         "KNIGHT": [
           26,
-          "0x7522d751bef4d75fef6c519423a92be7966a22894806d5259362c39402f1a07"
+          "0x135716a147cdac1d04749e1a62beb0c1d22c54cae303ed72eff741ce684ade4"
         ],
         "CROSSBOWMAN": [
           29,
-          "0x1923e5294e0af8db2883d207872e439055d165abb0fa4fcb5f2852c60c785c2"
+          "0x24accfe99330fef799c5ab16ffa8086958ed0e6f9b188ba04cbb96978f4b417"
         ],
         "PALADIN": [
           32,
-          "0xc0a5f1ac4bf5b7c445e059578ba425bf53b2d71f648cbb0f8de2a7fc86d411"
+          "0x79780473e55273a91aeb9d29c50c38f83d2dafd77d2bc2f6e698ed98990012d"
         ],
         "WHEAT": [
           35,
-          "0x46482bbf48640bec0463cfe9b96088e01da310d227d948bf3aa3412eb359e5"
+          "0x581de298bd79abd255665acadbe4d9fde4fca0e0f22804dca1f592c8c7b7ecf"
         ],
         "FISH": [
           36,
-          "0x707f1552d58b19f735922c7d897b72adac6e71fde6e113f00b9828b8ae319af"
+          "0x6d77d7e99e7ef1ec9fed560d4e64971a8f853406d3ed0842d0e36df7939693f"
         ],
         "LORDS": [
           37,
-          "0x7f9fe08e078243ba14ead66344d741cef83deffe772f75b42917af93681e370"
+          "0x3263681c59dd5ca9d837039e3c954386da445acd4fb7525f7f97b7b0392d7a2"
         ]
       }
     },
@@ -3845,8 +3847,465 @@
       },
       "contracts": [
         {
-          "address": "0x1cfc02d07793ceac68d8ec5284303a0ca499702315437af76a9e153b89dc559",
-          "class_hash": "0x3b7d28042f63fc409e26b6ae072b9c0b9f6f14995102e36478a24e191eac25d",
+          "address": "0x3d006e16a62acf967aa1ede29f78460c9b728e980e820df67ecd44a1981d07b",
+          "class_hash": "0x70cae2985de0106dfc62833136e82440465daca7c444ddc820cd2bc279a749f",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "agent_discovery_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "agent_discovery_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "AgentDiscoveryImpl",
+              "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::MapConfig",
+              "members": [
+                {
+                  "name": "reward_resource_amount",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_fail_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_win_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_hex",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_fnd",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "mine_wheat_grant_amount",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mine_fish_grant_amount",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopLimitConfig",
+              "members": [
+                {
+                  "name": "explorer_max_party_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "explorer_guard_max_troop_count",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "guard_resurrection_delay",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_upper_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_upper_bound",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopStaminaConfig",
+              "members": [
+                {
+                  "name": "stamina_gain_per_tick",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_initial",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_bonus_value",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_knight_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_paladin_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_crossbowman_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_req",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_stamina_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_stamina_cost",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "Hyperstructure",
+                  "type": "()"
+                },
+                {
+                  "name": "Mine",
+                  "type": "()"
+                },
+                {
+                  "name": "Agent",
+                  "type": "()"
+                },
+                {
+                  "name": "Quest",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "find_treasure",
+                  "inputs": [
+                    {
+                      "name": "vrf_seed",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "tile",
+                      "type": "s1_eternum::models::map::Tile"
+                    },
+                    {
+                      "name": "caller",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "map_config",
+                      "type": "s1_eternum::models::config::MapConfig"
+                    },
+                    {
+                      "name": "troop_limit_config",
+                      "type": "s1_eternum::models::config::TroopLimitConfig"
+                    },
+                    {
+                      "name": "troop_stamina_config",
+                      "type": "s1_eternum::models::config::TroopStaminaConfig"
+                    },
+                    {
+                      "name": "current_tick",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::agent_discovery_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-agent_discovery_systems",
+          "selector": "0x39779154845217b9230e347a39ab6e47e8f2d46c1fd80c6996d13988857d770",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x504aa4707302d32ca2b3133ed5b7c467edeafe3881443cc3e8832e0b3bb3f26",
+          "class_hash": "0x6b70f6d94686fad5f2227ad5e230a45e13dd81813928d50ae7e1349711bf2fc",
           "abi": [
             {
               "type": "impl",
@@ -4167,8 +4626,8 @@
           ]
         },
         {
-          "address": "0x74ed806dd0b1a43482940b3e628a679c91d991c60923a2e527c83bb7b865711",
-          "class_hash": "0x2260719ab665f6e2e27a895b5148a1f11c4830538f467e8fd2c4071177f6066",
+          "address": "0xa3d8f8dd206ae57c92e4da2e42749e0d92b23cad67cc292645c5d0ca1f72b4",
+          "class_hash": "0x7c076eb520a875176ee261867ea2990fbad268288f87786fe1b1f75ba05cf06",
           "abi": [
             {
               "type": "impl",
@@ -4252,30 +4711,61 @@
             },
             {
               "type": "impl",
-              "name": "VillageControllerConfigImpl",
-              "interface_name": "s1_eternum::systems::config::contracts::IVillageControllerConfig"
+              "name": "VillageTokenConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IVillageTokenConfig"
             },
             {
               "type": "struct",
-              "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
+              "name": "s1_eternum::models::config::VillageTokenConfig",
               "members": [
                 {
-                  "name": "snapshot",
-                  "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
+                  "name": "token_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "mint_recipient_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ]
             },
             {
               "type": "interface",
-              "name": "s1_eternum::systems::config::contracts::IVillageControllerConfig",
+              "name": "s1_eternum::systems::config::contracts::IVillageTokenConfig",
               "items": [
                 {
                   "type": "function",
-                  "name": "set_village_controllers",
+                  "name": "set_village_token_config",
                   "inputs": [
                     {
-                      "name": "village_controller_addresses",
-                      "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
+                      "name": "village_token_config",
+                      "type": "s1_eternum::models::config::VillageTokenConfig"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "WonderBonusConfigImpl",
+              "interface_name": "s1_eternum::systems::config::contracts::IWonderBonusConfig"
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::config::contracts::IWonderBonusConfig",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "set_wonder_bonus_config",
+                  "inputs": [
+                    {
+                      "name": "within_tile_distance",
+                      "type": "core::integer::u8"
+                    },
+                    {
+                      "name": "bonus_percent_num",
+                      "type": "core::integer::u128"
                     }
                   ],
                   "outputs": [],
@@ -5569,7 +6059,8 @@
           "selector": "0x1cb4608b18b40cb6420be7cf67ff21abe727a2bf599f2727d8eed5e36099fc2",
           "systems": [
             "set_agent_controller",
-            "set_village_controllers",
+            "set_village_token_config",
+            "set_wonder_bonus_config",
             "set_world_config",
             "set_mercenaries_name_config",
             "set_season_config",
@@ -5598,8 +6089,8 @@
           ]
         },
         {
-          "address": "0x2a73ffb6b15ba193b2d983e1a660a552ddd090182b32d7fe3122d5d0873ea80",
-          "class_hash": "0x709fd501db30a977694c871f9c5ab5a2a246403f0c1969ae2ae4f5ee93d27ba",
+          "address": "0x17c4551e93ff04c3914bdfdfb86771ed45629b9f5489fe36485972d707350a1",
+          "class_hash": "0x9f4d6549887769904afb70cd2b188b30b2c9396020a1c44074ea091b41ecf0",
           "abi": [
             {
               "type": "impl",
@@ -5812,8 +6303,1094 @@
           ]
         },
         {
-          "address": "0x7e6b1bebc805bcbe830e2cee844db6252c1828efbebc79b27f10230a6008694",
-          "class_hash": "0x442a6b8075c6e12e54816d8686ef7c17f30b1e9f9d68acad5aff818b2231ca5",
+          "address": "0x5e85b7a538646cb683f239f526491c2b4654479fdfb7734bfffd641957ae71a",
+          "class_hash": "0x65909389b21c1ee7d5cfdbe7c5167ef2f438d809a8d6b27f196918c18bf99b9",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "game_mock__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "game_mock__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "SettingsImpl",
+              "interface_name": "tournaments::components::interfaces::ISettings"
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "tournaments::components::interfaces::ISettings",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "setting_exists",
+                  "inputs": [
+                    {
+                      "name": "settings_id",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::bool"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "GameDetailsImpl",
+              "interface_name": "tournaments::components::interfaces::IGameDetails"
+            },
+            {
+              "type": "interface",
+              "name": "tournaments::components::interfaces::IGameDetails",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "score",
+                  "inputs": [
+                    {
+                      "name": "game_id",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "GameMockImpl",
+              "interface_name": "tournaments::components::tests::mocks::game_mock::IGameTokenMock"
+            },
+            {
+              "type": "interface",
+              "name": "tournaments::components::tests::mocks::game_mock::IGameTokenMock",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "start_game",
+                  "inputs": [
+                    {
+                      "name": "game_id",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "end_game",
+                  "inputs": [
+                    {
+                      "name": "game_id",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "score",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "set_settings",
+                  "inputs": [
+                    {
+                      "name": "settings_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "name",
+                      "type": "core::felt252"
+                    },
+                    {
+                      "name": "description",
+                      "type": "core::byte_array::ByteArray"
+                    },
+                    {
+                      "name": "exists",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "GameInitializerImpl",
+              "interface_name": "tournaments::components::tests::mocks::game_mock::IGameTokenMockInit"
+            },
+            {
+              "type": "interface",
+              "name": "tournaments::components::tests::mocks::game_mock::IGameTokenMockInit",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "initializer",
+                  "inputs": [
+                    {
+                      "name": "namespace",
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "GameImpl",
+              "interface_name": "tournaments::components::interfaces::IGameToken"
+            },
+            {
+              "type": "enum",
+              "name": "core::option::Option::<core::integer::u64>",
+              "variants": [
+                {
+                  "name": "Some",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "None",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "tournaments::components::models::game::GameMetadata",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "creator_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "name",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "description",
+                  "type": "core::byte_array::ByteArray"
+                },
+                {
+                  "name": "developer",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "publisher",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "genre",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "image",
+                  "type": "core::byte_array::ByteArray"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "tournaments::components::models::lifecycle::Lifecycle",
+              "members": [
+                {
+                  "name": "mint",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "start",
+                  "type": "core::option::Option::<core::integer::u64>"
+                },
+                {
+                  "name": "end",
+                  "type": "core::option::Option::<core::integer::u64>"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "tournaments::components::models::game::TokenMetadata",
+              "members": [
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "minted_by",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "player_name",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "settings_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "lifecycle",
+                  "type": "tournaments::components::models::lifecycle::Lifecycle"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "tournaments::components::interfaces::IGameToken",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "mint",
+                  "inputs": [
+                    {
+                      "name": "player_name",
+                      "type": "core::felt252"
+                    },
+                    {
+                      "name": "settings_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "start",
+                      "type": "core::option::Option::<core::integer::u64>"
+                    },
+                    {
+                      "name": "end",
+                      "type": "core::option::Option::<core::integer::u64>"
+                    },
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "emit_metadata_update",
+                  "inputs": [
+                    {
+                      "name": "game_id",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "game_metadata",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "tournaments::components::models::game::GameMetadata"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "token_metadata",
+                  "inputs": [
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "tournaments::components::models::game::TokenMetadata"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "game_count",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "namespace",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "score_model",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "score_attribute",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "settings_model",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "ERC721MixinImpl",
+              "interface_name": "openzeppelin_token::erc721::interface::ERC721ABI"
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<core::felt252>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<core::felt252>"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "openzeppelin_token::erc721::interface::ERC721ABI",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "balance_of",
+                  "inputs": [
+                    {
+                      "name": "account",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "owner_of",
+                  "inputs": [
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "safe_transfer_from",
+                  "inputs": [
+                    {
+                      "name": "from",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "data",
+                      "type": "core::array::Span::<core::felt252>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "transfer_from",
+                  "inputs": [
+                    {
+                      "name": "from",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "approve",
+                  "inputs": [
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "set_approval_for_all",
+                  "inputs": [
+                    {
+                      "name": "operator",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "approved",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "get_approved",
+                  "inputs": [
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "is_approved_for_all",
+                  "inputs": [
+                    {
+                      "name": "owner",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "operator",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::bool"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "supports_interface",
+                  "inputs": [
+                    {
+                      "name": "interface_id",
+                      "type": "core::felt252"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::bool"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "symbol",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "token_uri",
+                  "inputs": [
+                    {
+                      "name": "token_id",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "balanceOf",
+                  "inputs": [
+                    {
+                      "name": "account",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "ownerOf",
+                  "inputs": [
+                    {
+                      "name": "tokenId",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "safeTransferFrom",
+                  "inputs": [
+                    {
+                      "name": "from",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "tokenId",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "data",
+                      "type": "core::array::Span::<core::felt252>"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "transferFrom",
+                  "inputs": [
+                    {
+                      "name": "from",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "to",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "tokenId",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "setApprovalForAll",
+                  "inputs": [
+                    {
+                      "name": "operator",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "approved",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "getApproved",
+                  "inputs": [
+                    {
+                      "name": "tokenId",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "isApprovedForAll",
+                  "inputs": [
+                    {
+                      "name": "owner",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "operator",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::bool"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "tokenURI",
+                  "inputs": [
+                    {
+                      "name": "tokenId",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "tournaments::components::game::game_component::MetadataUpdateEvent",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256",
+                  "kind": "key"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "tournaments::components::game::game_component::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "MetadataUpdate",
+                  "type": "tournaments::components::game::game_component::MetadataUpdateEvent",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "openzeppelin_introspection::src5::SRC5Component::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "openzeppelin_token::erc721::erc721::ERC721Component::Transfer",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "from",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "to",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256",
+                  "kind": "key"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "openzeppelin_token::erc721::erc721::ERC721Component::Approval",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "owner",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "approved",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "token_id",
+                  "type": "core::integer::u256",
+                  "kind": "key"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "openzeppelin_token::erc721::erc721::ERC721Component::ApprovalForAll",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "owner",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "operator",
+                  "type": "core::starknet::contract_address::ContractAddress",
+                  "kind": "key"
+                },
+                {
+                  "name": "approved",
+                  "type": "core::bool",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "openzeppelin_token::erc721::erc721::ERC721Component::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Transfer",
+                  "type": "openzeppelin_token::erc721::erc721::ERC721Component::Transfer",
+                  "kind": "nested"
+                },
+                {
+                  "name": "Approval",
+                  "type": "openzeppelin_token::erc721::erc721::ERC721Component::Approval",
+                  "kind": "nested"
+                },
+                {
+                  "name": "ApprovalForAll",
+                  "type": "openzeppelin_token::erc721::erc721::ERC721Component::ApprovalForAll",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "tournaments::components::tests::mocks::game_mock::game_mock::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "GameEvent",
+                  "type": "tournaments::components::game::game_component::Event",
+                  "kind": "flat"
+                },
+                {
+                  "name": "SRC5Event",
+                  "type": "openzeppelin_introspection::src5::SRC5Component::Event",
+                  "kind": "flat"
+                },
+                {
+                  "name": "ERC721Event",
+                  "type": "openzeppelin_token::erc721::erc721::ERC721Component::Event",
+                  "kind": "flat"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-game_mock",
+          "selector": "0x58c68f6a8ae95c09a56283fa7f1c831d0852ea54e39178bcf05685fcac32bcc",
+          "systems": [
+            "start_game",
+            "end_game",
+            "set_settings",
+            "initializer",
+            "upgrade",
+            "mint",
+            "emit_metadata_update",
+            "safe_transfer_from",
+            "transfer_from",
+            "approve",
+            "set_approval_for_all",
+            "safeTransferFrom",
+            "transferFrom",
+            "setApprovalForAll"
+          ]
+        },
+        {
+          "address": "0x3abf4fd74594e4a1ff034062236692b1b38f6fc97eab6c84172022ed7579c45",
+          "class_hash": "0x736e69bd85a8f6912de642f9185725c67701778ef85be9d3243523f013e84e3",
           "abi": [
             {
               "type": "impl",
@@ -6081,8 +7658,465 @@
           ]
         },
         {
-          "address": "0x74f2aa2debb5ad0c5e84758f1e569a75e36d56da256d5e13895dc68a7ed1e50",
-          "class_hash": "0xf1dedbfa171b54f5857a422a22cfba8164bfe979a4238746e4b2c9cbef97a",
+          "address": "0x22c712f9e9ea4c1307da491666a83f62dcc2250e565f7467bd3b526a42df5dc",
+          "class_hash": "0x7556ac648dcbdabf4c4509cb8790597a5e5fc439e4a52f03fd696518da7bca1",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "hyperstructure_discovery_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "hyperstructure_discovery_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "HyperstructureDiscoveryImpl",
+              "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::MapConfig",
+              "members": [
+                {
+                  "name": "reward_resource_amount",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_fail_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_win_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_hex",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_fnd",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "mine_wheat_grant_amount",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mine_fish_grant_amount",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopLimitConfig",
+              "members": [
+                {
+                  "name": "explorer_max_party_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "explorer_guard_max_troop_count",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "guard_resurrection_delay",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_upper_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_upper_bound",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopStaminaConfig",
+              "members": [
+                {
+                  "name": "stamina_gain_per_tick",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_initial",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_bonus_value",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_knight_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_paladin_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_crossbowman_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_req",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_stamina_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_stamina_cost",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "Hyperstructure",
+                  "type": "()"
+                },
+                {
+                  "name": "Mine",
+                  "type": "()"
+                },
+                {
+                  "name": "Agent",
+                  "type": "()"
+                },
+                {
+                  "name": "Quest",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "find_treasure",
+                  "inputs": [
+                    {
+                      "name": "vrf_seed",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "tile",
+                      "type": "s1_eternum::models::map::Tile"
+                    },
+                    {
+                      "name": "caller",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "map_config",
+                      "type": "s1_eternum::models::config::MapConfig"
+                    },
+                    {
+                      "name": "troop_limit_config",
+                      "type": "s1_eternum::models::config::TroopLimitConfig"
+                    },
+                    {
+                      "name": "troop_stamina_config",
+                      "type": "s1_eternum::models::config::TroopStaminaConfig"
+                    },
+                    {
+                      "name": "current_tick",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::hyperstructure_discovery_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-hyperstructure_discovery_systems",
+          "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x4c4025f503859f6458f72731ee121a63f901d8beb48c88595905b0980a751c4",
+          "class_hash": "0x770612c955624f0fc1aebdd2e937901b37f8c501860925e99dc6ae6d9fcd5a7",
           "abi": [
             {
               "type": "impl",
@@ -6414,8 +8448,8 @@
           ]
         },
         {
-          "address": "0x2c3727b3035bf350409838993409c6c72dc172aac499ebcc2ea4d025d7ac1e8",
-          "class_hash": "0x56770445093a9b24c074004fa83276c7917d1d864984bce607901c1eaac379f",
+          "address": "0x48155bc58c580e0f801c7980d252f61e98c7fbb3c39f0df8970aede3f1f512b",
+          "class_hash": "0xec6bef255b3319692715fcad253361af44dda311dda9cc9761b2393135ce09",
           "abi": [
             {
               "type": "impl",
@@ -6655,8 +8689,465 @@
           ]
         },
         {
-          "address": "0x1b7ae208cb831932ba176f11d9b52348edded910747eab10ef75b22abfdee14",
-          "class_hash": "0x244a90247001bf0ffa0df5f82ab6454530e57068cdf159f390b0358562867ac",
+          "address": "0x2246aa522af9f7426e0437c3c0657d4dc67c4a9c1f15c5bfe4afd1347feccbd",
+          "class_hash": "0x2084eb046e8fb94fdd0a8774e4f1f5e4a63e299894cbd560377d6ee6c2c1e50",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "mine_discovery_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "mine_discovery_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "MineDiscoveryImpl",
+              "interface_name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems"
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::MapConfig",
+              "members": [
+                {
+                  "name": "reward_resource_amount",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_win_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "shards_mines_fail_probability",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "agent_discovery_fail_prob",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_win_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_hex",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "hyps_fail_prob_increase_p_fnd",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "mine_wheat_grant_amount",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mine_fish_grant_amount",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopLimitConfig",
+              "members": [
+                {
+                  "name": "explorer_max_party_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "explorer_guard_max_troop_count",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "guard_resurrection_delay",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "mercenaries_troop_upper_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_lower_bound",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "agents_troop_upper_bound",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::config::TroopStaminaConfig",
+              "members": [
+                {
+                  "name": "stamina_gain_per_tick",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_initial",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_bonus_value",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_knight_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_paladin_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_crossbowman_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_req",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_attack_max",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_explore_stamina_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_wheat_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_fish_cost",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "stamina_travel_stamina_cost",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind",
+              "variants": [
+                {
+                  "name": "None",
+                  "type": "()"
+                },
+                {
+                  "name": "Hyperstructure",
+                  "type": "()"
+                },
+                {
+                  "name": "Mine",
+                  "type": "()"
+                },
+                {
+                  "name": "Agent",
+                  "type": "()"
+                },
+                {
+                  "name": "Quest",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementUtilSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "find_treasure",
+                  "inputs": [
+                    {
+                      "name": "vrf_seed",
+                      "type": "core::integer::u256"
+                    },
+                    {
+                      "name": "tile",
+                      "type": "s1_eternum::models::map::Tile"
+                    },
+                    {
+                      "name": "caller",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "map_config",
+                      "type": "s1_eternum::models::config::MapConfig"
+                    },
+                    {
+                      "name": "troop_limit_config",
+                      "type": "s1_eternum::models::config::TroopLimitConfig"
+                    },
+                    {
+                      "name": "troop_stamina_config",
+                      "type": "s1_eternum::models::config::TroopStaminaConfig"
+                    },
+                    {
+                      "name": "current_tick",
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "(core::bool, s1_eternum::systems::combat::contracts::troop_movement::troop_movement_systems::ExploreFind)"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::combat::contracts::troop_movement::mine_discovery_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-mine_discovery_systems",
+          "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
+          "systems": [
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x19c2e30a359b3a0ea7e0f5adc15cc8cbcdcb07503038f0e683c653536af8f90",
+          "class_hash": "0x5f2d2855abf8bf76dca64de31b61c7d62b574a9abeb8ba5f692452ea641691a",
           "abi": [
             {
               "type": "impl",
@@ -6855,8 +9346,8 @@
           ]
         },
         {
-          "address": "0x4090af3742f051882ffc700e2161767a66cd3e259ee8765de88a0590c7bc51b",
-          "class_hash": "0x46ee51bd8c9f5babe9db45be5e604f93718a773037565e429756c643be6b7c5",
+          "address": "0x5b2557dbdca5464c66f2bb8f38e1bf0c4e5bc89b83b5838cce05ee92c660a12",
+          "class_hash": "0x2dcefd5d3b39800445230755ff4b9e780939e55393a50fe6d7249cb15508426",
           "abi": [
             {
               "type": "impl",
@@ -7076,8 +9567,8 @@
           ]
         },
         {
-          "address": "0x61f93f133401087ad75db6f6d607c41b86d072576bcf6cdf4461c927e9ab1aa",
-          "class_hash": "0x653dce0a3ff971703e0abdf7b3efe2c9e6d665e8c1be72e5f46286b92076e2f",
+          "address": "0x7d88a9f9073698b5c2e410288a3441256ba35f28e7e7ee72ab2f71402e5c493",
+          "class_hash": "0x74c7d35672f5ae5533999a5bbbbf03cfc139fdbf606de7fd8b9ded834eef12c",
           "abi": [
             {
               "type": "impl",
@@ -7519,6 +10010,22 @@
                   ],
                   "outputs": [],
                   "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "claim_wonder_production_bonus",
+                  "inputs": [
+                    {
+                      "name": "structure_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "wonder_structure_id",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
                 }
               ]
             },
@@ -7648,12 +10155,594 @@
             "burn_resource_for_labor_production",
             "burn_labor_for_resource_production",
             "burn_resource_for_resource_production",
+            "claim_wonder_production_bonus",
             "upgrade"
           ]
         },
         {
-          "address": "0x6497738bcdb0255a8b546ef286a902721885e7ea5cef349e9b613f964f230fd",
-          "class_hash": "0x1d43c02885e8fea5549dfc1c6e17223f5e37f35e9998ae3714f858b84496f31",
+          "address": "0x1b3a3458983a46ef6666806b8f7d373ae7ef5c0152b56e574806401ee7b1dce",
+          "class_hash": "0x53c65bfd2cc59b2fdaf908d1702f89952e13a941f6e190eb52a2e77d1cd83e6",
+          "abi": [
+            {
+              "type": "impl",
+              "name": "quest_systems__ContractImpl",
+              "interface_name": "dojo::contract::interface::IContract"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::interface::IContract",
+              "items": []
+            },
+            {
+              "type": "impl",
+              "name": "quest_systems__DeployedContractImpl",
+              "interface_name": "dojo::meta::interface::IDeployedResource"
+            },
+            {
+              "type": "struct",
+              "name": "core::byte_array::ByteArray",
+              "members": [
+                {
+                  "name": "data",
+                  "type": "core::array::Array::<core::bytes_31::bytes31>"
+                },
+                {
+                  "name": "pending_word",
+                  "type": "core::felt252"
+                },
+                {
+                  "name": "pending_word_len",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::meta::interface::IDeployedResource",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "dojo_name",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::byte_array::ByteArray"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "impl",
+              "name": "QuestSystemsImpl",
+              "interface_name": "s1_eternum::systems::quest::contracts::IQuestSystems"
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::quest::Level",
+              "members": [
+                {
+                  "name": "target_score",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "settings_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "time_limit",
+                  "type": "core::integer::u64"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<s1_eternum::models::quest::Level>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<s1_eternum::models::quest::Level>"
+                }
+              ]
+            },
+            {
+              "type": "enum",
+              "name": "core::bool",
+              "variants": [
+                {
+                  "name": "False",
+                  "type": "()"
+                },
+                {
+                  "name": "True",
+                  "type": "()"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::integer::u256",
+              "members": [
+                {
+                  "name": "low",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "high",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::quest::Quest",
+              "members": [
+                {
+                  "name": "game_token_id",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "game_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "quest_tile_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "explorer_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "completed",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::position::Coord",
+              "members": [
+                {
+                  "name": "x",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "y",
+                  "type": "core::integer::u32"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::quest::QuestDetails",
+              "members": [
+                {
+                  "name": "quest_tile_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "game_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "coord",
+                  "type": "s1_eternum::models::position::Coord"
+                },
+                {
+                  "name": "target_score",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "reward_name",
+                  "type": "core::byte_array::ByteArray"
+                },
+                {
+                  "name": "reward_amount",
+                  "type": "core::integer::u128"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "s1_eternum::models::quest::QuestTile",
+              "members": [
+                {
+                  "name": "id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "game_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "coord",
+                  "type": "s1_eternum::models::position::Coord"
+                },
+                {
+                  "name": "level",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "capacity",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "participant_count",
+                  "type": "core::integer::u16"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "s1_eternum::systems::quest::contracts::IQuestSystems",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "add_game",
+                  "inputs": [
+                    {
+                      "name": "address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    },
+                    {
+                      "name": "levels",
+                      "type": "core::array::Span::<s1_eternum::models::quest::Level>"
+                    },
+                    {
+                      "name": "overwrite",
+                      "type": "core::bool"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "remove_game",
+                  "inputs": [
+                    {
+                      "name": "address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "create_quest",
+                  "inputs": [
+                    {
+                      "name": "tile",
+                      "type": "s1_eternum::models::map::Tile"
+                    },
+                    {
+                      "name": "vrf_seed",
+                      "type": "core::integer::u256"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "start_quest",
+                  "inputs": [
+                    {
+                      "name": "quest_tile_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "explorer_id",
+                      "type": "core::integer::u32"
+                    },
+                    {
+                      "name": "player_name",
+                      "type": "core::felt252"
+                    },
+                    {
+                      "name": "to_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u64"
+                    }
+                  ],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "claim_reward",
+                  "inputs": [
+                    {
+                      "name": "game_token_id",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "game_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "enable_quests",
+                  "inputs": [],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "disable_quests",
+                  "inputs": [],
+                  "outputs": [],
+                  "state_mutability": "external"
+                },
+                {
+                  "type": "function",
+                  "name": "get_quest",
+                  "inputs": [
+                    {
+                      "name": "game_token_id",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "game_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "s1_eternum::models::quest::Quest"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "get_quest_details",
+                  "inputs": [
+                    {
+                      "name": "game_token_id",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "game_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "s1_eternum::models::quest::QuestDetails"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "get_quest_tile",
+                  "inputs": [
+                    {
+                      "name": "quest_tile_id",
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "s1_eternum::models::quest::QuestTile"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "get_target_score",
+                  "inputs": [
+                    {
+                      "name": "game_token_id",
+                      "type": "core::integer::u64"
+                    },
+                    {
+                      "name": "game_address",
+                      "type": "core::starknet::contract_address::ContractAddress"
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "type": "core::integer::u32"
+                    }
+                  ],
+                  "state_mutability": "view"
+                },
+                {
+                  "type": "function",
+                  "name": "is_quest_feature_enabled",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::bool"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "WorldProviderImpl",
+              "interface_name": "dojo::contract::components::world_provider::IWorldProvider"
+            },
+            {
+              "type": "struct",
+              "name": "dojo::world::iworld::IWorldDispatcher",
+              "members": [
+                {
+                  "name": "contract_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ]
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::world_provider::IWorldProvider",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "world_dispatcher",
+                  "inputs": [],
+                  "outputs": [
+                    {
+                      "type": "dojo::world::iworld::IWorldDispatcher"
+                    }
+                  ],
+                  "state_mutability": "view"
+                }
+              ]
+            },
+            {
+              "type": "impl",
+              "name": "UpgradeableImpl",
+              "interface_name": "dojo::contract::components::upgradeable::IUpgradeable"
+            },
+            {
+              "type": "interface",
+              "name": "dojo::contract::components::upgradeable::IUpgradeable",
+              "items": [
+                {
+                  "type": "function",
+                  "name": "upgrade",
+                  "inputs": [
+                    {
+                      "name": "new_class_hash",
+                      "type": "core::starknet::class_hash::ClassHash"
+                    }
+                  ],
+                  "outputs": [],
+                  "state_mutability": "external"
+                }
+              ]
+            },
+            {
+              "type": "constructor",
+              "name": "constructor",
+              "inputs": []
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+              "kind": "struct",
+              "members": [
+                {
+                  "name": "class_hash",
+                  "type": "core::starknet::class_hash::ClassHash",
+                  "kind": "data"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "Upgraded",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Upgraded",
+                  "kind": "nested"
+                }
+              ]
+            },
+            {
+              "type": "event",
+              "name": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "enum",
+              "variants": []
+            },
+            {
+              "type": "event",
+              "name": "s1_eternum::systems::quest::contracts::quest_systems::Event",
+              "kind": "enum",
+              "variants": [
+                {
+                  "name": "UpgradeableEvent",
+                  "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+                  "kind": "nested"
+                },
+                {
+                  "name": "WorldProviderEvent",
+                  "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+                  "kind": "nested"
+                }
+              ]
+            }
+          ],
+          "init_calldata": [],
+          "tag": "s1_eternum-quest_systems",
+          "selector": "0x7cafb0f91debc04472133f7332506bb33c7dd7b0c88b603a8c03b7e48627cb8",
+          "systems": [
+            "add_game",
+            "remove_game",
+            "create_quest",
+            "start_quest",
+            "claim_reward",
+            "enable_quests",
+            "disable_quests",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x46084122fdf7d7b5722833fa055f7034a05fbcb880d83935af09fbe373e03b5",
+          "class_hash": "0x4efc9cc733b723e709fbbf0be6d24a62ea4091b7db7ef159c09d19fc032bd7c",
           "abi": [
             {
               "type": "impl",
@@ -7886,8 +10975,8 @@
           ]
         },
         {
-          "address": "0x153cd58381ce65ff16dca9e801c86d87f070ad05f7e8d8c4c6f5aeb00cc3f41",
-          "class_hash": "0x20b7c2e049214e815fe7c37655ad02bb32761e56754550c33f2219004562687",
+          "address": "0x4da121230bcea9a0a32b80f52e612bf138b0cc92d10dd326207252f7a415211",
+          "class_hash": "0x4bb340b95e4e736d182a5b210f07ae94c793c871b5c78b2767b59f6424be41e",
           "abi": [
             {
               "type": "impl",
@@ -8141,8 +11230,8 @@
           ]
         },
         {
-          "address": "0x248bd828590f964f1ea3d90b860c5c96a5915863eca48e6986eff7f0b67f7bd",
-          "class_hash": "0x3d2e4a087e6641d1c810c0f7daeb5d877aaff0e3c62d2983803e260d1601db5",
+          "address": "0x3352deb448eb32087cf5d6e35bb06acbd347e00d63b05b620c5f88763482e14",
+          "class_hash": "0x201dd6a9e3a4feb5230af76564e181cb3282f36c38aa50c4899cf5b5c013ab9",
           "abi": [
             {
               "type": "impl",
@@ -8506,8 +11595,8 @@
           ]
         },
         {
-          "address": "0x12a60ab4258333619e421e32aac866ca3dc9f4f6cbc665f133206649c8a7034",
-          "class_hash": "0x71f2ec3e3816bda8e531526c80d28594952f383b5f0c6dc467f3b8c09a7cd2d",
+          "address": "0xa2f1df2ba441dccb6c5dd6f22b1474ced0f7aafe0e428d94c2e1a1bd1f6c38",
+          "class_hash": "0x674959a498a06a5b0626b6a1e57b71cf2bbfc8fa57a1dab1b38d120b3db3c68",
           "abi": [
             {
               "type": "impl",
@@ -8709,8 +11798,8 @@
           ]
         },
         {
-          "address": "0x1a5e666b660d0eed6ea33647e1f57a8be8de5317ea76a051c3cebad27ef08a1",
-          "class_hash": "0x2a28b35ec49b17e96799ff860de0453395c603cfbe39ec06a7b2fec8a0e7c9c",
+          "address": "0x1f6b2db42088883a81ace6d5ba956afa5fb244652fd957b4a04aca77283d6e6",
+          "class_hash": "0x3c8f36192b8bf8c797ad954c9e6161dd0b0808481afe831581ba5ea0f5b2e5b",
           "abi": [
             {
               "type": "impl",
@@ -8909,8 +11998,8 @@
           ]
         },
         {
-          "address": "0x4bf274590f7057968cf37e701adaeaa89e6122f3d9946e355ce360df52e8f7c",
-          "class_hash": "0x2934b75a5efd3861dfa47fdf5b0c8b7966e4934cb8c623411ba118ec02e01c1",
+          "address": "0x2d40a30dea0be831c302a567769d170a203cd94d0653b44ac509c44e37519ca",
+          "class_hash": "0x423568a153b5263649006489b0d884da56d0c825799781f5c32fd0532400da",
           "abi": [
             {
               "type": "impl",
@@ -9146,8 +12235,8 @@
           ]
         },
         {
-          "address": "0x5643b2a4d6d41b07a76fdefa38ecb2f98cc6bc09318980b5ed608e392533e12",
-          "class_hash": "0x6813603f3438dd55ce6209017f52290ad11127e5bab04bc5f655ad5d8ab660d",
+          "address": "0x23bacc694be053a5a7e3688f27e7db039b6bb5e921925205d58fcf4ec1c893b",
+          "class_hash": "0x282e916b5047dba371ddbb04cf77264c0ecbc4752432c7554288f6788f13db",
           "abi": [
             {
               "type": "impl",
@@ -9412,8 +12501,8 @@
           ]
         },
         {
-          "address": "0x7b0f9094b7f0bd1e74d7770bf8c4e59763ddf52fa7bcd116774644a8057581f",
-          "class_hash": "0x37c58a45145ed2e3c90af38ef635c274a122fb2196b632fed7ee991087f9f5d",
+          "address": "0x78f5f31611dbadf5c28752b4bd642ebe6cb7c3560b1fa41a0537005d18890ac",
+          "class_hash": "0x53a8f073aee0911f2b3ccbc4270c4047ac4f52cdd909d6b132898b5eab50f8d",
           "abi": [
             {
               "type": "impl",
@@ -9732,8 +12821,8 @@
           ]
         },
         {
-          "address": "0x5a93e11502e601aabe9be50200816af1eedb69137712844d9f28dce64622b9e",
-          "class_hash": "0x2227c60f960890e955e8805ba247dc905a8568de4d792207f27a1fe27461491",
+          "address": "0xadaba43c563f734d711239e356864b2362269ce9035e5f9f74d82b035cc768",
+          "class_hash": "0x106cf7122dbb5edabf1eb7b0b254fd461a16e5bf2673fecdbfcdc15af7119bb",
           "abi": [
             {
               "type": "impl",
@@ -10203,8 +13292,8 @@
           ]
         },
         {
-          "address": "0x59bdbe7c1dd7edbf98e70be76869479f8510b74e2643653a63e71a8bcc514c9",
-          "class_hash": "0x4c83f82317489f1f61253db7c2da51e634dbf89524c6536ad7007125ecd8fc5",
+          "address": "0x43241340d1ee8b128e458e1f9c8129c9179c68f994facfda025c639abfd6835",
+          "class_hash": "0x4d05fd9fe982a620ad9818652c88211f5af3582c2709f4b7d50552acdbd5830",
           "abi": [
             {
               "type": "impl",
@@ -10316,6 +13405,46 @@
               ]
             },
             {
+              "type": "struct",
+              "name": "s1_eternum::models::map::Tile",
+              "members": [
+                {
+                  "name": "col",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "row",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "biome",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "occupier_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "occupier_is_structure",
+                  "type": "core::bool"
+                }
+              ]
+            },
+            {
+              "type": "struct",
+              "name": "core::array::Span::<s1_eternum::models::map::Tile>",
+              "members": [
+                {
+                  "name": "snapshot",
+                  "type": "@core::array::Array::<s1_eternum::models::map::Tile>"
+                }
+              ]
+            },
+            {
               "type": "interface",
               "name": "s1_eternum::systems::combat::contracts::troop_movement::ITroopMovementSystems",
               "items": [
@@ -10336,7 +13465,11 @@
                       "type": "core::bool"
                     }
                   ],
-                  "outputs": [],
+                  "outputs": [
+                    {
+                      "type": "core::array::Span::<s1_eternum::models::map::Tile>"
+                    }
+                  ],
                   "state_mutability": "external"
                 }
               ]
@@ -10465,8 +13598,8 @@
           ]
         },
         {
-          "address": "0x783d747cb84421c85004cc075e4e2dc615a0895d865ce333d221703fa126031",
-          "class_hash": "0x5b3f5ba149024c8b973d40c5544bb445fccbde9a7790df713359c2df35080d9",
+          "address": "0x89dd3bfa6967d2db4361a643fea0479f4ea213e4d9fe37b7cdd10f4088d7eb",
+          "class_hash": "0x1d3b694e4e7aabbcbff32646890912e3ecd39cf4232de8d18f1f2effb37e8a",
           "abi": [
             {
               "type": "impl",
@@ -10746,6 +13879,10 @@
                 {
                   "name": "Agent",
                   "type": "()"
+                },
+                {
+                  "name": "Quest",
+                  "type": "()"
                 }
               ]
             },
@@ -10918,8 +14055,8 @@
           ]
         },
         {
-          "address": "0x54e3bb3c367617ea71a1b360813b998314ace8734f500227fbddb39728bcc21",
-          "class_hash": "0x33b158332e9dd636d1887ed6b660a5074ee8959bfc1254892357b72a9d1fa10",
+          "address": "0x299727cb96e49710cd7b9a85b4194602fcbccb232f5176aaecf6caf8db6b56e",
+          "class_hash": "0x5186d5fee6465b77a3c2cbf74fe83a79ea5274a1cbdb74a3c0c22850a2156c6",
           "abi": [
             {
               "type": "impl",
@@ -11170,8 +14307,8 @@
           ]
         },
         {
-          "address": "0x62487e4177540588cd2b8ef4b00a23a59ad0595fd0db6ab5648f76fc36e4b45",
-          "class_hash": "0x39d9096c36ac7819f126866c5feb27d6f6a6cbcf4a38d5beef7eb0643a3a942",
+          "address": "0x3614a97e14e164c129b3f322a01cbdd45f9eeed8d49f5052f45350275353898",
+          "class_hash": "0x53548af58a8e2410db060a7bfef8406ac74fdcb6e7d039a3b27097302bdefbf",
           "abi": [
             {
               "type": "impl",
@@ -11267,11 +14404,11 @@
                   "name": "create",
                   "inputs": [
                     {
-                      "name": "village_owner",
-                      "type": "core::starknet::contract_address::ContractAddress"
+                      "name": "village_pass_token_id",
+                      "type": "core::integer::u16"
                     },
                     {
-                      "name": "connected_realm",
+                      "name": "connected_realm_entity_id",
                       "type": "core::integer::u32"
                     },
                     {
@@ -11452,6 +14589,18 @@
         },
         {
           "members": [],
+          "class_hash": "0xdc2e5bb9a031c39c331e7452da6001f874a496eedab97472fa7f5c911a8ec2",
+          "tag": "s1_eternum-GameCounter",
+          "selector": "0x53670cde0d9563780c34ba586b4050772ea171ce6d42c90a2e17c1effb60d2b"
+        },
+        {
+          "members": [],
+          "class_hash": "0x32268509eabc1bd319688f1fca9d8151159dbb09b9cf26734dc23e0afffafe4",
+          "tag": "s1_eternum-GameMetadata",
+          "selector": "0x62b6f6c0ecce469dded7241cd56d71ce8bb7381e556ae3f6e1324430ec06482"
+        },
+        {
+          "members": [],
           "class_hash": "0x4d7379972da721e141dc075889c8f952810c7df5afc553e707cee95b6fde99",
           "tag": "s1_eternum-Guild",
           "selector": "0x1005f12b60fb0b9955acaa3d2ef4e839a9d9ca0de11ba53c74c3a4b5d324142"
@@ -11530,6 +14679,12 @@
         },
         {
           "members": [],
+          "class_hash": "0x48c48a8b05048cb2f0322e3f7f1a9b1118f6a09c1c66c6993c76776208c5b77",
+          "tag": "s1_eternum-ProductionWonderBonus",
+          "selector": "0x3242c8e4b929517347883c0484c930d3da02bf388bd05aa10036dd7ba2f6a8a"
+        },
+        {
+          "members": [],
           "class_hash": "0x6b5dfef42903974de499b703b464b6aa706a1751a8b4c585c2cc182ac68038",
           "tag": "s1_eternum-Quantity",
           "selector": "0x8646cb000744430c5d95cf5616ce8ba4913401760158aa1ad6738475a36591"
@@ -11539,6 +14694,42 @@
           "class_hash": "0xf3d14017030058ef6fa5e0a48734da1a76f480c0c299a295d11e66dc9c72d4",
           "tag": "s1_eternum-QuantityTracker",
           "selector": "0x5f336941c172ea1a837a1c82d98ff802817688e6e5f66a32ac3a9ff320cfb18"
+        },
+        {
+          "members": [],
+          "class_hash": "0xb7c607cfbdfbeb939e9f5a697646cf5494652a2060e3ace24b069d8f62c5a7",
+          "tag": "s1_eternum-Quest",
+          "selector": "0x5748c683cbda725287adb63a5b5c7c471d1d782f2779609d4f66efeda03ff68"
+        },
+        {
+          "members": [],
+          "class_hash": "0x30d21640d093383f9fdb7ba9a6205b3effa02601eb0c581fe66d9beb4af2240",
+          "tag": "s1_eternum-QuestFeatureFlag",
+          "selector": "0x54be5e8db46958f90ec8993939fa018995e419e009dc405f34518bb13c9bb32"
+        },
+        {
+          "members": [],
+          "class_hash": "0x3f5b63f44daf5dc4a5a44ce78e30aae2c7cfa3b35f9732d5591ecc1ca447050",
+          "tag": "s1_eternum-QuestGameRegistry",
+          "selector": "0x4affdc964f92a9263def6bd613b7559bef2092d4bb0d87ee70f0c5146d58739"
+        },
+        {
+          "members": [],
+          "class_hash": "0x78da4381292e57b2ad511341a37d85108a1ce15ec998f533c7b9dcbd5078f2a",
+          "tag": "s1_eternum-QuestLevels",
+          "selector": "0x51d8be9e564f646d370cb845c085087b55bff0301b9cf009f9360655ba5cf81"
+        },
+        {
+          "members": [],
+          "class_hash": "0x7908498aa0d9d15834b25d3ccb1d4181edc90f82ea6b4387aa4444df8b3d53b",
+          "tag": "s1_eternum-QuestRegistrations",
+          "selector": "0x5bc94c6394a4cade60bfa2a36ce745d9495aa1f4042ff905c4368d1fff5d74c"
+        },
+        {
+          "members": [],
+          "class_hash": "0x7e7ef2335624c85315490b6512fb15f987c1ab9e75394db28ea724b203874e0",
+          "tag": "s1_eternum-QuestTile",
+          "selector": "0x61f4cba350928998cf98d6fafef2b9c7da216ef013195f85c41b0f3e0d8a370"
         },
         {
           "members": [],
@@ -11578,9 +14769,33 @@
         },
         {
           "members": [],
+          "class_hash": "0x18fc1c720db350bed92a902bee4a63a7df92b49569eabfcf5d46fc6bb73628a",
+          "tag": "s1_eternum-Score",
+          "selector": "0x231a6d35328fb2fc19d06c4dcfe88c0d30543a3f1e2922f89b7de3ed24fa428"
+        },
+        {
+          "members": [],
           "class_hash": "0x36b1bfa77571e6dfec2d027fe9c48e60c246adc3fa7a393ab6d3074b64e8634",
           "tag": "s1_eternum-SeasonPrize",
           "selector": "0x52494c495c466f56b0712ded319bb8d6d782e702493101057a8e093f024a368"
+        },
+        {
+          "members": [],
+          "class_hash": "0xfe76028a63cb7cb179e39108da14dfc7a2a0b86ee2d32363dd9cf796d81fe7",
+          "tag": "s1_eternum-Settings",
+          "selector": "0x338ff48cd06b9dd3fe363df5c08a297595b7bd1622c644fce910a3253b645b5"
+        },
+        {
+          "members": [],
+          "class_hash": "0x1540d593f7b6d0ec355e68e7d066ad39cbb99c32c96a46d572c758c70f40c02",
+          "tag": "s1_eternum-SettingsCounter",
+          "selector": "0x1660d30d4efe72dbac135b090919a5b526ac5914ad53274e59c79afe76d3058"
+        },
+        {
+          "members": [],
+          "class_hash": "0x7289d1d56a6e92ff99925fdfac1f70d7829a991211281fdda7e6f4bb15b4453",
+          "tag": "s1_eternum-SettingsDetails",
+          "selector": "0x2fa964ce09f4b136ee247b030fe6a5abecfe11e12d92ea26a840faafa8da109"
         },
         {
           "members": [],
@@ -11602,9 +14817,21 @@
         },
         {
           "members": [],
+          "class_hash": "0x164bc118456658f921e1c6582966392df848a18af20fc8106bebd277187ab4f",
+          "tag": "s1_eternum-StructureVillageSlots",
+          "selector": "0x60ced96a6248196ca67650c7943d5248807119bcf12ba7f2f90af7983c1a74a"
+        },
+        {
+          "members": [],
           "class_hash": "0x57bfe1896f0a1c7eb0615d1602a57e21008cf414308c398c9434b4adce7329",
           "tag": "s1_eternum-Tile",
           "selector": "0x66c306156fe0c5b2785192d61977ac8475e3cb3dbc5d68f5547ade25fe1f4f2"
+        },
+        {
+          "members": [],
+          "class_hash": "0x33d1fab3b617046a970045ee9e236a70a7585a8938b9c54eddd2b1ef9979b9a",
+          "tag": "s1_eternum-TokenMetadata",
+          "selector": "0x3008555555cea3d29f86f4cc5a60e01d9fa47ba67fe5f9f4ab2bdf13379b88a"
         },
         {
           "members": [],
@@ -11626,7 +14853,13 @@
         },
         {
           "members": [],
-          "class_hash": "0x20c37dd6c7e1633315a9c8db0af6b44d35f192ce1ce2359f6aa0a44e4e4a92",
+          "class_hash": "0x5ad449e114d404a01d8c64a5969366dfc5114673436adbaab4f90bbbb69f032",
+          "tag": "s1_eternum-Wonder",
+          "selector": "0x2a78e143b8a02f332d940ed8f0432242f17b891ad1ae5e53a813fbdb1cf3b0c"
+        },
+        {
+          "members": [],
+          "class_hash": "0x6ba8b8ee694fa2147da18b1698a89e8f4ff62fe8a4db03700c8ac953a9834d5",
           "tag": "s1_eternum-WorldConfig",
           "selector": "0x6212a03a10506a6661b44a6685e9d2978709dfdfc8de36fe93d947b939f200a"
         }
@@ -11670,7 +14903,7 @@
         },
         {
           "members": [],
-          "class_hash": "0x7b08291bc6d3df2bfe16d035d116462e207481f53ad5f8180c802056c0bbd00",
+          "class_hash": "0x2cfb4665ae327d6d0109989cd298a4091e6ab6753e70d2f6aabff9d3739650a",
           "tag": "s1_eternum-ExplorerMoveEvent",
           "selector": "0x771febd17a135066bdc92bc5cd00e8f07b39bb0e8501141c2c67e4a5287b4e9"
         },

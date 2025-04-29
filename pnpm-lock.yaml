@@ -82,7 +82,7 @@ importers:
         version: 1.4.1(@tanstack/react-query@5.74.3(react@18.3.1))(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
+        version: 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.4.1
@@ -266,7 +266,7 @@ importers:
         specifier: ^1.1.1
         version: 1.1.4(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dialog':
-        specifier: ^1.1.4
+        specifier: ^1.1.6
         version: 1.1.7(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.2
@@ -278,7 +278,7 @@ importers:
         specifier: ^2.1.4
         version: 2.1.7(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-slot':
-        specifier: ^1.1.1
+        specifier: ^1.1.2
         version: 1.2.0(@types/react@18.3.20)(react@18.3.1)
       '@radix-ui/react-tabs':
         specifier: ^1.1.0
@@ -418,7 +418,7 @@ importers:
         version: 1.4.1(@tanstack/react-query@5.74.3(react@18.3.1))(@types/react-dom@18.3.6(@types/react@18.3.20))(@types/react@18.3.20)(bufferutil@4.0.9)(encoding@0.1.13)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/state':
         specifier: 'catalog:'
-        version: 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
+        version: 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client':
         specifier: 'catalog:'
         version: 1.4.1
@@ -515,7 +515,7 @@ importers:
         version: 7.18.0(@typescript-eslint/parser@8.30.1(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3))(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.3)
       '@vitest/coverage-v8':
         specifier: ^2.0.5
-        version: 2.1.9(vitest@2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0))
+        version: 2.1.9(vitest@2.1.9)
       '@vitest/ui':
         specifier: ^2.0.1
         version: 2.1.9(vitest@2.1.9)
@@ -11739,7 +11739,7 @@ snapshots:
   '@dojoengine/react@1.4.2(@types/node@20.17.30)(@types/react@18.3.20)(bufferutil@4.0.9)(immer@10.1.1)(lightningcss@1.29.3)(react@18.3.1)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(type-fest@0.21.3)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
-      '@dojoengine/state': 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
+      '@dojoengine/state': 1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client': 1.4.1
       '@dojoengine/utils': 1.4.1(bufferutil@4.0.9)(starknet@6.23.1(encoding@0.1.13))(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@latticexyz/utils': 2.2.21
@@ -11821,12 +11821,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@dojoengine/state@1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)':
+  '@dojoengine/state@1.4.2(@types/node@20.17.30)(@vitest/ui@2.1.9)(bufferutil@4.0.9)(lightningcss@1.29.3)(starknet@6.23.1(encoding@0.1.13))(terser@5.39.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)':
     dependencies:
       '@dojoengine/recs': 2.0.13(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.2)
       '@dojoengine/torii-client': 1.4.1
       starknet: 6.23.1(encoding@0.1.13)
-      vitest: 1.6.1(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(lightningcss@1.29.3)(terser@5.39.0)
+      vitest: 1.6.1(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -15714,7 +15714,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/coverage-v8@2.1.9(vitest@2.1.9(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0))':
+  '@vitest/coverage-v8@2.1.9(vitest@2.1.9)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -22146,7 +22146,7 @@ snapshots:
       tsx: 4.19.3
       yaml: 2.7.1
 
-  vitest@1.6.1(@types/node@20.17.30)(@vitest/ui@2.1.9(vitest@2.1.9))(lightningcss@1.29.3)(terser@5.39.0):
+  vitest@1.6.1(@types/node@20.17.30)(@vitest/ui@2.1.9)(lightningcss@1.29.3)(terser@5.39.0):
     dependencies:
       '@vitest/expect': 1.6.1
       '@vitest/runner': 1.6.1

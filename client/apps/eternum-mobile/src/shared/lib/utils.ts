@@ -1,4 +1,5 @@
 import { divideByPrecision } from "@bibliothecadao/eternum";
+import { getNeighborHexes, HexPosition } from "@bibliothecadao/types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { AppRoute } from "../types";
@@ -38,3 +39,42 @@ export function currencyIntlFormat(num: number, decimals: number = 2): string {
     maximumFractionDigits: decimals,
   }).format(num || 0);
 }
+
+export const generateHexPositions = (center: HexPosition, radius: number) => {
+  const positions: any[] = [];
+  const positionSet = new Set(); // To track existing positions
+
+  // Helper function to add position if not already added
+  const addPosition = (col: number, row: number, isBorder: boolean) => {
+    const key = `${col},${row}`;
+    if (!positionSet.has(key)) {
+      const position = {
+        col,
+        row,
+        isBorder,
+      };
+      positions.push(position);
+      positionSet.add(key);
+    }
+  };
+
+  // Add center position
+  addPosition(center.col, center.row, false);
+
+  // Generate positions in expanding hexagonal layers
+  let currentLayer = [center];
+  for (let i = 0; i < radius; i++) {
+    const nextLayer: any = [];
+    currentLayer.forEach((pos) => {
+      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
+        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
+          addPosition(neighbor.col, neighbor.row, i === radius - 1);
+          nextLayer.push({ col: neighbor.col, row: neighbor.row });
+        }
+      });
+    });
+    currentLayer = nextLayer; // Move to the next layer
+  }
+
+  return positions;
+};
