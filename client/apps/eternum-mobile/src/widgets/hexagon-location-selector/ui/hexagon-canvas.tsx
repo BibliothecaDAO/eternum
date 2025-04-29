@@ -162,7 +162,6 @@ export function HexagonCanvas({
   const handleTouchMove = (event: React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDragging || !canvasRef.current || event.touches.length !== 1) return;
     event.stopPropagation();
-    event.preventDefault();
 
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
