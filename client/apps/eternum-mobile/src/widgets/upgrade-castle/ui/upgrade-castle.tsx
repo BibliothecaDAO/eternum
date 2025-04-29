@@ -14,7 +14,7 @@ interface UpgradeCastleProps {
 export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const dojo = useDojo();
-  const { currentLevel, nextLevel, canUpgrade, upgradeProgress, currentLevelName, nextLevelName } =
+  const { nextLevel, canUpgrade, upgradeProgress, currentLevelName, nextLevelName } =
     useStructureUpgrade(realmEntityId);
 
   // Check ownership

@@ -105,14 +105,6 @@ export const BuildingDetailsDrawer = ({
     setError(null);
 
     try {
-      console.log("Placing building at:", {
-        dojo: dojo.account.account,
-        entityId,
-        col: selectedLocation.col,
-        row: selectedLocation.row,
-        buildingId: building.buildingId,
-        useSimpleCost,
-      });
       await tileManager.placeBuilding(
         dojo.account.account,
         entityId,
@@ -271,13 +263,6 @@ export const BuildingDetailsDrawer = ({
                   <div className="mt-2 flex gap-3 items-center">
                     {ongoingCost.map((costItem, index) => {
                       if (!costItem || costItem.resource === undefined) return null;
-                      const balance = getBalance(
-                        entityId,
-                        costItem.resource,
-                        currentDefaultTick,
-                        dojo.setup.components,
-                      );
-                      console.log(costItem.amount);
                       return (
                         <div key={`ongoing-cost-${index}`} className="flex items-center gap-0.5">
                           <ResourceIcon resourceId={costItem.resource} size={24} />
