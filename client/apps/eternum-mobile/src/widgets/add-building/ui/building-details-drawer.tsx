@@ -1,13 +1,28 @@
 import { getBlockTimestamp } from "@/shared/hooks/use-block-timestamp";
-import { currencyIntlFormat } from "@/shared/lib/utils";
+import { currencyIntlFormat, generateHexPositions } from "@/shared/lib/utils";
+import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
-import { configManager, divideByPrecision, getBalance, getBuildingCosts, getConsumedBy } from "@bibliothecadao/eternum";
+import { HexagonLocationSelector, HexLocation } from "@/widgets/hexagon-location-selector";
+import {
+  configManager,
+  divideByPrecision,
+  getBalance,
+  getBuildingCosts,
+  getConsumedBy,
+  TileManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { BuildingType, CapacityConfig, findResourceById } from "@bibliothecadao/types";
-import { Clock, Users, Warehouse } from "lucide-react";
-import React, { useMemo } from "react";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  BuildingTypeToString,
+  CapacityConfig,
+  findResourceById,
+} from "@bibliothecadao/types";
+import { Clock, Loader2, Users, Warehouse } from "lucide-react";
+import React, { useCallback, useMemo, useState } from "react";
 
 // Building category enum
 enum BuildingCategory {
@@ -45,12 +60,80 @@ export const BuildingDetailsDrawer = ({
 }: BuildingDetailsDrawerProps) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const selectedRealm = useStore((state) => state.selectedRealm);
+  const [selectedLocation, setSelectedLocation] = useState<HexLocation | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isHexSelectorOpen, setIsHexSelectorOpen] = useState(false);
 
-  const handleAddBuilding = () => {
-    // Handle adding building logic here
-    console.log("Adding building:", building);
-    onOpenChange(false);
+  // Create and manage tile manager instance
+  const tileManager = useMemo(() => {
+    if (!selectedRealm) return null;
+    return new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
+      col: selectedRealm.position.x,
+      row: selectedRealm.position.y,
+    });
+  }, [selectedRealm, dojo.setup.components, dojo.setup.systemCalls]);
+
+  // Get available locations based on realm position
+  const availableLocations = useMemo(() => {
+    return generateHexPositions({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, 1);
+  }, []);
+
+  // Get occupied locations from existing buildings
+  const occupiedLocations: HexLocation[] = useMemo(() => {
+    if (!tileManager) return [];
+    return tileManager.existingBuildings().map((building) => ({
+      col: building.col,
+      row: building.row,
+      title: findResourceById(building.resource ?? 0)?.trait ?? BuildingTypeToString[building.category as BuildingType],
+    }));
+  }, [tileManager]);
+
+  const handleAddBuilding = async () => {
+    if (!selectedLocation) {
+      setError("Please select a location for the building");
+      return;
+    }
+
+    if (!tileManager) {
+      setError("Invalid realm position");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log("Placing building at:", {
+        dojo: dojo.account.account,
+        entityId,
+        col: selectedLocation.col,
+        row: selectedLocation.row,
+        buildingId: building.buildingId,
+        useSimpleCost,
+      });
+      await tileManager.placeBuilding(
+        dojo.account.account,
+        entityId,
+        building.buildingId,
+        { col: selectedLocation.col, row: selectedLocation.row },
+        useSimpleCost,
+      );
+
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Error placing building:", err);
+      setError("Failed to place building. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleHexSelect = useCallback((col: number, row: number) => {
+    setSelectedLocation({ col, row });
+    setIsHexSelectorOpen(false);
+  }, []);
 
   // Get the produced resource for this building
   const resourceProduced = building.resourceId || configManager.getResourceBuildingProduced(building.buildingId);
@@ -106,6 +189,26 @@ export const BuildingDetailsDrawer = ({
         </DrawerHeader>
 
         <div className="px-4 pb-1 space-y-5 overflow-y-auto">
+          {/* Location Selection */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-white/80">Location</h4>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+              <div className="flex-1">
+                <div className="flex items-baseline gap-1">
+                  <span className="font-medium">Selected Location</span>
+                  <span className="text-sm text-white/90">
+                    {selectedLocation
+                      ? `Column ${selectedLocation.col}, Row ${selectedLocation.row}`
+                      : "No location selected"}
+                  </span>
+                </div>
+                <Button onClick={() => setIsHexSelectorOpen(true)} className="mt-2" variant="outline" size="sm">
+                  Select Location
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Production section - for resource buildings */}
           {resourceProducedName && perTick !== 0 && (
             <div className="space-y-2">
@@ -240,6 +343,8 @@ export const BuildingDetailsDrawer = ({
               })}
             </div>
           </div>
+
+          {error && <div className="p-3 rounded-lg bg-red-500/10 text-red-400 text-sm">{error}</div>}
         </div>
 
         <DrawerFooter className="pt-2">
@@ -249,14 +354,32 @@ export const BuildingDetailsDrawer = ({
             </Button>
             <Button
               onClick={handleAddBuilding}
-              disabled={!building.canBuild}
+              disabled={!building.canBuild || !selectedLocation || isLoading || !tileManager}
               className={`flex-1 ${building.canBuild ? "bg-emerald-600 hover:bg-emerald-700" : "bg-emerald-600/30"}`}
             >
-              Add Building
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Placing Building...
+                </>
+              ) : (
+                "Add Building"
+              )}
             </Button>
           </div>
         </DrawerFooter>
       </DrawerContent>
+
+      <HexagonLocationSelector
+        availableLocations={availableLocations}
+        occupiedLocations={occupiedLocations}
+        onSelect={handleHexSelect}
+        initialSelectedLocation={selectedLocation}
+        open={isHexSelectorOpen}
+        onClose={() => setIsHexSelectorOpen(false)}
+        center={[BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]]}
+        showCoordinates={false}
+      />
     </Drawer>
   );
 };
