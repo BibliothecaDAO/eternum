@@ -218,9 +218,11 @@ export class StructureManager {
 
   private updateVisibleStructures() {
     const _structures = this.structures.getStructures();
+    console.log("structures", _structures);
     const visibleStructureIds = new Set<ID>();
 
     for (const [structureType, structures] of _structures) {
+      console.log("structureType", structureType);
       const visibleStructures = this.getVisibleStructures(structures);
       const models = this.structureModels.get(structureType);
 

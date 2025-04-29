@@ -45,7 +45,8 @@ export const QuestContainer = ({
     QuestLevels,
     getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
   );
-  const questLevel = questLevelsEntity?.levels[questTileEntity?.level ?? 0] as any;
+  const questLevels = questLevelsEntity?.levels ?? [];
+  const questLevel = questLevels[questTileEntity?.level ?? 0] as any;
   const timeLimit = questLevel?.value?.time_limit?.value;
 
   const minigames = useMinigameStore((state) => state.minigames);
@@ -82,13 +83,9 @@ export const QuestContainer = ({
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        const questsEntities = await getQuests(
-          toriiClient,
-          components as any,
-          questTileEntity?.game_address as string,
-          questGames,
-        );
-        setQuestEntities(questsEntities);
+        await getQuests(toriiClient, components as any, questTileEntity?.game_address as string, questGames);
+        // setQuestEntities(quests);
+        // console.log(quests);
       } catch (error) {
         console.log(error);
       }
@@ -104,7 +101,7 @@ export const QuestContainer = ({
     fetchQuests();
   }, [questGamesKey, questTileEntity?.game_address]);
 
-  console.log(questEntities);
+  console.log(questEntities, components.Quest);
 
   const handleStartQuest = async () => {
     if (!selectedHex) return;
@@ -184,8 +181,6 @@ export const QuestContainer = ({
 
   const armyInfo = getArmy(explorerEntityId, ContractAddress(account?.address), components);
 
-  console.log(armyInfo);
-
   const realmsOrVillages = useMemo(() => {
     const matchingRealmId = armyInfo?.structure?.metadata?.realm_id;
 
@@ -208,12 +203,9 @@ export const QuestContainer = ({
       });
   }, [playerStructures, armyInfo?.structure?.metadata?.realm_id]);
 
-  console.log(realmsOrVillages);
-
   useEffect(() => {
     const fetchQuest = async () => {
       const quest = await getQuestForExplorer(toriiClient, components, explorerEntityId);
-      console.log(quest);
     };
     fetchQuest();
   }, [toriiClient, components, explorerEntityId]);
@@ -221,71 +213,67 @@ export const QuestContainer = ({
   // const explorerGame = questEntities.find((quest) => quest.explorer_id === explorerEntityId);
 
   return (
-    <div className="flex flex-col gap-6 px-6 mx-auto max-w-full overflow-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[600px]">
-        <div className="flex flex-col gap-4 mt-4 text-xl p-4 border panel-wood rounded-lg backdrop-blur-sm">
-          <div className="flex flex-row items-center gap-4">
+    <div className="flex flex-col gap-6 px-6 mx-auto max-w-full overflow-hidden h-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+        <div className="flex flex-col gap-5 text-xl p-4 border panel-wood rounded-lg backdrop-blur-sm h-full overflow-hidden">
+          <div className="flex flex-row items-center gap-5 h-[40px]">
             <h2>Quest</h2>
             <div className="flex flex-row gap-2">Level: {(questTileEntity?.level ?? 0) + 1}</div>
           </div>
-          <div className="flex flex-col h-full">
-            <div className="flex flex-row justify-between items-center px-5 h-1/4 border-t border-gold/20">
-              <div className="flex flex-col items-center gap-2">
-                <span>Reward</span>
-                <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
-                  {divideByPrecision(Number(questTileEntity?.amount || 0))}
-                  <ResourceIcon resource={ResourcesIds[1]} size={"sm"} />
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <span>Target</span>
-                <span className="text-2xl font-bold text-gold">{questLevel?.value?.target_score?.value} XP</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <span>Participants</span>
-                <span className="text-2xl font-bold text-gold">
-                  {questTileEntity?.participant_count} / {questTileEntity?.capacity}
-                </span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <span>Time Limit</span>
-                <span className="text-2xl font-bold text-gold">{formatTime(timeLimit)}</span>
-              </div>
-              {/* Start Quest Button */}
+          <div className="flex flex-row justify-between items-center px-5 pt-5 h-1/4 border-t border-gold/20">
+            <div className="flex flex-col items-center gap-2">
+              <span>Reward</span>
+              <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
+                {divideByPrecision(Number(questTileEntity?.amount || 0))}
+                <ResourceIcon resource={ResourcesIds[questTileEntity?.resource_type ?? 1]} size={"sm"} />
+              </span>
             </div>
-            <div className="flex flex-col gap-5 border-t border-gold/20 pt-5 h-3/4">
-              <div className="flex flex-row items-center gap-2 text-lg font-bold">
-                Available Quests
-                <Button variant="secondary" className="rounded-lg" onClick={() => refetchQuestGames()}>
-                  Refresh
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 overflow-y-auto h-full">
-                {realmsOrVillages.map((structure) => {
-                  return (
-                    <QuestRealm
-                      handleStartQuest={handleStartQuest}
-                      loading={loading}
-                      setLoading={setLoading}
-                      questLevelInfo={questLevel}
-                      structureInfo={structure}
-                      armyInfo={armyInfo!}
-                      questEntities={questEntities}
-                      questGames={questGames}
-                    />
-                  );
-                })}
-              </div>
+            <div className="flex flex-col items-center gap-2">
+              <span>Target</span>
+              <span className="text-2xl font-bold text-gold">{questLevel?.value?.target_score?.value} XP</span>
             </div>
+            <div className="flex flex-col items-center gap-2">
+              <span>Participants</span>
+              <span className="text-2xl font-bold text-gold">
+                {questTileEntity?.participant_count} / {questTileEntity?.capacity}
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <span>Time Limit</span>
+              <span className="text-2xl font-bold text-gold">{formatTime(timeLimit)}</span>
+            </div>
+            {/* Start Quest Button */}
+          </div>
+          <div className="flex flex-row items-center gap-2 text-lg font-bold h-[50px]">
+            Available Quests
+            <Button variant="secondary" className="rounded-lg" onClick={() => refetchQuestGames()}>
+              Refresh
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 overflow-y-auto h-5/6 pr-2">
+            {realmsOrVillages.map((structure) => {
+              return (
+                <QuestRealm
+                  handleStartQuest={handleStartQuest}
+                  loading={loading}
+                  setLoading={setLoading}
+                  questLevelInfo={questLevel}
+                  structureInfo={structure}
+                  armyInfo={armyInfo!}
+                  questEntities={questEntities}
+                  questGames={questGames}
+                />
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 mt-4 text-xl p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
-          <div className="flex flex-row gap-2">
+        <div className="flex flex-col gap-5 text-xl p-4 border panel-wood  rounded-lg backdrop-blur-sm ">
+          <div className="flex flex-row items-center gap-5 h-[40px]">
             <h2>Game Details</h2>
           </div>
-          <div className="flex flex-col gap-4 mt-4 text-xl">
-            <img src={gameImage} alt="Dark Shuffle" className="w-full h-auto rounded" />
+          <img src={gameImage} alt="Dark Shuffle" className="w-full h-auto rounded pt-5 border-t border-gold/20" />
+          <div className="flex flex-col gap-2">
             <div className="flex flex-row justify-between">
               <div className="flex flex-col items-center">
                 <span className="font-bold">Game</span> <span>Dark Shuffle</span>
@@ -304,6 +292,47 @@ export const QuestContainer = ({
               <span className="font-bold">Description</span>{" "}
               <span className="text-sm">{minigames?.[0]?.description}</span>
             </div>
+          </div>
+          <div className="flex flex-row gap-5 pt-5 border-t border-gold/20 overflow-x-auto overflow-y-hidden no-scrollbar">
+            {questLevels.map((level: any, i: number) => {
+              return (
+                <div className="flex flex-col gap-2 items-center justify-center border border-gold/50 rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
+                  <div className="flex flex-row items-center justify-between text-sm w-full px-5">
+                    <span className="font-bold text-sm">Level {i + 1}</span>
+                    <div className="flex flex-row items-center gap-2 text-[12px]">
+                      <span>Setting:</span>
+                      <span
+                        className="font-bold"
+                        onClick={() =>
+                          window.open(
+                            `https://darkshuffle.dev/settings/${Number(level?.value?.settings_id?.value)}`,
+                            "_blank",
+                          )
+                        }
+                      >
+                        Xtreme
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-row gap-2 border border-gold/20 px-2 w-full">
+                    <div className="flex flex-col items-center text-sm w-1/3">
+                      <span>Reward</span>
+                      <span className="text-[10px]">
+                        {(i + 1) * 7500} <span>?</span>
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center text-sm w-1/3">
+                      <span>Target</span>
+                      <span className="text-[10px]">100 XP</span>
+                    </div>
+                    <div className="flex flex-col items-center text-sm w-1/3">
+                      <span>Time</span>
+                      <span className="text-[10px]">{formatTime(level?.value?.time_limit?.value)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

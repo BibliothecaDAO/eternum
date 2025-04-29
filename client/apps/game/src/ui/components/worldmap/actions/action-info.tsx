@@ -14,11 +14,13 @@ import {
   configManager,
   getBalance,
   getGuardsByStructure,
+  getRemainingCapacityInKg,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii-client";
 import { BiomeType, ClientComponents, ID, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
@@ -332,39 +334,9 @@ const QuestInfo = memo(
     path: ActionPath[];
     components: ClientComponents;
   }) => {
-    const { currentArmiesTick } = getBlockTimestamp();
+    const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(selectedEntityId)]));
 
-    const troops = useMemo(() => {
-      const explorerTroops = getComponentValue(
-        components.ExplorerTroops,
-        getEntityIdFromKeys([BigInt(selectedEntityId)]),
-      )?.troops;
-
-      const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-
-      const guardTroops = structure ? getGuardsByStructure(structure)[0]?.troops : undefined;
-
-      if (explorerTroops) return explorerTroops;
-      if (guardTroops) return guardTroops;
-      return undefined;
-    }, [components, selectedEntityId]);
-
-    const stamina = useMemo(() => {
-      const maxStamina = StaminaManager.getMaxStamina(troops);
-      return StaminaManager.getStamina(
-        troops?.stamina || { amount: 0n, updated_tick: 0n },
-        maxStamina,
-        currentArmiesTick,
-        components,
-      );
-    }, [troops, currentArmiesTick, components]);
-
-    const exploreStaminaCost = useMemo(() => configManager.getExploreStaminaCost(), []);
-
-    // Determine if attacker has enough stamina to attack
-    const hasEnoughStamina = useMemo(() => {
-      return Number(stamina.amount) >= exploreStaminaCost;
-    }, [stamina, exploreStaminaCost]);
+    const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resources!), [resources]);
 
     const questCoords = path[path.length - 1].hex;
 
@@ -385,38 +357,27 @@ const QuestInfo = memo(
 
     const questLevel = questLevelsEntity?.levels[(questTileEntity?.level ?? 0) - 1] as any;
 
-    console.log(questTileEntity, questLevel);
+    const rewardAmount = questTileEntity?.amount ?? 0;
+
+    const hasEnoughCapacity = useMemo(() => {
+      return remainingCapacity >= Number(rewardAmount) / 10 ** 8;
+    }, [remainingCapacity, rewardAmount]);
 
     return (
       <div className="flex flex-col p-1 text-xs">
         {/* Stamina Status */}
         <div className="flex flex-row items-center mb-2">
-          <div className="text-lg p-1 pr-3">⚡️</div>
+          <div className="text-lg p-1 pr-3">🎒</div>
           <div className="flex flex-col">
             <div className="flex items-center">
-              <span className={clsx(hasEnoughStamina ? "text-green-500" : "text-red-500", "font-normal")}>
-                ({Number(stamina.amount)})
-              </span>
               <span className="ml-2">
-                {hasEnoughStamina
-                  ? "Enough stamina to start quest"
-                  : `Need ${exploreStaminaCost} stamina to start quest`}
+                {hasEnoughCapacity
+                  ? "Enough capacity to start quest"
+                  : `Need ${Number(rewardAmount) / 10 ** 8}kg capacity to start quest`}
               </span>
             </div>
           </div>
         </div>
-
-        {/* Quest Info
-        <div className="flex flex-col mt-2">
-          <div className="font-semibold mb-1">Quest: {questLevel?.value?.name}</div>
-
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-            <div className="font-medium">Target: {questLevel?.value?.target_score?.value}XP</div>
-            <div className="font-medium">
-              Participants: {questTileEntity?.participant_count} / {questTileEntity?.capacity}
-            </div>
-          </div>
-        </div> */}
       </div>
     );
   },

@@ -154,7 +154,6 @@ export default class WorldmapScene extends HexagonScene {
 
     // Store the unsubscribe function for Army updates
     this.systemManager.Army.onUpdate((update: ArmySystemUpdate) => {
-      console.log("ArmyManager.onUpdate called with update", update);
       this.updateArmyHexes(update);
       this.armyManager.onUpdate(update, this.armyHexes, this.structureHexes, this.exploredTiles);
     });
@@ -197,9 +196,7 @@ export default class WorldmapScene extends HexagonScene {
 
     // perform some updates for the quest manager
     this.systemManager.Quest.onUpdate((update: QuestSystemUpdate) => {
-      console.log("QuestManager.onUpdate called with update", update);
       this.updateQuestHexes(update);
-      this.questManager.updateChunk(this.currentChunk);
       this.questManager.onUpdate(update);
     });
 
@@ -451,8 +448,6 @@ export default class WorldmapScene extends HexagonScene {
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
 
-    console.log("quest hexes", this.questHexes);
-
     const actionPaths = armyActionManager.findActionPaths(
       this.structureHexes,
       this.armyHexes,
@@ -462,6 +457,7 @@ export default class WorldmapScene extends HexagonScene {
       currentArmiesTick,
       playerAddress,
     );
+    console.log("quest hexes", this.questHexes);
     console.log("actionPaths", actionPaths);
     this.state.updateEntityActionActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightedHexes());
@@ -665,8 +661,10 @@ export default class WorldmapScene extends HexagonScene {
     dummy.position.copy(pos);
 
     const isStructure = this.structureManager.structureHexCoords.get(col)?.has(row) || false;
+    const isQuest = this.questManager.questHexCoords.get(col)?.has(row) || false;
 
-    if (isStructure) {
+    if (isStructure || isQuest) {
+      console.log("isStructure or isQuest", isStructure, isQuest);
       dummy.scale.set(0, 0, 0);
     } else {
       dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
@@ -1030,6 +1028,7 @@ export default class WorldmapScene extends HexagonScene {
       this.currentChunk = chunkKey;
       // Calculate the starting position for the new chunk
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
+      console.log("loaded chunkKey", chunkKey);
       this.armyManager.updateChunk(chunkKey);
       this.structureManager.updateChunk(chunkKey);
       this.questManager.updateChunk(chunkKey);

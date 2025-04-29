@@ -1,6 +1,6 @@
 import InstancedModel from "@/three/managers/instanced-model";
 import { Position } from "@/types/position";
-import { ContractAddress, ID, QuestType } from "@bibliothecadao/types";
+import { ContractAddress, FELT_CENTER, ID, QuestType } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer";
 import { gltfLoader } from "../helpers/utils";
@@ -18,8 +18,6 @@ const ICONS = {
 export class QuestManager {
   private scene: THREE.Scene;
   private questModels: Map<QuestType, InstancedModel[]> = new Map();
-  private lastUpdateTime: number = 0;
-  private updateInterval: number = 5000; // 5 seconds between updates
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
   private dummy: THREE.Object3D = new THREE.Object3D();
@@ -31,6 +29,7 @@ export class QuestManager {
   private entityIdMaps: Map<QuestType, Map<number, ID>> = new Map();
   private scale: number = 1;
   private currentCameraView: CameraView;
+  questHexCoords: Map<number, Set<number>> = new Map();
 
   constructor(
     scene: THREE.Scene,
@@ -43,7 +42,12 @@ export class QuestManager {
     this.labelsGroup = labelsGroup || new THREE.Group();
     this.renderChunkSize = renderChunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.loadModel();
+    this.loadModel().then(() => {
+      // SPAG Render initial quests with default chunk
+      if (this.currentChunkKey) {
+        this.renderVisibleQuests(this.currentChunkKey);
+      }
+    });
 
     if (hexagonScene) {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
@@ -70,9 +74,9 @@ export class QuestManager {
   private async loadModel(): Promise<void> {
     const loadPromise = new Promise<InstancedModel>((resolve, reject) => {
       gltfLoader.load(
-        `models/buildings/wonder.glb`,
+        `models/buildings/quest_tile_high.glb`,
         (gltf) => {
-          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "wonder");
+          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Quest");
           this.questModels.set(QuestType.DarkShuffle, [instancedModel]);
           this.scene.add(instancedModel.group);
           resolve(instancedModel);
@@ -86,18 +90,18 @@ export class QuestManager {
   }
 
   async onUpdate(update: QuestSystemUpdate) {
-    // Prevent too frequent updates
-    const now = Date.now();
-    if (now - this.lastUpdateTime < this.updateInterval) {
-      return false;
-    }
-    this.lastUpdateTime = now;
-
     const { entityId, id, game_address, hexCoords, level, resource_type, amount, capacity, participant_count } = update;
-
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
     // Add the quest to the map with the complete owner info
     const position = new Position({ x: hexCoords.col, y: hexCoords.row });
     const structureType = QuestType.DarkShuffle;
+
+    if (!this.questHexCoords.has(normalizedCoord.col)) {
+      this.questHexCoords.set(normalizedCoord.col, new Set());
+    }
+    if (!this.questHexCoords.get(normalizedCoord.col)!.has(normalizedCoord.row)) {
+      this.questHexCoords.get(normalizedCoord.col)!.add(normalizedCoord.row);
+    }
 
     this.quests.addQuest(
       entityId,
@@ -111,10 +115,14 @@ export class QuestManager {
       capacity,
       participant_count,
     );
+
+    // SPAG Re-render if we have a current chunk
+    if (this.currentChunkKey) {
+      this.renderVisibleQuests(this.currentChunkKey);
+    }
   }
 
   async updateChunk(chunkKey: string) {
-    console.log("QuestManager.updateChunk called with chunkKey", chunkKey);
     if (this.currentChunkKey === chunkKey) {
       return;
     }
@@ -129,10 +137,6 @@ export class QuestManager {
     return basePosition;
   };
 
-  public getQuests() {
-    return Array.from(this.quests.getQuests().values());
-  }
-
   private isQuestVisible(quest: { entityId: ID; hexCoords: Position }, startRow: number, startCol: number) {
     const { x, y } = quest.hexCoords.getNormalized();
     const isVisible =
@@ -145,6 +149,7 @@ export class QuestManager {
 
   private getVisibleQuestsForChunk(quests: Map<ID, QuestData>, startRow: number, startCol: number): QuestData[] {
     const visibleQuests = Array.from(quests.values())
+
       .filter((quest) => {
         return this.isQuestVisible(quest, startRow, startCol);
       })
@@ -176,8 +181,6 @@ export class QuestManager {
         models.forEach((model) => {
           model.setCount(0);
         });
-
-        console.log("models", models);
 
         this.entityIdMaps.set(questType, new Map());
 
@@ -278,7 +281,7 @@ export class QuestManager {
     line1.textContent = `Quest`;
     line1.style.color = "inherit";
     const line2 = document.createElement("strong");
-    line2.textContent = `Level: ${quest.level}`;
+    line2.textContent = `Level: ${quest.level + 1}`;
 
     textContainer.appendChild(line1);
     textContainer.appendChild(line2);

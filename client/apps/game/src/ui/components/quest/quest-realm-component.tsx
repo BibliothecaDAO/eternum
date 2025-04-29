@@ -148,7 +148,7 @@ export const QuestRealm = ({
             </div>
             <Button
               variant="primary"
-              className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2`}
+              className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2 ${reachedTargetScore ? "animate-pulse" : ""}`}
               isLoading={loading}
               disabled={expired || !questExplorerUsed || !reachedTargetScore}
               onClick={handleClaimReward}

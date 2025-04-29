@@ -30,7 +30,7 @@ export class StaminaManager {
   }
 
   public static getStamina(troops: Troops, currentArmiesTick: number) {
-    const last_refill_tick = troops.stamina.updated_tick;
+    const last_refill_tick = troops.stamina?.updated_tick ?? 0n;
 
     if (last_refill_tick >= BigInt(currentArmiesTick)) {
       return structuredClone(troops.stamina);

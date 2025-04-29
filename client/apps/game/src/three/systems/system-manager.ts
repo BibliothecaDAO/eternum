@@ -214,7 +214,6 @@ export class SystemManager {
           callback,
           (update: any): ID | undefined => {
             if (isComponentUpdate(update, this.setup.components.ExplorerTroops)) {
-              console.log("army update", update);
               const [currentState, prevState] = update.value;
               const explorer = getComponentValue(this.setup.components.ExplorerTroops, update.entity);
               if (!explorer && !prevState) return;
@@ -352,13 +351,22 @@ export class SystemManager {
     return {
       onUpdate: (callback: (value: any) => void) => {
         this.setupSystem(
-          this.setup.components.QuestTile,
+          this.setup.components.Tile,
           callback,
           (update: any) => {
-            if (isComponentUpdate(update, this.setup.components.QuestTile)) {
-              const questTile = getComponentValue(this.setup.components.QuestTile, update.entity);
-              console.log("questTile", questTile);
+            if (isComponentUpdate(update, this.setup.components.Tile)) {
+              const [currentState, _prevState] = update.value;
+
+              if (!currentState) return;
+
+              const questTile = getComponentValue(
+                this.setup.components.QuestTile,
+                getEntityIdFromKeys([BigInt(currentState?.occupier_id)]),
+              );
+
               if (!questTile) return;
+
+              console.log("questTile", questTile);
 
               return {
                 entityId: update.entity,

@@ -1,5 +1,6 @@
+import { type Tile } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, HasValue } from "@dojoengine/recs";
 import { useDojo } from "../context";
 
 export const useQuests = () => {
@@ -7,18 +8,9 @@ export const useQuests = () => {
     setup: { components },
   } = useDojo();
 
-  const questTileEntities = useEntityQuery([HasValue(components.QuestTile, {})]);
+  const tileEntitiesForQuests = useEntityQuery([HasValue(components.Tile, { occupier_type: 38 })]).map((entityId) =>
+    getComponentValue(components.Tile, entityId),
+  ) as Tile[];
 
-  // Map the entities to their quest tiles
-  const quests = questTileEntities
-    .map((entity) => {
-      const questTile = getComponentValue(components.QuestTile, entity);
-      return {
-        entityId: entity,
-        ...questTile,
-      };
-    })
-    .filter((quest) => quest !== undefined);
-
-  return quests;
+  return tileEntitiesForQuests;
 };

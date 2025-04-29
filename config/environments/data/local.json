@@ -4998,14 +4998,6 @@
                 {
                   "name": "mine_fish_grant_amount",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "quest_discovery_prob",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "quest_discovery_fail_prob",
-                  "type": "core::integer::u16"
                 }
               ]
             },
@@ -13852,14 +13844,6 @@
                 {
                   "name": "mine_fish_grant_amount",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "quest_discovery_prob",
-                  "type": "core::integer::u16"
-                },
-                {
-                  "name": "quest_discovery_fail_prob",
-                  "type": "core::integer::u16"
                 }
               ]
             },

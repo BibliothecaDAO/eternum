@@ -247,8 +247,8 @@ class Minimap {
       height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
     };
     this.questSize = {
-      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
-      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier,
+      width: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
+      height: MINIMAP_CONFIG.SIZES.ARMY * this.scaleX * modifier * zoomScaleFactor,
     };
     this.cameraSize = {
       topSideWidth: (window.innerWidth / MINIMAP_CONFIG.SIZES.CAMERA.TOP_SIDE_WIDTH_FACTOR) * this.scaleX,

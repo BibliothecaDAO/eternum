@@ -222,8 +222,8 @@ export const EternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
-    questDiscoveryProbability: QUEST_DISCOVERY_PROBABILITY,
-    questDiscoveryFailProbability: QUEST_DISCOVERY_FAIL_PROBABILITY,
+    questFindProbability: QUEST_DISCOVERY_PROBABILITY,
+    questFindFailProbability: QUEST_DISCOVERY_FAIL_PROBABILITY,
   },
   tick: {
     defaultTickIntervalInSeconds: DEFAULT_TICK_INTERVAL_SECONDS,

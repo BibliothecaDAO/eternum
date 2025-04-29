@@ -1,7 +1,7 @@
 import { HexPosition, ID } from "@bibliothecadao/types";
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
-import { getBuildingsFromTorii, getEntitiesFromTorii, getOwnedArmiesFromTorii } from "./queries";
+import { getBuildingsFromTorii, getEntitiesFromTorii, getOwnedArmiesFromTorii, getQuestsFromTorii } from "./queries";
 
 // Queue class to manage requests
 class RequestQueue {
@@ -87,6 +87,21 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
     await subscriptionQueue.add(() => getBuildingsFromTorii(client, components, structurePositions), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetBuildingsFromTorii:", error);
+    // Make sure onComplete is called even if there's an error
+    onComplete?.();
+  }
+};
+
+export const debouncedGetQuestsFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  questTileIds: ID[],
+  onComplete?: () => void,
+) => {
+  try {
+    await subscriptionQueue.add(() => getQuestsFromTorii(client, components, questTileIds), onComplete);
+  } catch (error) {
+    console.error("Error in debouncedGetQuestsFromTorii:", error);
     // Make sure onComplete is called even if there's an error
     onComplete?.();
   }

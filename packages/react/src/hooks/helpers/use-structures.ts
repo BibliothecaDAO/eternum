@@ -1,5 +1,5 @@
-import { ContractAddress, Position, Structure } from "@bibliothecadao/types";
 import { getEntityIdFromKeys, getStructure } from "@bibliothecadao/eternum";
+import { ContractAddress, Position, Structure } from "@bibliothecadao/types";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -14,6 +14,8 @@ export const usePlayerStructures = (playerAddress?: ContractAddress) => {
   const entities = useEntityQuery([
     HasValue(components.Structure, { owner: playerAddress || ContractAddress(account.address) }),
   ]);
+
+  console.log("structures", entities);
 
   const playerStructures = useMemo(() => {
     return entities

@@ -10,6 +10,7 @@ import {
   debouncedGetBuildingsFromTorii,
   debouncedGetEntitiesFromTorii,
   debouncedGetOwnedArmiesFromTorii,
+  debouncedGetQuestsFromTorii,
 } from "./debounced-queries";
 import { EVENT_QUERY_LIMIT } from "./sync";
 
@@ -400,18 +401,38 @@ export const getMapFromTorii = async <S extends Schema>(
   );
 };
 
+export const getQuestTilesFromTorii = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  questTileIds: ID[],
+) => {
+  return await debouncedGetQuestsFromTorii(client, components as any, questTileIds, () => {});
+};
+
 export const getQuestsFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
-  questTileId: ID,
+  questTileIds: number[],
 ) => {
-  return getEntities(
+  await getEntities(
     client,
-    AndComposeClause([MemberClause("s1_eternum-Quest", "quest_tile_id", "Eq", questTileId)]).build(),
-    components as any,
+    {
+      Composite: {
+        operator: "Or",
+        clauses: questTileIds.map((id) => ({
+          Member: {
+            model: "s1_eternum-QuestTile",
+            member: "id",
+            operator: "Eq",
+            value: { Primitive: { U32: id } },
+          },
+        })),
+      },
+    },
+    components,
     [],
-    ["s1_eternum-Quest"],
-    EVENT_QUERY_LIMIT,
+    ["s1_eternum-QuestTile"],
+    1000,
     false,
   );
 };

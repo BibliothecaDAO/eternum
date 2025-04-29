@@ -48,8 +48,8 @@ export const SepoliaEternumGlobalConfig: Config = {
     shardsMinesFailProbability: 11,
     agentFindProbability: 1,
     agentFindFailProbability: 6,
-    questFindProbability: 1,
-    questFindFailProbability: 10,
+    questFindProbability: 19,
+    questFindFailProbability: 1,
   },
   // cheap hyperstructures
   hyperstructures: {

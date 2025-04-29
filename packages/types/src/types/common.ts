@@ -125,6 +125,15 @@ export type Structure = {
   position: Position;
 };
 
+export type Tile = {
+  col: number;
+  row: number;
+  biome: number;
+  occupier_id: ID;
+  occupier_type: number;
+  occupier_is_structure: boolean;
+};
+
 export type Quest = {
   game_token_id: number;
   game_address: ContractAddress;

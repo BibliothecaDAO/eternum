@@ -259,8 +259,6 @@ pub struct MapConfig {
     // Mine discovery rewards
     pub mine_wheat_grant_amount: u32,
     pub mine_fish_grant_amount: u32,
-    pub quest_discovery_prob: u16,
-    pub quest_discovery_fail_prob: u16,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]

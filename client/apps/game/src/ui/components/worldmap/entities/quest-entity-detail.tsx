@@ -1,8 +1,10 @@
 import { useMinigameStore } from "@/hooks/store/use-minigame-store";
-import { formatTime, getEntityIdFromKeys, getQuest, toHexString } from "@bibliothecadao/eternum";
+import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { getQuestFromToriiClient } from "@bibliothecadao/torii-client";
+import { ClientComponents, ID } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { useEffect, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { QuestReward } from "../../resources/quest-reward";
 
@@ -16,13 +18,29 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
   const {
     account,
     setup: { components },
+    network: { toriiClient },
   } = useDojo();
-  const quest = getQuest(questEntityId, components);
+
+  const [quest, setQuest] = useState<ComponentValue<ClientComponents["QuestTile"]["schema"]> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuest = async () => {
+      setIsLoading(true);
+      const result = await getQuestFromToriiClient(toriiClient, questEntityId);
+      if (result) {
+        setQuest(result);
+      }
+      setIsLoading(false);
+    };
+    fetchQuest();
+  }, [questEntityId]);
+
   const minigames = useMinigameStore((state) => state.minigames);
   const game = minigames?.find(
-    (miniGame) => miniGame.contract_address === addAddressPadding(toHexString(quest.game_address)),
+    (miniGame) => miniGame.contract_address === addAddressPadding(quest?.game_address || 0n),
   );
-  const slotsRemaining = quest.capacity - quest.participant_count;
+  const slotsRemaining = (quest?.capacity ?? 0) - (quest?.participant_count ?? 0);
   const hasSlotsRemaining = slotsRemaining > 0;
 
   // Precompute common class strings for consistency with ArmyEntityDetail
@@ -41,7 +59,7 @@ export const QuestEntityDetail = ({ questEntityId, compact = false, className }:
       <div className="flex items-center justify-between border-b border-gold/30 pb-2 gap-2">
         <div className="flex flex-col">
           <h4 className={`${compact ? "text-base" : "text-lg"} font-bold`}>{game?.name}</h4>
-          <span className="text-sm">Level {quest.level + 1}</span>
+          <span className="text-sm">Level {(quest?.level ?? 0) + 1}</span>
         </div>
         <div className={`px-2 py-1 rounded text-xs font-bold ${hasSlotsRemaining ? "bg-green/20" : "bg-red/20"}`}>
           {hasSlotsRemaining ? "Active" : "Ended"}
