@@ -1,4 +1,5 @@
 import { useResourceArrivals } from "@/features/resource-arrivals";
+import { generateHexPositions } from "@/shared/lib/utils";
 import { useStore } from "@/shared/store";
 import { Button } from "@/shared/ui/button";
 import { ArrivedDonkeys } from "@/widgets/arrived-donkeys";
@@ -37,15 +38,7 @@ export function OverviewTab() {
   };
 
   // Dummy data for the hexagon grid
-  const dummyAvailableLocations = [
-    { col: 1, row: 1 },
-    { col: 0, row: 1 },
-    { col: 0, row: 0 },
-    { col: 1, row: 0 },
-    { col: -1, row: 0 },
-    { col: 0, row: -1 },
-    { col: 1, row: -1 },
-  ];
+  const dummyAvailableLocations = generateHexPositions({ col: 0, row: 0 }, 1);
 
   const dummyOccupiedLocations: HexLocation[] = [
     { col: 1, row: -1 },
