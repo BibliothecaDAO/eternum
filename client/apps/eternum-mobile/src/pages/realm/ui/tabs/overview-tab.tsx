@@ -9,7 +9,7 @@ import { ResourcesCard } from "@/widgets/resources-card";
 import { UpgradeCastle } from "@/widgets/upgrade-castle";
 import { TileManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { BUILDINGS_CENTER } from "@bibliothecadao/types";
+import { BUILDINGS_CENTER, BuildingType, BuildingTypeToString, findResourceById } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 import { ProductionWidgetsSection } from "../components/production-widgets-section";
 import { useRealmTabs } from "../realm-page";
@@ -65,6 +65,8 @@ export function OverviewTab() {
       return {
         col: building.col,
         row: building.row,
+        title:
+          findResourceById(building.resource ?? 0)?.trait ?? BuildingTypeToString[building.category as BuildingType],
       };
     });
   }, [tileManager, selectedRealm]);
@@ -131,6 +133,7 @@ export function OverviewTab() {
             open={isHexSelectorOpen}
             onClose={closeHexSelector}
             center={[BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]]}
+            showCoordinates={false}
           />
         </div>
       </div>

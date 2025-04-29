@@ -11,6 +11,7 @@ interface HexagonCanvasProps {
   selectedLocation: HexLocation | null;
   onHexClick: (col: number, row: number) => void;
   center?: [number, number];
+  showCoordinates?: boolean;
 }
 
 export function HexagonCanvas({
@@ -22,6 +23,7 @@ export function HexagonCanvas({
   selectedLocation,
   onHexClick,
   center = [0, 0],
+  showCoordinates = false,
 }: HexagonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -255,12 +257,27 @@ export function HexagonCanvas({
       // Draw the image
       ctx.drawImage(image, x - imgSize / 2, y - imgSize / 2, imgSize, imgSize);
 
-      // Draw coordinates
-      ctx.fillStyle = "#ffffff";
-      ctx.font = `${hexSize / 4}px Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(`${hex.col},${hex.row}`, x, y);
+      // Draw coordinates if enabled
+      if (showCoordinates) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `${hexSize / 4}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`${hex.col},${hex.row}`, x, y);
+      }
+
+      // Draw title for occupied hexes if available
+      if (isOccupied) {
+        const occupiedHex = occupiedLocations.find((loc) => loc.col === hex.col && loc.row === hex.row);
+        if (occupiedHex?.title) {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `${hexSize / 4}px Arial`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          // Draw title slightly above the center
+          ctx.fillText(occupiedHex.title, x, y);
+        }
+      }
     });
 
     // Reset transformation

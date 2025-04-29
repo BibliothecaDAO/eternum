@@ -1,6 +1,7 @@
 export interface HexLocation {
   col: number;
   row: number;
+  title?: string;
 }
 
 export type HexState = "available" | "occupied" | "selected";
