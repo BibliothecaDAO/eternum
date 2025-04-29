@@ -13,7 +13,7 @@ import { getRealmsQueryOptions } from "@/lib/eternum/getRealms";
 import { SUPPORTED_L2_CHAIN_ID } from "@/utils/utils";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAccount } from "@starknet-react/core";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   getCoreRowModel,
@@ -24,6 +24,7 @@ import { ArrowLeftRight, TriangleAlert } from "lucide-react";
 import { useAccount as useL1Account } from "wagmi";
 
 import { CollectionAddresses } from "@realms-world/constants";
+import { getAccountTokensQueryOptions } from "@/lib/eternum/getPortfolioCollections";
 
 export const Route = createFileRoute("/realms/bridge")({
   component: RouteComponent,
@@ -40,15 +41,13 @@ function RouteComponent() {
   console.log(l1Realms);
 
   const l2RealmsQuery = useQuery(
-    getRealmsQueryOptions({
+    getAccountTokensQueryOptions({
       address: l2Address,
-      collectionAddress: CollectionAddresses.realms[
-        SUPPORTED_L2_CHAIN_ID
-      ] as string,
     }),
   );
   const l2Realms = l2RealmsQuery.data;
 
+console.log(l2Realms)
   const [selectedAsset, setSelectedAsset] = useState<"Ethereum" | "Starknet">(
     "Ethereum",
   );
@@ -67,11 +66,16 @@ function RouteComponent() {
         })) ?? []
       );
     } else if (selectedAsset === "Starknet" && l2Realms) {
-      return l2Realms.data.map((realm) => ({
-        token_id: realm.token_id,
-        name: realm.metadata?.name,
-        attributes: realm.metadata?.attributes,
-      }));
+      return l2Realms.map((realm) => {
+        const {tokenMetadata} = realm.node
+        const parsedMetadata: RealmMetadata | null = tokenMetadata ? JSON.parse(tokenMetadata.metadata) : null;
+        const { attributes, name, image } = parsedMetadata ?? {};
+        return {
+
+        token_id: Number(tokenMetadata.tokenId),
+        name: name,
+        attributes: attributes,
+      }});
     } else {
       return [];
     }
