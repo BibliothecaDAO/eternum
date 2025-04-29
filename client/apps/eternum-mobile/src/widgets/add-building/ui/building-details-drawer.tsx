@@ -132,13 +132,11 @@ export const BuildingDetailsDrawer = ({
                 {population !== 0 && (
                   <div className="flex items-baseline gap-1">
                     <span className="font-medium">Required</span>
-                    <span className="text-sm text-white/90">{population} workers</span>
+                    <span className="text-sm text-white/90">{population} slots</span>
                   </div>
                 )}
 
-                {capacity !== 0 && (
-                  <div className="text-xs text-emerald-400 mt-1">Provides housing for {capacity} workers</div>
-                )}
+                {capacity !== 0 && <div className="text-xs text-emerald-400 mt-1">+{capacity} max population</div>}
               </div>
             </div>
           </div>
@@ -152,7 +150,7 @@ export const BuildingDetailsDrawer = ({
                 <div className="flex-1">
                   <div className="flex items-baseline gap-1">
                     <span className="font-medium">Capacity</span>
-                    <span className="text-sm text-white/90">+{extraStorehouseCapacityKg.toLocaleString()} kg</span>
+                    <span className="text-sm text-emerald-400 ">+{extraStorehouseCapacityKg.toLocaleString()} kg</span>
                   </div>
                 </div>
               </div>
@@ -167,7 +165,7 @@ export const BuildingDetailsDrawer = ({
                 <Clock className="h-6 w-6 text-red-400" />
                 <div className="flex-1">
                   <div className="font-medium">Consumes per second</div>
-                  <div className="mt-2 space-y-1.5">
+                  <div className="mt-2 flex gap-3 items-center">
                     {ongoingCost.map((costItem, index) => {
                       if (!costItem || costItem.resource === undefined) return null;
                       const balance = getBalance(
@@ -177,8 +175,8 @@ export const BuildingDetailsDrawer = ({
                         dojo.setup.components,
                       );
                       return (
-                        <div key={`ongoing-cost-${index}`} className="flex items-center gap-2">
-                          <ResourceIcon resourceId={costItem.resource} size={20} />
+                        <div key={`ongoing-cost-${index}`} className="flex items-center gap-0.5">
+                          <ResourceIcon resourceId={costItem.resource} size={24} />
                           <span className="text-xs text-red-400">
                             {currencyIntlFormat(divideByPrecision(costItem.amount))}
                           </span>

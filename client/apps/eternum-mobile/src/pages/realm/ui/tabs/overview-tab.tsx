@@ -37,18 +37,19 @@ export function OverviewTab() {
   };
 
   // Dummy data for the hexagon grid
-  const dummyAvailableLocations = generateHexGrid(5); // Generate a grid with radius 5
+  const dummyAvailableLocations = [
+    { col: 1, row: 1 },
+    { col: 0, row: 1 },
+    { col: 0, row: 0 },
+    { col: 1, row: 0 },
+    { col: -1, row: 0 },
+    { col: 0, row: -1 },
+    { col: 1, row: -1 },
+  ];
 
   const dummyOccupiedLocations: HexLocation[] = [
-    { col: -1, row: 1 },
-    { col: 0, row: 2 },
-    { col: 2, row: -1 },
-    { col: 3, row: -3 },
-    { col: -2, row: -2 },
-    { col: 4, row: 1 },
-    { col: -4, row: 2 },
-    { col: -3, row: 4 },
-    { col: 5, row: -3 },
+    { col: 1, row: -1 },
+    { col: 0, row: 0 },
   ];
 
   const handleHexSelect = useCallback((col: number, row: number) => {
