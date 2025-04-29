@@ -174,12 +174,11 @@ export const BuildingDetailsDrawer = ({
                         currentDefaultTick,
                         dojo.setup.components,
                       );
+                      console.log(costItem.amount);
                       return (
                         <div key={`ongoing-cost-${index}`} className="flex items-center gap-0.5">
                           <ResourceIcon resourceId={costItem.resource} size={24} />
-                          <span className="text-xs text-red-400">
-                            {currencyIntlFormat(divideByPrecision(costItem.amount))}
-                          </span>
+                          <span className="text-xs text-red-400">{currencyIntlFormat(costItem.amount)}</span>
                         </div>
                       );
                     })}
