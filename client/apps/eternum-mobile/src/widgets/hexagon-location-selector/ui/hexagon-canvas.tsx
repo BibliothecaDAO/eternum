@@ -10,6 +10,7 @@ interface HexagonCanvasProps {
   occupiedLocations: HexLocation[];
   selectedLocation: HexLocation | null;
   onHexClick: (col: number, row: number) => void;
+  center?: [number, number];
 }
 
 export function HexagonCanvas({
@@ -20,6 +21,7 @@ export function HexagonCanvas({
   occupiedLocations,
   selectedLocation,
   onHexClick,
+  center = [0, 0],
 }: HexagonCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -32,13 +34,19 @@ export function HexagonCanvas({
   } | null>(null);
 
   // Canvas offset for panning
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [offset, setOffset] = useState(() => {
+    const [centerCol, centerRow] = center;
+    const { x, y } = hexToPixel({ col: centerCol, row: centerRow }, hexSize);
+    return { x: -x, y: -y };
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // Gap factor between hexes (0.9 means 10% gap, 0.95 means 5% gap, etc.)
   const gapFactor = 1.1;
   const imgSize = hexSize * 2 * gapFactor;
+
+  console.log(occupiedLocations);
 
   // Load images
   useEffect(() => {

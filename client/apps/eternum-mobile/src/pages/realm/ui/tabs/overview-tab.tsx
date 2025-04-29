@@ -67,7 +67,7 @@ export function OverviewTab() {
         row: building.row,
       };
     });
-  }, [tileManager]);
+  }, [tileManager, selectedRealm]);
 
   const handleHexSelect = useCallback((col: number, row: number) => {
     console.log(`Selected hex at column: ${col}, row: ${row}`);
@@ -130,6 +130,7 @@ export function OverviewTab() {
             initialSelectedLocation={selectedHexLocation}
             open={isHexSelectorOpen}
             onClose={closeHexSelector}
+            center={[BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]]}
           />
         </div>
       </div>

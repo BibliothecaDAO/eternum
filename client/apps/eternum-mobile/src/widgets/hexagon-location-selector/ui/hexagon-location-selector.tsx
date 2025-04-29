@@ -12,6 +12,7 @@ interface HexagonLocationSelectorProps {
   initialSelectedLocation?: HexLocation | null;
   open: boolean;
   onClose: () => void;
+  center?: [number, number];
 }
 
 export function HexagonLocationSelector({
@@ -21,6 +22,7 @@ export function HexagonLocationSelector({
   initialSelectedLocation = null,
   open,
   onClose,
+  center = [0, 0],
 }: HexagonLocationSelectorProps) {
   const [selectedLocation, setSelectedLocation] = useState<HexLocation | null>(initialSelectedLocation);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 300 });
@@ -104,6 +106,7 @@ export function HexagonLocationSelector({
               occupiedLocations={occupiedLocations}
               selectedLocation={selectedLocation}
               onHexClick={handleHexClick}
+              center={center}
             />
           </div>
         </div>
