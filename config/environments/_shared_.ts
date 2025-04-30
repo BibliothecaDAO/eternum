@@ -95,11 +95,11 @@ export const AGENT_FIND_FAIL_PROBABILITY = 500; // 500/600 = 83.33%
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 10_000; // 10_000 / 50_000 = 20%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 40_000; // 40_000 / 50_000 = 80%
 
-// This means that for every x hexes away from the center, the win probability gets 
+// This means that for every x hexes away from the center, the win probability gets
 // multiplied by 0.95. so the formula is 20% * (0.95 ^ x)
 export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_500; // 9_500 / 10_000 = 95%
 
-// Without considering the hex distance, this is a linear multiplier for every 
+// Without considering the hex distance, this is a linear multiplier for every
 // hyperstructure found. e.g if there have been y hyperstructures found, the probability
 // of finding a hyperstructure is max(20% - (1% * y), 0%)
 export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 500; // 500 / 50_000 = 1%

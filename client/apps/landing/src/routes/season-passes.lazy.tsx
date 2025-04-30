@@ -47,12 +47,7 @@ function SeasonPasses() {
   const seasonPassNfts: TokenBalance[] | undefined = useMemo(() => getSeasonPassNfts(data), [data]);
 
   if (!address) {
-    return (
-      <ConnectWalletPrompt
-        connectors={connectors}
-        connect={connect}
-      />
-    );
+    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
   }
 
   return (
@@ -76,28 +71,30 @@ function SeasonPasses() {
         <>
           {/* Page Title */}
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">Your Season Passes</h2>
-          <p className="text-center text-muted-foreground mb-6">
-            View and manage your Season Pass NFTs.
-          </p>
-          
+          <p className="text-center text-muted-foreground mb-6">View and manage your Season Pass NFTs.</p>
+
           {/* Beautiful Instruction Banner */}
-          {seasonPassNfts && seasonPassNfts.length > 0 && (
-            <div className="flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-6 text-base text-blue-700 dark:text-blue-300 shadow-sm">
-              <MousePointerClick className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>Click on any Season Pass card below to transfer it</span>
-            </div>
-          )}
+          <div className="px-6">
+            {seasonPassNfts && seasonPassNfts.length > 0 && (
+              <div className="flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-6 text-base text-blue-700 dark:text-blue-300 shadow-sm">
+                <MousePointerClick className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>Click on any Season Pass card below to transfer it</span>
+              </div>
+            )}
+          </div>
 
           {/* Grid container - Removed extra bottom padding */}
-          <div className="flex-grow overflow-y-auto p-4 pt-0"> 
+          <div className="flex-grow overflow-y-auto p-4 pt-0">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
                 {/* Pass setIsTransferOpen to the grid */}
-                {seasonPassNfts && <SeasonPassesGrid seasonPasses={seasonPassNfts} setIsTransferOpen={setIsTransferOpen} />}
+                {seasonPassNfts && (
+                  <SeasonPassesGrid seasonPasses={seasonPassNfts} setIsTransferOpen={setIsTransferOpen} />
+                )}
               </Suspense>
             </div>
           </div>
-          
+
           {/* Render Transfer Dialog conditionally */}
           {isTransferOpen && seasonPassNfts && (
             <TransferSeasonPassDialog

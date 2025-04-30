@@ -2,12 +2,12 @@ import { LordsAbi } from "@bibliothecadao/eternum";
 import { useAccount, useCall } from "@starknet-react/core";
 import { Abi } from "starknet";
 
-export const useResourceBalance = ({ 
-  resourceAddress, 
-  disabled 
-}: { 
-  resourceAddress: string | null; 
-  disabled?: boolean 
+export const useResourceBalance = ({
+  resourceAddress,
+  disabled,
+}: {
+  resourceAddress: string | null;
+  disabled?: boolean;
 }) => {
   const { account } = useAccount();
 
@@ -24,4 +24,4 @@ export const useResourceBalance = ({
   return {
     balance: (data as bigint) || BigInt(0),
   };
-}; 
+};

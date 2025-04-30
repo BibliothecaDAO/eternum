@@ -30,43 +30,41 @@ interface ResourceToBridge {
 type BridgeDirection = "in" | "out";
 
 // Component to display a resource balance as a compact badge
-const ResourceBalance = ({ resourceId, tokenAddress, direction }: { 
-  resourceId: number | null; 
+const ResourceBalance = ({
+  resourceId,
+  tokenAddress,
+  direction,
+}: {
+  resourceId: number | null;
   tokenAddress: string | null;
   direction: BridgeDirection;
 }) => {
   const { balance } = useResourceBalance({
     resourceAddress: tokenAddress,
-    disabled: direction === "out" || !resourceId
+    disabled: direction === "out" || !resourceId,
   });
 
   if (!resourceId || direction === "out" || balance === undefined) return null;
-  
-  const formattedBalance = parseFloat(formatEther(balance)).toLocaleString(undefined, { 
-    maximumFractionDigits: 4 
+
+  const formattedBalance = parseFloat(formatEther(balance)).toLocaleString(undefined, {
+    maximumFractionDigits: 4,
   });
 
   return (
     // <div className="panel-wood flex items-center px-2 py-1 h-6 rounded text-xs ml-auto">
-      <span className="text-gray-200">{formattedBalance}</span>
-    
+    <span className="text-gray-200">{formattedBalance}</span>
   );
 };
 
 // Component to display realm balance
-const RealmBalance = ({ resourceId, balance }: { 
-  resourceId: number | null; 
-  balance: number;
-}) => {
+const RealmBalance = ({ resourceId, balance }: { resourceId: number | null; balance: number }) => {
   if (!resourceId) return null;
-  
-  const formattedBalance = balance.toLocaleString(undefined, { 
-    maximumFractionDigits: 4 
+
+  const formattedBalance = balance.toLocaleString(undefined, {
+    maximumFractionDigits: 4,
   });
 
-  return (
-      <span className="text-gray-200">{formattedBalance}</span>
-  );
+  return <span className="text-gray-200">{formattedBalance}</span>;
 };
 
 export const Bridge = ({ structures }: BridgeProps) => {
@@ -77,7 +75,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   const resourceAddresses = getResourceAddresses();
 
   const [bridgeDirection, setBridgeDirection] = useState<BridgeDirection>("in");
-  
+
   const bridgeableResources = Object.entries(resourceAddresses)
     .map(([key, value]) => ({
       id: value[0],
@@ -119,7 +117,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   const [resourcesToBridge, setResourcesToBridge] = useState<ResourceToBridge[]>([
     { key: Date.now(), resourceId: null, amount: "", tokenAddress: null },
   ]);
-  
+
   const [favorites, setFavorites] = useState<number[]>(() => {
     const saved = localStorage.getItem("favoriteStructures");
     return saved ? JSON.parse(saved) : [];
@@ -270,39 +268,59 @@ export const Bridge = ({ structures }: BridgeProps) => {
   const pendingButtonText = bridgeDirection === "in" ? "Bridging In..." : "Bridging Out...";
 
   return (
-    <div className={cn(
-      "p-4 rounded-lg shadow-lg flex flex-col gap-4 w-full max-w-md mx-auto transition-all duration-300 border-t-4",
-      bridgeDirection === "in" 
-        ? "bg-gradient-to-b from-sky-900/30 to-gray-900/10 border-sky-500"
-        : "bg-gradient-to-b from-amber-900/30 to-gray-900/10 border-amber-500"
-    )}>
+    <div
+      className={cn(
+        "p-4 rounded-lg shadow-lg flex flex-col gap-4 w-full max-w-md mx-auto transition-all duration-300 border-t-4",
+        bridgeDirection === "in"
+          ? "bg-gradient-to-b from-sky-900/30 to-gray-900/10 border-sky-500"
+          : "bg-gradient-to-b from-amber-900/30 to-gray-900/10 border-amber-500",
+      )}
+    >
       {/* Header: Title, Description, and Toggle Button */}
       <div className="flex flex-col items-center text-center gap-2 mb-2">
-        <h2 className={cn(
-          "text-xl font-bold transition-colors duration-300",
-           bridgeDirection === "in" ? "text-sky-300" : "text-amber-300"
-        )}>{bridgeTitle}</h2>
+        <h2
+          className={cn(
+            "text-xl font-bold transition-colors duration-300",
+            bridgeDirection === "in" ? "text-sky-300" : "text-amber-300",
+          )}
+        >
+          {bridgeTitle}
+        </h2>
         <p className="text-sm text-gray-400 max-w-xs">
-           {bridgeDirection === "in" 
-             ? <>Transfer resources into the game from your  <span className="inline-flex item-center"><Controller className="h-5 w-5 mr-1 ml-2" />Cartridge Wallet</span> </> 
-             : <> Transfer resources out of the game to your <span className="inline-flex item-center"><Controller className="h-5 w-5 mr-1 ml-2" />Cartridge Wallet</span> </>
-             }
-         </p>
-        <Button 
-          onClick={toggleBridgeDirection} 
-          variant="outline" 
+          {bridgeDirection === "in" ? (
+            <>
+              Transfer resources into the game from your{" "}
+              <span className="inline-flex item-center">
+                <Controller className="h-5 w-5 mr-1 ml-2" />
+                Cartridge Wallet
+              </span>{" "}
+            </>
+          ) : (
+            <>
+              {" "}
+              Transfer resources out of the game to your{" "}
+              <span className="inline-flex item-center">
+                <Controller className="h-5 w-5 mr-1 ml-2" />
+                Cartridge Wallet
+              </span>{" "}
+            </>
+          )}
+        </p>
+        <Button
+          onClick={toggleBridgeDirection}
+          variant="outline"
           className={cn(
             "h-9 flex items-center gap-1 mt-2 border text-xs px-3 transition-all duration-300",
-            bridgeDirection === "in" 
+            bridgeDirection === "in"
               ? "border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40 hover:border-amber-500"
-              : "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500"
+              : "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500",
           )}
         >
           <ArrowLeftRight className="h-4 w-4 mr-1" />
           <span>{bridgeDirection === "in" ? "WITHDRAW INSTEAD" : "DEPOSIT INSTEAD"}</span>
         </Button>
       </div>
-      
+
       {/* Structure Selection */}
       <div>
         <h3 className="text-sm font-medium mb-2">{structureSelectLabel}</h3>
@@ -310,13 +328,11 @@ export const Bridge = ({ structures }: BridgeProps) => {
           value={selectedStructureId?.toString() ?? ""}
           onValueChange={(value) => setSelectedStructureId(value ? ID(value) : null)}
         >
-          <SelectTrigger 
-            id="structure-select" 
+          <SelectTrigger
+            id="structure-select"
             className={cn(
               "w-full panel-wood transition-colors duration-300",
-              bridgeDirection === "in" 
-                ? "focus:ring-sky-500/50" 
-                : "focus:ring-amber-500/50"
+              bridgeDirection === "in" ? "focus:ring-sky-500/50" : "focus:ring-amber-500/50",
             )}
           >
             <SelectValue placeholder="Select Structure..." />
@@ -350,7 +366,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-medium">Resources</h3>
         </div>
-        
+
         <div className="flex flex-col gap-3">
           {resourcesToBridge.map((resource) => {
             const balance =
@@ -359,67 +375,68 @@ export const Bridge = ({ structures }: BridgeProps) => {
                 : null;
 
             const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
-            const resourceName = resource.resourceId ? 
-              bridgeableResources.find(r => r.id === resource.resourceId)?.name : "";
-            const resourceTrait = resource.resourceId ? 
-              resources.find(r => r.id === resource.resourceId)?.trait || "" : "";
+            const resourceName = resource.resourceId
+              ? bridgeableResources.find((r) => r.id === resource.resourceId)?.name
+              : "";
+            const resourceTrait = resource.resourceId
+              ? resources.find((r) => r.id === resource.resourceId)?.trait || ""
+              : "";
 
             return (
               <div key={resource.key} className="border border-gray-700 rounded-lg p-3 relative">
                 {/* Resource header with balance badge */}
                 <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <ResourceIcon resource={resourceTrait} size="md" />
-                        <span className="font-medium">                    
-                          {/* Balance badge & Conditional Mint Button */}
-                          {bridgeDirection === "in" && resource.resourceId && (
-                            <div className="flex items-center gap-2"> {/* Group Balance and Button */}
-                              <ResourceBalance 
-                                resourceId={resource.resourceId} 
-                                tokenAddress={resource.tokenAddress}
-                                direction={bridgeDirection}
-                              />
-                              {/* Conditional Mint Test LORDS Button */}
-                              {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" && 
-                               resourceName?.toLowerCase() === "lords" && (
-                                <Button 
-                                  onClick={handleMintTestLords} 
-                                  disabled={isMintPending} 
-                                  variant="outline"
-                                  title="Mint 1000 Test $LORDS"
-                                  // Smaller size for header placement
-                                  className={cn(
-                                    "h-6 px-2 text-xs border transition-colors duration-300 flex-shrink-0", 
-                                    "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500"
-                                  )}
-                                >
-                                  {isMintPending ? "..." : "Mint"}
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                          
-                          {bridgeDirection === "out" && resource.resourceId && selectedStructureId && (
-                            <RealmBalance
-                              resourceId={resource.resourceId}
-                              balance={displayBalance}
-                            />
-                          )}
-                        </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <ResourceIcon resource={resourceTrait} size="md" />
+                    <span className="font-medium">
+                      {/* Balance badge & Conditional Mint Button */}
+                      {bridgeDirection === "in" && resource.resourceId && (
+                        <div className="flex items-center gap-2">
+                          {" "}
+                          {/* Group Balance and Button */}
+                          <ResourceBalance
+                            resourceId={resource.resourceId}
+                            tokenAddress={resource.tokenAddress}
+                            direction={bridgeDirection}
+                          />
+                          {/* Conditional Mint Test LORDS Button */}
+                          {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" &&
+                            resourceName?.toLowerCase() === "lords" && (
+                              <Button
+                                onClick={handleMintTestLords}
+                                disabled={isMintPending}
+                                variant="outline"
+                                title="Mint 1000 Test $LORDS"
+                                // Smaller size for header placement
+                                className={cn(
+                                  "h-6 px-2 text-xs border transition-colors duration-300 flex-shrink-0",
+                                  "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500",
+                                )}
+                              >
+                                {isMintPending ? "..." : "Mint"}
+                              </Button>
+                            )}
+                        </div>
+                      )}
+
+                      {bridgeDirection === "out" && resource.resourceId && selectedStructureId && (
+                        <RealmBalance resourceId={resource.resourceId} balance={displayBalance} />
+                      )}
+                    </span>
+                  </div>
                 </div>
-                
+
                 {/* Remove button */}
                 {resourcesToBridge.length > 1 && (
-                  <Button 
-                    variant="danger" 
-                    onClick={() => removeResourceEntry(resource.key)} 
+                  <Button
+                    variant="danger"
+                    onClick={() => removeResourceEntry(resource.key)}
                     className="absolute top-2 right-2"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 )}
-                
+
                 {/* Resource Selection */}
                 <div className="mb-3">
                   {/* <label className="block text-xs text-gray-400 mb-1">Resource</label> */}
@@ -442,10 +459,14 @@ export const Bridge = ({ structures }: BridgeProps) => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 {/* Amount Input & Optional Mint Button */}
-                <div className="flex items-center gap-2"> {/* Container for input and button */}
-                  <div className="flex-grow"> {/* Allow input to take most space */}
+                <div className="flex items-center gap-2">
+                  {" "}
+                  {/* Container for input and button */}
+                  <div className="flex-grow">
+                    {" "}
+                    {/* Allow input to take most space */}
                     <NumberInput
                       min={0}
                       max={bridgeDirection === "out" && balance !== null ? displayBalance : undefined}
@@ -459,12 +480,8 @@ export const Bridge = ({ structures }: BridgeProps) => {
               </div>
             );
           })}
-          
-          <Button 
-            onClick={addResourceEntry} 
-            variant="outline" 
-            className="self-center flex items-center gap-1 mt-3"
-          >
+
+          <Button onClick={addResourceEntry} variant="outline" className="self-center flex items-center gap-1 mt-3">
             <span>+ Add Resource</span>
           </Button>
         </div>
@@ -472,23 +489,23 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
       {/* Bridge Destination Indicator */}
       <div className="flex flex-col items-center justify-center text-xs text-gray-400 mt-6">
-        {selectedStructureId && bridgeDirection === 'in' && (
+        {selectedStructureId && bridgeDirection === "in" && (
           <>
-            <ArrowDown className={cn(
-              "h-5 w-5 mb-1 transition-colors duration-300",
-              "text-sky-500" 
-            )} />
-            <span>Bridging to: {structuresWithFavorites.find(s => s.entityId === selectedStructureId)?.name || `Structure ${selectedStructureId}`}</span>
+            <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-sky-500")} />
+            <span>
+              Bridging to:{" "}
+              {structuresWithFavorites.find((s) => s.entityId === selectedStructureId)?.name ||
+                `Structure ${selectedStructureId}`}
+            </span>
           </>
         )}
-        {account?.address && bridgeDirection === 'out' && (
+        {account?.address && bridgeDirection === "out" && (
           <>
-            <ArrowDown className={cn(
-              "h-5 w-5 mb-1 transition-colors duration-300",
-              "text-amber-500" 
-            )} />
+            <ArrowDown className={cn("h-5 w-5 mb-1 transition-colors duration-300", "text-amber-500")} />
             <div className="flex items-center gap-1">
-              <span>Bridging to: <Controller className="h-4 w-4 inline-block mx-1" /></span>
+              <span>
+                Bridging to: <Controller className="h-4 w-4 inline-block mx-1" />
+              </span>
               <span className="font-mono">{displayAddress(account.address)}</span>
             </div>
           </>
@@ -503,7 +520,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
           "w-full transition-all duration-300 border",
           bridgeDirection === "in"
             ? "border-sky-600 bg-sky-900/30 text-sky-300 hover:bg-sky-800/40 hover:border-sky-500"
-            : "border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40 hover:border-amber-500"
+            : "border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-800/40 hover:border-amber-500",
         )}
         variant={"outline"}
         isLoading={isBridgePending}

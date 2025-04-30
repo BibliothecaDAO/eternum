@@ -63,13 +63,10 @@ const getStructureInfo = (
   };
 };
 
-export const isStructureImmune = (
-  currentTimestamp: number,
-): boolean => {
+export const isStructureImmune = (currentTimestamp: number): boolean => {
   const tickCount = currentTickCount(currentTimestamp);
   const seasonMainGameStartAt = configManager.getSeasonMainGameStartAt();
-  const allowAttackTick =
-    currentTickCount(Number(seasonMainGameStartAt)) + configManager.getBattleGraceTickCount();
+  const allowAttackTick = currentTickCount(Number(seasonMainGameStartAt)) + configManager.getBattleGraceTickCount();
 
   if (tickCount < allowAttackTick) {
     return true;

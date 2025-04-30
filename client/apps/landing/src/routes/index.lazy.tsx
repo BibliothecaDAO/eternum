@@ -28,8 +28,7 @@ function Index() {
     {
       text: "Buy a Season Pass",
       imageUrl: "/images/covers/04.png",
-      linkUrl:
-        "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+      linkUrl: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
       heightClass: "h-72",
     },
   ];
@@ -53,7 +52,7 @@ function Index() {
   return (
     <div className="p-4 flex flex-col items-center">
       {/* Title might also be animated if desired */}
-      <h1 className="text-5xl font-extrabold mb-6 text-center">Welcome to Eternum Empire!</h1>
+      <h1 className="text-5xl mb-6 text-center">Welcome to Eternum Empire!</h1>
       <p className="text-xl text-center mb-12 max-w-2xl">Explore, conquer, and build your legacy.</p>
 
       <motion.div
@@ -66,7 +65,7 @@ function Index() {
           const MotionLink = motion(Link); // Create a motion component for Link
 
           // Conditionally apply entrance animation
-          const shouldAnimateEntrance = !['/mint', '/season-passes'].includes(cta.linkUrl);
+          const shouldAnimateEntrance = !["/mint", "/season-passes"].includes(cta.linkUrl);
           const commonAnimProps = {
             ...(shouldAnimateEntrance && { variants: itemVariants }), // Apply entrance animation variant conditionally
             whileHover: { scale: 1.03 }, // Keep scale up slightly on hover
@@ -94,13 +93,7 @@ function Index() {
               {content}
             </motion.div>
           ) : (
-            <MotionLink
-              key={cta.text}
-              to={cta.linkUrl}
-              preload="intent"
-              {...commonProps}
-              {...commonAnimProps}
-            >
+            <MotionLink key={cta.text} to={cta.linkUrl} preload="intent" {...commonProps} {...commonAnimProps}>
               {content}
             </MotionLink>
           );

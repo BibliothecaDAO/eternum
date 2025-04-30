@@ -43,7 +43,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransf
             <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
               Once you burn a pass, it will be removed from this view.
             </p>
-{/* 
+            {/* 
             <p className="text-primary/80 font-medium text-lg mt-6">
               Get your pass to join the game and start your journey into Eternum!
             </p> */}
