@@ -361,8 +361,13 @@ export interface SetCapacityConfigProps extends SystemSigner {
   storehouse_boost_capacity: num.BigNumberish; // grams
 }
 
-export interface SetAgentControllerProps extends SystemSigner {
+export interface SetAgentConfigProps extends SystemSigner {
   agent_controller: num.BigNumberish;
+
+  max_lifetime_count: num.BigNumberish;
+  max_current_count: num.BigNumberish;
+  min_spawn_lords_amount: num.BigNumberish;
+  max_spawn_lords_amount: num.BigNumberish;
 }
 
 export interface SetVillageTokenProps extends SystemSigner {
@@ -543,6 +548,11 @@ export interface SetHyperstructureConfig extends SystemSigner {
   }[];
   points_per_second: num.BigNumberish;
   points_for_win: num.BigNumberish;
+}
+
+export interface SetQuestConfigProps extends SystemSigner {
+  quest_find_probability: num.BigNumberish;
+  quest_find_fail_probability: num.BigNumberish;
 }
 
 export interface InitializeHyperstructureProps extends SystemSigner {

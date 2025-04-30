@@ -61,6 +61,7 @@ pub mod troop_management_systems {
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait};
+    use dojo::world::{WorldStorageTrait};
     use s1_eternum::alias::ID;
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::constants::{RESOURCE_PRECISION};
@@ -104,8 +105,12 @@ pub mod troop_management_systems {
             // ensure season is open
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
-            // ensure caller owns structure
-            StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
+            // ensure caller owns structure or is realms_systems
+            let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
+            let caller_address: starknet::ContractAddress = starknet::get_caller_address();
+            if caller_address != realms_systems_address {
+                StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
+            }
 
             // deduct resources used to create guard
             iTroopImpl::make_payment(ref world, for_structure_id, amount, category, tier);

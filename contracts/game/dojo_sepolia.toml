@@ -7,7 +7,7 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 
 [world]
-seed = "eternum-sepolia-creds1.21"
+seed = "eternum-sepolia.1001"
 name = "Eternum Sepolia"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
@@ -26,6 +26,7 @@ website = "https://eternum.realms.world/"
     "s1_eternum-name_systems",
     "s1_eternum-ownership_systems",
     "s1_eternum-realm_systems",
+	"s1_eternum-realm_internal_systems",
     "s1_eternum-resource_bridge_systems",
     "s1_eternum-resource_systems",
     "s1_eternum-swap_systems",

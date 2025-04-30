@@ -92,6 +92,7 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
+    pub mod realm;
     pub mod resource;
     pub mod structure;
     pub mod troop;

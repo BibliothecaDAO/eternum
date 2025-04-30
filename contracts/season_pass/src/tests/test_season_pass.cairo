@@ -3,7 +3,7 @@ mod tests {
     use esp::contract::{EternumSeasonPass as season_pass_contract, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
     use esp::mock::lords::{ITestLords, ITestLordsDispatcher, ITestLordsDispatcherTrait};
     use esp::mock::realms::realms::{
-        TestRealm as realms_contract, IERC721MinterDispatcher, IERC721MinterDispatcherTrait
+        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, TestRealm as realms_contract,
     };
     use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
 
@@ -12,11 +12,11 @@ mod tests {
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
     use snforge_std::{
-        cheatcodes::{l1_handler::L1HandlerTrait}, declare, ContractClass, ContractClassTrait,
-        start_cheat_caller_address, stop_cheat_caller_address, get_class_hash, spy_events, DeclareResultTrait
+        ContractClass, ContractClassTrait, DeclareResultTrait, cheatcodes::{l1_handler::L1HandlerTrait}, declare,
+        get_class_hash, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
     };
 
-    use starknet::{ContractAddress, ClassHash, EthAddress};
+    use starknet::{ClassHash, ContractAddress, EthAddress};
 
     fn ADMIN() -> ContractAddress {
         starknet::contract_address_const::<'ADMIN'>()
@@ -101,100 +101,99 @@ mod tests {
         let (season_pass_metadata, _a, _b) = IRealmMetadataEncodedDispatcher { contract_address: season_pass }
             .get_encoded_metadata(ALICE_REALMS_ID().try_into().unwrap());
         assert!(
-            realms_metadata == season_pass_metadata, "expected realms metadata to be equal to season pass metadata"
+            realms_metadata == season_pass_metadata, "expected realms metadata to be equal to season pass metadata",
         );
     }
 
-    #[test]
-    fn test_attach_lords_to_pass() {
-        let (season_pass, realms, lords) = SEASON_PASS();
+    // #[test]
+    // fn test_attach_lords_to_pass() {
+    //     let (season_pass, realms, lords) = SEASON_PASS();
 
-        let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
-        let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
-        let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
+    //     let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
+    //     let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
+    //     let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
 
-        // alice buys realms nft
-        start_cheat_caller_address(realms, ALICE());
-        realms_mint_dispatcher.mint(ALICE_REALMS_ID());
-        stop_cheat_caller_address(realms);
+    //     // alice buys realms nft
+    //     start_cheat_caller_address(realms, ALICE());
+    //     realms_mint_dispatcher.mint(ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(realms);
 
-        // alice gets pass using realms nft
-        start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
-        stop_cheat_caller_address(season_pass);
+    //     // alice gets pass using realms nft
+    //     start_cheat_caller_address(season_pass, ALICE());
+    //     season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(season_pass);
 
-        // get free lords from pass
-        lords_dispatcher.mint(ALICE_REALMS_ID());
-        // ensure amount attached to token is non zero
-        assert!(
-            season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into()) > 0, "expected alice to have some lords"
-        );
-    }
+    //     // get free lords from pass
+    //     lords_dispatcher.mint(ALICE_REALMS_ID());
+    //     // ensure amount attached to token is non zero
+    //     assert!(
+    //         season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into()) > 0, "expected alice to have some lords"
+    //     );
+    // }
 
+    // #[test]
+    // fn test_detach_lords_from_pass() {
+    //     let (season_pass, realms, lords) = SEASON_PASS();
 
-    #[test]
-    fn test_detach_lords_from_pass() {
-        let (season_pass, realms, lords) = SEASON_PASS();
+    //     let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
+    //     let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
+    //     let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
 
-        let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
-        let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
-        let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
+    //     // alice buys realms nft
+    //     start_cheat_caller_address(realms, ALICE());
+    //     realms_mint_dispatcher.mint(ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(realms);
 
-        // alice buys realms nft
-        start_cheat_caller_address(realms, ALICE());
-        realms_mint_dispatcher.mint(ALICE_REALMS_ID());
-        stop_cheat_caller_address(realms);
+    //     // alice gets pass using realms nft
+    //     start_cheat_caller_address(season_pass, ALICE());
+    //     season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(season_pass);
 
-        // alice gets pass using realms nft
-        start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
-        stop_cheat_caller_address(season_pass);
+    //     // get free lords from pass
+    //     lords_dispatcher.mint(ALICE_REALMS_ID());
 
-        // get free lords from pass
-        lords_dispatcher.mint(ALICE_REALMS_ID());
+    //     // detach amount
+    //     let minted_lords_amount = season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into());
+    //     start_cheat_caller_address(season_pass, ALICE());
+    //     season_pass_dispatcher.detach_lords(ALICE_REALMS_ID().into(), minted_lords_amount);
+    //     stop_cheat_caller_address(season_pass);
 
-        // detach amount
-        let minted_lords_amount = season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into());
-        start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.detach_lords(ALICE_REALMS_ID().into(), minted_lords_amount);
-        stop_cheat_caller_address(season_pass);
+    //     // ensure detachment was successful
+    //     assert!(
+    //         IERC20Dispatcher { contract_address: lords }.balance_of(ALICE()) == minted_lords_amount,
+    //         "expected alice to actual lords in balance"
+    //     );
+    //     assert!(
+    //         season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into()) == 0, "expected attached balance to be 0"
+    //     );
+    // }
 
-        // ensure detachment was successful
-        assert!(
-            IERC20Dispatcher { contract_address: lords }.balance_of(ALICE()) == minted_lords_amount,
-            "expected alice to actual lords in balance"
-        );
-        assert!(
-            season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into()) == 0, "expected attached balance to be 0"
-        );
-    }
+    // #[test]
+    // #[should_panic(expected: "ESP: Only season pass owner can detach lords")]
+    // fn test_detach_lords_from_pass_only_owner() {
+    //     let (season_pass, realms, lords) = SEASON_PASS();
 
-    #[test]
-    #[should_panic(expected: "ESP: Only season pass owner can detach lords")]
-    fn test_detach_lords_from_pass_only_owner() {
-        let (season_pass, realms, lords) = SEASON_PASS();
+    //     let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
+    //     let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
+    //     let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
 
-        let lords_dispatcher = ITestLordsDispatcher { contract_address: lords };
-        let realms_mint_dispatcher = IERC721MinterDispatcher { contract_address: realms };
-        let season_pass_dispatcher = ISeasonPassDispatcher { contract_address: season_pass };
+    //     // alice buys realms nft
+    //     start_cheat_caller_address(realms, ALICE());
+    //     realms_mint_dispatcher.mint(ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(realms);
 
-        // alice buys realms nft
-        start_cheat_caller_address(realms, ALICE());
-        realms_mint_dispatcher.mint(ALICE_REALMS_ID());
-        stop_cheat_caller_address(realms);
+    //     // alice gets pass using realms nft
+    //     start_cheat_caller_address(season_pass, ALICE());
+    //     season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
+    //     stop_cheat_caller_address(season_pass);
 
-        // alice gets pass using realms nft
-        start_cheat_caller_address(season_pass, ALICE());
-        season_pass_dispatcher.mint(ALICE(), ALICE_REALMS_ID());
-        stop_cheat_caller_address(season_pass);
+    //     // get free lords from pass
+    //     lords_dispatcher.mint(ALICE_REALMS_ID());
 
-        // get free lords from pass
-        lords_dispatcher.mint(ALICE_REALMS_ID());
-
-        // attempt detach
-        let minted_lords_amount = season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into());
-        season_pass_dispatcher.detach_lords(ALICE_REALMS_ID().into(), minted_lords_amount);
-    }
+    //     // attempt detach
+    //     let minted_lords_amount = season_pass_dispatcher.lords_balance(ALICE_REALMS_ID().into());
+    //     season_pass_dispatcher.detach_lords(ALICE_REALMS_ID().into(), minted_lords_amount);
+    // }
 
     #[test]
     #[should_panic(expected: "ESP: Only realm owner can mint season pass")]

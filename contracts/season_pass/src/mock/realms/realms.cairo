@@ -17,9 +17,9 @@ mod TestRealm {
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
 
-    use starknet::{ContractAddress, ClassHash};
+    use starknet::{ClassHash, ContractAddress};
     use super::super::metadata::compressed_name_and_attrs;
-    use super::{IRealmMetadataEncoded, IERC721Minter};
+    use super::{IERC721Minter, IRealmMetadataEncoded};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -47,7 +47,7 @@ mod TestRealm {
         #[substorage(v0)]
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
-        src5: SRC5Component::Storage
+        src5: SRC5Component::Storage,
     }
 
     #[event]
@@ -60,7 +60,7 @@ mod TestRealm {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
-        SRC5Event: SRC5Component::Event
+        SRC5Event: SRC5Component::Event,
     }
 
 

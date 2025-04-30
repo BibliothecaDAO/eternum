@@ -45,6 +45,8 @@ export const LocalEternumGlobalConfig: Config = {
     hyperstructureFailProbIncreasePerHexDistance: 20,
     agentFindProbability: 3_000,
     agentFindFailProbability: 10_000,
+    questFindProbability: 1_000,
+    questFindFailProbability: 10_000,
   },
   // cheap hyperstructures
   hyperstructures: {
@@ -70,8 +72,26 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: getAllResourcesWithAmount(1000000),
-  villageStartingResources: getAllResourcesWithAmount(1000000),
+  startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
+    if (
+      resource.resource === ResourcesIds.Knight ||
+      resource.resource === ResourcesIds.Paladin ||
+      resource.resource === ResourcesIds.Crossbowman
+    ) {
+      return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
+    }
+    return resource;
+  }),
+  villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
+    if (
+      resource.resource === ResourcesIds.Knight ||
+      resource.resource === ResourcesIds.Paladin ||
+      resource.resource === ResourcesIds.Crossbowman
+    ) {
+      return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
+    }
+    return resource;
+  }),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km

@@ -107,7 +107,7 @@ export default function SeasonPassMintDialog({
                     variant="cta"
                   >
                     {isMinting && <Loader className="animate-spin pr-2" />}
-                    Mint Season Pass
+                    Claim Season Pass
                   </Button>
                 </>
               </div>

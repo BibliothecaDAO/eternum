@@ -439,6 +439,15 @@ export class ClientConfigManager {
     }, 1);
   }
 
+  getSeasonMainGameStartAt() {
+    return this.getValueOrDefault(() => {
+      const startMainAt = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))
+        ?.season_config.start_main_at;
+
+      return startMainAt;
+    }, 0);
+  }
+
   getExploreReward() {
     return this.getValueOrDefault(() => {
       const exploreConfig = getComponentValue(
@@ -558,20 +567,13 @@ export class ClientConfigManager {
     );
   }
 
-  getBattleGraceTickCount(category: StructureType) {
+  getBattleGraceTickCount() {
     return this.getValueOrDefault(() => {
       const battleConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.battle_config;
-      switch (category) {
-        case StructureType.Hyperstructure:
-          return Number(battleConfig?.hyperstructure_immunity_ticks ?? 0);
-        case StructureType.FragmentMine:
-          return 0;
-        default:
-          return Number(battleConfig?.regular_immunity_ticks ?? 0);
-      }
+      return Number(battleConfig?.regular_immunity_ticks ?? 0);
     }, 0);
   }
 

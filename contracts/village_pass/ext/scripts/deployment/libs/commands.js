@@ -22,7 +22,7 @@ export const deployVillagePassContract = async () => {
 
   let VILLAGE_PASS_ADMIN = BigInt(process.env.SEASON_PASS_ADMIN);
   let VILLAGE_PASS_UPGRADER = VILLAGE_PASS_ADMIN;
-  let VILLAGE_PASS_MINTER = await getContractByNameFromManifest("realm_systems");
+  let VILLAGE_PASS_MINTER = await getContractByNameFromManifest("realm_internal_systems");
   let VILLAGE_PASS_DISTRIBUTORS = [
     await getContractByNameFromManifest("village_systems"),
     BigInt(process.env.VILLAGE_PASS_DISTRIBUTOR),

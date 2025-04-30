@@ -6,9 +6,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Castle, Gamepad2, Home, Scale, Twitter } from "lucide-react";
+import { Castle, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
 import { TypeH2 } from "../typography/type-h2";
 
 // Menu items.
@@ -26,22 +27,39 @@ const items = [
     icon: Castle,
   },
   {
-    title: "Transfer Passes",
+    title: "Manage Passes",
     url: "/season-passes",
     icon: Gamepad2,
   },
   {
-    title: "Buy Passes",
-    url: "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+    title: "Buy A Pass",
+    url: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
     icon: Scale,
   },
 ];
 
 export function AppSidebar() {
+  const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <Sidebar className="p-3">
-      <SidebarContent className="bg-dark-wood border rounded-xl">
-        <a href="/">
+      <SidebarContent className="bg-dark-wood border rounded-xl relative">
+        {isMobile && (
+          <button
+            onClick={() => setOpenMobile(false)}
+            className="absolute top-4 right-4 p-1 text-gray-300 hover:text-white focus:outline-none z-50"
+            aria-label="Close sidebar"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        )}
+        <a href="/" onClick={handleLinkClick}>
           <div className="flex flex-col items-center">
             <svg
               viewBox="0 0 256 217"
@@ -71,12 +89,17 @@ export function AppSidebar() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 py-2 rounded-md hover:bg-secondary font-heading text-xl"
+                        onClick={handleLinkClick}
                       >
                         <item.icon />
                         <span>{item.title}</span>
                       </a>
                     ) : (
-                      <Link className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl" to={item.url}>
+                      <Link
+                        className="[&.active]:font-bold [&.active]:bg-secondary font-heading text-xl"
+                        to={item.url}
+                        onClick={handleLinkClick}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
@@ -87,7 +110,12 @@ export function AppSidebar() {
             </SidebarMenu>
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center">
-              <a href="https://twitter.com/lootrealms" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://twitter.com/lootrealms"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleLinkClick}
+              >
                 <Twitter />
               </a>
             </div>

@@ -57,6 +57,11 @@ pub impl iBridgeImpl of iBridgeTrait {
         }
     }
 
+    fn assert_only_liquidity_systems(world: WorldStorage, caller: ContractAddress) {
+        let (liquidity_systems_address, _) = world.dns(@"liquidity_systems").unwrap();
+        assert!(caller == liquidity_systems_address, "Bridge: caller is not liquidity systems");
+    }
+
     fn assert_deposit_not_paused(world: WorldStorage) {
         let resource_bridge_config: ResourceBridgeConfig = WorldConfigUtilImpl::get_member(
             world, selector!("resource_bridge_config"),
@@ -193,7 +198,11 @@ pub impl iBridgeImpl of iBridgeTrait {
             Self::transfer_or_mint(token, fee_split_config.season_pool_fee_recipient, season_pool_fee_amount);
         }
         if client_fee_amount.is_non_zero() {
-            Self::transfer_or_mint(token, client_fee_recipient, client_fee_amount);
+            if client_fee_recipient.is_zero() {
+                Self::transfer_or_mint(token, fee_split_config.velords_fee_recipient, client_fee_amount);
+            } else {
+                Self::transfer_or_mint(token, client_fee_recipient, client_fee_amount);
+            }
         }
 
         // return the total fees sent

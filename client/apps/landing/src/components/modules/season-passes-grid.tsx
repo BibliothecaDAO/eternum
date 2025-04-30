@@ -17,9 +17,10 @@ interface RealmGridItem {
 interface SeasonPassRowProps {
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   seasonPasses: TokenBalance[];
+  setIsTransferOpen: (isOpen: boolean) => void;
 }
 
-export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses }: SeasonPassRowProps) => {
+export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransferOpen }: SeasonPassRowProps) => {
   const [isCompactGrid, setIsCompactGrid] = useState(false);
 
   if (!seasonPasses?.length) {
@@ -37,18 +38,18 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses }: SeasonPas
 
           <div className="space-y-4">
             <p className="text-gray-600 max-w-lg mx-auto leading-relaxed">
-              Your collection of season passes will appear here until you burn them to mint a realm in the game.
+              Your collection of season passes will appear here until you burn them to play the game.
             </p>
             <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
               Once you burn a pass, it will be removed from this view.
             </p>
-
+            {/* 
             <p className="text-primary/80 font-medium text-lg mt-6">
               Get your pass to join the game and start your journey into Eternum!
-            </p>
+            </p> */}
           </div>
 
-          <a
+          {/* <a
             href="https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80"
             target="_blank"
             rel="noopener noreferrer"
@@ -60,7 +61,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses }: SeasonPas
               <Crown className="w-5 h-5 mr-2 group-hover:text-primary transition-colors" />
               Get Your Season Pass
             </Button>
-          </a>
+          </a> */}
         </div>
       </div>
     );
@@ -90,11 +91,13 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses }: SeasonPas
           if (!pass?.node) return null;
 
           return (
-            <SeasonPassCard
-              toggleNftSelection={toggleNftSelection}
-              key={`${(pass.node.tokenMetadata.__typename === "ERC721__Token" && pass.node.tokenMetadata.tokenId) || ""}`}
-              pass={pass}
-            />
+            <div onClick={() => setIsTransferOpen(true)} className="cursor-pointer">
+              <SeasonPassCard
+                toggleNftSelection={toggleNftSelection}
+                key={`${(pass.node.tokenMetadata.__typename === "ERC721__Token" && pass.node.tokenMetadata.tokenId) || ""}`}
+                pass={pass}
+              />
+            </div>
           );
         }}
       />

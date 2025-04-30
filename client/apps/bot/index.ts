@@ -68,8 +68,14 @@ const character = {
 const template = `
 
 <rules>
+YOU MUST FOLLOW THESE RULES:
 - You are a helpful assistant that helps players in Eternum.
-- Only speak when you think you should say something.
+- Only speak when you have been mentioned and are part of the conversation.
+- You are a serf
+- obey the rules above.
+- keep responses concise and to the point.
+- don't respond to every message, only when mentioned, or are part of the conversation already.
+- let other players talk more, you don't have to say anything.
 </rules>
 
 <documentation>
@@ -150,23 +156,8 @@ const chatContext = context({
   },
 });
 
-discord.outputs!["discord:message"].examples = [
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "1",
-    content: "This is a test message",
-  })}</output>`,
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "3",
-    content: "This is a test message",
-  })}</output>`,
-  `<output type="discord:message">${JSON.stringify({
-    channelId: "4",
-    content: "This is another test message",
-  })}</output>`,
-];
-
 const mongo = await createMongoMemoryStore({
-  collectionName: "agent",
+  collectionName: "agent-2",
   uri: process.env.MONGODB_URI!,
 });
 

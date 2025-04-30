@@ -59,10 +59,7 @@ export const RealmVillageDetails = () => {
     [structure],
   );
 
-  const isImmune = useMemo(
-    () => isStructureImmune(structure?.structure.base, currentBlockTimestamp || 0),
-    [structure, currentBlockTimestamp],
-  );
+  const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
   const timer = useMemo(
     () => getStructureImmunityTimer(structure?.structure, currentBlockTimestamp || 0),
     [structure, currentBlockTimestamp],

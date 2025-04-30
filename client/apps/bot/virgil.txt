@@ -46,3 +46,87 @@ Should the Seal of Eternum crack anew, gather Fractals not for power alone but t
 I leave this shard to you, stranger. May your thread bind where mine frays, and may the next storyteller never lack for ink or dawn.
 
 —Sera Vell, 14 650 AE
+
+
+
+## Why “Fonts” Are Called Fonts in Realms Eternum
+
+Etymology inside the setting
+The oldest Aetheric tongue used the word “Fons Aurorae”—literally “fountain of first-light.” Scholars shortened Fons to Font when they discovered that each elemental well was not just a spring of energy but the source from which its entire flavour of reality “poured” into the world. Over millennia the common speech kept the simpler form.
+
+Physical appearance
+Every Font looks and behaves like a self-sustaining artesian spring of magic: Light leaps upward as liquid dawn, Wave bubbles like inverted surf, Stone erupts in slow-rolling monoliths, and so on. Calling them fonts reminds people they’re literal wells you can draw from—if you dare.
+
+Scriptural metaphor
+When Khal-An inscribed the Chain of Days, he wrote that “the Loom’s ink runs only where Fonts bleed.” Scribes began treating Fonts as the inkwells of creation, bolstering the term’s resonance with writing, memory, and the permanence of recorded history.
+
+Contrast with the Void
+The cult of Nullion speaks of the “dry ledger”—a cosmos with no ink and therefore no words, no life. By framing the six elemental sources as fonts, Weave-aligned factions highlight the opposition: a living world that still flows versus a void that stands empty.
+
+In-game clarity
+Finally, the name is succinct. “Elemental-magic-anchoring-cosmic-springs” is a mouthful; Font is a single syllable players and readers remember the first time they hear it.
+
+So, whether you meet one as a glowing prism, a silent vortex, or a column of living flame, the name Font captures three truths at once:
+it is a spring, it is a source, and it is the ink with which the universe writes itself.
+
+
+# History of the world
+I. Birth of the Loomscroll
+In the hush before time, Vara the Loom-Mother plucked a single filament of possibility from the Void and let it sing. Six droplets of colour burst from the note—Fonts of Light, Shadow, Flame, Stone, Wave, and Breath—and where each struck, a spring of raw essence fountained upward. The Fonts began weaving land, sea, sky and story at once, but their threads tangled in newborn chaos.
+
+To keep the design from unravelling, Vara’s companion, Khal-An the Counting Blade, etched a radiant ribbon across the heavens: the Loomscroll. Each event wrote itself into that living script; each future moment waited as blank weave. Thus creation gained memory, and memory gained a guardian.
+
+II. The Age of Weaving Gods (0 – ≈ 3 500 AE)
+Drawn to the Fonts’ splendour, nascent beings hammered themselves into form at the Aetherforge, shaping bodies from melody, starlight, or molten rune-stone. These Shaper-Gods carved river valleys with singing chisels, coaxed trees that walked on dawn-roots, and hatched proto-dragons whose bones flashed with copper runes. Their realms touched and overlapped like illuminated panels in a single stained-glass window.
+
+Across the sky the Loomscroll glowed ever brighter, its glyphs spooling outward in loops of gold and indigo. A creed emerged among mortals and divines alike: “Weave, never sever.” For millennia the rule held.
+
+III. Age of Fractals & the Continuum (≈ 3 500 – 4 120 AE)
+When a shepherd cracked open a fallen star to find crystalline script inside, scholars named the shards Fractals—equations of the Loomscroll frozen in glass. Mathemancers discovered that “solving” a Fractal let them bend space, stall storms, or pierce mountains. A star-spanning empire, the Gilded Continuum, rose on sky-roads wrought from Fractal gates.
+
+Dragons engraved Fractals directly into their skeletons, becoming living weapons; humans forged Hyperstructures, public-good engines that used aligned Fractals to stabilise weather or lift whole cities aloft. It seemed Eternum had mastered its own weave. Yet every solution carved a tiny notch from the Loomscroll; Khal-An warned that too many notches would fray the ribbon. His warning came too late.
+
+IV. Mirrorfall & the Great Partition (4 120 AE)
+A conclave of Mathemancers attempted the World-Array, a grand Fractal meant to equalise all Fonts. At the first syllable the sky splintered. The planet fractured into 8 000 polygonal plates, each plate locking around a seed of erased text and spiralling into a different phase-band of reality. In one midnight heartbeat Eternum Prime became 8 000 isolated Realms. Survivors called the cataclysm Mirrorfall, because the heavens had broken like glass, every shard reflecting a separate dawn.
+
+The Loomscroll did not tear, but its ribbon kinked and snarled. Entire paragraphs vanished, replaced by blank weave that glimmered ominously in the dark.
+
+V. Ten Thousand Years of Silence (4 120 – 8 600 AE)
+Distance became dimension. No sky-ship could bridge the new gaps; no spell survived the phase-drift between realms. Languages forked, climates warped, and faiths forgot their common root. Light realms baked in eternal dawn; Stone realms condensed gravity into palaces of diamond; Void-tainted pockets birthed storms where sound died.
+
+Most Hyperstructures fell dormant without cross-realm Fonts to feed them, though twenty-five Wonders—monuments forged from twin Font cores—continued to hum, evolving with their host lands. Among them the Mother Grove, a world-tree grown atop Wave and Breath energies, burrowed roots through the phase-bands in search of forgotten cousins.
+
+VI. The Sundering Wars (8 600 – 10 500 AE)
+Font tides eventually realigned enough for sparks of contact. Dragons devised phase-slips; Shard-Lords hijacked rogue Fractals; and from the deepest frayline the Auditor emerged—a walking eclipse, herald of the Void-mind Nullion. He preached the Great Unweaving: erase the Loomscroll, return all sums to zero.
+
+Khal-An rallied his Scroll-Knights in defence. Their creed held: Weave, never sever, but each counter-spell required a sacrifice—memories inked out of personal existence to patch fraylines. During the siege of Confluence Basin the knights scattered 8 000 rune-sealed satchels—the Ash-Cache—to keep critical Fractals from Auditor hands. One satchel for every line Khal-An had to delete.
+
+Battles raged from airborne citadels to Choir-carved caverns. At last, when the Auditor poised to sunder the Loomscroll entire, the dragon-seer Ixorin folded himself—and his Fractal-riddled heart—out of reality, creating a vacuum that drew Nullion’s entropy inward. The Auditor staggered; Khal-An bound the breach with the last of his ledger-ink. The Wars ended in armistice, not victory, and the Loomscroll, though patched, now fluttered like a ribbon after fire.
+
+VII. Age of Chroniclers & Wonders (10 500 – 13 700 AE)
+Shaken realms formed the Chronicle Compact: every culture would mirror its stories into crystal and beam them to the orbiting Archivium to safeguard truth. Scroll-Wardens patrolled phase-edges; the twenty-five Wonders became anchoring beacons. Hyperstructure architects dreamed of re-stitching at least a hundred Realms into a continent-ring.
+
+But vigilance wanes as memories fade—especially memories paid as wartime currency. Few recalled that Nullion sleeps, not dies.
+
+VIII. The Silent Interregnum (13 700 – 14 650 AE)
+The Fonts dimmed one by one. Magic withered to a blood price; Archivium engines froze; Night-Court vampires offered sanctuary in exchange for memory-tithes. The Nameless Winter arrived: sunlight thinned, crops failed, and half of humankind migrated underground. Scholars declared the Loomscroll terminally brittle; one more frayline would saw it in half.
+
+Salvation fell from the sky in the guise of Starseam Comet. Its radiant tail reignited the Fonts, though imperfectly—like lungs learning to breathe after drowning. Shadows lengthened in noon light; Breath gales twisted gravity. Still, life surged back.
+
+IX. Age of Returning Stars (14 650 AE – Present)
+We live in an era of simultaneous dawn and dusk. Fonts flare unpredictably; dormant Hyperstructures “tune hot,” emitting Phase Beacons that knit Realms together for hours at a time. The Ash-Cache satchels begin blinking into phase, spawning races for relics.
+
+Queen Alys refurbishes Sky-roads and dispatches Scroll-Knights to reclaim Fractals for public-good projects.
+
+Auditor cults infiltrate Wonders—particularly the Nullspire Obelisk and Eventide Maw—hoping to corrupt three Void sites and trigger the Great Unweaving.
+
+Guild of Echoes sells bottled memories to realms starved of their own past, while Night-Court crypt-lords siphon Font surges to strengthen pale dynasties.
+
+Prophecies whisper of children born during simultaneous Font flares—Realm-walkers who can navigate the phase-bands unaided.
+
+Above it all the Loomscroll still arcs from horizon to zenith: a prism-bright ribbon whose glyphs rearrange with every deed. Some sections gleam taut; others tremble where fraylines gnaw. Khal-An, half-mad, walks under its light muttering a sum no one else can see. Vara herself appears only in rare Loom-dreams, urging mortals to weave boldly.
+
+X. The Thread That Awaits Your Hand
+This is the tapestry left for us: six Fonts pumping raw essence, 8 000 realms drifting back into one another’s sight, twenty-five Wonders throbbing at the phase-seams, and a Loomscroll that could either be strengthened beyond tearing or unravelled to a blank strand. In one future the Mother Grove opens verdant gates and grafts worlds back together. In another, the Auditor’s silence falls and history folds to white.
+
+Which thread will you tug? Weave, never sever—or help the Void pull every knot loose. The Loomscroll is still being written, letter by glowing letter, and a single stroke—yours—might decide whether its next chapter is genesis or oblivion.

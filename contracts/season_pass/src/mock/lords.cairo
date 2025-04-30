@@ -15,8 +15,8 @@ mod TestLords {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc20::{ERC20Component};
     use openzeppelin::token::erc20::{ERC20HooksEmptyImpl};
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
-    use starknet::{ContractAddress, ClassHash};
+    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ClassHash, ContractAddress};
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
@@ -37,14 +37,14 @@ mod TestLords {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         season_pass: ISeasonPassDispatcher,
-        minted: Map<u256, bool>
+        minted: Map<u256, bool>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         ERC20Event: ERC20Component::Event,
-        SRC5Event: SRC5Component::Event
+        SRC5Event: SRC5Component::Event,
     }
 
 

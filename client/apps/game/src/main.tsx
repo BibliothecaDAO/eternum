@@ -22,6 +22,7 @@ import "./index.css";
 import GameRenderer from "./three/game-renderer";
 import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { IS_MOBILE } from "./ui/config";
+import Button from "./ui/elements/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { getRandomBackgroundImage } from "./ui/utils/utils";
@@ -119,6 +120,23 @@ async function init() {
               </svg>
               Twitter
             </a>
+            <Button
+              variant="gold"
+              onClick={() => {
+                window.open("https://element.market/collections/eternum-season-1?search[toggles][0]=ALL", "_blank");
+              }}
+            >
+              Buy a Season Pass
+            </Button>
+
+            <Button
+              variant="gold"
+              onClick={() => {
+                window.open("https://eternum-docs.realms.world/", "_blank");
+              }}
+            >
+              Docs
+            </Button>
           </div>
         </div>
       </div>,

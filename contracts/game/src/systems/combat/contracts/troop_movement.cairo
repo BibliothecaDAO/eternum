@@ -469,6 +469,7 @@ pub mod mine_discovery_systems {
 pub mod agent_discovery_systems {
     use dojo::world::{WorldStorageTrait};
     use s1_eternum::constants::DEFAULT_NS;
+    use s1_eternum::models::agent::AgentCountImpl;
     use s1_eternum::models::config::{TroopLimitConfig, TroopStaminaConfig};
     use s1_eternum::models::map::Tile;
     use s1_eternum::models::{config::{CombatConfigImpl, MapConfig, SeasonConfigImpl, TickImpl, WorldConfigUtilImpl}};
@@ -499,6 +500,10 @@ pub mod agent_discovery_systems {
                 starknet::get_caller_address() == troop_movement_util_systems,
                 "caller must be the troop_movement_util_systems",
             );
+
+            if AgentCountImpl::limit_reached(world) {
+                return (false, ExploreFind::None);
+            }
 
             let agent_lottery_won: bool = iAgentDiscoveryImpl::lottery(map_config, vrf_seed);
             if agent_lottery_won {

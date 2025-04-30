@@ -334,6 +334,10 @@ export interface ResourceOutputs {
 export interface Config {
   agent: {
     controller_address: string;
+    max_lifetime_count: number;
+    max_current_count: number;
+    min_spawn_lords_amount: number;
+    max_spawn_lords_amount: number;
   };
   village: {
     village_pass_nft_address: string;
@@ -380,6 +384,8 @@ export interface Config {
     hyperstructureFailProbIncreasePerHyperstructureFound: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
+    questFindProbability: number;
+    questFindFailProbability: number;
   };
   tick: {
     defaultTickIntervalInSeconds: number;

@@ -92,20 +92,17 @@ export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 export const AGENT_FIND_PROBABILITY = 100; // 100/600 = 16.66%
 export const AGENT_FIND_FAIL_PROBABILITY = 500; // 500/600 = 83.33%
 
-export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 20_000; // 20_000 / 120_000 = 16.66%
-export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 100_000; // 100_000 / 120_000 = 83.33%
+export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 10_000; // 10_000 / 50_000 = 20%
+export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 40_000; // 40_000 / 50_000 = 80%
 
-// by increasing this value, fail probability increases faster.
-// i.e the farther away from the center, the less likely to find a hyperstructure
-//
-// Using the values above and below, if a troop is more than 25 hexes away from the center,
-// the probability of finding a hyperstructure is essentially 0% i.e FLOOR(16.66/1.66) = 10
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE = 200; // 200 / 120_000 = 0.166%
+// This means that for every x hexes away from the center, the win probability gets
+// multiplied by 0.95. so the formula is 20% * (0.95 ^ x)
+export const HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER = 9_500; // 9_500 / 10_000 = 95%
 
-// using the above and below values (without considering the hex distance),
-// if there have been 2 hyperstructures found, the probability
-// of finding a hyperstructure is 16.66 - (1.25 * 2) = 14.16%
-export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 1500; // 1500 / 120_000 = 1.25%
+// Without considering the hex distance, this is a linear multiplier for every
+// hyperstructure found. e.g if there have been y hyperstructures found, the probability
+// of finding a hyperstructure is max(20% - (1% * y), 0%)
+export const HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND = 500; // 500 / 50_000 = 1%
 
 // ----- Tick ----- //
 export const DEFAULT_TICK_INTERVAL_SECONDS = 1;
@@ -120,8 +117,6 @@ export const ARMY_SPEED = 1;
 
 // ----- Battle ----- //
 export const BATTLE_GRACE_TICK_COUNT = 24;
-export const BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES = 1;
-export const BATTLE_DELAY_SECONDS = 8 * 60 * 60;
 
 // ----- Settlement ----- //
 export const SETTLEMENT_CENTER = 2147483646;
@@ -145,8 +140,8 @@ export const CLIENT_FEE_ON_DEPOSIT = 200; // 2%
 export const CLIENT_FEE_ON_WITHDRAWAL = 200; // 2%
 export const VELORDS_FEE_RECIPIENT = "0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5";
 export const SEASON_POOL_FEE_RECIPIENT = getContractByName(manifest, `${NAMESPACE}-season_systems`);
-export const REALM_FEE_ON_DEPOSIT = 5; // 5%
-export const REALM_FEE_ON_WITHDRAWAL = 5; // 5%
+export const REALM_FEE_ON_DEPOSIT = 500; // 5%
+export const REALM_FEE_ON_WITHDRAWAL = 500; // 5%
 export const MAX_NUM_BANKS = 6;
 
 const ONE_MINUTE_IN_SECONDS = 60;
@@ -160,6 +155,10 @@ export const SEASON_BRIDGE_CLOSE_AFTER_END_SECONDS = ONE_DAY_IN_SECONDS * 2; // 
 export const TRADE_MAX_COUNT = 5;
 
 export const AGENT_CONTROLLER_ADDRESS = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"; // set in indexer.sh
+export const AGENT_MAX_LIFETIME_COUNT = 10_000;
+export const AGENT_MAX_CURRENT_COUNT = 1_000;
+export const AGENT_MIN_SPAWN_LORDS_AMOUNT = 5;
+export const AGENT_MAX_SPAWN_LORDS_AMOUNT = 10;
 
 export const WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE = 12;
 export const WONDER_PRODUCTION_BONUS_PERCENT_NUM = 2000; // 20%
@@ -172,6 +171,10 @@ export const VILLAGE_TOKEN_NFT_CONTRACT = await getSeasonAddresses(process.env.V
 export const EternumGlobalConfig: Config = {
   agent: {
     controller_address: AGENT_CONTROLLER_ADDRESS,
+    max_lifetime_count: AGENT_MAX_LIFETIME_COUNT,
+    max_current_count: AGENT_MAX_CURRENT_COUNT,
+    min_spawn_lords_amount: AGENT_MIN_SPAWN_LORDS_AMOUNT,
+    max_spawn_lords_amount: AGENT_MAX_SPAWN_LORDS_AMOUNT,
   },
   village: {
     village_pass_nft_address: VILLAGE_TOKEN_NFT_CONTRACT,
@@ -213,7 +216,7 @@ export const EternumGlobalConfig: Config = {
     agentFindFailProbability: AGENT_FIND_FAIL_PROBABILITY,
     hyperstructureWinProbAtCenter: HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER,
     hyperstructureFailProbAtCenter: HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER,
-    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HEX_DISTANCE,
+    hyperstructureFailProbIncreasePerHexDistance: HYPSTRUCTURE_FAIL_MULTIPLIER_PER_RADIUS_FROM_CENTER,
     hyperstructureFailProbIncreasePerHyperstructureFound: HYPSTRUCTURE_FAIL_PROB_INCREASE_PER_HYPERSTRUCTURE_FOUND,
     shardsMineInitialWheatBalance: SHARDS_MINE_INITIAL_WHEAT_BALANCE,
     shardsMineInitialFishBalance: SHARDS_MINE_INITIAL_FISH_BALANCE,
@@ -236,8 +239,8 @@ export const EternumGlobalConfig: Config = {
   },
   battle: {
     graceTickCount: BATTLE_GRACE_TICK_COUNT,
-    graceTickCountHyp: BATTLE_GRACE_TICK_COUNT_HYPERSTRUCTURES,
-    delaySeconds: BATTLE_DELAY_SECONDS,
+    graceTickCountHyp: 0,
+    delaySeconds: 0,
   },
   troop: {
     damage: {

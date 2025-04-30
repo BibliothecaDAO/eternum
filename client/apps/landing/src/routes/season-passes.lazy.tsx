@@ -1,6 +1,6 @@
+import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
@@ -11,7 +11,7 @@ import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Loader2 } from "lucide-react";
+import { Badge, Loader2, MousePointerClick } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
@@ -31,7 +31,7 @@ const getSeasonPassNfts = (data: GetAccountTokensQuery | null) => {
 export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
 
 function SeasonPasses() {
-  const { connectors } = useConnect();
+  const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -45,6 +45,10 @@ function SeasonPasses() {
   });
 
   const seasonPassNfts: TokenBalance[] | undefined = useMemo(() => getSeasonPassNfts(data), [data]);
+
+  if (!address) {
+    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -65,25 +69,40 @@ function SeasonPasses() {
         )}
 
         <>
-          <div className="flex-grow overflow-y-auto p-4">
+          {/* Page Title */}
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">Your Season Passes</h2>
+          <p className="text-center text-muted-foreground mb-6">View and manage your Season Pass NFTs.</p>
+
+          {/* Beautiful Instruction Banner */}
+          <div className="px-6">
+            {seasonPassNfts && seasonPassNfts.length > 0 && (
+              <div className="flex items-center justify-center bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-3 mb-6 text-base text-blue-700 dark:text-blue-300 shadow-sm">
+                <MousePointerClick className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>Click on any Season Pass card below to transfer it</span>
+              </div>
+            )}
+          </div>
+
+          {/* Grid container - Removed extra bottom padding */}
+          <div className="flex-grow overflow-y-auto p-4 pt-0">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-                {seasonPassNfts && <SeasonPassesGrid seasonPasses={seasonPassNfts} />}
+                {/* Pass setIsTransferOpen to the grid */}
+                {seasonPassNfts && (
+                  <SeasonPassesGrid seasonPasses={seasonPassNfts} setIsTransferOpen={setIsTransferOpen} />
+                )}
               </Suspense>
             </div>
           </div>
-          <div className="flex justify-between border-t border-gold/15 p-4 sticky bottom-0 gap-8">
-            <Button onClick={() => setIsTransferOpen(true)} variant="cta">
-              Transfer Season Passes
-            </Button>
-            {seasonPassNfts && (
-              <TransferSeasonPassDialog
-                isOpen={isTransferOpen}
-                setIsOpen={setIsTransferOpen}
-                seasonPassMints={seasonPassNfts as SeasonPassMint[]}
-              />
-            )}
-          </div>
+
+          {/* Render Transfer Dialog conditionally */}
+          {isTransferOpen && seasonPassNfts && (
+            <TransferSeasonPassDialog
+              isOpen={isTransferOpen}
+              setIsOpen={setIsTransferOpen}
+              seasonPassMints={seasonPassNfts as SeasonPassMint[]}
+            />
+          )}
         </>
       </>
     </div>

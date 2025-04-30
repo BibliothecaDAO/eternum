@@ -23,7 +23,7 @@ use s1_eternum::models::troop::{ExplorerTroops, TroopTier, TroopType, Troops};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER};
 use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
-use s1_eternum::systems::realm::contracts::realm_systems::{InternalRealmLogicImpl};
+use s1_eternum::systems::utils::realm::iRealmImpl;
 use s1_eternum::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 use starknet::ContractAddress;
 
@@ -206,9 +206,7 @@ pub fn tspawn_simple_realm(
     tstore_production_config(ref world, ResourceTypes::EARTHEN_SHARD);
 
     // create realm
-    let realm_entity_id = InternalRealmLogicImpl::create_realm(
-        ref world, owner, realm_id, array![], 1, 0, 1, coord.into(),
-    );
+    let realm_entity_id = iRealmImpl::create_realm(ref world, owner, realm_id, array![], 1, 0, 1, coord.into());
 
     realm_entity_id
 }
@@ -239,7 +237,7 @@ pub fn tspawn_realm(
     coord: Coord,
 ) -> ID {
     // create realm
-    let realm_entity_id = InternalRealmLogicImpl::create_realm(
+    let realm_entity_id = iRealmImpl::create_realm(
         ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(),
     );
 

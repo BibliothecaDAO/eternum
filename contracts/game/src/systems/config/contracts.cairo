@@ -1,5 +1,5 @@
 use s1_eternum::models::config::{
-    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, ResourceBridgeConfig,
+    BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
     ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
     TroopStaminaConfig, VillageTokenConfig,
 };
@@ -21,7 +21,14 @@ pub trait IWonderBonusConfig<T> {
 
 #[starknet::interface]
 pub trait IAgentControllerConfig<T> {
-    fn set_agent_controller(ref self: T, agent_controller_address: starknet::ContractAddress);
+    fn set_agent_config(
+        ref self: T,
+        agent_controller_address: starknet::ContractAddress,
+        max_lifetime_count: u16,
+        max_current_count: u16,
+        min_spawn_lords_amount: u8,
+        max_spawn_lords_amount: u8,
+    );
 }
 
 #[starknet::interface]
@@ -176,6 +183,11 @@ pub trait IBattleConfig<T> {
     fn set_battle_config(ref self: T, battle_config: BattleConfig);
 }
 
+#[starknet::interface]
+pub trait IQuestConfig<T> {
+    fn set_quest_config(ref self: T, quest_config: QuestConfig);
+}
+
 #[dojo::contract]
 pub mod config_systems {
     use achievement::components::achievable::AchievableComponent;
@@ -188,17 +200,18 @@ pub mod config_systems {
     use s1_eternum::constants::DEFAULT_NS;
 
     use s1_eternum::constants::{WORLD_CONFIG_ID};
+    use s1_eternum::models::agent::AgentConfig;
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, ResourceBridgeConfig,
-        ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig, SeasonAddressesConfig,
-        SeasonConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VillageTokenConfig, WeightConfig, WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
+        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
+        ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
+        ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
+        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
+        WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
-
     use s1_eternum::models::resource::production::building::{BuildingCategory};
     use s1_eternum::models::resource::resource::{ResourceList};
     use s1_eternum::utils::trophies::index::{TROPHY_COUNT, Trophy, TrophyTrait};
@@ -268,15 +281,30 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl AgentControllerConfigImpl of super::IAgentControllerConfig<ContractState> {
-        fn set_agent_controller(ref self: ContractState, agent_controller_address: starknet::ContractAddress) {
+        fn set_agent_config(
+            ref self: ContractState,
+            agent_controller_address: starknet::ContractAddress,
+            max_lifetime_count: u16,
+            max_current_count: u16,
+            min_spawn_lords_amount: u8,
+            max_spawn_lords_amount: u8,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            let mut agent_controller_config: AgentControllerConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("agent_controller_config"),
-            );
-            agent_controller_config.address = agent_controller_address;
+            // set agent controller config
+            let mut agent_controller_config = AgentControllerConfig { address: agent_controller_address };
             WorldConfigUtilImpl::set_member(ref world, selector!("agent_controller_config"), agent_controller_config);
+
+            // set agent count config
+            let agent_config = AgentConfig {
+                id: WORLD_CONFIG_ID,
+                max_lifetime_count,
+                max_current_count,
+                min_spawn_lords_amount,
+                max_spawn_lords_amount,
+            };
+            world.write_model(@agent_config);
         }
     }
 
@@ -739,6 +767,13 @@ pub mod config_systems {
             );
 
             world.write_model(@resource_bridge_whitelist_config);
+
+            // reverse whitelist config
+            let mut resource_bridge_whitelist_reverse_config = ResourceRevBridgeWhtelistConfig {
+                resource_type: resource_bridge_whitelist_config.resource_type,
+                token: resource_bridge_whitelist_config.token,
+            };
+            world.write_model(@resource_bridge_whitelist_reverse_config);
         }
     }
 
@@ -804,6 +839,16 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("trade_config"), trade_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IQuestConfig of super::IQuestConfig<ContractState> {
+        fn set_quest_config(ref self: ContractState, quest_config: QuestConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), quest_config);
         }
     }
 }

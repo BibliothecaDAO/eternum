@@ -6,8 +6,8 @@ version = "1.0.0"
 sierra-replace-ids = true
 
 [dependencies]
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1b080577aaa6889116fc8be5dde72b2fd21e397" }
-openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.16.0"}
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "v0.3.0" }
+openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.20.0"}
 graffiti = { git = "https://github.com/ponderingdemocritus/graffiti", rev = "bc569531791dbc71c6cd8d9bc154c34eedad31fe" }
 
 [dev-dependencies]

@@ -12,6 +12,7 @@ import { LeftView } from "@/types";
 import { Position } from "@/types/position";
 import { IS_FLAT_MODE } from "@/ui/config";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
   Biome,
@@ -33,7 +34,6 @@ import {
   getNeighborHexes,
   getProducedResource,
 } from "@bibliothecadao/types";
-import { SetupResult } from "@bibliothecadao/dojo";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -330,6 +330,14 @@ export default class HexceptionScene extends HexagonScene {
         this.clearBuildingMode();
         const useSimpleCost = this.state.useSimpleCost;
         try {
+          console.log("Placing building at:", {
+            dojo: account!,
+            entityId: useUIStore.getState().structureEntityId,
+            col: normalizedCoords.col,
+            row: normalizedCoords.row,
+            buildingId: buildingType.type,
+          });
+
           await this.tileManager.placeBuilding(
             account!,
             useUIStore.getState().structureEntityId,

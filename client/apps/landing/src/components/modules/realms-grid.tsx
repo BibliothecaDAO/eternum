@@ -48,7 +48,7 @@ export const RealmsGrid = ({
             Realms World!
           </p>
 
-          <a
+          {/* <a
             href={`https://market.realms.world/collection/0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809`}
             target="_blank"
           >
@@ -56,11 +56,13 @@ export const RealmsGrid = ({
               <Castle className="w-4 h-4 mr-2 group-hover:text-primary transition-colors" />
               Get Your Realm
             </Button>
-          </a>
+          </a> */}
         </div>
       </div>
     );
   }
+
+  // Use the received realms array directly
   const gridItems: RealmGridItem[] = realms.map((realm) => ({
     colSpan: isCompactGrid ? { sm: 3, md: 2, lg: 2 } : { sm: 5, md: 3, lg: 3 },
     data: realm!,
