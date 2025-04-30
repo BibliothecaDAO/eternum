@@ -639,7 +639,6 @@ export class ResourceManager {
   }
 
   public getStoreCapacityKg(): { capacityKg: number; quantity: number } {
-
     const resource = this._getResource()!;
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,

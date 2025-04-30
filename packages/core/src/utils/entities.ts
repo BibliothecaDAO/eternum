@@ -34,12 +34,12 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
 
   let capacityCategoryId: CapacityConfig;
   if (explorer) {
-      capacityCategoryId = CapacityConfig.Army;
+    capacityCategoryId = CapacityConfig.Army;
   } else if (structure) {
-      // hmm
-      capacityCategoryId = CapacityConfig.Storehouse;
+    // hmm
+    capacityCategoryId = CapacityConfig.Storehouse;
   } else {
-      capacityCategoryId = CapacityConfig.None;
+    capacityCategoryId = CapacityConfig.None;
   }
 
   const capacityKg = configManager.getCapacityConfigKg(capacityCategoryId);
