@@ -4,8 +4,11 @@ import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
 import { useReadContract } from "@starknet-react/core";
 import { CheckCircle2, Loader } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
+
+// Placeholder for loading state - could be a simple spinner or a blurred low-res image
+const IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="; // Transparent 1x1 gif
 
 interface RealmCardProps {
   realm: NonNullable<NonNullable<NonNullable<GetAccountTokensQuery>["tokenBalances"]>["edges"]>[0] & {
@@ -22,6 +25,10 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     realm.node?.tokenMetadata.__typename === "ERC721__Token"
       ? realm.node.tokenMetadata
       : { tokenId: "", contractAddress: "", metadata: "" };
+
+  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
+  const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
+
   const [isError, setIsError] = useState(true);
   const { data, error, isSuccess, refetch, isFetching } = useReadContract({
     abi: [
@@ -38,6 +45,57 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     args: [tokenId],
     watch: isError ? true : false,
   });
+
+  // --- Image Loading State & Logic ---
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [imageSrc, setImageSrc] = useState<string>(IMAGE_PLACEHOLDER); // Start with placeholder
+  const [imageLoadAttempts, setImageLoadAttempts] = useState(0);
+  const MAX_IMAGE_LOAD_ATTEMPTS = 1; // Retry once
+
+  const handleImageError = useCallback(() => {
+    if (imageLoadAttempts < MAX_IMAGE_LOAD_ATTEMPTS) {
+      setImageLoadAttempts((prev) => prev + 1);
+      // Simple retry: Set the src again. Browser might retry automatically,
+      // but explicitly setting it ensures our logic runs.
+      // Could add cache-busting query param if needed: `${originalImageUrl}?retry=${imageLoadAttempts + 1}`
+      setImageSrc(originalImageUrl ?? IMAGE_PLACEHOLDER);
+    } else {
+      // Optional: Set a broken image placeholder if all retries fail
+      // setImageSrc(BROKEN_IMAGE_PLACEHOLDER);
+      console.error(`Failed to load image after ${MAX_IMAGE_LOAD_ATTEMPTS} retries: ${originalImageUrl}`);
+    }
+  }, [originalImageUrl, imageLoadAttempts]);
+
+  useEffect(() => {
+    // Intersection Observer setup
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // When the card is intersecting (visible) and the image hasn't been loaded yet
+        if (entry.isIntersecting && imageSrc === IMAGE_PLACEHOLDER && originalImageUrl) {
+          setImageSrc(originalImageUrl); // Start loading the actual image
+          observer.unobserve(entry.target); // Stop observing once triggered
+        }
+      },
+      {
+        rootMargin: "0px", // No margin
+        threshold: 0.1, // Trigger when 10% is visible
+      },
+    );
+
+    const currentRef = cardRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      // Cleanup observer on component unmount
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [originalImageUrl, imageSrc]); // Rerun if originalImageUrl changes or imageSrc resets
+
+  // --- End Image Loading Logic ---
 
   const handleCardClick = () => {
     if (toggleNftSelection && !isSuccess) {
@@ -57,11 +115,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     }
   }, [isSuccess, data, tokenId]);
 
-  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
-  const { attributes, name, image } = parsedMetadata ?? {};
-
   return (
     <Card
+      ref={cardRef}
       onClick={handleCardClick}
       className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
         ${isSuccess ? "cursor-not-allowed" : "cursor-pointer hover:ring-1 hover:ring-gold"} 
@@ -97,11 +153,14 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       <div className="relative z-10 bg-card/95">
         <div className="relative">
           <img
-            src={image}
-            alt={name}
-            className={`w-full object-cover h-40 sm:h-48 transition-all duration-200 
+            src={imageSrc}
+            alt={name ?? "Realm Image"}
+            className={`w-full object-cover h-40 sm:h-48 transition-all duration-200
               ${isSuccess ? "opacity-50 filter grayscale brightness-75" : "opacity-90 hover:opacity-100"}
+              ${imageSrc === IMAGE_PLACEHOLDER ? "animate-pulse bg-gray-200" : ""}
             `}
+            onError={handleImageError}
+            loading="lazy"
           />
           {isSelected && (
             <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs z-20">
