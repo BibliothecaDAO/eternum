@@ -1,12 +1,12 @@
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
 import { Castle, Gamepad2, Home, Scale, Twitter, X } from "lucide-react";
@@ -33,7 +33,7 @@ const items = [
   },
   {
     title: "Buy A Pass",
-    url: "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+    url: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
     icon: Scale,
   },
 ];
@@ -110,7 +110,12 @@ export function AppSidebar() {
             </SidebarMenu>
             {/* social links */}
             <div className="flex items-center gap-2 mt-8 justify-center">
-              <a href="https://twitter.com/lootrealms" target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>
+              <a
+                href="https://twitter.com/lootrealms"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleLinkClick}
+              >
                 <Twitter />
               </a>
             </div>
