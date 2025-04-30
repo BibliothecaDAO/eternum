@@ -195,12 +195,22 @@ pub mod quest_systems {
 
             // Get the realm ID from the explorer's owner structure
             let structure_metadata = StructureMetadataStoreImpl::retrieve(ref world, explorer.owner);
-            let realm_id = structure_metadata.realm_id;
+
+            // if the structure is a village
+            let realm_or_village_id = if structure_metadata.village_realm != 0 {
+                //  use the owner (structure id) of explorer
+                explorer.owner
+            } else {
+                // otherwise use realm id
+                structure_metadata.realm_id.into()
+            };
 
             // Check if this realm already has a participant in this quest
-            // This is now a simple model query instead of iteration
-            let realm_participation: QuestRegistrations = world.read_model((quest_tile_id, realm_id));
-            assert!(realm_participation.game_token_id == 0, "Realm has already attempted this quest");
+            let realm_or_village_participant: QuestRegistrations = world
+                .read_model((quest_tile_id, realm_or_village_id));
+            assert!(
+                realm_or_village_participant.game_token_id == 0, "Realm or Village has already attempted this quest",
+            );
 
             // TODO: Consider scenario in which game has been removed from registry
             let game: QuestLevels = world.read_model(quest_tile.game_address);
@@ -230,8 +240,8 @@ pub mod quest_systems {
             world.write_model(@quest_tile);
 
             // Record realm participation with this quest
-            let realm_participation = QuestRegistrations { quest_tile_id, realm_id, game_token_id };
-            world.write_model(@realm_participation);
+            let realm_or_village_participant = QuestRegistrations { quest_tile_id, realm_or_village_id, game_token_id };
+            world.write_model(@realm_or_village_participant);
 
             game_token_id
         }
@@ -484,10 +494,12 @@ mod tests {
         IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait, iQuestDiscoveryImpl, quest_systems,
     };
     use s1_eternum::systems::resources::contracts::resource_systems::{resource_systems};
+    use s1_eternum::systems::village::contracts::village_systems;
     use s1_eternum::utils::map::biomes::{Biome};
     use s1_eternum::utils::testing::helpers::{
         MOCK_MAP_CONFIG, MOCK_TICK_CONFIG, MOCK_TROOP_LIMIT_CONFIG, init_config, tgrant_resources, tspawn_explorer,
-        tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_world,
+        tspawn_quest_tile, tspawn_realm_with_resources, tspawn_simple_realm, tspawn_village, tspawn_village_explorer,
+        tspawn_world,
     };
     use starknet::ContractAddress;
     use tournaments::components::models::game::{
@@ -536,7 +548,7 @@ mod tests {
                 TestResource::Contract(resource_systems::TEST_CLASS_HASH),
                 TestResource::Contract(quest_systems::TEST_CLASS_HASH),
                 TestResource::Contract(game_mock::TEST_CLASS_HASH),
-                // TestResource::Model(m_SettingsDetails::TEST_CLASS_HASH),
+                TestResource::Contract(village_systems::TEST_CLASS_HASH),
                 // events
                 TestResource::Event(troop_movement_systems::e_ExplorerMoveEvent::TEST_CLASS_HASH),
             ]
@@ -565,6 +577,8 @@ mod tests {
             ContractDefTrait::new(DEFAULT_NS(), @"game_mock")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"quest_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ]
             .span()
@@ -1106,7 +1120,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ("Realm has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
     fn start_quest_twice_from_realm_different_explorers() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1161,13 +1175,13 @@ mod tests {
         assert!(quest_tile.participant_count == 1, "Quest should have 1 participant");
 
         // Try to start the same quest with a different explorer from the same realm
-        // This should fail with "Realm has already attempted this quest"
+        // This should fail with "Realm or Village has already attempted this quest"
         quest_system.start_quest(quest_tile.id, explorer2_id, 'player2', realm_owner);
     }
 
     // tests trying to start a quest with the same explorer twice
     #[test]
-    #[should_panic(expected: ("Realm has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
     fn start_quest_twice_same_explorer() {
         let mut world = tspawn_world(namespace_def(), contract_defs());
 
@@ -1216,7 +1230,8 @@ mod tests {
         assert!(quest_tile.participant_count == 1, "Quest should have 1 participant");
 
         // Try to start the same quest with the same explorer a second time
-        // This should fail with "Realm has already attempted this quest" since the explorer belongs to the same realm
+        // This should fail with "Realm or Village has already attempted this quest" since the explorer belongs to the
+        // same realm
         quest_system.start_quest(quest_tile.id, explorer_id, 'player1', realm_owner);
     }
 
@@ -2448,5 +2463,241 @@ mod tests {
         assert!(quest_tile.capacity >= MINIMUM_QUEST_CAPACITY, "QuestTile capacity should be above minimum");
         assert!(quest_tile.capacity <= MAXIMUM_QUEST_CAPACITY, "QuestTile capacity should be below maximum");
         assert!(quest_tile.participant_count == 0, "QuestTile participant count should be set");
+    }
+
+    #[test]
+    fn test_start_quest_realm_then_village_success() {
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+        init_config(ref world);
+
+        // Initialize game mock
+        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
+        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
+
+        // Create quest at specific location
+        let quest_coord = Coord { x: 80, y: 80 };
+        let level = 1;
+        let capacity = 10;
+        let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
+
+        // Create realm
+        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
+
+        // Create village associated with the realm
+        let village_coord = Coord { x: 78, y: 78 };
+        let village_owner = starknet::contract_address_const::<
+            'village_owner',
+        >(); // Use same owner for simplicity, could be different
+        let village_id = tspawn_village(ref world, realm_id, village_owner, village_coord);
+
+        // Set timestamp
+        let current_tick = MOCK_TICK_CONFIG().armies_tick_in_seconds;
+        starknet::testing::set_block_timestamp(current_tick);
+
+        // Create explorer for the realm
+        let realm_explorer_coord = Coord { x: 80, y: 79 }; // Adjacent to quest
+        starknet::testing::set_contract_address(realm_owner);
+        let realm_explorer_id = tspawn_explorer(ref world, realm_id, realm_explorer_coord);
+
+        // Create explorer for the village
+        let village_explorer_coord = Coord { x: 79, y: 80 }; // Adjacent to quest
+        starknet::testing::set_contract_address(village_owner);
+        let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
+
+        // Get quest system
+        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
+        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
+
+        // Start quest with realm explorer
+        starknet::testing::set_contract_address(realm_owner);
+        let realm_game_token_id = quest_system
+            .start_quest(*quest_tile.id, realm_explorer_id, 'realm_player', realm_owner);
+        assert!(realm_game_token_id > 0, "Realm failed to start quest");
+
+        // Verify participant count incremented
+        let quest_tile_after_realm: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_realm.participant_count == 1, "Participant count should be 1 after realm");
+
+        // Start quest with village explorer (should succeed)
+        starknet::testing::set_contract_address(village_owner);
+        let village_game_token_id = quest_system
+            .start_quest(*quest_tile.id, village_explorer_id, 'village_player', village_owner);
+        assert!(village_game_token_id > 0, "Village failed to start quest after realm");
+        assert!(village_game_token_id != realm_game_token_id, "Village and realm tokens should be different");
+
+        // Verify participant count incremented again
+        let quest_tile_after_village: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_village.participant_count == 2, "Participant count should be 2 after village");
+    }
+
+    #[test]
+    fn test_start_quest_village_then_realm_success() {
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+        init_config(ref world);
+
+        // Initialize game mock
+        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
+        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
+
+        // Create quest
+        let quest_coord = Coord { x: 80, y: 80 };
+        let level = 1;
+        let capacity = 10;
+        let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
+
+        // Create realm and village
+        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
+        let village_coord = Coord { x: 78, y: 78 };
+        let village_owner = starknet::contract_address_const::<'village_owner'>();
+        let village_id = tspawn_village(ref world, realm_id, village_owner, village_coord);
+
+        starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
+
+        // Create explorers
+        let realm_explorer_coord = Coord { x: 80, y: 79 };
+        starknet::testing::set_contract_address(realm_owner);
+        let realm_explorer_id = tspawn_explorer(ref world, realm_id, realm_explorer_coord);
+        let village_explorer_coord = Coord { x: 79, y: 80 };
+        starknet::testing::set_contract_address(village_owner);
+        let village_explorer_id = tspawn_village_explorer(ref world, village_id, village_explorer_coord);
+
+        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
+        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
+
+        // Start quest with village explorer first
+        starknet::testing::set_contract_address(village_owner);
+        let village_game_token_id = quest_system
+            .start_quest(*quest_tile.id, village_explorer_id, 'village_player', village_owner);
+        assert!(village_game_token_id > 0, "Village failed to start quest first");
+
+        let quest_tile_after_village: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_village.participant_count == 1, "Participant count should be 1 after village");
+
+        // Start quest with realm explorer (should succeed)
+        starknet::testing::set_contract_address(realm_owner);
+        let realm_game_token_id = quest_system
+            .start_quest(*quest_tile.id, realm_explorer_id, 'realm_player', realm_owner);
+        assert!(realm_game_token_id > 0, "Realm failed to start quest after village");
+        assert!(realm_game_token_id != village_game_token_id, "Realm and village tokens should be different");
+
+        let quest_tile_after_realm: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_realm.participant_count == 2, "Participant count should be 2 after realm");
+    }
+
+    #[test]
+    fn test_start_quest_two_villages_success() {
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+        init_config(ref world);
+
+        // Initialize game mock
+        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
+        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
+
+        // Create quest
+        let quest_coord = Coord { x: 80, y: 80 };
+        let level = 1;
+        let capacity = 10;
+        let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
+
+        // Create realm
+        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
+
+        // Create village 1
+        let village1_coord = Coord { x: 78, y: 78 };
+        let village1_owner = starknet::contract_address_const::<'village_owner1'>();
+        let village1_id = tspawn_village(ref world, realm_id, village1_owner, village1_coord);
+
+        // Create village 2
+        let village2_coord = Coord { x: 77, y: 77 };
+        let village2_owner = starknet::contract_address_const::<'village_owner2'>();
+        let village2_id = tspawn_village(ref world, realm_id, village2_owner, village2_coord);
+
+        starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
+
+        // Create explorer for village 1
+        let village1_explorer_coord = Coord { x: 80, y: 79 };
+        starknet::testing::set_contract_address(village1_owner);
+        let village1_explorer_id = tspawn_village_explorer(ref world, village1_id, village1_explorer_coord);
+
+        // Create explorer for village 2
+        let village2_explorer_coord = Coord { x: 79, y: 80 };
+        starknet::testing::set_contract_address(village2_owner);
+        let village2_explorer_id = tspawn_village_explorer(ref world, village2_id, village2_explorer_coord);
+
+        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
+        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
+
+        // Start quest with village 1 explorer
+        starknet::testing::set_contract_address(village1_owner);
+        let village1_game_token_id = quest_system
+            .start_quest(*quest_tile.id, village1_explorer_id, 'village_player1', village1_owner);
+        assert!(village1_game_token_id > 0, "Village 1 failed to start quest");
+
+        let quest_tile_after_v1: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_v1.participant_count == 1, "Participant count should be 1 after village 1");
+
+        // Start quest with village 2 explorer (should succeed)
+        starknet::testing::set_contract_address(village2_owner);
+        let village2_game_token_id = quest_system
+            .start_quest(*quest_tile.id, village2_explorer_id, 'village_player2', village2_owner);
+        assert!(village2_game_token_id > 0, "Village 2 failed to start quest after village 1");
+        assert!(village2_game_token_id != village1_game_token_id, "Village 1 and 2 tokens should be different");
+
+        let quest_tile_after_v2: QuestTile = world.read_model(*quest_tile.id);
+        assert!(quest_tile_after_v2.participant_count == 2, "Participant count should be 2 after village 2");
+    }
+
+    #[test]
+    #[should_panic(expected: ("Realm or Village has already attempted this quest", 'ENTRYPOINT_FAILED'))]
+    fn test_start_quest_village_twice_different_explorers() {
+        let mut world = tspawn_world(namespace_def(), contract_defs());
+        init_config(ref world);
+
+        // Initialize game mock
+        let (game_mock_addr, _) = world.dns(@"game_mock").unwrap();
+        let game_mock_init_dispatcher = IGameTokenMockInitDispatcher { contract_address: game_mock_addr };
+        game_mock_init_dispatcher.initializer(DEFAULT_NS_STR());
+
+        // Create quest
+        let quest_coord = Coord { x: 80, y: 80 };
+        let level = 1;
+        let capacity = 10;
+        let quest_tile = tspawn_quest_tile(ref world, game_mock_addr, level, capacity, quest_coord);
+
+        // Create realm and village
+        let realm_coord = Coord { x: 79, y: 79 };
+        let realm_owner = starknet::contract_address_const::<'realm_owner'>();
+        let realm_id = tspawn_realm_with_resources(ref world, 1, realm_owner, realm_coord);
+        let village_coord = Coord { x: 78, y: 78 };
+        let village_owner = starknet::contract_address_const::<'village_owner'>();
+        let village_id = tspawn_village(ref world, realm_id, village_owner, village_coord);
+
+        starknet::testing::set_block_timestamp(MOCK_TICK_CONFIG().armies_tick_in_seconds);
+        starknet::testing::set_contract_address(village_owner);
+
+        // Create two explorers for the same village
+        let explorer1_coord = Coord { x: 80, y: 79 };
+        let explorer1_id = tspawn_village_explorer(ref world, village_id, explorer1_coord);
+        let explorer2_coord = Coord { x: 79, y: 80 };
+        let explorer2_id = tspawn_village_explorer(ref world, village_id, explorer2_coord);
+
+        let (quest_system_addr, _) = world.dns(@"quest_systems").unwrap();
+        let quest_system = IQuestSystemsDispatcher { contract_address: quest_system_addr };
+
+        // Start quest with the first explorer
+        quest_system.start_quest(*quest_tile.id, explorer1_id, 'village_player1', village_owner);
+
+        // Attempt to start the same quest with the second explorer from the same village
+        // This should fail.
+        quest_system.start_quest(*quest_tile.id, explorer2_id, 'village_player2', village_owner);
     }
 }

@@ -22,6 +22,14 @@ use s1_eternum::utils::random;
 #[generate_trait]
 pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
     fn lottery(map_config: MapConfig, vrf_seed: u256) -> bool {
+        // make sure seed is different for each lottery system to prevent same outcome for same probability
+        let VRF_OFFSET: u256 = 2;
+        let mine_vrf_seed = if vrf_seed > VRF_OFFSET {
+            vrf_seed - VRF_OFFSET
+        } else {
+            vrf_seed + VRF_OFFSET
+        };
+
         let success: bool = *random::choices(
             array![true, false].span(),
             array![map_config.shards_mines_win_probability.into(), map_config.shards_mines_fail_probability.into()]
@@ -30,7 +38,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
             1,
             true,
             // make sure seed is different for each lottery system to prevent same outcome for same probability
-            vrf_seed - 2,
+            mine_vrf_seed,
         )[0];
 
         return success;

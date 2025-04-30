@@ -26,6 +26,8 @@ export const TopNavigationView = ({
 }: TopNavigationViewProps) => {
   const { address, connector, isConnected } = useAccount();
 
+  const chain = import.meta.env.VITE_PUBLIC_CHAIN;
+
   return (
     <div className="flex justify-between items-center w-full p-2 max-w-[100vw] overflow-y-auto">
       <div className="flex items-center gap-4">
@@ -36,12 +38,15 @@ export const TopNavigationView = ({
           disabled={!address}
           variant="cta"
           onClick={() => {
-            window.open("https://next-eternum.realms.world", "_blank");
+            window.open(
+              chain === "sepolia" ? "https://next-eternum.realms.world" : "https://eternum.realms.world",
+              "_blank",
+            );
           }}
           className="gap-2 hidden sm:flex"
         >
           <PlayIcon className="!w-4 h-2" />
-          Play Eternum (Sepolia)
+          {chain === "sepolia" ? "Play Eternum (Sepolia)" : "Play Eternum (Mainnet)"}
         </Button>
 
         <Button
