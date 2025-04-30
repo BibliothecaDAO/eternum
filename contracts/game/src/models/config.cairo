@@ -226,7 +226,7 @@ pub struct StructureCapacityConfig {
     pub village_capacity: u64, // grams
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
-    pub bank_structure_capacity: u64 // grams
+    pub bank_structure_capacity: u64,
 }
 
 // speed
