@@ -15,7 +15,9 @@ mod ownership_systems {
     use s1_eternum::models::agent::AgentOwner;
     use s1_eternum::models::config::{AgentControllerConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use s1_eternum::models::owner::OwnerAddressTrait;
-    use s1_eternum::models::structure::{StructureOwnerStoreImpl};
+    use s1_eternum::models::structure::{
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
+    };
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]
@@ -26,6 +28,13 @@ mod ownership_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
             // ensure caller owns structure
             StructureOwnerStoreImpl::retrieve(ref world, structure_id).assert_caller_owner();
+
+            // ensure structure is not a village
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            assert!(
+                structure_base.category != StructureCategory::Village.into(), "cannot transfer ownership of village",
+            );
+
             // update structure owner
             StructureOwnerStoreImpl::store(new_owner, ref world, structure_id)
         }

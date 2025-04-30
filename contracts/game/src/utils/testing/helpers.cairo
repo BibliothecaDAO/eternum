@@ -1,5 +1,5 @@
 use cubit::f128::types::fixed::{FixedTrait};
-use dojo::model::{ModelStorageTest};
+use dojo::model::{ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait};
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use dojo_cairo_test::deploy_contract;
@@ -12,6 +12,7 @@ use s1_eternum::models::config::{
 };
 use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
 use s1_eternum::models::config::{ResourceFactoryConfig};
+use s1_eternum::models::map::{Tile, TileOccupier};
 use s1_eternum::models::position::{Coord};
 use s1_eternum::models::quest::{Level, QuestTile};
 use s1_eternum::models::resource::resource::{ResourceList};
@@ -19,7 +20,10 @@ use s1_eternum::models::resource::resource::{
     ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
 use s1_eternum::models::stamina::{StaminaImpl, StaminaTrait};
-use s1_eternum::models::troop::{ExplorerTroops, TroopTier, TroopType, Troops};
+use s1_eternum::models::structure::{
+    Structure, StructureBase, StructureCategory, StructureMetadata, StructureVillageSlots,
+};
+use s1_eternum::models::troop::{ExplorerTroops, GuardTroops, TroopTier, TroopType, Troops};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::systems::quest::constants::{QUEST_REWARD_BASE_MULTIPLIER};
 use s1_eternum::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
@@ -340,4 +344,101 @@ pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
 
 pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("quest_config"), config);
+}
+
+pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: Coord) -> ID {
+    let mut uuid = world.dispatcher.uuid();
+    let explorer_id = uuid;
+
+    let troop_amount = MOCK_TROOP_LIMIT_CONFIG().explorer_guard_max_troop_count.into() * RESOURCE_PRECISION;
+    let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
+    let current_tick = starknet::get_block_timestamp();
+
+    let mut initial_troops = Troops {
+        category: TroopType::Crossbowman, tier: TroopTier::T2, count: troop_amount, stamina: Default::default(),
+    };
+    initial_troops.stamina.refill(initial_troops.category, troop_stamina_config, current_tick);
+
+    // Spawn explorer troops model
+    let explorer = ExplorerTroops {
+        explorer_id: explorer_id,
+        owner: village_id, // Explorer owned by the village
+        troops: initial_troops,
+        coord: coord,
+    };
+    world.write_model_test(@explorer);
+
+    explorer_id
+}
+
+pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddress, coord: Coord) -> ID {
+    let tile: Tile = world.read_model((coord.x, coord.y));
+    assert!(tile.occupier_id == 0, "Can't spawn village on occupied tile");
+
+    let mut uuid = world.dispatcher.uuid();
+    let village_id = uuid;
+
+    let basic_troops = Troops {
+        category: TroopType::Crossbowman,
+        tier: TroopTier::T2,
+        count: 100 * RESOURCE_PRECISION,
+        stamina: Default::default(),
+    };
+
+    // Spawn the village structure
+    let mut structure = Structure {
+        entity_id: village_id,
+        owner: owner,
+        base: StructureBase {
+            troop_guard_count: 0,
+            troop_explorer_count: 0,
+            troop_max_guard_count: 4, // Default max guards
+            troop_max_explorer_count: MOCK_TROOP_LIMIT_CONFIG().explorer_max_party_count.into(),
+            created_at: starknet::get_block_timestamp().try_into().unwrap(),
+            category: StructureCategory::Village.into(),
+            coord_x: coord.x,
+            coord_y: coord.y,
+            level: 1,
+        },
+        troop_guards: GuardTroops { // Initialize empty guards
+            delta: basic_troops,
+            charlie: basic_troops,
+            bravo: basic_troops,
+            alpha: basic_troops,
+            delta_destroyed_tick: 0,
+            charlie_destroyed_tick: 0,
+            bravo_destroyed_tick: 0,
+            alpha_destroyed_tick: 0,
+        },
+        troop_explorers: array![].span(), // Start with no explorers
+        resources_packed: 0, // Start with no resources packed
+        metadata: StructureMetadata {
+            realm_id: 0, // Village doesn't have its own realm_id here
+            order: 0, // Not applicable to village
+            has_wonder: false,
+            villages_count: 0, // Not applicable to village itself
+            village_realm: realm_id // Link to the parent realm
+        },
+        category: StructureCategory::Village.into(),
+    };
+    world.write_model_test(@structure);
+
+    let realm_coord = Coord { x: 0, y: 0 };
+
+    let structure_village_slots = StructureVillageSlots {
+        connected_realm_entity_id: realm_id,
+        connected_realm_id: 0, // Assuming realm_id can be converted or fetched
+        connected_realm_coord: realm_coord, // Need actual realm coord
+        directions_left: array![].span(),
+    };
+    world.write_model_test(@structure_village_slots);
+
+    // Ensure the tile is marked as occupied by the village
+    let mut tile: Tile = world.read_model((coord.x, coord.y));
+    tile.occupier_type = TileOccupier::Village.into();
+    tile.occupier_id = village_id;
+    tile.occupier_is_structure = true;
+    world.write_model_test(@tile);
+
+    village_id
 }
