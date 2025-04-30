@@ -28,8 +28,7 @@ function Index() {
     {
       text: "Buy a Season Pass",
       imageUrl: "/images/covers/04.png",
-      linkUrl:
-        "https://market.realms.world/collection/0x057675b9c0bd62b096a2e15502a37b290fa766ead21c33eda42993e48a714b80",
+      linkUrl: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
       heightClass: "h-72",
     },
   ];
