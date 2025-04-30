@@ -478,7 +478,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           game_token_id: RecsType.BigInt,
-          game_address: RecsType.BigInt,
+          game_address: RecsType.String,
           quest_tile_id: RecsType.Number,
           explorer_id: RecsType.Number,
           completed: RecsType.Boolean,

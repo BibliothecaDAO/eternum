@@ -3,6 +3,7 @@ import { useMinigameStore } from "@/hooks/store/use-minigame-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { QuestRealm } from "@/ui/components/quest/quest-realm-component";
 import { getQuestForExplorer, getQuests } from "@/ui/components/quest/quest-utils";
+import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { divideByPrecision, formatTime, getArmy, toHexString } from "@bibliothecadao/eternum";
@@ -13,6 +14,13 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useOwnedGamesWithScores } from "metagame-sdk";
 import { useEffect, useMemo, useState } from "react";
 import gameImage from "../../../assets/games/dark-shuffle.png";
+
+const formatAmount = (amount: number) => {
+  return Intl.NumberFormat("en-US", {
+    notation: amount < 0.01 ? "standard" : "compact",
+    maximumFractionDigits: amount < 0.01 ? 6 : 2,
+  }).format(amount);
+};
 
 export const QuestContainer = ({
   explorerEntityId,
@@ -36,6 +44,7 @@ export const QuestContainer = ({
   const addressName = useAddressStore((state) => state.addressName) ?? "test";
 
   const [loading, setLoading] = useState(false);
+  const [loadingQuests, setLoadingQuests] = useState(false);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
 
@@ -50,6 +59,7 @@ export const QuestContainer = ({
   const timeLimit = questLevel?.value?.time_limit?.value;
 
   const minigames = useMinigameStore((state) => state.minigames);
+  const settingsMetadata = useMinigameStore((state) => state.settingsMetadata);
 
   const queryAddress = useMemo(() => account?.address ?? "0x0", [account]);
   const queryGameAddress = useMemo(() => questLevelsEntity?.game_address ?? "0x0", [questLevelsEntity]);
@@ -76,18 +86,22 @@ export const QuestContainer = ({
     return questGames.join(",");
   }, [questGames]);
 
-  console.log(questGames);
-  console.log(questGames.map((game) => Number(game.token_id)));
-  console.log(questTileEntity?.id);
-
   useEffect(() => {
     const fetchQuests = async () => {
       try {
-        await getQuests(toriiClient, components as any, questTileEntity?.game_address as string, questGames);
-        // setQuestEntities(quests);
-        // console.log(quests);
+        setLoadingQuests(true);
+        const quests = await getQuests(
+          toriiClient,
+          components as any,
+          questTileEntity?.game_address as string,
+          questGames,
+        );
+        setQuestEntities(quests);
+        console.log(quests);
+        setLoadingQuests(false);
       } catch (error) {
         console.log(error);
+        setLoadingQuests(false);
       }
       // try {
       //   console.log(await getQuestsFromTorii(toriiClient, components as any, questTileEntity?.id!));
@@ -101,7 +115,7 @@ export const QuestContainer = ({
     fetchQuests();
   }, [questGamesKey, questTileEntity?.game_address]);
 
-  console.log(questEntities, components.Quest);
+  console.log(components.Quest);
 
   const handleStartQuest = async () => {
     if (!selectedHex) return;
@@ -212,6 +226,10 @@ export const QuestContainer = ({
 
   // const explorerGame = questEntities.find((quest) => quest.explorer_id === explorerEntityId);
 
+  const fullCapacity = useMemo(() => {
+    return questTileEntity?.capacity === questTileEntity?.participant_count;
+  }, [questTileEntity]);
+
   return (
     <div className="flex flex-col gap-6 px-6 mx-auto max-w-full overflow-hidden h-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
@@ -232,11 +250,16 @@ export const QuestContainer = ({
               <span>Target</span>
               <span className="text-2xl font-bold text-gold">{questLevel?.value?.target_score?.value} XP</span>
             </div>
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2 relative">
               <span>Participants</span>
               <span className="text-2xl font-bold text-gold">
                 {questTileEntity?.participant_count} / {questTileEntity?.capacity}
               </span>
+              {fullCapacity && (
+                <span className="absolute -bottom-8 text-sm bg-gold/20 border border-gold rounded-lg px-2">
+                  AT CAPACITY
+                </span>
+              )}
             </div>
             <div className="flex flex-col items-center gap-2">
               <span>Time Limit</span>
@@ -262,6 +285,8 @@ export const QuestContainer = ({
                   armyInfo={armyInfo!}
                   questEntities={questEntities}
                   questGames={questGames}
+                  fullCapacity={fullCapacity}
+                  loadingQuests={loadingQuests}
                 />
               );
             })}
@@ -295,39 +320,55 @@ export const QuestContainer = ({
           </div>
           <div className="flex flex-row gap-5 pt-5 border-t border-gold/20 overflow-x-auto overflow-y-hidden no-scrollbar">
             {questLevels.map((level: any, i: number) => {
+              const timeLimit = level?.value?.time_limit?.value;
+              const targetScore = level?.value?.target_score?.value;
+              const settingsId = level?.value?.settings_id?.value;
+              const settingName = settingsMetadata
+                ?.find((setting) => setting.settings_id === settingsId)
+                ?.name.split("Eternum Quest -")[1];
               return (
-                <div className="flex flex-col gap-2 items-center justify-center border border-gold/50 rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
+                <div className="flex flex-col gap-2 items-center justify-center border border-gold rounded-lg p-1 h-[90px] w-[200px] flex-shrink-0">
                   <div className="flex flex-row items-center justify-between text-sm w-full px-5">
                     <span className="font-bold text-sm">Level {i + 1}</span>
-                    <div className="flex flex-row items-center gap-2 text-[12px]">
-                      <span>Setting:</span>
-                      <span
-                        className="font-bold"
-                        onClick={() =>
-                          window.open(
-                            `https://darkshuffle.dev/settings/${Number(level?.value?.settings_id?.value)}`,
-                            "_blank",
-                          )
-                        }
-                      >
-                        Xtreme
-                      </span>
+                    <div
+                      className="flex flex-row items-center gap-2 text-[12px] relative group"
+                      onClick={() =>
+                        window.open(
+                          `https://darkshuffle.dev/settings/${Number(level?.value?.settings_id?.value)}`,
+                          "_blank",
+                        )
+                      }
+                    >
+                      <span className="font-bold">{settingName}</span>
+                      <span className="text-[10px] text-gold">View</span>
+                      <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-brown border border-gold rounded-lg w-max group-hover:flex px-2">
+                        <div className="flex flex-row items-center gap-1">
+                          <span className="text-sm">See Settings</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-row gap-2 border border-gold/20 px-2 w-full">
-                    <div className="flex flex-col items-center text-sm w-1/3">
+                  <div className="flex flex-row gap-2 border border-gold/20 bg-gold/10 px-2 w-full">
+                    <div className="flex flex-col items-center text-sm w-1/3 relative group">
                       <span>Reward</span>
-                      <span className="text-[10px]">
-                        {(i + 1) * 7500} <span>?</span>
-                      </span>
+                      <div className="flex flex-row items-center gap-2">
+                        <img src={BuildingThumbs.resources} className="w-4 h-4 self-center" />
+                        <span className="text-[10px]">+{formatAmount((i + 1) * 7500)}</span>
+                      </div>
+                      <div className="absolute -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-brown border border-gold rounded-lg w-max group-hover:flex px-2">
+                        <div className="flex flex-row items-center gap-1">
+                          <img src={BuildingThumbs.resources} className="w-4 h-4 self-center" />
+                          <span className="text-sm">+{formatAmount((i + 1) * 7500)} Random Resource</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex flex-col items-center text-sm w-1/3">
                       <span>Target</span>
-                      <span className="text-[10px]">100 XP</span>
+                      <span className="text-[10px]">{targetScore} XP</span>
                     </div>
                     <div className="flex flex-col items-center text-sm w-1/3">
                       <span>Time</span>
-                      <span className="text-[10px]">{formatTime(level?.value?.time_limit?.value)}</span>
+                      <span className="text-[10px]">{formatTime(timeLimit)}</span>
                     </div>
                   </div>
                 </div>

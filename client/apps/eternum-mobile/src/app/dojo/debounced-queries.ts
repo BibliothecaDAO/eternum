@@ -1,11 +1,6 @@
 import { Component, Metadata, Schema } from "@dojoengine/recs";
 import { ToriiClient } from "@dojoengine/torii-client";
-import {
-  addDonkeysAndArmiesSubscription,
-  getEntitiesFromTorii,
-  getMarketFromTorii,
-  getQuestTilesFromTorii,
-} from "./queries";
+import { addDonkeysAndArmiesSubscription, getEntitiesFromTorii, getMarketFromTorii } from "./queries";
 
 // Queue class to manage requests
 class RequestQueue {
@@ -86,19 +81,4 @@ export const debouncedGetMarketFromTorii = async <S extends Schema>(
   onComplete?: () => void,
 ) => {
   await marketQueue.add(() => getMarketFromTorii(client, components), onComplete);
-};
-
-export const debouncedGetQuestTilesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  questTileIds: number[],
-  onComplete?: () => void,
-) => {
-  try {
-    await subscriptionQueue.add(() => getQuestTilesFromTorii(client, components, questTileIds), onComplete);
-  } catch (error) {
-    console.error("Error in debouncedGetQuestTilesFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
-    onComplete?.();
-  }
 };

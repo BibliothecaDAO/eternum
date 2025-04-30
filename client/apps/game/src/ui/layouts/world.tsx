@@ -8,7 +8,7 @@ import { useDojo, usePlayerStructures, useQuests } from "@bibliothecadao/react";
 import { getAllStructuresFromToriiClient } from "@bibliothecadao/torii-client";
 import { Tile } from "@bibliothecadao/types";
 import { Leva } from "leva";
-import { useMiniGames } from "metagame-sdk";
+import { useGameSettingsMetadata, useMiniGames } from "metagame-sdk";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { env } from "../../../env";
 import { NotLoggedInMessage } from "../components/not-logged-in-message";
@@ -265,6 +265,9 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 
   const { data: minigames } = useMiniGames({});
   minigameStore.setMinigames(minigames);
+
+  const { data: settingsMetadata } = useGameSettingsMetadata({ gameAddress: minigames?.[0]?.contract_address });
+  minigameStore.setSettingsMetadata(settingsMetadata);
 
   return (
     <>

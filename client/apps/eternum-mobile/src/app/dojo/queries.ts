@@ -120,31 +120,3 @@ export const addDonkeysAndArmiesSubscription = async <S extends Schema>(
     false,
   );
 };
-
-export const getQuestTilesFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  questTileIds: number[],
-) => {
-  await getEntities(
-    client,
-    {
-      Composite: {
-        operator: "Or",
-        clauses: questTileIds.map((id) => ({
-          Member: {
-            model: "s1_eternum-QuestTile",
-            member: "id",
-            operator: "Eq",
-            value: { Primitive: { U32: id } },
-          },
-        })),
-      },
-    },
-    components,
-    [],
-    ["s1_eternum-QuestTile"],
-    1000,
-    false,
-  );
-};

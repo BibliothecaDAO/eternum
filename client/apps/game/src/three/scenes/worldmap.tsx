@@ -328,6 +328,7 @@ export default class WorldmapScene extends HexagonScene {
         playSound(soundSelector.click, this.state.isSoundOn, this.state.effectsLevel);
         this.armyManager.removeLabelsFromScene();
         this.structureManager.removeLabelsFromScene();
+        this.questManager.removeLabelsFromScene();
       }
     } else {
       this.state.setLeftNavigationView(LeftView.EntityView);

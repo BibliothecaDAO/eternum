@@ -26,6 +26,13 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
+const formatAmount = (amount: number) => {
+  return Intl.NumberFormat("en-US", {
+    notation: amount < 0.01 ? "standard" : "compact",
+    maximumFractionDigits: amount < 0.01 ? 6 : 2,
+  }).format(amount);
+};
+
 const TooltipContent = memo(
   ({
     isExplored,
@@ -334,10 +341,6 @@ const QuestInfo = memo(
     path: ActionPath[];
     components: ClientComponents;
   }) => {
-    const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(selectedEntityId)]));
-
-    const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resources!), [resources]);
-
     const questCoords = path[path.length - 1].hex;
 
     const tileEntity = getComponentValue(
@@ -350,32 +353,31 @@ const QuestInfo = memo(
       getEntityIdFromKeys([BigInt(tileEntity?.occupier_id || 0)]),
     );
 
-    const questLevelsEntity = getComponentValue(
-      components.QuestLevels,
-      getEntityIdFromKeys([BigInt(questTileEntity?.game_address || 0)]),
-    );
-
-    const questLevel = questLevelsEntity?.levels[(questTileEntity?.level ?? 0) - 1] as any;
-
     const rewardAmount = questTileEntity?.amount ?? 0;
 
+    const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(selectedEntityId)]));
+
+    const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resources!), [resources]);
+
     const hasEnoughCapacity = useMemo(() => {
-      return remainingCapacity >= Number(rewardAmount) / 10 ** 8;
+      return remainingCapacity >= Number(rewardAmount) / 10 ** 9;
     }, [remainingCapacity, rewardAmount]);
 
     return (
       <div className="flex flex-col p-1 text-xs">
-        {/* Stamina Status */}
-        <div className="flex flex-row items-center mb-2">
-          <div className="text-lg p-1 pr-3">🎒</div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              <span className="ml-2">
-                {hasEnoughCapacity
-                  ? "Enough capacity to start quest"
-                  : `Need ${Number(rewardAmount) / 10 ** 8}kg capacity to start quest`}
-              </span>
+        {/* Reward */}
+        {!hasEnoughCapacity && (
+          <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+            <div className="flex">
+              <span className="w-5">⚠️</span>
+              <span>Too heavy to claim reward</span>
             </div>
+          </div>
+        )}
+        <div className="flex flex-row text-xs ml-1">
+          <img src={BuildingThumbs.resources} className="w-6 h-6 self-center" />
+          <div className="flex flex-col p-1 text-xs">
+            <div>+{formatAmount(Number(rewardAmount) / 10 ** 9)} Random resource</div>
           </div>
         </div>
       </div>
