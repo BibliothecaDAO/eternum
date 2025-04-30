@@ -20,9 +20,7 @@ export function ConnectWalletPrompt({ connectors, connect, message }: ConnectWal
             <Wallet className="h-8 w-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold">Connect Your Wallet</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {message || defaultMessage}
-          </CardDescription>
+          <CardDescription className="text-muted-foreground">{message || defaultMessage}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {connectors.map((connector) => (
@@ -33,13 +31,18 @@ export function ConnectWalletPrompt({ connectors, connect, message }: ConnectWal
               size="lg"
               className="w-full flex items-center justify-center gap-3 transition-transform hover:scale-[1.02] focus:scale-[1.02] font-semibold"
             >
-              {connector.icon && typeof connector.icon === 'string' && (
+              {connector.icon && typeof connector.icon === "string" && (
                 <img src={connector.icon} alt={`${connector.name} icon`} className="w-6 h-6" />
               )}
-               {connector.icon && typeof connector.icon !== 'string' && connector.id !== 'argentX' && connector.id !== 'braavos' &&( // Handle potential ReactNode icons differently if needed
-                 // Attempt to render ReactNode icon, may need adjustment based on actual structure
-                 <span className="w-6 h-6 flex items-center justify-center">{connector.icon.light ?? connector.icon}</span>
-               )}
+              {connector.icon &&
+                typeof connector.icon !== "string" &&
+                connector.id !== "argentX" &&
+                connector.id !== "braavos" && ( // Handle potential ReactNode icons differently if needed
+                  // Attempt to render ReactNode icon, may need adjustment based on actual structure
+                  <span className="w-6 h-6 flex items-center justify-center">
+                    {connector.icon.light ?? connector.icon}
+                  </span>
+                )}
               Connect {connector.name}
             </Button>
           ))}
@@ -47,4 +50,4 @@ export function ConnectWalletPrompt({ connectors, connect, message }: ConnectWal
       </Card>
     </div>
   );
-} 
+}

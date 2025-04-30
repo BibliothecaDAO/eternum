@@ -441,10 +441,8 @@ export class ClientConfigManager {
 
   getSeasonMainGameStartAt() {
     return this.getValueOrDefault(() => {
-      const startMainAt = getComponentValue(
-        this.components.WorldConfig,
-        getEntityIdFromKeys([WORLD_CONFIG_ID]),
-      )?.season_config.start_main_at;
+      const startMainAt = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))
+        ?.season_config.start_main_at;
 
       return startMainAt;
     }, 0);

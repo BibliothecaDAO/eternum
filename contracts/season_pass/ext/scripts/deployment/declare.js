@@ -1,6 +1,4 @@
-import {
-  declareOnlySeasonPassContract
-} from "./libs/commands.js";
+import { declareOnlySeasonPassContract } from "./libs/commands.js";
 
 // Pretty console header
 console.log("\n\n");

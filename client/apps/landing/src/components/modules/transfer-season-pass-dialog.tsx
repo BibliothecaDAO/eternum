@@ -176,23 +176,23 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               </div>
             )}
             {cartridgeAddress && debouncedInput && (
-               <div className="border p-2 rounded-md border-green-300 bg-green-50 text-base text-green/90 flex items-center justify-between gap-2">
-                 <span>Controller Address Found! {displayAddress(cartridgeAddress)}</span>
-                 <Button 
-                   variant="ghost" 
-                   size="icon" 
-                   className="h-6 w-6 text-green/90 hover:bg-green-100"
-                   onClick={() => {
-                     if (cartridgeAddress) {
-                       navigator.clipboard.writeText(cartridgeAddress);
-                       setIsCopied(true);
-                       setTimeout(() => setIsCopied(false), 1500); // Reset after 1.5 seconds
-                     }
-                   }}
-                 >
-                   {isCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                 </Button>
-               </div>
+              <div className="border p-2 rounded-md border-green-300 bg-green-50 text-base text-green/90 flex items-center justify-between gap-2">
+                <span>Controller Address Found! {displayAddress(cartridgeAddress)}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-green/90 hover:bg-green-100"
+                  onClick={() => {
+                    if (cartridgeAddress) {
+                      navigator.clipboard.writeText(cartridgeAddress);
+                      setIsCopied(true);
+                      setTimeout(() => setIsCopied(false), 1500); // Reset after 1.5 seconds
+                    }
+                  }}
+                >
+                  {isCopied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
             )}
             {!cartridgeLoading && !cartridgeAddress && debouncedInput && (
               <div className="flex items-center gap-2 rounded-md border border-green-400 bg-green-100 p-2 text-base text-red/90">
@@ -200,10 +200,10 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               </div>
             )}
             {!transferTo && !cartridgeLoading && !debouncedInput && (
-                <div className="text-gold text-base flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  Please enter a valid Controller ID or address
-                </div>
+              <div className="text-gold text-base flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Please enter a valid Controller ID or address
+              </div>
             )}
           </div>
 
@@ -218,11 +218,12 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               Transfer {selectedRealms.length > 0 ? `(${selectedRealms.length})` : ""}
             </Button>
           </div>
-          
+
           <div className="mt-4 flex items-center gap-2 rounded-md border border-red-400 bg-red-100 p-3 text-sm shadow-sm text-red/80">
             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-            <span className="text-md ">Transferring to a wrong address will result in loss of assets. 
-  Double-check the address.</span>
+            <span className="text-md ">
+              Transferring to a wrong address will result in loss of assets. Double-check the address.
+            </span>
           </div>
         </div>
       </DialogContent>

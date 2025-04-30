@@ -13,10 +13,7 @@ export const ImmunityTimer = ({
 }) => {
   const { currentBlockTimestamp } = useBlockTimestamp();
 
-  const isImmune = useMemo(
-    () => isStructureImmune(currentBlockTimestamp || 0),
-    [structure, currentBlockTimestamp],
-  );
+  const isImmune = useMemo(() => isStructureImmune(currentBlockTimestamp || 0), [structure, currentBlockTimestamp]);
 
   const timer = useMemo(
     () => getStructureImmunityTimer(structure, currentBlockTimestamp || 0),
