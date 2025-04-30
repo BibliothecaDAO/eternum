@@ -60,7 +60,6 @@ export const getAccountTokens = createServerFn({ method: "GET" })
     const response = await executeTorii(GET_ACCOUNT_TOKENS, {
       address: address,
     });
-    console.log(response);
     return (
       response.tokenBalances?.edges.filter((edge) => {
         return (
