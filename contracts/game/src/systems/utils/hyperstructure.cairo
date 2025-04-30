@@ -60,6 +60,14 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 0
             };
 
+        // make sure seed is different for each lottery system to prevent same outcome for same probability
+        let VRF_OFFSET: u256 = 1;
+        let hyps_vrf_seed = if vrf_seed > VRF_OFFSET {
+            vrf_seed - VRF_OFFSET
+        } else {
+            vrf_seed + VRF_OFFSET
+        };
+
         // calculate final probabilities
         let hyps_fail_prob = hyps_probs_original_sum - hyps_win_prob;
         let success: bool = *random::choices(
@@ -68,8 +76,7 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
             array![].span(),
             1,
             true,
-            // make sure seed is different for each lottery system to prevent same outcome for same probability
-            vrf_seed - 1,
+            hyps_vrf_seed,
         )[0];
 
         return success;
