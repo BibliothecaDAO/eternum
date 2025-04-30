@@ -6,9 +6,10 @@ import { getQuestForExplorer, getQuests } from "@/ui/components/quest/quest-util
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/elements/button";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
-import { divideByPrecision, formatTime, getArmy, toHexString } from "@bibliothecadao/eternum";
+import { divideByPrecision, formatTime, getArmy, getRemainingCapacityInKg, toHexString } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { ContractAddress, type ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useOwnedGamesWithScores } from "metagame-sdk";
@@ -230,6 +231,16 @@ export const QuestContainer = ({
     return questTileEntity?.capacity === questTileEntity?.participant_count;
   }, [questTileEntity]);
 
+  const rewardAmount = questTileEntity?.amount ?? 0;
+
+  const resources = useComponentValue(components.Resource, getEntityIdFromKeys([BigInt(explorerEntityId)]));
+
+  const remainingCapacity = useMemo(() => getRemainingCapacityInKg(resources!), [resources]);
+
+  const explorerHasEnoughCapacity = useMemo(() => {
+    return remainingCapacity >= Number(rewardAmount) / 10 ** 9;
+  }, [remainingCapacity, rewardAmount]);
+
   return (
     <div className="flex flex-col gap-6 px-6 mx-auto max-w-full overflow-hidden h-full">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
@@ -242,7 +253,7 @@ export const QuestContainer = ({
             <div className="flex flex-col items-center gap-2">
               <span>Reward</span>
               <span className="flex flex-row gap-2 items-center text-2xl font-bold text-gold">
-                {divideByPrecision(Number(questTileEntity?.amount || 0))}
+                {divideByPrecision(Number(rewardAmount))}
                 <ResourceIcon resource={ResourcesIds[questTileEntity?.resource_type ?? 1]} size={"sm"} />
               </span>
             </div>
@@ -267,11 +278,21 @@ export const QuestContainer = ({
             </div>
             {/* Start Quest Button */}
           </div>
-          <div className="flex flex-row items-center gap-2 text-lg font-bold h-[50px]">
-            Available Quests
-            <Button variant="secondary" className="rounded-lg" onClick={() => refetchQuestGames()}>
-              Refresh
-            </Button>
+          <div className="flex flex-row items-center justify-between h-[50px] w-full">
+            <div className="flex flex-row items-center gap-2">
+              <span className="text-lg font-bold">Available Quests</span>
+              <Button variant="secondary" className="rounded-lg" onClick={() => refetchQuestGames()}>
+                Refresh
+              </Button>
+            </div>
+            {!explorerHasEnoughCapacity && (
+              <div className="text-xxs font-semibold text-center bg-red/50 rounded px-1 py-0.5">
+                <div className="flex">
+                  <span className="w-5">⚠️</span>
+                  <span>Too heavy to claim reward</span>
+                </div>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3 overflow-y-auto h-5/6 pr-2">
             {realmsOrVillages.map((structure) => {
@@ -287,6 +308,7 @@ export const QuestContainer = ({
                   questGames={questGames}
                   fullCapacity={fullCapacity}
                   loadingQuests={loadingQuests}
+                  explorerHasEnoughCapacity={explorerHasEnoughCapacity}
                 />
               );
             })}

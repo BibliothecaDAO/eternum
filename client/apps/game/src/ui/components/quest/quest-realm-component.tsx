@@ -17,6 +17,7 @@ interface QuestRealmProps {
   questGames: any[];
   fullCapacity: boolean;
   loadingQuests: boolean;
+  explorerHasEnoughCapacity: boolean;
 }
 
 export const QuestRealm = ({
@@ -30,6 +31,7 @@ export const QuestRealm = ({
   questGames,
   fullCapacity,
   loadingQuests,
+  explorerHasEnoughCapacity,
 }: QuestRealmProps) => {
   const {
     account: { account },
@@ -167,9 +169,9 @@ export const QuestRealm = ({
                 </div>
                 <Button
                   variant="primary"
-                  className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2 ${reachedTargetScore ? "animate-pulse" : ""}`}
+                  className={`px-6 py-3 rounded-lg font-bold transition-colors w-1/2 ${reachedTargetScore && explorerHasEnoughCapacity ? "animate-pulse" : ""}`}
                   isLoading={loading}
-                  disabled={expired || !questExplorerUsed || !reachedTargetScore}
+                  disabled={expired || !questExplorerUsed || !reachedTargetScore || !explorerHasEnoughCapacity}
                   onClick={handleClaimReward}
                 >
                   {claimRewardButtonMessage}
