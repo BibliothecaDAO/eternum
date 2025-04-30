@@ -53,7 +53,7 @@ function Index() {
   return (
     <div className="p-4 flex flex-col items-center">
       {/* Title might also be animated if desired */}
-      <h1 className="text-5xl font-extrabold mb-6 text-center">Welcome to Eternum Empire!</h1>
+      <h1 className="text-5xl mb-6 text-center">Welcome to Eternum Empire!</h1>
       <p className="text-xl text-center mb-12 max-w-2xl">Explore, conquer, and build your legacy.</p>
 
       <motion.div
@@ -66,7 +66,7 @@ function Index() {
           const MotionLink = motion(Link); // Create a motion component for Link
 
           // Conditionally apply entrance animation
-          const shouldAnimateEntrance = !['/mint', '/season-passes'].includes(cta.linkUrl);
+          const shouldAnimateEntrance = !["/mint", "/season-passes"].includes(cta.linkUrl);
           const commonAnimProps = {
             ...(shouldAnimateEntrance && { variants: itemVariants }), // Apply entrance animation variant conditionally
             whileHover: { scale: 1.03 }, // Keep scale up slightly on hover
@@ -94,13 +94,7 @@ function Index() {
               {content}
             </motion.div>
           ) : (
-            <MotionLink
-              key={cta.text}
-              to={cta.linkUrl}
-              preload="intent"
-              {...commonProps}
-              {...commonAnimProps}
-            >
+            <MotionLink key={cta.text} to={cta.linkUrl} preload="intent" {...commonProps} {...commonAnimProps}>
               {content}
             </MotionLink>
           );

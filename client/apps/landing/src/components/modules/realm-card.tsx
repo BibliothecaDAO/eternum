@@ -65,38 +65,33 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
       onClick={handleCardClick}
       className={`relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
         ${isSuccess ? "cursor-not-allowed" : "cursor-pointer hover:ring-1 hover:ring-gold"} 
-        ${isSelected ? "ring-2 ring-offset-2 ring-gold scale-[1.02]" : ""} 
-        ${!isSuccess && !isFetching && !isSelected 
-          ? "ring-1 ring-gold shadow-lg shadow-gold/40"
-          : ""
-        } 
+        ${isSelected ? "ring-2 ring-offset-2 ring-gold/30 scale-[1.02]" : ""} 
+        ${!isSuccess && !isFetching && !isSelected ? "ring-1 ring-gold/30 " : ""} 
       `}
     >
-      <div className={`absolute inset-0 opacity-5 
-        ${isFetching ? 'bg-gray-500' : isSuccess ? 'bg-dark-green' : 'bg-enemy'} 
+      <div
+        className={`absolute inset-0 opacity-5 
+        ${isFetching ? "bg-gray-500" : isSuccess ? "bg-dark-green" : "bg-enemy"} 
         pointer-events-none`}
       />
-      
+
       {/* Status Indicator Icon (Top Right) - Remains absolutely positioned */}
-      {!isSelected && ( 
-        <div 
-          className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`} 
+      {!isSelected && (
+        <div
+          className={`absolute top-2 right-2 z-20 p-1 rounded-full bg-card/80 backdrop-blur-sm`}
           title={isFetching ? "Checking Status..." : isSuccess ? "Season Pass Minted" : "Season Pass Not Minted"}
         >
           {isFetching ? (
             <Loader className="w-5 h-5 text-gray-400 animate-spin" />
           ) : isSuccess ? (
-            <CheckCircle2 className="w-5 h-5 text-lime-500" /> 
-          ) :""}
+            <CheckCircle2 className="w-5 h-5 text-lime-500" />
+          ) : (
+            ""
+          )}
         </div>
       )}
 
       {/* Prompt to Mint Section (Top of Card) */}
-      {!isSuccess && !isSelected && !isFetching && (
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 text-xs font-semibold p-2 text-center border-b border-blue-200/50">
-            Click card to select
-          </div>
-      )}
 
       {/* Main card content starts below the mint prompt */}
       <div className="relative z-10 bg-card/95">
@@ -105,25 +100,19 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
             src={image}
             alt={name}
             className={`w-full object-cover h-40 sm:h-48 transition-all duration-200 
-              ${isSuccess 
-                ? 'opacity-50 filter grayscale brightness-75' 
-                : 'opacity-90 hover:opacity-100'
-              }
+              ${isSuccess ? "opacity-50 filter grayscale brightness-75" : "opacity-90 hover:opacity-100"}
             `}
           />
           {isSelected && (
-            <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs font-bold z-20">
+            <div className="absolute top-2 right-2 bg-gold text-background px-2 py-0.5 rounded-md text-xs z-20">
               Selected
             </div>
           )}
         </div>
         <CardHeader className="p-4 pb-2">
           <CardTitle className="items-center gap-2">
-            <div className="uppercase text-xs tracking-wider mb-1 flex justify-between items-center text-gray-400">
-              Realm
-            </div>
             <div className="flex justify-between gap-2">
-              <div className="text-xl font-bold">{name}</div>
+              <h5 className="text-xl">{name}</h5>
             </div>
           </CardTitle>
         </CardHeader>
@@ -143,8 +132,11 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
             </span>
           </CardFooter>
         )}
-      </div> 
+      </div>
+
+      {!isSuccess && !isSelected && !isFetching && (
+        <div className="bg-gold/30 text-xs uppercase text-center p-2">Select</div>
+      )}
     </Card>
   );
 };
-

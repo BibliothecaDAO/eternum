@@ -41,9 +41,9 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
       {/* Main card content starts below the manage prompt */}
       {/* <div className="relative z-10 bg-card/95"> */}
       <div className="relative">
-        <img 
-          src={image} 
-          alt={name} 
+        <img
+          src={image}
+          alt={name}
           className="w-full object-contain opacity-90 hover:opacity-100 transition-all duration-200"
         />
         {isSelected && (
@@ -58,7 +58,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             Season 1 Pass
           </div>
           <div className="flex justify-between gap-2">
-            <div className="text-2xl font-bold">{name}</div>
+            <h4 className="text-2xl">{name}</h4>
           </div>
         </CardTitle>
       </CardHeader>
@@ -74,7 +74,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
       {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
         <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-center text-center p-3 text-sm">
           <span className="text-gold font-bold tracking-wide">
-             {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+            {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
           </span>
         </CardFooter>
       )}

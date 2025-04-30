@@ -72,23 +72,23 @@ function Mint() {
 
   const sortedRealms = useMemo(() => {
     // Filter out null/undefined realms first
-    const validRealms = realmsErcBalance?.filter(realm => !!realm?.node) || [];
+    const validRealms = realmsErcBalance?.filter((realm) => !!realm?.node) || [];
 
     // Augment realms with their mint status
-    const augmentedRealms = validRealms.map(realm => {
-       // Ensure realm and node exist before proceeding
-       if (!realm?.node) return null; // Return null for invalid entries
+    const augmentedRealms = validRealms
+      .map((realm) => {
+        // Ensure realm and node exist before proceeding
+        if (!realm?.node) return null; // Return null for invalid entries
 
-       // Extract tokenId safely
-       const tokenId = realm.node.tokenMetadata.__typename === "ERC721__Token"
-         ? realm.node.tokenMetadata.tokenId
-         : "";
-       
-       return {
-         ...realm,
-         seasonPassMinted: seasonPassStatus[tokenId] ?? false, // Get status from state, default to false
-       };
-    }).filter(Boolean); // Filter out any nulls introduced by the check above
+        // Extract tokenId safely
+        const tokenId = realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : "";
+
+        return {
+          ...realm,
+          seasonPassMinted: seasonPassStatus[tokenId] ?? false, // Get status from state, default to false
+        };
+      })
+      .filter(Boolean); // Filter out any nulls introduced by the check above
 
     // Sort the augmented array
     return augmentedRealms.sort((a, b) => {
@@ -102,8 +102,14 @@ function Mint() {
       }
 
       try {
-        const aName = a.node?.tokenMetadata.__typename === "ERC721__Token" ? JSON.parse(a.node.tokenMetadata.metadata || '{}').name || '' : '';
-        const bName = b.node?.tokenMetadata.__typename === "ERC721__Token" ? JSON.parse(b.node.tokenMetadata.metadata || '{}').name || '' : '';
+        const aName =
+          a.node?.tokenMetadata.__typename === "ERC721__Token"
+            ? JSON.parse(a.node.tokenMetadata.metadata || "{}").name || ""
+            : "";
+        const bName =
+          b.node?.tokenMetadata.__typename === "ERC721__Token"
+            ? JSON.parse(b.node.tokenMetadata.metadata || "{}").name || ""
+            : "";
         return aName.localeCompare(bName);
       } catch {
         return 0;
@@ -113,18 +119,13 @@ function Mint() {
 
   // Calculate minting status
   const totalRealms = sortedRealms.length;
-  const mintedRealmsCount = sortedRealms.filter(realm => realm && realm.seasonPassMinted).length;
+  const mintedRealmsCount = sortedRealms.filter((realm) => realm && realm.seasonPassMinted).length;
   const allMinted = totalRealms > 0 && mintedRealmsCount === totalRealms;
-  console.log(sortedRealms, totalRealms, mintedRealmsCount)
+  console.log(sortedRealms, totalRealms, mintedRealmsCount);
 
   // If wallet is not connected, show a prominent connect message
   if (!address) {
-    return (
-      <ConnectWalletPrompt
-        connectors={connectors}
-        connect={connect}
-      />
-    );
+    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
   }
 
   // Render the minting interface if wallet is connected
@@ -149,9 +150,9 @@ function Mint() {
             )}
           </div>
           {isDev && (
-            <Button 
-              onClick={() => setIsRealmMintIsOpen(true)} 
-              variant="destructive" 
+            <Button
+              onClick={() => setIsRealmMintIsOpen(true)}
+              variant="destructive"
               className="flex items-center gap-2 rotate-[-6deg] hover:animate-pulse"
             >
               <Bug className="h-4 w-4" />
@@ -170,7 +171,22 @@ function Mint() {
           <div className="flex flex-col gap-4">
             {!allMinted && (
               <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info h-5 w-5 text-blue-600 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-info h-5 w-5 text-blue-600 flex-shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </svg>
                 <span>Please note: It may take up to a minute for newly minted Season Passes to show up.</span>
               </div>
             )}
@@ -184,46 +200,55 @@ function Mint() {
 
               {/* --- Top Action Bar (sm+) --- */}
               {totalRealms > 0 && !allMinted && totalSelectedNfts > 0 && (
-                <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-4 mb-6 border-b border-gold/15 gap-4">
-                  <div className="flex items-center gap-4 w-auto"> {/* Selection controls part */}
-                    {(data?.tokenBalances?.edges?.length ?? 0) > 0 && (() => {
-                      const allTokenIds = realmsErcBalance
-                        ?.map((token) =>
-                          token?.node?.tokenMetadata.__typename === "ERC721__Token" ? token.node.tokenMetadata.tokenId : "",
-                        )
-                        .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
-                      
-                      const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
+                <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-2  border-gold/15 border rounded-2xl">
+                  <div className="flex items-center gap-4 w-auto">
+                    {" "}
+                    {/* Selection controls part */}
+                    {(data?.tokenBalances?.edges?.length ?? 0) > 0 &&
+                      (() => {
+                        const allTokenIds =
+                          realmsErcBalance
+                            ?.map((token) =>
+                              token?.node?.tokenMetadata.__typename === "ERC721__Token"
+                                ? token.node.tokenMetadata.tokenId
+                                : "",
+                            )
+                            .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
 
-                      return (
-                        <SelectNftActions
-                          totalSelectedNfts={totalSelectedNfts}
-                          selectBatchNfts={selectBatchNftsFiltered}
-                          deselectAllNfts={deselectAllNfts}
-                          contractAddress={
-                            realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
-                              ? realmsErcBalance[0].node.tokenMetadata.contractAddress
-                              : ""
-                          }
-                          eligibleTokenIds={eligibleTokenIds}
-                          totalEligibleNfts={eligibleTokenIds.length}
-                        />
-                      );
-                    })()}
-                    <div className="whitespace-nowrap"> {/* Selected Count */}
+                        const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
+
+                        return (
+                          <SelectNftActions
+                            totalSelectedNfts={totalSelectedNfts}
+                            selectBatchNfts={selectBatchNftsFiltered}
+                            deselectAllNfts={deselectAllNfts}
+                            contractAddress={
+                              realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
+                                ? realmsErcBalance[0].node.tokenMetadata.contractAddress
+                                : ""
+                            }
+                            eligibleTokenIds={eligibleTokenIds}
+                            totalEligibleNfts={eligibleTokenIds.length}
+                          />
+                        );
+                      })()}
+                    <div className="whitespace-nowrap">
+                      {" "}
+                      {/* Selected Count */}
                       <TypeH3>{totalSelectedNfts} Selected</TypeH3>
                     </div>
                   </div>
 
-                  <Button 
-                    disabled={totalSelectedNfts < 1} 
-                    onClick={() => setIsOpen(true)} 
-                    variant="cta" 
+                  <Button
+                    disabled={totalSelectedNfts < 1}
+                    onClick={() => setIsOpen(true)}
+                    variant="cta"
                     className="w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200 
                               font-sans hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]"
                   >
                     <Send className="!h-4 !w-4" />
-                    Claim {totalSelectedNfts > 0 ? `${totalSelectedNfts} ` : ""}Season Pass{totalSelectedNfts > 1 ? 'es' : ''}
+                    Claim {totalSelectedNfts > 0 ? `${totalSelectedNfts} ` : ""}Season Pass
+                    {totalSelectedNfts > 1 ? "es" : ""}
                   </Button>
                 </div>
               )}
@@ -235,58 +260,72 @@ function Mint() {
                 realms={sortedRealms ?? []}
                 onSeasonPassStatusChange={handleSeasonPassStatusChange}
               />
-
             </Suspense>
           </div>
         </div>
-        
+
         {/* Sticky Bottom Action Bar (Mobile Only) */}
-        {totalRealms > 0 && !allMinted && totalSelectedNfts > 0 && ( // Only show actions if there are realms, not all are minted, AND at least one is selected
-          <div className="sm:hidden sticky bottom-0 z-20 bg-background border-t border-gold/15 p-4 mt-auto"> {/* MODIFIED: Added sm:hidden */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4"> {/* Inner container */}
-              <div className="flex items-center gap-4 w-full sm:w-auto"> {/* Selection actions */}
-                {(data?.tokenBalances?.edges?.length ?? 0) > 0 && (() => { // Ensure edges exist before calculating
-                  const allTokenIds = realmsErcBalance
-                    ?.map((token) =>
-                      token?.node?.tokenMetadata.__typename === "ERC721__Token" ? token.node.tokenMetadata.tokenId : "",
-                    )
-                    .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
-                  
-                  const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
+        {totalRealms > 0 &&
+          !allMinted &&
+          totalSelectedNfts > 0 && ( // Only show actions if there are realms, not all are minted, AND at least one is selected
+            <div className="sm:hidden sticky bottom-0 z-20 bg-background border-t border-gold/15 p-4 mt-auto">
+              {" "}
+              {/* MODIFIED: Added sm:hidden */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                {" "}
+                {/* Inner container */}
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  {" "}
+                  {/* Selection actions */}
+                  {(data?.tokenBalances?.edges?.length ?? 0) > 0 &&
+                    (() => {
+                      // Ensure edges exist before calculating
+                      const allTokenIds =
+                        realmsErcBalance
+                          ?.map((token) =>
+                            token?.node?.tokenMetadata.__typename === "ERC721__Token"
+                              ? token.node.tokenMetadata.tokenId
+                              : "",
+                          )
+                          .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
 
-                  return (
-                    <SelectNftActions
-                      totalSelectedNfts={totalSelectedNfts}
-                      selectBatchNfts={selectBatchNftsFiltered} // Uses filtered list internally
-                      deselectAllNfts={deselectAllNfts}
-                      contractAddress={
-                        realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
-                          ? realmsErcBalance[0].node.tokenMetadata.contractAddress
-                          : ""
-                      }
-                      eligibleTokenIds={eligibleTokenIds} // Pass the filtered list
-                      totalEligibleNfts={eligibleTokenIds.length} // Pass the count for comparison
-                    />
-                  );
-                })()}
-                <div className="whitespace-nowrap ml-auto sm:ml-0"> {/* Selected count */}
-                  <TypeH3>{totalSelectedNfts} Selected</TypeH3>
+                      const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
+
+                      return (
+                        <SelectNftActions
+                          totalSelectedNfts={totalSelectedNfts}
+                          selectBatchNfts={selectBatchNftsFiltered} // Uses filtered list internally
+                          deselectAllNfts={deselectAllNfts}
+                          contractAddress={
+                            realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
+                              ? realmsErcBalance[0].node.tokenMetadata.contractAddress
+                              : ""
+                          }
+                          eligibleTokenIds={eligibleTokenIds} // Pass the filtered list
+                          totalEligibleNfts={eligibleTokenIds.length} // Pass the count for comparison
+                        />
+                      );
+                    })()}
+                  <div className="whitespace-nowrap ml-auto sm:ml-0">
+                    {" "}
+                    {/* Selected count */}
+                    <TypeH3>{totalSelectedNfts} Selected</TypeH3>
+                  </div>
                 </div>
-              </div>
-
-              <Button 
-                disabled={totalSelectedNfts < 1} 
-                onClick={() => setIsOpen(true)} 
-                variant="cta" 
-                className="w-full sm:w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200 
+                <Button
+                  disabled={totalSelectedNfts < 1}
+                  onClick={() => setIsOpen(true)}
+                  variant="cta"
+                  className="w-full sm:w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200 
                            hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]" /* Mint Button */
-              >
-                <Send className="!h-4 !w-4" />
-                Mint {totalSelectedNfts > 1 ? `${totalSelectedNfts} ` : ""}Season Pass{totalSelectedNfts > 1 ? 'es' : ''}
-              </Button>
+                >
+                  <Send className="!h-4 !w-4" />
+                  Mint {totalSelectedNfts > 1 ? `${totalSelectedNfts} ` : ""}Season Pass
+                  {totalSelectedNfts > 1 ? "es" : ""}
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {isOpen && (
           <SeasonPassMintDialog
