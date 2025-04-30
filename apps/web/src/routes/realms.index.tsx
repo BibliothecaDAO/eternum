@@ -62,11 +62,7 @@ function RealmsComponent() {
       ] as string,
     }),
   );
-  const l2Realms = l2RealmsQuery?.data?.tokenBalances.edges.filter((edge) =>{
-    return edge.node.tokenMetadata.__typename === "ERC721__Token" && formatAddress(edge.node.tokenMetadata.contractAddress) === CollectionAddresses.realms[
-    SUPPORTED_L2_CHAIN_ID
-  ] as string});
-
+  const l2Realms = l2RealmsQuery?.data
   if (!address) {
     return <div>Connect Starknet Wallet to view your Realms</div>;
   }
