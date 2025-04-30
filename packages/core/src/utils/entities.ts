@@ -1,15 +1,15 @@
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { shortString } from "starknet";
-import { configManager } from "../managers/config-manager";
 import {
   CapacityConfig,
-  StructureType,
   ClientComponents,
   ContractAddress,
   EntityType,
   ID,
+  StructureType,
 } from "@bibliothecadao/types";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { shortString } from "starknet";
+import { configManager } from "../managers/config-manager";
 import { getRealmNameById } from "./realm";
 
 export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, components: ClientComponents) => {
@@ -32,13 +32,16 @@ export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress, comp
     owner = structure.owner;
   }
 
-  const capacityCategoryId = explorer
-    ? CapacityConfig.Army
-    : structure
-      ? CapacityConfig.Storehouse
-      : structure
-        ? CapacityConfig.Structure
-        : CapacityConfig.None;
+  let capacityCategoryId: CapacityConfig;
+  if (explorer) {
+      capacityCategoryId = CapacityConfig.Army;
+  } else if (structure) {
+      // hmm
+      capacityCategoryId = CapacityConfig.Storehouse;
+  } else {
+      capacityCategoryId = CapacityConfig.None;
+  }
+
   const capacityKg = configManager.getCapacityConfigKg(capacityCategoryId);
 
   return {
