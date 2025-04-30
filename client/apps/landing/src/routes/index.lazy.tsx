@@ -6,11 +6,13 @@ export const Route = createLazyFileRoute("/")({
 });
 
 function Index() {
+  const chain = import.meta.env.VITE_PUBLIC_CHAIN;
+
   const ctas = [
     {
-      text: "Play Now [Sepolia]",
+      text: chain === "sepolia" ? "Play Now [Sepolia]" : "Play Now [Mainnet]",
       imageUrl: "/images/covers/01.png",
-      linkUrl: "https://next-eternum.realms.world",
+      linkUrl: chain === "sepolia" ? "https://next-eternum.realms.world" : "https://eternum.realms.world",
       heightClass: "h-72", // Keep the specific height for the first item
     },
     {
