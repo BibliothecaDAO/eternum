@@ -179,6 +179,17 @@ pub mod marketplace_systems {
                 "Market: Order expired",
             );
 
+            // ensure the collection is whitelisted
+            let collection_id = market_order_model.order.collection_id;
+            let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
+            let collection_address = collection_whitelisted.collection_address;
+            assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
+
+            // ensure the market order creator still owns the nft
+            let collection_dispatcher = IERC721Dispatcher { contract_address: collection_address };
+            let nft_owner = collection_dispatcher.owner_of(market_order_model.order.token_id.into());
+            assert!(nft_owner == market_order_model.order.owner, "Market: Order creator no longer owns NFT");
+
             // assert active
             assert!(market_order_model.order.active, "Market: Order not active");
 
@@ -192,17 +203,10 @@ pub mod marketplace_systems {
             fee_token.transfer_from(caller, market_fee.fee_recipient, fee.into());
 
             // transfer cost less fee from buyer to seller
-            fee_token.transfer_from(caller, market_order_model.order.owner, (cost.into() - fee).into());
+            fee_token.transfer_from(caller, nft_owner, (cost.into() - fee).into());
 
             // transfer nft from seller to buyer
-            let collection_id = market_order_model.order.collection_id;
-            let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
-            let collection_address = collection_whitelisted.collection_address;
-            assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
-
-            let collection_dispatcher = IERC721Dispatcher { contract_address: collection_address };
-            collection_dispatcher
-                .transfer_from(market_order_model.order.owner, caller, market_order_model.order.token_id.into());
+            collection_dispatcher.transfer_from(nft_owner, caller, market_order_model.order.token_id.into());
 
             // make order inactive
             market_order_model.order.active = false;
@@ -230,8 +234,18 @@ pub mod marketplace_systems {
             let mut market_order_model: MarketOrderModel = world.read_model(order_id);
             assert!(market_order_model.order.active, "Market: Order not active");
 
-            // ensure caller owns the order
-            assert!(market_order_model.order.owner == get_caller_address(), "Market: Not order owner");
+            // ensure the collection is whitelisted
+            let collection_id = market_order_model.order.collection_id;
+            let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
+            let collection_address = collection_whitelisted.collection_address;
+            assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
+
+            // ensure caller owns the nft but not necessarily the order
+            let collection_dispatcher = IERC721Dispatcher { contract_address: collection_address };
+            assert!(
+                collection_dispatcher.owner_of(market_order_model.order.token_id.into()) == get_caller_address(),
+                "Market: Caller not owner of NFT",
+            );
 
             // set inactive
             market_order_model.order.active = false;
@@ -258,8 +272,18 @@ pub mod marketplace_systems {
             let mut market_order_model: MarketOrderModel = world.read_model(order_id);
             assert!(market_order_model.order.active, "Market: Order not active");
 
-            // ensure caller owns the order
-            assert!(market_order_model.order.owner == get_caller_address(), "Market: Not order owner");
+            // ensure the collection is whitelisted
+            let collection_id = market_order_model.order.collection_id;
+            let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
+            let collection_address = collection_whitelisted.collection_address;
+            assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
+
+            // ensure caller owns the nft but not necessarily the order
+            let collection_dispatcher = IERC721Dispatcher { contract_address: collection_address };
+            assert!(
+                collection_dispatcher.owner_of(market_order_model.order.token_id.into()) == get_caller_address(),
+                "Market: Caller not owner of NFT",
+            );
 
             // update price
             market_order_model.order.price = new_price;
