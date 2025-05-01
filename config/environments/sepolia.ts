@@ -47,7 +47,7 @@ export const SepoliaEternumGlobalConfig: Config = {
     shardsMinesWinProbability: 1,
     shardsMinesFailProbability: 11,
     agentFindProbability: 1,
-    agentFindFailProbability: 10,
+    agentFindFailProbability: 6,
     questFindProbability: 1,
     questFindFailProbability: 10,
   },
@@ -70,7 +70,7 @@ export const SepoliaEternumGlobalConfig: Config = {
   // no grace period
   battle: {
     ...CommonEternumGlobalConfig.battle,
-    graceTickCount: 14, // 14 ticks so 14 hours
+    graceTickCount: 1, // 1 tick so 1 hours
   },
   // starting resources x1000
   startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {

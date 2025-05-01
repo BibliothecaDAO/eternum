@@ -2,7 +2,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAccount, useContract, useSendTransaction } from "@starknet-react/core";
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getChecksumAddress, validateChecksumAddress } from "starknet";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Dialog, DialogContent } from "../ui/dialog";
@@ -48,7 +47,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
     address: seasonPassAddress as `0x${string}`,
   });
 
-  const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading } = useCartridgeAddress();
+  const { address: cartridgeAddress, fetchAddress, loading: cartridgeLoading, name } = useCartridgeAddress();
 
   const { sendAsync, error } = useSendTransaction({
     calls:
@@ -78,18 +77,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
         return;
       }
 
-      if (debouncedInput.startsWith("0x")) {
-        try {
-          if (validateChecksumAddress(getChecksumAddress(debouncedInput))) {
-            setTransferTo(debouncedInput);
-            return;
-          }
-        } catch (error) {
-          console.error("Error validating address:", error);
-        }
-      } else {
-        await fetchAddress(debouncedInput);
-      }
+      await fetchAddress(debouncedInput);
 
       if (cartridgeAddress) {
         setTransferTo(cartridgeAddress);
@@ -177,7 +165,9 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
             )}
             {cartridgeAddress && debouncedInput && (
               <div className="border p-2 rounded-md border-green-300 bg-green-50 text-base text-green/90 flex items-center justify-between gap-2">
-                <span>Controller Address Found! {displayAddress(cartridgeAddress)}</span>
+                <span>Address Found! {displayAddress(cartridgeAddress)}</span>
+
+                <span>Name: {name}</span>
                 <Button
                   variant="ghost"
                   size="icon"

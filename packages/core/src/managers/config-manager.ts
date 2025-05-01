@@ -679,24 +679,41 @@ export class ClientConfigManager {
 
   getCapacityConfigKg(category: CapacityConfig) {
     return this.getValueOrDefault(() => {
-      const capacityConfig = getComponentValue(
+      const nonStructureCapacityConfig = getComponentValue(
         this.components.WorldConfig,
         getEntityIdFromKeys([WORLD_CONFIG_ID]),
       )?.capacity_config;
 
+      const structureCapacityConfig = getComponentValue(
+        this.components.WorldConfig,
+        getEntityIdFromKeys([WORLD_CONFIG_ID]),
+      )?.structure_capacity_config;
+
       let capacityInGrams = 0;
       switch (category) {
-        case CapacityConfig.Structure:
-          capacityInGrams = Number(capacityConfig?.structure_capacity ?? 0);
+        case CapacityConfig.RealmStructure:
+          capacityInGrams = Number(structureCapacityConfig?.realm_capacity ?? 0);
+          break;
+        case CapacityConfig.VillageStructure:
+          capacityInGrams = Number(structureCapacityConfig?.village_capacity ?? 0);
+          break;
+        case CapacityConfig.HyperstructureStructure:
+          capacityInGrams = Number(structureCapacityConfig?.hyperstructure_capacity ?? 0);
+          break;
+        case CapacityConfig.FragmentMineStructure:
+          capacityInGrams = Number(structureCapacityConfig?.fragment_mine_capacity ?? 0);
+          break;
+        case CapacityConfig.BankStructure:
+          capacityInGrams = Number(structureCapacityConfig?.bank_structure_capacity ?? 0);
           break;
         case CapacityConfig.Donkey:
-          capacityInGrams = Number(capacityConfig?.donkey_capacity ?? 0);
+          capacityInGrams = Number(nonStructureCapacityConfig?.donkey_capacity ?? 0);
           break;
         case CapacityConfig.Army:
-          capacityInGrams = Number(capacityConfig?.troop_capacity ?? 0);
+          capacityInGrams = Number(nonStructureCapacityConfig?.troop_capacity ?? 0);
           break;
         case CapacityConfig.Storehouse:
-          capacityInGrams = Number(capacityConfig?.storehouse_boost_capacity ?? 0);
+          capacityInGrams = Number(nonStructureCapacityConfig?.storehouse_boost_capacity ?? 0);
           break;
         case CapacityConfig.None:
           return 0;

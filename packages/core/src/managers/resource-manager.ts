@@ -1,9 +1,9 @@
 // import { getEntityIdFromKeys, gramToKg, multiplyByPrecision } from "@/ui/utils/utils";
-import { BuildingType, CapacityConfig, ClientComponents, ID, Resource, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, ClientComponents, ID, Resource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import { getBuildingCount, kgToGram, multiplyByPrecision } from "../utils";
+import { getBuildingCount, gramToKg, kgToGram, multiplyByPrecision } from "../utils";
 import { configManager } from "./config-manager";
 
 export class ResourceManager {
@@ -639,14 +639,11 @@ export class ResourceManager {
   }
 
   public getStoreCapacityKg(): { capacityKg: number; quantity: number } {
-    const storehouseCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Storehouse);
+    const resource = this._getResource()!;
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
       getEntityIdFromKeys([BigInt(this.entityId || 0)]),
     );
-
-    const structureCapacityKg = configManager.getCapacityConfigKg(CapacityConfig.Structure);
-
     const packBuildingCounts = [
       structureBuildings?.packed_counts_1 || 0n,
       structureBuildings?.packed_counts_2 || 0n,
@@ -655,7 +652,7 @@ export class ResourceManager {
     const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
     return {
-      capacityKg: Number(quantity) * storehouseCapacityKg + structureCapacityKg,
+      capacityKg: gramToKg(Number(resource.weight.capacity) / RESOURCE_PRECISION),
       quantity,
     };
   }

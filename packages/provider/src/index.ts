@@ -2005,12 +2005,32 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
-    const { structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity, signer } = props;
+    const {
+      troop_capacity,
+      donkey_capacity,
+      storehouse_boost_capacity,
+      realm_capacity,
+      village_capacity,
+      hyperstructure_capacity,
+      fragment_mine_capacity,
+      bank_structure_capacity,
+      signer,
+    } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_capacity_config",
-      calldata: [structure_capacity, troop_capacity, donkey_capacity, storehouse_boost_capacity],
+      calldata: [
+        0,
+        troop_capacity,
+        donkey_capacity,
+        storehouse_boost_capacity,
+        realm_capacity,
+        village_capacity,
+        hyperstructure_capacity,
+        fragment_mine_capacity,
+        bank_structure_capacity,
+      ],
     });
   }
 

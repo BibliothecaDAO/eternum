@@ -1270,6 +1270,13 @@ export function defineContractComponents(world: World) {
             token_address: RecsType.BigInt,
             mint_recipient_address: RecsType.BigInt,
           },
+          structure_capacity_config: {
+            realm_capacity: RecsType.BigInt,
+            village_capacity: RecsType.BigInt,
+            hyperstructure_capacity: RecsType.BigInt,
+            fragment_mine_capacity: RecsType.BigInt,
+            bank_structure_capacity: RecsType.BigInt,
+          },
         },
         {
           metadata: {
@@ -1374,6 +1381,11 @@ export function defineContractComponents(world: World) {
               "Span<ContractAddress>", // village controller addresses
               "ContractAddress", // village VillageTokenConfig token_address
               "ContractAddress", // village VillageTokenConfig mint_recipient_address
+              "u64", // StructureCapacityConfig realm_structure_capacity
+              "u64", // StructureCapacityConfig village_structure_capacity
+              "u64", // StructureCapacityConfig hyperstructure_structure_capacity
+              "u64", // StructureCapacityConfig fragment_mine_structure_capacity
+              "u64", // StructureCapacityConfig bank_structure_capacity
             ],
             customTypes: [],
           },

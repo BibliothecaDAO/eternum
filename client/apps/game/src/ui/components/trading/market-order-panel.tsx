@@ -16,6 +16,7 @@ import {
   isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
+import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   EntityType,
   findResourceById,
@@ -24,7 +25,6 @@ import {
   type ID,
   type MarketInterface,
 } from "@bibliothecadao/types";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -537,6 +537,39 @@ const OrderCreation = memo(
       return isBuy ? [ResourcesIds.Lords, multiplyByPrecision(lords)] : [resourceId, multiplyByPrecision(resource)];
     }, [resource, resourceId, lords]);
 
+    const createOrderParams = useMemo(() => {
+      const maxDecimalPlaces = 7;
+      let pow10 = 0;
+      let rate = takerGives[1] / makerGives[1];
+      if (!Number.isInteger(rate)) {
+        // get the number of decimal places in rate
+        const rateStr = rate.toString();
+        let decimalPlaces = 0;
+
+        if (rateStr.includes(".")) {
+          decimalPlaces = rateStr.split(".")[1]?.length || 0;
+        } else if (rateStr.includes("e-")) {
+          // Handle scientific notation like 1e-6
+          decimalPlaces = parseInt(rateStr.split("e-")[1], 10);
+        }
+
+        decimalPlaces = Math.min(decimalPlaces, maxDecimalPlaces);
+
+        // convert the rate to an integer
+        rate = Math.floor(rate * 10 ** decimalPlaces);
+        pow10 = decimalPlaces;
+      }
+      const makerGivesMinResourceAmount = 1 * 10 ** pow10;
+      const makerGivesMaxCount = BigInt(makerGives[1]) / BigInt(makerGivesMinResourceAmount);
+      const takerPaysMinResourceAmount = rate;
+
+      return {
+        makerGivesMinResourceAmount,
+        makerGivesMaxCount,
+        takerPaysMinResourceAmount,
+      };
+    }, [takerGives, makerGives]);
+
     const createOrder = async () => {
       if (!currentBlockTimestamp) return;
       setLoading(true);
@@ -546,10 +579,10 @@ const OrderCreation = memo(
         maker_id: entityId,
         maker_gives_resource_type: makerGives[0],
         taker_pays_resource_type: takerGives[0],
-        maker_gives_min_resource_amount: 1,
-        maker_gives_max_count: makerGives[1],
+        maker_gives_min_resource_amount: createOrderParams.makerGivesMinResourceAmount,
+        maker_gives_max_count: createOrderParams.makerGivesMaxCount,
         taker_id: 0,
-        taker_pays_min_resource_amount: takerGives[1] / makerGives[1],
+        taker_pays_min_resource_amount: createOrderParams.takerPaysMinResourceAmount,
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
 

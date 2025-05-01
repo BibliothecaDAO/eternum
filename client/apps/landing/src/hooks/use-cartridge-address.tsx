@@ -21,7 +21,7 @@ export const useCartridgeAddress = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ usernames: [searchId] }),
+          body: JSON.stringify(searchId.startsWith("0x") ? { addresses: [searchId] } : { usernames: [searchId] }),
         });
 
         const data = await response.json();
@@ -45,5 +45,5 @@ export const useCartridgeAddress = () => {
     getAddress();
   }, [searchId]);
 
-  return { address, fetchAddress, loading };
+  return { address, fetchAddress, loading, name };
 };

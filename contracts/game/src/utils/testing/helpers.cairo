@@ -7,8 +7,8 @@ use dojo_cairo_test::{ContractDef, NamespaceDef, WorldStorageTestTrait, spawn_te
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
-    CapacityConfig, MapConfig, QuestConfig, TickConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    VillageTokenConfig, WeightConfig, WorldConfigUtilImpl,
+    CapacityConfig, MapConfig, QuestConfig, StructureCapacityConfig, TickConfig, TroopDamageConfig, TroopLimitConfig,
+    TroopStaminaConfig, VillageTokenConfig, WeightConfig, WorldConfigUtilImpl,
 };
 use s1_eternum::models::config::{CombatConfigImpl, TickImpl};
 use s1_eternum::models::config::{ResourceFactoryConfig};
@@ -122,6 +122,16 @@ pub fn MOCK_CAPACITY_CONFIG() -> CapacityConfig {
     }
 }
 
+pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
+    StructureCapacityConfig {
+        realm_capacity: 1000000000000000, // grams
+        village_capacity: 1000000000000000, // grams
+        hyperstructure_capacity: 1000000000000000, // grams
+        fragment_mine_capacity: 1000000000000000, // grams
+        bank_structure_capacity: 1000000000000000 // grams
+    }
+}
+
 pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
     WeightConfig { resource_type, weight_gram: 100 }
 }
@@ -140,6 +150,10 @@ pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
 
 pub fn tstore_capacity_config(ref world: WorldStorage, capacity_config: CapacityConfig) {
     WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), capacity_config);
+}
+
+pub fn tstore_structure_capacity_config(ref world: WorldStorage, structure_capacity_config: StructureCapacityConfig) {
+    WorldConfigUtilImpl::set_member(ref world, selector!("structure_capacity_config"), structure_capacity_config);
 }
 
 pub fn tstore_weight_config(ref world: WorldStorage, weight_configs: Span<WeightConfig>) {
@@ -301,6 +315,7 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
 
 pub fn init_config(ref world: WorldStorage) {
     tstore_capacity_config(ref world, MOCK_CAPACITY_CONFIG());
+    tstore_structure_capacity_config(ref world, MOCK_STRUCTURE_CAPACITY_CONFIG());
     tstore_tick_config(ref world, MOCK_TICK_CONFIG());
     tstore_troop_limit_config(ref world, MOCK_TROOP_LIMIT_CONFIG());
     tstore_troop_stamina_config(ref world, MOCK_TROOP_STAMINA_CONFIG());

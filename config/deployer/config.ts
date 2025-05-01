@@ -928,7 +928,11 @@ export const setVillageControllersConfig = async (config: Config) => {
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
-    structure_capacity: config.config.carryCapacityGram[CapacityConfig.Structure],
+    realm_capacity: config.config.carryCapacityGram[CapacityConfig.RealmStructure],
+    village_capacity: config.config.carryCapacityGram[CapacityConfig.VillageStructure],
+    hyperstructure_capacity: config.config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
+    fragment_mine_capacity: config.config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
+    bank_structure_capacity: config.config.carryCapacityGram[CapacityConfig.BankStructure],
     troop_capacity: config.config.carryCapacityGram[CapacityConfig.Army],
     donkey_capacity: config.config.carryCapacityGram[CapacityConfig.Donkey],
     storehouse_boost_capacity: config.config.carryCapacityGram[CapacityConfig.Storehouse],
@@ -941,7 +945,11 @@ export const setCapacityConfig = async (config: Config) => {
   );
 
   const capacities = [
-    { name: "Structure", value: calldata.structure_capacity },
+    { name: "Realm", value: calldata.realm_capacity },
+    { name: "Village", value: calldata.village_capacity },
+    { name: "Hyperstructure", value: calldata.hyperstructure_capacity },
+    { name: "Fragment Mine", value: calldata.fragment_mine_capacity },
+    { name: "Bank", value: calldata.bank_structure_capacity },
     { name: "Troops", value: calldata.troop_capacity },
     { name: "Donkeys", value: calldata.donkey_capacity },
     {

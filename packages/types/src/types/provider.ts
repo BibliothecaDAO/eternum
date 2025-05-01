@@ -355,10 +355,15 @@ export interface SetTravelFoodCostConfigProps extends SystemSigner {
 }
 
 export interface SetCapacityConfigProps extends SystemSigner {
-  structure_capacity: num.BigNumberish; // grams
   troop_capacity: num.BigNumberish; // grams
   donkey_capacity: num.BigNumberish; // grams
   storehouse_boost_capacity: num.BigNumberish; // grams
+
+  realm_capacity: num.BigNumberish; // grams
+  village_capacity: num.BigNumberish; // grams
+  hyperstructure_capacity: num.BigNumberish; // grams
+  fragment_mine_capacity: num.BigNumberish; // grams
+  bank_structure_capacity: num.BigNumberish; // grams
 }
 
 export interface SetAgentConfigProps extends SystemSigner {

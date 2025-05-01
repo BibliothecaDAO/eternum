@@ -16,6 +16,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
+import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
+import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
+import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { Bug, Loader2, PartyPopper, Send } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
@@ -24,111 +27,148 @@ export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
 
+// Define the type for a single realm edge, assuming GetAccountTokensQuery is correctly generated
+type RealmEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
+
+// Define the structure of the augmented realm used internally
+interface AugmentedRealm {
+  originalRealm: RealmEdge; // Keep the original structure
+  parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] };
+  seasonPassMinted: boolean;
+  tokenId: string;
+}
+
 function Mint() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
-
   const [controllerAddress] = useState<string>();
 
-  const { data, isLoading: isPending } = useSuspenseQuery({
+  // --- Fetch data ---
+  const { data, isLoading: isPending } = useSuspenseQuery<GetAccountTokensQuery | null>({
     queryKey: ["erc721Balance", address],
     queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
     refetchInterval: 10_000,
   });
 
-  const realmsErcBalance = useMemo(
+  // --- Prepare Realm Data ---
+  const realmsErcBalance = useMemo<RealmEdge[] | undefined>(
     () =>
-      data?.tokenBalances?.edges?.filter((token) => {
+      data?.tokenBalances?.edges?.filter((token): token is RealmEdge => {
+        // Type assertion
         if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
         return (
           addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
           addAddressPadding(realmsAddress ?? "0x0")
         );
       }),
-    [data, realmsAddress],
+    [data],
   );
 
-  const isDev = import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet";
+  // --- Filtering Hook ---
+  const getRealmMetadataString = useCallback((realm: RealmEdge): string | null => {
+    if (realm?.node?.tokenMetadata?.__typename === "ERC721__Token") {
+      return realm.node.tokenMetadata.metadata;
+    }
+    return null;
+  }, []);
 
-  const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
-    useNftSelection({ userAddress: address as `0x${string}` });
+  const {
+    selectedFilters,
+    allTraits,
+    filteredData: filteredRealms, // Renamed output from hook
+    handleFilterChange,
+    clearFilter,
+    clearAllFilters,
+  } = useTraitFiltering<RealmEdge>(realmsErcBalance, getRealmMetadataString);
 
-  const [initialSelectionDone, setInitialSelectionDone] = useState(false);
-  const loading = isPending; /*|| isSeasonPassMintsLoading*/
-
+  // --- State for Season Pass Mint Status ---
   const [seasonPassStatus, setSeasonPassStatus] = useState<Record<string, boolean>>({});
 
   const handleSeasonPassStatusChange = useCallback((tokenId: string, hasMinted: boolean) => {
     setSeasonPassStatus((prev) => ({ ...prev, [tokenId]: hasMinted }));
   }, []);
 
-  const selectBatchNftsFiltered = (contractAddress: string, tokenIds: string[]) => {
-    const filteredTokenIds = tokenIds.filter((id) => !seasonPassStatus[id]);
-    selectBatchNfts(contractAddress ?? "", filteredTokenIds);
-  };
-
-  const sortedRealms = useMemo(() => {
-    // Filter out null/undefined realms first
-    const validRealms = realmsErcBalance?.filter((realm) => !!realm?.node) || [];
-
-    // Augment realms with their mint status
-    const augmentedRealms = validRealms
+  // --- Augment, Sort Filtered Data ---
+  const augmentedAndSortedRealms = useMemo(() => {
+    // 1. Augment the *filtered* data with parsed metadata and mint status
+    const augmented = filteredRealms
       .map((realm) => {
-        // Ensure realm and node exist before proceeding
-        if (!realm?.node) return null; // Return null for invalid entries
+        if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return null;
+        const tokenId = realm.node.tokenMetadata.tokenId;
 
-        // Extract tokenId safely
-        const tokenId = realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : "";
+        let parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] } = {
+          name: "",
+          attributes: [],
+        };
+        try {
+          const metaString = getRealmMetadataString(realm);
+          if (metaString) {
+            parsedMetadata = JSON.parse(metaString);
+          }
+        } catch (e) {
+          console.error(`Failed to parse metadata for token ${tokenId}:`, e);
+        }
 
         return {
-          ...realm,
-          seasonPassMinted: seasonPassStatus[tokenId] ?? false, // Get status from state, default to false
-        };
+          originalRealm: realm,
+          parsedMetadata: parsedMetadata,
+          seasonPassMinted: seasonPassStatus[tokenId] ?? false,
+          tokenId: tokenId,
+        } as AugmentedRealm;
       })
-      .filter(Boolean); // Filter out any nulls introduced by the check above
+      .filter((realm): realm is AugmentedRealm => realm !== null);
 
-    // Sort the augmented array
-    return augmentedRealms.sort((a, b) => {
-      // Add null checks for TypeScript, even though filter(Boolean) removed them
-      if (!a) return 1;
-      if (!b) return -1;
-
+    // 2. Sort the augmented array
+    return augmented.sort((a, b) => {
       // Sort by minted status first (false/unminted comes first)
       if (a.seasonPassMinted !== b.seasonPassMinted) {
         return a.seasonPassMinted ? 1 : -1;
       }
-
-      try {
-        const aName =
-          a.node?.tokenMetadata.__typename === "ERC721__Token"
-            ? JSON.parse(a.node.tokenMetadata.metadata || "{}").name || ""
-            : "";
-        const bName =
-          b.node?.tokenMetadata.__typename === "ERC721__Token"
-            ? JSON.parse(b.node.tokenMetadata.metadata || "{}").name || ""
-            : "";
-        return aName.localeCompare(bName);
-      } catch {
-        return 0;
-      }
+      // Then sort by name
+      const aName = a.parsedMetadata?.name || "";
+      const bName = b.parsedMetadata?.name || "";
+      return aName.localeCompare(bName);
     });
+  }, [filteredRealms, seasonPassStatus, getRealmMetadataString]);
+
+  // --- NFT Selection Hook ---
+  const { deselectAllNfts, isNftSelected, selectBatchNfts, toggleNftSelection, totalSelectedNfts, selectedTokenIds } =
+    useNftSelection({ userAddress: address as `0x${string}` });
+
+  const loading = isPending;
+
+  const selectBatchNftsFiltered = (contractAddress: string, tokenIds: string[]) => {
+    // Filter based on the currently displayed (and potentially filtered) *augmented* list
+    const eligibleDisplayedTokenIds = augmentedAndSortedRealms.filter((r) => !r.seasonPassMinted).map((r) => r.tokenId);
+
+    const idsToSelect = tokenIds.filter((id) => eligibleDisplayedTokenIds.includes(id));
+    selectBatchNfts(contractAddress ?? "", idsToSelect);
+  };
+
+  // --- Calculate Minting Status (Based on original data) ---
+  const totalRealms = useMemo(() => realmsErcBalance?.length ?? 0, [realmsErcBalance]);
+  const mintedRealmsCount = useMemo(() => {
+    return (
+      realmsErcBalance?.filter((realm) => {
+        if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return false;
+        const tokenId = realm.node.tokenMetadata.tokenId;
+        return seasonPassStatus[tokenId] ?? false;
+      }).length ?? 0
+    );
   }, [realmsErcBalance, seasonPassStatus]);
 
-  // Calculate minting status
-  const totalRealms = sortedRealms.length;
-  const mintedRealmsCount = sortedRealms.filter((realm) => realm && realm.seasonPassMinted).length;
   const allMinted = totalRealms > 0 && mintedRealmsCount === totalRealms;
-  console.log(sortedRealms, totalRealms, mintedRealmsCount);
 
-  // If wallet is not connected, show a prominent connect message
+  const isDev = import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet";
+
+  // --- Render Logic ---
   if (!address) {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
   }
 
-  // Render the minting interface if wallet is connected
   return (
     <div className="flex flex-col h-full p-4">
       {loading && (
@@ -137,7 +177,7 @@ function Mint() {
         </div>
       )}
       <>
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <div>
             {controllerAddress && (
               <div className="text-xl py-4 flex items-center">
@@ -164,8 +204,18 @@ function Mint() {
         {/* Page Title */}
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">Mint Season Passes for your Realms</h2>
         <p className="text-center text-muted-foreground mb-6">
-          Select your Realm NFTs below to mint their corresponding Season Pass NFTs.
+          Select your Realm NFTs below to mint their corresponding Season Pass NFTs
         </p>
+
+        {/* --- Use the Reusable Filter UI --- */}
+        <TraitFilterUI
+          allTraits={allTraits}
+          selectedFilters={selectedFilters}
+          handleFilterChange={handleFilterChange}
+          clearFilter={clearFilter}
+          clearAllFilters={clearAllFilters}
+        />
+        {/* --- End Filter UI --- */}
 
         <div className="flex-grow overflow-y-auto">
           <div className="flex flex-col gap-4">
@@ -191,47 +241,55 @@ function Mint() {
               </div>
             )}
             <Suspense fallback={<Skeleton>Loading</Skeleton>}>
-              {allMinted && (
+              {/* Show allMinted message only if no filters are active */}
+              {allMinted && Object.keys(selectedFilters).length === 0 && (
                 <div className="mb-4 flex items-center gap-3 rounded-lg border border-lime-300 bg-lime-50 p-4 text-lime-800 shadow-sm">
                   <PartyPopper className="h-6 w-6 text-lime-600" />
                   <span className="font-semibold">Congratulations! All your Realms have Season Passes minted.</span>
                 </div>
               )}
 
+              {/* Show message if filters result in no realms */}
+              {augmentedAndSortedRealms.length === 0 && Object.keys(selectedFilters).length > 0 && !loading && (
+                <div className="text-center py-6 text-muted-foreground">No realms match the selected filters.</div>
+              )}
+              {/* Show message if user has no realms (based on original data) */}
+              {totalRealms === 0 && !loading && (
+                <div className="text-center py-6 text-muted-foreground">
+                  You do not own any Realm NFTs yet. {isDev && "Try minting one!"}
+                </div>
+              )}
+
               {/* --- Top Action Bar (sm+) --- */}
-              {totalRealms > 0 && !allMinted && totalSelectedNfts > 0 && (
+              {/* Only show action bar if there are *filtered* and *augmented* realms eligible for minting */}
+              {augmentedAndSortedRealms.some((realm) => !realm.seasonPassMinted) && totalSelectedNfts > 0 && (
                 <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-2  border-gold/15 border rounded-2xl">
                   <div className="flex items-center gap-4 w-auto">
-                    {" "}
-                    {/* Selection controls part */}
-                    {(data?.tokenBalances?.edges?.length ?? 0) > 0 &&
-                      (() => {
-                        const allTokenIds =
-                          realmsErcBalance
-                            ?.map((token) =>
-                              token?.node?.tokenMetadata.__typename === "ERC721__Token"
-                                ? token.node.tokenMetadata.tokenId
-                                : "",
-                            )
-                            .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
+                    {/* Selection controls part - Updated to use augmented/sorted/filtered realms */}
+                    {(() => {
+                      // Calculate eligible based on *currently displayed* augmented realms
+                      const eligibleTokenIds = augmentedAndSortedRealms
+                        .filter((realm) => !realm.seasonPassMinted)
+                        .map((realm) => realm.tokenId);
 
-                        const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
+                      // Safely access contractAddress only for ERC721 from the first displayed realm's original data
+                      const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
+                      const contractAddress =
+                        firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
 
-                        return (
-                          <SelectNftActions
-                            totalSelectedNfts={totalSelectedNfts}
-                            selectBatchNfts={selectBatchNftsFiltered}
-                            deselectAllNfts={deselectAllNfts}
-                            contractAddress={
-                              realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
-                                ? realmsErcBalance[0].node.tokenMetadata.contractAddress
-                                : ""
-                            }
-                            eligibleTokenIds={eligibleTokenIds}
-                            totalEligibleNfts={eligibleTokenIds.length}
-                          />
-                        );
-                      })()}
+                      return (
+                        <SelectNftActions
+                          totalSelectedNfts={totalSelectedNfts}
+                          // Pass only eligible IDs from the *currently displayed* set
+                          selectBatchNfts={(contract, ids) => selectBatchNftsFiltered(contract, ids)}
+                          deselectAllNfts={deselectAllNfts}
+                          contractAddress={contractAddress}
+                          eligibleTokenIds={eligibleTokenIds}
+                          totalEligibleNfts={eligibleTokenIds.length}
+                        />
+                      );
+                    })()}
+
                     <div className="whitespace-nowrap">
                       {" "}
                       {/* Selected Count */}
@@ -243,8 +301,8 @@ function Mint() {
                     disabled={totalSelectedNfts < 1}
                     onClick={() => setIsOpen(true)}
                     variant="cta"
-                    className="w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200 
-                              font-sans hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]"
+                    className="w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200
+                                font-sans hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]"
                   >
                     <Send className="!h-4 !w-4" />
                     Claim {totalSelectedNfts > 0 ? `${totalSelectedNfts} ` : ""}Season Pass
@@ -254,10 +312,11 @@ function Mint() {
               )}
               {/* --- End Top Action Bar --- */}
 
+              {/* Use augmentedAndSortedRealms for the grid */}
               <RealmsGrid
                 isNftSelected={isNftSelected}
                 toggleNftSelection={toggleNftSelection}
-                realms={sortedRealms ?? []}
+                realms={augmentedAndSortedRealms.map((ar) => ar.originalRealm) ?? []} // Extract original realm
                 onSeasonPassStatusChange={handleSeasonPassStatusChange}
               />
             </Suspense>
@@ -265,80 +324,66 @@ function Mint() {
         </div>
 
         {/* Sticky Bottom Action Bar (Mobile Only) */}
-        {totalRealms > 0 &&
-          !allMinted &&
-          totalSelectedNfts > 0 && ( // Only show actions if there are realms, not all are minted, AND at least one is selected
-            <div className="sm:hidden sticky bottom-0 z-20 bg-background border-t border-gold/15 p-4 mt-auto">
-              {" "}
-              {/* MODIFIED: Added sm:hidden */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Only show action bar if there are *filtered* and *augmented* realms eligible for minting */}
+        {augmentedAndSortedRealms.some((realm) => !realm.seasonPassMinted) && totalSelectedNfts > 0 && (
+          <div className="sm:hidden sticky bottom-0 z-20 bg-background border-t border-gold/15 p-4 mt-auto">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              {/* Selection actions - Updated to use augmented/sorted/filtered realms */}
+              {(() => {
+                // Calculate eligible based on *currently displayed* augmented realms
+                const eligibleTokenIds = augmentedAndSortedRealms
+                  .filter((realm) => !realm.seasonPassMinted)
+                  .map((realm) => realm.tokenId);
+
+                // Safely access contractAddress only for ERC721 from the first displayed realm's original data
+                const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
+                const contractAddress =
+                  firstRealmMeta?.__typename === "ERC721__Token" ? firstRealmMeta.contractAddress : "";
+
+                return (
+                  <SelectNftActions
+                    totalSelectedNfts={totalSelectedNfts}
+                    // Pass only eligible IDs from the *currently displayed* set
+                    selectBatchNfts={(contract, ids) => selectBatchNftsFiltered(contract, ids)}
+                    deselectAllNfts={deselectAllNfts}
+                    contractAddress={contractAddress}
+                    eligibleTokenIds={eligibleTokenIds}
+                    totalEligibleNfts={eligibleTokenIds.length}
+                  />
+                );
+              })()}
+              <div className="whitespace-nowrap ml-auto sm:ml-0">
                 {" "}
-                {/* Inner container */}
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                  {" "}
-                  {/* Selection actions */}
-                  {(data?.tokenBalances?.edges?.length ?? 0) > 0 &&
-                    (() => {
-                      // Ensure edges exist before calculating
-                      const allTokenIds =
-                        realmsErcBalance
-                          ?.map((token) =>
-                            token?.node?.tokenMetadata.__typename === "ERC721__Token"
-                              ? token.node.tokenMetadata.tokenId
-                              : "",
-                          )
-                          .filter((tokenId): tokenId is string => tokenId !== "") ?? [];
-
-                      const eligibleTokenIds = allTokenIds.filter((id) => !seasonPassStatus[id]);
-
-                      return (
-                        <SelectNftActions
-                          totalSelectedNfts={totalSelectedNfts}
-                          selectBatchNfts={selectBatchNftsFiltered} // Uses filtered list internally
-                          deselectAllNfts={deselectAllNfts}
-                          contractAddress={
-                            realmsErcBalance?.[0]?.node?.tokenMetadata.__typename === "ERC721__Token"
-                              ? realmsErcBalance[0].node.tokenMetadata.contractAddress
-                              : ""
-                          }
-                          eligibleTokenIds={eligibleTokenIds} // Pass the filtered list
-                          totalEligibleNfts={eligibleTokenIds.length} // Pass the count for comparison
-                        />
-                      );
-                    })()}
-                  <div className="whitespace-nowrap ml-auto sm:ml-0">
-                    {" "}
-                    {/* Selected count */}
-                    <TypeH3>{totalSelectedNfts} Selected</TypeH3>
-                  </div>
-                </div>
-                <Button
-                  disabled={totalSelectedNfts < 1}
-                  onClick={() => setIsOpen(true)}
-                  variant="cta"
-                  className="w-full sm:w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200 
-                           hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]" /* Mint Button */
-                >
-                  <Send className="!h-4 !w-4" />
-                  Mint {totalSelectedNfts > 1 ? `${totalSelectedNfts} ` : ""}Season Pass
-                  {totalSelectedNfts > 1 ? "es" : ""}
-                </Button>
+                {/* Selected count */}
+                <TypeH3>{totalSelectedNfts} Selected</TypeH3>
               </div>
             </div>
-          )}
+            <Button
+              disabled={totalSelectedNfts < 1}
+              onClick={() => setIsOpen(true)}
+              variant="cta"
+              className="w-full sm:w-auto sm:px-8 sm:py-2.5 flex items-center gap-2 transition-all duration-200
+                             hover:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)] focus:shadow-[0_0_15px_3px_rgba(234,179,8,0.5)]" /* Mint Button */
+            >
+              <Send className="!h-4 !w-4" />
+              Mint {totalSelectedNfts > 1 ? `${totalSelectedNfts} ` : ""}Season Pass
+              {totalSelectedNfts > 1 ? "es" : ""}
+            </Button>
+          </div>
+        )}
 
         {isOpen && (
           <SeasonPassMintDialog
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             deselectAllNfts={deselectAllNfts}
-            isSuccess={status === "success"}
-            realm_ids={selectedTokenIds}
+            isSuccess={false} // Pass default value for isSuccess
+            realm_ids={selectedTokenIds} // Pass only selected IDs
           />
         )}
         {isRealmMintOpen && (
           <RealmMintDialog
-            totalOwnedRealms={realmsErcBalance?.length}
+            totalOwnedRealms={totalRealms} // Use total count before filtering
             isOpen={isRealmMintOpen}
             setIsOpen={setIsRealmMintIsOpen}
           />

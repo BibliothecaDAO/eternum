@@ -3,7 +3,9 @@ use dojo::model::ModelStorage;
 use dojo::world::{WorldStorage, WorldStorageTrait};
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-use s1_eternum::models::config::{CapacityConfig, StartingResourcesConfig, VillageTokenConfig, WorldConfigUtilImpl};
+use s1_eternum::models::config::{
+    StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
+};
 use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
 use s1_eternum::models::position::{Coord, CoordImpl, Direction};
 use s1_eternum::models::resource::resource::{
@@ -155,8 +157,18 @@ pub impl iStructureImpl of IStructureTrait {
         IMapImpl::occupy(ref world, ref tile, tile_occupier, structure_id);
 
         // set structure capacity
-        let capacity_config: CapacityConfig = WorldConfigUtilImpl::get_member(world, selector!("capacity_config"));
-        let capacity: u128 = capacity_config.structure_capacity.into() * RESOURCE_PRECISION;
+        let structure_capacity_config: StructureCapacityConfig = WorldConfigUtilImpl::get_member(
+            world, selector!("structure_capacity_config"),
+        );
+        let capacity: u64 = match category {
+            StructureCategory::None => 0,
+            StructureCategory::Realm => structure_capacity_config.realm_capacity,
+            StructureCategory::Village => structure_capacity_config.village_capacity,
+            StructureCategory::Hyperstructure => structure_capacity_config.hyperstructure_capacity,
+            StructureCategory::FragmentMine => structure_capacity_config.fragment_mine_capacity,
+            StructureCategory::Bank => structure_capacity_config.bank_structure_capacity,
+        };
+        let capacity: u128 = capacity.into() * RESOURCE_PRECISION;
         let structure_weight: Weight = Weight { capacity, weight: 0 };
         ResourceImpl::initialize(ref world, structure_id);
         ResourceImpl::write_weight(ref world, structure_id, structure_weight);
