@@ -1,5 +1,5 @@
 [namespace]
-default = "s1_eternum"
+default = "marketplace"
 
 [env]
 account_address = "0x01BFC84464f990C09Cc0e5D64D18F54c3469fD5c467398BF31293051bAde1C39"
@@ -7,8 +7,8 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 
 [world]
-seed = "eternum-sepolia.1002444"
-name = "Eternum Sepolia"
+seed = "marketplace0"
+name = "Realms: Marketplace"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
 website = "https://eternum.realms.world/"

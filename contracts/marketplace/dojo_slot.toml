@@ -1,5 +1,5 @@
 [namespace]
-default = "s1_eternum"
+default = "marketplace"
 
 [env]
 ## local
@@ -8,8 +8,8 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 rpc_url = "https://api.cartridge.gg/x/hello/katana"
 
 [world]
-seed = "s1_eternum"
-name = "Realms: Eternum"
+seed = "marketplace0"
+name = "Realms: Marketplace"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
 website = "https://alpha-eternum.realms.world/"
