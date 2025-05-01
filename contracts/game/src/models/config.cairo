@@ -45,6 +45,7 @@ pub struct WorldConfig {
     pub village_pass_config: VillageTokenConfig,
     pub wonder_production_bonus_config: WonderProductionBonusConfig,
     pub quest_config: QuestConfig,
+    pub structure_capacity_config: StructureCapacityConfig,
 }
 
 #[derive(Introspect, Copy, Drop, Serde)]
@@ -213,10 +214,19 @@ pub struct HyperstructureCostConfig {
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 pub struct CapacityConfig {
-    pub structure_capacity: u128, // grams
+    pub structure_capacity: u128, // grams // deprecated
     pub troop_capacity: u32, // grams
     pub donkey_capacity: u32, // grams
     pub storehouse_boost_capacity: u32,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+pub struct StructureCapacityConfig {
+    pub realm_capacity: u64, // grams
+    pub village_capacity: u64, // grams
+    pub hyperstructure_capacity: u64, // grams
+    pub fragment_mine_capacity: u64, // grams
+    pub bank_structure_capacity: u64,
 }
 
 // speed

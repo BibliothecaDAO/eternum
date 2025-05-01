@@ -227,7 +227,11 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.Structure]: 400_000_000_000, // 400m kg
+    [CapacityConfig.RealmStructure]: 400_000_000_000, // 400m kg
+    [CapacityConfig.VillageStructure]: 200_000_000_000, // 200m kg
+    [CapacityConfig.HyperstructureStructure]: 1_800_000_000, // 1.8m kg
+    [CapacityConfig.BankStructure]: 400_000_000_000, // 400m kg
+    [CapacityConfig.FragmentMineStructure]: 100_000_000, // 100k kg
     [CapacityConfig.Donkey]: 500_000,
     // 10_000 gr per army
     [CapacityConfig.Army]: 10_000,

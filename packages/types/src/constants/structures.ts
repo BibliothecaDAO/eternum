@@ -262,10 +262,14 @@ export function getProducedResource(category: BuildingType): ResourcesIds | unde
 
 export enum CapacityConfig {
   None = 0,
-  Structure = 1,
+  RealmStructure = 1,
   Donkey = 2,
   Army = 3,
   Storehouse = 4,
+  VillageStructure = 5,
+  HyperstructureStructure = 6,
+  BankStructure = 7,
+  FragmentMineStructure = 8,
 }
 
 export const CAPACITY_CONFIG_CATEGORY_STRING_MAP: { [key: string]: number } = {

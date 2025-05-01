@@ -1,7 +1,7 @@
 use s1_eternum::models::config::{
     BattleConfig, CapacityConfig, HyperstructureConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig,
-    TroopStaminaConfig, VillageTokenConfig,
+    ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, StructureCapacityConfig, TradeConfig,
+    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig,
 };
 use s1_eternum::models::resource::production::building::BuildingCategory;
 
@@ -76,7 +76,9 @@ pub trait IWeightConfig<T> {
 
 #[starknet::interface]
 pub trait ICapacityConfig<T> {
-    fn set_capacity_config(ref self: T, capacity_config: CapacityConfig);
+    fn set_capacity_config(
+        ref self: T, non_structure_capacity_config: CapacityConfig, structure_capacity_config: StructureCapacityConfig,
+    );
 }
 
 #[starknet::interface]
@@ -207,8 +209,8 @@ pub mod config_systems {
         HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
         ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
-        StartingResourcesConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
-        TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
+        StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
+        TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VillageTokenConfig, WeightConfig,
         WonderProductionBonusConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use s1_eternum::models::name::AddressName;
@@ -471,11 +473,18 @@ pub mod config_systems {
 
     #[abi(embed_v0)]
     impl CapacityConfigImpl of super::ICapacityConfig<ContractState> {
-        fn set_capacity_config(ref self: ContractState, capacity_config: CapacityConfig) {
+        fn set_capacity_config(
+            ref self: ContractState,
+            non_structure_capacity_config: CapacityConfig,
+            structure_capacity_config: StructureCapacityConfig,
+        ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
 
-            WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), capacity_config);
+            WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), non_structure_capacity_config);
+            WorldConfigUtilImpl::set_member(
+                ref world, selector!("structure_capacity_config"), structure_capacity_config,
+            );
         }
     }
 
