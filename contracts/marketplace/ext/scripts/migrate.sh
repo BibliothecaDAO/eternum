@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # =============================================================================
-#          Eternum Game Contract Migration Script
+#          SeasonPass Marketplace Contract Migration Script
 # =============================================================================
 #
 # DESCRIPTION:
-#   This script automates the build and deployment process for the game contracts
+#   This script automates the build and deployment process for the marketplace contracts
 #   using sozo. 
 #
 # USAGE:
@@ -86,11 +86,11 @@ done
 
 echo -e ""
 echo -e "${BLUE}╔═════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║           Game Contract Compilation                 ║${NC}"
+echo -e "${BLUE}║           MarketPlace Contract Compilation                 ║${NC}"
 echo -e "${BLUE}╚═════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
-echo -e "${YELLOW}► Building Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"
+echo -e "${YELLOW}► Building MarketPlace contracts with --profile ${BOLD}${PROFILE}${YELLOW}"
 COMMAND="sozo build --profile $PROFILE"
 echo -e ""
 echo -e "${BLUE}► Running command: ${BOLD}${COMMAND}${BLUE}${NC}"
@@ -103,11 +103,11 @@ $COMMAND
 
 echo -e ""
 echo -e "${BLUE}╔═════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                Game Contract Migration              ║${NC}"
+echo -e "${BLUE}║                Marketplace Contract Migration              ║${NC}"
 echo -e "${BLUE}╚═════════════════════════════════════════════════════╝${NC}"
 echo -e ""
 
-echo -e "${YELLOW}► Migrating Game contracts with --profile ${BOLD}${PROFILE}${YELLOW}"\
+echo -e "${YELLOW}► Migrating Marketplace contracts with --profile ${BOLD}${PROFILE}${YELLOW}"\
        "and world contract: ${BOLD}${WORLD_CONTRACT:-(unspecified)}${YELLOW}${NC}"
 COMMAND="sozo migrate --profile $PROFILE $WORLD_CONTRACT --fee eth"
 echo -e ""
