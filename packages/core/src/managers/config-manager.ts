@@ -692,16 +692,16 @@ export class ClientConfigManager {
       let capacityInGrams = 0;
       switch (category) {
         case CapacityConfig.RealmStructure:
-          capacityInGrams = Number(structureCapacityConfig?.realm_structure_capacity ?? 0);
+          capacityInGrams = Number(structureCapacityConfig?.realm_capacity ?? 0);
           break;
         case CapacityConfig.VillageStructure:
-          capacityInGrams = Number(structureCapacityConfig?.village_structure_capacity ?? 0);
+          capacityInGrams = Number(structureCapacityConfig?.village_capacity ?? 0);
           break;
         case CapacityConfig.HyperstructureStructure:
-          capacityInGrams = Number(structureCapacityConfig?.hyperstructure_structure_capacity ?? 0);
+          capacityInGrams = Number(structureCapacityConfig?.hyperstructure_capacity ?? 0);
           break;
         case CapacityConfig.FragmentMineStructure:
-          capacityInGrams = Number(structureCapacityConfig?.fragment_mine_structure_capacity ?? 0);
+          capacityInGrams = Number(structureCapacityConfig?.fragment_mine_capacity ?? 0);
           break;
         case CapacityConfig.BankStructure:
           capacityInGrams = Number(structureCapacityConfig?.bank_structure_capacity ?? 0);
