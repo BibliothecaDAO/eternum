@@ -5,7 +5,13 @@ pub trait IMarketplaceSystems<T> {
     fn cancel(ref self: T, order_id: u64);
     fn edit(ref self: T, order_id: u64, new_price: u128);
     fn admin_whitelist_collection(ref self: T, collection_address: starknet::ContractAddress);
-    fn admin_update_market_fee(ref self: T, fee_numerator: u64, fee_denominator: u64);
+    fn admin_update_market_fee(
+        ref self: T,
+        fee_recipient: starknet::ContractAddress,
+        fee_token: starknet::ContractAddress,
+        fee_numerator: u64,
+        fee_denominator: u64,
+    );
     fn admin_update_market_owner_address(ref self: T, new_address: starknet::ContractAddress);
     fn admin_pause(ref self: T);
     fn admin_unpause(ref self: T);
@@ -322,7 +328,13 @@ pub mod marketplace_systems {
         /// Updates the DAO fee. Can only be called by the DAO multisig.
         /// # Arguments
         /// * `fee` - The new fee.
-        fn admin_update_market_fee(ref self: ContractState, fee_numerator: u64, fee_denominator: u64) {
+        fn admin_update_market_fee(
+            ref self: ContractState,
+            fee_recipient: starknet::ContractAddress,
+            fee_token: starknet::ContractAddress,
+            fee_numerator: u64,
+            fee_denominator: u64,
+        ) {
             // ensure caller is admin
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut market_global: MarketGlobalModel = world.read_model(MARKET_GLOBAL_ID);
@@ -330,6 +342,8 @@ pub mod marketplace_systems {
 
             // update fee
             let mut market_fee: MarketFeeModel = world.read_model(MARKET_GLOBAL_ID);
+            market_fee.fee_recipient = fee_recipient;
+            market_fee.fee_token = fee_token;
             market_fee.fee_numerator = fee_numerator;
             market_fee.fee_denominator = fee_denominator;
             world.write_model(@market_fee);
