@@ -543,7 +543,16 @@ const OrderCreation = memo(
       let rate = takerGives[1] / makerGives[1];
       if (!Number.isInteger(rate)) {
         // get the number of decimal places in rate
-        let decimalPlaces = rate.toString().split(".")[1].length;
+        const rateStr = rate.toString();
+        let decimalPlaces = 0;
+
+        if (rateStr.includes(".")) {
+          decimalPlaces = rateStr.split(".")[1]?.length || 0;
+        } else if (rateStr.includes("e-")) {
+          // Handle scientific notation like 1e-6
+          decimalPlaces = parseInt(rateStr.split("e-")[1], 10);
+        }
+
         decimalPlaces = Math.min(decimalPlaces, maxDecimalPlaces);
 
         // convert the rate to an integer
