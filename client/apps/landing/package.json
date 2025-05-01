@@ -17,12 +17,12 @@
     "vite-plugin-pwa": "^0.20.5"
   },
   "dependencies": {
-    "@bibliothecadao/eternum": "workspace:*",
-    "@bibliothecadao/dojo": "workspace:*",
-    "@bibliothecadao/provider": "workspace:*",
-    "@bibliothecadao/types": "workspace:*",
     "@ark-project/core": "3.0.0-beta.1",
     "@ark-project/react": "2.0.0-beta.2",
+    "@bibliothecadao/dojo": "workspace:*",
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:",
     "@graphql-codegen/schema-ast": "^4.1.0",
     "@graphql-typed-document-node/core": "^3.2.0",
@@ -34,7 +34,7 @@
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/react-separator": "^1.1.0",
-    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-tooltip": "^1.1.3",
     "@starknet-react/chains": "catalog:",
     "@starknet-react/core": "catalog:",
@@ -67,10 +67,10 @@
     "@storybook/react": "^8.3.2",
     "@storybook/react-vite": "^8.3.2",
     "@storybook/test": "^8.3.2",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
     "@tanstack/router-devtools": "^1.74.0",
-    "@tanstack/router-plugin": "^1.73.1"
+    "@tanstack/router-plugin": "^1.73.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:"
   },
   "peerDependencies": {
     "starknet": "6.23.1"

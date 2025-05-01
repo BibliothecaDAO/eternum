@@ -33,13 +33,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         cursor-pointer
       `}
     >
-      {/* Prompt to Manage Section (Top of Card) - REMOVED */}
-      {/* <div className="bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 text-xs font-semibold p-2 text-center border-b border-blue-200/50">
-        Click card to manage
-      </div> */}
-
-      {/* Main card content starts below the manage prompt */}
-      {/* <div className="relative z-10 bg-card/95"> */}
       <div className="relative">
         <img
           src={image}
@@ -78,7 +71,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
           </span>
         </CardFooter>
       )}
-      {/* </div> */}
     </Card>
   );
 };

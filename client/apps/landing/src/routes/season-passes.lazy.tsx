@@ -42,9 +42,18 @@ function SeasonPasses() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [controllerAddress] = useState<string>();
 
+  // --- Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
   const { data, isLoading: isPassesLoading } = useSuspenseQuery<GetAccountTokensQuery | null>({
     queryKey: ["erc721Balance", address, "seasonPasses"],
-    queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
+    queryFn: () =>
+      address
+        ? execute(GET_ACCOUNT_TOKENS, {
+            accountAddress: address,
+          })
+        : null,
     refetchInterval: 10_000,
   });
 

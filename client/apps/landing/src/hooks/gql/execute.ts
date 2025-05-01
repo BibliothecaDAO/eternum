@@ -17,6 +17,7 @@ export async function execute<TResult, TVariables>(
     }),
   });
 
+
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
