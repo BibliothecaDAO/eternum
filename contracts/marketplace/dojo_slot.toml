@@ -16,5 +16,5 @@ website = "https://alpha-eternum.realms.world/"
 
 [writers]
 "marketplace" = [
-	"marketplace-marketplace_systens",
+	"marketplace-marketplace_systems",
 ]

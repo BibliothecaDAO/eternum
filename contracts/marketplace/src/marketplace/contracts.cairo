@@ -315,10 +315,15 @@ pub mod marketplace_systems {
         /// # Arguments
         /// * `new_address` - The new DAO address.
         fn admin_update_market_owner_address(ref self: ContractState, new_address: starknet::ContractAddress) {
+            // ensure new address is not zero
+            assert!(new_address.is_non_zero(), "Market: New address is zero");
+
             // ensure caller is admin
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let mut market_global: MarketGlobalModel = world.read_model(MARKET_GLOBAL_ID);
-            assert!(market_global.owner == get_caller_address(), "Market: Not market owner");
+            if market_global.owner.is_non_zero() {
+                assert!(market_global.owner == get_caller_address(), "Market: Not market owner");
+            }
 
             // update owner
             market_global.owner = new_address;

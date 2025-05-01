@@ -81,9 +81,7 @@ echo -e "${BLUE}╚════════════════════�
 
 # Extract and validate contract addresses
 echo -e "${YELLOW}► Reading contract addresses...${NC}"
-VILLAGE_PASS=$(jq -r '.villagePass' "$JSON_FILE")
 SEASON_PASS=$(jq -r '.seasonPass' "$JSON_FILE")
-REALMS=$(jq -r '.realms' "$JSON_FILE")
 LORDS=$(jq -r '.lords' "$JSON_FILE")
 
 
@@ -92,11 +90,9 @@ echo -e "\n${BLUE}╔═══════════════════�
 echo -e "${BLUE}║                     Contract Addresses                          ║${NC}"
 echo -e "${BLUE}╠════════════════════════════════════════════════════════════════╣${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
-echo -e "${BLUE}║  ${MAGENTA}${BOLD}VILLAGE PASS:${NC} ${BLUE}${BOLD}$VILLAGE_PASS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}║  ${MAGENTA}${BOLD}SEASON PASS:${NC} ${BLUE}${BOLD}$SEASON_PASS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
-echo -e "${BLUE}║  ${MAGENTA}${BOLD}REALMS:${NC} ${BLUE}${BOLD}$REALMS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
 echo -e "${BLUE}║  ${MAGENTA}${BOLD}LORDS:${NC} ${BLUE}${BOLD}$LORDS${NC}${BLUE}  ║${NC}"
 echo -e "${BLUE}║                                                                ║${NC}"
@@ -107,17 +103,13 @@ echo -e "${YELLOW}► Updating TOML configuration...${NC}"
 tmp_file=$(mktemp)
 
 # Process the TOML file
-awk -v season_pass="$SEASON_PASS" -v village_pass="$VILLAGE_PASS" -v realms="$REALMS" -v lords="$LORDS" '
+awk -v season_pass="$SEASON_PASS" lords="$LORDS" '
 BEGIN { erc721_count = 0 }
 {
     if ($0 ~ /erc721:0x[0-9a-fA-F]+/) {
         erc721_count++
         if (erc721_count == 1) {
-            gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" village_pass)
-        } else if (erc721_count == 2) {
             gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" season_pass)
-        } else if (erc721_count == 3) {
-            gsub(/erc721:0x[0-9a-fA-F]+/, "erc721:" realms)
         }
     } else if ($0 ~ /erc20:0x[0-9a-fA-F]+/) {
         gsub(/erc20:0x[0-9a-fA-F]+/, "erc20:" lords)
