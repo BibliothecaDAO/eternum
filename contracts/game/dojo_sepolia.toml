@@ -7,7 +7,7 @@ private_key = "0x075362a844768f31c8058ce31aec3dd7751686440b4f220f410ae0c9bf042e6
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 
 [world]
-seed = "eternum-sepolia.1002"
+seed = "eternum-sepolia.1002444"
 name = "Eternum Sepolia"
 description = "Rule the Hex"
 cover_uri = "file://assets/bg.webp"
