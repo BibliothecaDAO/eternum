@@ -1313,7 +1313,7 @@
   "contracts": [
     {
       "address": "0x7e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
-      "class_hash": "0x7219ff84ce24192b5941c10ad481ac49f24121031e19582dcc56925953fd756",
+      "class_hash": "0x34f6213ddab0bb97a8f0814ece66f1dcebca3b57aa9dbb5e34b3da1f89c026c",
       "abi": [
         {
           "type": "impl",
@@ -1458,6 +1458,14 @@
               "type": "function",
               "name": "admin_update_market_fee",
               "inputs": [
+                {
+                  "name": "fee_recipient",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "fee_token",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
                 {
                   "name": "fee_numerator",
                   "type": "core::integer::u64"
