@@ -74,6 +74,16 @@ pub mod marketplace_systems {
 
     #[derive(IntrospectPacked, Copy, Drop, Serde)]
     #[dojo::model]
+    pub struct MarketTokenOrderModel {
+        #[key]
+        token_id: u16,
+        #[key]
+        collection_address: starknet::ContractAddress,
+        order_id: u64,
+    }
+
+    #[derive(IntrospectPacked, Copy, Drop, Serde)]
+    #[dojo::model]
     pub struct MarketWhitelistModel {
         #[key]
         collection_id: u32,
@@ -129,7 +139,12 @@ pub mod marketplace_systems {
 
             // ensure the collection is whitelisted
             let collection_whitelisted: MarketWhitelistModel = world.read_model(collection_id);
-            assert!(collection_whitelisted.collection_address.is_non_zero(), "Market: Collection not whitelisted");
+            let collection_address = collection_whitelisted.collection_address;
+            assert!(collection_address.is_non_zero(), "Market: Collection not whitelisted");
+
+            // ensure the token cant be listed more than once
+            let token_order: MarketTokenOrderModel = world.read_model((token_id, collection_address));
+            assert!(token_order.order_id.is_zero(), "Market: Token already listed");
 
             // ensure the market is approved to spend the nft
             let collection_dispatcher = IERC721Dispatcher {
@@ -151,6 +166,12 @@ pub mod marketplace_systems {
 
             // write the market order
             world.write_model(@MarketOrderModel { order_id: market_global.order_count, order: market_order });
+
+            // write the token order
+            world
+                .write_model(
+                    @MarketTokenOrderModel { token_id, collection_address, order_id: market_global.order_count },
+                );
 
             // emit event
             world
@@ -218,6 +239,14 @@ pub mod marketplace_systems {
             market_order_model.order.active = false;
             world.write_model(@market_order_model);
 
+            // make token order inactive
+            world
+                .write_model(
+                    @MarketTokenOrderModel {
+                        token_id: market_order_model.order.token_id, collection_address, order_id: 0,
+                    },
+                );
+
             // emit event
             world
                 .emit_event(
@@ -256,6 +285,14 @@ pub mod marketplace_systems {
             // set inactive
             market_order_model.order.active = false;
             world.write_model(@market_order_model);
+
+            // make token order inactive
+            world
+                .write_model(
+                    @MarketTokenOrderModel {
+                        token_id: market_order_model.order.token_id, collection_address, order_id: 0,
+                    },
+                );
 
             // emit event
             world
