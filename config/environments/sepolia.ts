@@ -47,7 +47,7 @@ export const SepoliaEternumGlobalConfig: Config = {
     shardsMinesWinProbability: 1,
     shardsMinesFailProbability: 11,
     agentFindProbability: 1,
-    agentFindFailProbability: 10,
+    agentFindFailProbability: 6,
     questFindProbability: 1,
     questFindFailProbability: 10,
   },
