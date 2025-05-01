@@ -1,0 +1,47 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "http://127.0.0.1:5050"
+
+world_address = "0x51ee71bcf98cdcba52e97f0b98294e99e0c94fa79dade5b004703cf48231b74"
+
+db_dir = "torii-local"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = [
+	  "erc721:0x7274e6b255c4951ef345e88d5b4a047100c6593157ce1d994e279bb9361371a",
+      "erc20:0x3263681c59dd5ca9d837039e3c954386da445acd4fb7525f7f97b7b0392d7a2",
+]
+
+namespaces = ["marketplace"]
+
+world_block = 0
+
+[erc]
+max_metadata_tasks = 2
+
+[sql]
+all_model_indices = false
+model_indices = [
+	{ model_tag = "marketplace-MarketOrderModel", fields = ["order_id"]},
+]
+
+historical = []
+cache_size = -1_000_000 # 1024MB of cache size
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

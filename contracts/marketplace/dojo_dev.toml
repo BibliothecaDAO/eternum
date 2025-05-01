@@ -1,0 +1,19 @@
+[namespace]
+default = "marketplace"
+
+[env]
+## local
+account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+
+[world]
+seed = "marketplace0"
+name = "Realms: Marketplace"
+description = "Rule the Hex"
+cover_uri = "file://assets/bg.webp"
+website = "https://alpha-eternum.realms.world/"
+
+[writers]
+"marketplace" = [
+	"marketplace-marketplace_systens",
+]
