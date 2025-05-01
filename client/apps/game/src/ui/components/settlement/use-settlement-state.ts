@@ -1,6 +1,6 @@
 import { Position } from "@/types/position";
-import { ContractAddress } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { SettlementLocation } from "./settlement-types";
 import { generateSettlementLocations, getBanksLocations, getOccupiedLocations } from "./settlement-utils";
@@ -50,15 +50,37 @@ export const useSettlementState = (maxLayers: number, extraPlayerOccupiedLocatio
 
       setAvailableLocations(allLocations);
 
+      const occupiedLocations = await getOccupiedLocations(
+        ContractAddress(account.address),
+        components,
+        allLocationsMap,
+      );
+
       // Fetch occupied locations
-      const locations = [
-        ...getOccupiedLocations(ContractAddress(account.address), components, allLocationsMap),
-        ...extraPlayerOccupiedLocations,
-      ];
+      const locations = [...occupiedLocations, ...extraPlayerOccupiedLocations];
       // Move this here, so it only happens once after fetching
       setSettledLocations(locations);
     };
+
+    // Initial fetch
     fetchOccupiedLocations();
+
+    // Set up polling interval (every 30 seconds)
+    const intervalId = setInterval(fetchOccupiedLocations, 30 * 1000);
+
+    // Set up timeout to clear interval after 30 minutes
+    const timeoutId = setTimeout(
+      () => {
+        clearInterval(intervalId);
+      },
+      30 * 60 * 1000,
+    );
+
+    // Cleanup function
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
   }, [account?.address, components, extraPlayerOccupiedLocations, maxLayers]);
 
   return {

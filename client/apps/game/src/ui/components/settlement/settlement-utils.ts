@@ -1,3 +1,4 @@
+import { fetchRealmSettlements } from "@/services/api";
 import { Position } from "@/types/position";
 import { Coord } from "@bibliothecadao/eternum";
 import {
@@ -108,29 +109,37 @@ export function generateSettlementLocations(
 /**
  * Gets all occupied locations from the game state
  */
-export const getOccupiedLocations = (
+export const getOccupiedLocations = async (
   playerAddress: ContractAddress,
   components: ClientComponents,
   locations_map: Map<string, { side: number; layer: number; point: number }>,
-) => {
-  const realmEntities = runQuery([HasValue(components.Structure, { category: StructureType.Realm })]);
-  const realmPositions = Array.from(realmEntities).map((entity) => {
-    const structure = getComponentValue(components.Structure, entity);
-    if (structure) {
-      const x = structure?.base.coord_x;
-      const y = structure?.base.coord_y;
+): Promise<SettlementLocation[]> => {
+  try {
+    const settlements = await fetchRealmSettlements();
+    const realmPositions = settlements.map((entity) => {
+      const x = entity["base.coord_x"];
+      const y = entity["base.coord_y"];
 
       // Use the improved reverse calculation function
       const location = locations_map.get(`${x},${y}`);
-      const isMine = structure?.owner === playerAddress;
+
+      if (!location) return null;
+
       return {
-        ...location,
-        isMine,
-      };
-    }
-    return null;
-  });
-  return realmPositions.filter((position) => position !== null) as SettlementLocation[];
+        side: location.side,
+        layer: location.layer,
+        point: location.point,
+        x,
+        y,
+        isMine: BigInt(entity.owner) === BigInt(playerAddress),
+      } as SettlementLocation;
+    });
+
+    return realmPositions.filter((position): position is SettlementLocation => position !== null);
+  } catch (error) {
+    console.error("Failed to fetch settlements:", error);
+    return [];
+  }
 };
 
 /**
