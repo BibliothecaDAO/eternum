@@ -65,6 +65,7 @@
     "_comment_mainnet_network2": "Commands will be executed using `.env.mainnet` in contracts/common/",
     "_comment_mainnet_network3": "and will also use `.env.mainnet` in client/apps/game for setting game config",
     "_comment_mainnet_network__": "_______________________________________________",
+    "marketplace:migrate:mainnet": "cd ./contracts/marketplace && ./ext/scripts/migrate.sh --profile mainnet",
     "game:migrate:mainnet": "cd ./contracts/game && ./ext/scripts/migrate.sh --profile mainnet",
     "seasonpass:declare:mainnet": "cd ./contracts/season_pass/ext/scripts && ./declare.sh mainnet",
     "seasonpass:deploy:mainnet": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh mainnet",
