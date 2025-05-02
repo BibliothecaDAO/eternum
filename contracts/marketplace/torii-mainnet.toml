@@ -2,7 +2,7 @@
 
 rpc = "https://api.cartridge.gg/x/starknet/mainnet"
 
-world_address = "0x0009dd5e66cfa83f893c2a70b9ea5221e2df18aaf52a111fe9003264f948c7aa"
+world_address = "0x656c7780d54a545802da391bc1c34dc643e82d8f24fb3149a5912ce62d628b5"
 
 db_dir = "torii-mainnet"
 
@@ -19,16 +19,17 @@ max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
 transactions = true
 
 contracts = [
-	  "erc721:0x7274e6b255c4951ef345e88d5b4a047100c6593157ce1d994e279bb9361371a",
-      "erc20:0x3263681c59dd5ca9d837039e3c954386da445acd4fb7525f7f97b7b0392d7a2",
+	  "erc721:0x07ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
+	  "erc721:0x060e8836acbebb535dfcd237ff01f20be503aae407b67bb6e3b5869afae97156",
+      "erc20:0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
 ]
 
 namespaces = ["marketplace"]
 
-world_block = 940000
-
 [erc]
 max_metadata_tasks = 2
+
+world_block = 664160
 
 [sql]
 all_model_indices = false
@@ -37,7 +38,7 @@ model_indices = [
 ]
 
 historical = []
-cache_size = -1_000_000 # 1024MB of cache size
+cache_size = -78_125_000 # 10GB of cache size
 page_size = 32_768
 
 [server]
