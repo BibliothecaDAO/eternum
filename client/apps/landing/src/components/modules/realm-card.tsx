@@ -277,10 +277,6 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
                   />
                 ))}
             </div>
-            <div className="flex items-center gap-2">
-              <span className=" text-2xl">1000</span>
-              <span className="uppercase text-xs tracking-wider text-muted-foreground">Lords</span>
-            </div>
           </CardContent>
           {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
             <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-center text-center p-3 text-sm">

@@ -4,7 +4,7 @@ import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { Send } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -38,6 +38,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const { data: ownerData, isSuccess: isOwnerSuccess } = useReadContract({
     abi: [
@@ -57,6 +58,35 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   });
 
   const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
+
+  // Calculate time remaining for auctions about to expire
+  useEffect(() => {
+    if (!pass.expiration) return;
+
+    const expirationTime = Number(pass.expiration) * 1000;
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = expirationTime - now;
+
+      if (diff <= 0) {
+        setTimeRemaining("Expired");
+        return;
+      }
+
+      // Only show countdown if less than an hour remains
+      if (diff < 60 * 60 * 1000) {
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        setTimeRemaining(`${minutes}m ${seconds}s remaining`);
+      } else {
+        setTimeRemaining(null);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [pass.expiration]);
 
   const handleCardClick = () => {
     setIsModalOpen(true);
@@ -123,21 +153,39 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 pt-2 min-h-[50px] flex justify-between">
-          {pass.minPrice !== null ? (
-            <div className="text-4xl font-semibold flex items-center gap-2">
-              {formatUnits(pass.minPrice, 18)} <ResourceIcon resource="Lords" size="sm" />
+        <CardContent className="px-4 pt-2 min-h-[100px]">
+          <div className="flex justify-between">
+            <div className="flex flex-col">
+              {pass.minPrice !== null ? (
+                <div className="text-4xl font-semibold flex items-center gap-2">
+                  {formatUnits(pass.minPrice, 18)} <ResourceIcon resource="Lords" size="sm" />
+                </div>
+              ) : (
+                <div className="text-xl font-semibold">Not Listed</div>
+              )}
+
+              {pass.expiration !== null && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  {timeRemaining ? (
+                    <span className="text-red-500 font-medium">{timeRemaining}</span>
+                  ) : (
+                    `Expires ${new Date(Number(pass.expiration) * 1000).toLocaleString()}`
+                  )}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-xl font-semibold flex items-center gap-2">Not Listed</div>
-          )}
-          {/* Added min-height */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {attributes
-              ?.filter((attribute) => attribute.trait_type === "Resource") // Assuming passes might have resource attributes?
-              .map((attribute, index) => (
-                <ResourceIcon resource={attribute.value as string} size="sm" key={`${attribute.trait_type}-${index}`} />
-              ))}
+
+            <div className="flex flex-wrap gap-2">
+              {attributes
+                ?.filter((attribute) => attribute.trait_type === "Resource")
+                .map((attribute, index) => (
+                  <ResourceIcon
+                    resource={attribute.value as string}
+                    size="sm"
+                    key={`${attribute.trait_type}-${index}`}
+                  />
+                ))}
+            </div>
           </div>
         </CardContent>
         {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
@@ -153,7 +201,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
           </Button>
           {isOwner && (
             <Button variant="outline" size="sm" onClick={handleTransferClick}>
-              Transfer To Controller <Send className="w-4 h-4" />
+              Transfer <Send className="w-4 h-4" />
             </Button>
           )}
         </CardFooter>

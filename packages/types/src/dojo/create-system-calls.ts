@@ -1,4 +1,5 @@
 // import type { EternumProvider } from "../types/provider";
+import { Call } from "starknet";
 import * as SystemProps from "../types";
 
 export type SystemCallAuthHandler = {
@@ -295,8 +296,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.create_marketplace_order(props);
   };
 
-  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrderProps) => {
-    await provider.accept_marketplace_order(props);
+  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrderProps, approval: Call) => {
+    await provider.accept_marketplace_order(props, approval);
   };
 
   const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps) => {

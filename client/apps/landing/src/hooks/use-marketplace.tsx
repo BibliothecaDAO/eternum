@@ -1,5 +1,5 @@
-import { marketplaceAddress, seasonPassAddress } from "@/config";
-import { SeasonPassAbi } from "@bibliothecadao/eternum";
+import { lordsAddress, marketplaceAddress, seasonPassAddress } from "@/config";
+import { LordsAbi, SeasonPassAbi } from "@bibliothecadao/eternum";
 import {
   AcceptMarketplaceOrderProps,
   CancelMarketplaceOrderProps,
@@ -41,6 +41,11 @@ export const useMarketplace = () => {
     address: seasonPassAddress as `0x${string}`,
   });
 
+  const { contract: lordsContract } = useContract({
+    abi: LordsAbi,
+    address: lordsAddress as `0x${string}`,
+  });
+
   // improve
   const seasonPassApproved = useReadContract({
     abi: SeasonPassAbi,
@@ -49,8 +54,6 @@ export const useMarketplace = () => {
     args: [account?.address as `0x${string}`, marketplaceAddress],
     watch: true,
   });
-
-  console.log(seasonPassApproved.data);
 
   const { send, error } = useSendTransaction({
     calls: contract && account ? [contract.populate("set_approval_for_all", [marketplaceAddress, 1n])] : undefined,
@@ -79,15 +82,22 @@ export const useMarketplace = () => {
     }
   };
 
-  const acceptOrder = async (params: AcceptOrderParams) => {
+  const acceptOrder = async (params: AcceptOrderParams & { price: bigint }) => {
     if (!account) throw new Error("Account not connected");
     setIsAcceptingOrder(true);
+
+    const lordsApproved = lordsContract?.populate("approve", [marketplaceAddress, params.price]);
+
     try {
-      await accept_marketplace_order({
-        ...params,
-        signer: account as AccountInterface,
-        marketplace_address: marketplaceAddress,
-      });
+      // accept order
+      await accept_marketplace_order(
+        {
+          ...params,
+          signer: account as AccountInterface,
+          marketplace_address: marketplaceAddress,
+        },
+        lordsApproved,
+      );
       // Add success handling if needed
     } catch (error) {
       console.error("Failed to accept order:", error);

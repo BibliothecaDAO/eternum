@@ -33,7 +33,7 @@ const items = [
   },
   {
     title: "Buy A Pass",
-    url: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
+    url: "/trade",
     icon: Scale,
   },
 ];

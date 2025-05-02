@@ -162,10 +162,11 @@ export const RealmDetailModal = ({
   };
 
   const handleAcceptOrder = async () => {
-    if (!orderId) return; // Basic validation
+    if (!orderId || price === undefined) return; // Validate both orderId and price exist
     try {
       await acceptOrder({
         order_id: BigInt(orderId),
+        price: price,
       });
       toast.success("Transaction confirmed! Syncing purchase...");
       setIsSyncing(true);

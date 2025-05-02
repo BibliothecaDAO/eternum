@@ -2627,14 +2627,19 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
-  public async accept_marketplace_order(props: SystemProps.AcceptMarketplaceOrderProps) {
+  public async accept_marketplace_order(props: SystemProps.AcceptMarketplaceOrderProps, approval: Call) {
     const { order_id, signer } = props;
 
-    const call = this.createProviderCall(signer, {
-      contractAddress: props.marketplace_address.toString(),
-      entrypoint: "accept",
-      calldata: [order_id],
-    });
+    console.log("approval", approval);
+
+    const call = this.createProviderCall(signer, [
+      approval,
+      {
+        contractAddress: props.marketplace_address.toString(),
+        entrypoint: "accept",
+        calldata: [order_id],
+      },
+    ]);
 
     return await this.promiseQueue.enqueue(call);
   }

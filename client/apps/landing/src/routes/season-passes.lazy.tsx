@@ -11,11 +11,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
-import { GET_ACCOUNT_TOKENS, GET_ALL_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
+import { GET_ACCOUNT_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
 import { SeasonPassMint } from "@/types";
@@ -100,7 +99,7 @@ function SeasonPasses() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
-  const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
+  const [myNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
       {
         queryKey: ["erc721Balance", address, "seasonPasses"],
@@ -112,15 +111,6 @@ function SeasonPasses() {
           }),
       },
       {
-        queryKey: ["allTokens", "seasonPasses"],
-        queryFn: () =>
-          execute(GET_ALL_TOKENS, {
-            offset: 0,
-            limit: 1000,
-            contractAddress: seasonPassAddress,
-          }),
-      },
-      {
         queryKey: ["marketplaceOrders", marketplaceAddress],
         queryFn: () => execute(GET_MARKETPLACE_ORDERS),
         refetchInterval: 15_000,
@@ -128,7 +118,6 @@ function SeasonPasses() {
     ],
   });
 
-  console.log("allNftsQuery.data", allNftsQuery.data);
   console.log("myNftsQuery.data", myNftsQuery.data);
 
   const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(
@@ -136,28 +125,14 @@ function SeasonPasses() {
     [myNftsQuery.data, viewMode, address],
   );
 
-  const allSeasonPassNfts: AllTokenEdge[] = useMemo(
-    () => (viewMode === "all" ? getAllSeasonPassNfts(allNftsQuery.data) : []),
-    [allNftsQuery.data, viewMode],
-  );
-
   const marketplaceOrdersData = ordersQuery.data as any;
-  const isLoading =
-    (viewMode === "my" && myNftsQuery.isLoading) ||
-    (viewMode === "all" && allNftsQuery.isLoading) ||
-    ordersQuery.isLoading;
-
-  console.log("mySeasonPassNfts", mySeasonPassNfts);
-  console.log("allSeasonPassNfts", allSeasonPassNfts);
+  const isLoading = (viewMode === "my" && myNftsQuery.isLoading) || ordersQuery.isLoading;
 
   const processedAndSortedNfts = useMemo((): MergedNftData[] => {
     // Use the appropriate NFT edges based on view mode
-    const nftEdges = viewMode === "my" ? mySeasonPassNfts : allSeasonPassNfts;
+    const nftEdges = mySeasonPassNfts;
     // Adjust access based on actual response structure from GET_MARKETPLACE_ORDERS
     const orderEdges = marketplaceOrdersData?.marketplaceMarketOrderModelModels?.edges;
-
-    console.log("orderEdges", orderEdges);
-    console.log("nftEdges", nftEdges);
 
     if (!nftEdges || !orderEdges) return [];
 
@@ -221,7 +196,7 @@ function SeasonPasses() {
     });
 
     return mergedNfts;
-  }, [viewMode, mySeasonPassNfts, allSeasonPassNfts, marketplaceOrdersData]);
+  }, [viewMode, mySeasonPassNfts, marketplaceOrdersData]);
 
   const getSeasonPassMetadataString = useCallback((pass: TokenBalanceEdge | AllTokenEdge): string | null => {
     if (pass?.node?.tokenMetadata?.__typename === "ERC721__Token") {
@@ -262,7 +237,7 @@ function SeasonPasses() {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
   }
 
-  const totalPasses = viewMode === "my" ? mySeasonPassNfts.length : allSeasonPassNfts.length;
+  const totalPasses = mySeasonPassNfts.length;
 
   return (
     <div className="flex flex-col h-full">
@@ -290,21 +265,6 @@ function SeasonPasses() {
           <p className="text-center text-muted-foreground mb-6">
             {viewMode === "my" ? "View and manage your Season Pass NFTs." : "Browse all available Season Pass NFTs."}
           </p>
-
-          {/* View Mode Tabs */}
-          <Tabs
-            value={viewMode}
-            onValueChange={(value: string) => {
-              setViewMode(value as ViewMode);
-              setCurrentPage(1); // Reset to page 1 when changing view modes
-            }}
-            className="mb-6"
-          >
-            <TabsList className="grid w-64 grid-cols-2 mx-auto">
-              <TabsTrigger value="my">My Passes</TabsTrigger>
-              <TabsTrigger value="all">All Passes</TabsTrigger>
-            </TabsList>
-          </Tabs>
 
           {/* Filter UI */}
           <div className="px-4">
