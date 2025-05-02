@@ -21,14 +21,22 @@ interface TransferSeasonPassProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   seasonPassMints: SeasonPassMint[];
+  initialSelectedTokenId?: string | null;
 }
 
-export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPassMints }: TransferSeasonPassProps) {
+export default function TransferSeasonPassDialog({
+  isOpen,
+  setIsOpen,
+  seasonPassMints,
+  initialSelectedTokenId,
+}: TransferSeasonPassProps) {
   const [input, setInput] = useState<string>("");
   const debouncedInput = useDebounce(input, 500); // 500ms delay
 
   const [transferTo, setTransferTo] = useState<string | null>(null);
-  const [selectedRealms, setSelectedRealms] = useState<string[]>([]);
+  const [selectedRealms, setSelectedRealms] = useState<string[]>(
+    initialSelectedTokenId ? [initialSelectedTokenId] : [],
+  );
   const [isCopied, setIsCopied] = useState(false);
 
   const toggleRealmSelection = (tokenId: string) => {
@@ -179,7 +187,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
             )}
             {cartridgeAddress && debouncedInput && (
               <div className="border p-2 rounded-md border-green-300 bg-green-50 text-base text-green/90 flex items-center justify-between gap-2">
-                <span>Address Found! {displayAddress(cartridgeAddress)}</span>
+                <span>Controller address found! {displayAddress(cartridgeAddress)}</span>
 
                 <span>Name: {name}</span>
                 <Button
@@ -198,7 +206,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
                 </Button>
               </div>
             )}
-            {!cartridgeLoading && !cartridgeAddress && debouncedInput && (
+            {/* {!cartridgeLoading && !cartridgeAddress && debouncedInput && (
               <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-base text-orange-700 shadow-sm">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0 text-orange-400" />
                 <span>
@@ -215,7 +223,7 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
                   )}
                 </span>
               </div>
-            )}
+            )} */}
             {!transferTo && !cartridgeLoading && !debouncedInput && (
               <div className="text-gold text-base flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />

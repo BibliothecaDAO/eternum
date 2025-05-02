@@ -17,7 +17,7 @@ interface RealmGridItem {
 interface SeasonPassRowProps {
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   seasonPasses: MergedNftData[];
-  setIsTransferOpen: (isOpen: boolean) => void;
+  setIsTransferOpen: (tokenId?: string) => void;
 }
 
 export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransferOpen }: SeasonPassRowProps) => {
@@ -71,11 +71,13 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransf
         renderItem={(item) => {
           const pass = item.data;
           if (!pass?.node) return null;
+          const tokenId =
+            pass.node.tokenMetadata.__typename === "ERC721__Token" ? pass.node.tokenMetadata.tokenId : null;
 
           return (
             <SeasonPassCard
-              toggleNftSelection={() => setIsTransferOpen(true)}
-              key={`${(pass.node.tokenMetadata.__typename === "ERC721__Token" && pass.node.tokenMetadata.tokenId) || ""}`}
+              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId)}
+              key={`${tokenId || ""}`}
               pass={pass}
             />
           );
