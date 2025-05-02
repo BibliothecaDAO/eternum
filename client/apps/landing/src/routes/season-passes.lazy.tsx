@@ -92,6 +92,7 @@ function SeasonPasses() {
   const { address } = useAccount();
 
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("my");
 
@@ -227,11 +228,23 @@ function SeasonPasses() {
   };
 
   // Only allow transfer for user's own tokens
-  const handleTransferClick = useCallback(() => {
-    if (viewMode === "my") {
-      setIsTransferOpen(true);
+  const handleTransferClick = useCallback(
+    (tokenId?: string) => {
+      if (viewMode === "my") {
+        setInitialSelectedTokenId(tokenId || null);
+        setIsTransferOpen(true);
+      }
+    },
+    [viewMode],
+  );
+
+  // Create a handler to reset the initial token ID when dialog closes
+  const handleDialogClose = (open: boolean) => {
+    setIsTransferOpen(open);
+    if (!open) {
+      setInitialSelectedTokenId(null);
     }
-  }, [viewMode]);
+  };
 
   if (!address) {
     return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
@@ -346,8 +359,9 @@ function SeasonPasses() {
           {isTransferOpen && (
             <TransferSeasonPassDialog
               isOpen={isTransferOpen}
-              setIsOpen={setIsTransferOpen}
+              setIsOpen={handleDialogClose}
               seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
+              initialSelectedTokenId={initialSelectedTokenId}
             />
           )}
         </>
