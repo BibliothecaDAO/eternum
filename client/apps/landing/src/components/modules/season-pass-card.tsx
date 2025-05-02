@@ -4,7 +4,6 @@ import { useTransferState } from "@/hooks/use-transfer-state";
 import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
-import { Send } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -64,12 +63,12 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   const { addTransferableTokenId, removeTransferableTokenId } = useTransferState();
 
   useEffect(() => {
-    if (!orderOwner) {
+    if (BigInt(pass.owner ?? "0") !== ownerData) {
       addTransferableTokenId(tokenId.toString());
     } else {
       removeTransferableTokenId(tokenId.toString());
     }
-  }, [tokenId, ownerData]);
+  }, [tokenId, isOwner, isOwnerSuccess]);
 
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
@@ -225,7 +224,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
 
           {isOwner && (
             <Button variant="outline" size="sm" onClick={handleTransferClick}>
-              Transfer <Send className="w-4 h-4" />
+              Transfer
             </Button>
           )}
         </CardFooter>

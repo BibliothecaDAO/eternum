@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
@@ -38,28 +39,42 @@ export function TraitFilterUI({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {Object.entries(allTraits)
           .filter(([traitType]) => traitType === "Resource" || traitType === "Wonder")
-          .map(([traitType, values]) => (
-            <div key={traitType} className="flex flex-col gap-1.5">
-              <Select
-                value={selectedFilters[traitType]?.[0] || ""} // Assuming single select
-                onValueChange={(value) => handleFilterChange(traitType, value)}
-              >
-                <SelectTrigger id={`filter-${traitType}`} className="h-9">
-                  <SelectValue placeholder={`Any ${traitType.replace(/_/g, " ")}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {values.map((value) => (
-                    <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
-                      <div className="flex items-center gap-2">
-                        {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
-                        <span className="text-xs">{value}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ))}
+          .map(([traitType, values]) => {
+            // Sort resources by their ID (rarity)
+            const sortedValues =
+              traitType === "Resource"
+                ? [...values].sort((a, b) => {
+                    const idA = ResourcesIds[a as keyof typeof ResourcesIds];
+                    const idB = ResourcesIds[b as keyof typeof ResourcesIds];
+                    const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
+                    const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
+                    return rarityA - rarityB;
+                  })
+                : values;
+
+            return (
+              <div key={traitType} className="flex flex-col gap-1.5">
+                <Select
+                  value={selectedFilters[traitType]?.[0] || ""} // Assuming single select
+                  onValueChange={(value) => handleFilterChange(traitType, value)}
+                >
+                  <SelectTrigger id={`filter-${traitType}`} className="h-9">
+                    <SelectValue placeholder={`Any ${traitType.replace(/_/g, " ")}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortedValues.map((value) => (
+                      <SelectItem key={value} value={value} className="flex items-center gap-2 text-lg">
+                        <div className="flex items-center gap-2">
+                          {traitType === "Resource" && <ResourceIcon resource={value} size="md" />}
+                          <span className="text-xs">{value}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
       </div>
       {/* Display Active Filters */}
       {hasActiveFilters && (

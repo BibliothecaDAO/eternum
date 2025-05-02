@@ -62,8 +62,8 @@ export const useMarketplace = () => {
   });
 
   const approveMarketplace = async () => {
-    setIsApprovingMarketplace(true);
     if (!account) throw new Error("Account not connected");
+    setIsApprovingMarketplace(true);
     try {
       await send();
       toast.success("Marketplace approved successfully!");

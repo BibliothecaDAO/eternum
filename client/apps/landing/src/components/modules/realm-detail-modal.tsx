@@ -251,11 +251,7 @@ export const RealmDetailModal = ({
               <>
                 {!seasonPassApproved ? (
                   // --- Owner & Needs Approval ---
-                  <Button
-                    onClick={approveMarketplace}
-                    disabled={isLoading || isSyncing || isApprovingMarketplace}
-                    size="lg"
-                  >
+                  <Button onClick={approveMarketplace} disabled={isApprovingMarketplace} size="lg">
                     {isApprovingMarketplace ? "Approving..." : "Approve Marketplace"}
                   </Button>
                 ) : (
