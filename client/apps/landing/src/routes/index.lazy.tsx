@@ -30,7 +30,7 @@ function Index() {
     {
       text: "Buy a Season Pass",
       imageUrl: "/images/covers/04.png",
-      linkUrl: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
+      linkUrl: "/trade",
       heightClass: "h-72",
     },
   ];

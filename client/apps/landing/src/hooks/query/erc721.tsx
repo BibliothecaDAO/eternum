@@ -45,7 +45,7 @@ export const GET_ALL_TOKENS = graphql(`
 
 export const GET_MARKETPLACE_ORDERS = graphql(`
   query getMarketOrders {
-    marketplaceMarketOrderModelModels(where: { order: { active: true, collection_id: 1 } }) {
+    marketplaceMarketOrderModelModels(where: { order: { active: true, collection_id: 1 } }, limit: 1000) {
       edges {
         node {
           order_id

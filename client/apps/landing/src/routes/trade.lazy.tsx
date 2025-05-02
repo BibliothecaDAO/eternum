@@ -20,8 +20,8 @@ import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge, Loader2 } from "lucide-react";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Badge } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { MarketOrder, MergedNftData } from "./season-passes.lazy";
 
@@ -339,28 +339,7 @@ function SeasonPasses() {
 
           {/* Grid container - Removed extra bottom padding */}
           <div className="flex-grow overflow-y-auto pt-0 pb-4 px-2">
-            <div className="flex flex-col gap-2">
-              <Suspense
-                fallback={
-                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
-                    <Loader2 className="w-10 h-10 animate-spin" />
-                  </div>
-                }
-              >
-                {filteredSeasonPasses.length > 0 && (
-                  <SeasonPassesGrid seasonPasses={paginatedPasses} setIsTransferOpen={handleTransferClick} />
-                )}
-
-                {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    No Season Passes match the selected filters.
-                  </div>
-                )}
-                {totalPasses === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">No Season Pass NFTs available.</div>
-                )}
-              </Suspense>
-            </div>
+            <SeasonPassesGrid seasonPasses={paginatedPasses} setIsTransferOpen={handleTransferClick} />
           </div>
 
           {/* Pagination Controls */}
