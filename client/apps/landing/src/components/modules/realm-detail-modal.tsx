@@ -11,6 +11,9 @@ import { toast } from "sonner";
 import { formatUnits } from "viem";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
+// Marketplace fee percentage
+const MARKETPLACE_FEE_PERCENT = 5;
+
 // Define the structure for realm data passed to the modal
 interface RealmModalData {
   tokenId: string; // Pass as string
@@ -196,9 +199,12 @@ export const RealmDetailModal = ({
           {isListed && price !== undefined ? (
             <div className="text-center border-t border-b py-3 my-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <p className="text-2xl font-bold text-gold">
-                {isSyncing ? "Syncing..." : parseFloat(formatUnits(price, 18)).toFixed(2)} LORDS
-              </p>
+              <div className="text-4xl font-bold text-gold gap-2 mx-auto text-center flex items-center justify-center">
+                <div>{isSyncing ? "Syncing..." : parseFloat(formatUnits(price, 18)).toFixed(2)} </div>
+
+                <ResourceIcon resource="Lords" size="sm" />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Includes {MARKETPLACE_FEE_PERCENT}% marketplace fee</p>
             </div>
           ) : (
             <div className="text-center border-t border-b py-3 my-3">
@@ -270,7 +276,21 @@ export const RealmDetailModal = ({
                           </div>
                         ) : (
                           <div className="flex flex-col gap-2 border p-3 rounded-md bg-background/50">
-                            <Label htmlFor="edit-price">New Price (LORDS)</Label>
+                            <Label htmlFor="edit-price">
+                              New Price (LORDS) <ResourceIcon resource="Lords" size="sm" />
+                            </Label>
+                            {editPrice && parseFloat(editPrice) > 0 && (
+                              <div className="text-sm text-muted-foreground mb-1 flex justify-between">
+                                <span>
+                                  You receive:{" "}
+                                  {((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toFixed(2)} LORDS
+                                </span>
+                                <span>
+                                  Fee: {((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toFixed(2)} LORDS (
+                                  {MARKETPLACE_FEE_PERCENT}%)
+                                </span>
+                              </div>
+                            )}
                             <Input
                               id="edit-price"
                               type="number"
@@ -309,7 +329,21 @@ export const RealmDetailModal = ({
                           </Button>
                         ) : (
                           <div className="flex flex-col gap-2 border p-3 rounded-md bg-background/50">
-                            <Label htmlFor="list-price">Price (LORDS)</Label>
+                            <Label htmlFor="list-price" className="flex items-center gap-2">
+                              Price (LORDS) <ResourceIcon resource="Lords" size="sm" />
+                            </Label>
+                            {listPrice && parseFloat(listPrice) > 0 && (
+                              <div className="text-sm text-muted-foreground mb-1 flex justify-between">
+                                <span>
+                                  You receive:{" "}
+                                  {((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toFixed(2)} LORDS
+                                </span>
+                                <span>
+                                  Fee: {((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toFixed(2)} LORDS (
+                                  {MARKETPLACE_FEE_PERCENT}%)
+                                </span>
+                              </div>
+                            )}
                             <Input
                               id="list-price"
                               type="number"
@@ -337,6 +371,9 @@ export const RealmDetailModal = ({
                                 </div>
                               ))}
                             </RadioGroup>
+                            <div className="text-sm font-medium text-muted-foreground mt-1">
+                              Expires: {new Date(listExpiration * 1000).toLocaleString()}
+                            </div>
                             <div className="flex justify-end gap-2 mt-2">
                               <Button
                                 variant="outline"
@@ -373,7 +410,7 @@ export const RealmDetailModal = ({
                   >
                     {marketplaceActions.isAcceptingOrder
                       ? "Purchasing..."
-                      : `Purchase for ${formatUnits(price, 18)} LORDS`}
+                      : `Purchase for ${formatUnits(price, 18)} LORDS (incl. ${MARKETPLACE_FEE_PERCENT}% fee)`}
                   </Button>
                 )}
               </>
