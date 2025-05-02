@@ -77,14 +77,28 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
         return;
       }
 
+      // Reset transferTo initially
+      setTransferTo(null);
+
       await fetchAddress(debouncedInput);
 
       if (cartridgeAddress) {
         setTransferTo(cartridgeAddress);
-        return;
+      } else {
+        // Check if the input looks like a Starknet address (hex)
+        if (debouncedInput.startsWith("0x") && debouncedInput.length === 66) {
+          setTransferTo(debouncedInput);
+        } else {
+          // Check if the input can be converted to a BigInt (decimal or other valid format)
+          try {
+            BigInt(debouncedInput);
+            // If conversion succeeds, set it as the transfer target
+            setTransferTo(debouncedInput);
+          } catch (e) {
+            // If conversion fails, transferTo remains null
+          }
+        }
       }
-
-      setTransferTo(null);
     };
 
     validateAndSetTransferAddress();
@@ -185,14 +199,33 @@ export default function TransferSeasonPassDialog({ isOpen, setIsOpen, seasonPass
               </div>
             )}
             {!cartridgeLoading && !cartridgeAddress && debouncedInput && (
-              <div className="flex items-center gap-2 rounded-md border border-green-400 bg-green-100 p-2 text-base text-red/90">
-                <span>No controller address found for "{debouncedInput}".</span>
+              <div className="flex items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 p-3 text-base text-orange-700 shadow-sm">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0 text-orange-400" />
+                <span>
+                  {debouncedInput.startsWith("0x") ? (
+                    <>
+                      The address <span className="font-semibold">"{displayAddress(debouncedInput)}"</span> is not a
+                      known Cartridge Controller.
+                    </>
+                  ) : (
+                    <>
+                      The name <span className="font-semibold">"{debouncedInput}"</span> is not a known Cartridge
+                      Controller.
+                    </>
+                  )}
+                </span>
               </div>
             )}
             {!transferTo && !cartridgeLoading && !debouncedInput && (
               <div className="text-gold text-base flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 Please enter a valid Controller ID or address
+              </div>
+            )}
+            {selectedRealms.length === 0 && (
+              <div className="text-gold text-base flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Please select at least one Season Pass to transfer.
               </div>
             )}
           </div>

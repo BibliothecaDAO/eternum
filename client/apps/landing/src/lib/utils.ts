@@ -16,5 +16,9 @@ export const currencyFormat = (num: number, decimals: number): string => {
 
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
+  // If the string is short enough, don't shorten it
+  if (string.length <= 10) {
+    return string;
+  }
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
