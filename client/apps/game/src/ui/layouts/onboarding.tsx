@@ -245,7 +245,7 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
             </a>
             <a
               className="text-brown cursor-pointer w-full"
-              href={`https://market.realms.world/collection/${SEASON_PASS_MARKET_URL}`}
+              href={`https://empire.realms.world/trade`}
               target="_blank"
               rel="noopener noreferrer"
             >
