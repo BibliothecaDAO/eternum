@@ -2,6 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
+import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { ArrowRightLeft } from "lucide-react"; // Import the icon
 import { useEffect, useMemo, useState } from "react";
@@ -173,6 +174,14 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
             <div className="flex flex-wrap gap-2">
               {attributes
                 ?.filter((attribute) => attribute.trait_type === "Resource")
+                .sort((a, b) => {
+                  // Sort resources by rarity
+                  const idA = ResourcesIds[a.value as keyof typeof ResourcesIds];
+                  const idB = ResourcesIds[b.value as keyof typeof ResourcesIds];
+                  const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
+                  const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
+                  return rarityA - rarityB;
+                })
                 .map((attribute, index) => (
                   <ResourceIcon
                     resource={attribute.value as string}
