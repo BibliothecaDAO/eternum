@@ -21,7 +21,7 @@ interface SeasonPassRowProps {
 }
 
 export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransferOpen }: SeasonPassRowProps) => {
-  const [isCompactGrid, setIsCompactGrid] = useState(false);
+  const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   if (!seasonPasses?.length) {
     return (
@@ -56,7 +56,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransf
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end my-4">
         <Button
           variant="outline"
           size="icon"

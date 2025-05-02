@@ -24,6 +24,8 @@ export interface SeasonAddresses {
   resources: {
     [key: string]: (string | number)[];
   };
+  /** Address of the marketplace contract */
+  marketplace: string;
 }
 
 /** Valid chain identifiers */

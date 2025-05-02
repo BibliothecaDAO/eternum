@@ -4,6 +4,7 @@ import { ExitIcon } from "@radix-ui/react-icons";
 import { useAccount } from "@starknet-react/core";
 import { PlayIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { ResourceIcon } from "../ui/elements/resource-icon";
 import { SidebarTrigger } from "../ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
 import { SeasonStartTimer } from "./season-start-timer";
@@ -40,8 +41,9 @@ export const TopNavigationView = ({
           </Button>
         )}
 
-        <div className="text-sm text-muted-foreground border border-muted-foreground rounded-md px-2 py-2">
-          {(lordsBalance / 10n ** 18n).toLocaleString("en-US")} LORDS
+        <div className="text-sm text-primary border border-primary/40 rounded-md px-2 py-2 flex items-center gap-2">
+          {(lordsBalance / 10n ** 18n).toLocaleString("en-US")}
+          <ResourceIcon size="sm" resource="Lords" className="w-4 h-4" />
         </div>
 
         <Button

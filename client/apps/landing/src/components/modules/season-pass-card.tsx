@@ -37,7 +37,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
-  const [isTransferOpen, setIsTransferOpen] = useState(false);
+
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
 
   const { data: ownerData, isSuccess: isOwnerSuccess } = useReadContract({
@@ -125,6 +125,15 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         `}
       >
         <div className="relative">
+          {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
+            <div className="absolute z-10 top-0 border-t items-center flex uppercase flex-wrap w-full py-2 justify-center text-center text-sm bg-crimson/50 rounded-t-lg">
+              <span className="text-gold font-bold tracking-wide truncate">
+                {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
+                <br />
+                (+20% production)
+              </span>
+            </div>
+          )}
           <img
             src={image}
             alt={name ?? "Season Pass"}
@@ -149,7 +158,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
               Season 1 Pass
             </div>
             <div className="flex justify-between gap-2">
-              <h4 className="text-2xl truncate">{name || `Pass #${tokenId}`}</h4>
+              <h4 className="text-xl truncate">{name || `Pass #${tokenId}`}</h4>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -165,15 +174,15 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pt-2 min-h-[100px]">
+        <CardContent className="px-4 pt-2">
           <div className="flex justify-between">
             <div className="flex flex-col">
               {pass.minPrice !== null ? (
-                <div className="text-4xl font-semibold flex items-center gap-2">
+                <div className="text-xl  flex items-center gap-2 font-mono">
                   {parseFloat(formatUnits(pass.minPrice, 18)).toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
-                <div className="text-xl font-semibold">Not Listed</div>
+                <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
 
               {pass.expiration !== null && (
@@ -188,15 +197,9 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             </div>
           </div>
         </CardContent>
-        {attributes?.find((attribute) => attribute.trait_type === "Wonder")?.value && (
-          <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-center text-center p-3 text-sm">
-            <span className="text-gold font-bold tracking-wide truncate">
-              {attributes.find((attribute) => attribute.trait_type === "Wonder")?.value}
-            </span>
-          </CardFooter>
-        )}
-        <CardFooter className="border-t items-center bg-card/50 flex uppercase flex-wrap w-full h-full justify-between text-center p-3 text-sm gap-4">
-          <Button variant="default" size="lg" className="flex-grow" onClick={handleCardClick}>
+
+        <CardFooter className="border-t items-center bg-card/50 flex uppercase w-full h-full justify-between text-center p-3 text-sm gap-4">
+          <Button variant="default" className="w-full" onClick={handleCardClick}>
             {isOwner ? "Manage" : "Buy"}
           </Button>
           {isOwner && (
@@ -220,6 +223,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         price={pass.minPrice ?? undefined}
         orderId={pass.orderId ?? undefined}
         isListed={pass.expiration !== null}
+        expiration={pass.expiration ? Number(pass.expiration) : undefined}
       />
     </>
   );

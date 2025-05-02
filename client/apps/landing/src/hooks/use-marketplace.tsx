@@ -8,6 +8,7 @@ import {
 } from "@bibliothecadao/types";
 import { useAccount, useContract, useReadContract, useSendTransaction } from "@starknet-react/core";
 import { useState } from "react";
+import { toast } from "sonner";
 import { AccountInterface } from "starknet";
 import { useDojo } from "./context/dojo-context";
 
@@ -22,6 +23,7 @@ export const useMarketplace = () => {
   const [isAcceptingOrder, setIsAcceptingOrder] = useState(false);
   const [isCancellingOrder, setIsCancellingOrder] = useState(false);
   const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [isApprovingMarketplace, setIsApprovingMarketplace] = useState(false);
 
   const {
     setup: {
@@ -60,8 +62,19 @@ export const useMarketplace = () => {
   });
 
   const approveMarketplace = async () => {
+    console.log("approving marketplace");
+    setIsApprovingMarketplace(true);
     if (!account) throw new Error("Account not connected");
-    await send();
+    try {
+      await send();
+      toast.success("Marketplace approved successfully!");
+    } catch (error) {
+      console.error("Failed to approve marketplace:", error);
+      toast.error("Failed to approve marketplace. Please try again.");
+      throw error;
+    } finally {
+      setIsApprovingMarketplace(false);
+    }
   };
 
   const listItem = async (params: ListItemParams) => {
@@ -76,9 +89,11 @@ export const useMarketplace = () => {
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });
+      toast.success("Transaction confirmed! Syncing listing status...");
       // Add success handling if needed
     } catch (error) {
       console.error("Failed to list item:", error);
+      toast.error("Failed to list item. Please try again.");
       // Add error handling if needed
     } finally {
       setIsCreatingOrder(false);
@@ -102,9 +117,11 @@ export const useMarketplace = () => {
         lordsApproved,
       );
       // Add success handling if needed
+      toast.success("Order accepted successfully!");
     } catch (error) {
       console.error("Failed to accept order:", error);
       // Add error handling if needed
+      toast.error("Failed to accept order. Please try again.");
     } finally {
       setIsAcceptingOrder(false);
     }
@@ -120,9 +137,11 @@ export const useMarketplace = () => {
         marketplace_address: marketplaceAddress,
       });
       // Add success handling if needed
+      toast.success("Order cancelled successfully!");
     } catch (error) {
       console.error("Failed to cancel order:", error);
       // Add error handling if needed
+      toast.error("Failed to cancel order. Please try again.");
     } finally {
       setIsCancellingOrder(false);
     }
@@ -139,9 +158,11 @@ export const useMarketplace = () => {
         marketplace_address: marketplaceAddress,
       });
       // Add success handling if needed
+      toast.success("Order edited successfully!");
     } catch (error) {
       console.error("Failed to edit order:", error);
       // Add error handling if needed
+      toast.error("Failed to edit order. Please try again.");
     } finally {
       setIsEditingOrder(false);
     }
@@ -159,5 +180,6 @@ export const useMarketplace = () => {
     isAcceptingOrder,
     isCancellingOrder,
     isEditingOrder,
+    isApprovingMarketplace,
   };
 };

@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
@@ -27,7 +26,7 @@ export function TraitFilterUI({
   }
 
   return (
-    <div className=" p-4 border rounded-lg bg-muted/10">
+    <div className=" p-4 border-y">
       {/* <div className="flex justify-between items-center">
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-xs h-auto py-1 px-2">
@@ -41,9 +40,6 @@ export function TraitFilterUI({
           .filter(([traitType]) => traitType === "Resource" || traitType === "Wonder")
           .map(([traitType, values]) => (
             <div key={traitType} className="flex flex-col gap-1.5">
-              <Label htmlFor={`filter-${traitType}`} className="text-sm uppercase">
-                {traitType.replace(/_/g, " ")}
-              </Label>
               <Select
                 value={selectedFilters[traitType]?.[0] || ""} // Assuming single select
                 onValueChange={(value) => handleFilterChange(traitType, value)}

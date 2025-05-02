@@ -97,7 +97,7 @@ function SeasonPasses() {
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 24;
 
   const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
@@ -137,17 +137,11 @@ function SeasonPasses() {
   const marketplaceOrdersData = ordersQuery.data as any;
   const isLoading = (viewMode === "all" && allNftsQuery.isLoading) || ordersQuery.isLoading;
 
-  console.log("mySeasonPassNfts", mySeasonPassNfts);
-  console.log("allSeasonPassNfts", allSeasonPassNfts);
-
   const processedAndSortedNfts = useMemo((): MergedNftData[] => {
     // Use the appropriate NFT edges based on view mode
     const nftEdges = allSeasonPassNfts;
     // Adjust access based on actual response structure from GET_MARKETPLACE_ORDERS
     const orderEdges = marketplaceOrdersData?.marketplaceMarketOrderModelModels?.edges;
-
-    console.log("orderEdges", orderEdges);
-    console.log("nftEdges", nftEdges);
 
     if (!nftEdges || !orderEdges) return [];
 
@@ -276,7 +270,7 @@ function SeasonPasses() {
           <p className="text-center text-muted-foreground mb-6">{"Browse all available Season Pass NFTs."}</p>
 
           {/* Filter UI */}
-          <div className="px-4">
+          <div className="">
             <TraitFilterUI
               allTraits={allTraits}
               selectedFilters={selectedFilters}
@@ -287,7 +281,7 @@ function SeasonPasses() {
           </div>
 
           {/* Grid container - Removed extra bottom padding */}
-          <div className="flex-grow overflow-y-auto pt-0 px-2">
+          <div className="flex-grow overflow-y-auto pt-0 pb-4 px-2">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
                 {filteredSeasonPasses.length > 0 && (
@@ -308,7 +302,7 @@ function SeasonPasses() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <Pagination className="mt-4 pb-4">
+            <Pagination className="py-2 border-t">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious

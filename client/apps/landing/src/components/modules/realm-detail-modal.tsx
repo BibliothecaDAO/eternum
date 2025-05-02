@@ -37,6 +37,7 @@ interface RealmDetailModalProps {
   collection_id: number;
   price?: bigint;
   orderId?: string;
+  expiration?: number; // Added: Expiration timestamp (seconds)
 }
 
 export const RealmDetailModal = ({
@@ -50,15 +51,22 @@ export const RealmDetailModal = ({
   price,
   orderId,
   collection_id,
+  expiration, // Added
 }: RealmDetailModalProps) => {
   const { name, tokenId, contractAddress, imageSrc, attributes } = realmData;
-  const { listItem, cancelOrder, editOrder, acceptOrder, isLoading, approveMarketplace, seasonPassApproved } =
-    marketplaceActions;
+  const {
+    listItem,
+    cancelOrder,
+    editOrder,
+    acceptOrder,
+    isLoading,
+    approveMarketplace,
+    seasonPassApproved,
+    isApprovingMarketplace,
+  } = marketplaceActions;
 
   // State for inputs
   const durationOptions = {
-    "1hr": 60 * 60,
-    "6hr": 60 * 60 * 6,
     "24hr": 60 * 60 * 24,
     "7days": 60 * 60 * 24 * 7,
     "30days": 60 * 60 * 24 * 30,
@@ -118,13 +126,12 @@ export const RealmDetailModal = ({
         price: priceInWei,
         expiration: listExpiration,
       });
-      toast.success("Transaction confirmed! Syncing listing status...");
+
       setIsSyncing(true);
 
       setShowListInputs(false);
     } catch (error) {
       console.error("Failed to list item:", error);
-      toast.error("Failed to create listing. Please try again.");
       setIsSyncing(false);
     }
   };
@@ -138,13 +145,12 @@ export const RealmDetailModal = ({
         order_id: BigInt(orderId),
         new_price: priceInWei,
       });
-      toast.success("Transaction confirmed! Syncing listing update...");
+
       setIsSyncing(true);
 
       setShowEditInputs(false);
     } catch (error) {
       console.error("Failed to edit order:", error);
-      toast.error("Failed to update listing. Please try again.");
       setIsSyncing(false);
     }
   };
@@ -175,7 +181,7 @@ export const RealmDetailModal = ({
       setIsSyncing(true);
     } catch (error) {
       console.error("Failed to accept order:", error);
-      toast.error("Failed to purchase realm. Please try again.");
+
       setIsSyncing(false);
     }
   };
@@ -245,8 +251,12 @@ export const RealmDetailModal = ({
               <>
                 {!seasonPassApproved ? (
                   // --- Owner & Needs Approval ---
-                  <Button onClick={approveMarketplace} disabled={isLoading || isSyncing} size="sm">
-                    {isLoading ? "Approving..." : "Approve Marketplace"}
+                  <Button
+                    onClick={approveMarketplace}
+                    disabled={isLoading || isSyncing || isApprovingMarketplace}
+                    size="lg"
+                  >
+                    {isApprovingMarketplace ? "Approving..." : "Approve Marketplace"}
                   </Button>
                 ) : (
                   // --- Owner & Approved: Show Actions ---
@@ -299,6 +309,14 @@ export const RealmDetailModal = ({
                               placeholder="e.g., 1500"
                               disabled={isLoading || isSyncing}
                             />
+                            {expiration && ( // Display expiration if available
+                              <div className="text-sm font-medium text-muted-foreground mt-1">
+                                Current Expiration: {new Date(expiration * 1000).toLocaleString()}
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              To change the expiration time, please cancel this listing and create a new one.
+                            </p>
                             <div className="flex justify-end gap-2 mt-2">
                               <Button
                                 variant="outline"
@@ -324,7 +342,12 @@ export const RealmDetailModal = ({
                         {" "}
                         {/* Owner & Not Listed & Approved */}
                         {!showListInputs ? (
-                          <Button onClick={() => setShowListInputs(true)} size="sm" disabled={isLoading || isSyncing}>
+                          <Button
+                            variant="cta"
+                            onClick={() => setShowListInputs(true)}
+                            size="lg"
+                            disabled={isLoading || isSyncing}
+                          >
                             List Item
                           </Button>
                         ) : (
@@ -404,13 +427,23 @@ export const RealmDetailModal = ({
                 {isListed && price !== undefined && (
                   <Button
                     onClick={handleAcceptOrder}
-                    size="sm"
-                    disabled={isLoading || isSyncing || hasSeasonPassMinted || marketplaceActions.isAcceptingOrder}
+                    size="lg"
+                    variant="cta"
+                    disabled={
+                      // Updated disabled logic
+                      isLoading ||
+                      isSyncing ||
+                      hasSeasonPassMinted ||
+                      marketplaceActions.isAcceptingOrder ||
+                      (expiration !== undefined && expiration * 1000 < Date.now()) // Check if expired
+                    }
                     className="w-full sm:w-auto"
                   >
-                    {marketplaceActions.isAcceptingOrder
-                      ? "Purchasing..."
-                      : `Purchase for ${formatUnits(price, 18)} LORDS (incl. ${MARKETPLACE_FEE_PERCENT}% fee)`}
+                    {expiration !== undefined && expiration * 1000 < Date.now() // Change button text if expired
+                      ? "Listing Expired"
+                      : marketplaceActions.isAcceptingOrder
+                        ? "Purchasing..."
+                        : `Purchase`}
                   </Button>
                 )}
               </>
