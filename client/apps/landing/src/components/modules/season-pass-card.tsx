@@ -219,11 +219,10 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         </CardContent>
 
         <CardFooter className="border-t items-center bg-card/50 flex uppercase w-full h-full justify-between text-center p-3 text-sm gap-4">
-          {listingActive && (
-            <Button variant="default" className="w-full" onClick={handleCardClick}>
-              {isOwner ? "Manage" : "Buy"}
-            </Button>
-          )}
+          <Button variant="default" className="w-full" onClick={handleCardClick}>
+            {isOwner ? "Manage" : "Buy"}
+          </Button>
+
           {isOwner && (
             <Button variant="outline" size="sm" onClick={handleTransferClick}>
               Transfer <Send className="w-4 h-4" />
