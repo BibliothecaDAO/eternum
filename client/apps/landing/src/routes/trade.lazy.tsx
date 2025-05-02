@@ -228,11 +228,90 @@ function SeasonPasses() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedPasses = filteredSeasonPasses.slice(startIndex, endIndex);
+  const MAX_VISIBLE_PAGES = 5; // Define the maximum number of page links to show
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
+  };
+
+  // Function to generate pagination items with ellipsis
+  const renderPaginationItems = () => {
+    const items = [];
+    const startPage = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2));
+    const endPage = Math.min(totalPages, startPage + MAX_VISIBLE_PAGES - 1);
+
+    // Adjust startPage if endPage is at the maximum
+    const adjustedStartPage = Math.max(1, endPage - MAX_VISIBLE_PAGES + 1);
+
+    // "First" page link
+    if (adjustedStartPage > 1) {
+      items.push(
+        <PaginationItem key="first">
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(1);
+            }}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>,
+      );
+      if (adjustedStartPage > 2) {
+        items.push(
+          <PaginationItem key="start-ellipsis">
+            <span className="px-3 py-1.5">...</span>
+          </PaginationItem>,
+        );
+      }
+    }
+
+    // Page number links
+    for (let i = adjustedStartPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(i);
+            }}
+            isActive={currentPage === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    // "Last" page link
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="end-ellipsis">
+            <span className="px-3 py-1.5">...</span>
+          </PaginationItem>,
+        );
+      }
+      items.push(
+        <PaginationItem key="last">
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(totalPages);
+            }}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    return items;
   };
 
   // Only allow transfer for user's own tokens
@@ -314,21 +393,8 @@ function SeasonPasses() {
                     className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
                   />
                 </PaginationItem>
-                {/* Pagination Links */}
-                {[...Array(totalPages)].map((_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handlePageChange(i + 1);
-                      }}
-                      isActive={currentPage === i + 1}
-                    >
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
+                {/* Render dynamic pagination items */}
+                {renderPaginationItems()}
                 <PaginationItem>
                   <PaginationNext
                     href="#"

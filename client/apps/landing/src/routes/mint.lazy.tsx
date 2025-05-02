@@ -15,7 +15,6 @@ import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
-import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
@@ -48,7 +47,7 @@ interface AugmentedRealm {
 }
 
 function Mint() {
-  const { connectors, connect } = useConnect();
+  const { connectors } = useConnect();
   const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +56,7 @@ function Mint() {
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 20;
+  const ITEMS_PER_PAGE = 24;
 
   // --- Fetch data ---
   const { data, isLoading: isPending } = useSuspenseQuery<GetAccountTokensQuery | null>({
@@ -67,7 +66,7 @@ function Mint() {
         ? execute(GET_ACCOUNT_TOKENS, {
             accountAddress: address,
             offset: (currentPage - 1) * ITEMS_PER_PAGE,
-            limit: ITEMS_PER_PAGE,
+            limit: 500,
           })
         : null,
     refetchInterval: 10_000,
@@ -86,8 +85,6 @@ function Mint() {
       }),
     [data],
   );
-
-  console.log("realmsErcBalance", realmsErcBalance);
 
   // --- Filtering Hook ---
   const getRealmMetadataString = useCallback((realm: RealmEdge): string | null => {
@@ -119,7 +116,7 @@ function Mint() {
     const augmented = filteredRealms
       .map((realm) => {
         if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return null;
-        const tokenId = realm.node.tokenMetadata.tokenId;
+        const tokenId = parseInt(realm.node.tokenMetadata.tokenId);
 
         let parsedMetadata: { name: string; attributes: { trait_type: string; value: string }[] } = {
           name: "",
@@ -138,7 +135,7 @@ function Mint() {
           originalRealm: realm,
           parsedMetadata: parsedMetadata,
           seasonPassMinted: seasonPassStatus[tokenId] ?? false,
-          tokenId: tokenId,
+          tokenId: tokenId.toString(),
         } as AugmentedRealm;
       })
       .filter((realm): realm is AugmentedRealm => realm !== null);
@@ -172,11 +169,12 @@ function Mint() {
 
   // --- Calculate Minting Status (Based on original data) ---
   const totalRealms = useMemo(() => realmsErcBalance?.length ?? 0, [realmsErcBalance]);
+
   const mintedRealmsCount = useMemo(() => {
     return (
       realmsErcBalance?.filter((realm) => {
         if (!realm?.node || realm.node.tokenMetadata.__typename !== "ERC721__Token") return false;
-        const tokenId = realm.node.tokenMetadata.tokenId;
+        const tokenId = parseInt(realm.node.tokenMetadata.tokenId);
         return seasonPassStatus[tokenId] ?? false;
       }).length ?? 0
     );
@@ -191,6 +189,7 @@ function Mint() {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedRealms = augmentedAndSortedRealms.slice(startIndex, endIndex);
+  const MAX_VISIBLE_PAGES = 5; // Define the maximum number of page links to show
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -198,13 +197,86 @@ function Mint() {
     }
   };
 
-  // --- Render Logic ---
-  if (!address) {
-    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
-  }
+  // Function to generate pagination items with ellipsis
+  const renderPaginationItems = () => {
+    const items = [];
+    const startPage = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2));
+    const endPage = Math.min(totalPages, startPage + MAX_VISIBLE_PAGES - 1);
+
+    // Adjust startPage if endPage is at the maximum
+    const adjustedStartPage = Math.max(1, endPage - MAX_VISIBLE_PAGES + 1);
+
+    // "First" page link
+    if (adjustedStartPage > 1) {
+      items.push(
+        <PaginationItem key="first">
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(1);
+            }}
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>,
+      );
+      if (adjustedStartPage > 2) {
+        items.push(
+          <PaginationItem key="start-ellipsis">
+            <span className="px-3 py-1.5">...</span>
+          </PaginationItem>,
+        );
+      }
+    }
+
+    // Page number links
+    for (let i = adjustedStartPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(i);
+            }}
+            isActive={currentPage === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    // "Last" page link
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="end-ellipsis">
+            <span className="px-3 py-1.5">...</span>
+          </PaginationItem>,
+        );
+      }
+      items.push(
+        <PaginationItem key="last">
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePageChange(totalPages);
+            }}
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>,
+      );
+    }
+
+    return items;
+  };
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className="flex flex-col h-full">
       {loading && (
         <div className="flex-grow flex items-center justify-center absolute inset-0 bg-background/50 z-50">
           <Loader2 className="w-10 h-10 animate-spin" />
@@ -252,9 +324,9 @@ function Mint() {
         {/* --- End Filter UI --- */}
 
         <div className="flex-grow overflow-y-auto">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 px-2 pb-4">
             {!allMinted && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm">
+              <div className="m-2 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm ">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="16"
@@ -299,12 +371,13 @@ function Mint() {
               {augmentedAndSortedRealms.some((realm) => !realm.seasonPassMinted) && totalSelectedNfts > 0 && (
                 <div className="hidden sm:flex sticky top-0 z-20 bg-background justify-between items-center p-2  border-gold/15 border rounded-2xl">
                   <div className="flex items-center gap-4 w-auto">
-                    {/* Selection controls part - Updated to use augmented/sorted/filtered realms */}
                     {(() => {
                       // Calculate eligible based on *currently displayed* augmented realms
                       const eligibleTokenIds = augmentedAndSortedRealms
                         .filter((realm) => !realm.seasonPassMinted)
                         .map((realm) => realm.tokenId);
+
+                      console.log("eligibleTokenIds", eligibleTokenIds);
 
                       // Safely access contractAddress only for ERC721 from the first displayed realm's original data
                       const firstRealmMeta = augmentedAndSortedRealms[0]?.originalRealm?.node?.tokenMetadata;
@@ -408,7 +481,7 @@ function Mint() {
 
         {/* --- Pagination Controls --- */}
         {totalPages > 1 && (
-          <Pagination className="mt-4 pb-4">
+          <Pagination className="py-4 border-t">
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
@@ -420,21 +493,8 @@ function Mint() {
                   className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
                 />
               </PaginationItem>
-              {/* Simple Pagination Links (can be enhanced later) */}
-              {[...Array(totalPages)].map((_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(i + 1);
-                    }}
-                    isActive={currentPage === i + 1}
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+              {/* Render dynamic pagination items */}
+              {renderPaginationItems()}
               <PaginationItem>
                 <PaginationNext
                   href="#"

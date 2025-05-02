@@ -98,7 +98,7 @@ function SeasonPasses() {
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 24;
 
   const [myNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
@@ -280,7 +280,7 @@ function SeasonPasses() {
           </p>
 
           {/* Filter UI */}
-          <div className="px-4">
+          <div>
             <TraitFilterUI
               allTraits={allTraits}
               selectedFilters={selectedFilters}
@@ -291,7 +291,7 @@ function SeasonPasses() {
           </div>
 
           {/* Grid container - Removed extra bottom padding */}
-          <div className="flex-grow overflow-y-auto pt-0 px-2">
+          <div className="flex-grow overflow-y-auto pt-0 px-2 pb-4">
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
                 {filteredSeasonPasses.length > 0 && (
@@ -314,7 +314,7 @@ function SeasonPasses() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <Pagination className="mt-4 pb-4">
+            <Pagination className=" pb-4 border-t border-gold/15">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious

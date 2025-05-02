@@ -28,7 +28,7 @@ export const RealmsGrid = ({
   isNftSelected,
   onSeasonPassStatusChange,
 }: SeasonPassRowProps) => {
-  const [isCompactGrid, setIsCompactGrid] = useState(false);
+  const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   if (!realms?.length) {
     return (

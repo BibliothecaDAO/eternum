@@ -62,7 +62,6 @@ export const useMarketplace = () => {
   });
 
   const approveMarketplace = async () => {
-    console.log("approving marketplace");
     setIsApprovingMarketplace(true);
     if (!account) throw new Error("Account not connected");
     try {

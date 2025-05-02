@@ -5,7 +5,7 @@ import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { CheckCircle2, Loader } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 
 // Placeholder for loading state - could be a simple spinner or a blurred low-res image
@@ -37,8 +37,6 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
 
   const { address: accountAddress } = useAccount();
-
-  console.log(realm);
 
   const {
     setup: { components },
@@ -179,25 +177,11 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const hasSeasonPassMinted = isSeasonPassMintedSuccess && !!seasonPassOwnerData;
   const isLoadingStatus = isFetchingSeasonPass || isFetchingRealmOwner;
 
-  // Use useMemo for modal data to prevent unnecessary recalculations
-  const realmModalData = useMemo(
-    () => ({
-      tokenId: tokenId.toString(), // Pass as string
-      contractAddress: contractAddress,
-      name: name,
-      imageSrc: imageSrc, // Pass the current image src (could be placeholder or final image)
-      attributes: attributes,
-      isListed: false, // TODO: Fetch actual listing status
-      price: undefined, // TODO: Fetch actual price
-    }),
-    [tokenId, contractAddress, name, imageSrc, attributes, listingDetails],
-  ); // Add listingDetails dependency
-
   return (
     <>
       <Card
         ref={cardRef}
-        onClick={handleCardClick}
+        onClick={hasSeasonPassMinted ? undefined : handleCardClick}
         className={`group relative transition-all duration-200 rounded-lg overflow-hidden shadow-md hover:shadow-xl 
           ${hasSeasonPassMinted ? "cursor-not-allowed" : "cursor-pointer hover:ring-1 hover:ring-gold/50"} 
           ${isSelected ? "ring-2 ring-offset-2 ring-blue-500/50 scale-[1.02]" : ""} 

@@ -54,7 +54,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
     address: contractAddress as `0x${string}`,
     args: [tokenId.toString()],
     enabled: !!contractAddress && !!tokenId,
-    watch: true,
   });
 
   const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
