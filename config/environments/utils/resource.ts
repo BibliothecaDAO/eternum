@@ -26,7 +26,7 @@ export const RESOURCES_WEIGHTS_NANOGRAM: { [key in ResourcesIds]: number } = {
   [ResourcesIds.Mithral]: 1000,
   [ResourcesIds.Dragonhide]: 1000,
   [ResourcesIds.Labor]: 1000,
-  [ResourcesIds.AncientFragment]: 1000,
+  [ResourcesIds.AncientFragment]: 100, // 0.1 kg
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 5000,
   [ResourcesIds.KnightT2]: 5000,

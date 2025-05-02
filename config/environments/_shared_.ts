@@ -227,15 +227,15 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.RealmStructure]: 400_000_000_000, // 400m kg
-    [CapacityConfig.VillageStructure]: 200_000_000_000, // 200m kg
-    [CapacityConfig.HyperstructureStructure]: 1_800_000_000, // 1.8m kg
-    [CapacityConfig.BankStructure]: 400_000_000_000, // 400m kg
-    [CapacityConfig.FragmentMineStructure]: 100_000_000, // 100k kg
-    [CapacityConfig.Donkey]: 500_000,
+    [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.VillageStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.HyperstructureStructure]: 3_000_000 * 1000, // 3m kg
+    [CapacityConfig.BankStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.FragmentMineStructure]: 500_000 * 1000, // 500k kg
+    [CapacityConfig.Donkey]: 500 * 1000, // 500 kg per donkey
     // 10_000 gr per army
-    [CapacityConfig.Army]: 10_000,
-    [CapacityConfig.Storehouse]: 300_000_000,
+    [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
+    [CapacityConfig.Storehouse]: 1_000_000 * 1000, // 1m kg per storehouse
   },
   speed: {
     donkey: DONKEY_SPEED,
