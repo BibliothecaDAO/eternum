@@ -1,8 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ModalContainer } from "@/ui/components/modal-container";
 import { LoadingAnimation } from "@/ui/elements/loading-animation";
-import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { usePlayerOwnedRealmsInfo, usePlayerOwnedVillagesInfo } from "@bibliothecadao/react";
+import { ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { Suspense, lazy, useCallback, useMemo, useState } from "react";
 
 const ProductionSidebar = lazy(() =>
@@ -35,7 +35,7 @@ const ProductionContainer = ({
   );
 
   return (
-    <div className="production-modal-selector container border mx-auto grid grid-cols-12 bg-dark-wood border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
+    <div className="production-modal-selector container border mx-auto grid grid-cols-12 dark:bg-dark-wood border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
       <div className="col-span-3 p-1 pb-36 row-span-10 overflow-y-auto panel-wood-right">
         <Suspense fallback={<LoadingAnimation />}>
           {playerRealmsAndVillages.length > 0 && (
