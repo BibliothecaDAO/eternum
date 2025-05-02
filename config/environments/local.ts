@@ -42,7 +42,7 @@ export const LocalEternumGlobalConfig: Config = {
     shardsMinesFailProbability: 15_000,
     hyperstructureWinProbAtCenter: 20_000,
     hyperstructureFailProbAtCenter: 100_000,
-    hyperstructureFailProbIncreasePerHexDistance: 20,
+    // hyperstructureFailProbIncreasePerHexDistance: 20,
     agentFindProbability: 3_000,
     agentFindFailProbability: 10_000,
     questFindProbability: 1_000,
@@ -72,26 +72,26 @@ export const LocalEternumGlobalConfig: Config = {
     delaySeconds: 0,
   },
   // starting resources x1000
-  startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-    if (
-      resource.resource === ResourcesIds.Knight ||
-      resource.resource === ResourcesIds.Paladin ||
-      resource.resource === ResourcesIds.Crossbowman
-    ) {
-      return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-    }
-    return resource;
-  }),
-  villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
-    if (
-      resource.resource === ResourcesIds.Knight ||
-      resource.resource === ResourcesIds.Paladin ||
-      resource.resource === ResourcesIds.Crossbowman
-    ) {
-      return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
-    }
-    return resource;
-  }),
+  // startingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
+  //   if (
+  //     resource.resource === ResourcesIds.Knight ||
+  //     resource.resource === ResourcesIds.Paladin ||
+  //     resource.resource === ResourcesIds.Crossbowman
+  //   ) {
+  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
+  //   }
+  //   return resource;
+  // }),
+  // villageStartingResources: getAllResourcesWithAmount(1_000_000).map((resource) => {
+  //   if (
+  //     resource.resource === ResourcesIds.Knight ||
+  //     resource.resource === ResourcesIds.Paladin ||
+  //     resource.resource === ResourcesIds.Crossbowman
+  //   ) {
+  //     return { ...resource, amount: CommonEternumGlobalConfig.troop.limit.explorerAndGuardMaxTroopCount };
+  //   }
+  //   return resource;
+  // }),
   speed: {
     ...CommonEternumGlobalConfig.speed,
     // 1 second per km

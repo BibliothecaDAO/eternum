@@ -69,7 +69,7 @@ export class GameConfigDeployer {
   async setupBank(account: Account, provider: EternumProvider) {
     const config = { account, provider, config: this.globalConfig };
     await createBanks(config);
-    await mintResources(config);
+    // await mintResources(config);
     await addLiquidity(config);
   }
 
@@ -806,7 +806,7 @@ export const setupGlobals = async (config: Config) => {
   const hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   const hyperstructureFailRateIncreasePerHex =
-    (mapCalldata.hyps_fail_prob_increase_p_hex / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
+    (mapCalldata.hyps_fail_prob_increase_p_hex / 10_000) * 100;
   const hyperstructureFailRateIncreasePerHyperstructureFound =
     (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
@@ -1262,9 +1262,6 @@ export const createBanks = async (config: Config) => {
     banks.push({
       name: `${config.config.banks.name} ${i + 1}`,
       coord: bank_coords[i],
-      guard_slot: 0, // delta
-      troop_tier: 1, // T2
-      troop_type: 2, // Crossbowman
     });
   }
 
@@ -1273,10 +1270,6 @@ export const createBanks = async (config: Config) => {
     banks,
   };
 
-  const guard_slot_names = ["Delta", "Charlie", "Bravo", "Alpha"];
-  const troop_tier_names = ["T1", "T2", "T3"];
-  const troop_type_names = ["Knight", "Paladin", "Crossbowman"];
-
   for (const bank of calldata.banks) {
     console.log("\n");
     console.log(
@@ -1284,9 +1277,6 @@ export const createBanks = async (config: Config) => {
     ┌─ ${chalk.yellow("Bank Parameters")}
     │  ${chalk.gray("Name:")}              ${chalk.white(bank.name)}
     │  ${chalk.gray("Location:")}          ${chalk.white(`(${bank.coord.x}, ${bank.coord.y})`)}
-    │  ${chalk.gray("Guard Slot:")}        ${chalk.white(guard_slot_names[bank.guard_slot])}
-    │  ${chalk.gray("Troop Tier:")}        ${chalk.white(troop_tier_names[bank.troop_tier])}
-    │  ${chalk.gray("Troop Type:")}        ${chalk.white(troop_type_names[bank.troop_type])}
     └────────────────────────────────`),
     );
   }
@@ -1351,6 +1341,7 @@ export const mintResources = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Resources minted successfully\n`));
 };
 
+// This function mints and adds liquidity to the bank
 export const addLiquidity = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -1383,7 +1374,7 @@ export const addLiquidity = async (config: Config) => {
   }
 
   try {
-    const tx = await config.provider.add_liquidity({
+    const tx = await config.provider.add_initial_bank_liquidity({
       signer: config.account,
       bank_entity_id: ADMIN_BANK_ENTITY_ID,
       entity_id: ADMIN_BANK_ENTITY_ID,

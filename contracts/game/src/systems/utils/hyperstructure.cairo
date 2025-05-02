@@ -105,12 +105,22 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         );
 
         // add guards to structure
-        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
-
         let tick_config: TickConfig = TickImpl::get_tick_config(ref world);
-        iMercenariesImpl::add(
-            ref world, structure_id, vrf_seed, slot_tiers, troop_limit_config, troop_stamina_config, tick_config,
-        );
+        let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
+        let guard_troop_types_order = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
+        let mut count = 0;
+        for guard_slot in guard_slots {
+            iMercenariesImpl::add(
+                ref world,
+                structure_id,
+                vrf_seed + count.into(),
+                array![(guard_slot, TroopTier::T3, *guard_troop_types_order.at(count))].span(),
+                troop_limit_config,
+                troop_stamina_config,
+                tick_config,
+            );
+            count += 1;
+        };
 
         // create hyperstructure model
         let now = starknet::get_block_timestamp();

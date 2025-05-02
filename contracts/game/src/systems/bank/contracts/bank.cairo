@@ -1,14 +1,10 @@
 use s1_eternum::alias::ID;
 use s1_eternum::models::position::{Coord};
-use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
 
 #[derive(Copy, Drop, Serde)]
 struct BankCreateParams {
     name: felt252,
     coord: Coord,
-    guard_slot: GuardSlot,
-    troop_tier: TroopTier,
-    troop_type: TroopType,
 }
 
 #[starknet::interface]
@@ -34,6 +30,7 @@ pub mod bank_systems {
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
     use s1_eternum::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
+    use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
     use s1_eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use s1_eternum::systems::utils::structure::{iStructureImpl};
     use s1_eternum::systems::utils::troop::iMercenariesImpl;
@@ -77,21 +74,27 @@ pub mod bank_systems {
                 // save bank name model
                 world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });
 
-                // add guards to structure
+                // add guards to all 4 slots of the structure
                 let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
                 let troop_stamina_config = CombatConfigImpl::troop_stamina_config(ref world);
-                let bank_guard_slot_tier = array![(*bank.guard_slot, *bank.troop_tier, *bank.troop_type)].span();
                 let tick = TickImpl::get_tick_config(ref world);
                 let seed = 'what could possibly go wrong'.into() - bank_entity_id.into();
-                iMercenariesImpl::add(
-                    ref world,
-                    bank_entity_id,
-                    seed,
-                    bank_guard_slot_tier,
-                    troop_limit_config,
-                    troop_stamina_config,
-                    tick,
-                );
+
+                let guard_slots = array![GuardSlot::Delta, GuardSlot::Charlie, GuardSlot::Bravo];
+                let guard_troop_types_order = array![TroopType::Paladin, TroopType::Knight, TroopType::Crossbowman];
+                let mut count = 0;
+                for guard_slot in guard_slots {
+                    iMercenariesImpl::add(
+                        ref world,
+                        bank_entity_id,
+                        seed + count.into(),
+                        array![(guard_slot, TroopTier::T2, *guard_troop_types_order.at(count))].span(),
+                        troop_limit_config,
+                        troop_stamina_config,
+                        tick,
+                    );
+                    count += 1;
+                };
 
                 bank_ids.append(bank_entity_id);
             };
