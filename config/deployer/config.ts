@@ -805,8 +805,7 @@ export const setupGlobals = async (config: Config) => {
     100;
   const hyperstructureFailRateAtTheCenter =
     (mapCalldata.hyps_fail_prob / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
-  const hyperstructureFailRateIncreasePerHex =
-    (mapCalldata.hyps_fail_prob_increase_p_hex / 10_000) * 100;
+  const hyperstructureFailRateIncreasePerHex = (mapCalldata.hyps_fail_prob_increase_p_hex / 10_000) * 100;
   const hyperstructureFailRateIncreasePerHyperstructureFound =
     (mapCalldata.hyps_fail_prob_increase_p_fnd / (mapCalldata.hyps_win_prob + mapCalldata.hyps_fail_prob)) * 100;
   console.log(
