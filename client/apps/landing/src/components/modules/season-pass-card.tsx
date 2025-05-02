@@ -4,6 +4,7 @@ import { useTransferState } from "@/hooks/use-transfer-state";
 import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
+import { ArrowRightLeft } from "lucide-react"; // Import the icon
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits } from "viem";
 import { Button } from "../ui/button";
@@ -198,7 +199,8 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
             <div className="flex flex-col">
               {listingActive ? (
                 <div className="text-xl  flex items-center gap-2 font-mono">
-                  {parseFloat(formatUnits(pass.minPrice ?? BigInt(0), 18)).toFixed(2)}{" "}
+                  {/* Format price with commas, removing unnecessary decimals */}
+                  {Number(formatUnits(pass.minPrice ?? BigInt(0), 18)).toLocaleString()}{" "}
                   <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
@@ -218,16 +220,24 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
           </div>
         </CardContent>
 
-        <CardFooter className="border-t items-center bg-card/50 flex uppercase w-full h-full justify-between text-center p-3 text-sm gap-4">
-          <Button variant="default" className="w-full" onClick={handleCardClick}>
-            {isOwner ? "Manage" : "Buy"}
-          </Button>
-
-          {isOwner && (
-            <Button variant="outline" size="sm" onClick={handleTransferClick}>
-              Transfer
+        <CardFooter className="border-t items-center bg-card/50 flex flex-col uppercase w-full h-full justify-between text-center p-3 text-sm gap-2">
+          <div className="flex w-full gap-4">
+            {/* Change Sell button variant */}
+            <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
+              {isOwner ? "Sell" : "Buy Now"}
             </Button>
-          )}
+
+            {isOwner && (
+              <Button
+                variant="default" // Match Buy button style for emphasis
+                size="icon"
+                onClick={handleTransferClick}
+                title="Transfer Pass" // Add a tooltip for accessibility
+              >
+                <ArrowRightLeft className="h-4 w-4" /> {/* Use the icon */}
+              </Button>
+            )}
+          </div>
         </CardFooter>
       </Card>
 

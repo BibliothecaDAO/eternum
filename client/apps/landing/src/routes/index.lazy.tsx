@@ -16,7 +16,7 @@ function Index() {
       heightClass: "h-72", // Keep the specific height for the first item
     },
     {
-      text: "View Realms & Claim Season Passes",
+      text: "Claim Season Passes",
       imageUrl: "/images/covers/02.png",
       linkUrl: "/mint",
       heightClass: "h-72",
@@ -30,7 +30,7 @@ function Index() {
     {
       text: "Buy a Season Pass",
       imageUrl: "/images/covers/04.png",
-      linkUrl: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
+      linkUrl: "/trade",
       heightClass: "h-72",
     },
   ];
@@ -67,7 +67,7 @@ function Index() {
           const MotionLink = motion(Link); // Create a motion component for Link
 
           // Conditionally apply entrance animation
-          const shouldAnimateEntrance = !["/mint", "/season-passes"].includes(cta.linkUrl);
+          const shouldAnimateEntrance = !["/mint", "/season-passes", "/trade"].includes(cta.linkUrl);
           const commonAnimProps = {
             ...(shouldAnimateEntrance && { variants: itemVariants }), // Apply entrance animation variant conditionally
             whileHover: { scale: 1.03 }, // Keep scale up slightly on hover

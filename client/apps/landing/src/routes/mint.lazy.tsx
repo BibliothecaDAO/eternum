@@ -31,6 +31,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
+
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
@@ -47,7 +49,7 @@ interface AugmentedRealm {
 }
 
 function Mint() {
-  const { connectors } = useConnect();
+  const { connectors, connect } = useConnect();
   const { address } = useAccount();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -274,6 +276,12 @@ function Mint() {
 
     return items;
   };
+
+  // --- Wallet Connection Check ---
+  if (!address) {
+    return <ConnectWalletPrompt connectors={connectors} connect={connect} />; // Pass connect here
+  }
+  // --- End Wallet Connection Check ---
 
   return (
     <div className="flex flex-col h-full">
