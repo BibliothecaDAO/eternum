@@ -196,7 +196,9 @@ export const RealmDetailModal = ({
           {isListed && price !== undefined ? (
             <div className="text-center border-t border-b py-3 my-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
-              <p className="text-2xl font-bold text-gold">{isSyncing ? "Syncing..." : formatUnits(price, 18)} LORDS</p>
+              <p className="text-2xl font-bold text-gold">
+                {isSyncing ? "Syncing..." : parseFloat(formatUnits(price, 18)).toFixed(2)} LORDS
+              </p>
             </div>
           ) : (
             <div className="text-center border-t border-b py-3 my-3">

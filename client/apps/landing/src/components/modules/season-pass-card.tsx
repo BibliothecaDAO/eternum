@@ -151,6 +151,18 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             <div className="flex justify-between gap-2">
               <h4 className="text-2xl truncate">{name || `Pass #${tokenId}`}</h4>
             </div>
+
+            <div className="flex flex-wrap gap-2">
+              {attributes
+                ?.filter((attribute) => attribute.trait_type === "Resource")
+                .map((attribute, index) => (
+                  <ResourceIcon
+                    resource={attribute.value as string}
+                    size="sm"
+                    key={`${attribute.trait_type}-${index}`}
+                  />
+                ))}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pt-2 min-h-[100px]">
@@ -158,7 +170,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
             <div className="flex flex-col">
               {pass.minPrice !== null ? (
                 <div className="text-4xl font-semibold flex items-center gap-2">
-                  {formatUnits(pass.minPrice, 18)} <ResourceIcon resource="Lords" size="sm" />
+                  {parseFloat(formatUnits(pass.minPrice, 18)).toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
                 <div className="text-xl font-semibold">Not Listed</div>
@@ -173,18 +185,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
                   )}
                 </div>
               )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {attributes
-                ?.filter((attribute) => attribute.trait_type === "Resource")
-                .map((attribute, index) => (
-                  <ResourceIcon
-                    resource={attribute.value as string}
-                    size="sm"
-                    key={`${attribute.trait_type}-${index}`}
-                  />
-                ))}
             </div>
           </div>
         </CardContent>
