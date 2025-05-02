@@ -130,6 +130,9 @@ pub mod marketplace_systems {
         fn create(ref self: ContractState, token_id: u16, collection_id: u16, price: u128, expiration: u32) -> u64 {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
 
+            // assert price is greater than 0
+            assert!(price > 0, "Market: sale price is zero");
+
             // assert market is not paused
             let mut market_global: MarketGlobalModel = world.read_model(MARKET_GLOBAL_ID);
             assert!(!market_global.paused, "Market: Paused");
