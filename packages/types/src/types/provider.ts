@@ -902,26 +902,26 @@ export interface CreateMarketplaceOrderProps {
   marketplace_address: num.BigNumberish;
   token_id: number;
   collection_id: number;
-  price: bigint;
+  price: num.BigNumberish;
   expiration: number;
   signer: AccountInterface;
 }
 
 export interface AcceptMarketplaceOrderProps {
   marketplace_address: num.BigNumberish;
-  order_id: bigint;
+  order_id: num.BigNumberish;
   signer: AccountInterface;
 }
 
 export interface CancelMarketplaceOrderProps {
   marketplace_address: num.BigNumberish;
-  order_id: bigint;
+  order_id: num.BigNumberish;
   signer: AccountInterface;
 }
 
 export interface EditMarketplaceOrderProps {
   marketplace_address: num.BigNumberish;
-  order_id: bigint;
-  new_price: bigint;
+  order_id: num.BigNumberish;
+  new_price: num.BigNumberish;
   signer: AccountInterface;
 }

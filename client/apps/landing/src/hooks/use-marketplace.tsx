@@ -69,7 +69,10 @@ export const useMarketplace = () => {
     setIsCreatingOrder(true);
     try {
       await create_marketplace_order({
-        ...params,
+        price: params.price.toString(),
+        expiration: params.expiration,
+        token_id: params.token_id,
+        collection_id: params.collection_id,
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });
@@ -92,7 +95,7 @@ export const useMarketplace = () => {
       // accept order
       await accept_marketplace_order(
         {
-          ...params,
+          order_id: params.order_id.toString(),
           signer: account as AccountInterface,
           marketplace_address: marketplaceAddress,
         },
@@ -112,7 +115,7 @@ export const useMarketplace = () => {
     setIsCancellingOrder(true);
     try {
       await cancel_marketplace_order({
-        ...params,
+        order_id: params.order_id.toString(),
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });
@@ -130,7 +133,8 @@ export const useMarketplace = () => {
     setIsEditingOrder(true);
     try {
       await edit_marketplace_order({
-        ...params,
+        order_id: params.order_id.toString(),
+        new_price: params.new_price.toString(),
         signer: account as AccountInterface,
         marketplace_address: marketplaceAddress,
       });

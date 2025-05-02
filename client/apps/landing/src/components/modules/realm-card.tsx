@@ -1,9 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
-import { useMarketplace } from "@/hooks/use-marketplace";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { CheckCircle2, Loader } from "lucide-react";
@@ -39,7 +37,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
 
   const { address: accountAddress } = useAccount();
-  const marketplaceActions = useMarketplace();
+
+  console.log(realm);
+
   const {
     setup: { components },
   } = useDojo();
@@ -227,21 +227,6 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
               <CheckCircle2 className="w-5 h-5 text-lime-500" />
             ) : null}
           </div>
-        )}
-
-        {/* Hover Button for Owner */}
-        {isOwner && !hasSeasonPassMinted && (
-          <Button
-            variant="default"
-            size="lg"
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsModalOpen(true);
-            }}
-          >
-            Manage Listing
-          </Button>
         )}
 
         {/* Main card content starts below */}

@@ -168,7 +168,7 @@ export const RealmDetailModal = ({
         order_id: BigInt(orderId),
         price: price,
       });
-      toast.success("Transaction confirmed! Syncing purchase...");
+
       setIsSyncing(true);
     } catch (error) {
       console.error("Failed to accept order:", error);

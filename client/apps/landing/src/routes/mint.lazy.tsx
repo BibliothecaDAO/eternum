@@ -73,6 +73,8 @@ function Mint() {
     refetchInterval: 10_000,
   });
 
+  console.log("data", data);
+
   // --- Prepare Realm Data ---
   const realmsErcBalance = useMemo<RealmEdge[] | undefined>(
     () =>
