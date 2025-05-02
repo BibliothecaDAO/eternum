@@ -307,21 +307,6 @@ function SeasonPasses() {
   }, [viewMode]);
 
   const totalPasses = allSeasonPassNfts.length;
-  const isLoading =
-    allNftsQuery.isFetching ||
-    ordersQuery.isFetching ||
-    myNftsQuery.isFetching ||
-    allNftsQuery.isLoading ||
-    ordersQuery.isLoading ||
-    myNftsQuery.isLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex-grow flex items-center justify-center min-h-[200px]">
-        <Loader2 className="w-10 h-10 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
