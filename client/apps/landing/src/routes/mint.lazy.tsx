@@ -23,6 +23,15 @@ import { Bug, Loader2, PartyPopper, Send } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 export const Route = createLazyFileRoute("/mint")({
   component: Mint,
 });
@@ -46,10 +55,21 @@ function Mint() {
   const [isRealmMintOpen, setIsRealmMintIsOpen] = useState(false);
   const [controllerAddress] = useState<string>();
 
+  // --- Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
   // --- Fetch data ---
   const { data, isLoading: isPending } = useSuspenseQuery<GetAccountTokensQuery | null>({
     queryKey: ["erc721Balance", address],
-    queryFn: () => (address ? execute(GET_ACCOUNT_TOKENS, { accountAddress: address }) : null),
+    queryFn: () =>
+      address
+        ? execute(GET_ACCOUNT_TOKENS, {
+            accountAddress: address,
+            offset: (currentPage - 1) * ITEMS_PER_PAGE,
+            limit: ITEMS_PER_PAGE,
+          })
+        : null,
     refetchInterval: 10_000,
   });
 
@@ -66,6 +86,8 @@ function Mint() {
       }),
     [data],
   );
+
+  console.log("realmsErcBalance", realmsErcBalance);
 
   // --- Filtering Hook ---
   const getRealmMetadataString = useCallback((realm: RealmEdge): string | null => {
@@ -163,6 +185,18 @@ function Mint() {
   const allMinted = totalRealms > 0 && mintedRealmsCount === totalRealms;
 
   const isDev = import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet";
+
+  // --- Pagination Logic ---
+  const totalPages = Math.ceil(augmentedAndSortedRealms.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedRealms = augmentedAndSortedRealms.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   // --- Render Logic ---
   if (!address) {
@@ -316,7 +350,7 @@ function Mint() {
               <RealmsGrid
                 isNftSelected={isNftSelected}
                 toggleNftSelection={toggleNftSelection}
-                realms={augmentedAndSortedRealms.map((ar) => ar.originalRealm) ?? []} // Extract original realm
+                realms={paginatedRealms.map((ar) => ar.originalRealm) ?? []} // Use paginated data
                 onSeasonPassStatusChange={handleSeasonPassStatusChange}
               />
             </Suspense>
@@ -371,6 +405,50 @@ function Mint() {
             </Button>
           </div>
         )}
+
+        {/* --- Pagination Controls --- */}
+        {totalPages > 1 && (
+          <Pagination className="mt-4 pb-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(currentPage - 1);
+                  }}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+                />
+              </PaginationItem>
+              {/* Simple Pagination Links (can be enhanced later) */}
+              {[...Array(totalPages)].map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(i + 1);
+                    }}
+                    isActive={currentPage === i + 1}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(currentPage + 1);
+                  }}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
+        {/* --- End Pagination Controls --- */}
 
         {isOpen && (
           <SeasonPassMintDialog

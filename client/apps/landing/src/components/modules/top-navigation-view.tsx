@@ -34,6 +34,16 @@ export const TopNavigationView = ({
         <SidebarTrigger />
         <ModeToggle />
 
+        {chain === "sepolia" && (
+          <Button variant="outline" onClick={onMintTestLords}>
+            Mint Lords
+          </Button>
+        )}
+
+        <div className="text-sm text-muted-foreground border border-muted-foreground rounded-md px-2 py-2">
+          {(lordsBalance / 10n ** 18n).toLocaleString("en-US")} LORDS
+        </div>
+
         <Button
           disabled={!address}
           variant="cta"

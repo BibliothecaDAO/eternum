@@ -1,4 +1,5 @@
 // import type { EternumProvider } from "../types/provider";
+import { Call } from "starknet";
 import * as SystemProps from "../types";
 
 export type SystemCallAuthHandler = {
@@ -291,6 +292,22 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.create_village(props);
   };
 
+  const create_marketplace_order = async (props: SystemProps.CreateMarketplaceOrderProps) => {
+    await provider.create_marketplace_order(props);
+  };
+
+  const accept_marketplace_order = async (props: SystemProps.AcceptMarketplaceOrderProps, approval: Call) => {
+    await provider.accept_marketplace_order(props, approval);
+  };
+
+  const cancel_marketplace_order = async (props: SystemProps.CancelMarketplaceOrderProps) => {
+    await provider.cancel_marketplace_order(props);
+  };
+
+  const edit_marketplace_order = async (props: SystemProps.EditMarketplaceOrderProps) => {
+    await provider.edit_marketplace_order(props);
+  };
+
   const systemCalls = {
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -363,6 +380,11 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     troop_troop_adjacent_transfer: withAuth(troop_troop_adjacent_transfer),
     troop_structure_adjacent_transfer: withAuth(troop_structure_adjacent_transfer),
     structure_troop_adjacent_transfer: withAuth(structure_troop_adjacent_transfer),
+
+    create_marketplace_order: withAuth(create_marketplace_order),
+    accept_marketplace_order: withAuth(accept_marketplace_order),
+    cancel_marketplace_order: withAuth(cancel_marketplace_order),
+    edit_marketplace_order: withAuth(edit_marketplace_order),
   };
 
   return systemCalls;

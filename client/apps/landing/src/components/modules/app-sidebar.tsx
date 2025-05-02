@@ -33,7 +33,7 @@ const items = [
   },
   {
     title: "Buy A Pass",
-    url: "https://element.market/collections/eternum-season-1?search[toggles][0]=ALL",
+    url: "/trade",
     icon: Scale,
   },
 ];
@@ -49,7 +49,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="p-3">
-      <SidebarContent className="bg-dark-wood border rounded-xl relative">
+      <SidebarContent className="dark:bg-dark-wood border rounded-xl relative">
         {isMobile && (
           <button
             onClick={() => setOpenMobile(false)}

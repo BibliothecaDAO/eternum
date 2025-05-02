@@ -115,15 +115,16 @@ export function useTraitFiltering<T>(
   const handleFilterChange = useCallback((traitType: string, value: string) => {
     setSelectedFilters((prev) => {
       const currentValues = prev[traitType] || [];
-      // Assuming single select: If the value is empty ("Any"), clear the filter for this type.
-      // If the value is the same as current, clear it. Otherwise, set it.
       let newValues: string[];
+
       if (value === "") {
         newValues = []; // Clear filter for this trait
       } else if (currentValues.includes(value)) {
-        newValues = []; // Deselect if clicking the same value again
+        // Remove value if already selected (toggle behavior)
+        newValues = currentValues.filter((v) => v !== value);
       } else {
-        newValues = [value]; // Select the new value
+        // Add new value to existing values
+        newValues = [...currentValues, value];
       }
 
       const updatedFilters = { ...prev, [traitType]: newValues };
