@@ -66,6 +66,8 @@ function Mint() {
       address
         ? execute(GET_ACCOUNT_TOKENS, {
             accountAddress: address,
+            offset: (currentPage - 1) * ITEMS_PER_PAGE,
+            limit: ITEMS_PER_PAGE,
           })
         : null,
     refetchInterval: 10_000,

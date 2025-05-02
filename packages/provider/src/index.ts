@@ -2593,4 +2593,90 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue(call);
   }
+
+  // Marketplace functions
+
+  /**
+   * Create a new marketplace order
+   *
+   * @param props - Properties for creating the order
+   * @param props.token_id - ID of the token to sell
+   * @param props.collection_id - ID of the collection the token belongs to
+   * @param props.price - Price of the token in LORDS (u128)
+   * @param props.expiration - Expiration timestamp (u32)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async create_marketplace_order(props: SystemProps.CreateMarketplaceOrderProps) {
+    const { token_id, collection_id, price, expiration, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: props.marketplace_address.toString(),
+      entrypoint: "create",
+      calldata: [token_id, collection_id, price, expiration],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Accept an existing marketplace order
+   *
+   * @param props - Properties for accepting the order
+   * @param props.order_id - ID of the order to accept (u64)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async accept_marketplace_order(props: SystemProps.AcceptMarketplaceOrderProps) {
+    const { order_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: props.marketplace_address.toString(),
+      entrypoint: "accept",
+      calldata: [order_id],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Cancel an existing marketplace order
+   *
+   * @param props - Properties for canceling the order
+   * @param props.order_id - ID of the order to cancel (u64)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async cancel_marketplace_order(props: SystemProps.CancelMarketplaceOrderProps) {
+    const { order_id, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: props.marketplace_address.toString(),
+      entrypoint: "cancel",
+      calldata: [order_id],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
+  /**
+   * Edit the price of an existing marketplace order
+   *
+   * @param props - Properties for editing the order
+   * @param props.order_id - ID of the order to edit (u64)
+   * @param props.new_price - New price for the order in LORDS (u128)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async edit_marketplace_order(props: SystemProps.EditMarketplaceOrderProps) {
+    const { order_id, new_price, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: props.marketplace_address.toString(),
+      entrypoint: "edit",
+      calldata: [order_id, new_price],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
 }

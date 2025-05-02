@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { seasonPassAddress } from "@/config";
+import { useDojo } from "@/hooks/context/dojo-context";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
 import { CheckCircle2, Loader } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ResourceIcon } from "../ui/elements/resource-icon";
-import { RealmDetailModal } from "./realm-detail-modal";
 
 // Placeholder for loading state - could be a simple spinner or a blurred low-res image
 const IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=="; // Transparent 1x1 gif
@@ -23,10 +23,16 @@ interface RealmCardProps {
   onSeasonPassStatusChange?: (tokenId: string, hasMinted: boolean) => void;
 }
 
+interface ListingDetails {
+  orderId?: bigint; // Assuming order_id is u64, represented as bigint
+  price?: bigint; // Assuming price is u128, represented as bigint
+  isListed: boolean;
+}
+
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
   const { tokenId, contractAddress, metadata } =
     realm.node?.tokenMetadata.__typename === "ERC721__Token"
-      ? realm.node.tokenMetadata
+      ? { ...realm.node.tokenMetadata, tokenId: BigInt(realm.node.tokenMetadata.tokenId) }
       : { tokenId: "", contractAddress: "", metadata: "" };
 
   const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
@@ -34,8 +40,12 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
 
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
+  const {
+    setup: { components },
+  } = useDojo();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
 
   const {
     data: seasonPassOwnerData,
@@ -55,7 +65,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     ] as const,
     functionName: "owner_of",
     address: seasonPassAddress as `0x${string}`,
-    args: [tokenId],
+    args: [tokenId.toString()], // Pass tokenId as string if needed by hook
     watch: true,
   });
 
@@ -75,12 +85,12 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     ] as const,
     functionName: "owner_of",
     address: contractAddress as `0x${string}`,
-    args: [tokenId],
+    args: [tokenId.toString()], // Pass tokenId as string if needed by hook
     enabled: !!contractAddress && !!tokenId,
     watch: true,
   });
 
-  const isOwner = isRealmOwnerSuccess && realmOwnerData === accountAddress;
+  const isOwner = isRealmOwnerSuccess && realmOwnerData === BigInt(accountAddress ?? "");
 
   // --- Image Loading State & Logic ---
   const cardRef = useRef<HTMLDivElement>(null);
@@ -130,6 +140,9 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   }, [originalImageUrl, imageSrc]);
 
   const handleCardClick = () => {
+    if (toggleNftSelection) {
+      toggleNftSelection(tokenId.toString(), contractAddress ?? "0x");
+    }
     setIsModalOpen(true);
   };
 
@@ -139,19 +152,46 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     }
   }, [isSeasonPassMintedSuccess, seasonPassOwnerData, tokenId]);
 
+  // --- Fetch Marketplace Listing Status ---
+  // Placeholder: Replace with actual logic to query Dojo state for MarketOrderModel
+  useEffect(() => {
+    const fetchListingStatus = async () => {
+      if (!tokenId || !contractAddress) return;
+
+      // Placeholder: Replace with actual function call
+      // const orderModel = await getMarketOrderModel(tokenId, contractAddress, components);
+      const orderModel: any = null; // Simulate no order found (using any for placeholder)
+
+      if (orderModel && orderModel.order.active) {
+        setListingDetails({
+          isListed: true,
+          // orderId: orderModel.order_id, // Assuming the model structure
+          // price: orderModel.order.price, // Assuming the model structure
+        });
+      } else {
+        setListingDetails({ isListed: false });
+      }
+    };
+
+    fetchListingStatus();
+  }, [tokenId, contractAddress, components]); // Add components dependency
+
   const hasSeasonPassMinted = isSeasonPassMintedSuccess && !!seasonPassOwnerData;
   const isLoadingStatus = isFetchingSeasonPass || isFetchingRealmOwner;
 
-  // Prepare data for the modal
-  const realmModalData = {
-    tokenId: tokenId,
-    contractAddress: contractAddress,
-    name: name,
-    imageSrc: imageSrc, // Pass the current image src (could be placeholder or final image)
-    attributes: attributes,
-    isListed: false, // TODO: Fetch actual listing status
-    price: undefined, // TODO: Fetch actual price
-  };
+  // Use useMemo for modal data to prevent unnecessary recalculations
+  const realmModalData = useMemo(
+    () => ({
+      tokenId: tokenId.toString(), // Pass as string
+      contractAddress: contractAddress,
+      name: name,
+      imageSrc: imageSrc, // Pass the current image src (could be placeholder or final image)
+      attributes: attributes,
+      isListed: false, // TODO: Fetch actual listing status
+      price: undefined, // TODO: Fetch actual price
+    }),
+    [tokenId, contractAddress, name, imageSrc, attributes, listingDetails],
+  ); // Add listingDetails dependency
 
   return (
     <>
@@ -252,14 +292,16 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
         </div>
       </Card>
 
-      <RealmDetailModal
+      {/* <RealmDetailModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
         realmData={realmModalData}
         isOwner={isOwner}
         hasSeasonPassMinted={hasSeasonPassMinted}
         marketplaceActions={marketplaceActions}
-      />
+        collection_id={2}
+        {...listingDetails}
+      /> */}
     </>
   );
 };

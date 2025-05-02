@@ -897,3 +897,31 @@ export interface StructureTroopAdjacentTransferProps extends SystemSigner {
   /** Resources to transfer */
   resources: Resource[];
 }
+
+export interface CreateMarketplaceOrderProps {
+  marketplace_address: num.BigNumberish;
+  token_id: number;
+  collection_id: number;
+  price: bigint;
+  expiration: number;
+  signer: AccountInterface;
+}
+
+export interface AcceptMarketplaceOrderProps {
+  marketplace_address: num.BigNumberish;
+  order_id: bigint;
+  signer: AccountInterface;
+}
+
+export interface CancelMarketplaceOrderProps {
+  marketplace_address: num.BigNumberish;
+  order_id: bigint;
+  signer: AccountInterface;
+}
+
+export interface EditMarketplaceOrderProps {
+  marketplace_address: num.BigNumberish;
+  order_id: bigint;
+  new_price: bigint;
+  signer: AccountInterface;
+}
