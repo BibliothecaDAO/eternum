@@ -1107,14 +1107,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_banks",
-      calldata: [
-        banks.length,
-        ...banks.flatMap((bank) => [
-          bank.name,
-          bank.coord.x,
-          bank.coord.y
-        ]),
-      ],
+      calldata: [banks.length, ...banks.flatMap((bank) => [bank.name, bank.coord.x, bank.coord.y])],
     });
   }
 
@@ -1316,7 +1309,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, finalCalls);
   }
-
 
   /**
    * Remove liquidity from a bank's pool
