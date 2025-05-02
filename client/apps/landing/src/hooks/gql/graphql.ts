@@ -443,7 +443,9 @@ export type GetAllTokensQueryVariables = Exact<{
 
 export type GetAllTokensQuery = { __typename?: 'World__Query', tokens: { __typename?: 'TokenConnection', totalCount: number, edges?: Array<{ __typename?: 'TokenEdge', node?: { __typename?: 'Token', tokenMetadata: { __typename: 'ERC20__Token' } | { __typename: 'ERC721__Token', tokenId: string, metadataDescription?: string | null, imagePath: string, contractAddress: string, metadata: string } | { __typename: 'ERC1155__Token' } } | null } | null> | null } };
 
-export type GetMarketOrdersQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetMarketOrdersQueryVariables = Exact<{
+  limit: Scalars['Int']['input'];
+}>;
 
 
 export type GetMarketOrdersQuery = { __typename?: 'World__Query', marketplaceMarketOrderModelModels?: { __typename?: 'marketplace_MarketOrderModelConnection', edges?: Array<{ __typename?: 'marketplace_MarketOrderModelEdge', node?: { __typename?: 'marketplace_MarketOrderModel', order_id?: any | null, order?: { __typename?: 'marketplace_MarketOrder', active?: any | null, token_id?: any | null, collection_id?: any | null, owner?: any | null, price?: any | null, expiration?: any | null } | null } | null } | null> | null } | null };
@@ -514,8 +516,9 @@ export const GetAllTokensDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetAllTokensQuery, GetAllTokensQueryVariables>;
 export const GetMarketOrdersDocument = new TypedDocumentString(`
-    query getMarketOrders {
+    query getMarketOrders($limit: Int!) {
   marketplaceMarketOrderModelModels(
+    limit: $limit
     where: {order: {active: true, collection_id: 1}}
   ) {
     edges {

@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types";
 import { X } from "lucide-react";
@@ -36,9 +38,33 @@ export function TraitFilterUI({
           </Button>
         )}
       </div> */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="flex justify-center items-end gap-4">
+        {/* Render Checkbox for Wonder trait */}
+        {allTraits["Wonder"] && (
+          <div className="flex items-center h-9 px-3 rounded-md border border-input bg-background space-x-2 pb-0">
+            <Checkbox
+              id="wonder-filter"
+              checked={!!selectedFilters["Wonder"]}
+              onCheckedChange={(checked) => {
+                if (checked) {
+                  handleFilterChange("Wonder", "__ALL_WONDERS__"); // Use special value
+                } else {
+                  clearFilter("Wonder");
+                }
+              }}
+            />
+            <Label
+              htmlFor="wonder-filter"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Filter by Wonder
+            </Label>
+          </div>
+        )}
+
+        {/* Render Select dropdowns for other traits (e.g., Resource) */}
         {Object.entries(allTraits)
-          .filter(([traitType]) => traitType === "Resource" || traitType === "Wonder")
+          .filter(([traitType]) => traitType === "Resource") // Only include Resource
           .map(([traitType, values]) => {
             // Sort resources by their ID (rarity)
             const sortedValues =
@@ -59,7 +85,10 @@ export function TraitFilterUI({
                   onValueChange={(value) => handleFilterChange(traitType, value)}
                 >
                   <SelectTrigger id={`filter-${traitType}`} className="h-9">
-                    <SelectValue placeholder={`Any ${traitType.replace(/_/g, " ")}`} />
+                    <SelectValue placeholder="Filter by Resource">
+                      {/* Always display 'Filter by Resource' if a resource is selected */}
+                      {selectedFilters["Resource"]?.[0] ? "Filter by Resource" : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {sortedValues.map((value) => (
@@ -80,19 +109,38 @@ export function TraitFilterUI({
       {hasActiveFilters && (
         <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-2 items-center">
           {Object.entries(selectedFilters).map(([traitType, values]) =>
-            values.map((value) => (
-              <Badge key={`${traitType}-${value}`} variant="default" className="">
-                {traitType.replace(/_/g, " ")}:{" "}
-                {traitType === "Resource" && <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />}
-                {value}
-                <button
-                  onClick={() => clearFilter(traitType)}
-                  className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )),
+            values.map((value) => {
+              // Handle Wonder badge display
+              if (traitType === "Wonder") {
+                return (
+                  <Badge key={`${traitType}-filter`} variant="default" className="">
+                    Has Wonder
+                    <button
+                      onClick={() => clearFilter(traitType)}
+                      className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              }
+              // Handle other trait badges
+              return (
+                <Badge key={`${traitType}-${value}`} variant="default" className="">
+                  {traitType.replace(/_/g, " ")}:{" "}
+                  {traitType === "Resource" && (
+                    <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />
+                  )}
+                  {value}
+                  <button
+                    onClick={() => handleFilterChange(traitType, value)} // Use handleFilterChange to remove specific value
+                    className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            }),
           )}
         </div>
       )}

@@ -47,7 +47,7 @@ export const TopNavigationView = ({
         </div>
 
         <Button
-          disabled={!address}
+          disabled={false}
           variant="cta"
           onClick={() => {
             window.open(

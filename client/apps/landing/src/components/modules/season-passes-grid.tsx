@@ -19,6 +19,7 @@ interface SeasonPassRowProps {
   seasonPasses: MergedNftData[];
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
+  hideTransferButton?: boolean;
 }
 
 export const SeasonPassesGrid = ({
@@ -26,6 +27,7 @@ export const SeasonPassesGrid = ({
   seasonPasses,
   setIsTransferOpen,
   checkOwner,
+  hideTransferButton,
 }: SeasonPassRowProps) => {
   const [isCompactGrid, setIsCompactGrid] = useState(true);
 

@@ -114,7 +114,7 @@ function SeasonPasses() {
       },
       {
         queryKey: ["marketplaceOrders", marketplaceAddress],
-        queryFn: () => execute(GET_MARKETPLACE_ORDERS),
+        queryFn: () => execute(GET_MARKETPLACE_ORDERS, { limit: 8000 }),
         refetchInterval: 15_000,
       },
     ],

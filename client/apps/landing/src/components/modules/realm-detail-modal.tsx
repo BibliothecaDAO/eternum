@@ -3,9 +3,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { lordsAddress } from "@/config";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { RealmMetadata } from "@/types";
-import { Loader2 } from "lucide-react";
+import { useAccount, useBalance, useConnect } from "@starknet-react/core";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatUnits } from "viem";
@@ -65,9 +67,23 @@ export const RealmDetailModal = ({
     isApprovingMarketplace,
   } = marketplaceActions;
 
+  // Get wallet state
+  const { address } = useAccount();
+  const { connectors, connect } = useConnect();
+
+  // Fetch user's LORDS balance
+  const { data: balanceData } = useBalance({
+    address: address,
+    token: lordsAddress as `0x${string}`,
+    watch: true,
+  });
+  const userBalance = balanceData?.value ?? BigInt(0);
+  const nftPrice = price ?? BigInt(0);
+  const hasSufficientBalance = userBalance >= nftPrice;
+
   // State for inputs
   const durationOptions = {
-    "24hr": 60 * 60 * 24,
+    "24hr": 60 * 60 * 24 + 60 * 2, // 24hours + 2 minutes
     "7days": 60 * 60 * 24 * 7,
     "30days": 60 * 60 * 24 * 30,
   };
@@ -206,7 +222,14 @@ export const RealmDetailModal = ({
             <div className="text-center border-t border-b py-3 my-3">
               <p className="text-sm text-muted-foreground uppercase tracking-wider">Price</p>
               <div className="text-4xl font-bold text-gold gap-2 mx-auto text-center flex items-center justify-center">
-                <div>{isSyncing ? "Syncing..." : parseFloat(formatUnits(price, 18)).toFixed(2)} </div>
+                <div>
+                  {isSyncing
+                    ? "Syncing..."
+                    : parseFloat(formatUnits(price, 18)).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                </div>
 
                 <ResourceIcon resource="Lords" size="sm" />
               </div>
@@ -289,11 +312,19 @@ export const RealmDetailModal = ({
                               <div className="text-sm text-muted-foreground mb-1 flex justify-between">
                                 <span>
                                   You receive:{" "}
-                                  {((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toFixed(2)} LORDS
+                                  {((parseFloat(editPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
+                                    "en-US",
+                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                                  )}{" "}
+                                  LORDS
                                 </span>
                                 <span>
-                                  Fee: {((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toFixed(2)} LORDS (
-                                  {MARKETPLACE_FEE_PERCENT}%)
+                                  Fee:{" "}
+                                  {((parseFloat(editPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}{" "}
+                                  LORDS ({MARKETPLACE_FEE_PERCENT}%)
                                 </span>
                               </div>
                             )}
@@ -355,11 +386,19 @@ export const RealmDetailModal = ({
                               <div className="text-sm text-muted-foreground mb-1 flex justify-between">
                                 <span>
                                   You receive:{" "}
-                                  {((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toFixed(2)} LORDS
+                                  {((parseFloat(listPrice) * (100 - MARKETPLACE_FEE_PERCENT)) / 100).toLocaleString(
+                                    "en-US",
+                                    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+                                  )}{" "}
+                                  LORDS
                                 </span>
                                 <span>
-                                  Fee: {((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toFixed(2)} LORDS (
-                                  {MARKETPLACE_FEE_PERCENT}%)
+                                  Fee:{" "}
+                                  {((parseFloat(listPrice) * MARKETPLACE_FEE_PERCENT) / 100).toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}{" "}
+                                  LORDS ({MARKETPLACE_FEE_PERCENT}%)
                                 </span>
                               </div>
                             )}
@@ -420,27 +459,77 @@ export const RealmDetailModal = ({
             ) : (
               // --- Non-Owner Logic ---
               <>
-                {isListed && price !== undefined && (
-                  <Button
-                    onClick={handleAcceptOrder}
-                    size="lg"
-                    variant="cta"
-                    disabled={
-                      // Updated disabled logic
-                      isLoading ||
-                      isSyncing ||
-                      hasSeasonPassMinted ||
-                      marketplaceActions.isAcceptingOrder ||
-                      (expiration !== undefined && expiration * 1000 < Date.now()) // Check if expired
-                    }
-                    className="w-full sm:w-auto"
-                  >
-                    {expiration !== undefined && expiration * 1000 < Date.now() // Change button text if expired
-                      ? "Listing Expired"
-                      : marketplaceActions.isAcceptingOrder
-                        ? "Purchasing..."
-                        : `Purchase`}
-                  </Button>
+                {isListed && price !== undefined ? (
+                  <>
+                    {address ? (
+                      <div className="flex flex-col items-center sm:items-stretch">
+                        {/* Insufficient Balance Message - Showing Current Balance */}
+                        {address &&
+                          !hasSufficientBalance &&
+                          expiration !== undefined &&
+                          expiration * 1000 >= Date.now() && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-md p-2 mb-2">
+                              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                              <span>
+                                Insufficient LORDS balance (Balance:{" "}
+                                {parseFloat(formatUnits(userBalance, 18)).toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                                )
+                              </span>
+                            </div>
+                          )}
+                        <Button
+                          onClick={handleAcceptOrder}
+                          size="lg"
+                          variant="cta"
+                          disabled={
+                            isLoading ||
+                            isSyncing ||
+                            hasSeasonPassMinted ||
+                            marketplaceActions.isAcceptingOrder ||
+                            (expiration !== undefined && expiration * 1000 < Date.now())
+                          }
+                          className="w-full sm:w-auto"
+                        >
+                          {expiration !== undefined && expiration * 1000 < Date.now()
+                            ? "Listing Expired"
+                            : marketplaceActions.isAcceptingOrder
+                              ? "Purchasing..."
+                              : `Purchase`}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 items-center">
+                        <p className="text-sm text-muted-foreground mb-2">Connect wallet to purchase</p>
+                        {connectors.map((connector) => (
+                          <Button
+                            key={connector.id}
+                            onClick={() => connect({ connector })}
+                            variant="default"
+                            size="sm"
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            {connector.icon && typeof connector.icon === "string" && (
+                              <img src={connector.icon} alt={`${connector.name} icon`} className="w-5 h-5" />
+                            )}
+                            {connector.icon &&
+                              typeof connector.icon !== "string" &&
+                              connector.id !== "argentX" &&
+                              connector.id !== "braavos" && (
+                                <span className="w-5 h-5 flex items-center justify-center">
+                                  {connector.icon.light ?? connector.icon}
+                                </span>
+                              )}
+                            Connect {connector.name}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>{/* Optionally add a message like "Not available for purchase" */}</>
                 )}
               </>
             )}
@@ -452,16 +541,18 @@ export const RealmDetailModal = ({
                 Season Pass already minted.
               </p>
             )}
-            {/* Close Button - Moved slightly for better alignment */}
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              size="sm"
-              className="self-end"
-              disabled={isLoading}
-            >
-              Close
-            </Button>
+            {/* Close Button - Conditionally render */}
+            {address && ( // Only show Close button if connected or owner
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                size="sm"
+                className="self-end"
+                disabled={isLoading}
+              >
+                Close
+              </Button>
+            )}
           </div>
         </DialogFooter>
       </DialogContent>
