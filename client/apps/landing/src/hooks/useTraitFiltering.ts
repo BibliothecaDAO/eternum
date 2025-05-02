@@ -105,7 +105,13 @@ export function useTraitFiltering<T>(
         // Find the item's values for the current traitType
         const itemValues = attributes.filter((attr) => attr.trait_type === traitType).map((attr) => String(attr.value));
 
-        // Check if any of the item's values are included in the selected filter values
+        // Special handling for the 'Wonder' checkbox filter
+        if (traitType === "Wonder" && selectedValues.includes("__ALL_WONDERS__")) {
+          // If the Wonder filter is active, check if the item has *any* Wonder trait
+          return itemValues.length > 0;
+        }
+
+        // Original logic: Check if any of the item's values are included in the selected filter values
         return selectedValues.some((selectedValue) => itemValues.includes(selectedValue));
       });
     });

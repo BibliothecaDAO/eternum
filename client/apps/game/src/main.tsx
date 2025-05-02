@@ -123,7 +123,7 @@ async function init() {
             <Button
               variant="gold"
               onClick={() => {
-                window.open("https://element.market/collections/eternum-season-1?search[toggles][0]=ALL", "_blank");
+                window.open("https://empire.realms.world/trade", "_blank");
               }}
             >
               Buy a Season Pass

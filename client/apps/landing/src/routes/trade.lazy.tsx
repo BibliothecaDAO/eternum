@@ -1,3 +1,4 @@
+import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
@@ -20,13 +21,14 @@ import { SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Badge } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Badge, Loader2 } from "lucide-react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 import { MarketOrder, MergedNftData } from "./season-passes.lazy";
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
+  pendingComponent: FullPageLoader,
 });
 export type TokenBalance = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
 export type TokenBalanceEdge = NonNullable<NonNullable<GetAccountTokensQuery["tokenBalances"]>["edges"]>[number];
@@ -68,6 +70,7 @@ function SeasonPasses() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [controllerAddress] = useState<string>();
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [tokenIdToTransfer, setTokenIdToTransfer] = useState<string | null>(null);
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,7 +100,7 @@ function SeasonPasses() {
       },
       {
         queryKey: ["marketplaceOrders", marketplaceAddress],
-        queryFn: () => execute(GET_MARKETPLACE_ORDERS),
+        queryFn: () => execute(GET_MARKETPLACE_ORDERS, { limit: 8000 }),
         refetchInterval: 15_000,
       },
     ],
@@ -302,9 +305,15 @@ function SeasonPasses() {
   };
 
   // Only allow transfer for user's own tokens
-  const handleTransferClick = useCallback(() => {
-    setIsTransferOpen(true);
-  }, [viewMode]);
+  const handleTransferClick = useCallback(
+    (tokenId?: string) => {
+      if (tokenId) {
+        setTokenIdToTransfer(tokenId);
+      }
+      setIsTransferOpen(true);
+    },
+    [viewMode],
+  );
 
   const totalPasses = allSeasonPassNfts.length;
 
@@ -339,7 +348,32 @@ function SeasonPasses() {
 
           {/* Grid container - Removed extra bottom padding */}
           <div className="flex-grow overflow-y-auto pt-0 pb-4 px-2">
-            <SeasonPassesGrid seasonPasses={paginatedPasses} setIsTransferOpen={handleTransferClick} />
+            <div className="flex flex-col gap-2">
+              <Suspense
+                fallback={
+                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="w-10 h-10 animate-spin" />
+                  </div>
+                }
+              >
+                {filteredSeasonPasses.length > 0 && (
+                  <SeasonPassesGrid
+                    seasonPasses={paginatedPasses}
+                    setIsTransferOpen={handleTransferClick}
+                    hideTransferButton={true}
+                  />
+                )}
+
+                {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No Season Passes match the selected filters.
+                  </div>
+                )}
+                {totalPasses === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">No Season Pass NFTs available.</div>
+                )}
+              </Suspense>
+            </div>
           </div>
 
           {/* Pagination Controls */}
@@ -378,6 +412,7 @@ function SeasonPasses() {
               isOpen={isTransferOpen}
               setIsOpen={setIsTransferOpen}
               seasonPassMints={mySeasonPassNfts as SeasonPassMint[]}
+              initialSelectedTokenId={tokenIdToTransfer}
             />
           )}
         </>
