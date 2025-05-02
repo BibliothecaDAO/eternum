@@ -325,7 +325,7 @@ function Mint() {
 
         <div className="flex-grow overflow-y-auto">
           <div className="flex flex-col gap-4 px-2 pb-4">
-            {!allMinted && (
+            {!allMinted && totalRealms > 0 && (
               <div className="m-2 flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 p-3 text-base text-blue-800 shadow-sm ">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -358,12 +358,6 @@ function Mint() {
               {/* Show message if filters result in no realms */}
               {augmentedAndSortedRealms.length === 0 && Object.keys(selectedFilters).length > 0 && !loading && (
                 <div className="text-center py-6 text-muted-foreground">No realms match the selected filters.</div>
-              )}
-              {/* Show message if user has no realms (based on original data) */}
-              {totalRealms === 0 && !loading && (
-                <div className="text-center py-6 text-muted-foreground">
-                  You do not own any Realm NFTs yet. {isDev && "Try minting one!"}
-                </div>
               )}
 
               {/* --- Top Action Bar (sm+) --- */}
