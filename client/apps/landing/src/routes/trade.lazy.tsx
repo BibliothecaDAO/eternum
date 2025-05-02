@@ -1,4 +1,3 @@
-import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
@@ -76,8 +75,6 @@ function SeasonPasses() {
   const ITEMS_PER_PAGE = 24;
 
   const { transferableTokenIds } = useTransferState();
-
-  console.log("transferableTokenIds", transferableTokenIds);
 
   const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
@@ -310,10 +307,6 @@ function SeasonPasses() {
   const handleTransferClick = useCallback(() => {
     setIsTransferOpen(true);
   }, [viewMode]);
-
-  if (!address) {
-    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
-  }
 
   const totalPasses = allSeasonPassNfts.length;
 

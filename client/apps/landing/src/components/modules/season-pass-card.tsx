@@ -53,14 +53,16 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
     functionName: "owner_of",
     address: contractAddress as `0x${string}`,
     args: [tokenId.toString()],
-    enabled: !!contractAddress && !!tokenId,
+    enabled: BigInt(pass.owner ?? "0") !== BigInt("0"),
   });
-
-  const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
 
   const orderOwner = BigInt(pass.owner ?? "0") === ownerData || BigInt(pass.owner ?? "0") === BigInt("0");
 
   const { addTransferableTokenId, removeTransferableTokenId } = useTransferState();
+
+  const isOwner = useMemo(() => {
+    return BigInt(pass.owner ?? "0") === BigInt(accountAddress ?? "0");
+  }, [pass.owner, accountAddress]);
 
   useEffect(() => {
     if (BigInt(pass.owner ?? "0") !== ownerData) {
@@ -125,11 +127,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
   );
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && orderOwner && pass.minPrice !== null) {
+    if (pass.expiration !== null && pass.minPrice !== null && orderOwner) {
       return true;
     }
     return false;
-  }, [pass.expiration, orderOwner, pass.minPrice]);
+  }, [pass.expiration, pass.minPrice, orderOwner]);
 
   return (
     <>
