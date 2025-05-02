@@ -296,7 +296,11 @@ function SeasonPasses() {
             <div className="flex flex-col gap-2">
               <Suspense fallback={<Skeleton>Loading</Skeleton>}>
                 {filteredSeasonPasses.length > 0 && (
-                  <SeasonPassesGrid seasonPasses={paginatedPasses} setIsTransferOpen={handleTransferClick} />
+                  <SeasonPassesGrid
+                    checkOwner={true}
+                    seasonPasses={paginatedPasses}
+                    setIsTransferOpen={handleTransferClick}
+                  />
                 )}
 
                 {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && !isLoading && (

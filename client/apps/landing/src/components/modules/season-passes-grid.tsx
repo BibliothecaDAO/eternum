@@ -18,9 +18,15 @@ interface SeasonPassRowProps {
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
   seasonPasses: MergedNftData[];
   setIsTransferOpen: (tokenId?: string) => void;
+  checkOwner?: boolean;
 }
 
-export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransferOpen }: SeasonPassRowProps) => {
+export const SeasonPassesGrid = ({
+  toggleNftSelection,
+  seasonPasses,
+  setIsTransferOpen,
+  checkOwner,
+}: SeasonPassRowProps) => {
   const [isCompactGrid, setIsCompactGrid] = useState(true);
 
   if (!seasonPasses?.length) {
@@ -79,6 +85,7 @@ export const SeasonPassesGrid = ({ toggleNftSelection, seasonPasses, setIsTransf
               toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId)}
               key={`${tokenId || ""}`}
               pass={pass}
+              checkOwner={checkOwner}
             />
           );
         }}
