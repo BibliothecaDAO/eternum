@@ -213,7 +213,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
           <div className="flex w-full gap-4">
             {/* Change Sell button variant */}
             <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
-              {isOwner ? "Sell" : "Buy Now"}
+              {isOwner ? "Manage" : "Buy Now"}
             </Button>
 
             {isOwner && (
