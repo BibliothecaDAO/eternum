@@ -15,6 +15,7 @@ interface SeasonPassCardProps {
   toggleNftSelection?: () => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
+  checkOwner?: boolean;
 }
 
 interface ListingDetails {
@@ -26,7 +27,7 @@ interface ListingDetails {
 
 const SEASON_PASS_COLLECTION_ID = 1;
 
-export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonPassCardProps) => {
+export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwner = false }: SeasonPassCardProps) => {
   const { tokenId, contractAddress, metadata } =
     pass?.node?.tokenMetadata.__typename === "ERC721__Token"
       ? { ...pass.node.tokenMetadata, tokenId: BigInt(pass.node.tokenMetadata.tokenId) }
@@ -53,7 +54,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
     functionName: "owner_of",
     address: contractAddress as `0x${string}`,
     args: [tokenId.toString()],
-    enabled: !!contractAddress && !!tokenId,
+    enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
   });
 
   const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");

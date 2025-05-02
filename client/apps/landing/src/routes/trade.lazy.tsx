@@ -1,4 +1,3 @@
-import { ConnectWalletPrompt } from "@/components/modules/connect-wallet-prompt";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
@@ -10,7 +9,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
 import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
@@ -77,8 +75,6 @@ function SeasonPasses() {
 
   const { transferableTokenIds } = useTransferState();
 
-  console.log("transferableTokenIds", transferableTokenIds);
-
   const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
       {
@@ -115,7 +111,6 @@ function SeasonPasses() {
   );
 
   const marketplaceOrdersData = ordersQuery.data as any;
-  const isLoading = (viewMode === "all" && allNftsQuery.isLoading) || ordersQuery.isLoading;
 
   const processedAndSortedNfts = useMemo((): MergedNftData[] => {
     // Use the appropriate NFT edges based on view mode
@@ -311,19 +306,10 @@ function SeasonPasses() {
     setIsTransferOpen(true);
   }, [viewMode]);
 
-  if (!address) {
-    return <ConnectWalletPrompt connectors={connectors} connect={connect} />;
-  }
-
   const totalPasses = allSeasonPassNfts.length;
 
   return (
     <div className="flex flex-col h-full">
-      {isLoading && (
-        <div className="flex-grow flex items-center justify-center absolute inset-0 bg-background/50 z-50">
-          <Loader2 className="w-10 h-10 animate-spin" />
-        </div>
-      )}
       <>
         {controllerAddress && (
           <div className="text-xl py-4 flex items-center">
@@ -354,17 +340,23 @@ function SeasonPasses() {
           {/* Grid container - Removed extra bottom padding */}
           <div className="flex-grow overflow-y-auto pt-0 pb-4 px-2">
             <div className="flex flex-col gap-2">
-              <Suspense fallback={<Skeleton>Loading</Skeleton>}>
+              <Suspense
+                fallback={
+                  <div className="flex-grow flex items-center justify-center min-h-[200px]">
+                    <Loader2 className="w-10 h-10 animate-spin" />
+                  </div>
+                }
+              >
                 {filteredSeasonPasses.length > 0 && (
                   <SeasonPassesGrid seasonPasses={paginatedPasses} setIsTransferOpen={handleTransferClick} />
                 )}
 
-                {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && !isLoading && (
+                {filteredSeasonPasses.length === 0 && Object.keys(selectedFilters).length > 0 && (
                   <div className="text-center py-6 text-muted-foreground">
                     No Season Passes match the selected filters.
                   </div>
                 )}
-                {totalPasses === 0 && !isLoading && (
+                {totalPasses === 0 && (
                   <div className="text-center py-6 text-muted-foreground">No Season Pass NFTs available.</div>
                 )}
               </Suspense>
