@@ -67,20 +67,20 @@ export const Controller = ({ className, iconClassName }: { className?: string; i
     <>
       {showDisconnectConfirm ? (
         <>
-          <Button className="bg-dark-wood !pb-0" variant="danger" onClick={handleCancelDisconnect}>
+          <Button className="dark:bg-dark-wood !pb-0" variant="danger" onClick={handleCancelDisconnect}>
             Close
           </Button>
           <CircleButton label="Logout" image={BuildingThumbs.leave} size="md" onClick={handleDisconnect}></CircleButton>
         </>
       ) : (
-        <Button variant="default" className="!pb-0 bg-dark-wood" onClick={handleShowDisconnect}>
+        <Button variant="default" className="!pb-0 dark:bg-dark-wood" onClick={handleShowDisconnect}>
           {/* <CartridgeSmall className={`w-5 md:w-4 mr-1 md:mr-1 !fill-current self-center ${iconClassName}`} /> */}
           <div className="self-center">{userName}</div>
         </Button>
       )}
     </>
   ) : (
-    <Button className="bg-dark-wood !pb-0" variant="default" onClick={handleConnect}>
+    <Button className="dark:bg-dark-wood !pb-0" variant="default" onClick={handleConnect}>
       Login
     </Button>
   );

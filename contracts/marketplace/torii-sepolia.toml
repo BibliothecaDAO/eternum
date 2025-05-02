@@ -1,0 +1,49 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://api.cartridge.gg/x/starknet/sepolia"
+
+world_address = "0x0656c7780d54a545802da391bc1c34dc643e82d8f24fb3149a5912ce62d628b5"
+
+db_dir = "torii-sepolia"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = [
+    "erc721:0x33b928dbf2e57422f89e04dbc79f591c209b8dc2c0f7a65a0cbf7964508cf08",
+    "erc721:0x3821e12abd167abb93194afac48c2f71d02308471826b77713baafcfe8dbf77",
+	"erc721:0x73d6cf641720e97308fd32ea80e5457e80148447efe88e5f5080c9d6d29047e",
+    "erc20:0x22b68d4ede70ad64d3b1c43b544b34515c0d7d9a6adc085c44fdd29ad53507c",
+]
+
+namespaces = ["marketplace"]
+
+world_block = 0
+
+[erc]
+max_metadata_tasks = 2
+
+[sql]
+all_model_indices = false
+model_indices = [
+	{ model_tag = "marketplace-MarketOrderModel", fields = ["order_id"]},
+]
+
+historical = []
+cache_size = -1_000_000 # 1024MB of cache size
+page_size = 32_768
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

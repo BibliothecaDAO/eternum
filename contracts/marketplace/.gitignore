@@ -1,0 +1,15 @@
+target/*
+torii.db
+KATANA.toml
+logs/*
+pids/*
+.DS_Store
+
+torii.db-wal
+torii.db-shm
+
+dojo_prod.local.toml
+
+.env
+
+dojo_mainnet.toml

@@ -46,7 +46,7 @@ export const LoadingScreen = ({ backgroundImage }: { backgroundImage: string }) 
   return (
     <OnboardingContainer backgroundImage={backgroundImage} controller={false}>
       <div className="h-screen w-screen flex justify-center align-middle">
-        <div className="mt-10 w-[500px] relative bottom-1 text-center text-xl self-center panel-wood bg-dark-wood panel-wood-corners p-4 px-12">
+        <div className="mt-10 w-[500px] relative bottom-1 text-center text-xl self-center panel-wood dark:bg-dark-wood panel-wood-corners p-4 px-12">
           {" "}
           <img src="/images/logos/eternum-loader.png" className="w-32 sm:w-24 lg:w-24 xl:w-28 2xl:mt-2 mx-auto my-8" />
           {`${statements[currentStatement]}`}
