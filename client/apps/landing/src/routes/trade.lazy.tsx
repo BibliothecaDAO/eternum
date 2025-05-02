@@ -94,7 +94,7 @@ function SeasonPasses() {
         queryFn: () =>
           execute(GET_ALL_TOKENS, {
             offset: 0,
-            limit: 1000,
+            limit: 8000,
             contractAddress: seasonPassAddress,
           }),
       },

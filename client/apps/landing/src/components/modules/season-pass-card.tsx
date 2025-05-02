@@ -1,6 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { useTransferState } from "@/hooks/use-transfer-state";
 import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
@@ -61,16 +60,6 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
 
   const orderOwner = BigInt(pass.owner ?? "0") === ownerData || BigInt(pass.owner ?? "0") === BigInt("0");
-
-  const { addTransferableTokenId, removeTransferableTokenId } = useTransferState();
-
-  useEffect(() => {
-    if (BigInt(pass.owner ?? "0") !== ownerData) {
-      addTransferableTokenId(tokenId.toString());
-    } else {
-      removeTransferableTokenId(tokenId.toString());
-    }
-  }, [tokenId, isOwner, isOwnerSuccess]);
 
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
@@ -224,7 +213,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
           <div className="flex w-full gap-4">
             {/* Change Sell button variant */}
             <Button variant={isOwner ? "outline" : "default"} className="w-full" onClick={handleCardClick}>
-              {isOwner ? "Sell" : "Buy Now"}
+              {isOwner ? "Manage" : "Buy Now"}
             </Button>
 
             {isOwner && (
