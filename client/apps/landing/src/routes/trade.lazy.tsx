@@ -97,7 +97,7 @@ function SeasonPasses() {
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 20;
 
   const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
@@ -126,9 +126,6 @@ function SeasonPasses() {
       },
     ],
   });
-
-  console.log("allNftsQuery.data", allNftsQuery.data);
-  console.log("myNftsQuery.data", myNftsQuery.data);
 
   const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(() => getSeasonPassNfts(myNftsQuery.data), [myNftsQuery.data]);
 

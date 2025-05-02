@@ -441,7 +441,7 @@ export type GetAllTokensQueryVariables = Exact<{
 }>;
 
 
-export type GetAllTokensQuery = { __typename?: 'World__Query', tokens: { __typename?: 'TokenConnection', edges?: Array<{ __typename?: 'TokenEdge', node?: { __typename?: 'Token', tokenMetadata: { __typename: 'ERC20__Token' } | { __typename: 'ERC721__Token', tokenId: string, metadataDescription?: string | null, imagePath: string, contractAddress: string, metadata: string } | { __typename: 'ERC1155__Token' } } | null } | null> | null } };
+export type GetAllTokensQuery = { __typename?: 'World__Query', tokens: { __typename?: 'TokenConnection', totalCount: number, edges?: Array<{ __typename?: 'TokenEdge', node?: { __typename?: 'Token', tokenMetadata: { __typename: 'ERC20__Token' } | { __typename: 'ERC721__Token', tokenId: string, metadataDescription?: string | null, imagePath: string, contractAddress: string, metadata: string } | { __typename: 'ERC1155__Token' } } | null } | null> | null } };
 
 export type GetMarketOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -495,6 +495,7 @@ export const GetAccountTokensDocument = new TypedDocumentString(`
 export const GetAllTokensDocument = new TypedDocumentString(`
     query getAllTokens($offset: Int!, $limit: Int!, $contractAddress: String!) {
   tokens(limit: $limit, offset: $offset, contractAddress: $contractAddress) {
+    totalCount
     edges {
       node {
         tokenMetadata {

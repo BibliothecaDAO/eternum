@@ -24,6 +24,7 @@ export const GET_ACCOUNT_TOKENS = graphql(`
 export const GET_ALL_TOKENS = graphql(`
   query getAllTokens($offset: Int!, $limit: Int!, $contractAddress: String!) {
     tokens(limit: $limit, offset: $offset, contractAddress: $contractAddress) {
+      totalCount
       edges {
         node {
           tokenMetadata {
