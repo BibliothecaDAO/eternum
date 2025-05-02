@@ -38,7 +38,7 @@ export function TraitFilterUI({
       </div> */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {Object.entries(allTraits)
-          .filter(([traitType]) => traitType === "Resource")
+          .filter(([traitType]) => traitType === "Resource" || traitType === "Wonder")
           .map(([traitType, values]) => (
             <div key={traitType} className="flex flex-col gap-1.5">
               <Label htmlFor={`filter-${traitType}`} className="text-sm uppercase">
