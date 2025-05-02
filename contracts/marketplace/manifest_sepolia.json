@@ -1313,7 +1313,7 @@
   "contracts": [
     {
       "address": "0x7e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
-      "class_hash": "0x34f6213ddab0bb97a8f0814ece66f1dcebca3b57aa9dbb5e34b3da1f89c026c",
+      "class_hash": "0x4f24403287e527604411e41ea7490e0c11d0864b532f56197ac47e6599d8f1c",
       "abi": [
         {
           "type": "impl",
@@ -1657,6 +1657,12 @@
       "class_hash": "0x3a774ed248f3250f22b7e8b3bf004cf3999bf72ebbdbe2a5bd63e9b283f7538",
       "tag": "marketplace-MarketOrderModel",
       "selector": "0x1b788e0ce89d97f3455ffb1bf0474fd532c657d9a7ca8cf9a09cfe2492a4507"
+    },
+    {
+      "members": [],
+      "class_hash": "0x1900d4b052fbd744bf485cef0ee33900a40f2fc212b9caa215afb6bf395fdf5",
+      "tag": "marketplace-MarketTokenOrderModel",
+      "selector": "0x1c646dee8f8477a8d618e7fded1f19fda56c61d955217b491360fa08b90ded3"
     },
     {
       "members": [],
