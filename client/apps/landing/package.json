@@ -50,7 +50,8 @@
     "react-dom": "catalog:",
     "starknet": "catalog:",
     "storybook": "^8.3.2",
-    "vite-plugin-vercel": "^9.0.3"
+    "vite-plugin-vercel": "^9.0.3",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.16",

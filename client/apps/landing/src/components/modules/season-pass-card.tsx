@@ -1,5 +1,6 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useTransferState } from "@/hooks/use-transfer-state";
 import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { useAccount, useReadContract } from "@starknet-react/core";
@@ -58,6 +59,18 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
 
   const isOwner = isOwnerSuccess && ownerData === BigInt(accountAddress ?? "0");
 
+  const orderOwner = BigInt(pass.owner ?? "0") === ownerData || BigInt(pass.owner ?? "0") === BigInt("0");
+
+  const { addTransferableTokenId, removeTransferableTokenId } = useTransferState();
+
+  useEffect(() => {
+    if (!orderOwner) {
+      addTransferableTokenId(tokenId.toString());
+    } else {
+      removeTransferableTokenId(tokenId.toString());
+    }
+  }, [tokenId, ownerData]);
+
   // Calculate time remaining for auctions about to expire
   useEffect(() => {
     if (!pass.expiration) return;
@@ -111,6 +124,13 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
     }),
     [tokenId, contractAddress, name, image, attributes],
   );
+
+  const listingActive = useMemo(() => {
+    if (pass.expiration !== null && orderOwner && pass.minPrice !== null) {
+      return true;
+    }
+    return false;
+  }, [pass.expiration, orderOwner, pass.minPrice]);
 
   return (
     <>
@@ -176,15 +196,16 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         <CardContent className="px-4 pt-2">
           <div className="flex justify-between">
             <div className="flex flex-col">
-              {pass.minPrice !== null ? (
+              {listingActive ? (
                 <div className="text-xl  flex items-center gap-2 font-mono">
-                  {parseFloat(formatUnits(pass.minPrice, 18)).toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
+                  {parseFloat(formatUnits(pass.minPrice ?? BigInt(0), 18)).toFixed(2)}{" "}
+                  <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
                 <div className="text-xl text-muted-foreground">Not Listed</div>
               )}
 
-              {pass.expiration !== null && (
+              {listingActive && (
                 <div className="text-sm text-muted-foreground mt-1">
                   {timeRemaining ? (
                     <span className="text-red-500 font-medium">{timeRemaining}</span>
@@ -198,9 +219,11 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection }: SeasonP
         </CardContent>
 
         <CardFooter className="border-t items-center bg-card/50 flex uppercase w-full h-full justify-between text-center p-3 text-sm gap-4">
-          <Button variant="default" className="w-full" onClick={handleCardClick}>
-            {isOwner ? "Manage" : "Buy"}
-          </Button>
+          {listingActive && (
+            <Button variant="default" className="w-full" onClick={handleCardClick}>
+              {isOwner ? "Manage" : "Buy"}
+            </Button>
+          )}
           {isOwner && (
             <Button variant="outline" size="sm" onClick={handleTransferClick}>
               Transfer <Send className="w-4 h-4" />

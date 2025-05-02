@@ -691,6 +691,9 @@ importers:
       vite-plugin-vercel:
         specifier: ^9.0.3
         version: 9.0.5(encoding@0.1.13)(rollup@4.40.0)(vite@6.2.6(@types/node@20.17.30)(jiti@2.4.2)(lightningcss@1.29.3)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1))
+      zustand:
+        specifier: ^4.5.2
+        version: 4.5.6(@types/react@18.3.20)(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: ^1.12.16

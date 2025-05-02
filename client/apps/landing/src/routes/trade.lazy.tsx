@@ -15,6 +15,7 @@ import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
 import { GET_ACCOUNT_TOKENS, GET_ALL_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
+import { useTransferState } from "@/hooks/use-transfer-state";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
 import { SeasonPassMint } from "@/types";
@@ -24,32 +25,7 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
-
-interface MarketOrder {
-  active: boolean;
-  token_id: string;
-  collection_id: string;
-  owner: string;
-  price: string;
-  expiration: string;
-}
-
-export interface MergedNftData {
-  node: {
-    tokenMetadata: {
-      __typename: "ERC721__Token";
-      tokenId: string;
-      metadataDescription?: string | null;
-      imagePath: string;
-      contractAddress: string;
-      metadata: string;
-    };
-  };
-  minPrice: bigint | null;
-  marketplaceOwner: string | null;
-  orderId: string | null;
-  expiration: string | null;
-}
+import { MarketOrder, MergedNftData } from "./season-passes.lazy";
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
@@ -98,6 +74,10 @@ function SeasonPasses() {
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
+
+  const { transferableTokenIds } = useTransferState();
+
+  console.log("transferableTokenIds", transferableTokenIds);
 
   const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
@@ -183,6 +163,7 @@ function SeasonPasses() {
         marketplaceOwner: orderInfo ? orderInfo.owner : null,
         expiration: orderInfo ? orderInfo.expiration : null,
         orderId: orderInfo ? orderInfo.orderId : null,
+        owner: orderInfo ? orderInfo.owner : null,
       };
     });
 
@@ -191,13 +172,24 @@ function SeasonPasses() {
       (nft): nft is any => nft !== null && nft.node?.tokenMetadata?.__typename === "ERC721__Token",
     );
 
-    // 3. Sort the merged NFTs by price (lowest first, unlisted last)
+    // 3. Sort the merged NFTs: transferable last, then by price (lowest first, unlisted last)
     mergedNfts.sort((a, b) => {
+      const aTokenId = a.node.tokenMetadata.tokenId.toString();
+      const bTokenId = b.node.tokenMetadata.tokenId.toString();
+
+      const isATransferable = transferableTokenIds.has(parseInt(aTokenId).toString());
+      const isBTransferable = transferableTokenIds.has(parseInt(bTokenId).toString());
+
+      // Prioritize non-transferable items first
+      if (isATransferable && !isBTransferable) return 1; // a comes after b
+      if (!isATransferable && isBTransferable) return -1; // a comes before b
+
+      // If both are transferable or both are not, sort by price
       const priceA = a.minPrice;
       const priceB = b.minPrice;
 
       if (priceA === null && priceB === null) return 0;
-      if (priceA === null) return 1;
+      if (priceA === null) return 1; // Unlisted (null price) come last among non-transferable/transferable groups
       if (priceB === null) return -1;
       if (priceA < priceB) return -1;
       if (priceA > priceB) return 1;
@@ -205,7 +197,7 @@ function SeasonPasses() {
     });
 
     return mergedNfts;
-  }, [viewMode, mySeasonPassNfts, allSeasonPassNfts, marketplaceOrdersData]);
+  }, [viewMode, mySeasonPassNfts, allSeasonPassNfts, marketplaceOrdersData, transferableTokenIds]);
 
   const getSeasonPassMetadataString = useCallback((pass: TokenBalanceEdge | AllTokenEdge): string | null => {
     if (pass?.node?.tokenMetadata?.__typename === "ERC721__Token") {

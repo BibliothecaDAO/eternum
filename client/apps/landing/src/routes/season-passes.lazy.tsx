@@ -25,7 +25,7 @@ import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
 
-interface MarketOrder {
+export interface MarketOrder {
   active: boolean;
   token_id: string;
   collection_id: string;
@@ -49,6 +49,7 @@ export interface MergedNftData {
   marketplaceOwner: string | null;
   orderId: string | null;
   expiration: string | null;
+  owner: string | null;
 }
 
 export const Route = createLazyFileRoute("/season-passes")({
