@@ -127,7 +127,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         let multipliers: Array<u128> = array![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let random_index: u128 = random::random(randomness, 124, multipliers.len().into());
         let random_multiplier: u128 = *multipliers.at(random_index.try_into().unwrap());
-        let minimum_amount: u128 = 100_000 * RESOURCE_PRECISION;
+        let minimum_amount: u128 = 300_000 * RESOURCE_PRECISION;
         let actual_amount: u128 = minimum_amount * random_multiplier;
         return actual_amount;
     }

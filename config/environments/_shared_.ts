@@ -84,13 +84,13 @@ export const BASE_POPULATION_CAPACITY = 5;
 
 // ----- Exploration ----- //
 export const EXPLORATION_REWARD = 750;
-export const SHARDS_MINES_WIN_PROBABILITY = 100; // 100 / 10_000 = 1%
-export const SHARDS_MINES_FAIL_PROBABILITY = 9900; // 9900 / 10_000 = 99%
+export const SHARDS_MINES_WIN_PROBABILITY = 1; // 1/150 = 0.666%
+export const SHARDS_MINES_FAIL_PROBABILITY = 149; // 149/150 = 99.33%
 export const SHARDS_MINE_INITIAL_WHEAT_BALANCE = 1000;
 export const SHARDS_MINE_INITIAL_FISH_BALANCE = 1000;
 
-export const AGENT_FIND_PROBABILITY = 100; // 100/600 = 16.66%
-export const AGENT_FIND_FAIL_PROBABILITY = 500; // 500/600 = 83.33%
+export const AGENT_FIND_PROBABILITY = 8; // 8/100 = 8%
+export const AGENT_FIND_FAIL_PROBABILITY = 92; // 92/100 = 92%
 
 export const HYPSTRUCTURE_WIN_PROBABILITY_AT_CENTER = 4000; // 4_000 / 100_000 = 4%
 export const HYPSTRUCTURE_FAIL_PROBABILITY_AT_CENTER = 96_000; // 96_000 / 100_000 = 96%
@@ -227,15 +227,15 @@ export const EternumGlobalConfig: Config = {
   },
   carryCapacityGram: {
     [CapacityConfig.None]: 0,
-    [CapacityConfig.RealmStructure]: 400_000_000_000, // 400m kg
-    [CapacityConfig.VillageStructure]: 200_000_000_000, // 200m kg
-    [CapacityConfig.HyperstructureStructure]: 1_800_000_000, // 1.8m kg
-    [CapacityConfig.BankStructure]: 400_000_000_000, // 400m kg
-    [CapacityConfig.FragmentMineStructure]: 100_000_000, // 100k kg
-    [CapacityConfig.Donkey]: 500_000,
+    [CapacityConfig.RealmStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.VillageStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.HyperstructureStructure]: 3_000_000 * 1000, // 3m kg
+    [CapacityConfig.BankStructure]: 1_000_000 * 1000, // 1m kg
+    [CapacityConfig.FragmentMineStructure]: 500_000 * 1000, // 500k kg
+    [CapacityConfig.Donkey]: 500 * 1000, // 500 kg per donkey
     // 10_000 gr per army
-    [CapacityConfig.Army]: 10_000,
-    [CapacityConfig.Storehouse]: 300_000_000,
+    [CapacityConfig.Army]: 10 * 1000, // 10 kg per troop count
+    [CapacityConfig.Storehouse]: 1_000_000 * 1000, // 1m kg per storehouse
   },
   speed: {
     donkey: DONKEY_SPEED,
