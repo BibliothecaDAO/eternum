@@ -100,9 +100,9 @@ function Mint() {
     selectedFilters,
     allTraits,
     filteredData: filteredRealms, // Renamed output from hook
-    handleFilterChange,
-    clearFilter,
-    clearAllFilters,
+    handleFilterChange: originalHandleFilterChange, // Rename original
+    clearFilter: originalClearFilter, // Rename original
+    clearAllFilters: originalClearAllFilters, // Rename original
   } = useTraitFiltering<RealmEdge>(realmsErcBalance, getRealmMetadataString);
 
   // --- State for Season Pass Mint Status ---
@@ -198,6 +198,28 @@ function Mint() {
       setCurrentPage(page);
     }
   };
+
+  // --- Wrappers for filter functions to reset page ---
+  const handleFilterChange = useCallback(
+    (traitType: string, value: string) => {
+      originalHandleFilterChange(traitType, value);
+      setCurrentPage(1); // Reset page
+    },
+    [originalHandleFilterChange],
+  );
+
+  const clearFilter = useCallback(
+    (traitType: string) => {
+      originalClearFilter(traitType);
+      setCurrentPage(1); // Reset page
+    },
+    [originalClearFilter],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    originalClearAllFilters();
+    setCurrentPage(1); // Reset page
+  }, [originalClearAllFilters]);
 
   // Function to generate pagination items with ellipsis
   const renderPaginationItems = () => {

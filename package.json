@@ -12,6 +12,7 @@
     "dev": "pnpm --dir ./client/apps/game dev",
     "dev:docs": "cd ./client/apps/game-docs && vocs dev",
     "dev:landing": "pnpm --dir ./client/apps/landing dev",
+    "dev:mobile": "pnpm --dir ./client/apps/eternum-mobile dev",
     "_comment_local_network_": "_______________________________________________",
     "_comment_local_network1": "These are all you commands you need to run (in this order)",
     "_comment_local_network2": "to start the game contracts on the your network. This has been simplified to:",

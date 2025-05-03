@@ -70,8 +70,10 @@ export function TraitFilterUI({
             const sortedValues =
               traitType === "Resource"
                 ? [...values].sort((a, b) => {
-                    const idA = ResourcesIds[a as keyof typeof ResourcesIds];
-                    const idB = ResourcesIds[b as keyof typeof ResourcesIds];
+                    const aWithoutSpace = a.replace(/\s/g, "");
+                    const bWithoutSpace = b.replace(/\s/g, "");
+                    const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
+                    const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
                     const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
                     const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
                     return rarityA - rarityB;
