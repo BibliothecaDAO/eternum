@@ -9,7 +9,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { ShepherdJourneyProvider } from "react-shepherd";
 import "shepherd.js/dist/css/shepherd.css";
-import { registerSW } from "virtual:pwa-register";
+
 import { dojoConfig } from "../dojoConfig";
 import { env } from "../env";
 import App from "./app";
@@ -20,7 +20,6 @@ import { useSyncStore } from "./hooks/store/use-sync-store";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import "./index.css";
 import GameRenderer from "./three/game-renderer";
-import { PWAUpdatePopup } from "./ui/components/pwa-update-popup";
 import { IS_MOBILE } from "./ui/config";
 import Button from "./ui/elements/button";
 import { NoAccountModal } from "./ui/layouts/no-account-modal";
@@ -58,27 +57,6 @@ async function init() {
     );
     return;
   }
-
-  const updateContainer = document.createElement("div");
-  updateContainer.id = "pwa-update-container";
-  document.body.appendChild(updateContainer);
-  const updateRoot = ReactDOM.createRoot(updateContainer);
-
-  const updateSW = registerSW({
-    onNeedRefresh() {
-      updateRoot.render(
-        <PWAUpdatePopup
-          onUpdate={() => {
-            updateSW(true);
-          }}
-        />,
-      );
-    },
-    onOfflineReady() {
-      console.log("App ready to work offline");
-    },
-    immediate: true,
-  });
 
   const backgroundImage = getRandomBackgroundImage();
 
