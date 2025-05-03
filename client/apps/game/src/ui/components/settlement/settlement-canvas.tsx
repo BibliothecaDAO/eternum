@@ -390,7 +390,7 @@ export const SettlementCanvas = ({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        className=" panel-wood mb-4 cursor-grab hover:border-gold transition-all duration-300"
+        className=" panel-wood cursor-grab hover:border-gold transition-all duration-300"
         aria-label="Settlement map"
       />
 

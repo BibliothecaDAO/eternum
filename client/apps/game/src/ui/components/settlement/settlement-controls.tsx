@@ -103,16 +103,15 @@ interface SettlementInfoPanelProps {
  */
 export const SettlementInfoPanel = ({ selectedLocation, selectedCoords }: SettlementInfoPanelProps) => {
   return (
-    <div className="flex flex-col items-center justify-center h-[120px] bg-black/30 rounded-lg border border-gold/30 p-4 mb-4 w-full transition-all duration-300 hover:border-gold/50">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-gold/30  w-full transition-all duration-300 hover:border-gold/50">
       {selectedLocation ? (
-        <div className="text-center w-full">
-          <div className="text-xl font-semibold text-gold mb-2 border-b border-gold/20 pb-2">Selected Location</div>
+        <div className="text-center w-full py-2">
           <div className="flex justify-center items-center gap-4 text-gold">
-            <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
+            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
               <div className="text-xs text-gold/70 uppercase tracking-wider">X</div>
               <div className="text-xl font-bold">{selectedCoords?.x}</div>
             </div>
-            <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
+            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
               <div className="text-xs text-gold/70 uppercase tracking-wider">Y</div>
               <div className="text-xl font-bold">{selectedCoords?.y}</div>
             </div>
@@ -156,8 +155,8 @@ export const ConfirmButton = ({ selectedLocation, onConfirm }: ConfirmButtonProp
   return (
     <Button
       disabled={!selectedLocation}
-      className={`w-full transition-all duration-300 ${selectedLocation ? "animate-pulse" : ""}`}
-      variant="primary"
+      className={`w-full transition-all duration-300  ${selectedLocation ? "animate-pulse" : ""}`}
+      variant="gold"
       onClick={onConfirm}
     >
       {selectedLocation ? "Confirm Location" : "Select a Location First"}

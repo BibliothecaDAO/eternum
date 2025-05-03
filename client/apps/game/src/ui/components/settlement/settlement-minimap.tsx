@@ -56,10 +56,11 @@ export const SettlementMinimap = ({
   });
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-2">
       {/* Info Panel */}
       <SettlementInfoPanel selectedLocation={selectedLocation} selectedCoords={selectedCoords} />
 
+      <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />
       {/* Controls */}
       <SettlementControls
         customNormalizedCoords={canvasInteractions.customNormalizedCoords}
@@ -88,9 +89,6 @@ export const SettlementMinimap = ({
         onZoom={canvasInteractions.setZoom}
         villageSelect={villageSelect}
       />
-
-      {/* Confirm Button */}
-      <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />
     </div>
   );
 };
