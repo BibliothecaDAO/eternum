@@ -208,9 +208,9 @@ function SeasonPasses() {
     selectedFilters,
     allTraits,
     filteredData: filteredSeasonPasses,
-    handleFilterChange,
-    clearFilter,
-    clearAllFilters,
+    handleFilterChange: originalHandleFilterChange,
+    clearFilter: originalClearFilter,
+    clearAllFilters: originalClearAllFilters,
   } = useTraitFiltering<MergedNftData>(processedAndSortedNfts, getSeasonPassMetadataString);
 
   // --- Pagination Logic ---
@@ -225,6 +225,28 @@ function SeasonPasses() {
       setCurrentPage(page);
     }
   };
+
+  // --- Wrappers for filter functions to reset page ---
+  const handleFilterChange = useCallback(
+    (traitType: string, value: string) => {
+      originalHandleFilterChange(traitType, value);
+      setCurrentPage(1); // Reset page
+    },
+    [originalHandleFilterChange],
+  );
+
+  const clearFilter = useCallback(
+    (traitType: string) => {
+      originalClearFilter(traitType);
+      setCurrentPage(1); // Reset page
+    },
+    [originalClearFilter],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    originalClearAllFilters();
+    setCurrentPage(1); // Reset page
+  }, [originalClearAllFilters]);
 
   // Function to generate pagination items with ellipsis
   const renderPaginationItems = () => {
