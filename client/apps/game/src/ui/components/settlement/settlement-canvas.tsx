@@ -20,6 +20,7 @@ interface SettlementCanvasProps {
   onMouseUp: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseLeave: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onZoom?: (zoomOut: boolean) => void;
+  villageSelect?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export const SettlementCanvas = ({
   onMouseUp,
   onMouseLeave,
   onZoom,
+  villageSelect = false,
 }: SettlementCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -212,14 +214,33 @@ export const SettlementCanvas = ({
       );
 
       // Draw location point with appropriate color
-      let fillColor = COLORS.AVAILABLE;
-      if (isExtraPlayerLocation) {
-        fillColor = COLORS.EXTRA_PLAYER;
-      } else if (isMine) {
-        fillColor = COLORS.MINE;
-      } else if (isSettled) {
-        fillColor = COLORS.SETTLED;
+      let fillColor: string | null = null;
+
+      if (villageSelect) {
+        // In villageSelect mode, only settled locations are relevant
+        if (isSettled) {
+          // Draw settled locations as green (using MINE color)
+          fillColor = COLORS.MINE;
+        } else {
+          // Don't draw non-settled locations prominently in this mode
+          // Optionally draw faintly: fillColor = `${COLORS.AVAILABLE}33`;
+          return; // Or just skip drawing entirely
+        }
+      } else {
+        // Original color logic when not in villageSelect mode
+        if (isExtraPlayerLocation) {
+          fillColor = COLORS.EXTRA_PLAYER;
+        } else if (isMine) {
+          fillColor = COLORS.MINE;
+        } else if (isSettled) {
+          fillColor = COLORS.SETTLED;
+        } else {
+          fillColor = COLORS.AVAILABLE;
+        }
       }
+
+      // Skip drawing if no color was assigned (e.g., non-settled in villageSelect mode)
+      if (!fillColor) return;
 
       // Draw a slightly larger point for better visibility
       ctx.fillStyle = fillColor;
@@ -356,6 +377,7 @@ export const SettlementCanvas = ({
     bankLocations,
     bankIcon,
     maxLayers,
+    villageSelect,
   ]);
 
   return (

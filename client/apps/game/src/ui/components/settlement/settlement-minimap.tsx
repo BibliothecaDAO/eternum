@@ -20,6 +20,7 @@ export const SettlementMinimap = ({
   onConfirm,
   maxLayers,
   extraPlayerOccupiedLocations = [],
+  villageSelect = false,
 }: SettlementMinimapProps) => {
   // Use the settlement state hook to manage state
   const settlementState = useSettlementState(maxLayers, extraPlayerOccupiedLocations);
@@ -51,10 +52,11 @@ export const SettlementMinimap = ({
     settledLocations,
     setSelectedLocation,
     onSelectLocation,
+    villageSelect,
   });
 
   return (
-    <div className="flex flex-col items-center h-full">
+    <div className="flex flex-col items-center">
       {/* Info Panel */}
       <SettlementInfoPanel selectedLocation={selectedLocation} selectedCoords={selectedCoords} />
 
@@ -84,6 +86,7 @@ export const SettlementMinimap = ({
         onMouseUp={canvasInteractions.handleMouseUp}
         onMouseLeave={canvasInteractions.handleMouseUp}
         onZoom={canvasInteractions.setZoom}
+        villageSelect={villageSelect}
       />
 
       {/* Confirm Button */}

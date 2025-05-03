@@ -572,7 +572,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_village(props: SystemProps.CreateVillageProps) {
-    const { connected_realm, direction, signer } = props;
+    const { village_pass_token_id, connected_realm, direction, signer } = props;
 
     let callData: Call[] = [];
 
@@ -589,7 +589,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const createCall: Call = {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-village_systems`),
       entrypoint: "create",
-      calldata: [connected_realm, direction],
+      calldata: [village_pass_token_id, connected_realm, direction],
     };
 
     const call = this.createProviderCall(signer, [...callData, createCall]);
@@ -615,7 +615,7 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realm_ids, owner, frontend, signer, season_pass_address, realm_settlement } = props;
+    let { realms, owner, frontend, signer, season_pass_address } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${NAMESPACE}-realm_systems`);
 
@@ -625,11 +625,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [realmSystemsContractAddress, true],
     });
 
-    const createCalls = realm_ids.map((realm_id) =>
+    const createCalls = realms.map((realm) =>
       this.createProviderCall(signer, {
         contractAddress: realmSystemsContractAddress,
         entrypoint: "create",
-        calldata: [owner, realm_id, frontend, realm_settlement],
+        calldata: [owner, realm.realm_id, frontend, realm.realm_settlement],
       }),
     );
 

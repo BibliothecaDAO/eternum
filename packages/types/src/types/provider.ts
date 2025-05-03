@@ -8,6 +8,7 @@ export interface SystemSigner {
 }
 
 export interface CreateVillageProps extends SystemSigner {
+  village_pass_token_id: num.BigNumberish;
   connected_realm: num.BigNumberish;
   direction: num.BigNumberish;
 }
@@ -112,14 +113,16 @@ export interface MintResourcesProps extends SystemSigner {
 
 export interface CreateMultipleRealmsProps extends SystemSigner {
   owner: num.BigNumberish;
-  realm_ids: num.BigNumberish[];
+  realms: {
+    realm_id: num.BigNumberish;
+    realm_settlement: {
+      side: num.BigNumberish;
+      layer: num.BigNumberish;
+      point: num.BigNumberish;
+    };
+  }[];
   frontend: num.BigNumberish;
   season_pass_address: string;
-  realm_settlement: {
-    side: num.BigNumberish;
-    layer: num.BigNumberish;
-    point: num.BigNumberish;
-  };
 }
 
 export interface CreateRealmDevProps extends SystemSigner {
