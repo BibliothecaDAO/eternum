@@ -32,19 +32,21 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     controllerConnector.controller.openStarterPack(id);
   };
 
-  // setInterval(() => {
-  //   if (!address) return;
+  setInterval(() => {
+    if (!address) return;
 
-  //   controllerConnector.controller.account
-  //     ?.callContract({
-  //       contractAddress: villagePassAddr,
-  //       entrypoint: "balanceOf",
-  //       calldata: [address],
-  //     })
-  //     .then((res) => {
-  //       setStarterPacks(parseInt(res[0]));
-  //     });
-  // }, 20000);
+    controllerConnector.controller.account
+      ?.callContract({
+        contractAddress: villagePassAddr,
+        entrypoint: "balanceOf",
+        calldata: [address],
+      })
+      .then((res) => {
+        setStarterPacks(parseInt(res[0]));
+      });
+  }, 20000);
+
+  console.log({ starterPacks });
 
   const [availableVillages, setAvailableVillages] = useState<RealmVillageSlot[]>([]);
   const [selectedRealm, setSelectedRealm] = useState<RealmVillageSlot | null>(null);
@@ -64,23 +66,12 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
   const handleSettleVillage = async () => {
     if (selectedRealm !== null && selectedDirection !== null) {
-      // if (starterPacks < 1) {
-      console.log("minting starter pack");
-      console.log("eternum-village-pass");
-      await mintStarterPack("eternum-village-pass");
-      // }
-
-      // console.log({
-      //   connected_realm: selectedRealm.connected_realm_entity_id,
-      //   direction: selectedDirection,
-      //   signer: account,
-      // });
-      // create_village({
-      //   village_pass_token_id: 0,
-      //   connected_realm: selectedRealm.connected_realm_entity_id,
-      //   direction: selectedDirection,
-      //   signer: account,
-      // });
+      create_village({
+        village_pass_token_id: 0,
+        connected_realm: selectedRealm.connected_realm_entity_id,
+        direction: selectedDirection,
+        signer: account,
+      });
       setShowResourceReveal(true);
     }
   };
@@ -138,6 +129,9 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
               Villages are smaller settlements with fewer perks than Realms. Each Realm has 6 possible village spots
               (one in each direction).
             </p>
+            <Button variant="gold" onClick={() => mintStarterPack("eternum-village-pass")}>
+              Purchase Village Pass $10
+            </Button>
           </div>
 
           {!showResourceReveal ? (
