@@ -253,13 +253,13 @@ export const SettlementCanvas = ({
       // Draw a slightly larger point for better visibility
       ctx.fillStyle = fillColor;
       ctx.beginPath();
-      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 4, 0, PI * 2);
+      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.x, location.y).y, 4, 0, PI * 2);
       ctx.fill();
 
       // Add a subtle glow effect for better visibility
       ctx.fillStyle = `${fillColor}33`; // 20% opacity
       ctx.beginPath();
-      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 8, 0, PI * 2);
+      ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.x, location.y).y, 8, 0, PI * 2);
       ctx.fill();
 
       // Highlight selected location
@@ -275,7 +275,7 @@ export const SettlementCanvas = ({
         ctx.strokeStyle = COLORS.SELECTED;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, pulseSize, 0, PI * 2);
+        ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.x, location.y).y, pulseSize, 0, PI * 2);
         ctx.stroke();
 
         // Draw selection info
@@ -294,7 +294,7 @@ export const SettlementCanvas = ({
         ctx.strokeStyle = COLORS.HOVERED;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.y, location.y).y, 7, 0, PI * 2);
+        ctx.arc(worldToCanvas(location.x, location.y).x, worldToCanvas(location.x, location.y).y, 7, 0, PI * 2);
         ctx.stroke();
       }
     });
