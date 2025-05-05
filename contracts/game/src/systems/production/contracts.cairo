@@ -38,7 +38,7 @@ trait IProductionContract<TContractState> {
     );
 
     fn claim_wonder_production_bonus(ref self: TContractState, structure_id: ID, wonder_structure_id: ID);
-    fn claim_resource_production(ref self: TContractState, structure_id: ID, resource_type: u8);
+    fn claim_resource_production(ref self: TContractState, structure_id: ID, resource_type: u8, allow_burn: bool);
 }
 
 #[dojo::contract]
@@ -194,7 +194,7 @@ mod production_systems {
         }
 
 
-        fn claim_resource_production(ref self: ContractState, structure_id: ID, resource_type: u8) {
+        fn claim_resource_production(ref self: ContractState, structure_id: ID, resource_type: u8, allow_burn: bool) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
@@ -217,20 +217,34 @@ mod production_systems {
             let mut structure_resource = SingleResourceStoreImpl::retrieve(
                 ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
             );
+            let balance_before_harvest: u128 = structure_resource.balance;
             structure_resource.production = ResourceImpl::read_production(ref world, structure_id, resource_type);
-            if structure_resource.production.last_updated_at != now {
-                let harvest_amount: u128 = ProductionImpl::harvest(ref structure_resource);
-                if harvest_amount.is_non_zero() {
-                    structure_resource.add(harvest_amount, ref structure_weight, resource_weight_grams);
-                }
 
-                // we store the resource object data even when there is no
-                // harvest because the resource object might have been updated
-                // when used in the harvest function
-                structure_resource.store(ref world);
-                structure_resource.store_production(ref world);
-                structure_weight.store(ref world, structure_id);
+            // ensure production last updated at is not the current block timestamp
+            assert!(structure_resource.production.last_updated_at != now, "Eternum: Production already claimed");
+
+            // harvest production
+            let harvest_amount: u128 = ProductionImpl::harvest(ref structure_resource);
+
+            // ensure harvest amount is non zero
+            assert!(harvest_amount.is_non_zero(), "Eternum: No harvest amount");
+
+            // add harvest amount to structure resource balance
+            structure_resource.add(harvest_amount, ref structure_weight, resource_weight_grams);
+
+            // check if any resources would get burned because of structure weight
+            let mut balance_after_harvest: u128 = structure_resource.balance;
+            if !allow_burn {
+                assert!(
+                    balance_after_harvest == balance_before_harvest + harvest_amount,
+                    "Eternum: Some of your harvest would get burned",
+                );
             }
+
+            // store data
+            structure_resource.store(ref world);
+            structure_resource.store_production(ref world);
+            structure_weight.store(ref world, structure_id);
         }
 
 
