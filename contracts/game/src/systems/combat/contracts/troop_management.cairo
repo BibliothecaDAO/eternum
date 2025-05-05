@@ -107,8 +107,9 @@ pub mod troop_management_systems {
 
             // ensure caller owns structure or is realms_systems
             let (realms_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
+            let (village_systems_address, _) = world.dns(@"village_systems").unwrap();
             let caller_address: starknet::ContractAddress = starknet::get_caller_address();
-            if caller_address != realms_systems_address {
+            if caller_address != realms_systems_address && caller_address != village_systems_address {
                 StructureOwnerStoreImpl::retrieve(ref world, for_structure_id).assert_caller_owner();
             }
 
