@@ -215,8 +215,8 @@ mod liquidity_systems {
                 };
 
                 // payout resource and lords
-                bridge_systems.lp_withdraw(caller, resource_type, payout_resource_amount);
-                bridge_systems.lp_withdraw(caller, ResourceTypes::LORDS, payout_lords);
+                bridge_systems.lp_withdraw(caller, bank_entity_id, resource_type, payout_resource_amount);
+                bridge_systems.lp_withdraw(caller, bank_entity_id, ResourceTypes::LORDS, payout_lords);
             }
 
             InternalLiquiditySystemsImpl::emit_event(
