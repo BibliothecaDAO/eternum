@@ -5,12 +5,12 @@ use dojo::world::WorldStorage;
 use s1_eternum::alias::ID;
 use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{ResourceFactoryConfig};
+use s1_eternum::models::resource::resource::{
+    ProductionStoreImpl, ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl,
+    StructureSingleResourceFoodImpl, WeightStoreImpl,
+};
 
 use s1_eternum::models::resource::resource::{ResourceList};
-use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResource, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
-    WeightStoreImpl,
-};
 use s1_eternum::models::structure::{StructureImpl};
 use s1_eternum::models::weight::{Weight};
 use s1_eternum::utils::math::{PercentageValueImpl};
@@ -117,31 +117,31 @@ pub impl ProductionImpl of ProductionTrait {
 
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(ref resource: SingleResource) -> u128 {
+    fn harvest(ref production: Production, resource_type: u8) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-        let start_at = resource.production.last_updated_at;
+        let start_at = production.last_updated_at;
 
         // last updated time must always be updated
-        resource.production.set_last_updated_at(now);
+        production.set_last_updated_at(now);
 
         // ensure lords can not be produced
-        if resource.resource_type == ResourceTypes::LORDS {
+        if resource_type == ResourceTypes::LORDS {
             return 0;
         }
         // stop if production is not active
-        if !resource.production.has_building() {
+        if !production.has_building() {
             return 0;
         }
 
         // total amount of time resources were produced for
         let num_seconds_produced: u128 = (now - start_at).into();
-        let mut total_produced_amount = num_seconds_produced * resource.production.production_rate.into();
+        let mut total_produced_amount = num_seconds_produced * production.production_rate.into();
 
         // limit amount of resources produced by the output amount left
-        if !Self::is_free_production(resource.resource_type) {
-            total_produced_amount = min(total_produced_amount, resource.production.output_amount_left);
-            resource.production.decrease_output_amout_left(total_produced_amount);
+        if !Self::is_free_production(resource_type) {
+            total_produced_amount = min(total_produced_amount, production.output_amount_left);
+            production.decrease_output_amout_left(total_produced_amount);
         }
 
         // todo add event here
@@ -184,18 +184,15 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         from_resource.store(ref world);
 
         // add produceable labor amount to factory
-        let labor_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::LABOR);
-        let mut from_labor_resource: SingleResource = SingleResourceStoreImpl::retrieve(
-            ref world, from_entity_id, ResourceTypes::LABOR, ref from_entity_weight, labor_resource_weight_grams, true,
+        let mut from_labor_production: Production = ProductionStoreImpl::retrieve(
+            ref world, from_entity_id, ResourceTypes::LABOR,
         );
-        let mut from_labor_resource_production: Production = from_labor_resource.production;
         let produced_labor_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produced_labor_amount,
         );
-        from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
-        from_labor_resource.production = from_labor_resource_production;
-        from_labor_resource.store(ref world);
-        from_labor_resource.store_production(ref world);
+        // update production
+        from_labor_production.increase_output_amout_left(produced_labor_amount);
+        ProductionStoreImpl::store(ref from_labor_production, ref world, from_entity_id, ResourceTypes::LABOR);
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
@@ -237,18 +234,16 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         };
 
         // add produceable resource amount to factory
-        let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource = SingleResourceStoreImpl::retrieve(
-            ref world, from_entity_id, produced_resource_type, ref from_entity_weight, resource_weight_grams, true,
+        let mut produced_production: Production = ProductionStoreImpl::retrieve(
+            ref world, from_entity_id, produced_resource_type,
         );
-        let mut produced_resource_production: Production = produced_resource.production;
         let produced_resource_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produced_resource_amount,
         );
-        produced_resource_production.increase_output_amout_left(produced_resource_amount);
-        produced_resource.production = produced_resource_production;
-        produced_resource.store(ref world);
-        produced_resource.store_production(ref world);
+
+        // update production
+        produced_production.increase_output_amout_left(produced_resource_amount);
+        ProductionStoreImpl::store(ref produced_production, ref world, from_entity_id, produced_resource_type);
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
@@ -288,24 +283,16 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         };
 
         // add produced resource amount to factory
-        let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource = SingleResourceStoreImpl::retrieve(
-            ref world,
-            from_entity_id,
-            produced_resource_type,
-            ref from_entity_weight,
-            produced_resource_weight_grams,
-            true,
+        let mut produced_production: Production = ProductionStoreImpl::retrieve(
+            ref world, from_entity_id, produced_resource_type,
         );
-        let mut produced_resource_production: Production = produced_resource.production;
         let produceable_amount = cycles * produced_resource_factory_config.output_per_complex_input.into();
         let produceable_amount = ProductionWonderBonusImpl::include_wonder_bonus(
             ref world, from_entity_id, produceable_amount,
         );
-        produced_resource_production.increase_output_amout_left(produceable_amount);
-        produced_resource.production = produced_resource_production;
-        produced_resource.store(ref world);
-        produced_resource.store_production(ref world);
+        produced_production.increase_output_amout_left(produceable_amount);
+        ProductionStoreImpl::store(ref produced_production, ref world, from_entity_id, produced_resource_type);
+
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
         // todo add event here

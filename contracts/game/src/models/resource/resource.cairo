@@ -15,8 +15,6 @@ pub struct SingleResource {
     pub entity_id: ID,
     pub resource_type: u8,
     pub balance: u128,
-    pub production: Production,
-    pub produces: bool,
 }
 
 impl SingleResourceDisplay of Display<SingleResource> {
@@ -65,16 +63,23 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
         let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
-        let production: Production = ResourceImpl::read_production(ref world, entity_id, resource_type);
-        SingleResource { entity_id, resource_type, balance, production, produces: structure }
+        SingleResource { entity_id, resource_type, balance }
     }
 
     fn store(ref self: SingleResource, ref world: WorldStorage) {
         ResourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
     }
+}
 
-    fn store_production(ref self: SingleResource, ref world: WorldStorage) {
-        ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
+
+#[generate_trait]
+pub impl ProductionStoreImpl of ProductionStoreTrait {
+    fn retrieve(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
+        ResourceImpl::read_production(ref world, entity_id, resource_type)
+    }
+
+    fn store(ref self: Production, ref world: WorldStorage, entity_id: ID, resource_type: u8) {
+        ResourceImpl::write_production(ref world, entity_id, resource_type, self);
     }
 }
 

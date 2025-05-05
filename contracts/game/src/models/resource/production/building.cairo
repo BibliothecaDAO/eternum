@@ -8,12 +8,13 @@ use s1_eternum::constants::{RESOURCE_PRECISION, ResourceTypes};
 use s1_eternum::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
-use s1_eternum::models::position::{Coord, CoordTrait, Direction};
+use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
-use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl, WeightStoreImpl,
+    ProductionStoreImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
+    StructureSingleResourceFoodImpl, WeightStoreImpl,
 };
+use s1_eternum::models::resource::resource::{ResourceList};
 use s1_eternum::models::structure::{
     StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
 };
@@ -518,26 +519,15 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
     ) {
         // update produced resource balance before updating production
         let produced_resource_type = self.produced_resource();
-        let produced_resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, produced_resource_type);
-        let mut produced_resource = SingleResourceStoreImpl::retrieve(
-            ref world,
-            self.outer_entity_id,
-            produced_resource_type,
-            ref structure_weight,
-            produced_resource_weight_grams,
-            true,
+        let mut production: Production = ProductionStoreImpl::retrieve(
+            ref world, self.outer_entity_id, produced_resource_type,
         );
-
-        let mut production: Production = produced_resource.production;
 
         match stop {
             true => {
                 // ensure production amount is gotten BEFORE updating
                 // bonus received percent so production rate is decreased correctly
                 let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
-
-                // update bonus received percent
-                self.update_bonus_received_percent(ref world, delete: true);
 
                 // decrease building count
                 production.decrease_building_count();
@@ -546,9 +536,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
                 production.decrease_production_rate(produced_amount_every_second.try_into().unwrap());
             },
             false => {
-                // update bonus received percent
-                self.update_bonus_received_percent(ref world, delete: false);
-
                 // ensure production amount is gotten AFTER updating
                 // bonus received percent so production rate is increased correctly
                 let produced_amount_every_second = self.produced_amount_every_second(structure_category, ref world);
@@ -562,9 +549,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             },
         }
         // save production
-        produced_resource.production = production;
-        produced_resource.store(ref world);
-        produced_resource.store_production(ref world);
+        ProductionStoreImpl::store(ref production, ref world, self.outer_entity_id, produced_resource_type);
         // todo add event here
     }
 
@@ -576,10 +561,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             self.update_production(ref world, structure_category, ref structure_weight, stop: false);
         }
 
-        if self.is_adjacent_building_booster() {
-            // give out bonuses to surrounding buildings
-            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: false);
-        }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
 
@@ -595,10 +576,6 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             self.update_production(ref world, structure_category, ref structure_weight, stop: true);
         }
 
-        if self.is_adjacent_building_booster() {
-            // remove bonuses it gave to surrounding buildings
-            self.update_bonuses_supplied(ref world, structure_category, ref structure_weight, delete: true);
-        }
         // update structure weight
         structure_weight.store(ref world, self.outer_entity_id);
 
@@ -619,148 +596,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
             resource_factory_config.realm_output_per_second.into()
         };
 
-        let bonus_amount_every_second: u128 = (produced_amount_every_second * (*self.bonus_percent).into())
-            / PercentageValueImpl::_100().into();
-
-        produced_amount_every_second + bonus_amount_every_second
-    }
-
-
-    fn update_bonus_received_percent(ref self: Building, ref world: WorldStorage, delete: bool) {
-        if delete {
-            // clear building bonus
-            self.bonus_percent = 0;
-        } else {
-            // get bonuses from all buildings surronding this building if the offer boosts
-            let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
-            let mut bonus_percent = self.get_bonus_from(building_coord.neighbor(Direction::East), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthEast), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::NorthWest), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::West), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::SouthWest), ref world);
-            bonus_percent += self.get_bonus_from(building_coord.neighbor(Direction::SouthEast), ref world);
-
-            // set new bonus percent
-            self.bonus_percent = bonus_percent;
-        }
-    }
-
-    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, ref world: WorldStorage) -> u32 {
-        // only get bonuses from buildings that are active (not paused)
-        let bonus_giver_building: Building = world
-            .read_model((self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y));
-        if bonus_giver_building.paused {
-            return 0;
-        } else {
-            return bonus_giver_building.boost_adjacent_building_production_by();
-        }
-    }
-
-
-    fn update_bonuses_supplied(
-        self: @Building, ref world: WorldStorage, structure_category: u8, ref structure_weight: Weight, delete: bool,
-    ) {
-        let self = *self;
-
-        if self.is_adjacent_building_booster() {
-            let self_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
-
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::East), structure_category, ref structure_weight, ref world, delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthEast),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::NorthWest),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::West), structure_category, ref structure_weight, ref world, delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthWest),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-            self
-                .update_bonus_supplied_to(
-                    self_coord.neighbor(Direction::SouthEast),
-                    structure_category,
-                    ref structure_weight,
-                    ref world,
-                    delete,
-                );
-        }
-    }
-
-
-    fn update_bonus_supplied_to(
-        self: Building,
-        receiver_inner_coord: Coord,
-        structure_category: u8,
-        ref structure_weight: Weight,
-        ref world: WorldStorage,
-        delete: bool,
-    ) {
-        let mut recipient_building: Building = world
-            .read_model((self.outer_col, self.outer_row, receiver_inner_coord.x, receiver_inner_coord.y));
-        if recipient_building.exists() // only when building exists at the location
-            && !recipient_building.paused // only give bonus to active buildings
-            && recipient_building.is_resource_producer() { // only give bonus to resource producers
-            // get the resource that the building produces
-            let recipient_produced_resource_type = recipient_building.produced_resource();
-            let recipient_resource_weight_grams: u128 = ResourceWeightImpl::grams(
-                ref world, recipient_produced_resource_type,
-            );
-            let mut recipient_building_resource = SingleResourceStoreImpl::retrieve(
-                ref world,
-                self.outer_entity_id,
-                recipient_produced_resource_type,
-                ref structure_weight,
-                recipient_resource_weight_grams,
-                true,
-            );
-
-            // remove the recipient building's contribution from global resource production
-            // first so that we can recalculate and add the new production rate
-            let recipient_building_resource_produced_amount_every_second: u128 = recipient_building
-                .produced_amount_every_second(structure_category, ref world);
-            let mut recipient_building_resource_production: Production = recipient_building_resource.production;
-            recipient_building_resource_production
-                .decrease_production_rate(recipient_building_resource_produced_amount_every_second.try_into().unwrap());
-
-            // update the recipient building's bonus percent
-            if delete {
-                recipient_building.bonus_percent -= self.boost_adjacent_building_production_by();
-            } else {
-                recipient_building.bonus_percent += self.boost_adjacent_building_production_by();
-            }
-            world.write_model(@recipient_building);
-
-            // update the global resource production to reflect the new production rate
-            recipient_building_resource_production
-                .increase_production_rate(
-                    recipient_building.produced_amount_every_second(structure_category, ref world).try_into().unwrap(),
-                );
-            recipient_building_resource.production = recipient_building_resource_production;
-            recipient_building_resource.store(ref world);
-            recipient_building_resource.store_production(ref world);
-        }
+        produced_amount_every_second
     }
 }
 

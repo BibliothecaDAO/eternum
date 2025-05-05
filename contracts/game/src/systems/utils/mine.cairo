@@ -8,12 +8,11 @@ use s1_eternum::models::position::{Coord};
 use s1_eternum::models::resource::production::building::{BuildingCategory, BuildingImpl};
 use s1_eternum::models::resource::production::production::{Production, ProductionImpl};
 use s1_eternum::models::resource::resource::{
-    ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    ProductionStoreImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
 };
 
 use s1_eternum::models::structure::{StructureCategory, StructureImpl};
 use s1_eternum::models::troop::{GuardSlot, TroopTier, TroopType};
-use s1_eternum::models::weight::Weight;
 use s1_eternum::systems::utils::structure::iStructureImpl;
 use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::random;
@@ -74,42 +73,14 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
 
         // allow fragment mine to produce limited amount of shards
         let shards_reward_amount = Self::_reward_amount(ref world, vrf_seed);
-        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
-        let shards_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::EARTHEN_SHARD);
-        let mut shards_resource = SingleResourceStoreImpl::retrieve(
-            ref world, structure_id, ResourceTypes::EARTHEN_SHARD, ref structure_weight, shards_weight_grams, true,
+        let mut shards_resource_production: Production = ProductionStoreImpl::retrieve(
+            ref world, structure_id, ResourceTypes::EARTHEN_SHARD,
         );
-        let mut shards_resource_production: Production = shards_resource.production;
         shards_resource_production.increase_output_amout_left(shards_reward_amount);
-        shards_resource.production = shards_resource_production;
-        shards_resource.store(ref world);
-        shards_resource.store_production(ref world);
-        // // grant wheat to structure
-        // let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
-        // let mut wheat_resource = SingleResourceStoreImpl::retrieve(
-        //     ref world, structure_id, ResourceTypes::WHEAT, ref structure_weight, wheat_weight_grams, true,
-        // );
-        // wheat_resource
-        //     .add(
-        //         map_config.mine_wheat_grant_amount.into() * RESOURCE_PRECISION,
-        //         ref structure_weight,
-        //         wheat_weight_grams,
-        //     );
-        // wheat_resource.store(ref world);
-        // // grant fish to structure
-        // let fish_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::FISH);
-        // let mut fish_resource = SingleResourceStoreImpl::retrieve(
-        //     ref world, structure_id, ResourceTypes::FISH, ref structure_weight, fish_weight_grams, true,
-        // );
-        // fish_resource
-        //     .add(
-        //         map_config.mine_fish_grant_amount.into() * RESOURCE_PRECISION, ref structure_weight,
-        //         fish_weight_grams,
-        //     );
-        // fish_resource.store(ref world);
+        ProductionStoreImpl::store(
+            ref shards_resource_production, ref world, structure_id, ResourceTypes::EARTHEN_SHARD,
+        );
 
-        // update structure weight
-        structure_weight.store(ref world, structure_id);
         // create shards production building
         BuildingImpl::create(
             ref world,

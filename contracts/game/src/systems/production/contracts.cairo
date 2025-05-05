@@ -57,9 +57,10 @@ mod production_systems {
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
         resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionImpl, ProductionStrategyImpl, ProductionWonderBonus},
+        resource::production::production::{Production, ProductionImpl, ProductionStrategyImpl, ProductionWonderBonus},
         resource::resource::{
-            ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+            ProductionStoreImpl, ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
+            WeightStoreImpl,
         },
         weight::Weight,
     };
@@ -218,15 +219,14 @@ mod production_systems {
                 ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
             );
             let balance_before_harvest: u128 = structure_resource.balance;
-            structure_resource.production = ResourceImpl::read_production(ref world, structure_id, resource_type);
+
+            let mut production: Production = ProductionStoreImpl::retrieve(ref world, structure_id, resource_type);
 
             // ensure production last updated at is not the current block timestamp
-            assert!(structure_resource.production.last_updated_at != now, "Eternum: Production already claimed");
-
-            // harvest production
-            let harvest_amount: u128 = ProductionImpl::harvest(ref structure_resource);
+            assert!(production.last_updated_at != now, "Eternum: Production already claimed");
 
             // ensure harvest amount is non zero
+            let harvest_amount: u128 = ProductionImpl::harvest(ref production, resource_type);
             assert!(harvest_amount.is_non_zero(), "Eternum: No harvest amount");
 
             // add harvest amount to structure resource balance
@@ -241,10 +241,12 @@ mod production_systems {
                 );
             }
 
-            // store data
+            // store resources and weight
             structure_resource.store(ref world);
-            structure_resource.store_production(ref world);
             structure_weight.store(ref world, structure_id);
+
+            // store production
+            ProductionStoreImpl::store(ref production, ref world, structure_id, resource_type);
         }
 
 
