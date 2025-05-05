@@ -139,6 +139,7 @@ export const SeasonPassRealm = ({
   const handleLocationSelect = (location: SettlementLocation) => {
     if (onSelectLocation) {
       onSelectLocation(seasonPassRealm.realmId, location);
+      toggleModal(null);
     }
   };
 

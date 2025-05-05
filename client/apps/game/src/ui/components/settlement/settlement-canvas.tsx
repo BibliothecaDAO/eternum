@@ -1,6 +1,6 @@
 import { FELT_CENTER as SETTLEMENT_CENTER } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
-import { BANK_ICON_PATH, COLORS, LEGEND_ITEMS, MINIMAP_HEIGHT, MINIMAP_WIDTH, PI } from "./settlement-constants";
+import { BANK_ICON_PATH, COLORS, LEGEND_ITEMS, PI } from "./settlement-constants";
 import { SettlementLocation } from "./settlement-types";
 
 interface SettlementCanvasProps {
@@ -20,6 +20,7 @@ interface SettlementCanvasProps {
   onMouseUp: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseLeave: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onZoom?: (zoomOut: boolean) => void;
+  villageSelect?: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export const SettlementCanvas = ({
   onMouseUp,
   onMouseLeave,
   onZoom,
+  villageSelect = false,
 }: SettlementCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -131,6 +133,13 @@ export const SettlementCanvas = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Match canvas drawing buffer size to its display size
+    // This ensures the canvas resolution matches its displayed size.
+    if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -191,13 +200,12 @@ export const SettlementCanvas = ({
       // Skip if outside visible area
       if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
 
-      // Check if this location is already settled
+      // Check location status - Calculate these upfront
       const isSettled = settledLocations.some(
         (settled) =>
           settled.layer === location.layer && settled.side === location.side && settled.point === location.point,
       );
 
-      // Check if this is an extra player location
       const isExtraPlayerLocation = extraPlayerOccupiedLocations.some(
         (extra) => extra.layer === location.layer && extra.side === location.side && extra.point === location.point,
       );
@@ -207,19 +215,40 @@ export const SettlementCanvas = ({
           settled.layer === location.layer &&
           settled.side === location.side &&
           settled.point === location.point &&
-          !isExtraPlayerLocation && // Make sure it's not an extra player location
+          !isExtraPlayerLocation && // Ensure it's not counted if it's also an extra player location
           settled.isMine,
       );
 
       // Draw location point with appropriate color
-      let fillColor = COLORS.AVAILABLE;
-      if (isExtraPlayerLocation) {
-        fillColor = COLORS.EXTRA_PLAYER;
-      } else if (isMine) {
-        fillColor = COLORS.MINE;
-      } else if (isSettled) {
-        fillColor = COLORS.SETTLED;
+      let fillColor: string | null = null;
+
+      if (villageSelect) {
+        // In villageSelect mode, ONLY display extra player occupied locations
+        if (isExtraPlayerLocation) {
+          fillColor = COLORS.EXTRA_PLAYER;
+        } else if (isMine) {
+          fillColor = COLORS.MINE;
+        } else if (isSettled) {
+          fillColor = COLORS.AVAILABLE;
+        } else {
+          // Don't draw any other locations in this mode
+          return;
+        }
+      } else {
+        // Original color logic when not in villageSelect mode
+        if (isExtraPlayerLocation) {
+          fillColor = COLORS.EXTRA_PLAYER;
+        } else if (isMine) {
+          fillColor = COLORS.MINE;
+        } else if (isSettled) {
+          fillColor = COLORS.SETTLED;
+        } else {
+          fillColor = COLORS.AVAILABLE;
+        }
       }
+
+      // Skip drawing if no color was assigned
+      if (!fillColor) return;
 
       // Draw a slightly larger point for better visibility
       ctx.fillStyle = fillColor;
@@ -278,7 +307,7 @@ export const SettlementCanvas = ({
     const legendWidth = 150;
 
     // Draw legend background with rounded corners
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
     const legendHeight = legendPadding * 2 + legendItemHeight * LEGEND_ITEMS.length;
     const legendRadius = 5;
 
@@ -356,19 +385,18 @@ export const SettlementCanvas = ({
     bankLocations,
     bankIcon,
     maxLayers,
+    villageSelect,
   ]);
 
   return (
-    <div className="relative group">
+    <div className="relative group w-full">
       <canvas
         ref={canvasRef}
-        width={MINIMAP_WIDTH}
-        height={MINIMAP_HEIGHT}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        className=" panel-wood mb-4 cursor-grab hover:border-gold transition-all duration-300"
+        className="w-full h-[600px] panel-wood cursor-grab hover:border-gold transition-all duration-300 block"
         aria-label="Settlement map"
       />
 

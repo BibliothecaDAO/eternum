@@ -198,7 +198,6 @@ const SeasonPassButton = ({ setSettleRealm }: SeasonPassButtonProps) => {
   }, [realmsEntities, villageEntities]);
 
   const handleVillagePassClick = () => {
-    console.log("Village pass clicked");
     toggleModal(<MintVillagePassModal onClose={() => toggleModal(null)} />);
   };
 

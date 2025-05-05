@@ -16,6 +16,7 @@ interface CanvasInteractionsProps {
   settledLocations: SettlementLocation[];
   setSelectedLocation: (location: SettlementLocation | null) => void;
   onSelectLocation: (location: SettlementLocation) => void;
+  villageSelect?: boolean;
 }
 
 /**
@@ -26,6 +27,7 @@ export const useCanvasInteractions = ({
   settledLocations,
   setSelectedLocation,
   onSelectLocation,
+  villageSelect = false,
 }: CanvasInteractionsProps) => {
   // Use refs instead of state for hover information and dragging state
   const hoveredLocationRef = useRef<SettlementLocation | null>(null);
@@ -191,18 +193,22 @@ export const useCanvasInteractions = ({
       let closestLocation: SettlementLocation | null = null;
       let minDistance = Infinity;
 
-      availableLocations.forEach((location) => {
+      // Determine which list of locations to iterate over based on villageSelect
+      const locationsToCheck = villageSelect ? settledLocations : availableLocations;
+
+      locationsToCheck.forEach((location) => {
         // Skip if outside visible area
         if (location.x < minX || location.x > maxX || location.y < minY || location.y > maxY) return;
 
-        // Check if this location is already settled
-        const isSettled = settledLocations.some(
-          (settled) =>
-            settled.layer === location.layer && settled.side === location.side && settled.point === location.point,
-        );
-
-        // Skip if already settled
-        if (isSettled) return;
+        // If not in villageSelect mode, check if this location is already settled and skip if it is
+        if (!villageSelect) {
+          const isSettled = settledLocations.some(
+            (settled) =>
+              settled.layer === location.layer && settled.side === location.side && settled.point === location.point,
+          );
+          // Skip if already settled when not in villageSelect mode
+          if (isSettled) return;
+        }
 
         const canvasX = padding + (location.x - minX) * scale;
         const canvasY = padding + (location.y - minY) * scale;
@@ -216,12 +222,22 @@ export const useCanvasInteractions = ({
       });
 
       // If we found a close location and it's within a reasonable distance
+      // Ensure the selected location fits the mode (settled for villageSelect, unsettled otherwise)
       if (closestLocation && minDistance < 20) {
-        setSelectedLocation(closestLocation);
-        onSelectLocation(closestLocation);
+        const isClosestSettled = settledLocations.some(
+          (settled) =>
+            settled.layer === closestLocation!.layer &&
+            settled.side === closestLocation!.side &&
+            settled.point === closestLocation!.point,
+        );
+
+        if ((villageSelect && isClosestSettled) || (!villageSelect && !isClosestSettled)) {
+          setSelectedLocation(closestLocation);
+          onSelectLocation(closestLocation);
+        }
       }
     },
-    [availableLocations, mapCenter, mapSize, onSelectLocation, setSelectedLocation, settledLocations],
+    [availableLocations, mapCenter, mapSize, onSelectLocation, setSelectedLocation, settledLocations, villageSelect],
   );
 
   // Handle mouse move to show hover effect
@@ -274,8 +290,11 @@ export const useCanvasInteractions = ({
       let closestLocation: SettlementLocation | null = null;
       let minDistance = Infinity;
 
+      // Determine which list of locations to check for hover based on villageSelect
+      const locationsForHover = villageSelect ? settledLocations : availableLocations;
+
       // Filter to only visible locations for better performance
-      const visibleLocations = availableLocations.filter(
+      const visibleLocations = locationsForHover.filter(
         (location) => location.x >= minX && location.x <= maxX && location.y >= minY && location.y <= maxY,
       );
 
@@ -301,14 +320,17 @@ export const useCanvasInteractions = ({
             settled.point === closestLocation!.point,
         );
 
-        // Only hover on unsettled locations
-        if (!isSettled) {
+        // Only hover on locations relevant to the current mode
+        // If villageSelect is true, hover on settled locations
+        // If villageSelect is false, hover on unsettled locations
+        if ((villageSelect && isSettled) || (!villageSelect && !isSettled)) {
           hoveredLocationRef.current = closestLocation;
           canvas.style.cursor = "pointer";
 
           // Force a redraw of the canvas
           canvas.dispatchEvent(new CustomEvent("needsRedraw"));
         } else {
+          // If the closest location is not relevant for the mode, treat it as no hover
           hoveredLocationRef.current = null;
           canvas.style.cursor = isDraggingRef.current ? "grabbing" : "grab";
         }
@@ -322,7 +344,7 @@ export const useCanvasInteractions = ({
         }
       }
     },
-    [availableLocations, isDraggingRef, mapCenter, mapSize, settledLocations],
+    [availableLocations, isDraggingRef, mapCenter, mapSize, settledLocations, villageSelect],
   );
 
   // Handle mouse down for dragging

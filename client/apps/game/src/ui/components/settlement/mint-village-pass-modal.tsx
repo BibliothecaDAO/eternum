@@ -1,16 +1,30 @@
+import { fetchRealmVillageSlots, fetchTokenTransfers, RealmVillageSlot, TokenTransfer } from "@/services/api";
 import Button from "@/ui/elements/button";
-import { getEntityIdFromKeys, getRealmNameById } from "@bibliothecadao/eternum";
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/select";
 import { useDojo } from "@bibliothecadao/react";
-import {
-  checkOpenVillageSlotFromToriiClient,
-  getRandomRealmWithVillageSlotsFromTorii,
-} from "@bibliothecadao/torii-client";
-import { Direction, HexPosition, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useState } from "react";
+import { Direction, HexPosition } from "@bibliothecadao/types";
+import { ControllerConnector } from "@cartridge/connector";
+import { useAccount } from "@starknet-react/core";
+import { useEffect, useMemo, useState } from "react";
 import { ModalContainer } from "../modal-container";
+import { SettlementMinimap } from "./settlement-minimap";
 import { VillageResourceReveal } from "./village-resource-reveal";
+
+import { ResourceIcon } from "@/ui/elements/resource-icon";
+import { getVillagePassAddress } from "@/utils/addresses";
+import RealmJson from "../../../../../../public/jsons/realms.json";
+
+interface RealmAttribute {
+  trait_type: string;
+  value: string | number;
+}
+
+interface Realm {
+  name: string;
+  description: string;
+  image: string;
+  attributes: RealmAttribute[];
+}
 
 interface MintVillagePassModalProps {
   onClose: () => void;
@@ -18,312 +32,539 @@ interface MintVillagePassModalProps {
 
 export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => {
   const {
-    network: { toriiClient },
     setup: {
       account: { account },
-      components,
       systemCalls: { create_village },
     },
   } = useDojo();
+  const { address, connector } = useAccount();
 
-  const [selectedRealm, setSelectedRealm] = useState<{ realmId: ID; entityId: ID } | null>(null);
-  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const controllerConnector = connector as never as ControllerConnector;
+
   const [selectedCoords, setSelectedCoords] = useState<HexPosition | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResourceReveal, setShowResourceReveal] = useState(false);
+  const [realmSearchTerm, setRealmSearchTerm] = useState("");
+  const [selectedResourceFilter, setSelectedResourceFilter] = useState<string | null>(null);
+  const [isPurchasingPass, setIsPurchasingPass] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
-  // New state variables
-  const [realmIdInput, setRealmIdInput] = useState<string>("");
-  const [realmCheckResult, setRealmCheckResult] = useState<{
-    realmId: ID;
-    entityId: ID;
-    hasSlots: boolean;
-    availableSlots: Array<{
-      value: Direction;
-      label: string;
-      coord: { col: number; row: number };
-    }>;
-    position: HexPosition;
-  } | null>(null);
-  const [isCheckingRealm, setIsCheckingRealm] = useState(false);
-  const [realmCheckError, setRealmCheckError] = useState<string | null>(null);
+  const [availableVillages, setAvailableVillages] = useState<RealmVillageSlot[]>([]);
+  const [selectedRealm, setSelectedRealm] = useState<RealmVillageSlot | null>(null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [purchasedVillagePass, setPurchasedVillagePass] = useState<TokenTransfer[]>([]);
+  const [selectedVillagePass, setSelectedVillagePass] = useState<TokenTransfer | null>(null);
+
   const [directionOptions, setDirectionOptions] = useState<
     Array<{
       value: Direction;
       label: string;
-      coord: { col: number; row: number };
     }>
   >([]);
 
-  const handleSettleVillage = async () => {
-    if (selectedRealm !== null && selectedDirection !== null) {
-      create_village({
-        connected_realm: selectedRealm.entityId,
-        direction: selectedDirection,
-        signer: account,
-      });
-      setShowResourceReveal(true);
-    }
+  const getRealm = (realmId: number): Realm | undefined => {
+    const key = realmId.toString(); // convert number id to string key
+    return (RealmJson as Record<string, Realm>)[key];
   };
 
-  // Function to check a specific realm for village slots
-  const checkRealm = async () => {
-    if (!realmIdInput.trim()) {
-      setRealmCheckError("Please enter a realm ID");
-      return;
+  const getResources = (realmId: number): string[] => {
+    const realmData = getRealm(realmId);
+    if (!realmData || !realmData.attributes) {
+      return [];
     }
-
-    const realmId = Number(realmIdInput);
-    if (isNaN(realmId)) {
-      setRealmCheckError("Please enter a valid realm ID (number)");
-      return;
-    }
-
-    setIsCheckingRealm(true);
-    setRealmCheckError(null);
-
-    try {
-      const result = await checkOpenVillageSlotFromToriiClient(toriiClient, realmId);
-
-      if (!result) {
-        setRealmCheckError("Realm has no available village slots");
-        setRealmCheckResult(null);
-        setSelectedRealm(null);
-      } else {
-        setRealmCheckResult(result);
-        setSelectedRealm({
-          realmId: result.realmId,
-          entityId: result.entityId,
-        });
-        setRealmCheckError(null);
-      }
-    } catch (error) {
-      console.error("Error checking realm:", error);
-      setRealmCheckError("Error checking realm. Please try again.");
-    } finally {
-      setIsCheckingRealm(false);
-    }
+    return realmData.attributes.filter((attr) => attr.trait_type === "Resource").map((attr) => String(attr.value));
   };
 
-  // Function to select a random realm with village slots
-  const selectRandomRealm = async () => {
-    setIsLoading(true);
-    const realmCount =
-      getComponentValue(components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]))?.realm_count_config.count || 0;
-    try {
-      const data = await getRandomRealmWithVillageSlotsFromTorii(toriiClient);
-      if (data && data) {
-        // Extract values safely with type assertions
-        const result = {
-          realmId: data.realmId,
-          entityId: data.entityId,
-          hasSlots: true,
-          availableSlots: data.availableSlots,
-          position: { col: data.position.col, row: data.position.row },
-        };
-
-        console.log({ result });
-        setRealmCheckResult(result);
-
-        setSelectedRealm({
-          realmId: result.realmId,
-          entityId: result.entityId,
-        });
-
-        setRealmIdInput(data.realmId.toString());
-        setRealmCheckError(null);
-      } else {
-        setRealmCheckError("No realms with available village slots found");
-      }
-    } catch (error) {
-      console.error("Error selecting random realm:", error);
-      setRealmCheckError("Error selecting random realm. Please try again.");
-    } finally {
-      setIsLoading(false);
+  const getRealmName = (realmId: number): string => {
+    const realmData = getRealm(realmId);
+    if (!realmData || !realmData.attributes) {
+      return "";
     }
+    return realmData.name;
   };
 
-  // Function to select the checked realm
-  // const selectCheckedRealm = () => {
-  //   if (realmCheckResult && realmCheckResult.hasSlots) {
-  //     setSelectedRealm({
-  //       realmId: realmCheckResult.realmId,
-  //       entityId: realmCheckResult.entityId,
-  //     });
-  //   }
-  // };
-
-  useEffect(() => {
-    const loadDirectionOptions = async () => {
-      if (!selectedRealm || !realmCheckResult) {
-        setDirectionOptions([]);
-        return;
-      }
-
+  const refetchAndSetPasses = async (): Promise<number> => {
+    if (address) {
       try {
-        const options = realmCheckResult?.availableSlots;
-        setDirectionOptions(options);
-
-        // Auto-select the first direction if available
-        if (options.length > 0) {
-          setSelectedDirection(options[0].value);
-        }
+        const tokenTransfers = await fetchTokenTransfers(
+          getVillagePassAddress(),
+          address.replace("0x0", "0x") as string,
+        );
+        const updatedPasses = tokenTransfers.map((a) => {
+          return {
+            ...a,
+            token_id: parseInt(a.token_id.replace(getVillagePassAddress() + ":", "")).toString(),
+          };
+        });
+        setPurchasedVillagePass(updatedPasses);
+        return updatedPasses.length;
       } catch (error) {
-        console.error("Error loading direction options:", error);
-        setDirectionOptions([]);
+        console.error("Error fetching token transfers:", error);
       }
-    };
+    }
+    return purchasedVillagePass.length;
+  };
 
-    loadDirectionOptions();
-  }, [selectedRealm, toriiClient]);
+  const mintStarterPack = async (id: string) => {
+    setIsPurchasingPass(true);
+    const initialPassCount = purchasedVillagePass.length;
+
+    try {
+      controllerConnector.controller.openStarterPack(id);
+
+      const startTime = Date.now();
+
+      const pollForNewPass = async () => {
+        const currentTime = Date.now();
+        if (currentTime - startTime > 60000) {
+          console.warn("Polling for village pass timed out after 60 seconds.");
+          setIsPurchasingPass(false);
+          return;
+        }
+
+        const updatedPassCount = await refetchAndSetPasses();
+
+        if (updatedPassCount > initialPassCount) {
+          console.log("New village pass detected!");
+          setIsPurchasingPass(false);
+        } else {
+          console.log(`Polling for pass... Current: ${updatedPassCount}, Initial: ${initialPassCount}`);
+          setTimeout(pollForNewPass, 3000);
+        }
+      };
+
+      setTimeout(pollForNewPass, 3000);
+    } catch (error) {
+      console.error("Error opening starter pack:", error);
+      setIsPurchasingPass(false);
+    }
+  };
+
+  const handleSettleVillage = async () => {
+    if (selectedRealm !== null && selectedDirection !== null && selectedVillagePass) {
+      setIsLoading(true);
+      try {
+        await create_village({
+          village_pass_token_id: selectedVillagePass.token_id,
+          connected_realm: selectedRealm.connected_realm_entity_id,
+          direction: selectedDirection,
+          village_pass_address: getVillagePassAddress(),
+          signer: account,
+        });
+        setCurrentStep(4);
+        setShowResourceReveal(true);
+      } catch (error) {
+        console.error("Error settling village:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      console.warn("Attempted to settle village without required selections.");
+    }
+  };
 
   useEffect(() => {
-    if (selectedDirection !== null) {
-      const coord = directionOptions.find((option) => option.value === selectedDirection)?.coord;
-      setSelectedCoords(coord ? coord : null);
-    } else {
-      setSelectedCoords(null);
+    const fetchData = async () => {
+      setAvailableVillages(await fetchRealmVillageSlots());
+    };
+    fetchData();
+  }, [address]);
+
+  useEffect(() => {
+    if (address) {
+      const fetchData = async () => {
+        await refetchAndSetPasses();
+      };
+      fetchData();
     }
-  }, [selectedDirection, directionOptions]);
+  }, [address]);
 
+  useMemo(() => {
+    const selectedLocation = availableVillages.find(
+      (village) =>
+        village.connected_realm_coord.col === selectedCoords?.col &&
+        village.connected_realm_coord.row === selectedCoords?.row,
+    );
+
+    if (!selectedLocation) {
+      setSelectedRealm(null);
+      return null;
+    }
+
+    setSelectedRealm(selectedLocation);
+  }, [availableVillages, selectedCoords]);
+
+  useEffect(() => {
+    if (selectedRealm && selectedRealm.directions_left) {
+      const options = selectedRealm.directions_left
+        .map((dirObj) => {
+          const [directionName, slotArray] = Object.entries(dirObj)[0];
+          if (slotArray.length === 0) {
+            return getDirectionInfo(directionName);
+          }
+          return null;
+        })
+        .filter((option): option is { value: Direction; label: string } => option !== null);
+
+      setDirectionOptions(options);
+      setSelectedDirection(null);
+    } else {
+      setDirectionOptions([]);
+      setSelectedDirection(null);
+    }
+  }, [selectedRealm]);
+
+  const uniqueResources = useMemo(() => {
+    const allResources = new Set<string>();
+    availableVillages.forEach((village) => {
+      const resources = getResources(village.connected_realm_entity_id);
+      resources.forEach((resource) => allResources.add(resource));
+    });
+    return Array.from(allResources).sort();
+  }, [availableVillages, getResources]);
+
+  const filteredVillages = useMemo(() => {
+    let filtered = availableVillages;
+
+    if (realmSearchTerm) {
+      filtered = filtered.filter((village) => village.connected_realm_id.toString().includes(realmSearchTerm));
+    }
+
+    if (selectedResourceFilter) {
+      filtered = filtered.filter((village) => {
+        const villageResources = getResources(village.connected_realm_entity_id);
+        return villageResources.includes(selectedResourceFilter);
+      });
+    }
+
+    return filtered;
+  }, [availableVillages, realmSearchTerm, selectedResourceFilter, getResources]);
+
+  const handlePassSelection = (pass: TokenTransfer) => {
+    setSelectedVillagePass(pass);
+    setCurrentStep(2);
+  };
+
+  const handleRealmSelection = (village: RealmVillageSlot | null) => {
+    setSelectedRealm(village);
+    setSelectedCoords(village ? village.connected_realm_coord : null);
+    setSelectedDirection(null);
+  };
+
+  const handleConfirmRealm = () => {
+    if (selectedRealm) {
+      setCurrentStep(3);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      if (currentStep === 3) {
+        setSelectedDirection(null);
+      }
+      if (currentStep === 2) {
+        setSelectedVillagePass(null);
+      }
+    }
+  };
+
+  console.log(directionOptions);
   return (
-    <ModalContainer size="medium" title="">
-      <div className="h-full flex flex-col px-8">
-        <div className="flex-1 overflow-auto space-y-6">
-          <div className=" rounded-md mb-8">
-            <h2 className="mb-4">About Villages</h2>
-            <p className="text-xl text-gray-300 mb-2">
-              Villages are smaller settlements with fewer perks than Realms. Each Realm has 6 possible village spots
-              (one in each direction).
-            </p>
-          </div>
+    <ModalContainer size="full" title={`Villages - Step ${currentStep}/4`}>
+      <div className="h-full flex flex-col">
+        <div className="flex justify-end p-2">
+          {currentStep > 1 && currentStep < 4 && (
+            <Button variant="default" size="md" onClick={handleGoBack} className="mr-2">
+              Back
+            </Button>
+          )}
+          <Button variant="danger" size="md" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto space-y-6 p-4">
+          {currentStep === 1 && (
+            <div>
+              <p className="text-xl text-gray-300 mb-4">
+                <span className="font-bold text-2xl">Villages</span> are smaller settlements with fewer perks than
+                Realms.
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                  <li>Each Realm has 6 possible village spots (one in each direction).</li>
+                  <li>Villages cannot be claimed by other players in battle.</li>
+                  <li>Villages have 20% production of the Realm they are on.</li>
+                  <li>
+                    Have a <span className="font-bold">random</span> chance at a resource which exists on the Realm they
+                    are on.
+                  </li>
+                </ul>
+              </p>
+              <Button
+                variant="gold"
+                onClick={() => mintStarterPack("eternum-village-pass")}
+                isLoading={isPurchasingPass}
+                disabled={isPurchasingPass}
+                className="mb-6"
+              >
+                {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass $10 (CC or Crypto Accepted)"}
+              </Button>
 
-          {!showResourceReveal ? (
-            <div className="flex space-x-8">
-              {/* Left Column: Selectors and Buttons */}
-              <div className="flex-1 space-y-8">
-                <div className="w-full space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-gold h6">Select Realm</label>
-                    <Button
-                      onClick={selectRandomRealm}
-                      className="text-xs bg-dark-brown border border-gold/30 text-gold px-2 py-1 rounded-md hover:bg-gold/20"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Loading..." : "Random Realm"}
-                    </Button>
+              {purchasedVillagePass.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <h4 className="text-gold mt-4">1. Select an Available Village Pass</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {purchasedVillagePass.map((pass) => (
+                      <div
+                        className={`p-4 h5 border panel-wood rounded-md cursor-pointer hover:bg-gold/10 ${
+                          selectedVillagePass?.token_id === pass.token_id ? "bg-gold/10 ring-2 ring-gold" : ""
+                        }`}
+                        key={pass.token_id}
+                        onClick={() => handlePassSelection(pass)}
+                      >
+                        <p>Pass #{pass.token_id}</p>
+                      </div>
+                    ))}
                   </div>
+                  {isPurchasingPass && <div className="text-sm text-gray-400 mt-2"> Checking for new passes...</div>}
+                </div>
+              ) : (
+                !isPurchasingPass && (
+                  <p className="text-center text-gray-400 mt-4">
+                    You don't have any Village Passes. Purchase one to continue.
+                  </p>
+                )
+              )}
+            </div>
+          )}
 
-                  {/* Realm ID Input */}
-                  <div className="flex space-x-2">
+          {currentStep === 2 && (
+            <div>
+              <h4 className="text-gold mb-4">2. Select a Realm for Your Village</h4>
+              <div className="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-8">
+                <div className="w-full md:w-96 space-y-4 flex-shrink-0">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <h5 className="text-gold">Search by Realm ID</h5>
+                    </div>
                     <input
                       type="text"
-                      value={realmIdInput}
-                      onChange={(e) => setRealmIdInput(e.target.value)}
-                      placeholder="Enter Realm ID"
-                      className="flex-1 p-2 bg-dark-brown border border-gold/30 rounded-md text-gold focus:outline-none focus:ring-0 focus:border-gold"
+                      placeholder="Search Realm ID..."
+                      value={realmSearchTerm}
+                      onChange={(e) => setRealmSearchTerm(e.target.value)}
+                      className="w-full p-2 bg-dark-brown border border-gold/30 rounded-md text-gold placeholder-gold/50 focus:outline-none focus:ring-0 focus:border-gold"
+                      disabled={isLoading || availableVillages.length === 0}
                     />
-                    <Button
-                      onClick={checkRealm}
-                      className="bg-dark-brown border border-gold/30 text-gold px-4 py-2 rounded-md hover:bg-gold/20"
-                      disabled={isCheckingRealm}
-                    >
-                      {isCheckingRealm ? "Checking..." : "Check"}
-                    </Button>
                   </div>
 
-                  {/* Realm Check Result */}
-                  {realmCheckResult && (
-                    <div className={`p-3 rounded-md "bg-green-900/30 border border-green-500/30"`}>
-                      <p className="text-gold">
-                        Realm #{realmCheckResult.realmId} - {getRealmNameById(realmCheckResult.realmId) || "Unnamed"}
-                      </p>
-                      <p className="text-sm text-gold/80">
-                        {`${realmCheckResult.availableSlots.length} village slot${realmCheckResult.availableSlots.length !== 1 ? "s" : ""} available`}
-                      </p>
-                      {/* {realmCheckResult.hasSlots && (
-                        <Button
-                          onClick={selectCheckedRealm}
-                          className="mt-2 text-xs bg-dark-brown border border-gold/30 text-gold px-2 py-1 rounded-md hover:bg-gold/20"
-                        >
-                          Select This Realm
-                        </Button>
-                      )} */}
-                    </div>
-                  )}
-
-                  {/* Error Message */}
-                  {realmCheckError && <div className="text-xs text-red-400 mt-1">{realmCheckError}</div>}
-                </div>
-
-                {/* <div className="w-full space-y-2">
-                  <label className="text-gold h6">Select Direction</label>
-                  <select
-                    onChange={(e) => setSelectedDirection(Number(e.target.value) as Direction)}
-                    value={selectedDirection ?? ""}
-                    className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold"
-                    style={{ backgroundPosition: "right 0.75rem center" }}
-                    disabled={!selectedRealm}
-                  >
-                    <option value="" disabled>
-                      {selectedRealm ? "Select a Direction" : "First select a Realm"}
-                    </option>
-                    {directionOptions.map((option, index) => (
-                      <option key={index} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedRealm && directionOptions.length === 0 && (
-                    <div className="text-xs text-red-400 mt-1">
-                      No available spots for this realm. This can happen if mines or hyperstructures are discovered on
-                      the village spots.
-                    </div>
-                  )}
-                </div> */}
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3 justify-center pt-4">
-                  <Button onClick={onClose} variant="danger">
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="gold"
-                    onClick={handleSettleVillage}
-                    disabled={!(selectedRealm !== null && selectedDirection !== null)}
-                    isLoading={isLoading}
-                  >
-                    {isLoading ? "Minting..." : "Settle Village"}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Right Column: Preview */}
-              <div className="w-96 p-4 bg-dark-brown/50 border border-gold/20 rounded-md h-fit">
-                <h3 className="text-gold h6 mb-4 text-center">Village Preview</h3>
-                <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-gold/70 block">Realm</label>
-                    <p className="text-gold">
-                      {selectedRealm
-                        ? `Realm #${selectedRealm.realmId} - ${getRealmNameById(selectedRealm.realmId) || "Unnamed"}`
-                        : "Not Selected"}
-                    </p>
+                    <div className="flex justify-between items-center mb-1 pt-2">
+                      <h5 className="text-gold">Filter by Resource</h5>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => setSelectedResourceFilter(null)}
+                        disabled={!selectedResourceFilter}
+                      >
+                        Clear Filter
+                      </Button>
+                    </div>
+                    <Select
+                      value={selectedResourceFilter ?? ""}
+                      onValueChange={(value) => {
+                        setSelectedResourceFilter(value || null);
+                      }}
+                      disabled={isLoading || uniqueResources.length === 0}
+                    >
+                      <SelectTrigger className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
+                        <SelectValue placeholder="Select a Resource to Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {uniqueResources.map((resource) => (
+                          <SelectItem key={resource} value={resource}>
+                            <div className="flex items-center gap-2">
+                              <ResourceIcon resource={resource} size="xs" />
+                              {resource}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {/* <div>
-                    <label className="text-xs text-gold/70 block">Direction</label>
-                    <p className="text-gold">
-                      {selectedDirection !== null
-                        ? (directionOptions.find((o) => o.value === selectedDirection)?.label ?? "Unknown")
-                        : "Not Selected"}
-                    </p>
-                  </div> */}
-                  {/* Add more preview details if needed */}
+
+                  <div>
+                    <h5 className="text-gold mb-1 pt-2">Or Select Realm from List</h5>
+                    <Select
+                      value={selectedRealm?.connected_realm_entity_id.toString() ?? ""}
+                      onValueChange={(value) => {
+                        const entityId = Number(value);
+                        const village = availableVillages.find((v) => v.connected_realm_entity_id === entityId);
+                        handleRealmSelection(village || null);
+                      }}
+                      disabled={isLoading || availableVillages.length === 0}
+                    >
+                      <SelectTrigger className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
+                        <SelectValue
+                          placeholder={
+                            availableVillages.length > 0
+                              ? filteredVillages.length > 0
+                                ? "Select an Available Realm"
+                                : "No matching Realms found"
+                              : "Loading available Realms..."
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredVillages.map((village) => (
+                          <SelectItem
+                            key={village.connected_realm_entity_id}
+                            value={village.connected_realm_entity_id.toString()}
+                          >
+                            {`Realm #${village.connected_realm_id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedRealm && (
+                    <div className="mt-4 p-3 bg-dark-brown border border-gold/30 rounded-md">
+                      <h5 className="text-gold mb-2">
+                        Selected Realm: {getRealmName(selectedRealm.connected_realm_entity_id)} (#
+                        {selectedRealm.connected_realm_id})
+                      </h5>
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {getResources(selectedRealm.connected_realm_entity_id).map((resource, index) => (
+                          <ResourceIcon
+                            resource={resource}
+                            size="xs"
+                            key={index}
+                            withTooltip
+                            tooltipText={resource}
+                            className="hover:scale-110 transition-transform"
+                          />
+                        ))}
+                      </div>
+                      <Button variant="gold" onClick={handleConfirmRealm} className="w-full">
+                        Confirm Realm & Select Direction
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1">
+                  <h5 className="text-gold mb-2">Or Select Realm on Map</h5>
+                  <div className="border border-gold/30 rounded-md overflow-hidden">
+                    <SettlementMinimap
+                      onSelectLocation={(location) => {
+                        const village = availableVillages.find(
+                          (v) =>
+                            v.connected_realm_coord.col === location.x && v.connected_realm_coord.row === location.y,
+                        );
+                        handleRealmSelection(village || null);
+                        console.log(location);
+                      }}
+                      onConfirm={() => {}}
+                      maxLayers={50}
+                      extraPlayerOccupiedLocations={[]}
+                      villageSelect={true}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          ) : (
-            selectedCoords && (
+          )}
+
+          {currentStep === 3 && selectedRealm && (
+            <div>
+              <h4 className="text-gold mb-4">3. Confirm Settlement Details</h4>
+              <div className="flex flex-col md:flex-row gap-6 p-4 border border-gold/30 rounded-md bg-dark-brown/50">
+                <div className="flex-1 space-y-4">
+                  <h2 className="text-xl font-bold ">
+                    {getRealmName(selectedRealm.connected_realm_entity_id)} (#{selectedRealm.connected_realm_id})
+                  </h2>
+
+                  <div>
+                    <h6 className="text-base font-semibold mb-1">Realm Resources</h6>
+                    <p className="text-sm text-gray-400 mb-4"> (Village will produce ONE of these):</p>
+                    <div className="flex flex-wrap gap-1">
+                      {getResources(selectedRealm.connected_realm_entity_id).map((resource, index) => (
+                        <ResourceIcon
+                          resource={resource}
+                          size="lg"
+                          key={index}
+                          withTooltip
+                          tooltipText={resource}
+                          className="hover:scale-110 transition-transform"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {selectedVillagePass && (
+                    <p className="text-sm text-gray-300">Using Village Pass #{selectedVillagePass.token_id}</p>
+                  )}
+                  <div className="w-full md:w-96 pt-4">
+                    <h6 className="text-base font-semibold mb-2">Select Village Direction:</h6>
+                    <Select
+                      value={selectedDirection?.toString() ?? ""}
+                      onValueChange={(value) => setSelectedDirection(Number(value) as Direction)}
+                      disabled={!selectedRealm || directionOptions.length === 0}
+                    >
+                      <SelectTrigger className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
+                        <SelectValue
+                          placeholder={directionOptions.length > 0 ? "Select Direction" : "No Spots Available"}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {directionOptions.map((option, index) => (
+                          <SelectItem key={index} value={option.value.toString()}>
+                            {(() => {
+                              switch (option.label) {
+                                case "North East":
+                                  return "↗";
+                                case "East":
+                                  return "→";
+                                case "South East":
+                                  return "↘";
+                                case "South West":
+                                  return "↙";
+                                case "West":
+                                  return "←";
+                                case "North West":
+                                  return "↖";
+                                default:
+                                  return "";
+                              }
+                            })()}
+                            {` ${option.label}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {directionOptions.length === 0 && (
+                      <div className="text-xs text-red-400 mt-1">
+                        No available spots for this realm. This can happen if mines or hyperstructures are discovered on
+                        the village spots.
+                      </div>
+                    )}
+
+                    <Button
+                      variant="gold"
+                      className="w-full mt-4"
+                      onClick={handleSettleVillage}
+                      disabled={selectedDirection === null || isLoading || directionOptions.length === 0}
+                      isLoading={isLoading}
+                    >
+                      {isLoading ? "Minting..." : "Confirm and Settle Village"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 4 && selectedCoords && showResourceReveal && (
+            <>
+              <h4 className="text-gold mb-4">4. Village Settled & Resource Revealed!</h4>
               <VillageResourceReveal
                 villageCoords={selectedCoords}
                 onClose={onClose}
@@ -332,12 +573,34 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   setSelectedCoords(null);
                   setSelectedDirection(null);
                   setSelectedRealm(null);
+                  setSelectedVillagePass(null);
+                  setCurrentStep(1);
+                  refetchAndSetPasses();
                 }}
               />
-            )
+            </>
           )}
         </div>
       </div>
     </ModalContainer>
   );
+};
+
+const getDirectionInfo = (directionName: string): { value: Direction; label: string } | null => {
+  switch (directionName) {
+    case "NorthEast":
+      return { value: Direction.NORTH_EAST, label: "North East" };
+    case "East":
+      return { value: Direction.EAST, label: "East" };
+    case "SouthEast":
+      return { value: Direction.SOUTH_EAST, label: "South East" };
+    case "SouthWest":
+      return { value: Direction.SOUTH_WEST, label: "South West" };
+    case "West":
+      return { value: Direction.WEST, label: "West" };
+    case "NorthWest":
+      return { value: Direction.NORTH_WEST, label: "North West" };
+    default:
+      return null;
+  }
 };

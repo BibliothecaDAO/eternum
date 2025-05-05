@@ -22,4 +22,5 @@ export interface SettlementMinimapProps {
   maxLayers: number;
   // potential player locations to display on the minimap
   extraPlayerOccupiedLocations?: SettlementLocation[];
+  villageSelect?: boolean;
 }

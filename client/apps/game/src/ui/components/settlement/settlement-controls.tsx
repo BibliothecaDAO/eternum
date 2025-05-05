@@ -39,10 +39,14 @@ export const SettlementControls = ({
   onResetMapCenter,
 }: SettlementControlsProps) => {
   return (
-    <div className="flex items-center justify-between w-full mb-2 bg-black/30 rounded-lg border border-gold/30 p-2 transition-all duration-300 hover:border-gold/50">
-      <div className="flex items-center flex-wrap gap-2">
-        <div className="text-gold">Center on:</div>
-        <div className="flex items-center">
+    <div className="w-full rounded-lg p-4 transition-colors duration-300 hover:border-gold/50 panel-wood">
+      {/* Heading */}
+      <h4 className="text-gold mb-3">Center on coordinates</h4>
+
+      {/* Inputs & Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        {/* Coordinate inputs */}
+        <div className="flex gap-2">
           <CoordinateInput
             value={customNormalizedCoords.x}
             onChange={(e) => onCoordinateChange(e, "x")}
@@ -55,40 +59,18 @@ export const SettlementControls = ({
             placeholder="Y"
             label="Y coordinate"
           />
-          <Button
-            variant="secondary"
-            onClick={onCenterCoordinates}
-            className="mr-2 hover:bg-gold/20 transition-colors duration-200"
-            aria-label="Go to coordinates"
-          >
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="secondary" onClick={onCenterCoordinates} aria-label="Go to coordinates">
             Go
+          </Button>
+          <Button variant="danger" onClick={onResetMapCenter} aria-label="Reset map view">
+            Reset
           </Button>
         </div>
       </div>
-      <Button
-        variant="secondary"
-        onClick={onResetMapCenter}
-        className="hover:bg-gold/20 transition-colors duration-200"
-        aria-label="Reset map view"
-      >
-        <span className="flex items-center">
-          <svg
-            className="w-4 h-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Reset View
-        </span>
-      </Button>
     </div>
   );
 };
@@ -103,16 +85,15 @@ interface SettlementInfoPanelProps {
  */
 export const SettlementInfoPanel = ({ selectedLocation, selectedCoords }: SettlementInfoPanelProps) => {
   return (
-    <div className="flex flex-col items-center justify-center h-[120px] bg-black/30 rounded-lg border border-gold/30 p-4 mb-4 w-full transition-all duration-300 hover:border-gold/50">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-gold/30  w-full transition-all duration-300 hover:border-gold/50">
       {selectedLocation ? (
-        <div className="text-center w-full">
-          <div className="text-xl font-semibold text-gold mb-2 border-b border-gold/20 pb-2">Selected Location</div>
+        <div className="text-center w-full py-2">
           <div className="flex justify-center items-center gap-4 text-gold">
-            <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
+            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
               <div className="text-xs text-gold/70 uppercase tracking-wider">X</div>
               <div className="text-xl font-bold">{selectedCoords?.x}</div>
             </div>
-            <div className="flex flex-col items-center bg-black/40 p-2 rounded-md hover:bg-black/50 transition-colors duration-200">
+            <div className="flex flex-col items-center rounded-md hover:bg-black/50 transition-colors duration-200">
               <div className="text-xs text-gold/70 uppercase tracking-wider">Y</div>
               <div className="text-xl font-bold">{selectedCoords?.y}</div>
             </div>
@@ -156,8 +137,8 @@ export const ConfirmButton = ({ selectedLocation, onConfirm }: ConfirmButtonProp
   return (
     <Button
       disabled={!selectedLocation}
-      className={`w-full transition-all duration-300 ${selectedLocation ? "animate-pulse" : ""}`}
-      variant="primary"
+      className={`w-full transition-all duration-300  ${selectedLocation ? "animate-pulse" : ""}`}
+      variant="gold"
       onClick={onConfirm}
     >
       {selectedLocation ? "Confirm Location" : "Select a Location First"}
