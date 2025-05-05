@@ -134,7 +134,7 @@ export class ResourceManager {
 
     const entity = getEntityIdFromKeys([BigInt(this.entityId)]);
     const currentBalance = this.balance(resourceId);
-    const weight = configManager.getResourceWeightKg(resourceId);
+    const weight = configManager.getResourceWeightKg(resourceId) || 0;
     // current weight in nanograms per unit with precision
     const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
     const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(actualResourceChange)));
@@ -652,7 +652,7 @@ export class ResourceManager {
     const quantity = getBuildingCount(BuildingType.Storehouse, packBuildingCounts) || 0;
 
     return {
-      capacityKg: gramToKg(Number(resource.weight.capacity) / RESOURCE_PRECISION),
+      capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
       quantity,
     };
   }

@@ -3,60 +3,12 @@ import react from "@vitejs/plugin-react";
 import path, { resolve } from "path";
 import { defineConfig } from "vite";
 import mkcert from "vite-plugin-mkcert";
-import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    mkcert(),
-    svgr({ dimensions: false, svgo: false, typescript: true }),
-    react(),
-    wasm(),
-    topLevelAwait(),
-    VitePWA({
-      devOptions: {
-        enabled: process.env.VITE_PUBLIC_CHAIN === "local",
-      },
-      workbox: {
-        maximumFileSizeToCacheInBytes: 8000000,
-        clientsClaim: true,
-        skipWaiting: false,
-      },
-      manifest: {
-        name: "Eternum",
-        short_name: "Eternum",
-        description: "Glory awaits for those who rule the Hex",
-        theme_color: "#F6C297",
-        background_color: "#F6C297",
-        display: "standalone",
-        orientation: "landscape",
-        scope: "/",
-        start_url: "/",
-        icons: [
-          {
-            src: "/images/pwa-64x64.png",
-            sizes: "64x64",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/images/pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/images/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-        ],
-      },
-    }),
-  ],
+  plugins: [mkcert(), svgr({ dimensions: false, svgo: false, typescript: true }), react(), wasm(), topLevelAwait()],
   resolve: {
     alias: {
       "@/assets": path.resolve(__dirname, "../../public/assets"),

@@ -1113,17 +1113,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_banks",
-      calldata: [
-        banks.length,
-        ...banks.flatMap((bank) => [
-          bank.name,
-          bank.coord.x,
-          bank.coord.y,
-          bank.guard_slot,
-          bank.troop_tier,
-          bank.troop_type,
-        ]),
-      ],
+      calldata: [banks.length, ...banks.flatMap((bank) => [bank.name, bank.coord.x, bank.coord.y])],
     });
   }
 
@@ -1300,6 +1290,30 @@ export class EternumProvider extends EnhancedDojoProvider {
         };
       }),
     );
+  }
+
+  public async add_initial_bank_liquidity(props: SystemProps.AddLiquidityProps) {
+    const { bank_entity_id, entity_id, calls, signer } = props;
+
+    const finalCalls: AllowArray<Call> = [];
+    calls.forEach((call) => {
+      // mint the resource and lords to the bank
+      let resources = [SystemProps.ResourcesIds.Lords, call.lords_amount, call.resource_type, call.resource_amount];
+      finalCalls.push({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
+        entrypoint: "mint",
+        calldata: [bank_entity_id, resources.length / 2, ...resources],
+      });
+
+      // add the liquidity to the bank
+      finalCalls.push({
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
+        entrypoint: "add",
+        calldata: [bank_entity_id, entity_id, call.resource_type, call.resource_amount, call.lords_amount],
+      });
+    });
+
+    return await this.executeAndCheckTransaction(signer, finalCalls);
   }
 
   /**

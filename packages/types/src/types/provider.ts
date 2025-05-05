@@ -172,9 +172,6 @@ export interface CreateAdminBanksProps extends SystemSigner {
       x: num.BigNumberish;
       y: num.BigNumberish;
     };
-    guard_slot: num.BigNumberish;
-    troop_tier: num.BigNumberish;
-    troop_type: num.BigNumberish;
   }[];
 }
 

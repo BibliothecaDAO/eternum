@@ -176,8 +176,10 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
                 ?.filter((attribute) => attribute.trait_type === "Resource")
                 .sort((a, b) => {
                   // Sort resources by rarity
-                  const idA = ResourcesIds[a.value as keyof typeof ResourcesIds];
-                  const idB = ResourcesIds[b.value as keyof typeof ResourcesIds];
+                  const aWithoutSpace = a.value.toString().replace(/\s/g, "");
+                  const bWithoutSpace = b.value.toString().replace(/\s/g, "");
+                  const idA = ResourcesIds[aWithoutSpace as keyof typeof ResourcesIds];
+                  const idB = ResourcesIds[bWithoutSpace as keyof typeof ResourcesIds];
                   const rarityA = (idA !== undefined ? RESOURCE_RARITY[idA] : undefined) || Infinity;
                   const rarityB = (idB !== undefined ? RESOURCE_RARITY[idB] : undefined) || Infinity;
                   return rarityA - rarityB;

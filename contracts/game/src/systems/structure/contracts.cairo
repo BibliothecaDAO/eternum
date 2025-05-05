@@ -89,6 +89,7 @@ pub mod structure_systems {
             // update structure level and troop max guard count
             structure_base.level = next_level;
             structure_base.troop_max_guard_count += 1;
+            structure_base.troop_max_explorer_count += 1;
             StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
 
             // update structure tile
