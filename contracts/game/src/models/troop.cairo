@@ -507,7 +507,7 @@ pub impl TroopsImpl of TroopsTrait {
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
-    ) -> (u128, u128) {
+    ) -> (u128, u128, u64) {
         assert!(self.count.is_non_zero(), "you have no troops");
         assert!(bravo.count.is_non_zero(), "the defender has no troops");
         assert!(biome != Biome::None, "biome is not set");
@@ -573,11 +573,15 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
+        let ALPHA_STAMINA_LOSS: u64 = alpha_additional_stamina_for_damage
+            + troop_stamina_config.stamina_attack_req.into();
+
         self = alpha;
 
         (
             ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
             BRAVO_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
+            ALPHA_STAMINA_LOSS,
         )
     }
 
@@ -590,7 +594,7 @@ pub impl TroopsImpl of TroopsTrait {
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
     ) {
-        let (alpha_damage_dealt, bravo_damage_dealt) = self
+        let (alpha_damage_dealt, bravo_damage_dealt, alpha_stamina_loss) = self
             .damage(ref bravo, biome, troop_stamina_config, troop_damage_config, current_tick);
 
         let mut alpha = self;
@@ -600,24 +604,9 @@ pub impl TroopsImpl of TroopsTrait {
         bravo.count -= core::cmp::min(bravo.count, alpha_damage_dealt);
 
         // deduct stamina spent
-        alpha
-            .stamina
-            .spend(
-                alpha.category,
-                troop_stamina_config,
-                troop_stamina_config.stamina_attack_req.into(),
-                current_tick,
-                true,
-            );
-        bravo
-            .stamina
-            .spend(
-                bravo.category,
-                troop_stamina_config,
-                troop_stamina_config.stamina_attack_req.into(),
-                current_tick,
-                false,
-            );
+        alpha.stamina.spend(alpha.category, troop_stamina_config, alpha_stamina_loss, current_tick, true);
+
+        // the defense does not lose stamina
 
         // grant stamina to victor
         if alpha.count.is_zero() || bravo.count.is_zero() {
@@ -632,7 +621,6 @@ pub impl TroopsImpl of TroopsTrait {
                     );
             }
             if bravo.count.is_non_zero() {
-                // todo: do we grant stamina here when they originally had none
                 bravo
                     .stamina
                     .add(
