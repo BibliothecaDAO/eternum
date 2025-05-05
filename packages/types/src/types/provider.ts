@@ -11,6 +11,7 @@ export interface CreateVillageProps extends SystemSigner {
   village_pass_token_id: num.BigNumberish;
   connected_realm: num.BigNumberish;
   direction: num.BigNumberish;
+  village_pass_address: string;
 }
 
 export interface MintAndSettleTestRealmProps extends SystemSigner {

@@ -16,7 +16,7 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   const containerClasses = (() => {
     switch (size) {
       case "full":
-        return "w-full h-full pb-20";
+        return "w-full h-full";
       case "half":
         return "w-1/2 h-1/2 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2";
       case "small":
@@ -60,11 +60,11 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
   return (
     <div
       ref={modalRef}
-      className={`z-50  dark:bg-dark-wood panel-wood text-gold ${containerClasses} fixed overflow-hidden focus:outline-none focus:ring-2 focus:ring-gold/50`}
+      className={`z-50  dark:bg-dark-wood panel-wood text-gold ${containerClasses} fixed overflow-hidden`}
       tabIndex={0}
     >
       <div className={`flex flex-col ${size === "auto" ? "h-auto" : "h-full"}`}>
-        <div className="flex justify-between items-center p-2">
+        <div className="flex justify-between items-center p-2 border-b border-gold/30">
           <h5>{title}</h5>
           <div className="flex justify-end p-1">
             <Button className="!p-4" size="xs" variant="danger" onClick={() => toggleModal(null)}>
@@ -72,7 +72,7 @@ export const ModalContainer = ({ children, size = "full", title }: ModalContaine
             </Button>
           </div>
         </div>
-        <div className={`${size === "auto" ? "" : "flex-1"} overflow-auto pl-2 pr-2 pb-2`}>{children}</div>
+        <div className={`${size === "auto" ? "" : "flex-1"} overflow-auto px-2`}>{children}</div>
       </div>
     </div>
   );
