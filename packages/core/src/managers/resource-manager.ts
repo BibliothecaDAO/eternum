@@ -638,7 +638,7 @@ export class ResourceManager {
     return production.last_updated_at + Math.ceil(remainingTicks);
   }
 
-  public getStoreCapacityKg(): { capacityKg: number; quantity: number } {
+  public getStoreCapacityKg(): { capacityKg: number; capacityUsedKg: number; quantity: number } {
     const resource = this._getResource()!;
     const structureBuildings = getComponentValue(
       this.components.StructureBuildings,
@@ -653,9 +653,11 @@ export class ResourceManager {
 
     return {
       capacityKg: gramToKg(Number(resource?.weight.capacity || 0) / RESOURCE_PRECISION),
+      capacityUsedKg: gramToKg(Number(resource?.weight.weight || 0) / RESOURCE_PRECISION),
       quantity,
     };
   }
+  
 
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
     const storeCapacityKg = this.getStoreCapacityKg().capacityKg;

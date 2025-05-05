@@ -508,6 +508,7 @@ export interface RealmInfo {
   position: Position;
   storehouses: {
     capacityKg: number;
+    capacityUsedKg: number;
     quantity: number;
   };
   population?: number | undefined;
