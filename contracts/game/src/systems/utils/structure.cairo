@@ -218,6 +218,7 @@ pub impl iStructureImpl of IStructureTrait {
                     // store the resource
                     realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
                     realm_resource.store(ref world);
+                    structure_weight.store(ref world, structure_id);
 
                     // create starting guard
                     let start_guard_troop_amount = resource_amount - TroopsImpl::start_resource_amount();
@@ -234,9 +235,9 @@ pub impl iStructureImpl of IStructureTrait {
             } else {
                 realm_resource.add(resource_amount, ref structure_weight, resource_weight_grams);
                 realm_resource.store(ref world);
+                structure_weight.store(ref world, structure_id);
             }
         };
-        structure_weight.store(ref world, structure_id);
     }
 }
 

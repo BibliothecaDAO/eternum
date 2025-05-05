@@ -8,7 +8,13 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
 
-const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) => {
+const StorehouseInfo = ({
+  storehouseCapacity,
+  storehouseCapacityUsed,
+}: {
+  storehouseCapacity: number;
+  storehouseCapacityUsed: number;
+}) => {
   const capacity = storehouseCapacity;
   // All troops have the same weight now, so we can use any troop type to calculate
   const troopWeight = configManager.getResourceWeightKg(ResourcesIds.Knight);
@@ -17,6 +23,10 @@ const StorehouseInfo = ({ storehouseCapacity }: { storehouseCapacity: number }) 
   return (
     <div className=" text-gray-200 p-2 max-w-xs z-50 ">
       <p className="font-bold text-gold mb-1">Storage Capacity ({storehouseCapacity.toLocaleString()} kg)</p>
+      <p className="font-bold text-gold mb-1">Storage Used ({storehouseCapacityUsed.toLocaleString()} kg)</p>
+      <p className="font-bold text-gold mb-1">
+        Storage Left ({(storehouseCapacity - storehouseCapacityUsed).toLocaleString()} kg)
+      </p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-1 my-1">
         <div className="flex items-center bg-white/5 p-1 rounded">
           <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="xs" className="mr-1" />
@@ -124,7 +134,12 @@ export const CapacityInfo = ({ structureEntityId, className }: { structureEntity
           onMouseEnter={() => {
             setTooltip({
               position: "bottom",
-              content: <StorehouseInfo storehouseCapacity={realmInfo.storehouses.capacityKg} />,
+              content: (
+                <StorehouseInfo
+                  storehouseCapacity={realmInfo.storehouses.capacityKg}
+                  storehouseCapacityUsed={realmInfo.storehouses.capacityUsedKg}
+                />
+              ),
             });
           }}
           onMouseLeave={() => {
