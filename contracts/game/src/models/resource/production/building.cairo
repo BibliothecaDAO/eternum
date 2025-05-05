@@ -564,6 +564,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         // save production
         produced_resource.production = production;
         produced_resource.store(ref world);
+        produced_resource.store_production(ref world);
         // todo add event here
     }
 
@@ -758,6 +759,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
                 );
             recipient_building_resource.production = recipient_building_resource_production;
             recipient_building_resource.store(ref world);
+            recipient_building_resource.store_production(ref world);
         }
     }
 }

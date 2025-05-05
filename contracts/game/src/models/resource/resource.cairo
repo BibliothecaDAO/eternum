@@ -65,7 +65,8 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
         let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
-        SingleResource { entity_id, resource_type, balance, production: Zero::zero(), produces: structure }
+        let production: Production = ResourceImpl::read_production(ref world, entity_id, resource_type);
+        SingleResource { entity_id, resource_type, balance, production, produces: structure }
     }
 
     fn store(ref self: SingleResource, ref world: WorldStorage) {

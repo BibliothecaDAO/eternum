@@ -35,6 +35,8 @@ pub impl ProductionWonderBonusImpl of ProductionWonderBonusTrait {
     }
 }
 
+
+// todo: update layout to be more efficient
 #[derive(IntrospectPacked, Copy, Drop, Serde, Default, PartialEq)]
 pub struct Production {
     // active building count
@@ -193,6 +195,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         from_labor_resource_production.increase_output_amout_left(produced_labor_amount);
         from_labor_resource.production = from_labor_resource_production;
         from_labor_resource.store(ref world);
+        from_labor_resource.store_production(ref world);
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
@@ -245,6 +248,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         produced_resource_production.increase_output_amout_left(produced_resource_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
+        produced_resource.store_production(ref world);
 
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
@@ -301,7 +305,7 @@ pub impl ProductionStrategyImpl of ProductionStrategyTrait {
         produced_resource_production.increase_output_amout_left(produceable_amount);
         produced_resource.production = produced_resource_production;
         produced_resource.store(ref world);
-
+        produced_resource.store_production(ref world);
         // update entity weight
         from_entity_weight.store(ref world, from_entity_id);
         // todo add event here

@@ -83,7 +83,7 @@ pub impl iMineDiscoveryImpl of iMineDiscoveryTrait {
         shards_resource_production.increase_output_amout_left(shards_reward_amount);
         shards_resource.production = shards_resource_production;
         shards_resource.store(ref world);
-
+        shards_resource.store_production(ref world);
         // // grant wheat to structure
         // let wheat_weight_grams: u128 = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
         // let mut wheat_resource = SingleResourceStoreImpl::retrieve(
