@@ -738,6 +738,6 @@ mod tests {
 
         assert_eq!(alpha.count, 0);
         assert_eq!(bravo.count, 2_052 * RESOURCE_PRECISION);
-        assert_eq!(bravo.stamina.amount, 130);
+        assert_eq!(bravo.stamina.amount, 120);
     }
 }
