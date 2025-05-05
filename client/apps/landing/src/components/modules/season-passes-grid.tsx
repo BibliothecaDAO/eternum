@@ -1,22 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { MergedNftData } from "@/routes/season-passes.lazy";
+import { OpenOrderByPrice } from "@/hooks/services";
 import { Crown, Grid2X2, Grid3X3 } from "lucide-react";
 import { useState } from "react";
 import { AnimatedGrid } from "./animated-grid";
 import { SeasonPassCard } from "./season-pass-card";
-
 interface RealmGridItem {
   colSpan?: {
     sm?: number;
     md?: number;
     lg?: number;
   };
-  data: MergedNftData;
+  data: OpenOrderByPrice;
 }
 
 interface SeasonPassRowProps {
   toggleNftSelection?: (tokenId: string, collectionAddress: string) => void;
-  seasonPasses: MergedNftData[];
+  seasonPasses: OpenOrderByPrice[];
   setIsTransferOpen: (tokenId?: string) => void;
   checkOwner?: boolean;
   hideTransferButton?: boolean;
@@ -78,13 +77,12 @@ export const SeasonPassesGrid = ({
         items={gridItems}
         renderItem={(item) => {
           const pass = item.data;
-          if (!pass?.node) return null;
-          const tokenId =
-            pass.node.tokenMetadata.__typename === "ERC721__Token" ? pass.node.tokenMetadata.tokenId : null;
+          if (!pass) return null;
+          const tokenId = pass.token_id;
 
           return (
             <SeasonPassCard
-              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId)}
+              toggleNftSelection={() => tokenId && setIsTransferOpen(tokenId.toString())}
               key={`${tokenId || ""}`}
               pass={pass}
               checkOwner={checkOwner}

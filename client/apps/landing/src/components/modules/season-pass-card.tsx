@@ -1,6 +1,7 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { seasonPassAddress } from "@/config";
+import { OpenOrderByPrice } from "@/hooks/services";
 import { useMarketplace } from "@/hooks/use-marketplace";
-import { MergedNftData } from "@/routes/season-passes.lazy";
 import { RealmMetadata } from "@/types";
 import { RESOURCE_RARITY, ResourcesIds } from "@bibliothecadao/types"; // Import enums
 import { useAccount, useReadContract } from "@starknet-react/core";
@@ -10,9 +11,8 @@ import { formatUnits } from "viem";
 import { Button } from "../ui/button";
 import { ResourceIcon } from "../ui/elements/resource-icon";
 import { RealmDetailModal } from "./realm-detail-modal";
-
 interface SeasonPassCardProps {
-  pass: MergedNftData;
+  pass: OpenOrderByPrice;
   toggleNftSelection?: () => void;
   isSelected?: boolean;
   metadata?: RealmMetadata;
@@ -29,10 +29,7 @@ interface ListingDetails {
 const SEASON_PASS_COLLECTION_ID = 1;
 
 export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwner = false }: SeasonPassCardProps) => {
-  const { tokenId, contractAddress, metadata } =
-    pass?.node?.tokenMetadata.__typename === "ERC721__Token"
-      ? { ...pass.node.tokenMetadata, tokenId: BigInt(pass.node.tokenMetadata.tokenId) }
-      : { tokenId: "", contractAddress: "", metadata: "" };
+  const { token_id, metadata } = pass;
 
   const { address: accountAddress } = useAccount();
   const marketplaceActions = useMarketplace();
@@ -53,8 +50,8 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
       },
     ] as const,
     functionName: "owner_of",
-    address: contractAddress as `0x${string}`,
-    args: [tokenId.toString()],
+    address: seasonPassAddress as `0x${string}`,
+    args: [token_id.toString()],
     enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
   });
 
@@ -107,21 +104,21 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   // Prepare data for the modal (useMemo)
   const modalData = useMemo(
     () => ({
-      tokenId: tokenId.toString(),
-      contractAddress: contractAddress,
+      tokenId: token_id.toString(),
+      contractAddress: seasonPassAddress,
       name: name,
       imageSrc: image || "",
       attributes: attributes,
     }),
-    [tokenId, contractAddress, name, image, attributes],
+    [token_id, seasonPassAddress, name, image, attributes],
   );
 
   const listingActive = useMemo(() => {
-    if (pass.expiration !== null && orderOwner && pass.minPrice !== null) {
+    if (pass.expiration !== null && orderOwner && pass.best_price_hex !== null) {
       return true;
     }
     return false;
-  }, [pass.expiration, orderOwner, pass.minPrice]);
+  }, [pass.expiration, orderOwner, pass.best_price_hex]);
 
   return (
     <>
@@ -168,7 +165,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
               Season 1 Pass
             </div>
             <div className="flex justify-between gap-2">
-              <h4 className="text-xl truncate">{name || `Pass #${tokenId}`}</h4>
+              <h4 className="text-xl truncate">{name || `Pass #${token_id}`}</h4>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -200,7 +197,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
               {listingActive ? (
                 <div className="text-xl  flex items-center gap-2 font-mono">
                   {/* Format price with commas, removing unnecessary decimals */}
-                  {Number(formatUnits(pass.minPrice ?? BigInt(0), 18)).toLocaleString()}{" "}
+                  {Number(formatUnits(pass.best_price_hex ?? BigInt(0), 18)).toLocaleString()}{" "}
                   <ResourceIcon resource="Lords" size="sm" />
                 </div>
               ) : (
@@ -251,8 +248,8 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
         marketplaceActions={marketplaceActions}
         collection_id={SEASON_PASS_COLLECTION_ID}
         // Pass listing details from state
-        price={pass.minPrice ?? undefined}
-        orderId={pass.orderId ?? undefined}
+        price={pass.best_price_hex ?? undefined}
+        orderId={pass.order_id?.toString() ?? undefined}
         isListed={pass.expiration !== null}
         expiration={pass.expiration ? Number(pass.expiration) : undefined}
       />

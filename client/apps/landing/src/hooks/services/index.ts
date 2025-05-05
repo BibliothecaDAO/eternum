@@ -55,7 +55,7 @@ const QUERIES = {
     ),
 
     /* ❷ ----------------------------------------------------------------------- */
-    accepted AS (                           -- only “Accepted” events
+    accepted AS (                           -- only "Accepted" events
         SELECT "market_order.price" AS hex_price
         FROM   "marketplace-MarketOrderEvent"
         WHERE  state = 'Accepted'           -- <- use single quotes for the literal
@@ -95,6 +95,77 @@ const QUERIES = {
     FROM   total_active
     CROSS  JOIN total_volume;
   `,
+  OPEN_ORDERS_BY_PRICE: `
+    /* ─────────────────────────────────────────────────────────────────────
+      All tokens of one contract
+      + their lowest‑price ACTIVE listing
+      + metadata (tokens)   + expiration (order)
+      ─────────────────────────────────────────────────────────────────── */
+
+    WITH
+    /* 1️⃣  every token that belongs to the contract -------------------- */
+    contract_tokens AS (
+        SELECT
+            token_id,                            -- 66‑char hex string
+            name,
+            symbol,
+            metadata
+        FROM   tokens
+        WHERE  contract_address = '{contractAddress}'        -- <‑‑ change me
+    ),
+
+    /* 2️⃣  active listings for the same contract ---------------------- */
+    active_orders AS (
+        SELECT
+            printf('0x%064x', "order.token_id") AS token_id_hex,  -- pad to 66‑char hex
+            "order.price"                       AS price_hex,     -- hex price
+            "order.expiration"                  AS expiration,
+            "order.owner" AS owner,
+            order_id
+        FROM   "marketplace-MarketOrderModel"
+        WHERE  "order.active" = 1
+    ),
+
+    /* 3️⃣  find the cheapest ACTIVE price per token ------------------- */
+    min_prices AS (
+        SELECT
+            token_id_hex,
+            MIN(price_hex) AS best_price_hex                     -- lexicographic=min
+        FROM   active_orders
+        GROUP  BY token_id_hex
+    ),
+
+    /* 4️⃣  attach the matching expiration to that cheapest listing ---- */
+    best_active AS (
+        SELECT
+            ao.token_id_hex,
+            mp.best_price_hex,
+            ao.expiration,       -- expiration of *that* cheapest listing
+            ao.owner,
+            ao.order_id
+        FROM   active_orders ao
+        JOIN   min_prices   mp
+              ON  mp.token_id_hex   = ao.token_id_hex
+              AND mp.best_price_hex = ao.price_hex
+    )
+
+    /* 5️⃣  merge: tokens first, then listing data --------------------- */
+    SELECT
+        ct.token_id,
+        ct.name,
+        ct.symbol,
+        ct.metadata,
+        ba.best_price_hex,       -- NULL if not listed
+        ba.expiration,            -- NULL if not listed
+        ba.owner,
+        ba.order_id
+    FROM   contract_tokens AS ct
+    LEFT   JOIN best_active   AS ba
+          ON ba.token_id_hex = ct.token_id
+    ORDER  BY
+          ba.best_price_hex IS NULL,   -- push unlisted tokens down
+          ba.best_price_hex;           -- then cheapest → highest
+  `,
 };
 
 // API response types
@@ -129,6 +200,18 @@ export interface TokenTransfer {
 export interface ActiveMarketOrdersTotal {
   total_active: number;
   total_volume: bigint | null; // SUM can return null if there are no rows
+}
+
+// Define the response type for the new query
+export interface OpenOrderByPrice {
+  token_id: number;
+  order_id: number;
+  name: string | null;
+  symbol: string | null;
+  metadata: string | null; // Assuming this is a string, potentially JSON
+  best_price_hex: bigint | null;
+  expiration: number | null; // Assuming this is a numeric timestamp
+  owner: ContractAddress | null;
 }
 
 /**
@@ -205,15 +288,41 @@ export async function fetchActiveMarketOrdersTotal(): Promise<ActiveMarketOrders
     throw new Error(`Failed to fetch active market orders total: ${response.statusText}`);
   }
 
-  // The API returns an array with a single object, potentially with large numbers
-  const rawResult: { active_order_count: number; open_orders_total_wei: number | string | null }[] =
-    await response.json();
+  return await response.json();
+}
 
-  // Convert wei to bigint
-  const result: ActiveMarketOrdersTotal[] = rawResult.map((item) => ({
-    total_active: item.active_order_count,
-    total_volume: item.open_orders_total_wei !== null ? BigInt(Math.round(Number(item.open_orders_total_wei))) : null,
+/**
+ * Fetch open orders by price from the API
+ */
+export async function fetchOpenOrdersByPrice(contractAddress: string): Promise<OpenOrderByPrice[]> {
+  const query = QUERIES.OPEN_ORDERS_BY_PRICE.replace("{contractAddress}", contractAddress);
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch open orders by price: ${response.statusText}`);
+  }
+
+  // Define the type for the raw API response
+  type RawOpenOrderByPrice = {
+    token_id: string;
+    name: string | null;
+    symbol: string | null;
+    metadata: string | null;
+    best_price_hex: string | null;
+    expiration: number | null;
+    owner: ContractAddress | null;
+    order_id: string;
+  };
+
+  const rawData: RawOpenOrderByPrice[] = await response.json();
+
+  // Parse hex strings to bigint
+  return rawData.map((item) => ({
+    ...item,
+    token_id: parseInt(item.token_id, 16),
+    order_id: parseInt(item.order_id, 16),
+
+    best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
   }));
-
-  return result;
 }

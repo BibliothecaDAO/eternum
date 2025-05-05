@@ -17,40 +17,14 @@ import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
 import { GET_ACCOUNT_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
-import { SeasonPassMint } from "@/types";
+
+import { MarketOrder, MergedNftData, SeasonPassMint } from "@/types";
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
-
-export interface MarketOrder {
-  active: boolean;
-  token_id: string;
-  collection_id: string;
-  owner: string;
-  price: string;
-  expiration: string;
-}
-
-export interface MergedNftData {
-  node: {
-    tokenMetadata: {
-      __typename: "ERC721__Token";
-      tokenId: string;
-      metadataDescription?: string | null;
-      imagePath: string;
-      contractAddress: string;
-      metadata: string;
-    };
-  };
-  minPrice: bigint | null;
-  marketplaceOwner: string | null;
-  orderId: string | null;
-  expiration: string | null;
-  owner: string | null;
-}
 
 export const Route = createLazyFileRoute("/season-passes")({
   component: SeasonPasses,
@@ -60,7 +34,7 @@ export type TokenBalanceEdge = NonNullable<NonNullable<GetAccountTokensQuery["to
 export type AllTokenEdge = NonNullable<NonNullable<GetAllTokensQuery["tokens"]>["edges"]>[number];
 
 // Filter for season pass NFTs from account tokens query
-const getSeasonPassNfts = (data: GetAccountTokensQuery | null): TokenBalanceEdge[] => {
+export const getSeasonPassNfts = (data: GetAccountTokensQuery | null): TokenBalanceEdge[] => {
   return (
     data?.tokenBalances?.edges?.filter((token): token is TokenBalanceEdge => {
       if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
@@ -72,22 +46,6 @@ const getSeasonPassNfts = (data: GetAccountTokensQuery | null): TokenBalanceEdge
   );
 };
 
-// Filter for season pass NFTs from all tokens query
-const getAllSeasonPassNfts = (data: GetAllTokensQuery | null): AllTokenEdge[] => {
-  return (
-    data?.tokens?.edges?.filter((token): token is AllTokenEdge => {
-      if (token?.node?.tokenMetadata.__typename !== "ERC721__Token") return false;
-
-      return (
-        addAddressPadding(token.node.tokenMetadata.contractAddress ?? "0x0") ===
-        addAddressPadding(seasonPassAddress ?? "0x0")
-      );
-    }) ?? []
-  );
-};
-
-type ViewMode = "my" | "all";
-
 function SeasonPasses() {
   const { connectors, connect } = useConnect();
   const { address } = useAccount();
@@ -95,7 +53,6 @@ function SeasonPasses() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [initialSelectedTokenId, setInitialSelectedTokenId] = useState<string | null>(null);
   const [controllerAddress] = useState<string>();
-  const [viewMode, setViewMode] = useState<ViewMode>("my");
 
   // --- Pagination State ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,12 +80,12 @@ function SeasonPasses() {
   console.log("myNftsQuery.data", myNftsQuery.data);
 
   const mySeasonPassNfts: TokenBalanceEdge[] = useMemo(
-    () => (viewMode === "my" && address ? getSeasonPassNfts(myNftsQuery.data) : []),
-    [myNftsQuery.data, viewMode, address],
+    () => (address ? getSeasonPassNfts(myNftsQuery.data) : []),
+    [myNftsQuery.data, address],
   );
 
   const marketplaceOrdersData = ordersQuery.data as any;
-  const isLoading = (viewMode === "my" && myNftsQuery.isLoading) || ordersQuery.isLoading;
+  const isLoading = myNftsQuery.isLoading || ordersQuery.isLoading;
 
   const processedAndSortedNfts = useMemo((): MergedNftData[] => {
     // Use the appropriate NFT edges based on view mode
@@ -198,7 +155,7 @@ function SeasonPasses() {
     });
 
     return mergedNfts;
-  }, [viewMode, mySeasonPassNfts, marketplaceOrdersData]);
+  }, [mySeasonPassNfts, marketplaceOrdersData]);
 
   const getSeasonPassMetadataString = useCallback((pass: TokenBalanceEdge | AllTokenEdge): string | null => {
     if (pass?.node?.tokenMetadata?.__typename === "ERC721__Token") {
@@ -251,15 +208,10 @@ function SeasonPasses() {
   }, [originalClearAllFilters]);
 
   // Only allow transfer for user's own tokens
-  const handleTransferClick = useCallback(
-    (tokenId?: string) => {
-      if (viewMode === "my") {
-        setInitialSelectedTokenId(tokenId || null);
-        setIsTransferOpen(true);
-      }
-    },
-    [viewMode],
-  );
+  const handleTransferClick = useCallback((tokenId?: string) => {
+    setInitialSelectedTokenId(tokenId || null);
+    setIsTransferOpen(true);
+  }, []);
 
   // Create a handler to reset the initial token ID when dialog closes
   const handleDialogClose = (open: boolean) => {
@@ -295,12 +247,8 @@ function SeasonPasses() {
 
         <>
           {/* Page Title */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">
-            {viewMode === "my" ? "Your Season Passes" : "All Season Passes"}
-          </h2>
-          <p className="text-center text-muted-foreground mb-6">
-            {viewMode === "my" ? "View and manage your Season Pass NFTs." : "Browse all available Season Pass NFTs."}
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">Your Season Passes</h2>
+          <p className="text-center text-muted-foreground mb-6">View and manage your Season Pass NFTs.</p>
 
           {/* Filter UI */}
           <div>
@@ -331,9 +279,7 @@ function SeasonPasses() {
                   </div>
                 )}
                 {totalPasses === 0 && !isLoading && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    {viewMode === "my" ? "You do not own any Season Pass NFTs yet." : "No Season Pass NFTs available."}
-                  </div>
+                  <div className="text-center py-6 text-muted-foreground">You do not own any Season Pass NFTs yet.</div>
                 )}
               </Suspense>
             </div>
