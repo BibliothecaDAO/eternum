@@ -1,15 +1,15 @@
+import {
+    ClientComponents,
+    ContractComponents,
+    ID,
+    MarketInterface,
+    Resource,
+    ResourcesIds,
+} from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import { ResourceManager, getRealmNameById } from "..";
-import {
-  ResourcesIds,
-  ClientComponents,
-  ContractComponents,
-  ID,
-  MarketInterface,
-  Resource,
-} from "@bibliothecadao/types";
 
 export type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -151,7 +151,7 @@ export const canAcceptOffer = (
   let canAccept = true;
   Object.values(resourcesGive).forEach((resource) => {
     const resourceManager = new ResourceManager(components, realmEntityId);
-    if (resourceManager.balanceWithProduction(currentTick, resource.resourceId) < resource.amount) {
+    if (resourceManager.actualBalance(currentTick, resource.resourceId) < resource.amount) {
       canAccept = false;
     }
   });

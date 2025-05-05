@@ -4,8 +4,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
-import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getBuildingFromResource, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -104,7 +104,7 @@ export const ResourceProductionControls = ({
     const { currentDefaultTick } = getBlockTimestamp();
 
     allResources.forEach((resource) => {
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource);
+      const balance = resourceManager.actualBalance(currentDefaultTick, resource.resource);
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;

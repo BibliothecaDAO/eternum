@@ -6,8 +6,8 @@ import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { ResourceSelectDrawer } from "@/shared/ui/resource-select-drawer";
 import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { ChevronDownIcon, Loader2Icon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -79,7 +79,7 @@ export const LaborProductionDrawer = ({ realm, open, onOpenChange }: LaborDrawer
   const availableResources = useMemo(() => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     return selectedResources.map((resource) => {
-      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+      const resourceBalance = resourceManager.actualBalance(currentBlockTimestamp, resource.id);
       return {
         resourceId: resource.id,
         amount: resourceBalance,

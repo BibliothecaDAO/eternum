@@ -39,7 +39,7 @@ export const getBalance = (
 ) => {
   const resourceManager = new ResourceManager(components, entityId);
   return {
-    balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId),
+    balance: resourceManager.actualBalance(currentDefaultTick, resourceId),
     resourceId,
   };
 };
@@ -59,7 +59,7 @@ export const getResourcesFromBalance = (
   return resourceIds
     .map((id) => {
       const resourceManager = new ResourceManager(components, entityId);
-      const balance = resourceManager.balanceWithProduction(currentDefaultTick, id);
+      const balance = resourceManager.actualBalance(currentDefaultTick, id);
       return { resourceId: id, amount: balance };
     })
     .filter((r) => r.amount > 0);
@@ -210,8 +210,8 @@ export const getFood = (
   resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
   currentDefaultTick: number,
 ) => {
-  const wheat = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Wheat);
-  const fish = ResourceManager.balanceWithProduction(resource, currentDefaultTick, ResourcesIds.Fish);
+  const wheat = ResourceManager.actualBalance(resource, currentDefaultTick, ResourcesIds.Wheat);
+  const fish = ResourceManager.actualBalance(resource, currentDefaultTick, ResourcesIds.Fish);
   return {
     wheat,
     fish,

@@ -9,7 +9,7 @@ use s1_eternum::models::config::{
     BuildingCategoryConfig, BuildingConfig, CapacityConfig, ResourceFactoryConfig, TickImpl, WorldConfigUtilImpl,
 };
 use s1_eternum::models::position::{Coord};
-use s1_eternum::models::resource::production::production::{Production, ProductionTrait};
+use s1_eternum::models::resource::production::production::{Production, ProductionTrait, ProductionImpl};
 use s1_eternum::models::resource::resource::{
     ProductionStoreImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl,
     StructureSingleResourceFoodImpl, WeightStoreImpl,
@@ -522,6 +522,7 @@ pub impl BuildingProductionImpl of BuildingProductionTrait {
         let mut production: Production = ProductionStoreImpl::retrieve(
             ref world, self.outer_entity_id, produced_resource_type,
         );
+        ProductionImpl::harvest_to_unclaimed(ref production, produced_resource_type);
 
         match stop {
             true => {

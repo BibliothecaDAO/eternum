@@ -24,7 +24,7 @@ export const useLaborProduction = () => {
   const availableResources = useMemo(() => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     return selectedResources.map((resource) => {
-      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+      const resourceBalance = resourceManager.actualBalance(currentBlockTimestamp, resource.id);
       return {
         resourceId: resource.id,
         amount: resourceBalance,

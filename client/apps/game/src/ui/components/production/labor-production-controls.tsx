@@ -5,8 +5,8 @@ import { SelectResource } from "@/ui/elements/select-resource";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { configManager, divideByPrecision, formatTime, multiplyByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { findResourceById, RealmInfo, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
@@ -66,7 +66,7 @@ export const LaborProductionControls = ({ realm }: { realm: RealmInfo }) => {
   const availableResources = useMemo(() => {
     const { currentBlockTimestamp } = getBlockTimestamp();
     return selectedResources.map((resource) => {
-      const resourceBalance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.id);
+      const resourceBalance = resourceManager.actualBalance(currentBlockTimestamp, resource.id);
       return {
         resourceId: resource.id,
         amount: resourceBalance,

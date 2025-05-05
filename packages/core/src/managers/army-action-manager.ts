@@ -1,20 +1,20 @@
 import {
-  type BiomeType,
-  BiomeTypeToId,
-  type ClientComponents,
-  type ContractAddress,
-  type DojoAccount,
-  FELT_CENTER,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-  type HexEntityInfo,
-  type HexPosition,
-  type ID,
-  ResourcesIds,
-  type SystemCalls,
-  TileOccupier,
-  TravelTypes,
-  type TroopType,
+    type BiomeType,
+    BiomeTypeToId,
+    type ClientComponents,
+    type ContractAddress,
+    type DojoAccount,
+    FELT_CENTER,
+    getDirectionBetweenAdjacentHexes,
+    getNeighborHexes,
+    type HexEntityInfo,
+    type HexPosition,
+    type ID,
+    ResourcesIds,
+    type SystemCalls,
+    TileOccupier,
+    TravelTypes,
+    type TroopType,
 } from "@bibliothecadao/types";
 import { type Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -111,8 +111,8 @@ export class ArmyActionManager {
 
   // getFood is without precision
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
-    const fishBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+    const wheatBalance = this.resourceManager.actualBalance(currentDefaultTick, ResourcesIds.Wheat);
+    const fishBalance = this.resourceManager.actualBalance(currentDefaultTick, ResourcesIds.Fish);
 
     return {
       wheat: divideByPrecision(wheatBalance),

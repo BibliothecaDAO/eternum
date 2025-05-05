@@ -12,7 +12,7 @@ export const useResourceProduction = (resourceId: number) => {
 
   const availableAmount = useMemo(() => {
     const { currentBlockTimestamp } = getBlockTimestamp();
-    const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, resourceId);
+    const balance = resourceManager.actualBalance(currentBlockTimestamp, resourceId);
     return divideByPrecision(Number(balance));
   }, [resourceManager, resourceId]);
 

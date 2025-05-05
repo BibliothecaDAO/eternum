@@ -34,7 +34,7 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        const balance = resourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
+        const balance = resourceManager.actualBalance(getBlockTimestamp().currentDefaultTick, resourceId);
         const production = resourceManager.getProduction(resourceId);
 
         return {

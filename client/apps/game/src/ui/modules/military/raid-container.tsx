@@ -5,29 +5,29 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatStringNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import {
-  Biome,
-  CombatSimulator,
-  configManager,
-  divideByPrecision,
-  getArmy,
-  getEntityIdFromKeys,
-  getGuardsByStructure,
-  getRemainingCapacityInKg,
-  multiplyByPrecision,
-  RaidSimulator,
-  ResourceManager,
-  StaminaManager,
+    Biome,
+    CombatSimulator,
+    configManager,
+    divideByPrecision,
+    getArmy,
+    getEntityIdFromKeys,
+    getGuardsByStructure,
+    getRemainingCapacityInKg,
+    multiplyByPrecision,
+    RaidSimulator,
+    ResourceManager,
+    StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
-  CapacityConfig,
-  ContractAddress,
-  getDirectionBetweenAdjacentHexes,
-  ID,
-  resources,
-  ResourcesIds,
-  TroopTier,
-  TroopType,
+    CapacityConfig,
+    ContractAddress,
+    getDirectionBetweenAdjacentHexes,
+    ID,
+    resources,
+    ResourcesIds,
+    TroopTier,
+    TroopType,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
@@ -133,7 +133,7 @@ export const RaidContainer = ({
     RAIDABLE_RESOURCES.sort((a, b) => b - a).forEach((resourceId) => {
       // Use a resource manager to get the balance
       const resourceManager = new ResourceManager(components, structureId as ID);
-      const amount = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      const amount = resourceManager.actualBalance(currentDefaultTick, resourceId);
 
       if (amount > 0) {
         availableResources.push({

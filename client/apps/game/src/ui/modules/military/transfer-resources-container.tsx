@@ -3,8 +3,8 @@ import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { ResourceManager, configManager, divideByPrecision, getArmy } from "@bibliothecadao/eternum";
-import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 import { TransferDirection } from "./transfer-troops-container";
 
@@ -51,7 +51,7 @@ export const TransferResourcesContainer = ({
     return resources
       .map(({ id }) => ({
         resourceId: id,
-        amount: resourceManager.balanceWithProduction(currentDefaultTick, id),
+        amount: resourceManager.actualBalance(currentDefaultTick, id),
       }))
       .filter(({ amount }) => amount > 0);
   })();

@@ -2608,6 +2608,18 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.promiseQueue.enqueue(call);
   }
 
+  public async harvest_production(props: SystemProps.HarvestProductionProps) {
+    const { entity_id, resource_type, allow_burn, signer } = props;
+
+    const call = this.createProviderCall(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-production_systems`),
+      entrypoint: "claim_resource_production",
+      calldata: [entity_id, resource_type, allow_burn],
+    });
+
+    return await this.promiseQueue.enqueue(call);
+  }
+
   // Marketplace functions
 
   /**

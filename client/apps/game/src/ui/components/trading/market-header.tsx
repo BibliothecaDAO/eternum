@@ -5,18 +5,18 @@ import { ViewOnMapIcon } from "@/ui/elements/view-on-map-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@/utils/timestamp";
 import { getGuardsByStructure } from "@bibliothecadao/eternum";
-import {
-  ADMIN_BANK_ENTITY_ID,
-  DEFENSE_NAMES,
-  ID,
-  REGIONAL_BANK_FIVE_ID,
-  REGIONAL_BANK_FOUR_ID,
-  REGIONAL_BANK_SIX_ID,
-  REGIONAL_BANK_THREE_ID,
-  REGIONAL_BANK_TWO_ID,
-  ResourcesIds,
-} from "@bibliothecadao/types";
 import { useBank, useResourceManager } from "@bibliothecadao/react";
+import {
+    ADMIN_BANK_ENTITY_ID,
+    DEFENSE_NAMES,
+    ID,
+    REGIONAL_BANK_FIVE_ID,
+    REGIONAL_BANK_FOUR_ID,
+    REGIONAL_BANK_SIX_ID,
+    REGIONAL_BANK_THREE_ID,
+    REGIONAL_BANK_TWO_ID,
+    ResourcesIds,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { NavigateToPositionIcon } from "../military/army-chip";
 import { CooldownTimer, DefenseTroop } from "../military/structure-defence";
@@ -94,7 +94,7 @@ const BankInformation = ({ bank }: { bank: Bank }) => {
   const bankResourceManager = useResourceManager(bankInfo?.entityId || 0);
 
   const bankLordsBalance = useMemo(
-    () => Number(bankResourceManager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)),
+    () => Number(bankResourceManager.actualBalance(getBlockTimestamp().currentDefaultTick, ResourcesIds.Lords)),
     [bankResourceManager],
   );
 

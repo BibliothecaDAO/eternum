@@ -27,7 +27,7 @@ contracts = [
 namespaces = ["marketplace"]
 
 [erc]
-max_metadata_tasks = 2
+max_metadata_tasks = 5
 
 world_block = 664160
 

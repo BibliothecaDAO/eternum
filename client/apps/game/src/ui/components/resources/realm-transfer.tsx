@@ -5,21 +5,21 @@ import { NumberInput } from "@/ui/elements/number-input";
 import { ResourceIcon } from "@/ui/elements/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
-  calculateDonkeysNeeded,
-  getEntityIdFromKeys,
-  getTotalResourceWeightKg,
-  isMilitaryResource,
-  ResourceManager,
+    calculateDonkeysNeeded,
+    getEntityIdFromKeys,
+    getTotalResourceWeightKg,
+    isMilitaryResource,
+    ResourceManager,
 } from "@bibliothecadao/eternum";
-import {
-  findResourceById,
-  ID,
-  PlayerStructure,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  StructureType,
-} from "@bibliothecadao/types";
 import { useDojo, usePlayerStructures, useResourceManager } from "@bibliothecadao/react";
+import {
+    findResourceById,
+    ID,
+    PlayerStructure,
+    RESOURCE_PRECISION,
+    ResourcesIds,
+    StructureType,
+} from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { Dispatch, memo, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
@@ -49,7 +49,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   const resourceManager = useResourceManager(selectedStructureEntityId);
 
   const balance = useMemo(() => {
-    return resourceManager.balanceWithProduction(tick, resource);
+    return resourceManager.actualBalance(tick, resource);
   }, [resourceManager, tick]);
 
   const playerStructures = usePlayerStructures();
@@ -226,11 +226,11 @@ const RealmTransferBalance = memo(
     );
 
     const getBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, resource);
+      return resourceManager.actualBalance(tick, resource);
     }, [resourceManager, tick]);
 
     const getDonkeyBalance = useCallback(() => {
-      return resourceManager.balanceWithProduction(tick, ResourcesIds.Donkey);
+      return resourceManager.actualBalance(tick, ResourcesIds.Donkey);
     }, [resourceManager, tick]);
 
     const [resourceWeightKg, setResourceWeightKg] = useState(0);

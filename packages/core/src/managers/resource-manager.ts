@@ -117,16 +117,17 @@ export class ResourceManager {
     return production.building_count > 0 && production.production_rate !== 0n && production.output_amount_left !== 0n;
   }
 
-  public balanceWithProduction(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
+
+  public producedBalance(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
     const production = this.getProduction(resourceId);
-    const balance = this.balance(resourceId);
-    if (!production) return Number(balance);
+    if (!production) return Number(0);
     const amountProduced = this._amountProduced(production, currentTick, resourceId);
-    if (hasMaxCapacity) {
-      const finalBalance = this._limitBalanceByStoreCapacity(balance + amountProduced, resourceId);
-      return Number(finalBalance);
-    }
-    return Number(balance + amountProduced);
+    return Number(amountProduced);
+  }
+
+  public actualBalance(currentTick: number, resourceId: ResourcesIds, hasMaxCapacity: boolean = true): number {
+    const balance = this.balance(resourceId);
+    return Number(balance);
   }
 
   public optimisticResourceUpdate = (resourceId: ResourcesIds, actualResourceChange: number) => {
@@ -659,30 +660,32 @@ export class ResourceManager {
   }
   
 
-  private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
-    const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
+  // private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
+  //   const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
 
-    const maxAmountStorable = multiplyByPrecision(
-      storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),
-    );
+  //   const maxAmountStorable = multiplyByPrecision(
+  //     storeCapacityKg / (configManager.getResourceWeightKg(resourceId) || 1),
+  //   );
 
-    if (balance > maxAmountStorable) {
-      return BigInt(maxAmountStorable);
-    }
-    return balance;
-  }
+  //   if (balance > maxAmountStorable) {
+  //     return BigInt(maxAmountStorable);
+  //   }
+  //   return balance;
+  // }
 
   private _amountProduced(
     production: {
       building_count: number;
       production_rate: bigint;
       output_amount_left: bigint;
+      unclaimed_amount: bigint;
       last_updated_at: number;
     },
     currentTick: number,
     resourceId: ResourcesIds,
   ): bigint {
-    if (!production || production.building_count === 0) return 0n;
+    if (!production) return 0n;
+    if (production.production_rate === 0n && production.unclaimed_amount > 0n) return production.unclaimed_amount;
     if (production.production_rate === 0n) return 0n;
 
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
@@ -692,6 +695,11 @@ export class ResourceManager {
       totalAmountProduced = production.output_amount_left;
     }
 
+    if (resourceId === ResourcesIds.Labor) {
+      console.log({totalAmountProduced, production})
+    }
+    
+    totalAmountProduced += production.unclaimed_amount;
     return totalAmountProduced;
   }
 
@@ -983,12 +991,14 @@ export class ResourceManager {
       building_count: number;
       production_rate: bigint;
       output_amount_left: bigint;
+      unclaimed_amount: bigint;
       last_updated_at: number;
     },
     currentTick: number,
     isFood: boolean,
   ): bigint {
-    if (!production || production.building_count === 0) return 0n;
+    if (!production) return 0n;
+    if (production.production_rate === 0n && production.unclaimed_amount > 0n) return production.unclaimed_amount;
     if (production.production_rate === 0n) return 0n;
 
     const ticksSinceLastUpdate = currentTick - production.last_updated_at;
@@ -997,6 +1007,8 @@ export class ResourceManager {
     if (!isFood && totalAmountProduced > production.output_amount_left) {
       totalAmountProduced = production.output_amount_left;
     }
+
+    totalAmountProduced += production.unclaimed_amount;
 
     return totalAmountProduced;
   }
@@ -1085,7 +1097,7 @@ export class ResourceManager {
     }
   }
 
-  public static balanceWithProduction(
+  public static producedBalance(
     resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
     currentTick: number,
     resourceId: ResourcesIds,
@@ -1212,8 +1224,18 @@ export class ResourceManager {
         return Number(balance);
     }
 
-    if (!production) return Number(balance);
+    if (!production) return Number(0);
     const amountProduced = ResourceManager._amountProduced(production, currentTick, isFood);
-    return Number(balance + amountProduced);
+    return Number(amountProduced);
+  }
+
+  public static actualBalance(
+    resource: ComponentValue<ClientComponents["Resource"]["schema"]>,
+    currentTick: number,
+    resourceId: ResourcesIds,
+  ): number {
+    if (!resource) return 0;
+    const balance = ResourceManager._getBalance(resource, resourceId);
+    return Number(balance); 
   }
 }

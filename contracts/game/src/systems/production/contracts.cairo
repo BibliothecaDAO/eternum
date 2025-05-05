@@ -226,7 +226,7 @@ mod production_systems {
             assert!(production.last_updated_at != now, "Eternum: Production already claimed");
 
             // ensure harvest amount is non zero
-            let harvest_amount: u128 = ProductionImpl::harvest(ref production, resource_type);
+            let harvest_amount: u128 = ProductionImpl::harvest_to_balance(ref production, resource_type);
             assert!(harvest_amount.is_non_zero(), "Eternum: No harvest amount");
 
             // add harvest amount to structure resource balance

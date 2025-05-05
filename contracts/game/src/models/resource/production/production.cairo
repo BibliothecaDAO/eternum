@@ -43,22 +43,25 @@ pub struct Production {
     pub building_count: u8,
     // production rate per second
     pub production_rate: u64,
-    // output amount left to be produced
-    pub output_amount_left: u128,
     // last time this struct was updated
     pub last_updated_at: u32,
+    // output amount left to be produced
+    pub output_amount_left: u128,
+    // forced harvest amount
+    pub unclaimed_amount: u128,
 }
 
 pub impl ProductionZeroable of Zero<Production> {
     #[inline(always)]
     fn zero() -> Production {
-        Production { building_count: 0, production_rate: 0, output_amount_left: 0, last_updated_at: 0 }
+        Production { building_count: 0, production_rate: 0, output_amount_left: 0, unclaimed_amount: 0, last_updated_at: 0 }
     }
     #[inline(always)]
     fn is_zero(self: @Production) -> bool {
         self.building_count == @0
             && self.production_rate == @0
             && self.output_amount_left == @0
+            && self.unclaimed_amount == @0
             && self.last_updated_at == @0
     }
 
@@ -115,9 +118,21 @@ pub impl ProductionImpl of ProductionTrait {
         return StructureSingleResourceFoodImpl::is_food(resource_type);
     }
 
+
+    fn harvest_to_unclaimed(ref production: Production, resource_type: u8) {
+        let harvest_amount = Self::_harvest(ref production, resource_type);
+        production.unclaimed_amount += harvest_amount;
+    }
+
+    fn harvest_to_balance(ref production: Production, resource_type: u8) -> u128 {
+        let harvest_amount = Self::_harvest(ref production, resource_type) + production.unclaimed_amount;
+        production.unclaimed_amount = 0;
+        return harvest_amount;
+    }
+
     // function must be called on every resource before querying their balance
     // to ensure that the balance is accurate
-    fn harvest(ref production: Production, resource_type: u8) -> u128 {
+    fn _harvest(ref production: Production, resource_type: u8) -> u128 {
         // get start time before updating last updated seconds
         let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
         let start_at = production.last_updated_at;
@@ -150,6 +165,8 @@ pub impl ProductionImpl of ProductionTrait {
         // which is used to update the resource balance
         return total_produced_amount;
     }
+
+
 }
 
 

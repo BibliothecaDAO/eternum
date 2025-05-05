@@ -685,6 +685,16 @@ export interface BurnOtherPredefinedResourcesForResourcesProps {
   signer: Account | AccountInterface;
 }
 
+export interface HarvestProductionProps {
+  /** ID of the realm entity */
+  entity_id: number;
+  /** Array of resource types to produce */
+  resource_type: number;
+  /** Whether to allow burning resources if produced amount exceeds storage limit */
+  allow_burn: boolean;
+  /** Account executing the transaction */
+  signer: Account | AccountInterface;
+}
 /**
  * Properties for moving an explorer
  */

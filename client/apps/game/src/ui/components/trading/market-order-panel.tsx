@@ -56,7 +56,7 @@ export const MarketResource = memo(
     }, []);
 
     const balance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      return resourceManager.actualBalance(currentDefaultTick, resourceId);
     }, [resourceManager, production, currentDefaultTick]);
 
     const resource = useMemo(() => {
@@ -235,7 +235,7 @@ const OrderRow = memo(
     const lordsBalance = useMemo(() => Number(resourceManager.balance(ResourcesIds.Lords)), [entityId, updateBalance]);
 
     const resourceBalance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
+      () => Number(resourceManager.actualBalance(currentDefaultTick, offer.makerGets[0].resourceId)),
       [entityId, updateBalance],
     );
 
@@ -324,7 +324,7 @@ const OrderRow = memo(
     }, []);
 
     const donkeyBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
+      return resourceManager.actualBalance(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const accountName = useMemo(() => {
@@ -620,7 +620,7 @@ const OrderCreation = memo(
     }, []);
 
     const donkeyBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey);
+      return resourceManager.actualBalance(currentDefaultTick, ResourcesIds.Donkey);
     }, [resourceManager, donkeyProduction, currentDefaultTick]);
 
     const resourceProduction = useMemo(() => {
@@ -628,7 +628,7 @@ const OrderCreation = memo(
     }, [resourceId]);
 
     const resourceBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
+      return resourceManager.actualBalance(currentDefaultTick, resourceId);
     }, [resourceManager, resourceProduction, currentDefaultTick]);
 
     const lordsProduction = useMemo(() => {
@@ -636,7 +636,7 @@ const OrderCreation = memo(
     }, []);
 
     const lordsBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords);
+      return resourceManager.actualBalance(currentDefaultTick, ResourcesIds.Lords);
     }, [resourceManager, lordsProduction, currentDefaultTick]);
 
     const canBuy = useMemo(() => {

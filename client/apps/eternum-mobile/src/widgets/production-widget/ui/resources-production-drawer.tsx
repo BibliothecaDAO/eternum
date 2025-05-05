@@ -6,14 +6,14 @@ import { NumericInput } from "@/shared/ui/numeric-input";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  getBuildingQuantity,
-  TileManager,
+    configManager,
+    divideByPrecision,
+    formatTime,
+    getBuildingQuantity,
+    TileManager,
 } from "@bibliothecadao/eternum";
-import { getBuildingFromResource, RealmInfo, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getBuildingFromResource, RealmInfo, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { Loader2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LaborBuilding } from "../model/types";
@@ -62,7 +62,7 @@ export const ResourcesProductionDrawer = ({ building, realm, open, onOpenChange 
         ? configManager.complexSystemResourceInputs[building.produced.resource]
         : configManager.simpleSystemResourceInputs[building.produced.resource];
     return inputs.map((resource) => {
-      const balance = resourceManager.balanceWithProduction(currentBlockTimestamp, resource.resource);
+      const balance = resourceManager.actualBalance(currentBlockTimestamp, resource.resource);
       return { resource: resource.resource, balance: divideByPrecision(balance) };
     }, 0);
   }, [resourceManager, building.produced.resource, activeTab]);

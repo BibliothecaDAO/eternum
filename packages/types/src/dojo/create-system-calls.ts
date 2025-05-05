@@ -224,6 +224,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     await provider.burn_resource_for_resource_production(props);
   };
 
+  const harvest_production = async (props: SystemProps.HarvestProductionProps) => {
+    await provider.harvest_production(props);
+  };
+
   const guard_add = async (props: SystemProps.GuardAddProps) => {
     await provider.guard_add(props);
   };
@@ -362,7 +366,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     burn_resource_for_labor_production: withAuth(burn_resource_for_labor_production),
     burn_labor_for_resource_production: withAuth(burn_labor_for_resource_production),
     burn_resource_for_resource_production: withAuth(burn_resource_for_resource_production),
-
+    harvest_production: withAuth(harvest_production),
     guard_add: withAuth(guard_add),
     guard_delete: withAuth(guard_delete),
     explorer_create: withAuth(explorer_create),
