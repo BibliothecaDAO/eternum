@@ -657,7 +657,6 @@ export class ResourceManager {
       quantity,
     };
   }
-  
 
   private _limitBalanceByStoreCapacity(balance: bigint, resourceId: ResourcesIds): bigint {
     const storeCapacityKg = this.getStoreCapacityKg().capacityKg;
