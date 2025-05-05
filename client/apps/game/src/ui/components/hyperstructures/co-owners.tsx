@@ -8,8 +8,8 @@ import { SortButton, SortInterface } from "@/ui/elements/sort-button";
 import { SortPanel } from "@/ui/elements/sort-panel";
 import { displayAddress } from "@/ui/utils/utils";
 import { getAddressName, getStructure } from "@bibliothecadao/eternum";
-import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { ContractAddress, ID, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -130,7 +130,7 @@ const CoOwnersRows = ({
             variant="primary"
             className="w-full mt-4 bg-gold/20"
           >
-            Change Co-Owners
+            Change Shareholders
           </Button>
         </div>
       )}
@@ -275,7 +275,7 @@ const ChangeCoOwners = ({
             ? "You must include yourself as a co-owner"
             : totalPercentage !== 100
               ? "Total percentage must be 100%"
-              : "Set co-owners (Required to earn points)"}
+              : "Change Shareholders"}
       </Button>
     </div>
   );

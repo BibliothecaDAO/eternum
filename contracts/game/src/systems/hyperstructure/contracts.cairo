@@ -113,25 +113,6 @@ trait IHyperstructureSystems<T> {
     /// * Updates the hyperstructure's access control setting
     fn update_construction_access(ref self: T, hyperstructure_id: ID, access: ConstructionAccess);
 
-    /// Claims construction points earned by a player from contributing to hyperstructures.
-    ///
-    /// This function converts unregistered points earned from construction contributions into
-    /// registered points that count towards season rewards.
-    ///
-    /// # Arguments
-    /// * `hyperstructure_ids` - List of hyperstructure IDs to claim points from
-    /// * `player` - Address of the player to claim points for
-    ///
-    /// # Requirements
-    /// * Can only be called during the season's main game and before point registration grace period ends
-    /// * Hyperstructures must be initialized and completed
-    /// * Player must have unregistered points to claim
-    ///
-    /// # Effects
-    /// * Transfers unregistered points to registered points for the player
-    /// * Updates the season's total registered points
-    /// * Erases the player's construction points record for the hyperstructure
-    fn claim_construction_points(ref self: T, hyperstructure_ids: Span<ID>, player: ContractAddress);
 
     /// Claims share points earned by shareholders of completed hyperstructures.
     ///
@@ -181,8 +162,7 @@ pub mod hyperstructure_systems {
             guild::{GuildMember},
             hyperstructure::{
                 ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
-                HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerConstructionPoints,
-                PlayerRegisteredPoints,
+                HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
             },
             owner::{OwnerAddressTrait}, resource::resource::{}, season::{SeasonPrize},
             structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl},
@@ -323,13 +303,18 @@ pub mod hyperstructure_systems {
                 );
                 total_resource_amount_contributed_by_structure += resource_amount;
 
-                // add points to from_structure_owner
-                let mut player_construction_points: PlayerConstructionPoints = world
-                    .read_model((from_structure_owner, hyperstructure_id));
-                player_construction_points.unregistered_points += (resource_amount / RESOURCE_PRECISION)
+                // add points to player's registered points and update global total registered points
+                let generated_points = (resource_amount / RESOURCE_PRECISION)
                     * HyperstructureRequirementsImpl::get_resource_points(ref world, resource_type)
                     / (needed_contribution_amount / RESOURCE_PRECISION);
-                world.write_model(@player_construction_points);
+
+                let mut player_points: PlayerRegisteredPoints = world.read_model(from_structure_owner);
+                let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
+                player_points.registered_points += generated_points;
+                season_prize.total_registered_points += generated_points;
+
+                world.write_model(@player_points);
+                world.write_model(@season_prize);
             };
 
             // update structure weight
@@ -413,6 +398,11 @@ pub mod hyperstructure_systems {
                 let (address, percentage) = *shareholders.at(i);
                 assert!(address.is_non_zero(), "zero address shareholders");
                 allocated_percentage += percentage;
+
+                // initialize the player registered points model in the indexer
+                // if not present
+                let player_points_initializer: PlayerRegisteredPoints = world.read_model(address);
+                world.write_model(@player_points_initializer);
             };
             assert!(
                 allocated_percentage.into() == PercentageValueImpl::_100(),
@@ -429,38 +419,6 @@ pub mod hyperstructure_systems {
                 hyperstructure_id, start_at: starknet::get_block_timestamp(), shareholders,
             };
             world.write_model(@hyperstructure_shareholders);
-        }
-
-        // claim construction points for any player
-        fn claim_construction_points(ref self: ContractState, hyperstructure_ids: Span<ID>, player: ContractAddress) {
-            // ensure function can only be called before point registration grace ends
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world).assert_main_game_started_and_point_registration_grace_not_elapsed();
-
-            assert!(player.is_non_zero(), "zero player address");
-
-            let mut season_prize: SeasonPrize = world.read_model(WORLD_CONFIG_ID);
-            let mut player_points: PlayerRegisteredPoints = world.read_model(player);
-            for hyperstructure_id in hyperstructure_ids {
-                // ensure hyperstructure is initialized and completed
-                let hyperstructure_id = *hyperstructure_id;
-                let mut hyperstructure: Hyperstructure = world.read_model(hyperstructure_id);
-                assert!(hyperstructure.initialized, "hyperstructure has not been initialized");
-                assert!(hyperstructure.completed, "hyperstructure has not been completed");
-
-                let mut player_construction_points: PlayerConstructionPoints = world
-                    .read_model((player, hyperstructure_id));
-                assert!(player_construction_points.unregistered_points.is_non_zero(), "no points to register");
-
-                // add points to player's registered points
-                player_points.registered_points += player_construction_points.unregistered_points;
-                season_prize.total_registered_points += player_construction_points.unregistered_points;
-
-                world.erase_model(@player_construction_points);
-            };
-
-            world.write_model(@player_points);
-            world.write_model(@season_prize);
         }
 
         // claim share points for any player
@@ -500,10 +458,11 @@ pub mod hyperstructure_systems {
                         // todo: ensure generated points is non zero. not by panicking though
                         // we just want to make sure that when shareholder_percentage is taken into account,
                         // generated points does not round out to zero.
-                        let generated_points: u128 = time_elapsed.into()
+                        let generated_points: u256 = time_elapsed.into()
                             * hyperstructure_config.points_per_second.into()
                             * (*shareholder_percentage).into()
                             / PercentageValueImpl::_100().into();
+                        let generated_points: u128 = generated_points.try_into().unwrap();
                         shareholder_points.registered_points += generated_points;
                         world.write_model(@shareholder_points);
 
