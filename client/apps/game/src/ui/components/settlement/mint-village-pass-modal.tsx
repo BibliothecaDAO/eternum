@@ -63,8 +63,8 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
   >([]);
 
   const getRealm = (realmId: number): Realm | undefined => {
-    const realmData = RealmJson[realmId as keyof typeof RealmJson];
-    return realmData as Realm | undefined;
+    const key = realmId.toString(); // convert number id to string key
+    return (RealmJson as Record<string, Realm>)[key];
   };
 
   const getResources = (realmId: number): string[] => {
