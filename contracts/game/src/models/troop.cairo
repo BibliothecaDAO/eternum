@@ -135,6 +135,16 @@ pub impl GuardImpl of GuardTrait {
         }
     }
 
+    fn reset_all_slots(ref self: GuardTroops) {
+        let default_troops: Troops = Troops {
+            category: TroopType::Knight, tier: TroopTier::T1, count: 0, stamina: Default::default(),
+        };
+        self.delta = default_troops;
+        self.charlie = default_troops;
+        self.bravo = default_troops;
+        self.alpha = default_troops;
+    }
+
     fn from_slot(self: GuardTroops, slot: GuardSlot) -> (Troops, u32) {
         match slot {
             GuardSlot::Delta => (self.delta, self.delta_destroyed_tick),
