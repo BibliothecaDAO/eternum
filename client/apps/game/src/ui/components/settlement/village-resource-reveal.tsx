@@ -53,8 +53,11 @@ export const VillageResourceReveal = ({
   const spinTimeout = useRef<NodeJS.Timeout | null>(null);
   const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  console.log(villageCoords);
+
   const tile = useComponentValue(Tile, getEntityIdFromKeys([BigInt(villageCoords.col), BigInt(villageCoords.row)]));
 
+  console.log(tile);
   // Check if player is owner in case someone else settles at same time
   const revealedResource = useMemo(() => {
     if (!tile?.occupier_id) return null;
@@ -63,6 +66,7 @@ export const VillageResourceReveal = ({
     return unpackValue(structure?.resources_packed)?.[0];
   }, [tile?.occupier_id, account.address]);
 
+  console.log(revealedResource);
   // Generate random resources for the roulette
   const generateRandomResources = useCallback(() => {
     // Create a pool with more common resources and fewer rare ones

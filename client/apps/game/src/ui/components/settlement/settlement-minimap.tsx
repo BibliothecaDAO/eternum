@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { SettlementCanvas } from "./settlement-canvas";
 import { BANK_ICON_PATH } from "./settlement-constants";
-import { ConfirmButton, SettlementControls, SettlementInfoPanel } from "./settlement-controls";
+import { SettlementControls } from "./settlement-controls";
 import { SettlementMinimapProps } from "./settlement-types";
 import { useCanvasInteractions } from "./use-canvas-interactions";
 import { useSettlementState } from "./use-settlement-state";
@@ -20,6 +20,7 @@ export const SettlementMinimap = ({
   onConfirm,
   maxLayers,
   extraPlayerOccupiedLocations = [],
+  villageSelect = false,
 }: SettlementMinimapProps) => {
   // Use the settlement state hook to manage state
   const settlementState = useSettlementState(maxLayers, extraPlayerOccupiedLocations);
@@ -51,13 +52,15 @@ export const SettlementMinimap = ({
     settledLocations,
     setSelectedLocation,
     onSelectLocation,
+    villageSelect,
   });
 
   return (
-    <div className="flex flex-col items-center h-full">
+    <div className="flex flex-col items-center gap-2">
       {/* Info Panel */}
-      <SettlementInfoPanel selectedLocation={selectedLocation} selectedCoords={selectedCoords} />
+      {/* <SettlementInfoPanel selectedLocation={selectedLocation} selectedCoords={selectedCoords} /> */}
 
+      {/* <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} /> */}
       {/* Controls */}
       <SettlementControls
         customNormalizedCoords={canvasInteractions.customNormalizedCoords}
@@ -84,10 +87,8 @@ export const SettlementMinimap = ({
         onMouseUp={canvasInteractions.handleMouseUp}
         onMouseLeave={canvasInteractions.handleMouseUp}
         onZoom={canvasInteractions.setZoom}
+        villageSelect={villageSelect}
       />
-
-      {/* Confirm Button */}
-      <ConfirmButton selectedLocation={selectedLocation} onConfirm={onConfirm} />
     </div>
   );
 };

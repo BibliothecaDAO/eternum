@@ -1,5 +1,5 @@
 import { ContractAddress, HexPosition, ID } from "@bibliothecadao/types";
-import { env } from "../../env";
+import { env } from "../../../env";
 
 const API_BASE_URL = env.VITE_PUBLIC_TORII + "/sql";
 
@@ -40,6 +40,61 @@ const QUERIES = {
                 AND  x.from_address    = tt.to_address
           );
   `,
+  ACTIVE_MARKET_ORDERS_TOTAL: `
+      /* ────────────────────────────────────────────────────────────────────────────
+      ❶  Count ACTIVE rows in marketplace‑MarketOrderModel
+      ❷  Decode each 0x‑hex price in marketplace‑MarketOrderEvent → integer
+      ❸  Return the two scalars as one record
+      ────────────────────────────────────────────────────────────────────────── */
+    WITH
+    /* ❶ ----------------------------------------------------------------------- */
+    total_active AS (
+        SELECT COUNT(*) AS active_order_count
+        FROM   "marketplace-MarketOrderModel"
+        WHERE  "order.active" = 1
+    ),
+
+    /* ❷ ----------------------------------------------------------------------- */
+    accepted AS (                           -- only “Accepted” events
+        SELECT "market_order.price" AS hex_price
+        FROM   "marketplace-MarketOrderEvent"
+        WHERE  state = 'Accepted'           -- <- use single quotes for the literal
+    ),
+
+    -- recursive hex‑string → integer
+    digits(hex, pos, len, val) AS (
+        SELECT lower(substr(hex_price, 3)),      -- strip leading 0x
+              1,
+              length(substr(hex_price, 3)),
+              0
+        FROM   accepted
+        UNION ALL
+        SELECT hex,
+              pos + 1,
+              len,
+              val * 16 +
+              instr('0123456789abcdef', substr(hex, pos, 1)) - 1
+        FROM   digits
+        WHERE  pos <= len
+    ),
+    decoded AS (                                -- final value for each row
+        SELECT val AS wei
+        FROM   digits
+        WHERE  pos = len + 1
+    ),
+
+    total_volume AS (
+        SELECT SUM(wei) AS open_orders_total_wei
+        FROM   decoded
+    )
+
+    /* ❸ ----------------------------------------------------------------------- */
+    SELECT
+        total_active.active_order_count,
+        total_volume.open_orders_total_wei
+    FROM   total_active
+    CROSS  JOIN total_volume;
+  `,
 };
 
 // API response types
@@ -69,6 +124,11 @@ export interface TokenTransfer {
   from_address: ContractAddress; // Added field
   name: string;
   symbol: string;
+}
+
+export interface ActiveMarketOrdersTotal {
+  total_active: number;
+  total_volume: bigint | null; // SUM can return null if there are no rows
 }
 
 /**
@@ -132,4 +192,28 @@ export async function fetchTokenTransfers(contractAddress: string, recipientAddr
   }
 
   return await response.json();
+}
+
+/**
+ * Fetch totals for active market orders from the API
+ */
+export async function fetchActiveMarketOrdersTotal(): Promise<ActiveMarketOrdersTotal[]> {
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(QUERIES.ACTIVE_MARKET_ORDERS_TOTAL)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch active market orders total: ${response.statusText}`);
+  }
+
+  // The API returns an array with a single object, potentially with large numbers
+  const rawResult: { active_order_count: number; open_orders_total_wei: number | string | null }[] =
+    await response.json();
+
+  // Convert wei to bigint
+  const result: ActiveMarketOrdersTotal[] = rawResult.map((item) => ({
+    total_active: item.active_order_count,
+    total_volume: item.open_orders_total_wei !== null ? BigInt(Math.round(Number(item.open_orders_total_wei))) : null,
+  }));
+
+  return result;
 }

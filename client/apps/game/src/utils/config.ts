@@ -27,7 +27,7 @@ export const TORII_SETTING = async (): Promise<string> => {
   return toriiUrl;
 };
 
-export const DEFAULT_TORII_SETTING = ToriiSetting.Local;
+export const DEFAULT_TORII_SETTING = ToriiSetting.Remote;
 
 const settingToUrl = (setting: ToriiSetting) => {
   return setting === ToriiSetting.Local ? "http://localhost:8080" : env.VITE_PUBLIC_TORII;

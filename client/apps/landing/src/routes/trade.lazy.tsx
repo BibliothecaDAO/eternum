@@ -2,6 +2,7 @@ import { FullPageLoader } from "@/components/modules/full-page-loader";
 import { SeasonPassesGrid } from "@/components/modules/season-passes-grid";
 import { TraitFilterUI } from "@/components/modules/trait-filter-ui";
 import TransferSeasonPassDialog from "@/components/modules/transfer-season-pass-dialog";
+import { ResourceIcon } from "@/components/ui/elements/resource-icon";
 import {
   Pagination,
   PaginationContent,
@@ -14,6 +15,7 @@ import { marketplaceAddress, seasonPassAddress } from "@/config";
 import { execute } from "@/hooks/gql/execute";
 import { GetAccountTokensQuery, GetAllTokensQuery } from "@/hooks/gql/graphql";
 import { GET_ACCOUNT_TOKENS, GET_ALL_TOKENS, GET_MARKETPLACE_ORDERS } from "@/hooks/query/erc721";
+import { fetchActiveMarketOrdersTotal } from "@/hooks/services";
 import { useTransferState } from "@/hooks/use-transfer-state";
 import { useTraitFiltering } from "@/hooks/useTraitFiltering";
 import { displayAddress } from "@/lib/utils";
@@ -24,6 +26,7 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { Badge, Loader2 } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
+import { formatUnits } from "viem";
 import { MarketOrder, MergedNftData } from "./season-passes.lazy";
 
 export const Route = createLazyFileRoute("/season-passes")({
@@ -78,8 +81,13 @@ function SeasonPasses() {
 
   const { transferableTokenIds } = useTransferState();
 
-  const [myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
+  const [totals, myNftsQuery, allNftsQuery, ordersQuery] = useSuspenseQueries({
     queries: [
+      {
+        queryKey: ["activeMarketOrdersTotal"],
+        queryFn: () => fetchActiveMarketOrdersTotal(),
+        refetchInterval: 60_000,
+      },
       {
         queryKey: ["erc721Balance", address, "seasonPasses"],
         queryFn: () =>
@@ -339,6 +347,10 @@ function SeasonPasses() {
 
   const totalPasses = allSeasonPassNfts.length;
 
+  const activeOrders = totals.data?.[0]?.total_active ?? 0;
+  const totalWei = totals.data?.[0]?.total_volume ?? null;
+  const totalEth = totalWei !== null ? formatUnits(totalWei, 18) : "0";
+
   return (
     <div className="flex flex-col h-full">
       <>
@@ -353,9 +365,20 @@ function SeasonPasses() {
         )}
 
         <>
-          {/* Page Title */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2 pt-4">{"All Season Passes"}</h2>
-          <p className="text-center text-muted-foreground mb-6">{"Browse all available Season Pass NFTs."}</p>
+          {/* Header Section */}
+          <div className="text-center py-4">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">{"Season Pass Marketplace"}</h2>
+            <div className="flex justify-center items-center gap-4 text-xl text-muted-foreground">
+              <span>
+                <span className="font-semibold text-foreground">{activeOrders}</span> Active Listings
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                Volume <span className="font-semibold text-foreground">{parseFloat(totalEth).toLocaleString()}</span>{" "}
+                <ResourceIcon resource="Lords" size="sm" />
+              </span>
+            </div>
+          </div>
 
           {/* Filter UI */}
           <div className="">

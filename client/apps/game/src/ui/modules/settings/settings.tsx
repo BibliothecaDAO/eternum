@@ -215,9 +215,9 @@ export const SettingsWindow = () => {
               </div>
             ) : (
               <div className="text-xs text-gray-gold mx-auto">
-                <span className="cursor-pointer underline" onClick={() => setDownload(true)}>
+                <Button size="xs" onClick={() => setDownload(true)}>
                   Download
-                </span>{" "}
+                </Button>{" "}
                 Eternum Loader for optimal loading times.
               </div>
             )}

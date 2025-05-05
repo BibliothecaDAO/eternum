@@ -281,16 +281,13 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
     setLoading(true);
     try {
       // For each realm, use its specific location
+      const toSettle = [];
       for (const realmId of realmIds) {
         const realm = seasonPassRealms.find((r) => r.realmId === realmId);
         if (!realm || !realm.selectedLocation) continue;
 
-        await create_multiple_realms({
-          realm_ids: [realmId],
-          owner: account.address,
-          frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
-          signer: account,
-          season_pass_address: getSeasonPassAddress(),
+        toSettle.push({
+          realm_id: realmId,
           realm_settlement: {
             side: realm.selectedLocation.side,
             layer: realm.selectedLocation.layer,
@@ -298,6 +295,14 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
           },
         });
       }
+
+      await create_multiple_realms({
+        realms: toSettle,
+        owner: account.address,
+        frontend: env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT,
+        signer: account,
+        season_pass_address: getSeasonPassAddress(),
+      });
 
       // Refresh the list of season passes after settling
       const updatedSeasonPasses = await getUnusedSeasonPasses(
@@ -392,7 +397,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
       <div
-        className={`self-center border-[0.5px] border-gradient rounded-lg text-gold w-full relative z-50 backdrop-filter
+        className={`self-center border-[0.5px] border-gradient rounded-lg w-full relative z-50 backdrop-filter
 		 p-8`}
       >
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
@@ -420,12 +425,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
               {realmsWithLocations.length} / {seasonPassRealms.length} With Locations
             </div>
           </div>
-
-          <div className="flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
-            {seasonPassElements}
-          </div>
-
-          <div className="absolute bottom-0 w-full">
+          <div className=" w-full mt-auto">
             <Button
               disabled={settleableRealms.length === 0 || loading}
               onClick={() => settleRealms(settleableRealms)}
@@ -443,6 +443,10 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
                 </div>
               )}
             </Button>
+          </div>
+
+          <div className="flex flex-col gap-3 overflow-hidden overflow-y-auto h-full no-scrollbar pb-24">
+            {seasonPassElements}
           </div>
         </div>
       </div>
