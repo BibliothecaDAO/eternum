@@ -38,6 +38,7 @@ trait IProductionContract<TContractState> {
     );
 
     fn claim_wonder_production_bonus(ref self: TContractState, structure_id: ID, wonder_structure_id: ID);
+    fn claim_resource_production(ref self: TContractState, structure_id: ID, resource_type: u8);
 }
 
 #[dojo::contract]
@@ -56,7 +57,11 @@ mod production_systems {
     use s1_eternum::models::{
         owner::{OwnerAddressTrait}, position::{Coord, CoordTrait, TravelImpl},
         resource::production::building::{BuildingCategory, BuildingImpl, BuildingProductionImpl},
-        resource::production::production::{ProductionStrategyImpl, ProductionWonderBonus},
+        resource::production::production::{ProductionImpl, ProductionStrategyImpl, ProductionWonderBonus},
+        resource::resource::{
+            ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+        },
+        weight::Weight,
     };
     use s1_eternum::systems::utils::map::IMapImpl;
     use starknet::ContractAddress;
@@ -187,6 +192,47 @@ mod production_systems {
 
             BuildingImpl::resume_production(ref world, structure_base.category, structure_base.coord(), building_coord);
         }
+
+
+        fn claim_resource_production(ref self: ContractState, structure_id: ID, resource_type: u8) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            SeasonConfigImpl::get(world).assert_started_and_not_over();
+
+            // ensure structure is a realm or village
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            assert!(
+                structure_base.category == StructureCategory::Realm.into()
+                    || structure_base.category == StructureCategory::Village.into(),
+                "structure is not a realm or village",
+            );
+
+            // ensure caller owns the structure
+            let structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            structure_owner.assert_caller_owner();
+
+            // claim produced amount
+            let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
+            let resource_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
+            let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+            let mut structure_resource = SingleResourceStoreImpl::retrieve(
+                ref world, structure_id, resource_type, ref structure_weight, resource_weight_grams, true,
+            );
+            structure_resource.production = ResourceImpl::read_production(ref world, structure_id, resource_type);
+            if structure_resource.production.last_updated_at != now {
+                let harvest_amount: u128 = ProductionImpl::harvest(ref structure_resource);
+                if harvest_amount.is_non_zero() {
+                    structure_resource.add(harvest_amount, ref structure_weight, resource_weight_grams);
+                }
+
+                // we store the resource object data even when there is no
+                // harvest because the resource object might have been updated
+                // when used in the harvest function
+                structure_resource.store(ref world);
+                structure_resource.store_production(ref world);
+                structure_weight.store(ref world, structure_id);
+            }
+        }
+
 
         /// Burn other resource for production of labor
         fn burn_resource_for_labor_production(

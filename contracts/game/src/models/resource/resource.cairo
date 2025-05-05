@@ -65,37 +65,15 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         assert!(resource_type.is_non_zero(), "invalid resource specified");
 
         let balance: u128 = ResourceImpl::read_balance(ref world, entity_id, resource_type);
-        // ensure the balance is updated when entity is a structure
-        let mut resource = SingleResource {
-            entity_id, resource_type, balance, production: Zero::zero(), produces: structure,
-        };
-        if resource.produces {
-            let now: u32 = starknet::get_block_timestamp().try_into().unwrap();
-            resource.production = ResourceImpl::read_production(ref world, entity_id, resource_type);
-            if resource.production.last_updated_at != now {
-                // harvest the resource and get the amount of resources produced
-                let harvest_amount: u128 = ProductionImpl::harvest(ref resource);
-
-                // add the produced amount to the resource balance
-                if harvest_amount.is_non_zero() {
-                    let unit_weight_grams: u128 = ResourceWeightImpl::grams(ref world, resource_type);
-                    resource.add(harvest_amount, ref entity_weight, unit_weight_grams);
-                }
-
-                // commit entity resource and weight
-                resource.store(ref world);
-                entity_weight.store(ref world, entity_id);
-            }
-        }
-
-        return resource;
+        SingleResource { entity_id, resource_type, balance, production: Zero::zero(), produces: structure }
     }
 
     fn store(ref self: SingleResource, ref world: WorldStorage) {
         ResourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
-        if self.produces {
-            ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
-        }
+    }
+
+    fn store_production(ref self: SingleResource, ref world: WorldStorage) {
+        ResourceImpl::write_production(ref world, self.entity_id, self.resource_type, self.production);
     }
 }
 
