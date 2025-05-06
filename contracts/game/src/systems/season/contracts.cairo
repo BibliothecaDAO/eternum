@@ -58,13 +58,11 @@ pub trait ISeasonSystems<T> {
 
 #[dojo::contract]
 pub mod season_systems {
-    use achievement::store::{StoreTrait};
     use core::num::traits::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
     use s1_eternum::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use s1_eternum::{
         constants::{DEFAULT_NS, WORLD_CONFIG_ID},
         models::{
@@ -109,12 +107,6 @@ pub mod season_systems {
             // emit season end event
             let now = starknet::get_block_timestamp();
             world.emit_event(@SeasonEnded { winner_address: player_address, timestamp: now });
-
-            // [Achievement] Win the game
-            let player_id: felt252 = player_address.into();
-            let task_id: felt252 = Task::Warlord.identifier();
-            let store = StoreTrait::new(world);
-            store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
         }
 
         fn season_prize_claim(ref self: ContractState) {

@@ -1,4 +1,3 @@
-use achievement::store::{StoreTrait};
 use core::num::traits::zero::Zero;
 use cubit::f128::types::fixed::{FixedTrait};
 use dojo::model::{ModelStorage};
@@ -17,7 +16,6 @@ use s1_eternum::systems::utils::troop::iMercenariesImpl;
 use s1_eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use s1_eternum::utils::random;
 use s1_eternum::utils::random::{VRFImpl};
-use s1_eternum::utils::tasks::index::{Task, TaskTrait};
 
 
 #[generate_trait]
@@ -45,7 +43,8 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
 
         // Calculate hyperstructure discovery probability adjustment based on global count
         // Formula: P_final = max(0, P_initial - (count * failure_rate_per_found))
-        // Example: If initial probability is 8_000, failure rate per found is 500, and 10 hyperstructures exist:
+        // Example: If initial probability is 8_000, failure rate per found is 500, and 10
+        // hyperstructures exist:
         //   - P_initial = 8_000
         //   - Penalty = 10 * 500 = 5_000
         //   - P_final = max(0, 8_000 - 5_000) = 3_000
@@ -60,7 +59,8 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
                 0
             };
 
-        // make sure seed is different for each lottery system to prevent same outcome for same probability
+        // make sure seed is different for each lottery system to prevent same outcome for same
+        // probability
         let VRF_OFFSET: u256 = 1;
         let hyps_vrf_seed = if vrf_seed > VRF_OFFSET {
             vrf_seed - VRF_OFFSET
@@ -139,11 +139,5 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(WORLD_CONFIG_ID);
         hyperstructure_globals.created_count += 1;
         world.write_model(@hyperstructure_globals);
-
-        // [Achievement] Hyperstructure Creation
-        let player_id: felt252 = caller.into();
-        let task_id: felt252 = Task::Builder.identifier();
-        let store = StoreTrait::new(world);
-        store.progress(player_id, task_id, count: 1, time: now);
     }
 }

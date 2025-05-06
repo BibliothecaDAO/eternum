@@ -7,7 +7,6 @@ pub trait IStructureSystems<T> {
 
 #[dojo::contract]
 pub mod structure_systems {
-    use achievement::store::{StoreTrait};
     use dojo::model::ModelStorage;
     use dojo::world::WorldStorage;
 
@@ -28,7 +27,6 @@ pub mod structure_systems {
     };
     use s1_eternum::models::weight::{Weight};
     use s1_eternum::systems::utils::map::IMapImpl;
-    use s1_eternum::utils::tasks::index::{Task, TaskTrait};
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]
@@ -104,14 +102,6 @@ pub mod structure_systems {
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
                 );
                 IMapImpl::occupy(ref world, ref structure_tile, tile_occupier, structure_id);
-            }
-
-            // [Achievement] Upgrade to max level
-            if structure_base.level == max_level {
-                let player_id: felt252 = starknet::get_caller_address().into();
-                let task_id: felt252 = Task::Maximalist.identifier();
-                let store = StoreTrait::new(world);
-                store.progress(player_id, task_id, count: 1, time: starknet::get_block_timestamp());
             }
         }
     }
