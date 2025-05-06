@@ -1,6 +1,6 @@
 import React from "react";
 import { TopNavigation } from "../modules/top-navigation";
-
+import { WrongNetworkDialog } from "../modules/wrong-network-dialog";
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -12,6 +12,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         <TopNavigation />
       </div>
       <div className="flex-grow overflow-auto rounded-t-xl">{children}</div>
+      <WrongNetworkDialog />
     </div>
   );
 };

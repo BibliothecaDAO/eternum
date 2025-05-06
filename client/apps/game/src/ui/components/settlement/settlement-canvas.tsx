@@ -150,6 +150,11 @@ export const SettlementCanvas = ({
     ctx.fillStyle = COLORS.BACKGROUND;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // if (villageSelect) {
+    //   mapSize.width = 3000;
+    //   mapSize.height = 1000;
+    // }
+
     // Calculate visible area based on map center and size
     const minX = mapCenter.x - mapSize.width / 2;
     const maxX = mapCenter.x + mapSize.width / 2;
@@ -396,7 +401,7 @@ export const SettlementCanvas = ({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
-        className="w-full h-[600px] panel-wood cursor-grab hover:border-gold transition-all duration-300 block"
+        className={`w-full h-[600px] panel-wood cursor-grab hover:border-gold transition-all duration-300 block`}
         aria-label="Settlement map"
       />
 

@@ -43,7 +43,7 @@ export function StarknetProvider({ children, onlyCartridge }: { children: React.
 
   return (
     <StarknetConfig
-      chains={[chain]}
+      chains={[mainnet, sepolia]}
       provider={jsonRpcProvider({ rpc })}
       connectors={[cartridgeController, ...(onlyCartridge ? [] : [...connectors])]}
       explorer={voyager}

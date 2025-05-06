@@ -1,8 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
 import { TransferDirection, TransferTroopsContainer } from "./transfer-troops-container";
@@ -13,71 +10,48 @@ enum TransferType {
 }
 
 export const HelpContainer = ({
-  selectedEntityId,
-  targetHex,
+  selected,
+  target,
+  allowBothDirections = false,
 }: {
-  selectedEntityId: ID;
-  targetHex: { x: number; y: number };
+  selected: {
+    type: "explorer" | "structure";
+    id: ID;
+    hex: { x: number; y: number };
+  };
+  target: {
+    type: "explorer" | "structure";
+    id: ID;
+    hex: { x: number; y: number };
+  };
+  allowBothDirections?: boolean;
 }) => {
-  const {
-    setup: {
-      components: { Tile },
-    },
-  } = useDojo();
-
   const [transferType, setTransferType] = useState<TransferType>(TransferType.Resources);
+  const [swapped, setSwapped] = useState<boolean>(false);
 
-  const selectedHex = useUIStore((state) => state.selectedHex);
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
-  // Determine if the selected entity is a structure or an explorer
-  const selectedEntityType = (() => {
-    const tile = getComponentValue(
-      Tile,
-      getEntityIdFromKeys([BigInt(selectedHex?.col || 0), BigInt(selectedHex?.row || 0)]),
-    );
-    return tile?.occupier_is_structure ? "structure" : "explorer";
-  })();
+  // Get the current entities we're working with based on swap state
+  const currentSelected = swapped ? target : selected;
+  const currentTarget = swapped ? selected : target;
 
-  // Determine if the target entity is a structure or an explorer
-  const targetEntityType = (() => {
-    const targetTile = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-    if (!targetTile || !targetTile.occupier_id) return null;
-    return targetTile.occupier_is_structure ? "structure" : "explorer";
-  })();
-
-  // Get the target entity ID
-  const targetEntityId = (() => {
-    const targetTile = getComponentValue(Tile, getEntityIdFromKeys([BigInt(targetHex.x), BigInt(targetHex.y)]));
-    return targetTile?.occupier_id || 0;
-  })();
-
-  // Determine available transfer directions based on entity types
-  const availableTransferDirections = (() => {
-    if (!selectedEntityType || !targetEntityType) return [];
-
-    const directions: TransferDirection[] = [];
-
-    if (selectedEntityType === "explorer" && targetEntityType === "structure") {
-      directions.push(TransferDirection.ExplorerToStructure);
+  // Determine the transfer direction based on entity types
+  const transferDirection = (() => {
+    if (currentSelected.type === "explorer" && currentTarget.type === "structure") {
+      return TransferDirection.ExplorerToStructure;
     }
 
-    if (selectedEntityType === "structure" && targetEntityType === "explorer") {
-      directions.push(TransferDirection.StructureToExplorer);
+    if (currentSelected.type === "structure" && currentTarget.type === "explorer") {
+      return TransferDirection.StructureToExplorer;
     }
 
-    if (selectedEntityType === "explorer" && targetEntityType === "explorer") {
-      directions.push(TransferDirection.ExplorerToExplorer);
+    if (currentSelected.type === "explorer" && currentTarget.type === "explorer") {
+      return TransferDirection.ExplorerToExplorer;
     }
 
-    return directions;
+    return TransferDirection.ExplorerToStructure;
   })();
-
-  // Set default transfer direction
-  const [transferDirection, setTransferDirection] = useState<TransferDirection>(
-    availableTransferDirections[0] || TransferDirection.ExplorerToStructure,
-  );
 
   // Handle transfer completion
   const handleTransferComplete = () => {
@@ -85,34 +59,41 @@ export const HelpContainer = ({
     toggleModal(null);
   };
 
+  // Handle swapping selected and target entities
+  const handleSwapEntities = () => {
+    setSwapped(!swapped);
+  };
+
   // Render transfer direction options
   const renderTransferDirectionOptions = () => {
     return (
       <div className="flex flex-col space-y-2 mb-4">
-        <label className="text-gold font-semibold">Transfer Direction:</label>
+        <div className="flex justify-between items-center">
+          <label className="text-gold font-semibold">Transfer Direction:</label>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {availableTransferDirections.map((direction) => (
-            <button
-              key={direction}
-              className={`px-4 py-2 rounded-md border ${
-                transferDirection === direction
-                  ? "bg-gold/20 border-gold"
-                  : "bg-dark-brown border-gold/30 hover:border-gold/50"
-              }`}
-              onClick={() => setTransferDirection(direction)}
-            >
-              {direction === TransferDirection.ExplorerToStructure && "Explorer → Structure"}
-              {direction === TransferDirection.StructureToExplorer && "Structure → Explorer"}
-              {direction === TransferDirection.ExplorerToExplorer && "Explorer → Explorer"}
+          <div className="flex items-center gap-2">
+            <button className={`px-4 py-2 rounded-md border ${"bg-gold/20 border-gold"}`}>
+              {transferDirection === TransferDirection.ExplorerToStructure
+                ? "Explorer → Structure"
+                : transferDirection === TransferDirection.StructureToExplorer
+                  ? "Structure → Explorer"
+                  : "Explorer → Explorer"}
             </button>
-          ))}
+            {allowBothDirections && (
+              <button
+                className="flex items-center px-3 py-2 rounded-md border border-gold/30 hover:border-gold/50 bg-dark-brown text-gold/70 hover:text-gold"
+                onClick={handleSwapEntities}
+              >
+                <span className="mr-1">🔄</span>
+                Swap
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
   };
-
-  // Convert selectedHex to the correct format
-  const formattedSelectedHex = selectedHex ? { x: selectedHex.col, y: selectedHex.row } : null;
 
   return (
     <div className="flex h-full flex-col items-center justify-center  max-w-4xl mx-auto">
@@ -165,22 +146,20 @@ export const HelpContainer = ({
         <div className="flex-grow overflow-y-auto">
           {transferType === TransferType.Resources ? (
             <TransferResourcesContainer
-              selectedEntityId={selectedEntityId}
-              targetEntityId={targetEntityId}
+              selectedEntityId={currentSelected.id}
+              targetEntityId={currentTarget.id}
               transferDirection={transferDirection}
               onTransferComplete={handleTransferComplete}
             />
           ) : (
-            formattedSelectedHex && (
-              <TransferTroopsContainer
-                selectedEntityId={selectedEntityId}
-                targetEntityId={targetEntityId}
-                selectedHex={formattedSelectedHex}
-                targetHex={targetHex}
-                transferDirection={transferDirection}
-                onTransferComplete={handleTransferComplete}
-              />
-            )
+            <TransferTroopsContainer
+              selectedEntityId={currentSelected.id}
+              targetEntityId={currentTarget.id}
+              selectedHex={currentSelected.hex}
+              targetHex={currentTarget.hex}
+              transferDirection={transferDirection}
+              onTransferComplete={handleTransferComplete}
+            />
           )}
         </div>
       </div>

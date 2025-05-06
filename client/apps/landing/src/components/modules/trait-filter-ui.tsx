@@ -29,7 +29,7 @@ export function TraitFilterUI({
   }
 
   return (
-    <div className=" p-4 border-y">
+    <>
       {/* <div className="flex justify-between items-center">
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-xs h-auto py-1 px-2">
@@ -38,6 +38,45 @@ export function TraitFilterUI({
           </Button>
         )}
       </div> */}
+      {/* Display Active Filters */}
+      {hasActiveFilters && (
+        <div className="border-r pr-4 border-border/50 flex flex-wrap gap-2 items-center">
+          {Object.entries(selectedFilters).map(([traitType, values]) =>
+            values.map((value) => {
+              // Handle Wonder badge display
+              if (traitType === "Wonder") {
+                return (
+                  <Badge key={`${traitType}-filter`} variant="default" className="">
+                    Has Wonder
+                    <button
+                      onClick={() => clearFilter(traitType)}
+                      className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              }
+              // Handle other trait badges
+              return (
+                <Badge key={`${traitType}-${value}`} variant="default" className="">
+                  {traitType.replace(/_/g, " ")}:{" "}
+                  {traitType === "Resource" && (
+                    <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />
+                  )}
+                  {value}
+                  <button
+                    onClick={() => handleFilterChange(traitType, value)} // Use handleFilterChange to remove specific value
+                    className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            }),
+          )}
+        </div>
+      )}
       <div className="flex justify-center items-end gap-4">
         {/* Render Checkbox for Wonder trait */}
         {allTraits["Wonder"] && (
@@ -107,45 +146,6 @@ export function TraitFilterUI({
             );
           })}
       </div>
-      {/* Display Active Filters */}
-      {hasActiveFilters && (
-        <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-2 items-center">
-          {Object.entries(selectedFilters).map(([traitType, values]) =>
-            values.map((value) => {
-              // Handle Wonder badge display
-              if (traitType === "Wonder") {
-                return (
-                  <Badge key={`${traitType}-filter`} variant="default" className="">
-                    Has Wonder
-                    <button
-                      onClick={() => clearFilter(traitType)}
-                      className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                );
-              }
-              // Handle other trait badges
-              return (
-                <Badge key={`${traitType}-${value}`} variant="default" className="">
-                  {traitType.replace(/_/g, " ")}:{" "}
-                  {traitType === "Resource" && (
-                    <ResourceIcon resource={value} size="md" className="mr-1 inline-block" />
-                  )}
-                  {value}
-                  <button
-                    onClick={() => handleFilterChange(traitType, value)} // Use handleFilterChange to remove specific value
-                    className="ml-1.5 p-0.5 rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              );
-            }),
-          )}
-        </div>
-      )}
-    </div>
+    </>
   );
 }

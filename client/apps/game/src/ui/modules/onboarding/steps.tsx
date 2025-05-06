@@ -1,6 +1,4 @@
 import { ReactComponent as BackArrow } from "@/assets/icons/back.svg";
-import { ReactComponent as CheckboxMinus } from "@/assets/icons/checkbox-minus.svg";
-import { ReactComponent as CheckboxUnchecked } from "@/assets/icons/checkbox-unchecked.svg";
 import { ReactComponent as Eye } from "@/assets/icons/eye.svg";
 import { ReactComponent as Sword } from "@/assets/icons/sword.svg";
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
@@ -207,6 +205,36 @@ export const StepOne = () => {
     return realmEntities.length > 0 || villageEntities.length > 0;
   }, [realmEntities, villageEntities]);
 
+  const isSeasonActive = env.VITE_PUBLIC_SEASON_START_TIME <= Date.now() / 1000;
+  const canPlay = hasRealmsOrVillages && isSeasonActive;
+
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = Date.now() / 1000;
+      const timeLeft = env.VITE_PUBLIC_SEASON_START_TIME - now;
+
+      if (timeLeft <= 0) {
+        setTimeRemaining("");
+        return;
+      }
+
+      const days = Math.floor(timeLeft / (60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (60 * 60 * 24)) / (60 * 60));
+      const minutes = Math.floor((timeLeft % (60 * 60)) / 60);
+      const seconds = Math.floor(timeLeft % 60);
+      const time = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+      setTimeRemaining(time);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const onSpectatorModeClick = useSpectatorModeClick(components);
   const goToStructure = useGoToStructure();
 
@@ -228,11 +256,12 @@ export const StepOne = () => {
         <Button
           size="lg"
           variant="gold"
-          disabled={!hasRealmsOrVillages}
-          className={` w-full ${!hasRealmsOrVillages ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
+          disabled={!canPlay}
+          className={` w-full ${!canPlay ? "opacity-40 hover:none disabled:pointer-events-none" : ""}`}
           onClick={onPlayModeClick}
         >
-          <Sword className="w-6 fill-current mr-2" /> <div className="text-black">Play</div>
+          <Sword className="w-6 fill-current mr-2" />
+          <div className="text-black">{isSeasonActive ? "Play" : timeRemaining}</div>
         </Button>
       ) : (
         <Button size="lg" className="!bg-gold border-none" onClick={() => setShowToS(true)}>
@@ -403,7 +432,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
         <div className="relative flex flex-col gap-6 min-h-full h-full max-h-full">
           <Header onPrevious={onPrevious} />
 
-          <div className="flex flex-row justify-between ml-1 relative top-2">
+          {/* <div className="flex flex-row justify-between ml-1 relative top-2">
             {selectedRealms.length === 0 ? (
               <div
                 className="flex flex-row items-center gap-2"
@@ -424,7 +453,7 @@ export const SettleRealm = ({ onPrevious }: { onPrevious: () => void }) => {
             <div className="text-sm">
               {realmsWithLocations.length} / {seasonPassRealms.length} With Locations
             </div>
-          </div>
+          </div> */}
           <div className=" w-full mt-auto">
             <Button
               disabled={settleableRealms.length === 0 || loading}

@@ -1,8 +1,8 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 
 // Constants for minimap dimensions and settlement configuration
-export const MINIMAP_WIDTH = 900;
-export const MINIMAP_HEIGHT = 400;
+export const MINIMAP_WIDTH = 2100;
+export const MINIMAP_HEIGHT = 1500;
 export const SETTLEMENT_BASE_DISTANCE = 30;
 export const SETTLEMENT_SUBSEQUENT_DISTANCE = 10;
 
