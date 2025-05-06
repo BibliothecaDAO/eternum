@@ -117,7 +117,6 @@ pub mod season_systems {
             assert!(season_config.has_ended(), "Season has not ended");
 
             // ensure claiming period has started
-            let season_config = SeasonConfigImpl::get(world);
             let season_prize_registration_end_at = season_config.end_at
                 + season_config.registration_grace_seconds.into();
             assert!(
