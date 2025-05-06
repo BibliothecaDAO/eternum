@@ -11,7 +11,7 @@
   },
   "village": {
     "village_pass_nft_address": "0x50799b38bed13d7f0e735a120ac7474f7fb675ebe8e6ea9488dec2b84179ddc",
-    "village_mint_initial_recipient": "0x054f2b25070d70d49f1c1f7c10Ef2639889fDAc15894D3FBa1a03caF5603eCA3"
+    "village_mint_initial_recipient": "0x077b8Ed8356a7C1F0903Fc4bA6E15F9b09CF437ce04f21B2cBf32dC2790183d0"
   },
   "resources": {
     "resourcePrecision": 1000000000,
@@ -2027,8 +2027,8 @@
     "hyperstructurePointsForWin": "9620000000000"
   },
   "season": {
-    "startSettlingAfterSeconds": 7200,
-    "startMainAfterSeconds": 10800,
+    "startSettlingAfterSeconds": 1,
+    "startMainAfterSeconds": 2,
     "bridgeCloseAfterEndSeconds": 3600
   },
   "bridge": {
