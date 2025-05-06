@@ -14,10 +14,14 @@ packages:
 
 catalog:
   starknet: 6.23.1
+  starknetkit: ^2.6.1
   "@cartridge/controller": ^0.7.13
   "@cartridge/connector": ^0.7.13
   "@starknet-react/core": 3.7.2
   "@starknet-react/chains": 3.1.2
+  "@metamask/sdk": ^0.32.1
+  "@solana/web3.js": ^1.98.0
+  open: ^10.1.0
   react: ^18
   react-dom: ^18
   "@types/react": ^18
