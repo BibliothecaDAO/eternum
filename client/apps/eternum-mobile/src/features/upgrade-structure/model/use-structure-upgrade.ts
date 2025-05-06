@@ -6,8 +6,8 @@ import {
   getEntityIdFromKeys,
   getRealmInfo,
 } from "@bibliothecadao/eternum";
-import { getLevelName } from "@bibliothecadao/types";
 import { useDojo } from "@bibliothecadao/react";
+import { getLevelName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 export interface UpgradeCost {
@@ -24,6 +24,7 @@ export interface StructureUpgradeInfo {
   currentLevelName: string;
   nextLevelName: string | null;
   handleUpgrade: () => Promise<void>;
+  isMaxLevel: boolean;
 }
 
 export const useStructureUpgrade = (structureEntityId: number): StructureUpgradeInfo => {
@@ -39,6 +40,11 @@ export const useStructureUpgrade = (structureEntityId: number): StructureUpgrade
     if (!structureInfo) return null;
     const nextLevel = structureInfo.level + 1;
     return nextLevel <= configManager.getMaxLevel(structureInfo.category) ? nextLevel : null;
+  }, [structureInfo]);
+
+  const isMaxLevel = useMemo(() => {
+    if (!structureInfo) return false;
+    return structureInfo.level === configManager.getMaxLevel(structureInfo.category);
   }, [structureInfo]);
 
   const upgradeCosts = useMemo(() => {
@@ -86,6 +92,7 @@ export const useStructureUpgrade = (structureEntityId: number): StructureUpgrade
       currentLevelName: "",
       nextLevelName: null,
       handleUpgrade,
+      isMaxLevel: false,
     };
   }
 
@@ -98,5 +105,6 @@ export const useStructureUpgrade = (structureEntityId: number): StructureUpgrade
     currentLevelName: getLevelName(structureInfo.level),
     nextLevelName: nextLevel ? getLevelName(nextLevel) : null,
     handleUpgrade,
+    isMaxLevel,
   };
 };

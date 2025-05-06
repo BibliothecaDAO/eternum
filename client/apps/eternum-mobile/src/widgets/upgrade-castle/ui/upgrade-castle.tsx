@@ -14,13 +14,13 @@ interface UpgradeCastleProps {
 export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const dojo = useDojo();
-  const { nextLevel, canUpgrade, upgradeProgress, currentLevelName, nextLevelName } =
+  const { nextLevel, isMaxLevel, currentLevel, canUpgrade, upgradeProgress, currentLevelName, nextLevelName } =
     useStructureUpgrade(realmEntityId);
 
   // Check ownership
   const isOwner = ContractAddress(dojo.account.account.address);
   if (!isOwner) return null;
-
+  if (isMaxLevel) return null;
   return (
     <>
       <Card
@@ -74,33 +74,31 @@ export const UpgradeCastle = ({ realmEntityId }: UpgradeCastleProps) => {
                   </span>
                 </>
               ) : (
-                <span className="text-muted-foreground">{currentLevelName} (Max Level)</span>
+                <span className="text-muted-foreground whitespace-nowrap">{currentLevelName} (Max Level)</span>
               )}
             </h3>
 
-            <Button
-              onClick={() => setIsDrawerOpen(true)}
-              className={
-                canUpgrade
-                  ? "w-fit bg-gradient-to-r from-amber-500 to-emerald-500 text-white shadow-lg hover:from-amber-600 hover:to-emerald-600"
-                  : "w-fit"
-              }
-              variant={canUpgrade ? "default" : "outline"}
-              size="lg"
-            >
-              <Castle className="mr-2 h-4 w-4" />
-              {nextLevel !== null
-                ? canUpgrade
-                  ? `Upgrade to Level ${nextLevel}`
-                  : "Show Requirements"
-                : "View Castle Details"}
-            </Button>
+            {nextLevel !== null && (
+              <Button
+                onClick={() => setIsDrawerOpen(true)}
+                className={
+                  canUpgrade
+                    ? "w-fit bg-gradient-to-r from-amber-500 to-emerald-500 text-white shadow-lg hover:from-amber-600 hover:to-emerald-600"
+                    : "w-fit"
+                }
+                variant={canUpgrade ? "default" : "outline"}
+                size="lg"
+              >
+                <Castle className="mr-2 h-4 w-4" />
+                {canUpgrade ? `Upgrade to Level ${nextLevel}` : "Show Requirements"}
+              </Button>
+            )}
           </div>
 
           <div className="relative h-28 w-28 shrink-0">
             {canUpgrade && <div className="absolute inset-0 animate-pulse rounded-full bg-success/20 blur-xl" />}
             <img
-              src={`/images/castles/castle-${nextLevel}.png`}
+              src={`/images/castles/castle-${nextLevel ?? currentLevel}.png`}
               alt="Castle"
               className="relative h-full w-full object-cover drop-shadow-xl"
             />
