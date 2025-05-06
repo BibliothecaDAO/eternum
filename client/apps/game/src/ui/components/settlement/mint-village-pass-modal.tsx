@@ -295,15 +295,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     }
   }, [selectedRealm]);
 
-  const uniqueResources = useMemo(() => {
-    const allResources = new Set<string>();
-    availableVillages.forEach((village) => {
-      const resources = getResources(village.connected_realm_entity_id);
-      resources.forEach((resource) => allResources.add(resource));
-    });
-    return Array.from(allResources).sort();
-  }, [availableVillages, getResources]);
-
   const filteredVillages = useMemo(() => {
     let filtered = availableVillages;
 
@@ -350,7 +341,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
     }
   };
 
-  console.log(directionOptions);
   return (
     <ModalContainer size="full" title={`Villages - Step ${currentStep}/4`}>
       <div className="h-full flex flex-col">
@@ -375,10 +365,6 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   <li>Each Realm has 6 possible village spots (one in each direction).</li>
                   <li>Villages support a more casual style of play and can't be captured by other players.</li>
                   <li>Villages have 20% production of the Realm they are on.</li>
-                  <li>
-                    Have a <span className="font-bold">random</span> chance at a resource which exists on the Realm they
-                    are on.
-                  </li>
                 </ul>
               </p>
               <Button
@@ -410,25 +396,21 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                   {isPurchasingPass && <div className="text-sm text-gray-400 mt-2"> Checking for new passes...</div>}
                 </div>
               ) : (
-                !isPurchasingPass && (
-                  <p className="text-center text-gray-400 mt-4">
-                    You don't have any Village Passes. Purchase one to continue.
-                  </p>
-                )
+                !isPurchasingPass && <p className="text-center text-gray-400 mt-4"></p>
               )}
 
               {/* Resource Probability Section */}
-              <div className="my-6 p-4 border border-gold/30 rounded-md panel-wood">
-                <h5 className="text-gold mb-4 text-center">Possible Village Resources & Odds</h5>
+              <div className="my-6 ">
+                <h3 className="text-gold mb-4 text-center">Possible Village Resources & Odds</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {resourceProbabilities.map((tier) => (
-                    <div key={tier.name} className={cn("p-3 rounded border", tier.color)}>
+                    <div key={tier.name} className={cn("p-3 rounded border bg-dark-brown border-gold/30")}>
                       <h6 className="font-bold text-lg mb-2 text-center">
                         {tier.name} ({tier.totalChance.toFixed(3)}%)
                       </h6>
-                      <ul className="space-y-1 text-sm">
+                      <ul className="space-y-1">
                         {tier.resources.map((resource) => (
-                          <li key={resource.name} className="flex justify-between items-center">
+                          <li key={resource.name} className="flex justify-between items-center text-xl">
                             <span className="flex items-center gap-1">
                               <ResourceIcon resource={resource.name} size="xs" />
                               {resource.name}
