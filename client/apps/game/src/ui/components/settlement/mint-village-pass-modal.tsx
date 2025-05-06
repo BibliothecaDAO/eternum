@@ -286,12 +286,13 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
         <div className="flex-1 overflow-auto space-y-6 p-4">
           {currentStep === 1 && (
             <div>
+              <h4 className="text-gold mb-4">1. Purchase a Village Pass</h4>
               <p className="text-xl text-gray-300 mb-4">
                 <span className="font-bold text-2xl">Villages</span> are smaller settlements with fewer perks than
                 Realms.
                 <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
                   <li>Each Realm has 6 possible village spots (one in each direction).</li>
-                  <li>Villages cannot be claimed by other players in battle.</li>
+                  <li>Villages support a more casual style of play and can't be captured by other players.</li>
                   <li>Villages have 20% production of the Realm they are on.</li>
                   <li>
                     Have a <span className="font-bold">random</span> chance at a resource which exists on the Realm they
@@ -306,7 +307,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                 disabled={isPurchasingPass}
                 className="mb-6"
               >
-                {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass $10 (CC or Crypto Accepted)"}
+                {isPurchasingPass ? "Processing Purchase..." : "Purchase Village Pass $5 (CC or Crypto Accepted)"}
               </Button>
 
               {purchasedVillagePass.length > 0 ? (
@@ -426,16 +427,19 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                     </Select>
                   </div>
                   {selectedRealm && (
-                    <div className="mt-4 p-3 bg-dark-brown border border-gold/30 rounded-md">
+                    <div className="mt-4 bg-dark-brown rounded-md">
                       <h5 className="text-gold mb-2">
-                        Selected Realm: {getRealmName(selectedRealm.connected_realm_entity_id)} (#
-                        {selectedRealm.connected_realm_id})
+                        Selected Realm: <br />
                       </h5>
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <h4>
+                        {getRealmName(selectedRealm.connected_realm_entity_id)} (#
+                        {selectedRealm.connected_realm_id})
+                      </h4>
+                      <div className="flex flex-wrap gap-1 my-3">
                         {getResources(selectedRealm.connected_realm_entity_id).map((resource, index) => (
                           <ResourceIcon
                             resource={resource}
-                            size="xs"
+                            size="lg"
                             key={index}
                             withTooltip
                             tooltipText={resource}
@@ -452,7 +456,7 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
                 <div className="flex-1">
                   <h5 className="text-gold mb-2">Or Select Realm on Map</h5>
-                  <div className="border border-gold/30 rounded-md overflow-hidden">
+                  <div className="border border-gold/30 rounded-md overflow-hidden w-1/2">
                     <SettlementMinimap
                       onSelectLocation={(location) => {
                         const village = availableVillages.find(
@@ -475,21 +479,20 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
 
           {currentStep === 3 && selectedRealm && (
             <div>
-              <h4 className="text-gold mb-4">3. Confirm Settlement Details</h4>
-              <div className="flex flex-col md:flex-row gap-6 p-4 border border-gold/30 rounded-md bg-dark-brown/50">
-                <div className="flex-1 space-y-4">
-                  <h2 className="text-xl font-bold ">
+              <h4 className="text-gold mb-4">3. Confirm Village Details</h4>
+              <div className="flex flex-col md:flex-row gap-12  bg-dark-brown/50">
+                <div className="space-y-4">
+                  <h2>
                     {getRealmName(selectedRealm.connected_realm_entity_id)} (#{selectedRealm.connected_realm_id})
                   </h2>
 
                   <div>
-                    <h6 className="text-base font-semibold mb-1">Realm Resources</h6>
                     <p className="text-sm text-gray-400 mb-4"> (Village will produce ONE of these):</p>
                     <div className="flex flex-wrap gap-1">
                       {getResources(selectedRealm.connected_realm_entity_id).map((resource, index) => (
                         <ResourceIcon
                           resource={resource}
-                          size="lg"
+                          size="xl"
                           key={index}
                           withTooltip
                           tooltipText={resource}
@@ -498,65 +501,79 @@ export const MintVillagePassModal = ({ onClose }: MintVillagePassModalProps) => 
                       ))}
                     </div>
                   </div>
-                  {selectedVillagePass && (
-                    <p className="text-sm text-gray-300">Using Village Pass #{selectedVillagePass.token_id}</p>
-                  )}
-                  <div className="w-full md:w-96 pt-4">
-                    <h6 className="text-base font-semibold mb-2">Select Village Direction:</h6>
-                    <Select
-                      value={selectedDirection?.toString() ?? ""}
-                      onValueChange={(value) => setSelectedDirection(Number(value) as Direction)}
-                      disabled={!selectedRealm || directionOptions.length === 0}
-                    >
-                      <SelectTrigger className="w-full p-2 pr-8 bg-dark-brown border border-gold/30 rounded-md text-gold appearance-none focus:outline-none focus:ring-0 focus:border-gold">
-                        <SelectValue
-                          placeholder={directionOptions.length > 0 ? "Select Direction" : "No Spots Available"}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {directionOptions.map((option, index) => (
-                          <SelectItem key={index} value={option.value.toString()}>
-                            {(() => {
-                              switch (option.label) {
-                                case "North East":
-                                  return "↗";
-                                case "East":
-                                  return "→";
-                                case "South East":
-                                  return "↘";
-                                case "South West":
-                                  return "↙";
-                                case "West":
-                                  return "←";
-                                case "North West":
-                                  return "↖";
-                                default:
-                                  return "";
-                              }
-                            })()}
-                            {` ${option.label}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {directionOptions.length === 0 && (
-                      <div className="text-xs text-red-400 mt-1">
-                        No available spots for this realm. This can happen if mines or hyperstructures are discovered on
-                        the village spots.
-                      </div>
-                    )}
-
-                    <Button
-                      variant="gold"
-                      className="w-full mt-4"
-                      onClick={handleSettleVillage}
-                      disabled={selectedDirection === null || isLoading || directionOptions.length === 0}
-                      isLoading={isLoading}
-                    >
-                      {isLoading ? "Minting..." : "Confirm and Settle Village"}
-                    </Button>
+                </div>
+                <div className="w-full md:w-96 pt-4">
+                  <h6 className="text-base mb-2">Village Direction:</h6>
+                  <div className="grid grid-cols-3 gap-2 mx-auto my-4">
+                    <DirectionButton
+                      direction={Direction.NORTH_WEST}
+                      label="↖"
+                      tooltip="North West"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
+                    <div />
+                    <DirectionButton
+                      direction={Direction.NORTH_EAST}
+                      label="↗"
+                      tooltip="North East"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
+                    <DirectionButton
+                      direction={Direction.WEST}
+                      label="←"
+                      tooltip="West"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
+                    <div className="flex items-center justify-center text-4xl ">🏰</div>
+                    <DirectionButton
+                      direction={Direction.EAST}
+                      label="→"
+                      tooltip="East"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
+                    <DirectionButton
+                      direction={Direction.SOUTH_WEST}
+                      label="↙"
+                      tooltip="South West"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
+                    <div />
+                    <DirectionButton
+                      direction={Direction.SOUTH_EAST}
+                      label="↘"
+                      tooltip="South East"
+                      availableDirections={directionOptions.map((opt) => opt.value)}
+                      selectedDirection={selectedDirection}
+                      onClick={setSelectedDirection}
+                    />
                   </div>
+
+                  {directionOptions.length === 0 && (
+                    <div className="text-xs text-red-400 mt-1 text-center">
+                      No available spots for this realm. This can happen if mines or hyperstructures are discovered on
+                      the village spots.
+                    </div>
+                  )}
+
+                  <Button
+                    variant="gold"
+                    className="w-full mt-4"
+                    onClick={handleSettleVillage}
+                    disabled={selectedDirection === null || isLoading || directionOptions.length === 0}
+                    isLoading={isLoading}
+                  >
+                    {isLoading ? "Minting..." : "Confirm and Settle Village"}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -603,4 +620,37 @@ const getDirectionInfo = (directionName: string): { value: Direction; label: str
     default:
       return null;
   }
+};
+
+interface DirectionButtonProps {
+  direction: Direction;
+  label: string;
+  tooltip: string;
+  availableDirections: Direction[];
+  selectedDirection: Direction | null;
+  onClick: (direction: Direction) => void;
+}
+
+const DirectionButton: React.FC<DirectionButtonProps> = ({
+  direction,
+  label,
+  tooltip,
+  availableDirections,
+  selectedDirection,
+  onClick,
+}) => {
+  const isAvailable = availableDirections.includes(direction);
+  const isSelected = selectedDirection === direction;
+
+  return (
+    <Button
+      variant={isSelected ? "gold" : isAvailable ? "default" : "outline"}
+      size="md"
+      onClick={() => isAvailable && onClick(direction)}
+      disabled={!isAvailable}
+      className={`aspect-square text-lg ${isAvailable ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+    >
+      {label}
+    </Button>
+  );
 };
