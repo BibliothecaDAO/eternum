@@ -11,6 +11,7 @@ pub mod name_systems {
     use s1_eternum::constants::DEFAULT_NS;
     use s1_eternum::models::config::SeasonConfigImpl;
     use s1_eternum::models::name::AddressName;
+    use s1_eternum::models::structure::StructureOwnerStats;
 
     #[abi(embed_v0)]
     pub impl NameSystemsImpl of super::INameSystems<ContractState> {
@@ -20,10 +21,12 @@ pub mod name_systems {
             SeasonConfigImpl::get(world).assert_started_and_not_over();
 
             let caller = starknet::get_caller_address();
+            let structure_owner_stats: StructureOwnerStats = world.read_model(caller);
+            assert!(structure_owner_stats.structures_num > 0, "Caller does not own any structure");
 
             // assert that name not set
             let mut address_name: AddressName = world.read_model(caller);
-            assert(address_name.name == 0, 'Name already set');
+            assert!(address_name.name == 0, "Name already set");
             address_name.name = name;
 
             world.write_model(@address_name);
