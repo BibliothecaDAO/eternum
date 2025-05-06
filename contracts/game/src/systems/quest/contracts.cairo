@@ -459,7 +459,7 @@ mod tests {
     use s1_eternum::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
     use s1_eternum::models::config::{CombatConfigImpl};
     use s1_eternum::models::config::{WorldConfigUtilImpl};
-    use s1_eternum::models::map::{Tile, TileImpl};
+    use s1_eternum::models::map::{Tile, TileImpl, TileOccupier};
     use s1_eternum::models::position::{Coord, Direction};
     use s1_eternum::models::position::{TravelTrait};
     use s1_eternum::models::resource::resource::{
@@ -556,30 +556,6 @@ mod tests {
         };
 
         ndef
-    }
-
-    fn get_quest_systems_init_calldata() -> Span<felt252> {
-        let level1 = LevelConfig { target_score: 100, settings_id: 1, time_limit: 600 };
-        let level2 = LevelConfig { target_score: 200, settings_id: 2, time_limit: 1200 };
-
-        let game1 = QuestGame {
-            game_address: starknet::contract_address_const::<0x1>(), levels: array![level1, level2].span(),
-        };
-        let game2 = QuestGame {
-            game_address: starknet::contract_address_const::<0x2>(), levels: array![level1].span(),
-        };
-
-        let game_list_array = array![game1, game2];
-        let game_list_span: Span<QuestGame> = game_list_array.span();
-
-        // Create an empty array to store the serialized data
-        let mut serialized_data: Array<felt252> = array![];
-
-        // Serialize the Span<QuestGame> into the Array<felt252>
-        game_list_span.serialize(ref serialized_data);
-
-        // Now get the span from the populated array
-        serialized_data.span()
     }
 
     fn contract_defs() -> Span<ContractDef> {

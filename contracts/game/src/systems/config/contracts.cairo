@@ -206,7 +206,7 @@ pub mod config_systems {
 
     use s1_eternum::models::config::{
         AgentControllerConfig, BankConfig, BattleConfig, BuildingCategoryConfig, BuildingConfig, CapacityConfig,
-        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig,
+        HyperstructureConfig, HyperstructureConstructConfig, HyperstructureCostConfig, MapConfig, QuestConfig,
         ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWhitelistConfig, ResourceFactoryConfig,
         ResourceRevBridgeWhtelistConfig, SeasonAddressesConfig, SeasonConfig, SettlementConfig, SpeedConfig,
         StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig, TickConfig,
