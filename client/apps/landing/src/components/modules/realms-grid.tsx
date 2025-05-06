@@ -62,18 +62,18 @@ export const RealmsGrid = ({
         items={gridItems}
         renderItem={(item) => {
           const realm = item.data;
-          if (!realm?.node) return null;
+        //  if (!realm?.node) return null;
 
           const isSelected =
             isNftSelected?.(
-              realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : "",
-              realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.contractAddress : "",
+              realm.token_id,
+              realm.contract_address,
             ) ?? false;
 
           return (
             <RealmCard
               toggleNftSelection={toggleNftSelection}
-              key={`${realm.node.tokenMetadata.__typename === "ERC721__Token" ? realm.node.tokenMetadata.tokenId : ""}`}
+              key={`${realm.token_id}`}
               isSelected={isSelected}
               realm={realm}
               onSeasonPassStatusChange={onSeasonPassStatusChange}

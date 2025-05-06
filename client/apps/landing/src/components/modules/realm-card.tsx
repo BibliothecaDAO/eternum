@@ -1,5 +1,4 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { seasonPassAddress } from "@/config";
 import { useDojo } from "@/hooks/context/dojo-context";
 import { GetAccountTokensQuery } from "@/hooks/gql/graphql";
 import { RealmMetadata } from "@/types";
@@ -28,13 +27,12 @@ interface ListingDetails {
 }
 
 export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassStatusChange }: RealmCardProps) => {
-  const { tokenId, contractAddress, metadata } =
-    realm.node?.tokenMetadata.__typename === "ERC721__Token"
-      ? { ...realm.node.tokenMetadata, tokenId: BigInt(realm.node.tokenMetadata.tokenId) }
-      : { tokenId: "", contractAddress: "", metadata: "" };
+  const { tokenId, contractAddress } = { tokenId: BigInt(realm.token_id) }
+    /*{ tokenId: "", contractAddress: "", metadata: "" };*/
 
-  const parsedMetadata: RealmMetadata | null = metadata ? JSON.parse(metadata) : null;
+  const parsedMetadata: RealmMetadata | null = realm.metadata ? JSON.parse(realm.metadata) : null;
   const { attributes, name, image: originalImageUrl } = parsedMetadata ?? {};
+  console.log(parsedMetadata)
 
   const { address: accountAddress } = useAccount();
 
@@ -45,7 +43,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingDetails, setListingDetails] = useState<ListingDetails>({ isListed: false });
 
-  const {
+  /*const {
     data: seasonPassOwnerData,
     error: seasonPassError,
     isSuccess: isSeasonPassMintedSuccess,
@@ -65,7 +63,7 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     address: seasonPassAddress as `0x${string}`,
     args: [tokenId.toString()], // Pass tokenId as string if needed by hook
     watch: true,
-  });
+  });*/
 
   const {
     data: realmOwnerData,
@@ -144,11 +142,11 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     setIsModalOpen(true);
   };
 
-  useEffect(() => {
+  /**useEffect(() => {
     if (isSeasonPassMintedSuccess && onSeasonPassStatusChange && tokenId) {
       onSeasonPassStatusChange(tokenId.toString(), !!seasonPassOwnerData);
     }
-  }, [isSeasonPassMintedSuccess, seasonPassOwnerData, tokenId]);
+  }, [isSeasonPassMintedSuccess, seasonPassOwnerData, tokenId]);*/
 
   // --- Fetch Marketplace Listing Status ---
   // Placeholder: Replace with actual logic to query Dojo state for MarketOrderModel
@@ -174,8 +172,8 @@ export const RealmCard = ({ realm, isSelected, toggleNftSelection, onSeasonPassS
     fetchListingStatus();
   }, [tokenId, contractAddress, components]); // Add components dependency
 
-  const hasSeasonPassMinted = isSeasonPassMintedSuccess && !!seasonPassOwnerData;
-  const isLoadingStatus = isFetchingSeasonPass || isFetchingRealmOwner;
+  const hasSeasonPassMinted = realm.season_pass_balance != null
+  const isLoadingStatus =  isFetchingRealmOwner;
 
   return (
     <>

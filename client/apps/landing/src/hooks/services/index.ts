@@ -166,6 +166,22 @@ const QUERIES = {
           ba.best_price_hex IS NULL,   -- push unlisted tokens down
           ba.best_price_hex;           -- then cheapest → highest
   `,
+  SEASON_PASS_REALMS_BY_ADDRESS: `
+    SELECT substr(r.token_id, instr(r.token_id, ':') + 1) AS token_id,
+           r.balance,
+           r.contract_address,
+           sp.balance AS season_pass_balance,
+           t.metadata as metadata
+    FROM token_balances r
+    LEFT JOIN token_balances sp
+      ON sp.contract_address = '{seasonPassAddress}'
+      AND sp.account_address = '{accountAddress}'
+      AND substr(r.token_id, instr(r.token_id, ':') + 1) = substr(sp.token_id, instr(sp.token_id, ':') + 1)
+    LEFT JOIN (SELECT token_id, MAX(metadata) AS metadata FROM tokens GROUP BY token_id) t
+      ON t.token_id = substr(r.token_id, instr(r.token_id, ':') + 1)
+    WHERE r.contract_address = '{realmsAddress}'
+      AND r.account_address = '{accountAddress}'
+  `,
 };
 
 // API response types
@@ -208,10 +224,23 @@ export interface OpenOrderByPrice {
   order_id: number;
   name: string | null;
   symbol: string | null;
-  metadata: string | null; // Assuming this is a string, potentially JSON
+  metadata: string | null;
   best_price_hex: bigint | null;
-  expiration: number | null; // Assuming this is a numeric timestamp
+  expiration: number | null;
   owner: ContractAddress | null;
+}
+
+export interface TokenBalance {
+  token_id: string;
+  balance: string;
+  contract_address: string;
+}
+
+export interface SeasonPassRealm {
+  token_id: string;
+  balance: string;
+  contract_address: string;
+  season_pass_balance: string | null;
 }
 
 /**
@@ -322,7 +351,24 @@ export async function fetchOpenOrdersByPrice(contractAddress: string): Promise<O
     ...item,
     token_id: parseInt(item.token_id, 16),
     order_id: parseInt(item.order_id, 16),
-
     best_price_hex: item.best_price_hex ? BigInt(item.best_price_hex) : null,
   }));
+}
+
+/**
+ * Fetch season pass realms by address from the API
+ */
+export async function fetchSeasonPassRealmsByAddress(realmsAddress: string, seasonPassAddress: string, accountAddress: string): Promise<SeasonPassRealm[]> {
+  const query = QUERIES.SEASON_PASS_REALMS_BY_ADDRESS
+      .replace("{realmsAddress}", realmsAddress)
+      .replace("{seasonPassAddress}", seasonPassAddress)
+      .replace(/{accountAddress}/g, accountAddress);
+  const url = `${API_BASE_URL}?query=${encodeURIComponent(query)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch season pass realms: ${response.statusText}`);
+  }
+
+  return await response.json();
 }

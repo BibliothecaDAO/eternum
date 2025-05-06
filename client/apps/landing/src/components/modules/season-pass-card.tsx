@@ -51,7 +51,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
     ] as const,
     functionName: "owner_of",
     address: seasonPassAddress as `0x${string}`,
-    args: [token_id.toString()],
+    args: [token_id?.toString()],
     enabled: BigInt(pass.owner ?? "0") !== BigInt("0") || checkOwner,
   });
 
@@ -104,7 +104,7 @@ export const SeasonPassCard = ({ pass, isSelected, toggleNftSelection, checkOwne
   // Prepare data for the modal (useMemo)
   const modalData = useMemo(
     () => ({
-      tokenId: token_id.toString(),
+      tokenId: token_id?.toString(),
       contractAddress: seasonPassAddress,
       name: name,
       imageSrc: image || "",

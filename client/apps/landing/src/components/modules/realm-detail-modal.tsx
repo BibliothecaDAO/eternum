@@ -208,7 +208,7 @@ export const RealmDetailModal = ({
         <DialogHeader>
           <DialogTitle> {name || "N/A"}</DialogTitle>
           <div className="flex  justify-between gap-2 text-muted-foreground">
-            <p>{parseInt(tokenId.toString())}</p>
+            <p>{parseInt(tokenId?.toString())}</p>
             <p>
               {contractAddress?.slice(0, 4)}...{contractAddress?.slice(-4)}
             </p>
